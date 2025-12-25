@@ -48,6 +48,7 @@ AsyncWebSocket			s_wsLogs(W10_Const::WS_API_LOG);
 AsyncWebSocket			s_wsState(W10_Const::WS_API_STATE);
 AsyncWebSocket			s_wsChart(W10_Const::WS_API_CHART);
 AsyncWebSocket			s_wsMetrics(W10_Const::WS_API_METRICS);
+AsyncWebSocket			s_wsSummary(W10_Const::WS_API_SUMMARY);
 
 /*
 AsyncWebSocket          s_wsLogs("/ws/log");
@@ -60,6 +61,7 @@ AsyncWebSocket*			CL_W10_WebAPI::s_wsServerState	 = &s_wsState;
 AsyncWebSocket*			CL_W10_WebAPI::s_wsServerLogs	 = &s_wsLogs;
 AsyncWebSocket*			CL_W10_WebAPI::s_wsServerChart	 = &s_wsChart;
 AsyncWebSocket*			CL_W10_WebAPI::s_wsServerMetrics = &s_wsMetrics;
+AsyncWebSocket*			CL_W10_WebAPI::s_wsServerSummary = &s_wsSummary;
 
 // --------------------------------------------------
 // 초기화
@@ -137,9 +139,10 @@ void CL_W10_WebAPI::routeVersion() {
 		v_doc["module"]	 = "SmartNatureWind";
 		v_doc["fw"]		 = A20_Const::FW_VERSION;
 
-		v_doc["control"] = "CT10_ControlManager_024";
-		v_doc["config"]	 = "C10_ConfigManager_029";
-		v_doc["api"]	 = "W10_WebAPI_029";
+		v_doc["control"] = A20_Const::VER_CONTROL;
+		v_doc["config"]	 = A20_Const::VER_CONFIG;
+		v_doc["api"]	 = A20_Const::VER_API;
+		v_doc["simul"]	 = A20_Const::VER_SIMUL;
 
 		sendJson(p_request, v_doc);
 	});

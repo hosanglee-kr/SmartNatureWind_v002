@@ -53,6 +53,10 @@ void A00_broadcastMetrics(JsonDocument& doc, bool diffOnly) {
 	CL_W10_WebAPI::broadcastMetrics(doc, diffOnly);
 }
 
+void A00_broadcastSummary(JsonDocument& doc, bool diffOnly) {
+	CL_W10_WebAPI::broadcastSummary(doc, diffOnly);
+}
+
 void A00_markDirty(const char* key) {
 	CL_CT10_ControlManager::instance().markDirty(key);
 }
@@ -226,7 +230,7 @@ void A00_run() {
 	if (v_ctrl.consumeDirtySummary()) {
 		JsonDocument v_doc;
 		v_ctrl.toSummaryJson(v_doc);
-		// A00_broadcastSummary(v_doc, true); // summary 브로커는 현재 정의되어 있지 않음
+		A00_broadcastSummary(v_doc, true);
 	}
 
 	// --------------------------------------------------

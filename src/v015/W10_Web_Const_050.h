@@ -102,6 +102,7 @@ constexpr const char* WS_API_LOG				   = WS_API_BASE "/log";
 constexpr const char* WS_API_STATE				   = WS_API_BASE "/state";
 constexpr const char* WS_API_CHART				   = WS_API_BASE "/chart";
 constexpr const char* WS_API_METRICS			   = WS_API_BASE "/metrics";
+constexpr const char* WS_API_SUMMARY			   = WS_API_BASE "/summary";
 
 // --------------------------------------------------
 // 10. 파일 시스템 경로 (LittleFS Path)

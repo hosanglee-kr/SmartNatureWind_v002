@@ -20,7 +20,6 @@
  *  - createNestedArray/Object/containsKey 사용 금지
  *  - memset + strlcpy 기반 안전 초기화
  *  - 주석/필드명은 JSON 구조와 동일하게 유지
- *  - 모듈별 단일 헤더(h)파일로만 구성 (cpp 없음)
  *  - 변수명은 가능한 해석 가능하게
  * ------------------------------------------------------
  * [코드 네이밍 규칙]
@@ -55,6 +54,12 @@ namespace A20_Const {
 // 펌웨어/파일버전
 constexpr char FW_VERSION[]    = "FW_Ver_1.0.0";
 constexpr char CFG_JSON_FILE[] = "10_cfg_jsonFile.json";
+
+// 모듈별 버전 (Web API 응답용)
+constexpr char VER_CONTROL[] = "CT10_ControlManager_026";
+constexpr char VER_CONFIG[]  = "C10_ConfigManager_041";
+constexpr char VER_API[]     = "W10_WebAPI_050";
+constexpr char VER_SIMUL[]   = "S10_Simul_040";
 
 // 문자열 및 배열 길이 정의
 constexpr uint8_t LEN_NAME   = 64;

@@ -67,6 +67,7 @@ class CL_W10_WebAPI {
 	static void broadcastState(JsonDocument& p_doc, bool p_diffOnly = true);
 	static void broadcastMetrics(JsonDocument& p_doc, bool p_diffOnly = true);
 	static void broadcastChart(JsonDocument& p_doc, bool p_diffOnly = true);
+	static void broadcastSummary(JsonDocument& p_doc, bool p_diffOnly = true);
 
   private:
 	// --------------------------------------------------
@@ -84,6 +85,7 @@ class CL_W10_WebAPI {
 	static AsyncWebSocket*		   s_wsServerLogs;
 	static AsyncWebSocket*		   s_wsServerChart;
 	static AsyncWebSocket*		   s_wsServerMetrics;
+	static AsyncWebSocket*		   s_wsServerSummary;
 
 	// --------------------------------------------------
 	// Static Assets & Menu (W10_Web_Static_032.cpp)

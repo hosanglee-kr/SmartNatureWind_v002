@@ -1,32 +1,59 @@
 {
-    "editor.fontFamily": "D2Coding, 'Fira Code', Consolas, 'Courier New', monospace",
-    // "editor.fontFamily": "'Fira Code', D2Coding, Consolas, 'Courier New', monospace",
-    
-    // D2Coding이 아닌 다른 폰트를 사용하더라도, 한글/전각 문자의 폭을 영문/반각 문자의 2배로 강제합니다.
-    // "editor.unicodeHighlight.ambiguousCharacters": false,
-    // "editor.unicodeHighlight.invisibleCharacters": false,
-
-    // 폰트 렌더링 방식 변경 (일부 환경에서 정렬 문제 해결에 도움)
-    // "auto", "default", "dom", "canvas" 중 하나를 시도해 보세요.
-    // "editor.fontLigatures": true, // D2Coding은 합자를 지원하지 않으므로 꺼두는 것이 좋지만, 켜도 무방
-    "editor.fontRendering": "auto",
-
-    "editor.insertSpaces": true,    // false : 탭 사용, true : 스페이스 사용
-    "editor.tabSize": 4,
-
-    //"editor.fontWeight": "400",
-    "editor.fontSize": 14,
-    "files.associations": {
-        "*.old": "cpp",
-        "typeinfo": "cpp",
-        "deque": "cpp",
-        "array": "cpp",
-        "bitset": "cpp",
-        "string_view": "cpp",
-        "initializer_list": "cpp",
-        "regex": "cpp",
-        "utility": "cpp",
-        "*.001": "cpp",
-        "cmath": "cpp"
-    } // Regular
+  "C_Cpp_Runner.msvcBatchPath": "",
+  "C_Cpp_Runner.cCompilerPath": "gcc",
+  "C_Cpp_Runner.cppCompilerPath": "g++",
+  "C_Cpp_Runner.debuggerPath": "gdb",
+  "C_Cpp_Runner.cStandard": "",
+  "C_Cpp_Runner.cppStandard": "",
+  "C_Cpp_Runner.useMsvc": false,
+  "C_Cpp_Runner.warnings": [
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-Wshadow",
+    "-Wformat=2",
+    "-Wcast-align",
+    "-Wconversion",
+    "-Wsign-conversion",
+    "-Wnull-dereference"
+  ],
+  "C_Cpp_Runner.msvcWarnings": [
+    "/W4",
+    "/permissive-",
+    "/w14242",
+    "/w14287",
+    "/w14296",
+    "/w14311",
+    "/w14826",
+    "/w44062",
+    "/w44242",
+    "/w14905",
+    "/w14906",
+    "/w14263",
+    "/w44265",
+    "/w14928"
+  ],
+  "C_Cpp_Runner.enableWarnings": true,
+  "C_Cpp_Runner.warningsAsError": false,
+  "C_Cpp_Runner.compilerArgs": [],
+  "C_Cpp_Runner.linkerArgs": [],
+  "C_Cpp_Runner.includePaths": [],
+  "C_Cpp_Runner.includeSearch": [
+    "*",
+    "**/*"
+  ],
+  "C_Cpp_Runner.excludeSearch": [
+    "**/build",
+    "**/build/**",
+    "**/.*",
+    "**/.*/**",
+    "**/.vscode",
+    "**/.vscode/**"
+  ],
+  "C_Cpp_Runner.useAddressSanitizer": false,
+  "C_Cpp_Runner.useUndefinedSanitizer": false,
+  "C_Cpp_Runner.useLeakSanitizer": false,
+  "C_Cpp_Runner.showCompilationTime": false,
+  "C_Cpp_Runner.useLinkTimeOptimization": false,
+  "C_Cpp_Runner.msvcSecureNoWarnings": false
 }

@@ -86,6 +86,21 @@ void CL_W10_WebAPI::routeWebSocket() {
 	});
 	s_server->addHandler(s_wsServerChart);
 
+	// 요약 WS
+	s_wsServerSummary->onEvent([](AsyncWebSocket*, AsyncWebSocketClient* client, AwsEventType type, void*, uint8_t*, size_t) {
+		if (type == WS_EVT_CONNECT) {
+			CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WS /summary connected (id=%u)", client->id());
+			if (s_control) {
+				JsonDocument v_doc;
+				s_control->toSummaryJson(v_doc);
+				String v_json;
+				serializeJson(v_doc, v_json);
+				client->text(v_json);
+			}
+		}
+	});
+	s_server->addHandler(s_wsServerSummary);
+
 	// 메트릭 WS
 	s_wsServerMetrics->onEvent([](AsyncWebSocket*, AsyncWebSocketClient* client, AwsEventType type, void*, uint8_t*, size_t) {
 		if (type == WS_EVT_CONNECT) {
@@ -125,4 +140,11 @@ void CL_W10_WebAPI::broadcastMetrics(JsonDocument& p_doc, bool p_diffOnly) {
 // --------------------------------------------------
 void CL_W10_WebAPI::broadcastChart(JsonDocument& p_doc, bool p_diffOnly) {
 	_broadcast(s_wsServerChart, p_doc, p_diffOnly);
+}
+
+// --------------------------------------------------
+// 요약 브로드캐스트
+// --------------------------------------------------
+void CL_W10_WebAPI::broadcastSummary(JsonDocument& p_doc, bool p_diffOnly) {
+	_broadcast(s_wsServerSummary, p_doc, p_diffOnly);
 }

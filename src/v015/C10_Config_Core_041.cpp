@@ -404,7 +404,7 @@ void CL_C10_ConfigManager::freeLazySection(const char* p_section, ST_A20_ConfigR
 		}
 		return;
 	}
-	if (strcmp(p_section, "windProfile") == 0) {
+	if (strcmp(p_section, "windDict") == 0) {
 		if (p_root.windDict) {
 			delete p_root.windDict;
 			p_root.windDict = nullptr;
@@ -502,7 +502,7 @@ void CL_C10_ConfigManager::getDirtyStatus(JsonDocument& p_doc) {
 	p_doc["nvsSpec"]      = _dirty_nvsSpec;
 	p_doc["schedules"]    = _dirty_schedules;
 	p_doc["userProfiles"] = _dirty_userProfiles;
-	p_doc["windProfile"]  = _dirty_windProfile;
+	p_doc["windDict"]     = _dirty_windProfile;
 	p_doc["webPage"]      = _dirty_webPage;
 
 	C10_MUTEX_RELEASE();
@@ -565,127 +565,96 @@ void CL_C10_ConfigManager::toJson_All(const ST_A20_ConfigRoot_t& p,
 //  - 섹션 파일 경로는 cfg_jsonFile 매핑(s_cfgJsonFileMap.*)을 우선 사용
 // -----------------------------------------------------
 bool CL_C10_ConfigManager::factoryResetFromDefault() {
+	bool v_fileFound = false;
+
 #ifdef CFG_DEFAULT_FILE_EXISTS
 	// NOTE:
 	// - 아래 기본 파일 경로 매크로는 프로젝트 정책에 맞춰 제공되어야 함.
 	// - 예: A20_Const::CFG_DEFAULT_FILE 같은 상수 또는 빌드 정의.
 	// - 여기서는 A20_Const::CFG_DEFAULT_FILE이 존재한다고 가정.
 	JsonDocument v_def;
-	if (!ioLoadJson(A20_Const::CFG_DEFAULT_FILE, v_def)) {
-		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] Default file missing: %s", A20_Const::CFG_DEFAULT_FILE);
-		return false;
-	}
+	if (ioLoadJson(A20_Const::CFG_DEFAULT_FILE, v_def)) {
+		v_fileFound = true;
 
-	// cfg_jsonFile 매핑이 비어있을 경우를 대비해 재로드 시도
-	if (s_cfgJsonFileMap.system[0] == '\0') {
-		if (!_loadCfgJsonFile()) {
-			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] factoryReset: cfg_jsonFile load failed.");
-			return false;
-		}
-	}
-
-	// system
-	if (v_def["system"].is<JsonObjectConst>()) {
-		JsonDocument v_doc;
-		v_doc["system"] = v_def["system"];
-		if (!ioSaveJson(s_cfgJsonFileMap.system, v_doc)) {
-			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] FactoryReset save failed: system=%s", s_cfgJsonFileMap.system);
-			return false;
-		}
-	}
-
-	// wifi
-	if (v_def["wifi"].is<JsonObjectConst>()) {
-		JsonDocument v_doc;
-		v_doc["wifi"] = v_def["wifi"];
-		if (!ioSaveJson(s_cfgJsonFileMap.wifi, v_doc)) {
-			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] FactoryReset save failed: wifi=%s", s_cfgJsonFileMap.wifi);
-			return false;
-		}
-	}
-
-	// motion
-	if (v_def["motion"].is<JsonObjectConst>()) {
-		JsonDocument v_doc;
-		v_doc["motion"] = v_def["motion"];
-		if (!ioSaveJson(s_cfgJsonFileMap.motion, v_doc)) {
-			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] FactoryReset save failed: motion=%s", s_cfgJsonFileMap.motion);
-			return false;
-		}
-	}
-
-	// nvsSpec
-	// 기본파일은 "nvsSpec" 루트 또는 {"nvsSpec":{...}} 두 형태 모두 허용
-	if (v_def["nvsSpec"].is<JsonObjectConst>()) {
-		JsonDocument v_doc;
-		v_doc["nvsSpec"] = v_def["nvsSpec"];
-		if (!ioSaveJson(s_cfgJsonFileMap.nvsSpec, v_doc)) {
-			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] FactoryReset save failed: nvsSpec=%s", s_cfgJsonFileMap.nvsSpec);
-			return false;
-		}
-	}
-
-	// schedules
-	// 최신 스펙: { "schedules": [ ... ] }
-	if (v_def["schedules"].is<JsonArrayConst>()) {
-		JsonDocument v_doc;
-		v_doc["schedules"] = v_def["schedules"];
-		if (!ioSaveJson(s_cfgJsonFileMap.schedules, v_doc)) {
-			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] FactoryReset save failed: schedules=%s", s_cfgJsonFileMap.schedules);
-			return false;
-		}
-	}
-
-	// userProfiles
-	// 최신 스펙: { "userProfiles": { "profiles":[...] } }
-	if (v_def["userProfiles"].is<JsonObjectConst>()) {
-		JsonDocument v_doc;
-		v_doc["userProfiles"] = v_def["userProfiles"];
-		if (!ioSaveJson(s_cfgJsonFileMap.userProfiles, v_doc)) {
-			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] FactoryReset save failed: userProfiles=%s", s_cfgJsonFileMap.userProfiles);
-			return false;
-		}
-	}
-
-	// windProfile
-	if (v_def["windProfile"].is<JsonObjectConst>()) {
-		JsonDocument v_doc;
-		v_doc["windProfile"] = v_def["windProfile"];
-		if (!ioSaveJson(s_cfgJsonFileMap.windDict, v_doc)) {
-			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] FactoryReset save failed: windDict=%s", s_cfgJsonFileMap.windDict);
-			return false;
-		}
-	}
-
-	// webPage
-	// 최신 스펙: { "pages":[...], "reDirect":[...], "assets":[...] }
-	if (v_def["pages"].is<JsonArrayConst>() || v_def["webPage"].is<JsonObjectConst>()) {
-		// default 파일이 webPage를 "webPage":{...}로 담는 형태도 허용
-		JsonDocument v_doc;
-
-		if (v_def["webPage"].is<JsonObjectConst>()) {
-			JsonObjectConst v_wp = v_def["webPage"].as<JsonObjectConst>();
-
-			// 그대로 저장
-			v_doc["pages"]    = v_wp["pages"];
-			v_doc["reDirect"] = v_wp["reDirect"];
-			v_doc["assets"]   = v_wp["assets"];
-		} else {
-			// 루트에 pages/reDirect/assets가 있는 형태
-			v_doc["pages"]    = v_def["pages"];
-			v_doc["reDirect"] = v_def["reDirect"];
-			v_doc["assets"]   = v_def["assets"];
+		// cfg_jsonFile 매핑이 비어있을 경우를 대비해 재로드 시도
+		if (s_cfgJsonFileMap.system[0] == '\0') {
+			if (!_loadCfgJsonFile()) {
+				CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] factoryReset: cfg_jsonFile load failed.");
+				return false;
+			}
 		}
 
-		if (!ioSaveJson(s_cfgJsonFileMap.webPage, v_doc)) {
-			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] FactoryReset save failed: webPage=%s", s_cfgJsonFileMap.webPage);
-			return false;
+		// 1) system
+		if (v_def["system"].is<JsonObjectConst>()) {
+			JsonDocument v_doc;
+			v_doc["system"] = v_def["system"];
+			ioSaveJson(s_cfgJsonFileMap.system, v_doc);
 		}
-	}
 
-	CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] Factory reset completed from default");
-	return true;
-#else
-	return false;
+		// 2) wifi
+		if (v_def["wifi"].is<JsonObjectConst>()) {
+			JsonDocument v_doc;
+			v_doc["wifi"] = v_def["wifi"];
+			ioSaveJson(s_cfgJsonFileMap.wifi, v_doc);
+		}
+
+		// 3) motion
+		if (v_def["motion"].is<JsonObjectConst>()) {
+			JsonDocument v_doc;
+			v_doc["motion"] = v_def["motion"];
+			ioSaveJson(s_cfgJsonFileMap.motion, v_doc);
+		}
+
+		// 4) nvsSpec
+		if (v_def["nvsSpec"].is<JsonObjectConst>()) {
+			JsonDocument v_doc;
+			v_doc["nvsSpec"] = v_def["nvsSpec"];
+			ioSaveJson(s_cfgJsonFileMap.nvsSpec, v_doc);
+		}
+
+		// 5) windDict
+		if (v_def["windDict"].is<JsonObjectConst>() || v_def["windProfile"].is<JsonObjectConst>()) {
+			JsonDocument v_doc;
+			v_doc["windDict"] = v_def["windDict"].is<JsonObjectConst>() ? v_def["windDict"] : v_def["windProfile"];
+			ioSaveJson(s_cfgJsonFileMap.windDict, v_doc);
+		}
+
+		// 6) schedules
+		if (v_def["schedules"].is<JsonObjectConst>() || v_def["schedules"].is<JsonArrayConst>()) {
+			JsonDocument v_doc;
+			v_doc["schedules"] = v_def["schedules"];
+			ioSaveJson(s_cfgJsonFileMap.schedules, v_doc);
+		}
+
+		// 7) userProfiles
+		if (v_def["userProfiles"].is<JsonObjectConst>()) {
+			JsonDocument v_doc;
+			v_doc["userProfiles"] = v_def["userProfiles"];
+			ioSaveJson(s_cfgJsonFileMap.userProfiles, v_doc);
+		}
+
+		// 8) webPage
+		if (v_def["pages"].is<JsonArrayConst>() || v_def["webPage"].is<JsonObjectConst>()) {
+			JsonDocument v_doc;
+			if (v_def["webPage"].is<JsonObjectConst>()) {
+				v_doc = v_def["webPage"];
+			} else {
+				v_doc["pages"]    = v_def["pages"];
+				v_doc["reDirect"] = v_def["reDirect"];
+				v_doc["assets"]   = v_def["assets"];
+			}
+			ioSaveJson(s_cfgJsonFileMap.webPage, v_doc);
+		}
+
+		CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] Factory Reset: Restored from default master file.");
+	}
 #endif
+
+	if (!v_fileFound) {
+		CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] Factory Reset: Using hardcoded defaults in C++.");
+		A20_resetToDefault(g_A20_config_root);
+		saveAll(g_A20_config_root);
+	}
+
+	return true;
 }

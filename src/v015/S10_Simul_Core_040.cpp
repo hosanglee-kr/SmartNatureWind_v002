@@ -334,6 +334,12 @@ void CL_S10_Simulation::applyResolvedWind(const ST_A20_ResolvedWind_t& p_resolve
 	thermalStrength = max(1.0f, p_resolved.thermalBubbleStrength);
 	thermalRadius	= max(0.0f, p_resolved.thermalBubbleRadius);
 
+	baseMinWind     = p_resolved.baseMinWind;
+	baseMaxWind     = p_resolved.baseMaxWind;
+	gustProbBase    = p_resolved.gustProbBase;
+	gustStrengthMax = p_resolved.gustStrengthMax;
+	thermalFreqBase = p_resolved.thermalFreqBase;
+
 	// Preset 코어 파라미터 재적용
 	applyPresetCore(presetCode);
 

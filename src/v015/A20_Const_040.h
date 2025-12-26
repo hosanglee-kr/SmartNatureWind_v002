@@ -392,6 +392,12 @@ typedef struct {
 	float turbulenceIntensitySigma;
 	float thermalBubbleStrength;
 	float thermalBubbleRadius;
+
+	float baseMinWind;
+	float baseMaxWind;
+	float gustProbBase;
+	float gustStrengthMax;
+	float thermalFreqBase;
 } ST_A20_WindBase_t;
 
 typedef struct {
@@ -578,6 +584,12 @@ typedef struct {
 	float turbulenceIntensitySigma = 0.0f;
 	float thermalBubbleStrength = 0.0f;
 	float thermalBubbleRadius = 0.0f;
+
+	float baseMinWind = 0.0f;
+	float baseMaxWind = 0.0f;
+	float gustProbBase = 0.0f;
+	float gustStrengthMax = 0.0f;
+	float thermalFreqBase = 0.0f;
 } ST_A20_ResolvedWind_t;
 
 

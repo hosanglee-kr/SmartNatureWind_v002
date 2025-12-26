@@ -27,8 +27,9 @@ const API_STATE          = `${API_BASE}/state`;
 const API_CONFIG         = `${API_BASE}/config`;
 const API_CONFIG_SAVE    = `${API_BASE}/config/save`;
 const API_CONFIG_INIT    = `${API_BASE}/config/init`;     // factoryResetFromDefault와 매핑
-const API_CONFIG_MOTION  = `${API_BASE}/config/motion`;   // 풍속/모션 메모리 패치
-const API_CONFIG_TIMING  = `${API_BASE}/config/timing`;   // 타이밍 메모리 패치
+const API_CONFIG_MOTION  = `${API_BASE}/motion`;      // 풍속/모션 메모리 패치
+const API_CONFIG_TIMING  = `${API_BASE}/motion`;      // 타이밍 메모리 패치 (Backend 042 merge)
+const API_SIMULATION     = `${API_BASE}/simulation`;  // 실시간 물리 시뮬레이션 패치
 const API_CONFIG_WIFI_AP = `${API_BASE}/config/wifi_ap`;  // Wi-Fi AP 설정 패치
 const API_CONFIG_WIFI_STA= `${API_BASE}/config/wifi_sta`; // Wi-Fi STA 리스트 패치
 const API_CONFIG_PWM     = `${API_BASE}/config/hw_pwm`;   // PWM 하드웨어 설정 패치
@@ -348,15 +349,15 @@ async function loadConfig() {
 			if (elTurbLen())     elTurbLen().value     = motion.turb_len    ?? "";
 			if (elTurbSig())     elTurbSig().value     = motion.turb_sig    ?? "";
 			if (elThermStr())    elThermStr().value    = motion.therm_str   ?? "";
-			if (elThermRad())    elThermRad().value    = motion.therm_rad   ?? "";
+			if (elThermRad())    elThermRad().value    = motion.thermalBubbleRadius ?? motion.therm_rad   ?? "";
 		}
 
 		// ---- Timing ----
 		const timing = (cfg.motion && cfg.motion.timing) ? cfg.motion.timing : cfg.timing;
 		if (timing) {
-			if (elSimInt())     elSimInt().value     = timing.simIntervalMs     ?? timing.sim_int ?? "";
-			if (elGustInt())    elGustInt().value    = timing.gustIntervalMs    ?? timing.gust_int ?? "";
-			if (elThermalInt()) elThermalInt().value = timing.thermalIntervalMs ?? timing.thermal_int ?? "";
+			if (elSimInt())     elSimInt().value     = timing.simIntervalMs     ?? "";
+			if (elGustInt())    elGustInt().value    = timing.gustIntervalMs    ?? "";
+			if (elThermalInt()) elThermalInt().value = timing.thermalIntervalMs ?? "";
 		}
 
 		// ---- Preset 목록 (백엔드에서 motion.presets 또는 windProfiles 등) ----
@@ -390,6 +391,8 @@ function loadPresetsFromConfig(cfg) {
 
 	if (cfg.motion && Array.isArray(cfg.motion.presets)) {
 		presets = cfg.motion.presets;
+	} else if (cfg.windDict && Array.isArray(cfg.windDict.presets)) {
+		presets = cfg.windDict.presets;
 	} else if (cfg.windProfile && Array.isArray(cfg.windProfile.presets)) {
 		presets = cfg.windProfile.presets;
 	} else if (Array.isArray(cfg.windProfiles)) {
@@ -511,22 +514,22 @@ async function saveMotionPatch() {
 	try {
 		showLoading();
 		const body = {
-			motion: {
-				intensity:   Number(elIntensity().value || 0),
-				gust_freq:   Number(elGustFreq().value || 0),
-				variability: Number(elVariability().value || 0),
-				fanLimit:   Number(elFanLimit().value || 0),
-				minFan:     Number(elMinFan().value || 0),
-				turb_len:    Number(elTurbLen().value || 0),
-				turb_sig:    Number(elTurbSig().value || 0),
-				therm_str:   Number(elThermStr().value || 0),
-				therm_rad:   Number(elThermRad().value || 0),
-				preset_id:   elPreset().value || null
+			sim: {
+				intensity:           Number(elIntensity().value || 0),
+				gustFreq:            Number(elGustFreq().value || 0),
+				variability:         Number(elVariability().value || 0),
+				fanLimit:            Number(elFanLimit().value || 0),
+				minFan:              Number(elMinFan().value || 0),
+				turbLenScale:        Number(elTurbLen().value || 0),
+				turbSigma:           Number(elTurbSig().value || 0),
+				thermalBubbleStrength: Number(elThermStr().value || 0),
+				thermalBubbleRadius:   Number(elThermRad().value || 0),
+				presetCode:          elPreset().value || null
 			}
 		};
 
-		await apiFetch(API_CONFIG_MOTION, {
-			method: "PATCH",
+		await apiFetch(API_SIMULATION, {
+			method: "POST",
 			body: JSON.stringify(body)
 		});
 
@@ -555,7 +558,7 @@ async function saveTimingPatch() {
 		};
 
 		await apiFetch(API_CONFIG_TIMING, {
-			method: "PATCH",
+			method: "POST",
 			body: JSON.stringify(body)
 		});
 

@@ -17,7 +17,7 @@
 
   // ======================= 1. 공통 헬퍼 / 상수 =======================
 
-  const API_BASE = "/api";
+  const API_BASE = "/api/v001";
 
   const API_SCHEDULES = `${API_BASE}/schedules`;
   const API_WIND_PROFILE = `${API_BASE}/windProfile`;

@@ -147,7 +147,7 @@
 
   async function checkConfigDirtyState() {
     try {
-      const res = await fetchApi("/api/config/dirty", "GET", null, "Dirty 상태 조회");
+      const res = await fetchApi("/api/v001/config/dirty", "GET", null, "Dirty 상태 조회");
       if (!res) return;
 
       // 형태 유연 처리: { userProfiles: true } 또는 { sections: { userProfiles: true } } 등
@@ -171,7 +171,7 @@
       showToast("저장할 변경 사항이 없습니다.", "warn");
       return;
     }
-    const res = await fetchApi("/api/config/save", "POST", {}, "전체 설정 파일 저장");
+    const res = await fetchApi("/api/v001/config/save", "POST", {}, "전체 설정 파일 저장");
     if (res !== null) {
       setDirtyStatus(false);
       await loadUserProfiles();
@@ -181,7 +181,7 @@
   // ======================= 4. 데이터 로드 =======================
 
   async function loadWindProfileDict() {
-    const data = await fetchApi("/api/windProfile", "GET", null, "Wind Profile 사전 로드");
+    const data = await fetchApi("/api/v001/windProfile", "GET", null, "Wind Profile 사전 로드");
 
     let root = data || {};
     if (root.windProfile) root = root.windProfile;
@@ -205,7 +205,7 @@
   }
 
   async function loadUserProfiles() {
-    const data = await fetchApi("/api/user_profiles", "GET", null, "유저 프로파일 목록 로드");
+    const data = await fetchApi("/api/v001/user_profiles", "GET", null, "유저 프로파일 목록 로드");
     const noMsg = $("#noProfileMessage");
 
     let profiles = [];
@@ -698,7 +698,7 @@
     let result = null;
     if (isUpdate) {
       result = await fetchApi(
-        `/api/user_profiles/${profile.profileId}`,
+        `/api/v001/user_profiles/${profile.profileId}`,
         "PUT",
         { profile },
         `유저 프로파일 ${profile.profileId} 수정`
@@ -707,7 +707,7 @@
       // 새 ID는 백엔드에서 할당하도록 profileId=0 또는 미포함으로 전송
       delete profile.profileId;
       result = await fetchApi(
-        "/api/user_profiles",
+        "/api/v001/user_profiles",
         "POST",
         { profile },
         "새 유저 프로파일 생성"
@@ -728,7 +728,7 @@
     if (!ok) return;
 
     const res = await fetchApi(
-      `/api/user_profiles/${id}`,
+      `/api/v001/user_profiles/${id}`,
       "DELETE",
       null,
       `유저 프로파일 ${id} 삭제`

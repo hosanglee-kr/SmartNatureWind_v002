@@ -19,7 +19,7 @@
  * ============================== */
 
 // REST API 기본 prefix
-const API_BASE = "/api/v1";
+const API_BASE = "/api/v001";
 
 
 // 주요 엔드포인트 정의 (필요 시 여기만 고쳐 쓰면 됨)
@@ -303,7 +303,7 @@ async function loadConfig() {
 		if (cfg.wifi) {
 			if (elWifiModeSel()) elWifiModeSel().value = cfg.wifi.wifiMode ?? 0;
 			if (elApSsid()) elApSsid().value = cfg.wifi.ap ? cfg.wifi.ap.ssid || "" : "";
-			if (elApPass()) elApPass().value = cfg.wifi.ap ? cfg.wifi.ap.password || "" : "";
+			if (elApPass()) elApPass().value = cfg.wifi.ap ? cfg.wifi.ap.pass || "" : "";
 
 			// STA 리스트
 			g_staList = [];
@@ -352,10 +352,11 @@ async function loadConfig() {
 		}
 
 		// ---- Timing ----
-		if (cfg.timing) {
-			if (elSimInt())     elSimInt().value     = cfg.timing.sim_int     ?? "";
-			if (elGustInt())    elGustInt().value    = cfg.timing.gust_int    ?? "";
-			if (elThermalInt()) elThermalInt().value = cfg.timing.thermal_int ?? "";
+		const timing = (cfg.motion && cfg.motion.timing) ? cfg.motion.timing : cfg.timing;
+		if (timing) {
+			if (elSimInt())     elSimInt().value     = timing.simIntervalMs     ?? timing.sim_int ?? "";
+			if (elGustInt())    elGustInt().value    = timing.gustIntervalMs    ?? timing.gust_int ?? "";
+			if (elThermalInt()) elThermalInt().value = timing.thermalIntervalMs ?? timing.thermal_int ?? "";
 		}
 
 		// ---- Preset 목록 (백엔드에서 motion.presets 또는 windProfiles 등) ----
@@ -389,6 +390,8 @@ function loadPresetsFromConfig(cfg) {
 
 	if (cfg.motion && Array.isArray(cfg.motion.presets)) {
 		presets = cfg.motion.presets;
+	} else if (cfg.windProfile && Array.isArray(cfg.windProfile.presets)) {
+		presets = cfg.windProfile.presets;
 	} else if (Array.isArray(cfg.windProfiles)) {
 		presets = cfg.windProfiles;
 	}
@@ -403,8 +406,8 @@ function loadPresetsFromConfig(cfg) {
 
 	presets.forEach((p, idx) => {
 		const opt = document.createElement("option");
-		// {id, name, label} 형식을 가정
-		opt.value = p.id != null ? p.id : p.name || String(idx);
+		// {code, name} 형식을 가정 (Backend WindProfileDict 기준)
+		opt.value = p.id != null ? p.id : (p.code || p.name || String(idx));
 		opt.textContent = p.label || p.name || `Preset ${idx + 1}`;
 		sel.appendChild(opt);
 	});
@@ -542,10 +545,12 @@ async function saveTimingPatch() {
 	try {
 		showLoading();
 		const body = {
-			timing: {
-				sim_int:     Number(elSimInt().value || 0),
-				gust_int:    Number(elGustInt().value || 0),
-				thermal_int: Number(elThermalInt().value || 0)
+			motion: {
+				timing: {
+					simIntervalMs:     Number(elSimInt().value || 0),
+					gustIntervalMs:    Number(elGustInt().value || 0),
+					thermalIntervalMs: Number(elThermalInt().value || 0)
+				}
 			}
 		};
 
@@ -573,7 +578,7 @@ async function saveWifiApPatch() {
 				wifiMode: Number(elWifiModeSel().value || 0),
 				ap: {
 					ssid:     elApSsid().value || "",
-					password: elApPass().value || ""
+					pass:     elApPass().value || ""
 				}
 			}
 		};

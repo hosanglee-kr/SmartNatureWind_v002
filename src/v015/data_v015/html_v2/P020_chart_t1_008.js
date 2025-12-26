@@ -20,7 +20,7 @@
 	 * 0. 상수 / 공용 유틸
 	 * ============================== */
 
-	const API_BASE          = "/api";
+	const API_BASE          = "/api/v001";
 	const API_CONFIG        = `${API_BASE}/config`;
 	const API_CONFIG_SAVE   = `${API_BASE}/config/save`;
 	const API_CONFIG_INIT   = `${API_BASE}/config/init`;

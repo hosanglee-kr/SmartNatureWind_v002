@@ -52,6 +52,7 @@ constexpr const char* HTTP_API_CONTROL_SUMMARY	   = HTTP_API_BASE "/control/summ
 // --------------------------------------------------
 // 3. 설정 관리 (Configuration Life Cycle)
 // --------------------------------------------------
+constexpr const char* HTTP_API_CONFIG		   = HTTP_API_BASE "/config";
 constexpr const char* HTTP_API_CONFIG_SAVE		   = HTTP_API_BASE "/config/save";
 constexpr const char* HTTP_API_CONFIG_DIRTY		   = HTTP_API_BASE "/config/dirty";
 constexpr const char* HTTP_API_CONFIG_INIT		   = HTTP_API_BASE "/config/init";

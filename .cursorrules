@@ -1,0 +1,50 @@
+# Workspace Context7 Rules (v2.0)
+
+이 프로젝트는 ESP32를 위한 특정 Arduino 라이브러리를 사용합니다. 코드 작성이나 디버깅 시 항상 Context7 MCP 서버를 사용하여 최신 문서와 코드 스니펫을 참조하십시오.
+
+## 필수 라이브러리 ID (Required Library IDs)
+- **ArduinoJson**: `/bblanchon/arduinojson` (반드시 v7.x 사용)
+- **ESPAsyncWebServer**: `/esp32async/espasyncwebserver`
+- **AsyncTCP**: `/esp32async/asynctcp`
+- **PlatformIO**: `/platformio/platformio-docs`
+
+## 코드 네이밍 규칙 (Code Naming Conventions)
+다음 접두사와 대소문자 규칙을 엄격히 준수하십시오. **변수명은 의미를 명확히 알 수 있도록 충분히 길게 작성하며, 과도한 약어 사용을 지양합니다.**
+
+| 구분 | 패턴 | 예시 |
+| :--- | :--- | :--- |
+| **파일명** | `[영문접두사][숫자]_[이름]_[버전].cpp/h` | `W10_Web_Routes_050.cpp` |
+| **클래스명** | `CL_[영문접두사][숫자]_[이름]` | `CL_W10_WebAPI` |
+| **구조체** | `ST_[영문접두사][숫자]_[이름]_t` | `ST_A20_ConfigRoot_t` |
+| **Enum** | `EN_[영문접두사][숫자]_[이름]` | `EN_L10_LOG_INFO` |
+| **전역 상수/매크로** | `G_[영문접두사][숫자]_[이름]` | `G_W10_PAGES_JSON`, `G_S10_GUST_INTERVAL_MS` |
+| **전역 변수** | `g_[영문접두사][숫자]_[이름]` | `g_A20_config_root` |
+| **정적 멤버 변수** | `s_[이름]` | `s_webServer`, `s_configMutex` |
+| **Private 멤버 변수** | `_[이름]` | `_dirty_systemConfig` |
+| **지역 변수** | `v_[이름]` | `v_jsonDocument`, `v_isSuccess`, `v_temperatureValue` |
+| **함수 인자** | `p_[이름]` | `p_requestObject`, `p_jsonDocument` |
+| **전역 함수** | `[영문접두사][숫자]_[이름]` | `W10_guessMimeType` |
+| **클래스 메서드** | `camelCase` (접두사 없음) | `begin`, `sendJsonResponse` |
+
+## 구현 규칙 (Implementation Rules)
+1. **파일 헤더**: 모든 소스 파일은 표준 헤더 블록(소스명, 모듈약어, 모듈명, 기능요약)으로 시작해야 합니다.
+2. **변수 명명 (가독성)**:
+    - 변수명은 역할이나 데이터를 명확히 설명할 수 있도록 **충분히 길게** 작성하십시오.
+    - 예: `v_doc` -> `v_jsonDocument`, `v_res` -> `v_response`, `v_idx` -> `v_index`
+    - 시간 단위가 포함된 경우 `Ms`, `Sec` 등을 명시하십시오. (`v_elapsedMs`, `v_durationSec`)
+    - 불리언 변수는 `is`, `has`, `can` 등의 접두사를 권장합니다. (`v_isSuccess`, `v_isValid`)
+3. **로깅 (Logging)**:
+    - 디버깅 정보는 항상 `CL_D10_Logger::log(레벨, "[모듈약어] 메시지", ...)` 형식을 사용합니다.
+    - 레벨: `EN_L10_LOG_INFO`, `EN_L10_LOG_WARN`, `EN_L10_LOG_ERROR`, `EN_L10_LOG_DEBUG`
+4. **함수 내 주석**: 복잡한 로직은 단계별로 주석을 답니다. (예: `// 1. 입력 파라미터 검증`, `// 2. 물리 모델 계산`)
+5. **ArduinoJson**:
+    - 항상 `JsonDocument` 단일 타입을 사용하십시오 (v7.x 전용).
+    - `createNestedArray`, `createNestedObject` 사용을 금지합니다.
+6. **문자열 및 메모리**:
+    - 안전한 초기화를 위해 `memset` + `strlcpy` 패턴을 사용하십시오.
+    - 풍속 등 물리량 계산 시 `float` 타입을 사용하며, 상수 뒤에 `f`를 붙입니다. (`1.0f`)
+7. **에러 처리**: API 에러 응답 시 `{"error": "메시지"}` 표준 형식을 유지합니다.
+
+## 디렉토리 구조 (Directory Structure)
+- `src/v[XXX]`: 버전별 소스 디렉토리 (버전 업그레이드 시 폴더명 변경)
+- `include`: 프로젝트 공용 헤더 파일

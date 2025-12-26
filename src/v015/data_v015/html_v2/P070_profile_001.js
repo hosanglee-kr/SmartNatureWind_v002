@@ -68,7 +68,7 @@
     // ======================= 2. 프로파일 목록 렌더링 =======================
 
     async function loadProfiles() {
-        const data = await fetchApi("/api/windProfile", "GET", null, "프로파일 목록 불러오기");
+        const data = await fetchApi("/api/v001/windProfile", "GET", null, "프로파일 목록 불러오기");
 
         if (data && data.profiles && Array.isArray(data.profiles)) {
             currentProfiles = data.profiles;
@@ -167,10 +167,10 @@
         let result;
         if (isUpdate) {
             // PUT /api/windProfile/{id}
-            result = await fetchApi(`/api/windProfile/${id}`, "PUT", data, `프로파일 ${id} 수정`);
+            result = await fetchApi(`/api/v001/windProfile/${id}`, "PUT", data, `프로파일 ${id} 수정`);
         } else {
             // POST /api/windProfile
-            result = await fetchApi("/api/windProfile", "POST", data, "새 프로파일 생성");
+            result = await fetchApi("/api/v001/windProfile", "POST", data, "새 프로파일 생성");
         }
 
         if (result) {
@@ -206,7 +206,7 @@
 
     async function selectProfile(id, name) {
         // POST /api/control/profile/select
-        const result = await fetchApi("/api/control/profile/select", "POST", { id: parseInt(id) }, `프로파일 ${name} 적용`);
+        const result = await fetchApi("/api/v001/control/profile/select", "POST", { id: parseInt(id) }, `프로파일 ${name} 적용`);
         if (result) {
             loadProfiles(); // 활성 상태 업데이트를 위해 목록 새로고침
         }
@@ -214,7 +214,7 @@
 
     async function deleteProfile(id, name) {
         // DELETE /api/windProfile/{id}
-        const result = await fetchApi(`/api/windProfile/${id}`, "DELETE", null, `프로파일 ${name} 삭제`);
+        const result = await fetchApi(`/api/v001/windProfile/${id}`, "DELETE", null, `프로파일 ${name} 삭제`);
         if (result) {
             loadProfiles(); // 목록 새로고침
         }

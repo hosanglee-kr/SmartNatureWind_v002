@@ -994,6 +994,17 @@ void CL_W10_WebAPI::routeAuthTest() {
 //}
 
 void CL_W10_WebAPI::routeConfigDirtySave() {
+	// [ADD] GET /api/v001/config (전체 설정 조회)
+	s_server->on(W10_Const::HTTP_API_CONFIG, HTTP_GET, [](AsyncWebServerRequest* p_request) {
+		if (!checkApiKey(p_request)) {
+			p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+			return;
+		}
+		JsonDocument v_doc;
+		CL_C10_ConfigManager::toJson_All(g_A20_config_root, v_doc);
+		sendJson(p_request, v_doc);
+	});
+
 	s_server->on(W10_Const::HTTP_API_CONFIG_SAVE, HTTP_POST, [](AsyncWebServerRequest* p_request) {
 		if (!checkApiKey(p_request)) {
 			p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");

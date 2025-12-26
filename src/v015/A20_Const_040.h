@@ -340,6 +340,13 @@ typedef struct {
 			uint16_t exitDelaySec;
 		} rssi;
 	} ble;
+
+	// Timing 설정 (Frontend P060/P010 지원)
+	struct {
+		uint16_t simIntervalMs;      // Simulation tick interval (ms)
+		uint16_t gustIntervalMs;     // Gust evaluation interval (ms)
+		uint16_t thermalIntervalMs;  // Thermal evaluation interval (ms)
+	} timing;
 } ST_A20_MotionConfig_t;
 
 /* ======================================================
@@ -757,6 +764,11 @@ inline void A20_resetMotionDefault(ST_A20_MotionConfig_t& p_cfg) {
 	p_cfg.ble.rssi.avgCount     = 8;
 	p_cfg.ble.rssi.persistCount = 5;
 	p_cfg.ble.rssi.exitDelaySec = 12;
+
+	// Timing 기본값
+	p_cfg.timing.simIntervalMs     = 500;   // 0.5초
+	p_cfg.timing.gustIntervalMs    = 2000;  // 2초
+	p_cfg.timing.thermalIntervalMs = 3000;  // 3초
 }
 
 // WindProfile Dict 기본값

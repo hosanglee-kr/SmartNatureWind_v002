@@ -414,6 +414,11 @@ bool CL_C10_ConfigManager::saveMotionConfig(const ST_A20_MotionConfig_t& p_cfg) 
 		v_td["enabled"]     = v_d.enabled;
 	}
 
+	// Timing (camelCase)
+	d["motion"]["timing"]["simIntervalMs"]     = p_cfg.timing.simIntervalMs;
+	d["motion"]["timing"]["gustIntervalMs"]    = p_cfg.timing.gustIntervalMs;
+	d["motion"]["timing"]["thermalIntervalMs"] = p_cfg.timing.thermalIntervalMs;
+
 	return ioSaveJson(s_cfgJsonFileMap.motion, d);
 }
 
@@ -725,35 +730,56 @@ bool CL_C10_ConfigManager::patchMotionFromJson(ST_A20_MotionConfig_t& p_config, 
 			if (v_pst != p_config.ble.rssi.persistCount) { p_config.ble.rssi.persistCount = v_pst; v_changed = true; }
 
 			uint16_t v_exit = C10_getNum2<uint16_t>(j_rssi, "exitDelaySec", "exitDelaySec", p_config.ble.rssi.exitDelaySec);
-			if (v_exit != p_config.ble.rssi.exitDelaySec) { p_config.ble.rssi.exitDelaySec = v_exit; v_changed = true; }
+			if (v_exit != p_config.ble.rssi.exitDelaySec) {
+				p_config.ble.rssi.exitDelaySec = v_exit;
+				v_changed                      = true;
+			}
 		}
 
-		JsonArrayConst j_devices = j_ble["trustedDevices"].as<JsonArrayConst>();
-		if (j_devices.isNull()) j_devices = j_ble["trustedDevices"].as<JsonArrayConst>();
-
-		if (!j_devices.isNull()) {
+		JsonArrayConst j_tdArr = j_ble["trustedDevices"].as<JsonArrayConst>();
+		if (!j_tdArr.isNull()) {
 			p_config.ble.trustedCount = 0;
-			for (JsonObjectConst j_dev : j_devices) {
+			for (JsonObjectConst v_js : j_tdArr) {
 				if (p_config.ble.trustedCount >= A20_Const::MAX_BLE_DEVICES) break;
 
-				ST_A20_BLETrustedDevice_t& v_d = p_config.ble.trustedDevices[p_config.ble.trustedCount];
+				ST_A20_BLETrustedDevice_t& v_d = p_config.ble.trustedDevices[p_config.ble.trustedCount++];
+				strlcpy(v_d.alias, v_js["alias"] | "", sizeof(v_d.alias));
+				strlcpy(v_d.name, v_js["name"] | "", sizeof(v_d.name));
+				strlcpy(v_d.mac, v_js["mac"] | "", sizeof(v_d.mac));
 
-				strlcpy(v_d.alias, j_dev["alias"] | "", sizeof(v_d.alias));
-				strlcpy(v_d.name, j_dev["name"] | "", sizeof(v_d.name));
-				strlcpy(v_d.mac, j_dev["mac"] | "", sizeof(v_d.mac));
-
-				const char* v_mp = C10_getStr2(j_dev, "manufPrefix", "manufPrefix", "");
+				const char* v_mp = C10_getStr2(v_js, "manufPrefix", "manufPrefix", "");
 				strlcpy(v_d.manufPrefix, v_mp, sizeof(v_d.manufPrefix));
 
-				v_d.prefixLen = C10_getNum2<uint8_t>(j_dev, "prefixLen", "prefixLen", 0);
-				v_d.enabled    = C10_getBool2(j_dev, "enabled", "enabled", true);
-
-				p_config.ble.trustedCount++;
+				v_d.prefixLen = C10_getNum2<uint8_t>(v_js, "prefixLen", "prefixLen", 0);
+				v_d.enabled   = C10_getBool2(v_js, "enabled", "enabled", true);
 			}
 			v_changed = true;
 			CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[C10] Motion Trusted Devices array fully replaced.");
 		}
 	}
+
+	// 🆕 Timing
+	JsonObjectConst j_timing = j_motion["timing"].as<JsonObjectConst>();
+	if (!j_timing.isNull()) {
+		uint16_t v_sim = C10_getNum2<uint16_t>(j_timing, "simIntervalMs", "sim_interval", p_config.timing.simIntervalMs);
+		if (v_sim != p_config.timing.simIntervalMs && v_sim > 0) {
+			p_config.timing.simIntervalMs = v_sim;
+			v_changed = true;
+		}
+
+		uint16_t v_gust = C10_getNum2<uint16_t>(j_timing, "gustIntervalMs", "gust_interval", p_config.timing.gustIntervalMs);
+		if (v_gust != p_config.timing.gustIntervalMs && v_gust > 0) {
+			p_config.timing.gustIntervalMs = v_gust;
+			v_changed = true;
+		}
+
+		uint16_t v_thermal = C10_getNum2<uint16_t>(j_timing, "thermalIntervalMs", "thermal_interval", p_config.timing.thermalIntervalMs);
+		if (v_thermal != p_config.timing.thermalIntervalMs && v_thermal > 0) {
+			p_config.timing.thermalIntervalMs = v_thermal;
+			v_changed = true;
+		}
+	}
+
 
 	if (v_changed) {
 		_dirty_motion = true;
@@ -844,4 +870,10 @@ void CL_C10_ConfigManager::toJson_Motion(const ST_A20_MotionConfig_t& p, JsonDoc
 		v_td["prefixLen"]   = v_d.prefixLen;
 		v_td["enabled"]     = v_d.enabled;
 	}
+
+	// 🆕 Timing
+	d["motion"]["timing"]["simIntervalMs"]     = p.timing.simIntervalMs;
+	d["motion"]["timing"]["gustIntervalMs"]    = p.timing.gustIntervalMs;
+	d["motion"]["timing"]["thermalIntervalMs"] = p.timing.thermalIntervalMs;
 }
+

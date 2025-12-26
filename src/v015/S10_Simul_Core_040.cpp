@@ -175,8 +175,13 @@ void CL_S10_Simulation::tick() {
 
 	// 4) tick 업데이트 최소 간격(지터 포함)
 	// - BASE + [0..RANGE-1]
+	uint32_t v_baseMs = G_S10_TICK_MIN_BASE_MS;
+	if (g_A20_config_root.motion != nullptr) {
+		v_baseMs = (uint32_t)g_A20_config_root.motion->timing.simIntervalMs;
+	}
+
 	const uint32_t v_jitterMs	   = (G_S10_TICK_JITTER_RANGE_MS > 0u) ? (esp_random() % G_S10_TICK_JITTER_RANGE_MS) : 0u;
-	const uint32_t v_minIntervalMs = G_S10_TICK_MIN_BASE_MS + v_jitterMs;
+	const uint32_t v_minIntervalMs = v_baseMs + v_jitterMs;
 
 	if (_tickNowMs - lastUpdateMs < (unsigned long)v_minIntervalMs) {
 		portEXIT_CRITICAL(&_simMutex);

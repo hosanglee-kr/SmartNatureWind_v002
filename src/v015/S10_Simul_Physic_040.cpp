@@ -448,7 +448,12 @@ void CL_S10_Simulation::updateGust() {
 	const unsigned long v_nowMs		= _tickNowMs;
 	const unsigned long v_elapsedMs = (v_nowMs >= lastGustCheckMs) ? (v_nowMs - lastGustCheckMs) : 0UL;
 
-	if (v_elapsedMs < G_S10_GUST_EVAL_MIN_MS) {
+	uint32_t v_minGustEvalMs = G_S10_GUST_EVAL_MIN_MS;
+	if (g_A20_config_root.motion != nullptr) {
+		v_minGustEvalMs = (uint32_t)g_A20_config_root.motion->timing.gustIntervalMs;
+	}
+
+	if (v_elapsedMs < v_minGustEvalMs) {
 		return;
 	}
 
@@ -515,7 +520,12 @@ void CL_S10_Simulation::updateThermal() {
 	const unsigned long v_nowMs		= _tickNowMs;
 	const unsigned long v_elapsedMs = (v_nowMs >= lastThermalCheckMs) ? (v_nowMs - lastThermalCheckMs) : 0UL;
 
-	if (v_elapsedMs < G_S10_THERM_EVAL_MIN_MS) {
+	uint32_t v_minThermEvalMs = G_S10_THERM_EVAL_MIN_MS;
+	if (g_A20_config_root.motion != nullptr) {
+		v_minThermEvalMs = (uint32_t)g_A20_config_root.motion->timing.thermalIntervalMs;
+	}
+
+	if (v_elapsedMs < v_minThermEvalMs) {
 		return;
 	}
 

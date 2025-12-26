@@ -182,11 +182,11 @@ void A00_run() {
     // CT10 Dirty 플래그 기반 브로드캐스트 (책임 위임)
     CL_CT10_ControlManager& v_ctrl = g_A00_control;
 
-#if defined(G_A00_METRICS_DEBUG_LOG)
-    static uint32_t v_lastMetricsLogMs = 0;
-    static uint32_t v_lastChartLogMs   = 0;
-    static uint32_t v_lastStateLogMs   = 0;
-#endif
+	#if defined(G_A00_METRICS_DEBUG_LOG)
+		static uint32_t v_lastMetricsLogMs = 0;
+		static uint32_t v_lastChartLogMs   = 0;
+		static uint32_t v_lastStateLogMs   = 0;
+	#endif
 
     // 1. 상태 브로드캐스트 (상태 변경 발생 시)
     if (v_ctrl.consumeDirtyState()) {
@@ -194,11 +194,11 @@ void A00_run() {
         v_ctrl.toJson(v_doc);
         A00_broadcastState(v_doc, true);
 
-#if defined(G_A00_METRICS_DEBUG_LOG)
-        uint32_t v_now_ms = millis();
-        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A00] State broadcast at %u ms (Δ=%u)", v_now_ms, v_now_ms - v_lastStateLogMs);
-        v_lastStateLogMs = v_now_ms;
-#endif
+		#if defined(G_A00_METRICS_DEBUG_LOG)
+			uint32_t v_now_ms = millis();
+			CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A00] State broadcast at %u ms (Δ=%u)", v_now_ms, v_now_ms - v_lastStateLogMs);
+			v_lastStateLogMs = v_now_ms;
+		#endif
     }
 
     // 2. 메트릭/차트 브로드캐스트 (CT10 내부에서 1.5초 주기로 Dirty 설정)
@@ -207,11 +207,11 @@ void A00_run() {
         v_ctrl.toMetricsJson(v_doc);
         A00_broadcastMetrics(v_doc, true);
 
-#if defined(G_A00_METRICS_DEBUG_LOG)
-        uint32_t v_now_ms = millis();
-        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A00] Metrics broadcast at %u ms (Δ=%u)", v_now_ms, v_now_ms - v_lastMetricsLogMs);
-        v_lastMetricsLogMs = v_now_ms;
-#endif
+		#if defined(G_A00_METRICS_DEBUG_LOG)
+			uint32_t v_now_ms = millis();
+			CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A00] Metrics broadcast at %u ms (Δ=%u)", v_now_ms, v_now_ms - v_lastMetricsLogMs);
+			v_lastMetricsLogMs = v_now_ms;
+		#endif
     }
 
     if (v_ctrl.consumeDirtyChart()) {
@@ -219,11 +219,11 @@ void A00_run() {
         v_ctrl.toChartJson(v_doc, true);
         A00_broadcastChart(v_doc, true);
 
-#if defined(G_A00_METRICS_DEBUG_LOG)
-        uint32_t v_now_ms = millis();
-        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A00] Chart broadcast at %u ms (Δ=%u)", v_now_ms, v_now_ms - v_lastChartLogMs);
-        v_lastChartLogMs = v_now_ms;
-#endif
+		#if defined(G_A00_METRICS_DEBUG_LOG)
+			uint32_t v_now_ms = millis();
+			CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A00] Chart broadcast at %u ms (Δ=%u)", v_now_ms, v_now_ms - v_lastChartLogMs);
+			v_lastChartLogMs = v_now_ms;
+		#endif
     }
 
     // 3. 요약 상태 브로드캐스트 (필요 시)

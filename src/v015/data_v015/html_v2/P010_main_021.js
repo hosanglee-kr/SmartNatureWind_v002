@@ -37,8 +37,8 @@ const API_WIFI_SCAN      = `${API_BASE}/wifi/scan`;       // Wi-Fi 스캔
 const API_VERSION        = `${API_BASE}/version`;         // FW 버전 조회 (문자열 or JSON)
 
 // 파일 업로드 / OTA
-const API_UPLOAD_STATIC  = "/upload";
-const API_UPLOAD_OTA     = "/update";
+const API_UPLOAD_STATIC  = `${API_BASE}/fileUpload`;		// "/upload";
+const API_UPLOAD_OTA     = `${API_BASE}/fwUpdate`;		// "/update";
 
 // WebSocket 엔드포인트 (필요시 "/ws/logs", "/ws/state" 로 수정)
 const WS_LOG_URL   = () => {

@@ -47,8 +47,16 @@
 #include "D10_Logger_040.h"
 
 // Mutex 보호 매크로 정의
-#define WF10_MUTEX_ACQUIRE() xSemaphoreTake(CL_WF10_WiFiManager::s_wifiMutex, portMAX_DELAY)
-#define WF10_MUTEX_RELEASE() xSemaphoreGive(CL_WF10_WiFiManager::s_wifiMutex)
+#define WF10_MUTEX_ACQUIRE() \
+    if (CL_WF10_WiFiManager::s_wifiMutex != nullptr) \
+        xSemaphoreTake(CL_WF10_WiFiManager::s_wifiMutex, portMAX_DELAY)
+
+#define WF10_MUTEX_RELEASE() \
+    if (CL_WF10_WiFiManager::s_wifiMutex != nullptr) \
+        xSemaphoreGive(CL_WF10_WiFiManager::s_wifiMutex)
+
+// #define WF10_MUTEX_ACQUIRE() xSemaphoreTake(CL_WF10_WiFiManager::s_wifiMutex, portMAX_DELAY)
+// #define WF10_MUTEX_RELEASE() xSemaphoreGive(CL_WF10_WiFiManager::s_wifiMutex)
 
 // --------------------------------------------------
 // Time 설정 적용 전역 함수 선언 (Web API / Config에서 호출)

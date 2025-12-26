@@ -60,25 +60,144 @@
 			</div>
 
 			<div class="col-6 card">
-				<strong class="section-title">ℹ️ 시스템 정보</strong>
+				<strong class="section-title">ℹ️ 시스템 정보 및 진단</strong>
 				<div class="system-info">
 					<div class="info-item">
-						<span class="label">펌웨어 버전:</span>
+						<span class="label">펌웨어:</span>
 						<span id="fwVersion">N/A</span>
 					</div>
 					<div class="info-item">
-						<span class="label">운영 체제:</span>
-						<span id="osName">ESP32-Arduino-v7</span>
+						<span class="label">Uptime:</span>
+						<span id="uptime">N/A</span>
 					</div>
 					<div class="info-item">
-						<span class="label">구동 시간(Uptime):</span>
-						<span id="uptime">N/A</span>
+						<span class="label">Heap Free:</span>
+						<span id="heapFree">N/A</span>
 					</div>
 				</div>
 				<div class="actions">
-					<button class="btn" id="btnCheckUpdate">⬆️ 펌웨어 업데이트 확인</button>
+					<button class="btn" id="btnCheckUpdate">⬆️ 펌웨어 확인</button>
+                    <button class="btn" id="btnRefreshInfo">🔄 갱신</button>
 				</div>
 			</div>
+
+            <div class="col-6 card">
+                <strong class="section-title">⚙️ 일반 설정</strong>
+                <form id="generalSystemForm">
+                    <div class="form-group tight">
+                        <label for="deviceName">장치 이름 (Hostname)</label>
+                        <input type="text" id="deviceName" name="deviceName" placeholder="SmartNatureWind">
+                    </div>
+                    <div class="form-group tight">
+                        <label for="logLevel">로그 레벨</label>
+                        <select id="logLevel" name="logLevel">
+                            <option value="DEBUG">DEBUG (개발용)</option>
+                            <option value="INFO">INFO (기본)</option>
+                            <option value="WARN">WARN</option>
+                            <option value="ERROR">ERROR</option>
+                        </select>
+                    </div>
+                    <div class="actions">
+                        <button type="submit" class="btn ok">일반 설정 저장</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="col-12 card">
+                <strong class="section-title">💨 하드웨어 및 팬 제어 한계</strong>
+                <p class="muted">팬의 작동 범위 및 센서 관련 세부 설정입니다.</p>
+                <form id="fanConfigForm">
+                    <div class="grid timing-grid">
+                        <div class="col-3 form-group tight">
+                            <label>기동 최소 (%)</label>
+                            <input type="number" id="startPercentMin" name="startPercentMin" min="0" max="100">
+                        </div>
+                        <div class="col-3 form-group tight">
+                            <label>쾌적 최소 (%)</label>
+                            <input type="number" id="comfortPercentMin" name="comfortPercentMin" min="0" max="100">
+                        </div>
+                        <div class="col-3 form-group tight">
+                            <label>쾌적 최대 (%)</label>
+                            <input type="number" id="comfortPercentMax" name="comfortPercentMax" min="0" max="100">
+                        </div>
+                        <div class="col-3 form-group tight">
+                            <label>강풍 최대 (%)</label>
+                            <input type="number" id="hardPercentMax" name="hardPercentMax" min="0" max="100">
+                        </div>
+                    </div>
+                    <div class="actions top-margin">
+                        <button type="submit" class="btn ok">팬 한계 설정 저장</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="col-12 card">
+                <strong class="section-title">🔌 하드웨어 핀 및 센서 상세 설정</strong>
+                <p class="muted">각 센서의 사용 여부 및 연결된 GPIO 핀 번호를 설정합니다.</p>
+                <form id="hwConfigForm">
+                    <div class="grid timing-grid">
+                        <!-- Fan PWM -->
+                        <div class="col-4 hw-section">
+                            <strong class="sub-title">팬 PWM</strong>
+                            <div class="form-group tight">
+                                <label>핀 (GPIO)</label>
+                                <input type="number" id="hwFanPin" name="hwFanPin">
+                            </div>
+                            <div class="form-group tight">
+                                <label>주파수 (Hz)</label>
+                                <input type="number" id="hwFanFreq" name="hwFanFreq">
+                            </div>
+                        </div>
+                        <!-- PIR -->
+                        <div class="col-4 hw-section">
+                            <strong class="sub-title">PIR (모션)</strong>
+                            <div class="form-group tight row middle">
+                                <label><input type="checkbox" id="hwPirEnabled" name="hwPirEnabled"> 사용</label>
+                            </div>
+                            <div class="form-group tight">
+                                <label>핀 (GPIO)</label>
+                                <input type="number" id="hwPirPin" name="hwPirPin">
+                            </div>
+                            <div class="form-group tight">
+                                <label>지연(초)</label>
+                                <input type="number" id="hwPirHold" name="hwPirHold">
+                            </div>
+                        </div>
+                        <!-- Temp/Hum -->
+                        <div class="col-4 hw-section">
+                            <strong class="sub-title">온습도</strong>
+                            <div class="form-group tight row middle">
+                                <label><input type="checkbox" id="hwThEnabled" name="hwThEnabled"> 사용</label>
+                            </div>
+                            <div class="form-group tight">
+                                <label>핀 (GPIO)</label>
+                                <input type="number" id="hwThPin" name="hwThPin">
+                            </div>
+                            <div class="form-group tight">
+                                <label>타입</label>
+                                <select id="hwThType" name="hwThType">
+                                    <option value="DHT11">DHT11</option>
+                                    <option value="DHT22">DHT22</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- BLE -->
+                        <div class="col-4 hw-section">
+                            <strong class="sub-title">BLE 스캔</strong>
+                            <div class="form-group tight row middle">
+                                <label><input type="checkbox" id="hwBleEnabled" name="hwBleEnabled"> 사용</label>
+                            </div>
+                            <div class="form-group tight">
+                                <label>주기(초)</label>
+                                <input type="number" id="hwBleInterval" name="hwBleInterval">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="actions top-margin">
+                        <button type="submit" class="btn ok">하드웨어 설정 저장</button>
+                    </div>
+                </form>
+            </div>
 
 			<div class="col-12 card">
 				<strong class="section-title">🌐 네트워크 상태 및 설정</strong>
@@ -105,12 +224,27 @@
 			<div class="col-12 card">
 				<strong class="section-title">⚠️ 장치 제어 및 관리</strong>
 				<p class="muted">장치를 재부팅하거나 공장 초기화하는 기능입니다. 주의해서 사용하십시오.</p>
+                <div class="form-group row tight middle">
+                    <span class="label">설정 변경 상태:</span>
+                    <span id="configDirtyStatus" class="info-label ok">저장됨</span>
+                </div>
 				<div class="actions">
 					<button class="btn ok" id="btnConfigSave">💾 현재 설정 파일 저장</button>
+                    <button class="btn" id="btnReloadConfig">🔄 설정 새로고침</button>
 					<button class="btn warn" id="btnReboot">🔄 장치 재부팅</button>
 					<button class="btn err" id="btnFactoryReset">💥 공장 초기화</button>
 				</div>
 			</div>
+
+            <div class="col-12 card">
+                <strong class="section-title">📜 최근 시스템 로그</strong>
+                <div id="logViewer" class="scan-results" style="height: 150px; font-family: monospace; font-size: 0.85em; white-space: pre-wrap;">
+                    로그를 불러오는 중...
+                </div>
+                <div class="actions">
+                    <button class="btn" id="btnRefreshLogs">🔄 로그 갱신</button>
+                </div>
+            </div>
 		</div>
 
 		<div class="muted">© 2540.kr SmartNatureWind (v001 System Settings UI)</div>
@@ -159,6 +293,12 @@
 					<label for="networkPassword">비밀번호</label>
 					<input type="password" id="networkPassword" name="password" placeholder="WiFi 암호">
 				</div>
+                <div class="form-group">
+                    <button type="button" class="btn" id="btnWifiScan">🔍 주변 WiFi 검색</button>
+                    <div id="wifiScanResults" class="scan-results" style="display:none; margin-top:10px;">
+                        <ul id="wifiList"></ul>
+                    </div>
+                </div>
 				<div class="modal-actions">
 					<button type="submit" class="btn ok">저장 및 적용</button>
 					<button type="button" class="btn" id="btnCancelNetworkModal">취소</button>
@@ -179,6 +319,10 @@
 					<label for="ntpServer">NTP 서버 주소</label>
 					<input type="text" id="ntpServer" name="ntpServer" value="pool.ntp.org">
 				</div>
+                <div class="form-group">
+                    <label for="syncIntervalMin">동기화 주기 (분)</label>
+                    <input type="number" id="syncIntervalMin" name="syncIntervalMin" value="60">
+                </div>
 				<div class="form-group">
 					<label for="timezoneOffset">타임존 (Timezone)</label>
                     <select id="timezoneOffset" name="timezoneOffset">

@@ -75,28 +75,111 @@
 
     // ======================= 2. 데이터 로드 및 렌더링 =======================
 
-    // ✅ 시스템 정보 로드
+    // ✅ 시스템 정보 로드 (통합)
     async function loadSystemInfo() {
-        // GET /api/system/info
-        const data = await fetchApi("/api/v001/system/info", "GET", null, "시스템 정보 로드");
-        if (data) {
-            $("#fwVersion").textContent = data.version || "V1.0.0";
-            $("#osName").textContent = data.platform || "ESP32-Arduino-v7";
-            $("#uptime").textContent = data.uptime || "0m 0s";
+        // 1. 버전 및 기본 정보 (/api/v001/version)
+        const ver = await fetchApi("/api/v001/version", "GET", null, "버전 정보 로드");
+        if (ver) {
+            $("#fwVersion").textContent = ver.fw || "N/A";
+        }
 
-            // 네트워크 정보도 함께 로드
-            $("#ipAddress").textContent = data.ip_address || "0.0.0.0";
-            $("#wifiSsid").textContent = data.ssid || "연결 안 됨";
-            $("#netMode").textContent = data.mode || "AP";
+        // 2. 실시간 상태 (/api/v001/state)
+        const state = await fetchApi("/api/v001/state", "GET", null, "상태 로드");
+        if (state) {
+            $("#uptime").textContent = state.uptime || "N/A";
+            $("#ipAddress").textContent = state.network?.ip || "0.0.0.0";
+            $("#wifiSsid").textContent = state.network?.ssid || "연결 안 됨";
+            $("#netMode").textContent = state.network?.mode || "AP";
+        }
 
-            $("#apiKeyStatus").textContent = getKey() ? "저장됨 (확인 필요)" : "설정 필요";
-            $("#apiKeyStatus").className = getKey() ? "info-label warn" : "info-label err";
+        // 3. 진단 정보 (/api/v001/diag)
+        const diag = await fetchApi("/api/v001/diag", "GET", null, "진단 정보 로드");
+        if (diag) {
+            $("#heapFree").textContent = diag.heap?.free ? (diag.heap.free / 1024).toFixed(1) + " KB" : "N/A";
+        }
 
-            // ✅ 네트워크 설정 모달에 현재 SSID 표시 (옵션)
-            if (data.ssid) $("#networkSsid").value = data.ssid;
+        // 4. 시스템 설정 로드 (/api/v001/system)
+        const sys = await fetchApi("/api/v001/system", "GET", null, "시스템 설정 로드");
+        if (sys) {
+            // 일반 설정
+            if ($("#deviceName")) $("#deviceName").value = sys.meta?.deviceName || "";
+            if ($("#logLevel")) $("#logLevel").value = sys.system?.logging?.level || "INFO";
 
-            // 인증 테스트를 바로 실행하여 키 상태 업데이트
-            await checkAuth();
+            // 팬 설정
+            if (sys.hw?.fanConfig) {
+                $("#startPercentMin").value = sys.hw.fanConfig.startPercentMin;
+                $("#comfortPercentMin").value = sys.hw.fanConfig.comfortPercentMin;
+                $("#comfortPercentMax").value = sys.hw.fanConfig.comfortPercentMax;
+                $("#hardPercentMax").value = sys.hw.fanConfig.hardPercentMax;
+            }
+
+            // 시간 설정 (모달용 미리 채우기)
+            if (sys.time) {
+                $("#ntpServer").value = sys.time.ntpServer || "pool.ntp.org";
+                $("#timezoneOffset").value = sys.time.timezone || "Asia/Seoul";
+                $("#syncIntervalMin").value = sys.time.syncIntervalMin || 60;
+            }
+
+            // 하드웨어 설정 (신규)
+            if (sys.hw) {
+                // Fan PWM
+                if (sys.hw.fanPwm) {
+                    $("#hwFanPin").value = sys.hw.fanPwm.pin;
+                    $("#hwFanFreq").value = sys.hw.fanPwm.freq;
+                }
+                // PIR
+                if (sys.hw.pir) {
+                    $("#hwPirEnabled").checked = sys.hw.pir.enabled;
+                    $("#hwPirPin").value = sys.hw.pir.pin;
+                    $("#hwPirHold").value = sys.hw.pir.holdSec;
+                }
+                // Temp/Hum
+                if (sys.hw.tempHum) {
+                    $("#hwThEnabled").checked = sys.hw.tempHum.enabled;
+                    $("#hwThPin").value = sys.hw.tempHum.pin;
+                    $("#hwThType").value = sys.hw.tempHum.type || "DHT22";
+                }
+                // BLE
+                if (sys.hw.ble) {
+                    $("#hwBleEnabled").checked = sys.hw.ble.enabled;
+                    $("#hwBleInterval").value = sys.hw.ble.scanInterval;
+                }
+            }
+        }
+
+        // 5. 더티 체크 (/api/v001/config/dirty)
+        const dirty = await fetchApi("/api/v001/config/dirty", "GET", null, "변경 상태 확인");
+        if (dirty) {
+            const hasDirty = dirty.system || dirty.wifi || dirty.motion || dirty.schedules || dirty.profiles;
+            const statusEl = $("#configDirtyStatus");
+            if (statusEl) {
+                statusEl.textContent = hasDirty ? "📝 변경됨 (저장 필요)" : "✅ 저장됨";
+                statusEl.className = hasDirty ? "info-label warn" : "info-label ok";
+            }
+        }
+
+        $("#apiKeyStatus").textContent = getKey() ? "저장됨 (확인 필요)" : "설정 필요";
+        $("#apiKeyStatus").className = getKey() ? "info-label warn" : "info-label err";
+
+        // 인증 테스트
+        await checkAuth();
+
+        // 로그 로드
+        await loadLogs();
+    }
+
+    // ✅ 로그 로드
+    async function loadLogs() {
+        const viewer = $("#logViewer");
+        if (!viewer) return;
+
+        const data = await fetchApi("/api/v001/logs", "GET", null, "로그 로드");
+        if (data && data.logs) {
+            viewer.textContent = data.logs.join("\n");
+            // 스크롤 맨 아래로
+            viewer.scrollTop = viewer.scrollHeight;
+        } else {
+            viewer.textContent = "로그를 불러올 수 없습니다.";
         }
     }
 
@@ -251,28 +334,139 @@
     async function saveTimeSettings(event) {
         event.preventDefault();
         const ntpServer = $("#ntpServer").value.trim();
-        const timezone = $("#timezoneOffset").value; // Now string from select (e.g., "Asia/Seoul")
+        const timezone = $("#timezoneOffset").value;
+        const syncIntervalMin = parseInt($("#syncIntervalMin").value, 10) || 60;
 
         if (!ntpServer || !timezone) {
              showToast("유효한 NTP 서버 주소와 시간대를 입력하세요.", "err");
              return;
         }
 
-        // C++ Structure Match: {"time": { "ntpServer": ..., "timezone": ... }}
         const body = {
             time: {
                 ntpServer: ntpServer,
-                timezone: timezone
+                timezone: timezone,
+                syncIntervalMin: syncIntervalMin
             }
         };
 
-
-        // POST /api/system/time/set
-        const result = await fetchApi("/api/v001/system/time/set", "POST", body, "시간 설정 저장");
+        const result = await fetchApi("/api/v001/system", "POST", body, "시간 설정 저장");
 
         if (result) {
-            showToast("시간(NTP/시간대) 설정이 성공적으로 저장되었습니다.", "ok");
+            showToast("시간 설정이 저장되었습니다.", "ok");
             closeTimeSetupModal();
+            loadSystemInfo();
+        }
+    }
+
+    // ✅ 일반 설정 저장
+    async function saveGeneralSettings(event) {
+        event.preventDefault();
+        const deviceName = $("#deviceName").value.trim();
+        const logLevel = $("#logLevel").value;
+
+        const body = {
+            meta: { deviceName },
+            system: { logging: { level: logLevel } }
+        };
+
+        const result = await fetchApi("/api/v001/system", "POST", body, "일반 설정 저장");
+        if (result) {
+            showToast("일반 설정이 적용되었습니다.", "ok");
+            loadSystemInfo();
+        }
+    }
+
+    // ✅ 팬 제어 한계 저장
+    async function saveFanConfig(event) {
+        event.preventDefault();
+        const body = {
+            hw: {
+                fanConfig: {
+                    startPercentMin: parseInt($("#startPercentMin").value, 10),
+                    comfortPercentMin: parseInt($("#comfortPercentMin").value, 10),
+                    comfortPercentMax: parseInt($("#comfortPercentMax").value, 10),
+                    hardPercentMax: parseInt($("#hardPercentMax").value, 10)
+                }
+            }
+        };
+
+        const result = await fetchApi("/api/v001/system", "POST", body, "팬 설정 저장");
+        if (result) {
+            showToast("팬 제어 한계 설정이 적용되었습니다.", "ok");
+            loadSystemInfo();
+        }
+    }
+
+    // ✅ WiFi 스캔
+    async function scanWifi() {
+        const listEl = $("#wifiList");
+        const resultsEl = $("#wifiScanResults");
+        listEl.innerHTML = "<li>검색 중...</li>";
+        resultsEl.style.display = "block";
+
+        const data = await fetchApi("/api/v001/wifi/scan", "GET", null, "WiFi 검색");
+        if (data && data.wifi && data.wifi.scan) {
+            listEl.innerHTML = "";
+            if (data.wifi.scan.length === 0) {
+                listEl.innerHTML = "<li>찾은 네트워크가 없습니다.</li>";
+            } else {
+                data.wifi.scan.forEach(net => {
+                    const li = document.createElement("li");
+                    li.innerHTML = `<span>${net.ssid}</span> <span class="rssi-label">${net.rssi} dBm</span>`;
+                    li.onclick = () => {
+                        $("#networkSsid").value = net.ssid;
+                        resultsEl.style.display = "none";
+                    };
+                    listEl.appendChild(li);
+                });
+            }
+        } else {
+            listEl.innerHTML = "<li>스캔 실패</li>";
+        }
+    }
+
+    // ✅ 설정 새로고침 (Reload)
+    async function reloadConfig() {
+        if (confirm("파일 시스템에서 설정을 다시 로드하시겠습니까? (저장하지 않은 변경사항은 사라집니다)")) {
+            const result = await fetchApi("/api/v001/reload", "POST", null, "설정 새로고침");
+            if (result) {
+                showToast("설정이 다시 로드되었습니다.", "ok");
+                loadSystemInfo();
+            }
+        }
+    }
+
+    // ✅ 하드웨어 설정 저장
+    async function saveHwSettings(event) {
+        event.preventDefault();
+        const body = {
+            hw: {
+                fanPwm: {
+                    pin: parseInt($("#hwFanPin").value, 10),
+                    freq: parseInt($("#hwFanFreq").value, 10)
+                },
+                pir: {
+                    enabled: $("#hwPirEnabled").checked,
+                    pin: parseInt($("#hwPirPin").value, 10),
+                    holdSec: parseInt($("#hwPirHold").value, 10)
+                },
+                tempHum: {
+                    enabled: $("#hwThEnabled").checked,
+                    pin: parseInt($("#hwThPin").value, 10),
+                    type: $("#hwThType").value
+                },
+                ble: {
+                    enabled: $("#hwBleEnabled").checked,
+                    scanInterval: parseInt($("#hwBleInterval").value, 10)
+                }
+            }
+        };
+
+        const result = await fetchApi("/api/v001/system", "POST", body, "하드웨어 설정 저장");
+        if (result) {
+            showToast("하드웨어 설정이 적용되었습니다. (핀 변경 시 재부팅 권장)", "warn");
+            loadSystemInfo();
         }
     }
 
@@ -343,6 +537,15 @@
 
         // ✅ 펌웨어 및 네트워크 버튼 (추가된 기능)
         $("#btnCheckUpdate")?.addEventListener('click', checkFirmwareUpdate);
+        $("#btnRefreshInfo")?.addEventListener('click', loadSystemInfo);
+
+        // 신규 폼
+        $("#generalSystemForm")?.addEventListener('submit', saveGeneralSettings);
+        $("#fanConfigForm")?.addEventListener('submit', saveFanConfig);
+        $("#hwConfigForm")?.addEventListener('submit', saveHwSettings);
+        $("#btnWifiScan")?.addEventListener('click', scanWifi);
+        $("#btnReloadConfig")?.addEventListener('click', reloadConfig);
+        $("#btnRefreshLogs")?.addEventListener('click', loadLogs);
 
         // 네트워크 설정 모달 관련
         $("#btnNetworkSetup")?.addEventListener('click', openNetworkSetupModal);

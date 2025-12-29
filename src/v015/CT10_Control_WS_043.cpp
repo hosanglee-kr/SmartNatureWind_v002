@@ -373,3 +373,61 @@ void CT10_WS_tick() {
     }
 }
 
+
+
+// --------------------------------------------------
+// Dirty flags
+// --------------------------------------------------
+void CL_CT10_ControlManager::markDirty(const char* p_key) {
+	if (!p_key || p_key[0] == '\0')
+		return;
+
+	if (strcmp(p_key, "state") == 0) {
+		_dirtyState = true;
+	} else if (strcmp(p_key, "chart") == 0) {
+		_dirtyChart = true;
+	} else if (strcmp(p_key, "metrics") == 0) {
+		_dirtyMetrics = true;
+	} else if (strcmp(p_key, "summary") == 0) {
+		_dirtySummary = true;
+	} else {
+		CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] markDirty: unknown key=%s", p_key);
+	}
+}
+
+bool CL_CT10_ControlManager::consumeDirtyState() {
+	bool v_ret = _dirtyState;
+	_dirtyState = false;
+	return v_ret;
+}
+
+bool CL_CT10_ControlManager::consumeDirtyMetrics() {
+	bool v_ret = _dirtyMetrics;
+	_dirtyMetrics = false;
+	return v_ret;
+}
+
+bool CL_CT10_ControlManager::consumeDirtyChart() {
+	bool v_ret = _dirtyChart;
+	_dirtyChart = false;
+	return v_ret;
+}
+
+bool CL_CT10_ControlManager::consumeDirtySummary() {
+	bool v_ret = _dirtySummary;
+	_dirtySummary = false;
+	return v_ret;
+}
+// --------------------------------------------------
+// metrics dirty push
+// --------------------------------------------------
+void CL_CT10_ControlManager::maybePushMetricsDirty() {
+	unsigned long v_nowMs = millis();
+	if (v_nowMs - lastMetricsPushMs < S_METRICS_PUSH_INTERVAL_MS)
+		return;
+
+	lastMetricsPushMs = v_nowMs;
+	markDirty("metrics");
+}
+
+

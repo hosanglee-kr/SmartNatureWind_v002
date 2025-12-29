@@ -163,6 +163,10 @@ void A00_init() {
 
     g_A00_server.begin();
 
+	// ✅ CT10 WS 바인딩/스케줄러 시작 (A00의 브로커 함수 제거)
+    CT10_WS_bindToW10();
+    CT10_WS_begin();
+
     // 8. Watchdog 초기화 (10초)
     esp_task_wdt_init(10, true);
     esp_task_wdt_add(NULL);
@@ -174,9 +178,11 @@ void A00_init() {
 // 메인 루프
 // ------------------------------------------------------
 void A00_run() {
+	/*
     static uint32_t v_lastMetricsMs = 0; // 메트릭/차트 브로드캐스트 주기 관리
     static uint32_t v_lastLedMs     = 0;
     static uint32_t v_lastFlush     = 0;
+	*/
 
     uint32_t v_now = millis();
 
@@ -186,6 +192,11 @@ void A00_run() {
 
     // CT10 Dirty 플래그 기반 브로드캐스트 (책임 위임)
     CL_CT10_ControlManager& v_ctrl = g_A00_control;
+
+	// ✅ CT10 WS 스케줄러가 dirty 기반으로 전송/스로틀/우선순위를 수행
+    CT10_WS_tick();
+
+	/*
 
 	#if defined(G_A00_METRICS_DEBUG_LOG)
 		static uint32_t v_lastMetricsLogMs = 0;
@@ -237,14 +248,16 @@ void A00_run() {
         v_ctrl.toSummaryJson(v_doc);
         A00_broadcastSummary(v_doc, true);
     }
+	*/
 
     // --------------------------------------------------
-
+	/*
     // NVS Dirty Flush (10초마다)
     if (v_now - v_lastFlush >= 10000) {
         v_lastFlush = v_now;
         CL_N10_NvsManager::flushIfNeeded();
     }
+	*/
 
     // LED 상태 토글 (Wi-Fi 연결 유지 확인)
     if (v_now - v_lastLedMs >= 1000) {

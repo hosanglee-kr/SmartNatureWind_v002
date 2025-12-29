@@ -283,7 +283,8 @@ void CL_CT10_ControlManager::tickLoop() {
 	// 4) Schedule
 	if (tickSchedule()) {
 		sim.tick();
-		markDirty("chart");
+		// ✅ chart dirty는 applySegmentOn/off, override 적용, sim 내부 변화에서만 발생하도록
+		// markDirty("chart");
 		maybePushMetricsDirty();
 		return;
 	}

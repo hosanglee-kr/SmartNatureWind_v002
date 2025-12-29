@@ -109,14 +109,6 @@ constexpr uint8_t LEN_LABEL = 32;
 
 
 
-///// ws ////////////
-// 0=state, 1=metrics, 2=chart, 3=summary
-static constexpr uint8_t G_WS_CH_STATE   = 0;
-static constexpr uint8_t G_WS_CH_METRICS = 1;
-static constexpr uint8_t G_WS_CH_CHART   = 2;
-static constexpr uint8_t G_WS_CH_SUMMARY = 3;
-static constexpr uint8_t G_WS_CH_COUNT   = 4;
-
 // ------------------------------------------------------
 // WS 채널 인덱스 (0=state,1=metrics,2=chart,3=summary)
 // ------------------------------------------------------

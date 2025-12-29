@@ -58,12 +58,19 @@
 #include "D10_Logger_040.h"
 #include "P10_PWM_ctrl_040.h"
 
+
+// ------------------------------------------------------
+// S10 -> CT10 Dirty bridge (forward decl only)
+// ------------------------------------------------------
+extern void CT10_markDirtyFromSim(const char* p_key);
+/*
 // A00(메인 루프)의 전역 함수 전방 선언: WebAPI로 상태를 브로드캐스팅
 extern void A00_broadcastState(ArduinoJson::JsonDocument& doc, bool diffOnly);
 extern void A00_broadcastChart(ArduinoJson::JsonDocument& doc, bool diffOnly);
 extern void A00_broadcastMetrics(ArduinoJson::JsonDocument& doc, bool diffOnly);
 extern void A00_markDirty(const char* key);
 extern int strcasecmp(const char* s1, const char* s2);
+*/
 
 // ==================================================
 // [S10 주기 정책 상수] (시간 단위 주석 필수)

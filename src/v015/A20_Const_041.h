@@ -112,11 +112,11 @@ constexpr uint8_t LEN_LABEL = 32;
 // ------------------------------------------------------
 // WS 채널 인덱스 (0=state,1=metrics,2=chart,3=summary)
 // ------------------------------------------------------
-static constexpr uint8_t G_A20_WS_CH_STATE   = 0;
-static constexpr uint8_t G_A20_WS_CH_METRICS = 1;
-static constexpr uint8_t G_A20_WS_CH_CHART   = 2;
-static constexpr uint8_t G_A20_WS_CH_SUMMARY = 3;
-static constexpr uint8_t G_A20_WS_CH_COUNT   = 4;
+inline constexpr uint8_t G_A20_WS_CH_STATE   = 0;
+inline constexpr uint8_t G_A20_WS_CH_METRICS = 1;
+inline constexpr uint8_t G_A20_WS_CH_CHART   = 2;
+inline constexpr uint8_t G_A20_WS_CH_SUMMARY = 3;
+inline constexpr uint8_t G_A20_WS_CH_COUNT   = 4;
 
 // (옵션) 채널 이름 (로그/디버그용)
 inline constexpr const char* G_A20_WS_CH_NAMES_Arr[G_A20_WS_CH_COUNT] = {
@@ -126,21 +126,21 @@ inline constexpr const char* G_A20_WS_CH_NAMES_Arr[G_A20_WS_CH_COUNT] = {
 // ------------------------------------------------------
 // WS 기본 인터벌(ms) (fallback)
 // ------------------------------------------------------
-static constexpr uint16_t G_A20_WS_DEFAULT_ITV_STATE_MS   = 800;
-static constexpr uint16_t G_A20_WS_DEFAULT_ITV_METRICS_MS = 1500;
-static constexpr uint16_t G_A20_WS_DEFAULT_ITV_CHART_MS   = 1200;
-static constexpr uint16_t G_A20_WS_DEFAULT_ITV_SUMMARY_MS = 1500;
+inline constexpr uint16_t G_A20_WS_DEFAULT_ITV_STATE_MS   = 800;
+inline constexpr uint16_t G_A20_WS_DEFAULT_ITV_METRICS_MS = 1500;
+inline constexpr uint16_t G_A20_WS_DEFAULT_ITV_CHART_MS   = 1200;
+inline constexpr uint16_t G_A20_WS_DEFAULT_ITV_SUMMARY_MS = 1500;
 
 // ------------------------------------------------------
 // chart payload 기반 강스로틀 기본값
 // ------------------------------------------------------
-static constexpr uint16_t G_A20_WS_DEFAULT_CHART_LARGE_BYTES = 3500;
-static constexpr uint8_t  G_A20_WS_DEFAULT_CHART_THROTTLE_MUL = 2;
+inline constexpr uint16_t G_A20_WS_DEFAULT_CHART_LARGE_BYTES = 3500;
+inline constexpr uint8_t  G_A20_WS_DEFAULT_CHART_THROTTLE_MUL = 2;
 
 // ------------------------------------------------------
 // cleanupClients 호출 주기 기본값(ms)
 // ------------------------------------------------------
-static constexpr uint16_t G_A20_WS_DEFAULT_CLEANUP_MS = 2000;
+inline constexpr uint16_t G_A20_WS_DEFAULT_CLEANUP_MS = 2000;
 
 
 

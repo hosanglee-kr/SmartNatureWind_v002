@@ -102,17 +102,19 @@ typedef struct {
 } ST_CT10_AutoOffRuntime_t;
 
 
-// ------------------------------------------------------
-// S10 → CT10 Dirty 브리지 (inline, A00 의존 제거)
-// ------------------------------------------------------
-inline void CT10_markDirtyFromSim(const char* p_key) {
-	if (!p_key || !p_key[0]) return;
-	CL_CT10_ControlManager::instance().markDirty(p_key);
-}
-
 //// void CT10_WS_bindToW10();
 void CT10_WS_begin();
 void CT10_WS_tick();
+
+// WS Broker injection (W10 바인딩용)
+void CT10_WS_setBrokers(
+	void (*p_state)(JsonDocument&, bool),
+	void (*p_metrics)(JsonDocument&, bool),
+	void (*p_chart)(JsonDocument&, bool),
+	void (*p_summary)(JsonDocument&, bool),
+	void (*p_cleanup)(),
+	void (*p_setIntervalsFn)(const uint16_t p_itvMs[G_A20_WS_CH_COUNT])
+);
 
 // ======================================================
 // CL_CT10_ControlManager 클래스
@@ -256,3 +258,12 @@ class CL_CT10_ControlManager {
 	// 생성자 숨김
 	CL_CT10_ControlManager() = default;
 };
+
+
+// ------------------------------------------------------
+// S10 → CT10 Dirty 브리지 (inline, A00 의존 제거)
+// ------------------------------------------------------
+inline void CT10_markDirtyFromSim(const char* p_key) {
+	if (!p_key || !p_key[0]) return;
+	CL_CT10_ControlManager::instance().markDirty(p_key);
+}

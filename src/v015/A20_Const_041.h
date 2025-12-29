@@ -1,7 +1,7 @@
 #pragma once
 /*
  * ------------------------------------------------------
- * 소스명 : A20_Const_040.h
+ * 소스명 : A20_Const_041.h
  * 모듈약어 : A20
  * 모듈명 : Smart Nature Wind 공용 상수/타입/구조체 선언 (v030)
  * ------------------------------------------------------
@@ -758,30 +758,45 @@ inline float A20_randRange(float p_min, float p_max) {
 // Default 초기화 헬퍼
 // ======================================================
 
-// ------------------------------------------------------
-// 기본값 세팅 예시 (memset 이후)
-// ------------------------------------------------------
-static inline void A20_applyDefaultWebSocketConfig(ST_A20_WebSocketConfig_t& p_web) {
-    // intervals
-    p_web.wsIntervalMs[G_A20_WS_CH_STATE]   = G_A20_WS_DEFAULT_ITV_STATE_MS;
-    p_web.wsIntervalMs[G_A20_WS_CH_METRICS] = G_A20_WS_DEFAULT_ITV_METRICS_MS;
-    p_web.wsIntervalMs[G_A20_WS_CH_CHART]   = G_A20_WS_DEFAULT_ITV_CHART_MS;
-    p_web.wsIntervalMs[G_A20_WS_CH_SUMMARY] = G_A20_WS_DEFAULT_ITV_SUMMARY_MS;
+// // ------------------------------------------------------
+// // 기본값 세팅 예시 (memset 이후)
+// // ------------------------------------------------------
+// static inline void A20_applyDefaultWebSocketConfig(ST_A20_WebSocketConfig_t& p_web) {
+//     // intervals
+//     p_web.wsIntervalMs[G_A20_WS_CH_STATE]   = G_A20_WS_DEFAULT_ITV_STATE_MS;
+//     p_web.wsIntervalMs[G_A20_WS_CH_METRICS] = G_A20_WS_DEFAULT_ITV_METRICS_MS;
+//     p_web.wsIntervalMs[G_A20_WS_CH_CHART]   = G_A20_WS_DEFAULT_ITV_CHART_MS;
+//     p_web.wsIntervalMs[G_A20_WS_CH_SUMMARY] = G_A20_WS_DEFAULT_ITV_SUMMARY_MS;
 
-    // priority default: state -> metrics -> chart -> summary
-    p_web.wsPriority[0] = G_A20_WS_CH_STATE;
-    p_web.wsPriority[1] = G_A20_WS_CH_METRICS;
-    p_web.wsPriority[2] = G_A20_WS_CH_CHART;
-    p_web.wsPriority[3] = G_A20_WS_CH_SUMMARY;
+//     // priority default: state -> metrics -> chart -> summary
+//     p_web.wsPriority[0] = G_A20_WS_CH_STATE;
+//     p_web.wsPriority[1] = G_A20_WS_CH_METRICS;
+//     p_web.wsPriority[2] = G_A20_WS_CH_CHART;
+//     p_web.wsPriority[3] = G_A20_WS_CH_SUMMARY;
 
-    // chart payload throttle
-    p_web.chartLargeBytes  = G_A20_WS_DEFAULT_CHART_LARGE_BYTES;
-    p_web.chartThrottleMul = G_A20_WS_DEFAULT_CHART_THROTTLE_MUL;
+//     // chart payload throttle
+//     p_web.chartLargeBytes  = G_A20_WS_DEFAULT_CHART_LARGE_BYTES;
+//     p_web.chartThrottleMul = G_A20_WS_DEFAULT_CHART_THROTTLE_MUL;
 
-    // cleanup tick
-    p_web.wsCleanupMs = G_A20_WS_DEFAULT_CLEANUP_MS;
+//     // cleanup tick
+//     p_web.wsCleanupMs = G_A20_WS_DEFAULT_CLEANUP_MS;
+// }
+
+static inline void A20_initWebSocketDefault(ST_A20_WebSocketConfig_t& p_ws) {
+  p_ws.wsIntervalMs[G_A20_WS_CH_STATE]   = G_A20_WS_DEFAULT_ITV_STATE_MS;
+  p_ws.wsIntervalMs[G_A20_WS_CH_METRICS] = G_A20_WS_DEFAULT_ITV_METRICS_MS;
+  p_ws.wsIntervalMs[G_A20_WS_CH_CHART]   = G_A20_WS_DEFAULT_ITV_CHART_MS;
+  p_ws.wsIntervalMs[G_A20_WS_CH_SUMMARY] = G_A20_WS_DEFAULT_ITV_SUMMARY_MS;
+
+  p_ws.wsPriority[0] = G_A20_WS_CH_STATE;
+  p_ws.wsPriority[1] = G_A20_WS_CH_METRICS;
+  p_ws.wsPriority[2] = G_A20_WS_CH_CHART;
+  p_ws.wsPriority[3] = G_A20_WS_CH_SUMMARY;
+
+  p_ws.chartLargeBytes  = G_A20_WS_DEFAULT_CHART_LARGE_BYTES;
+  p_ws.chartThrottleMul = G_A20_WS_DEFAULT_CHART_THROTTLE_MUL;
+  p_ws.wsCleanupMs      = G_A20_WS_DEFAULT_CLEANUP_MS;
 }
-
 
 // System 기본값
 inline void A20_resetSystemDefault(ST_A20_SystemConfig_t& p_cfg) {
@@ -793,6 +808,30 @@ inline void A20_resetSystemDefault(ST_A20_SystemConfig_t& p_cfg) {
 
     A20_safe_strlcpy(p_cfg.system.logging.level, "INFO", sizeof(p_cfg.system.logging.level));
     p_cfg.system.logging.maxEntries = 300;
+
+
+	A20_initWebSocketDefault(p_cfg.system.webSocket);
+
+	/*
+	    // intervals
+    p_cfg.system.webSocket.wsIntervalMs[G_A20_WS_CH_STATE]   = G_A20_WS_DEFAULT_ITV_STATE_MS;
+    p_cfg.system.webSocket.wsIntervalMs[G_A20_WS_CH_METRICS] = G_A20_WS_DEFAULT_ITV_METRICS_MS;
+    p_cfg.system.webSocket.wsIntervalMs[G_A20_WS_CH_CHART]   = G_A20_WS_DEFAULT_ITV_CHART_MS;
+    p_cfg.system.webSocket.wsIntervalMs[G_A20_WS_CH_SUMMARY] = G_A20_WS_DEFAULT_ITV_SUMMARY_MS;
+
+    // priority default: state -> metrics -> chart -> summary
+    p_cfg.system.webSocket.wsPriority[0] = G_A20_WS_CH_STATE;
+    p_cfg.system.webSocket.wsPriority[1] = G_A20_WS_CH_METRICS;
+    p_cfg.system.webSocket.wsPriority[2] = G_A20_WS_CH_CHART;
+    p_cfg.system.webSocket.wsPriority[3] = G_A20_WS_CH_SUMMARY;
+
+    // chart payload throttle
+    p_cfg.system.webSocket.chartLargeBytes  = G_A20_WS_DEFAULT_CHART_LARGE_BYTES;
+    p_cfg.system.webSocket.chartThrottleMul = G_A20_WS_DEFAULT_CHART_THROTTLE_MUL;
+
+    // cleanup tick
+    p_cfg.system.webSocket.wsCleanupMs = G_A20_WS_DEFAULT_CLEANUP_MS;
+	*/
 
     // HW: fanPwm
     p_cfg.hw.fanPwm.pin     = 6;
@@ -1008,9 +1047,9 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
 // A20_resetToDefault
 // ------------------------------------------------------
 inline void A20_resetToDefault(ST_A20_ConfigRoot_t& p_root) {
-    
+
     if (p_root.system) A20_resetSystemDefault(*p_root.system);
-    if (p_root.system.webSocket) A20_applyDefaultWebSocketConfig(p_cfg.system.webSocket);
+    //// if (p_root.system.webSocket) A20_applyDefaultWebSocketConfig(p_cfg.system.webSocket);
     if (p_root.wifi) A20_resetWifiDefault(*p_root.wifi);
     if (p_root.motion) A20_resetMotionDefault(*p_root.motion);
     if (p_root.windDict) A20_resetWindProfileDictDefault(*p_root.windDict);

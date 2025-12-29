@@ -108,13 +108,45 @@ void CT10_WS_setBrokers(
 // --------------------------------------------------
 // priority 정규화: 중복 제거 + 누락 채움(운영급 방어)
 // --------------------------------------------------
+/*
 static void CT10_WS_fillDefaultPriority(uint8_t p_out[G_A20_WS_CH_COUNT]) {
     p_out[0] = G_A20_WS_CH_STATE;
     p_out[1] = G_A20_WS_CH_METRICS;
     p_out[2] = G_A20_WS_CH_CHART;
     p_out[3] = G_A20_WS_CH_SUMMARY;
 }
+*/
 
+static void CT10_WS_normalizePriority(
+    const uint8_t p_in[G_A20_WS_CH_COUNT],
+    uint8_t       p_out[G_A20_WS_CH_COUNT]
+) {
+    bool v_used[G_A20_WS_CH_COUNT] = {false,false,false,false};
+    uint8_t v_w = 0;
+
+    // 1) 유효 + 미사용만 순서 유지
+    for (uint8_t i = 0; i < G_A20_WS_CH_COUNT && v_w < G_A20_WS_CH_COUNT; i++) {
+        uint8_t ch = p_in[i];
+        if (ch >= G_A20_WS_CH_COUNT) continue;
+        if (v_used[ch]) continue;
+        p_out[v_w++] = ch;
+        v_used[ch] = true;
+    }
+
+    // 2) 누락 채우기
+    for (uint8_t ch = 0; ch < G_A20_WS_CH_COUNT && v_w < G_A20_WS_CH_COUNT; ch++) {
+        if (!v_used[ch]) {
+            p_out[v_w++] = ch;
+            v_used[ch] = true;
+        }
+    }
+}
+
+
+
+
+
+/*
 static void CT10_WS_normalizePriority(const uint8_t p_in[G_A20_WS_CH_COUNT], uint8_t p_out[G_A20_WS_CH_COUNT]) {
     bool v_used[G_A20_WS_CH_COUNT];
     memset(v_used, 0, sizeof(v_used));
@@ -141,6 +173,19 @@ static void CT10_WS_normalizePriority(const uint8_t p_in[G_A20_WS_CH_COUNT], uin
         v_used[v_ch] = true;
     }
 }
+*/
+
+
+static uint16_t s_lastAppliedItv[G_A20_WS_CH_COUNT] = {0,0,0,0};
+
+static bool CT10_WS_intervalsChanged() {
+    for (uint8_t i = 0; i < G_A20_WS_CH_COUNT; i++) {
+        if (s_lastAppliedItv[i] != s_itvMs[i]) return true;
+    }
+    return false;
+}
+
+
 
 // --------------------------------------------------
 // policy 로드: system.webSocket → s_itvMs / priority / chart 정책 / cleanupMs
@@ -163,7 +208,10 @@ static void CT10_WS_applyPolicyFromSystem() {
         for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
             v_tmp[v_i] = v_ws.wsPriority[v_i];
         }
-        CT10_WS_normalizePriority(v_tmp, s_prio);
+
+		CT10_WS_normalizePriority(v_tmp, s_prio);
+
+        // CT10_WS_normalizePriority(v_tmp, s_prio);
     }
 
     // chart payload policy
@@ -174,19 +222,29 @@ static void CT10_WS_applyPolicyFromSystem() {
     if (v_ws.wsCleanupMs > 0) s_cleanupMs = v_ws.wsCleanupMs;
 
     // W10 setter로도 전달(통합 요구사항)
-    if (s_setIntervals) s_setIntervals(s_itvMs);
+    // if (s_setIntervals) s_setIntervals(s_itvMs);
 
-    CL_D10_Logger::log(
-        EN_L10_LOG_INFO,
-        "[CT10][WS] policy applied: itv(%u/%u/%u/%u) prio(%u,%u,%u,%u) chart(%u,mul=%u) cleanup=%u",
-        (unsigned)s_itvMs[G_A20_WS_CH_STATE],
-        (unsigned)s_itvMs[G_A20_WS_CH_METRICS],
-        (unsigned)s_itvMs[G_A20_WS_CH_CHART],
-        (unsigned)s_itvMs[G_A20_WS_CH_SUMMARY],
-        (unsigned)s_prio[0], (unsigned)s_prio[1], (unsigned)s_prio[2], (unsigned)s_prio[3],
-        (unsigned)s_chartLargeBytes, (unsigned)s_chartThrottleMul,
-        (unsigned)s_cleanupMs
-    );
+	if (CT10_WS_intervalsChanged() && s_setIntervals) {
+		s_setIntervals(s_itvMs);
+		for (uint8_t i = 0; i < G_A20_WS_CH_COUNT; i++) {
+			s_lastAppliedItv[i] = s_itvMs[i];
+		}
+
+		CL_D10_Logger::log(
+			EN_L10_LOG_INFO,
+			"[CT10][WS] policy applied: itv(%u/%u/%u/%u) prio(%u,%u,%u,%u) chart(%u,mul=%u) cleanup=%u",
+			(unsigned)s_itvMs[G_A20_WS_CH_STATE],
+			(unsigned)s_itvMs[G_A20_WS_CH_METRICS],
+			(unsigned)s_itvMs[G_A20_WS_CH_CHART],
+			(unsigned)s_itvMs[G_A20_WS_CH_SUMMARY],
+			(unsigned)s_prio[0], (unsigned)s_prio[1], (unsigned)s_prio[2], (unsigned)s_prio[3],
+			(unsigned)s_chartLargeBytes, (unsigned)s_chartThrottleMul,
+			(unsigned)s_cleanupMs
+		);
+
+	}
+
+
 }
 
 // --------------------------------------------------
@@ -202,6 +260,10 @@ void CT10_WS_begin() {
 
     s_lastCleanupMs     = 0;
     s_lastPolicyApplyMs = millis();
+
+	for (uint8_t i = 0; i < G_A20_WS_CH_COUNT; i++) {
+		s_lastAppliedItv[i] = s_itvMs[i];
+	}
 
     CL_D10_Logger::log(
         EN_L10_LOG_INFO,

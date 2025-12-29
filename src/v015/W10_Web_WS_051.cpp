@@ -54,18 +54,18 @@ void CL_W10_WebAPI::_broadcast(AsyncWebSocket* p_ws, JsonDocument& p_doc, bool p
     (현재 ESPAsyncWebServer 버전에 따라 API가 조금씩 다릅니다)
 
     */
-    for (auto* c : p_ws->getClients()) {
-        if (!c) continue;
 
-        // canSend() false면 해당 client skip (큐 누적 방지)
-        if (!c->canSend()) {
-            // 필요 시 관찰 로그(빈도 제한 권장)
-            // CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[W10] WS skip (id=%u) canSend=false", c->id());
-            continue;
+	// 포인터를 직접 다루는 가장 안전한 방법
+    for (uint32_t i = 0; i < p_ws->count(); i++) {
+        AsyncWebSocketClient* c = p_ws->client(i);
+
+        if (c && c->status() == WS_CONNECTED) {
+            if (c->canSend()) {
+                c->text(v_json);
+            }
         }
-
-        c->text(v_json);
     }
+
 }
 
 /*

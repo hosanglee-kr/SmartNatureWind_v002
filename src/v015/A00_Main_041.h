@@ -23,7 +23,7 @@
 #include <WiFiMulti.h>
 #include <esp_task_wdt.h>
 
-#include "A20_Const_040.h"
+#include "A20_Const_041.h"
 #include "C10_Config_041.h"
 #include "CT10_Control_041.h"
 #include "D10_Logger_040.h"
@@ -178,9 +178,12 @@ void A00_init() {
 // 메인 루프
 // ------------------------------------------------------
 void A00_run() {
+	static uint32_t v_lastLedMs     = 0;
+
+
 	/*
     static uint32_t v_lastMetricsMs = 0; // 메트릭/차트 브로드캐스트 주기 관리
-    static uint32_t v_lastLedMs     = 0;
+
     static uint32_t v_lastFlush     = 0;
 	*/
 
@@ -188,12 +191,14 @@ void A00_run() {
 
     esp_task_wdt_reset(); // Watchdog feed
 
+
     CL_CT10_ControlManager::tick();
 
     // CT10 Dirty 플래그 기반 브로드캐스트 (책임 위임)
     CL_CT10_ControlManager& v_ctrl = g_A00_control;
 
 	// ✅ CT10 WS 스케줄러가 dirty 기반으로 전송/스로틀/우선순위를 수행
+
     CT10_WS_tick();
 
 	/*
@@ -257,6 +262,7 @@ void A00_run() {
         v_lastFlush = v_now;
         CL_N10_NvsManager::flushIfNeeded();
     }
+
 	*/
 
     // LED 상태 토글 (Wi-Fi 연결 유지 확인)

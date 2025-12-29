@@ -92,7 +92,7 @@ static void C10_wsFillDefaultPriority(uint8_t p_out[G_A20_WS_CH_COUNT]) {
     p_out[3] = G_A20_WS_CH_SUMMARY;
 }
 
-static void C10_wsParsePriorityArray(JsonArray p_arr, uint8_t p_out[G_A20_WS_CH_COUNT]) {
+static void C10_wsParsePriorityArray(JsonArrayConst p_arr, uint8_t p_out[G_A20_WS_CH_COUNT]) {
     // default 먼저
     C10_wsFillDefaultPriority(p_out);
 
@@ -102,10 +102,13 @@ static void C10_wsParsePriorityArray(JsonArray p_arr, uint8_t p_out[G_A20_WS_CH_
     uint8_t v_write = 0;
 
     // 1) 유효한 문자열 순서대로 채움(중복 제거)
-    for (JsonVariant v_it : p_arr) {
+    for (JsonVariantConst v_it : p_arr) {
         if (v_write >= G_A20_WS_CH_COUNT) break;
-        const char* v_s = v_it.as<const char*>();
-        int8_t v_idx = C10_wsChannelFromName(v_s);
+
+		const char* v_s = v_it | nullptr;
+        // const char* v_s = v_it.as<const char*>();
+
+		int8_t v_idx = C10_wsChannelFromName(v_s);
         if (v_idx < 0) continue;
         if (v_used[(uint8_t)v_idx]) continue;
 
@@ -194,9 +197,9 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
 	        sizeof(p_cfg.system.logging.level));
 	p_cfg.system.logging.maxEntries = C10_getNum2<uint16_t>(j_log, "maxEntries", "maxEntries", 300);
 
-
-    // 기본값으로 시작 (부분 누락/키 누락 대응)
-	A20_applyDefaultWebSocketConfig(p_cfg.system.webSocket);
+	// 기본값으로 시작 (부분 누락/키 누락 대응)
+	A20_initWebSocketDefault(p_cfg.system.webSocket);
+	//A20_applyDefaultWebSocketConfig(p_cfg.system.webSocket);
 
 	JsonObjectConst j_ws = j_sys["webSocket"].as<JsonObjectConst>();
 	if (!j_ws.isNull()) {
@@ -213,7 +216,7 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
 		JsonArrayConst j_pri = j_ws["priority"].as<JsonArrayConst>();
 		if (!j_pri.isNull() && j_pri.size() > 0) {
 			// C10_wsParsePriorityArray는 JsonArray 필요 -> const 캐스트 안전하게 로컬로 받음
-			JsonArray v_tmp = j_ws["priority"].as<JsonArray>();
+			JsonArrayConst v_tmp = j_ws["priority"].as<JsonArrayConst>();
 			if (!v_tmp.isNull()) {
 				C10_wsParsePriorityArray(v_tmp, p_cfg.system.webSocket.wsPriority);
 			}
@@ -235,13 +238,15 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
 			if (v_raw > 0) p_cfg.system.webSocket.wsCleanupMs = C10_u16Clamp(v_raw, 200, 60000);
 		}
 	}
-		
 
-	
+
+
 
 	// hw.fanPwm (기존 fanPwm 호환)
 	JsonObjectConst j_pwm = j_hw["fanPwm"].as<JsonObjectConst>();
-	if (j_pwm.isNull()) j_pwm = j_hw["fanPwm"].as<JsonObjectConst>();
+
+	// if (j_pwm.isNull()) j_pwm = j_hw["fanPwm"].as<JsonObjectConst>();
+
 	if (j_pwm.isNull()) {
 		CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] loadSystemConfig: missing hw.fanPwm (defaults used)");
 	}
@@ -443,7 +448,7 @@ bool CL_C10_ConfigManager::saveSystemConfig(const ST_A20_SystemConfig_t& p_cfg) 
 
 
 
-	
+
 	JsonObject v_ws = v["system"]["webSocket"].to<JsonObject>();
 
 	// wsIntervalMs[4]
@@ -629,7 +634,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
 				C10_wsFillDefaultPriority(v_newOrder);
 
 				// const->nonconst 접근을 위해 임시 JsonArray로 받음(ArduinoJson에서 허용)
-				JsonArray v_tmp = j_ws["priority"].as<JsonArray>();
+				JsonArrayConst v_tmp = j_ws["priority"].as<JsonArrayConst>();
 				if (!v_tmp.isNull()) {
 					C10_wsParsePriorityArray(v_tmp, v_newOrder);
 
@@ -671,7 +676,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
 		}
 
 
-		
+
 	}
 
 	// security.apiKey
@@ -1020,7 +1025,7 @@ void CL_C10_ConfigManager::toJson_System(const ST_A20_SystemConfig_t& p, JsonDoc
 	d_ws["chartThrottleMul"] = p.system.webSocket.chartThrottleMul;
 	d_ws["wsCleanupMs"]      = p.system.webSocket.wsCleanupMs;
 
-	
+
 
 	d["hw"]["fanPwm"]["pin"]     = p.hw.fanPwm.pin;
 	d["hw"]["fanPwm"]["channel"] = p.hw.fanPwm.channel;

@@ -284,8 +284,12 @@ void CL_S10_Simulation::tick() {
 		v_sim["samples"]   = v_bc_samples;
 		v_sim["delta"]	   = v_bc_delta;
 
-		A00_broadcastChart(v_doc, true);
-		A00_markDirty("chart");
+		CT10_markDirtyFromSim("chart");
++		// 차트 갱신 시 metrics도 같이 갱신되는 정책이면 함께 dirty 권장
++		CT10_markDirtyFromSim("metrics");
+		
+		// A00_broadcastChart(v_doc, true);
+		// A00_markDirty("chart");
 	}
 }
 

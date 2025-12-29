@@ -194,6 +194,51 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
 	        sizeof(p_cfg.system.logging.level));
 	p_cfg.system.logging.maxEntries = C10_getNum2<uint16_t>(j_log, "maxEntries", "maxEntries", 300);
 
+
+    // 기본값으로 시작 (부분 누락/키 누락 대응)
+	A20_applyDefaultWebSocketConfig(p_cfg.system.webSocket);
+
+	JsonObjectConst j_ws = j_sys["webSocket"].as<JsonObjectConst>();
+	if (!j_ws.isNull()) {
+		// 1) wsIntervalMs[4]
+		JsonArrayConst j_itv = j_ws["wsIntervalMs"].as<JsonArrayConst>();
+		if (!j_itv.isNull() && j_itv.size() >= G_A20_WS_CH_COUNT) {
+			for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+				uint32_t v_raw = j_itv[v_i].as<uint32_t>();
+				p_cfg.system.webSocket.wsIntervalMs[v_i] = C10_u16Clamp(v_raw, 20, 60000);
+			}
+		}
+
+		// 2) priority(string[]) -> wsPriority[4]
+		JsonArrayConst j_pri = j_ws["priority"].as<JsonArrayConst>();
+		if (!j_pri.isNull() && j_pri.size() > 0) {
+			// C10_wsParsePriorityArray는 JsonArray 필요 -> const 캐스트 안전하게 로컬로 받음
+			JsonArray v_tmp = j_ws["priority"].as<JsonArray>();
+			if (!v_tmp.isNull()) {
+				C10_wsParsePriorityArray(v_tmp, p_cfg.system.webSocket.wsPriority);
+			}
+		}
+
+		// 3) chartLargeBytes / chartThrottleMul
+		{
+			uint32_t v_raw = j_ws["chartLargeBytes"].as<uint32_t>();
+			if (v_raw > 0) p_cfg.system.webSocket.chartLargeBytes = C10_u16Clamp(v_raw, 256, 60000);
+		}
+		{
+			uint32_t v_raw = j_ws["chartThrottleMul"].as<uint32_t>();
+			if (v_raw > 0) p_cfg.system.webSocket.chartThrottleMul = C10_u8Clamp(v_raw, 1, 10);
+		}
+
+		// 4) wsCleanupMs  ✅ CT10에서 사용할 핵심 값
+		{
+			uint32_t v_raw = j_ws["wsCleanupMs"].as<uint32_t>();
+			if (v_raw > 0) p_cfg.system.webSocket.wsCleanupMs = C10_u16Clamp(v_raw, 200, 60000);
+		}
+	}
+		
+
+	
+
 	// hw.fanPwm (기존 fanPwm 호환)
 	JsonObjectConst j_pwm = j_hw["fanPwm"].as<JsonObjectConst>();
 	if (j_pwm.isNull()) j_pwm = j_hw["fanPwm"].as<JsonObjectConst>();
@@ -396,6 +441,30 @@ bool CL_C10_ConfigManager::saveSystemConfig(const ST_A20_SystemConfig_t& p_cfg) 
 	v["system"]["logging"]["level"]      = p_cfg.system.logging.level;
 	v["system"]["logging"]["maxEntries"] = p_cfg.system.logging.maxEntries;
 
+
+
+	
+	JsonObject v_ws = v["system"]["webSocket"].to<JsonObject>();
+
+	// wsIntervalMs[4]
+	JsonArray v_itv = v_ws["wsIntervalMs"].to<JsonArray>();
+	for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+		v_itv.add(p_cfg.system.webSocket.wsIntervalMs[v_i]);
+	}
+
+	// priority(string[])
+	JsonArray v_pri = v_ws["priority"].to<JsonArray>();
+	for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+		uint8_t v_ch = p_cfg.system.webSocket.wsPriority[v_i];
+		if (v_ch >= G_A20_WS_CH_COUNT) v_ch = 0;
+		v_pri.add(G_A20_WS_CH_NAMES_Arr[v_ch]);
+	}
+
+	v_ws["chartLargeBytes"]  = p_cfg.system.webSocket.chartLargeBytes;
+	v_ws["chartThrottleMul"] = p_cfg.system.webSocket.chartThrottleMul;
+	v_ws["wsCleanupMs"]      = p_cfg.system.webSocket.wsCleanupMs;
+
+
 	// hw.fanPwm (camelCase)
 	v["hw"]["fanPwm"]["pin"]     = p_cfg.hw.fanPwm.pin;
 	v["hw"]["fanPwm"]["channel"] = p_cfg.hw.fanPwm.channel;
@@ -536,6 +605,73 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
 				v_changed = true;
 			}
 		}
+
+
+
+        JsonObjectConst j_ws = j_sys["webSocket"].as<JsonObjectConst>();
+		if (!j_ws.isNull()) {
+			// wsIntervalMs
+			JsonArrayConst j_itv = j_ws["wsIntervalMs"].as<JsonArrayConst>();
+			if (!j_itv.isNull() && j_itv.size() >= G_A20_WS_CH_COUNT) {
+				for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+					uint16_t v_new = C10_u16Clamp(j_itv[v_i].as<uint32_t>(), 20, 60000);
+					if (v_new != p_config.system.webSocket.wsIntervalMs[v_i]) {
+						p_config.system.webSocket.wsIntervalMs[v_i] = v_new;
+						v_changed = true;
+					}
+				}
+			}
+
+			// priority(string[])
+			JsonArrayConst j_pri = j_ws["priority"].as<JsonArrayConst>();
+			if (!j_pri.isNull() && j_pri.size() > 0) {
+				uint8_t v_newOrder[G_A20_WS_CH_COUNT];
+				C10_wsFillDefaultPriority(v_newOrder);
+
+				// const->nonconst 접근을 위해 임시 JsonArray로 받음(ArduinoJson에서 허용)
+				JsonArray v_tmp = j_ws["priority"].as<JsonArray>();
+				if (!v_tmp.isNull()) {
+					C10_wsParsePriorityArray(v_tmp, v_newOrder);
+
+					for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+						if (v_newOrder[v_i] != p_config.system.webSocket.wsPriority[v_i]) {
+							p_config.system.webSocket.wsPriority[v_i] = v_newOrder[v_i];
+							v_changed = true;
+						}
+					}
+				}
+			}
+
+			// chartLargeBytes
+			if (j_ws["chartLargeBytes"].is<uint32_t>()) {
+				uint16_t v_new = C10_u16Clamp(j_ws["chartLargeBytes"].as<uint32_t>(), 256, 60000);
+				if (v_new != p_config.system.webSocket.chartLargeBytes) {
+					p_config.system.webSocket.chartLargeBytes = v_new;
+					v_changed = true;
+				}
+			}
+
+			// chartThrottleMul
+			if (j_ws["chartThrottleMul"].is<uint32_t>()) {
+				uint8_t v_new = C10_u8Clamp(j_ws["chartThrottleMul"].as<uint32_t>(), 1, 10);
+				if (v_new != p_config.system.webSocket.chartThrottleMul) {
+					p_config.system.webSocket.chartThrottleMul = v_new;
+					v_changed = true;
+				}
+			}
+
+			// wsCleanupMs  ✅ CT10에서 고정 2000 제거 근거 데이터
+			if (j_ws["wsCleanupMs"].is<uint32_t>()) {
+				uint16_t v_new = C10_u16Clamp(j_ws["wsCleanupMs"].as<uint32_t>(), 200, 60000);
+				if (v_new != p_config.system.webSocket.wsCleanupMs) {
+					p_config.system.webSocket.wsCleanupMs = v_new;
+					v_changed = true;
+				}
+			}
+		}
+
+
+		
 	}
 
 	// security.apiKey
@@ -864,6 +1000,27 @@ void CL_C10_ConfigManager::toJson_System(const ST_A20_SystemConfig_t& p, JsonDoc
 
 	d["system"]["logging"]["level"]      = p.system.logging.level;
 	d["system"]["logging"]["maxEntries"] = p.system.logging.maxEntries;
+
+
+    JsonObject d_ws = d["system"]["webSocket"].to<JsonObject>();
+
+	JsonArray d_itv = d_ws["wsIntervalMs"].to<JsonArray>();
+	for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+		d_itv.add(p.system.webSocket.wsIntervalMs[v_i]);
+	}
+
+	JsonArray d_pri = d_ws["priority"].to<JsonArray>();
+	for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+		uint8_t v_ch = p.system.webSocket.wsPriority[v_i];
+		if (v_ch >= G_A20_WS_CH_COUNT) v_ch = 0;
+		d_pri.add(G_A20_WS_CH_NAMES_Arr[v_ch]);
+	}
+
+	d_ws["chartLargeBytes"]  = p.system.webSocket.chartLargeBytes;
+	d_ws["chartThrottleMul"] = p.system.webSocket.chartThrottleMul;
+	d_ws["wsCleanupMs"]      = p.system.webSocket.wsCleanupMs;
+
+	
 
 	d["hw"]["fanPwm"]["pin"]     = p.hw.fanPwm.pin;
 	d["hw"]["fanPwm"]["channel"] = p.hw.fanPwm.channel;

@@ -101,7 +101,7 @@ typedef struct {
 	float		  offTemp;		   // AutoOff가 발동되는 온도 (섭씨)
 } ST_CT10_AutoOffRuntime_t;
 
-void CT10_WS_bindToW10();
+//// void CT10_WS_bindToW10();
 void CT10_WS_begin();
 void CT10_WS_tick();
 

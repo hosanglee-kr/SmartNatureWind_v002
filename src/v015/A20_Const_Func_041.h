@@ -369,3 +369,158 @@ inline int16_t A20_findStyleIndexByCode(const ST_A20_WindProfileDict_t& p_dict, 
     }
     return -1;
 }
+
+
+
+// ---------------------------
+// Item-level reset (중요)
+// ---------------------------
+static inline void A10_resetScheduleSegmentDefault(ST_A20_ScheduleSegment_t& p_sg) {
+    memset(&p_sg, 0, sizeof(p_sg));
+
+    // C10_fromJson_*의 기본값과 정합 맞춤
+    p_sg.onMinutes  = 10;
+    p_sg.offMinutes = 0;
+    // mode/presetCode/styleCode는 load에서 채움. mode는 기본 PRESET로 가정
+    p_sg.mode = A20_modeFromString("PRESET");
+    // adjust/fixedSpeed는 0 유지
+}
+
+static inline void A10_resetScheduleItemDefault(ST_A20_ScheduleItem_t& p_s) {
+    memset(&p_s, 0, sizeof(p_s));
+
+    p_s.schId = 0;
+    p_s.schNo = 0;
+    strlcpy(p_s.name, "", sizeof(p_s.name));
+    p_s.enabled = true;
+
+    p_s.repeatSegments = true;
+    p_s.repeatCount    = 0;
+
+    // period defaults
+    for (uint8_t v_d = 0; v_d < 7; v_d++) p_s.period.days[v_d] = 1;
+    strlcpy(p_s.period.startTime, "00:00", sizeof(p_s.period.startTime));
+    strlcpy(p_s.period.endTime,   "23:59", sizeof(p_s.period.endTime));
+
+    // segments defaults
+    p_s.segCount = 0;
+    for (uint8_t v_i = 0; v_i < A20_Const::MAX_SEGMENTS_PER_SCHEDULE; v_i++) {
+        A10_resetScheduleSegmentDefault(p_s.segments[v_i]);
+    }
+
+    // autoOff defaults (모두 비활성)
+    memset(&p_s.autoOff, 0, sizeof(p_s.autoOff));
+    p_s.autoOff.timer.enabled = false;
+    p_s.autoOff.timer.minutes = 0;
+    p_s.autoOff.offTime.enabled = false;
+    strlcpy(p_s.autoOff.offTime.time, "", sizeof(p_s.autoOff.offTime.time));
+    p_s.autoOff.offTemp.enabled = false;
+    p_s.autoOff.offTemp.temp    = 0.0f;
+
+    // motion defaults (모두 비활성)
+    memset(&p_s.motion, 0, sizeof(p_s.motion));
+    p_s.motion.pir.enabled = false;
+    p_s.motion.pir.holdSec = 0;
+    p_s.motion.ble.enabled = false;
+    p_s.motion.ble.rssiThreshold = -70;
+    p_s.motion.ble.holdSec = 0;
+}
+
+static inline void A10_resetSchedulesDefault(ST_A20_SchedulesRoot_t& p_root) {
+    memset(&p_root, 0, sizeof(p_root));
+    p_root.count = 0;
+    for (uint8_t v_i = 0; v_i < A20_Const::MAX_SCHEDULES; v_i++) {
+        A10_resetScheduleItemDefault(p_root.items[v_i]);
+    }
+}
+
+static inline void A10_resetUserProfileSegmentDefault(ST_A20_UserProfileSegment_t& p_sg) {
+    memset(&p_sg, 0, sizeof(p_sg));
+    p_sg.onMinutes  = 10;
+    p_sg.offMinutes = 0;
+    p_sg.mode       = A20_modeFromString("PRESET");
+}
+
+static inline void A10_resetUserProfileItemDefault(ST_A20_UserProfileItem_t& p_up) {
+    memset(&p_up, 0, sizeof(p_up));
+
+    p_up.profileId = 0;
+    p_up.profileNo = 0;
+    strlcpy(p_up.name, "", sizeof(p_up.name));
+    p_up.enabled = true;
+
+    p_up.repeatSegments = true;
+    p_up.repeatCount    = 0;
+
+    p_up.segCount = 0;
+    for (uint8_t v_i = 0; v_i < A20_Const::MAX_SEGMENTS_PER_PROFILE; v_i++) {
+        A10_resetUserProfileSegmentDefault(p_up.segments[v_i]);
+    }
+
+    memset(&p_up.autoOff, 0, sizeof(p_up.autoOff));
+    p_up.autoOff.timer.enabled = false;
+    p_up.autoOff.timer.minutes = 0;
+    p_up.autoOff.offTime.enabled = false;
+    strlcpy(p_up.autoOff.offTime.time, "", sizeof(p_up.autoOff.offTime.time));
+    p_up.autoOff.offTemp.enabled = false;
+    p_up.autoOff.offTemp.temp    = 0.0f;
+
+    memset(&p_up.motion, 0, sizeof(p_up.motion));
+    p_up.motion.pir.enabled = false;
+    p_up.motion.pir.holdSec = 0;
+    p_up.motion.ble.enabled = false;
+    p_up.motion.ble.rssiThreshold = -70;
+    p_up.motion.ble.holdSec = 0;
+}
+
+static inline void A10_resetUserProfilesDefault(ST_A20_UserProfilesRoot_t& p_root) {
+    memset(&p_root, 0, sizeof(p_root));
+    p_root.count = 0;
+    for (uint8_t v_i = 0; v_i < A20_Const::MAX_USER_PROFILES; v_i++) {
+        A10_resetUserProfileItemDefault(p_root.items[v_i]);
+    }
+}
+
+static inline void A10_resetPresetEntryDefault(ST_A20_PresetEntry_t& p_p) {
+    memset(&p_p, 0, sizeof(p_p));
+    strlcpy(p_p.name, "", sizeof(p_p.name));
+    strlcpy(p_p.code, "", sizeof(p_p.code));
+
+    // C10_fromJson_WindPreset 기본값 정합
+    p_p.base.windIntensity            = 70.0f;
+    p_p.base.gustFrequency            = 40.0f;
+    p_p.base.windVariability          = 50.0f;
+    p_p.base.fanLimit                 = 95.0f;
+    p_p.base.minFan                   = 10.0f;
+    p_p.base.turbulenceLengthScale    = 40.0f;
+    p_p.base.turbulenceIntensitySigma = 0.5f;
+    p_p.base.thermalBubbleStrength    = 2.0f;
+    p_p.base.thermalBubbleRadius      = 18.0f;
+
+    p_p.base.baseMinWind     = 1.8f;
+    p_p.base.baseMaxWind     = 5.5f;
+    p_p.base.gustProbBase    = 0.040f;
+    p_p.base.gustStrengthMax = 2.10f;
+    p_p.base.thermalFreqBase = 0.022f;
+}
+
+static inline void A10_resetStyleEntryDefault(ST_A20_StyleEntry_t& p_s) {
+    memset(&p_s, 0, sizeof(p_s));
+    strlcpy(p_s.name, "", sizeof(p_s.name));
+    strlcpy(p_s.code, "", sizeof(p_s.code));
+    p_s.factors.intensityFactor   = 1.0f;
+    p_s.factors.variabilityFactor = 1.0f;
+    p_s.factors.gustFactor        = 1.0f;
+    p_s.factors.thermalFactor     = 1.0f;
+}
+
+static inline void A10_resetWindProfileDictDefault(ST_A20_WindProfileDict_t& p_dict) {
+    memset(&p_dict, 0, sizeof(p_dict));
+    p_dict.presetCount = 0;
+    p_dict.styleCount  = 0;
+
+    for (uint8_t v_i = 0; v_i < 16; v_i++) {
+        A10_resetPresetEntryDefault(p_dict.presets[v_i]);
+        A10_resetStyleEntryDefault(p_dict.styles[v_i]);
+    }
+}

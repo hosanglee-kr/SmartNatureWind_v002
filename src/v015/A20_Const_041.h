@@ -725,9 +725,14 @@ extern ST_A20_ConfigRoot_t g_A20_config_root;
 class CL_M10_MotionLogic; // 전방 선언
 extern CL_M10_MotionLogic* g_M10_motionLogic;
 
-/* ======================================================
- * 헬퍼 함수 선언
- * ====================================================== */
+
+#include "A20_Const_Func_041.h"
+
+/*
+
+// ======================================================
+// * 헬퍼 함수 선언
+// * ====================================================== 
 inline float A20_clampf(float v, float lo, float hi) {
     if (v < lo) return lo;
     if (v > hi) return hi;
@@ -833,6 +838,7 @@ inline void A20_resetSystemDefault(ST_A20_SystemConfig_t& p_cfg) {
     p_cfg.system.webSocket.wsCleanupMs = G_A20_WS_DEFAULT_CLEANUP_MS;
 	*/
 
+/*
     // HW: fanPwm
     p_cfg.hw.fanPwm.pin     = 6;
     p_cfg.hw.fanPwm.channel = 0;
@@ -1086,3 +1092,6 @@ inline int16_t A20_findStyleIndexByCode(const ST_A20_WindProfileDict_t& p_dict, 
     }
     return -1;
 }
+
+
+*/

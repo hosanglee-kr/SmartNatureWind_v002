@@ -43,6 +43,12 @@
 
 #include "CT10_Control_041.h"
 
+
+void CT10_markDirtyFromSim(const char* p_key) {
+    if (!p_key || !p_key[0]) return;
+    CL_CT10_ControlManager::instance().markDirty(p_key);
+}
+
 // --------------------------------------------------
 // Broker 함수 포인터 (CT10_WS_bindToW10에서 주입)
 // --------------------------------------------------

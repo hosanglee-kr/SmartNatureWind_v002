@@ -107,12 +107,51 @@ constexpr uint8_t LEN_LABEL = 32;
 } // namespace A20_Const.
 
 
+
+
+///// ws ////////////
 // 0=state, 1=metrics, 2=chart, 3=summary
 static constexpr uint8_t G_WS_CH_STATE   = 0;
 static constexpr uint8_t G_WS_CH_METRICS = 1;
 static constexpr uint8_t G_WS_CH_CHART   = 2;
 static constexpr uint8_t G_WS_CH_SUMMARY = 3;
 static constexpr uint8_t G_WS_CH_COUNT   = 4;
+
+// ------------------------------------------------------
+// WS 채널 인덱스 (0=state,1=metrics,2=chart,3=summary)
+// ------------------------------------------------------
+static constexpr uint8_t G_A20_WS_CH_STATE   = 0;
+static constexpr uint8_t G_A20_WS_CH_METRICS = 1;
+static constexpr uint8_t G_A20_WS_CH_CHART   = 2;
+static constexpr uint8_t G_A20_WS_CH_SUMMARY = 3;
+static constexpr uint8_t G_A20_WS_CH_COUNT   = 4;
+
+// (옵션) 채널 이름 (로그/디버그용)
+static const char* const G_A20_WS_CH_NAMES_Arr[G_A20_WS_CH_COUNT] = {
+    "state", "metrics", "chart", "summary"
+};
+
+// ------------------------------------------------------
+// WS 기본 인터벌(ms) (fallback)
+// ------------------------------------------------------
+static constexpr uint16_t G_A20_WS_DEFAULT_ITV_STATE_MS   = 800;
+static constexpr uint16_t G_A20_WS_DEFAULT_ITV_METRICS_MS = 1500;
+static constexpr uint16_t G_A20_WS_DEFAULT_ITV_CHART_MS   = 1200;
+static constexpr uint16_t G_A20_WS_DEFAULT_ITV_SUMMARY_MS = 1500;
+
+// ------------------------------------------------------
+// chart payload 기반 강스로틀 기본값
+// ------------------------------------------------------
+static constexpr uint16_t G_A20_WS_DEFAULT_CHART_LARGE_BYTES = 3500;
+static constexpr uint8_t  G_A20_WS_DEFAULT_CHART_THROTTLE_MUL = 2;
+
+// ------------------------------------------------------
+// cleanupClients 호출 주기 기본값(ms)
+// ------------------------------------------------------
+static constexpr uint16_t G_A20_WS_DEFAULT_CLEANUP_MS = 2000;
+
+
+
 
 // ======================================================
 // ENUM 정의
@@ -221,6 +260,29 @@ typedef struct {
     uint8_t hardPercentMax;    // 팬/소음/내구성 상으로 무리 없는 상한 (예: 90)
 } ST_A20_FanConfig_t;
 
+
+// ------------------------------------------------------
+// system.webSocket 설정
+// ------------------------------------------------------
+typedef struct {
+    // 채널별 WS 전송 간격(ms)
+    // index: 0=state, 1=metrics, 2=chart, 3=summary
+    uint16_t wsIntervalMs[G_A20_WS_CH_COUNT];
+
+    // 채널 우선순위 순서(인덱스)
+    // 예: [0,1,2,3] => state > metrics > chart > summary
+    uint8_t  wsPriority[G_A20_WS_CH_COUNT];
+
+    // chart payload(bytes)가 크면 chart interval을 곱으로 늘림
+    uint16_t chartLargeBytes;   // ex) 3500
+    uint8_t  chartThrottleMul;  // ex) 2 (interval * 2)
+
+    // W10 cleanupClients 호출 주기(ms)
+    uint16_t wsCleanupMs;
+
+} ST_A20_WebSocketConfig_t;
+
+
 // ------------------------------------------------------
 // SYSTEM 설정 (cfg_system_xxx.json) : camelCase 정합
 //   meta.version, meta.deviceName, meta.lastUpdate
@@ -233,6 +295,7 @@ typedef struct {
 //   security.apiKey
 //   time.ntpServer, time.timezone, time.syncIntervalMin
 // ------------------------------------------------------
+
 typedef struct {
     struct {
         char version[A20_Const::LEN_NAME];
@@ -245,6 +308,7 @@ typedef struct {
             char     level[A20_Const::LEN_LEVEL];
             uint16_t maxEntries;
         } logging;
+        ST_A20_WebSocketConfig_t webSocket;
     } system;
 
     struct {
@@ -702,6 +766,31 @@ inline float A20_randRange(float p_min, float p_max) {
 // Default 초기화 헬퍼
 // ======================================================
 
+// ------------------------------------------------------
+// 기본값 세팅 예시 (memset 이후)
+// ------------------------------------------------------
+static inline void A20_applyDefaultWebSocketConfig(ST_A20_WebSocketConfig_t& p_web) {
+    // intervals
+    p_web.wsIntervalMs[G_A20_WS_CH_STATE]   = G_A20_WS_DEFAULT_ITV_STATE_MS;
+    p_web.wsIntervalMs[G_A20_WS_CH_METRICS] = G_A20_WS_DEFAULT_ITV_METRICS_MS;
+    p_web.wsIntervalMs[G_A20_WS_CH_CHART]   = G_A20_WS_DEFAULT_ITV_CHART_MS;
+    p_web.wsIntervalMs[G_A20_WS_CH_SUMMARY] = G_A20_WS_DEFAULT_ITV_SUMMARY_MS;
+
+    // priority default: state -> metrics -> chart -> summary
+    p_web.wsPriority[0] = G_A20_WS_CH_STATE;
+    p_web.wsPriority[1] = G_A20_WS_CH_METRICS;
+    p_web.wsPriority[2] = G_A20_WS_CH_CHART;
+    p_web.wsPriority[3] = G_A20_WS_CH_SUMMARY;
+
+    // chart payload throttle
+    p_web.chartLargeBytes  = G_A20_WS_DEFAULT_CHART_LARGE_BYTES;
+    p_web.chartThrottleMul = G_A20_WS_DEFAULT_CHART_THROTTLE_MUL;
+
+    // cleanup tick
+    p_web.wsCleanupMs = G_A20_WS_DEFAULT_CLEANUP_MS;
+}
+
+
 // System 기본값
 inline void A20_resetSystemDefault(ST_A20_SystemConfig_t& p_cfg) {
     memset(&p_cfg, 0, sizeof(p_cfg));
@@ -927,7 +1016,9 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
 // A20_resetToDefault
 // ------------------------------------------------------
 inline void A20_resetToDefault(ST_A20_ConfigRoot_t& p_root) {
+    
     if (p_root.system) A20_resetSystemDefault(*p_root.system);
+    if (p_root.system.webSocket) A20_applyDefaultWebSocketConfig(p_cfg.system.webSocket);
     if (p_root.wifi) A20_resetWifiDefault(*p_root.wifi);
     if (p_root.motion) A20_resetMotionDefault(*p_root.motion);
     if (p_root.windDict) A20_resetWindProfileDictDefault(*p_root.windDict);

@@ -104,7 +104,15 @@ constexpr uint8_t MAX_COMMON_ASSETS = 16;
 constexpr uint8_t LEN_URI   = 96;
 constexpr uint8_t LEN_LABEL = 32;
 
-} // namespace A20_Const
+} // namespace A20_Const.
+
+
+// 0=state, 1=metrics, 2=chart, 3=summary
+static constexpr uint8_t G_WS_CH_STATE   = 0;
+static constexpr uint8_t G_WS_CH_METRICS = 1;
+static constexpr uint8_t G_WS_CH_CHART   = 2;
+static constexpr uint8_t G_WS_CH_SUMMARY = 3;
+static constexpr uint8_t G_WS_CH_COUNT   = 4;
 
 // ======================================================
 // ENUM 정의

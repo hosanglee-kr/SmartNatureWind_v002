@@ -104,7 +104,7 @@ constexpr uint8_t MAX_COMMON_ASSETS = 16;
 constexpr uint8_t LEN_URI   = 96;
 constexpr uint8_t LEN_LABEL = 32;
 
-} // namespace A20_Const.
+} // namespace A20_Const
 
 
 
@@ -119,7 +119,7 @@ static constexpr uint8_t G_A20_WS_CH_SUMMARY = 3;
 static constexpr uint8_t G_A20_WS_CH_COUNT   = 4;
 
 // (옵션) 채널 이름 (로그/디버그용)
-static const char* const G_A20_WS_CH_NAMES_Arr[G_A20_WS_CH_COUNT] = {
+inline constexpr const char* G_A20_WS_CH_NAMES_Arr[G_A20_WS_CH_COUNT] = {
     "state", "metrics", "chart", "summary"
 };
 
@@ -168,7 +168,7 @@ typedef enum : uint8_t {
     EN_A20_WEATHER_PHASE_COUNT,
 } T_A20_WindPhase_t;
 
-inline constexpr const char* g_A20_WEATHER_PHASE_NAMES_Arr[] = {
+inline constexpr const char* g_A20_WEATHER_PHASE_NAMES_Arr[EN_A20_WEATHER_PHASE_COUNT] = {
     "CALM",
     "NORMAL",
     "STRONG",
@@ -191,7 +191,7 @@ typedef enum : uint8_t {
 } T_A20_PresetMode_t;
 
 // 프리셋 코드 배열 정의 (문자열 상수)  (참고용)
-inline constexpr const char* g_A20_PRESET_CODES[] = {
+inline constexpr const char* g_A20_PRESET_CODES[EN_A20_PRESET_COUNT] = {
     "OFF",
     "COUNTRY",
     "MEDITERRANEAN",
@@ -205,7 +205,7 @@ inline constexpr const char* g_A20_PRESET_CODES[] = {
     "DESERT_NIGHT",
 };
 
-inline constexpr const char* g_A20_PRESET_MODE_NAMES_Arr[] = {
+inline constexpr const char* g_A20_PRESET_MODE_NAMES_Arr[EN_A20_PRESET_COUNT] = {
     "OFF",
     "COUNTRY",
     "MEDITERRANEAN",
@@ -423,7 +423,7 @@ typedef enum : uint8_t {
 /* ======================================================
  * Segment Mode <-> String 매핑 유틸
  * ====================================================== */
-inline constexpr const char* g_A20_SEG_MODE_NAMES[] = {"PRESET", "FIXED"};
+inline constexpr const char* g_A20_SEG_MODE_NAMES[EN_A20_SEG_MODE_COUNT] = {"PRESET", "FIXED"};
 
 inline EN_A20_segment_mode_t A20_modeFromString(const char* p_str) {
     if (!p_str) return EN_A20_SEG_MODE_PRESET;
@@ -782,7 +782,7 @@ inline float A20_randRange(float p_min, float p_max) {
 //     p_web.wsCleanupMs = G_A20_WS_DEFAULT_CLEANUP_MS;
 // }
 
-static inline void A20_initWebSocketDefault(ST_A20_WebSocketConfig_t& p_ws) {
+static inline void A20_resetWebSocketDefault(ST_A20_WebSocketConfig_t& p_ws) {
   p_ws.wsIntervalMs[G_A20_WS_CH_STATE]   = G_A20_WS_DEFAULT_ITV_STATE_MS;
   p_ws.wsIntervalMs[G_A20_WS_CH_METRICS] = G_A20_WS_DEFAULT_ITV_METRICS_MS;
   p_ws.wsIntervalMs[G_A20_WS_CH_CHART]   = G_A20_WS_DEFAULT_ITV_CHART_MS;
@@ -810,7 +810,7 @@ inline void A20_resetSystemDefault(ST_A20_SystemConfig_t& p_cfg) {
     p_cfg.system.logging.maxEntries = 300;
 
 
-	A20_initWebSocketDefault(p_cfg.system.webSocket);
+	A20_resetWebSocketDefault(p_cfg.system.webSocket);
 
 	/*
 	    // intervals
@@ -1049,7 +1049,6 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
 inline void A20_resetToDefault(ST_A20_ConfigRoot_t& p_root) {
 
     if (p_root.system) A20_resetSystemDefault(*p_root.system);
-    //// if (p_root.system.webSocket) A20_applyDefaultWebSocketConfig(p_cfg.system.webSocket);
     if (p_root.wifi) A20_resetWifiDefault(*p_root.wifi);
     if (p_root.motion) A20_resetMotionDefault(*p_root.motion);
     if (p_root.windDict) A20_resetWindProfileDictDefault(*p_root.windDict);

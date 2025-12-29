@@ -164,7 +164,7 @@ void A00_init() {
     g_A00_server.begin();
 
 	// ✅ CT10 WS 바인딩/스케줄러 시작 (A00의 브로커 함수 제거)
-    CT10_WS_bindToW10();
+    //CT10_WS_bindToW10();
     CT10_WS_begin();
 
     // 8. Watchdog 초기화 (10초)

@@ -44,7 +44,7 @@
 
 #include "A20_Const_040.h"
 #include "C10_Config_041.h"
-#include "CT10_Control_040.h"
+#include "CT10_Control_041.h"
 #include "D10_Logger_040.h"
 #include "N10_NvsManager_040.h"
 #include "W10_Web_Const_050.h"
@@ -76,7 +76,7 @@ class CL_W10_WebAPI {
 	static void broadcastChart(JsonDocument& p_doc, bool p_diffOnly = true);
 	static void broadcastSummary(JsonDocument& p_doc, bool p_diffOnly = true);
 
-  
+
 
   private:
 	// --------------------------------------------------
@@ -216,7 +216,7 @@ class CL_W10_WebAPI {
 		p_request->send(v_resp);
 	}
 
-	// W10_Web_050.h 안에서 기존 sendText 교체
+	// W10_Web_051.h 안에서 기존 sendText 교체
 	static inline void sendText(AsyncWebServerRequest* p_request, const String& p_msg, int p_code = 200, const char* p_mime = "text/plain; charset=utf-8") {
 		auto* v_resp = p_request->beginResponse(p_code, p_mime, p_msg);
 		_applyHeaders(v_resp, true);

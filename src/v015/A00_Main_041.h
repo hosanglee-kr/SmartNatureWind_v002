@@ -25,14 +25,14 @@
 
 #include "A20_Const_040.h"
 #include "C10_Config_041.h"
-#include "CT10_Control_040.h"
+#include "CT10_Control_041.h"
 #include "D10_Logger_040.h"
 #include "M10_MotionLogic_040.h"
 #include "N10_NvsManager_040.h"
 #include "P10_PWM_ctrl_040.h"
 #include "S10_Simul_040.h"
 #include "S20_WindSolver_040.h"
-#include "W10_Web_050.h"
+#include "W10_Web_051.h"
 #include "WF10_WiFiManager_040.h"
 
 #define G_A00_METRICS_DEBUG_LOG

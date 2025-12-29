@@ -163,9 +163,16 @@ void A00_init() {
 
     g_A00_server.begin();
 
-	// ✅ CT10 WS 바인딩/스케줄러 시작 (A00의 브로커 함수 제거)
-	CT10_WS_setBrokers(); // CL_W10_WebAPI::begin() 이후 호출되야함
-    //CT10_WS_bindToW10();
+	  // ✅ 7.5 CT10 WS Broker 주입 + Scheduler 시작
+    // - 이제 CT10_WS_bindToW10()는 완전히 제거해도 됨
+    CT10_WS_setBrokers(
+        CL_W10_WebAPI::broadcastState,
+        CL_W10_WebAPI::broadcastMetrics,
+        CL_W10_WebAPI::broadcastChart,
+        CL_W10_WebAPI::broadcastSummary,
+        CL_W10_WebAPI::wsCleanupTick,
+        CL_W10_WebAPI::setWsIntervals
+    );
     CT10_WS_begin();
 
     // 8. Watchdog 초기화 (10초)

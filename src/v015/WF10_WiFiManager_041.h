@@ -68,8 +68,7 @@ class CL_WF10_WiFiManager {
 	// static bool				 s_timeSynced;
 	// static uint32_t			 s_lastSyncMs;
 	static uint8_t			 s_reconnectAttempts;
-	static SemaphoreHandle_t s_wifiMutex;  // Mutex 포인터 (init()
-에서 생성)
+	static SemaphoreHandle_t s_wifiMutex;  // Mutex 포인터 (init()에서 생성)
 
   public:
 	// --------------------------------------------------

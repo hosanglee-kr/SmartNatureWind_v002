@@ -372,13 +372,26 @@ bool CL_C10_ConfigManager::loadWifiConfig(ST_A20_WifiConfig_t& p_cfg) {
             ST_A20_STANetwork_t& v_net = p_cfg.sta[p_cfg.staCount];
             memset(&v_net, 0, sizeof(v_net)); // ✅ 찌꺼기 방지
 
-            const char* v_ssid = v_js["ssid"] | nullptr;
-            if (v_ssid && v_ssid[0]) strlcpy(v_net.ssid, v_ssid, sizeof(v_net.ssid));
+			const char* v_ssid = v_js["ssid"] | ""; // nullptr 대신 빈 문자열
+			const char* v_pass = v_js["pass"] | "";
 
-            const char* v_pw = C10_getStr2(v_js, "pass", "pass", nullptr);
-            if (v_pw && v_pw[0]) strlcpy(v_net.pass, v_pw, sizeof(v_net.pass));
+			if (v_ssid[0] != '\0') {
+				strlcpy(v_net.ssid, v_ssid, sizeof(v_net.ssid));
+				strlcpy(v_net.pass, v_pass, sizeof(v_net.pass));
 
-            p_cfg.staCount++;
+				// 💡 데이터 로드 직후 즉시 확인 로그 출력
+				CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[C10] Loaded STA[%d]: %s", p_cfg.staCount, v_net.ssid);
+
+				p_cfg.staCount++;
+			}
+
+            // const char* v_ssid = v_js["ssid"] | nullptr;
+            // if (v_ssid && v_ssid[0]) strlcpy(v_net.ssid, v_ssid, sizeof(v_net.ssid));
+
+            // const char* v_pw = C10_getStr2(v_js, "pass", "pass", nullptr);
+            // if (v_pw && v_pw[0]) strlcpy(v_net.pass, v_pw, sizeof(v_net.pass));
+
+            // p_cfg.staCount++;
         }
     }
 

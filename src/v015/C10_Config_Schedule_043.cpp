@@ -860,7 +860,7 @@ bool CL_C10_ConfigManager::patchWindProfileDictFromJson(ST_A20_WindProfileDict_t
         }
     }
 
-    _dirty_windProfile = true;
+    _dirty_windDict = true;
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] WindProfileDict patched (PUT). Dirty=true");
 
     C10_MUTEX_RELEASE();
@@ -1157,7 +1157,7 @@ int CL_C10_ConfigManager::addWindProfileFromJson(const JsonDocument& p_doc) {
     int v_index = v_root.presetCount;
     v_root.presetCount++;
 
-    _dirty_windProfile = true;
+    _dirty_windDict = true;
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] WindPreset added (index=%d)", v_index);
 
     C10_MUTEX_RELEASE();
@@ -1184,7 +1184,7 @@ bool CL_C10_ConfigManager::updateWindProfileFromJson(uint16_t p_id, const JsonDo
 
     C10_fromJson_WindPreset(v_js, v_root.presets[p_id]);
 
-    _dirty_windProfile = true;
+    _dirty_windDict = true;
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] WindPreset updated (index=%u)", (unsigned)p_id);
 
     C10_MUTEX_RELEASE();
@@ -1211,7 +1211,7 @@ bool CL_C10_ConfigManager::deleteWindProfile(uint16_t p_id) {
     }
     if (v_root.presetCount > 0) v_root.presetCount--;
 
-    _dirty_windProfile = true;
+    _dirty_windDict = true;
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] WindPreset deleted (index=%u)", (unsigned)p_id);
 
     C10_MUTEX_RELEASE();

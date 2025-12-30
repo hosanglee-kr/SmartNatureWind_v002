@@ -50,6 +50,9 @@
 #include "W10_Web_Const_050.h"
 #include "WF10_WiFiManager_040.h"
 
+
+#define W10_USE_API_KEY 0
+
 // ------------------------------------------------------
 // WebAPI Manager
 // ------------------------------------------------------
@@ -229,6 +232,7 @@ class CL_W10_WebAPI {
 		if (g_A20_config_root.system && g_A20_config_root.system->security.apiKey[0] != '\0') {
 			v_key = g_A20_config_root.system->security.apiKey;
 		}
+
 		if (!v_key || v_key[0] == '\0') {
 			return true;  // API 키 비활성화 상태
 		}

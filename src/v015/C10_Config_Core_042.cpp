@@ -57,7 +57,7 @@ bool CL_C10_ConfigManager::_dirty_wifi         = false;
 bool CL_C10_ConfigManager::_dirty_motion       = false;
 bool CL_C10_ConfigManager::_dirty_schedules    = false;
 bool CL_C10_ConfigManager::_dirty_userProfiles = false;
-bool CL_C10_ConfigManager::_dirty_windProfile  = false;
+bool CL_C10_ConfigManager::_dirty_windDict  = false;
 bool CL_C10_ConfigManager::_dirty_nvsSpec      = false;
 bool CL_C10_ConfigManager::_dirty_webPage      = false;
 
@@ -570,7 +570,7 @@ void CL_C10_ConfigManager::saveDirtyConfigs() {
     trySave(_dirty_nvsSpec, "nvsSpec", saveNvs_wrap, g_A20_config_root.nvsSpec);
     trySave(_dirty_schedules, "schedules", saveSchedules_wrap, g_A20_config_root.schedules);
     trySave(_dirty_userProfiles, "userProfiles", saveUserProfiles_wrap, g_A20_config_root.userProfiles);
-    trySave(_dirty_windProfile, "windDict", saveWind_wrap, g_A20_config_root.windDict);
+    trySave(_dirty_windDict, "windDict", saveWind_wrap, g_A20_config_root.windDict);
     trySave(_dirty_webPage, "webPage", saveWeb_wrap, g_A20_config_root.webPage);
 
     if (v_attempt == 0) {
@@ -594,7 +594,7 @@ void CL_C10_ConfigManager::getDirtyStatus(JsonDocument& p_doc) {
     p_doc["nvsSpec"]      = _dirty_nvsSpec;
     p_doc["schedules"]    = _dirty_schedules;
     p_doc["userProfiles"] = _dirty_userProfiles;
-    p_doc["windDict"]     = _dirty_windProfile;
+    p_doc["windDict"]     = _dirty_windDict;
     p_doc["webPage"]      = _dirty_webPage;
 
     C10_MUTEX_RELEASE();

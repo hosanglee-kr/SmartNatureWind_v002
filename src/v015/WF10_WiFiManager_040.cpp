@@ -104,6 +104,8 @@ bool CL_WF10_WiFiManager::init(const ST_A20_WifiConfig_t& p_cfg_wifi, const ST_A
 		v_interval_ms = 21600000UL;	 // 6시간 기본값
 	}
 
+	// CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] CL_WF10_WiFiManager::init - wifiMode :%d", p_cfg_wifi.wifiMode);
+
 	switch (p_cfg_wifi.wifiMode) {
 		case 0:	 // AP Only
 			WiFi.mode(WIFI_AP);
@@ -123,6 +125,8 @@ bool CL_WF10_WiFiManager::init(const ST_A20_WifiConfig_t& p_cfg_wifi, const ST_A
 		}
 
 		default: {	// 2 이상, AP+STA
+			// CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] CL_WF10_WiFiManager::init - Default WifiMode");
+
 			WiFi.mode(WIFI_AP_STA);
 			v_ap_ok	 = startAP(p_cfg_wifi, p_apChannel, p_enableApDhcp);
 			v_sta_ok = startSTA(p_cfg_wifi, p_multi, p_staMaxTries);
@@ -165,9 +169,11 @@ bool CL_WF10_WiFiManager::startAP(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t
 // --------------------------------------------------
 bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, WiFiMulti& p_multi, uint8_t p_maxTries) {
 	WF10_MUTEX_ACQUIRE();
+
 	s_staConnected		= false;
 	s_lastStaStatus		= WL_IDLE_STATUS;
 	s_reconnectAttempts = 0;
+
 	WF10_MUTEX_RELEASE();
 
 	if (p_cfg_wifi.staCount == 0) {
@@ -175,12 +181,27 @@ bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, WiFiMu
 		return false;
 	}
 
+	// CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] CL_WF10_WiFiManager::startSTA - stacount: %d", p_cfg_wifi.staCount);
+
+
 	for (uint8_t v_i = 0; v_i < p_cfg_wifi.staCount; v_i++) {
+
+		if (p_cfg_wifi.sta[v_i].ssid == nullptr) {
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] SSID pointer is NULL at index %d", v_i);
+            continue;
+        }
+
 		const char* v_ssid = p_cfg_wifi.sta[v_i].ssid;
 		const char* v_pass = p_cfg_wifi.sta[v_i].pass;
 		if (v_ssid[0] == '\0')
 			continue;
+
+		// CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] CL_WF10_WiFiManager::startSTA - addAP SSID Start : %s", v_ssid);
+
 		p_multi.addAP(v_ssid, v_pass);
+
+		// CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] CL_WF10_WiFiManager::startSTA - addAP SSID end : %s", v_ssid);
+
 		CL_D10_Logger::log(EN_L10_LOG_INFO, "[WiFi] STA candidate: %s", v_ssid);
 	}
 

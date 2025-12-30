@@ -7,7 +7,7 @@
  * ------------------------------------------------------
  * 기능 요약:
  *  - Smart Nature Wind 전체 설정(JSON 기반) 관리 매니저
- *  - 설정 파일 단위 분리 관리 (system / wifi / motion / schedules / userProfiles / windProfile / nvsSpec / webPage)
+ *  - 설정 파일 단위 분리 관리 (system / wifi / motion / schedules / userProfiles / windDict / nvsSpec / webPage)
  *  - 구조체 ↔ JSON 직렬화 및 역직렬화 (ArduinoJson v7 전용)
  *  - 파일 백업(.bak) / 복구 / 공장초기화(factoryResetFromDefault) 지원
  *  - PATCH 기반 부분 업데이트(patchConfigFromJson) 지원
@@ -169,7 +169,7 @@ class CL_C10_ConfigManager {
 	static bool patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, const JsonDocument& p_patch);
 
 	// =====================================================
-	// 5. CRUD - Schedules, UserProfiles, WindProfile
+	// 5. CRUD - Schedules, UserProfiles, windDict
 	//    (전역 g_A20_config_root를 대상으로 동작)
 	// =====================================================
 	static int addScheduleFromJson(const JsonDocument& p_doc);
@@ -191,7 +191,7 @@ class CL_C10_ConfigManager {
 	static bool _dirty_motion;
 	static bool _dirty_schedules;
 	static bool _dirty_userProfiles;
-	static bool _dirty_windProfile;
+	static bool _dirty_windDict;
 	static bool _dirty_nvsSpec;
 	static bool _dirty_webPage;
 

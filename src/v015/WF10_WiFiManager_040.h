@@ -95,7 +95,7 @@ class CL_WF10_WiFiManager {
 	// --------------------------------------------------
 	// 초기화
 	// --------------------------------------------------
-	static bool init(const ST_A20_WifiConfig_t& p_cfg_wifi, const ST_A20_SystemConfig_t& p_cfg_system, WiFiMulti& p_multi, uint8_t p_apChannel = 1, uint8_t p_staMaxTries = 15, bool p_enableApDhcp = true);
+	static bool init(const ST_A20_WifiConfig_t& p_cfg_wifi, const ST_A20_SystemConfig_t& p_cfg_system, WiFiMulti& p_multi, uint8_t p_apChannel = 1, uint8_t p_staMaxTries = 5, bool p_enableApDhcp = true);
 
 	// --------------------------------------------------
 	// AP 시작 (고정 IP + DHCP On/Off)

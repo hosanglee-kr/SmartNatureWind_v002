@@ -366,7 +366,7 @@ inline void A20_resetSystemDefault(ST_A20_SystemConfig_t& p_cfg) {
     // hw: tempHum
     p_cfg.hw.tempHum.enabled = true;
     A20_safe_strlcpy(p_cfg.hw.tempHum.type, "DHT22", sizeof(p_cfg.hw.tempHum.type));
-    p_cfg.hw.tempHum.pin         = 23;
+    p_cfg.hw.tempHum.pin         = 17;
     p_cfg.hw.tempHum.intervalSec = 30;
 
     // hw: ble

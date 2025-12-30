@@ -876,7 +876,7 @@ bool CL_C10_ConfigManager::patchWindProfileDictFromJson(ST_A20_WindProfileDict_t
 
 // ---------- Schedule CRUD ----------
 int CL_C10_ConfigManager::addScheduleFromJson(const JsonDocument& p_doc) {
-    C10_MUTEX_ACQUIRE_BOOL();
+    C10_MUTEX_ACQUIRE_INT();
 
     if (!g_A20_config_root.schedules) {
         g_A20_config_root.schedules = new (std::nothrow) ST_A20_SchedulesRoot_t();
@@ -1022,7 +1022,7 @@ bool CL_C10_ConfigManager::deleteSchedule(uint16_t p_id) {
 
 // ---------- UserProfiles CRUD ----------
 int CL_C10_ConfigManager::addUserProfilesFromJson(const JsonDocument& p_doc) {
-    C10_MUTEX_ACQUIRE_BOOL();
+    C10_MUTEX_ACQUIRE_INT();
 
     if (!g_A20_config_root.userProfiles) {
         g_A20_config_root.userProfiles = new (std::nothrow) ST_A20_UserProfilesRoot_t();
@@ -1128,7 +1128,7 @@ bool CL_C10_ConfigManager::deleteUserProfiles(uint16_t p_id) {
 
 // ---------- WindProfile CRUD (Preset 중심) ----------
 int CL_C10_ConfigManager::addWindProfileFromJson(const JsonDocument& p_doc) {
-    C10_MUTEX_ACQUIRE_BOOL();
+    C10_MUTEX_ACQUIRE_INT();
 
     if (!g_A20_config_root.windDict) {
         g_A20_config_root.windDict = new (std::nothrow) ST_A20_WindProfileDict_t();

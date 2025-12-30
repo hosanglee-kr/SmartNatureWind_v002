@@ -34,7 +34,7 @@
 #include "S20_WindSolver_040.h"
 #include "W10_Web_051.h"
 #include "WF10_WiFiManager_041.h"
-#include "TM10_TimeManager_001.h"
+#include "TM10_TimeManager_002.h"
 
 
 // [main.cpp] 또는 [MotionLogic.cpp] 파일에 추가

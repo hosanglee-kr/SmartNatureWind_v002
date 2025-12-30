@@ -1,4 +1,6 @@
-name: PR Build Strategy
+# .github/workflows/ci_005.yml
+
+name: PR
 
 on:
   pull_request:
@@ -6,16 +8,17 @@ on:
     # 소스 코드와 직접적인 관련이 없는 파일 수정 시 빌드를 건너뜁니다.
     paths:
       - 'platformio.ini'
-      - 'src/**'
       - 'lib/**'
       - 'include/**'
-      - '.github/workflows/pr.yml'
-    # html, js, css, json, md 파일만 수정된 경우 빌드를 실행하지 않음
-    paths-ignore:
-      - '**.md'
-      - '**.json'
-      - 'src/**/data/**' # 데이터 폴더 내 정적 자산 제외 (필요 시)
-
+      - '.github/workflows/*.yml'
+      - 'src/**/*.c'
+      - 'src/**/*.cpp'
+      - 'src/**/*.h'
+      - 'src/**/*.ino'
+      - '!**.md'          # 모든 경로의 md 파일 제외
+      - '!src/**/data_*/**'    # 웹 소스 폴더 제외 (보통 LittleFS 업로드용이므로 빌드 불필요 시)
+      - '!src/*_backup/**
+  
 jobs:
   get_environments:
     runs-on: ubuntu-latest

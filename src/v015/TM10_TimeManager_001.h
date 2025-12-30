@@ -3,12 +3,14 @@
  * ------------------------------------------------------
  * 소스명 : TM10_TimeManager_001.h
  * 모듈 약어 : TM10
- * 모듈명 : Smart Nature Wind Time Manager (TZ/NTP Apply + Sync) (v001)
+ * 모듈명 : Smart Nature Wind Time Manager (SNTP callback 기반, 운영급)
  * ------------------------------------------------------
  * 기능 요약:
- *  - system.time 설정(TZ, NTP 서버, syncIntervalMin)을 런타임에 반영
- *  - NTP 동기화 폴링 + 시간 유효성 판단 + localtime_r() null 방어
- *  - WF10 등 다른 모듈은 "트리거/상태"만 담당하고, 시간 책임은 TM10으로 분리
+ *  - Wi-Fi 연결 이벤트 기반으로 SNTP 시간 동기화 설정/관리
+ *  - 콜백 기반 동기화 완료 처리(긴 블로킹 폴링 없음)
+ *  - NTP 서버 fallback(1차/2차/3차) 자동 순환 및 백오프 재시도
+ *  - 시간 유효성 검증(time()/localtime_r NULL 방어 포함)
+ *  - 런타임 tick() 감시로 “장시간 미동기화” 상황 자동 복구
  * ------------------------------------------------------
  * [구현 규칙]
  *  - 항상 소스 시작 주석 부분 체계 유지 및 내용 업데이트
@@ -40,168 +42,85 @@
  */
 
 #include <Arduino.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/semphr.h>
+
+#include <esp_sntp.h>
 
 #include "A20_Const_043.h"
-#include "C10_Config_041.h"
 #include "D10_Logger_040.h"
 
-#ifndef G_TM10_MUTEX_TIMEOUT
-#	define G_TM10_MUTEX_TIMEOUT pdMS_TO_TICKS(100)
+// ------------------------------------------------------
+// 운영 파라미터 (상수)
+// ------------------------------------------------------
+#ifndef G_TM10_TIME_VALID_EPOCH_MIN
+// 2023-11-15 이후(운영 기준 최소 epoch)
+#	define G_TM10_TIME_VALID_EPOCH_MIN 1700000000
 #endif
 
+#ifndef G_TM10_RETRY_FIRST_MS
+// 최초 미동기화 재시도 시작: 10분
+#	define G_TM10_RETRY_FIRST_MS (10UL * 60UL * 1000UL)
+#endif
+
+#ifndef G_TM10_RETRY_MAX_MS
+// 재시도 백오프 최대: 60분
+#	define G_TM10_RETRY_MAX_MS (60UL * 60UL * 1000UL)
+#endif
+
+#ifndef G_TM10_SNTPSERVERS_MAX
+// SNTP 서버 최대(ESP-IDF 기본은 3이 일반적)
+#	define G_TM10_SNTPSERVERS_MAX 3
+#endif
+
+// ------------------------------------------------------
+// Time Manager
+// ------------------------------------------------------
 class CL_TM10_TimeManager {
   public:
-	// 상태(필요시 외부 조회)
-	static bool     s_timeSynced;
-	static uint32_t s_lastSyncMs;
+	// 상태 조회
+	static bool isTimeSynced();
+	static uint32_t getLastSyncMs();
+	static const char* getActiveServer();
 
-	// 초기화(옵션)
-	static void begin() {
-		if (s_timeMutex == nullptr) {
-			s_timeMutex = xSemaphoreCreateMutex();
-			if (!s_timeMutex) {
-				CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] Mutex create failed");
-			}
-		}
-	}
+	// Wi-Fi 이벤트 연동
+	static void onWiFiConnected(const ST_A20_SystemConfig_t& p_cfg_system);
+	static void onWiFiDisconnected();
 
-	/**
-	 * @brief system.time 설정을 기준으로 TZ/NTP/주기 설정을 런타임에 반영 + 즉시 동기화 시도(최대 5초)
-	 */
-	static void applyTimeConfigFromSystem(const ST_A20_SystemConfig_t& p_cfg) {
-		_beginIfNeeded();
+	// 런타임 감시(메인 루프에서 가볍게 호출)
+	static void tick(bool p_wifiConnected, const ST_A20_SystemConfig_t* p_cfg_system);
 
-		CL_D10_Logger::log(EN_L10_LOG_INFO,
-		                   "[TM10] Apply time config: ntp=%s, tz=%s, interval=%u min",
-		                   p_cfg.time.ntpServer,
-		                   p_cfg.time.timezone,
-		                   (unsigned int)p_cfg.time.syncIntervalMin);
-
-		// TZ/NTP 설정 적용
-		setenv("TZ", p_cfg.time.timezone, 1);
-		tzset();
-		configTime(0, 0, p_cfg.time.ntpServer);
-
-		// 즉시 동기화 시도(최대 5초)
-		uint32_t v_start = millis();
-		bool v_ok = false;
-
-		while (millis() - v_start < 5000) {
-			time_t v_now = time(nullptr);
-			if (_isValidEpoch(v_now)) {
-				struct tm v_tm;
-				if (_localtimeSafe(v_now, &v_tm)) {
-					v_ok = true;
-					break;
-				}
-			}
-			delay(250);
-		}
-
-		_mutexAcquire();
-		s_timeSynced = v_ok;
-		if (v_ok) s_lastSyncMs = millis();
-		_mutexRelease();
-
-		CL_D10_Logger::log(v_ok ? EN_L10_LOG_INFO : EN_L10_LOG_WARN,
-		                   v_ok ? "[TM10] Time sync OK after apply" : "[TM10] Time sync not yet complete after apply (non-fatal)");
-	}
-
-	/**
-	 * @brief NTP 동기화를 필요 시 수행(주기 기반). Wi-Fi 연결 여부는 호출자가 보장(또는 p_wifiConnected로 전달).
-	 * @param p_wifiConnected STA 연결 여부(외부에서 전달)
-	 */
-	static void syncTimeIfNeeded(bool p_wifiConnected,
-	                             const ST_A20_SystemConfig_t& p_cfg_system,
-	                             uint32_t p_interval_ms = 21600000UL) {
-		_beginIfNeeded();
-
-		if (!p_wifiConnected) return;
-
-		_mutexAcquire();
-		uint32_t v_nowMs = millis();
-		if (s_timeSynced && (v_nowMs - s_lastSyncMs < p_interval_ms)) {
-			_mutexRelease();
-			return;
-		}
-		_mutexRelease();
-
-		// TZ/NTP 재적용(안전하게 매번 적용)
-		setenv("TZ", p_cfg_system.time.timezone, 1);
-		tzset();
-		configTime(0, 0, p_cfg_system.time.ntpServer);
-
-		// 최대 10초 폴링
-		uint32_t v_start = millis();
-		while (millis() - v_start < 10000) {
-			time_t v_now = time(nullptr);
-			if (_isValidEpoch(v_now)) {
-				struct tm v_tm;
-				if (_localtimeSafe(v_now, &v_tm)) {
-					_mutexAcquire();
-					s_timeSynced = true;
-					s_lastSyncMs = millis();
-					_mutexRelease();
-					CL_D10_Logger::log(EN_L10_LOG_INFO, "[TM10] NTP Sync OK");
-					return;
-				}
-			}
-			delay(250);
-		}
-
-		_mutexAcquire();
-		s_timeSynced = false;
-		_mutexRelease();
-
-		CL_D10_Logger::log(EN_L10_LOG_WARN, "[TM10] NTP Timeout");
-	}
+	// (외부에서 시간 설정 변경 즉시 반영 요청 시)
+	static void applyTimeConfigFromSystem(const ST_A20_SystemConfig_t& p_cfg_system);
 
   private:
-	static SemaphoreHandle_t s_timeMutex;
+	// SNTP 콜백
+	static void _onSntpTimeSync(struct timeval* p_tv);
 
-	static void _beginIfNeeded() {
-		if (s_timeMutex == nullptr) begin();
-	}
+	// 내부 헬퍼
+	static bool _isTimeSane();
+	static void _buildServerList(const ST_A20_SystemConfig_t& p_cfg_system);
+	static void _applySntpConfig(uint32_t p_syncIntervalMs);
 
-	static bool _isValidEpoch(time_t p_t) {
-		// 기존 기준 유지(2023-11-15 이후)
-		return (p_t > (time_t)1700000000);
-	}
+	static bool _sameStr(const char* p_a, const char* p_b);
 
-	static bool _localtimeSafe(time_t p_t, struct tm* p_out) {
-		if (p_out == nullptr) return false;
-		memset(p_out, 0, sizeof(struct tm));
+  private:
+	// 상태
+	static volatile bool	  s_timeSynced;
+	static volatile uint32_t s_lastSyncMs;
 
-		struct tm* v_ret = localtime_r(&p_t, p_out);
-		if (v_ret == nullptr) return false;
+	static bool			  s_wifiConnected;
+	static uint32_t		  s_wifiUpMs;
 
-		// sanity(대략 2020 이상)
-		if (p_out->tm_year < 120) return false;
-		return true;
-	}
+	// 서버 목록/인덱스
+	static char			  s_servers[G_TM10_SNTPSERVERS_MAX][64];
+	static uint8_t		  s_serverCount;
+	static uint8_t		  s_activeServerIdx;
 
-	static void _mutexAcquire() {
-		if (s_timeMutex == nullptr) return;
-		xSemaphoreTake(s_timeMutex, G_TM10_MUTEX_TIMEOUT);
-	}
-	static void _mutexRelease() {
-		if (s_timeMutex == nullptr) return;
-		xSemaphoreGive(s_timeMutex);
-	}
+	// 재시도 정책
+	static uint32_t		  s_nextRetryMs;	  // 다음 재시도까지 대기(백오프)
+	static uint32_t		  s_lastRetryAttemptMs;
 };
-
-// ---- static members ----
-bool              CL_TM10_TimeManager::s_timeSynced  = false;
-uint32_t          CL_TM10_TimeManager::s_lastSyncMs  = 0;
-SemaphoreHandle_t CL_TM10_TimeManager::s_timeMutex   = nullptr;
-
-// --------------------------------------------------
-// (호환) 전역 함수 래퍼: 기존 WF10_applyTimeConfigFromSystem 이관용
-// --------------------------------------------------
-static inline void TM10_applyTimeConfigFromSystem(const ST_A20_SystemConfig_t& p_cfg) {
-	CL_TM10_TimeManager::applyTimeConfigFromSystem(p_cfg);
-}
 

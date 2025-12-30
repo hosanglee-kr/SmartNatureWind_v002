@@ -17,7 +17,7 @@ on:
       - 'src/**/*.ino'
       - '!**.md'          # 모든 경로의 md 파일 제외
       - '!src/**/data_*/**'    # 웹 소스 폴더 제외 (보통 LittleFS 업로드용이므로 빌드 불필요 시)
-      - '!src/*_backup/**
+      - '!src/*_backup/**'
   
 jobs:
   get_environments:

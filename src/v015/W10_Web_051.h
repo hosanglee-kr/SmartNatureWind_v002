@@ -48,7 +48,7 @@
 #include "D10_Logger_040.h"
 #include "N10_NvsManager_040.h"
 #include "W10_Web_Const_050.h"
-#include "WF10_WiFiManager_040.h"
+#include "WF10_WiFiManager_041.h"
 
 
 #define W10_USE_API_KEY 0

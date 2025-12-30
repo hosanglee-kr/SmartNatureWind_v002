@@ -43,552 +43,560 @@
 //  - containsKey 사용 금지 -> JsonVariantConst null 체크 기반
 // =====================================================
 static const char* C10_getStr2(JsonObjectConst p_obj, const char* p_k1, const char* p_k2, const char* p_def) {
-	if (p_obj.isNull()) return p_def;
+    if (p_obj.isNull()) return p_def;
 
-	JsonVariantConst v1 = p_obj[p_k1];
-	if (!v1.isNull()) {
-		const char* s = v1.as<const char*>();
-		return (s && s[0]) ? s : p_def;
-	}
+    JsonVariantConst v1 = p_obj[p_k1];
+    if (!v1.isNull()) {
+        const char* s = v1.as<const char*>();
+        return (s && s[0]) ? s : p_def;
+    }
 
-	JsonVariantConst v2 = p_obj[p_k2];
-	if (!v2.isNull()) {
-		const char* s = v2.as<const char*>();
-		return (s && s[0]) ? s : p_def;
-	}
+    JsonVariantConst v2 = p_obj[p_k2];
+    if (!v2.isNull()) {
+        const char* s = v2.as<const char*>();
+        return (s && s[0]) ? s : p_def;
+    }
 
-	return p_def;
+    return p_def;
 }
 
 template <typename T>
 static T C10_getNum2(JsonObjectConst p_obj, const char* p_k1, const char* p_k2, T p_def) {
-	if (p_obj.isNull()) return p_def;
+    if (p_obj.isNull()) return p_def;
 
-	JsonVariantConst v1 = p_obj[p_k1];
-	if (!v1.isNull()) return (T)(v1.as<T>());
+    JsonVariantConst v1 = p_obj[p_k1];
+    if (!v1.isNull()) return (T)(v1.as<T>());
 
-	JsonVariantConst v2 = p_obj[p_k2];
-	if (!v2.isNull()) return (T)(v2.as<T>());
+    JsonVariantConst v2 = p_obj[p_k2];
+    if (!v2.isNull()) return (T)(v2.as<T>());
 
-	return p_def;
+    return p_def;
 }
 
 static bool C10_getBool2(JsonObjectConst p_obj, const char* p_k1, const char* p_k2, bool p_def) {
-	if (p_obj.isNull()) return p_def;
+    if (p_obj.isNull()) return p_def;
 
-	JsonVariantConst v1 = p_obj[p_k1];
-	if (!v1.isNull()) return v1.as<bool>();
+    JsonVariantConst v1 = p_obj[p_k1];
+    if (!v1.isNull()) return v1.as<bool>();
 
-	JsonVariantConst v2 = p_obj[p_k2];
-	if (!v2.isNull()) return v2.as<bool>();
+    JsonVariantConst v2 = p_obj[p_k2];
+    if (!v2.isNull()) return v2.as<bool>();
 
-	return p_def;
+    return p_def;
 }
 
 // =====================================================
 // WebSocket 채널 유틸
 // =====================================================
 static int8_t C10_wsChannelFromName(const char* p_name) {
-	if (!p_name || !p_name[0]) return -1;
+    if (!p_name || !p_name[0]) return -1;
 
-	for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
-		if (strcasecmp(p_name, G_A20_WS_CH_NAMES_Arr[v_i]) == 0) {
-			return (int8_t)v_i;
-		}
-	}
-	return -1;
+    for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+        if (strcasecmp(p_name, G_A20_WS_CH_NAMES_Arr[v_i]) == 0) {
+            return (int8_t)v_i;
+        }
+    }
+    return -1;
 }
 
 static void C10_wsFillDefaultPriority(uint8_t p_out[G_A20_WS_CH_COUNT]) {
-	// 안전하게 "인덱스 순서"를 기본값으로 사용
-	for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
-		p_out[v_i] = v_i;
-	}
+    // 안전하게 "인덱스 순서"를 기본값으로 사용
+    for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+        p_out[v_i] = v_i;
+    }
 }
 
 static void C10_wsParsePriorityArray(JsonArrayConst p_arr, uint8_t p_out[G_A20_WS_CH_COUNT]) {
-	// default 먼저
-	C10_wsFillDefaultPriority(p_out);
+    // default 먼저
+    C10_wsFillDefaultPriority(p_out);
 
-	bool v_used[G_A20_WS_CH_COUNT];
-	memset(v_used, 0, sizeof(v_used));
+    bool v_used[G_A20_WS_CH_COUNT];
+    memset(v_used, 0, sizeof(v_used));
 
-	uint8_t v_write = 0;
+    uint8_t v_write = 0;
 
-	// 1) 유효한 문자열 순서대로 채움(중복 제거)
-	for (JsonVariantConst v_it : p_arr) {
-		if (v_write >= G_A20_WS_CH_COUNT) break;
+    // 1) 유효한 문자열 순서대로 채움(중복 제거)
+    for (JsonVariantConst v_it : p_arr) {
+        if (v_write >= G_A20_WS_CH_COUNT) break;
 
-		const char* v_s = v_it | nullptr;
-		int8_t      v_idx = C10_wsChannelFromName(v_s);
-		if (v_idx < 0) continue;
-		if (v_used[(uint8_t)v_idx]) continue;
+        const char* v_s   = v_it | nullptr;
+        int8_t      v_idx = C10_wsChannelFromName(v_s);
+        if (v_idx < 0) continue;
+        if (v_used[(uint8_t)v_idx]) continue;
 
-		p_out[v_write++] = (uint8_t)v_idx;
-		v_used[(uint8_t)v_idx] = true;
-	}
+        p_out[v_write++]       = (uint8_t)v_idx;
+        v_used[(uint8_t)v_idx] = true;
+    }
 
-	// 2) 누락 채널은 기본 인덱스 순서로 뒤에 채움
-	for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT && v_write < G_A20_WS_CH_COUNT; v_i++) {
-		if (v_used[v_i]) continue;
-		p_out[v_write++] = v_i;
-		v_used[v_i] = true;
-	}
+    // 2) 누락 채널은 기본 인덱스 순서로 뒤에 채움
+    for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT && v_write < G_A20_WS_CH_COUNT; v_i++) {
+        if (v_used[v_i]) continue;
+        p_out[v_write++] = v_i;
+        v_used[v_i]      = true;
+    }
 }
 
 static uint16_t C10_u16Clamp(uint32_t p_v, uint16_t p_lo, uint16_t p_hi) {
-	if (p_v < p_lo) return p_lo;
-	if (p_v > p_hi) return p_hi;
-	return (uint16_t)p_v;
+    if (p_v < p_lo) return p_lo;
+    if (p_v > p_hi) return p_hi;
+    return (uint16_t)p_v;
 }
 
 static uint8_t C10_u8Clamp(uint32_t p_v, uint8_t p_lo, uint8_t p_hi) {
-	if (p_v < p_lo) return p_lo;
-	if (p_v > p_hi) return p_hi;
-	return (uint8_t)p_v;
+    if (p_v < p_lo) return p_lo;
+    if (p_v > p_hi) return p_hi;
+    return (uint8_t)p_v;
 }
 
 // =====================================================
 // 2-1. 목적물별 Load 구현 (System/Wifi/Motion)
 // =====================================================
 bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
-	// ✅ 0) 기본값 1회 선행 (누락 키 대응)
-	A20_resetSystemDefault(p_cfg);
+    // ✅ 0) 기본값 1회 선행 (누락 키 대응)
+    A20_resetSystemDefault(p_cfg);
 
-	JsonDocument v_doc;
+    JsonDocument v_doc;
 
-	const char* v_cfgJsonPath = nullptr;
-	if (s_cfgJsonFileMap.system[0] != '\0') {
-		v_cfgJsonPath = s_cfgJsonFileMap.system;
-	} else {
-		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadSystemConfig: s_cfgJsonFileMap.system is empty");
-		return false; // 기본값 상태 유지
-	}
+    const char* v_cfgJsonPath = nullptr;
+    if (s_cfgJsonFileMap.system[0] != '\0') {
+        v_cfgJsonPath = s_cfgJsonFileMap.system;
+    } else {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadSystemConfig: s_cfgJsonFileMap.system is empty");
+        return false; // 기본값 상태 유지
+    }
 
-	if (!ioLoadJson(v_cfgJsonPath, v_doc)) {
-		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadSystemConfig: ioLoadJson failed (%s)", v_cfgJsonPath);
-		return false; // 기본값 상태 유지
-	}
+    if (!ioLoadJson(v_cfgJsonPath, v_doc)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadSystemConfig: ioLoadJson failed (%s)", v_cfgJsonPath);
+        return false; // 기본값 상태 유지
+    }
 
-	JsonObjectConst j_root = v_doc.as<JsonObjectConst>();
-	JsonObjectConst j_meta = j_root["meta"].as<JsonObjectConst>();
-	JsonObjectConst j_sys  = j_root["system"].as<JsonObjectConst>();
+    JsonObjectConst j_root = v_doc.as<JsonObjectConst>();
+    JsonObjectConst j_meta = j_root["meta"].as<JsonObjectConst>();
+    JsonObjectConst j_sys  = j_root["system"].as<JsonObjectConst>();
 
-	// hw는 루트 우선, 없으면 system.hw fallback
-	JsonObjectConst j_hw = j_root["hw"].as<JsonObjectConst>();
-	if (j_hw.isNull() && !j_sys.isNull()) {
-		j_hw = j_sys["hw"].as<JsonObjectConst>();
-	}
+    // hw는 루트 우선, 없으면 system.hw fallback
+    JsonObjectConst j_hw = j_root["hw"].as<JsonObjectConst>();
+    if (j_hw.isNull() && !j_sys.isNull()) {
+        j_hw = j_sys["hw"].as<JsonObjectConst>();
+    }
 
-	if (j_sys.isNull() || j_hw.isNull()) {
-		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadSystemConfig: missing 'system' or 'hw'");
-		return false; // 기본값 유지
-	}
+    if (j_sys.isNull() || j_hw.isNull()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadSystemConfig: missing 'system' or 'hw'");
+        return false; // 기본값 유지
+    }
 
-	// -------------------------
-	// meta (있으면 덮어쓰기)
-	// -------------------------
-	if (!j_meta.isNull()) {
-		const char* v_ver = C10_getStr2(j_meta, "version", "version", nullptr);
-		if (v_ver && v_ver[0]) strlcpy(p_cfg.meta.version, v_ver, sizeof(p_cfg.meta.version));
+    // -------------------------
+    // meta (있으면 덮어쓰기)
+    // -------------------------
+    if (!j_meta.isNull()) {
+        const char* v_ver = C10_getStr2(j_meta, "version", "version", nullptr);
+        if (v_ver && v_ver[0]) strlcpy(p_cfg.meta.version, v_ver, sizeof(p_cfg.meta.version));
 
-		const char* v_dn = C10_getStr2(j_meta, "deviceName", "deviceName", nullptr);
-		if (v_dn && v_dn[0]) strlcpy(p_cfg.meta.deviceName, v_dn, sizeof(p_cfg.meta.deviceName));
+        const char* v_dn = C10_getStr2(j_meta, "deviceName", "deviceName", nullptr);
+        if (v_dn && v_dn[0]) strlcpy(p_cfg.meta.deviceName, v_dn, sizeof(p_cfg.meta.deviceName));
 
-		const char* v_lu = C10_getStr2(j_meta, "lastUpdate", "lastUpdate", nullptr);
-		if (v_lu && v_lu[0]) strlcpy(p_cfg.meta.lastUpdate, v_lu, sizeof(p_cfg.meta.lastUpdate));
-	}
+        const char* v_lu = C10_getStr2(j_meta, "lastUpdate", "lastUpdate", nullptr);
+        if (v_lu && v_lu[0]) strlcpy(p_cfg.meta.lastUpdate, v_lu, sizeof(p_cfg.meta.lastUpdate));
+    }
 
-	// -------------------------
-	// system.logging (있으면 덮어쓰기)
-	// -------------------------
-	JsonObjectConst j_log = j_sys["logging"].as<JsonObjectConst>();
-	if (!j_log.isNull()) {
-		const char* v_lv = C10_getStr2(j_log, "level", "level", nullptr);
-		if (v_lv && v_lv[0]) strlcpy(p_cfg.system.logging.level, v_lv, sizeof(p_cfg.system.logging.level));
+    // -------------------------
+    // system.logging (있으면 덮어쓰기)
+    // -------------------------
+    JsonObjectConst j_log = j_sys["logging"].as<JsonObjectConst>();
+    if (!j_log.isNull()) {
+        const char* v_lv = C10_getStr2(j_log, "level", "level", nullptr);
+        if (v_lv && v_lv[0]) strlcpy(p_cfg.system.logging.level, v_lv, sizeof(p_cfg.system.logging.level));
 
-		if (!j_log["maxEntries"].isNull()) {
-			uint16_t v_me = j_log["maxEntries"].as<uint16_t>();
-			if (v_me > 0) p_cfg.system.logging.maxEntries = v_me;
-		}
-	}
+        if (!j_log["maxEntries"].isNull()) {
+            uint16_t v_me = j_log["maxEntries"].as<uint16_t>();
+            if (v_me > 0) p_cfg.system.logging.maxEntries = v_me;
+        }
+    }
 
-	// -------------------------
-	// system.webSocket (있으면 덮어쓰기)
-	// -------------------------
-	JsonObjectConst j_ws = j_sys["webSocket"].as<JsonObjectConst>();
-	if (!j_ws.isNull()) {
-		// 1) wsIntervalMs[4]
-		JsonArrayConst j_itv = j_ws["wsIntervalMs"].as<JsonArrayConst>();
-		if (!j_itv.isNull() && j_itv.size() >= G_A20_WS_CH_COUNT) {
-			for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
-				uint32_t v_raw = j_itv[v_i].as<uint32_t>();
-				p_cfg.system.webSocket.wsIntervalMs[v_i] = C10_u16Clamp(v_raw, 20, 60000);
-			}
-		}
+    // -------------------------
+    // system.webSocket (있으면 덮어쓰기)
+    // -------------------------
+    JsonObjectConst j_ws = j_sys["webSocket"].as<JsonObjectConst>();
+    if (!j_ws.isNull()) {
+        // 1) wsIntervalMs[4]
+        JsonArrayConst j_itv = j_ws["wsIntervalMs"].as<JsonArrayConst>();
+        if (!j_itv.isNull() && j_itv.size() >= G_A20_WS_CH_COUNT) {
+            for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+                uint32_t v_raw                           = j_itv[v_i].as<uint32_t>();
+                p_cfg.system.webSocket.wsIntervalMs[v_i] = C10_u16Clamp(v_raw, 20, 60000);
+            }
+        }
 
-		// 2) priority(string[]) -> wsPriority[4]
-		JsonArrayConst j_pri = j_ws["priority"].as<JsonArrayConst>();
-		if (!j_pri.isNull() && j_pri.size() > 0) {
-			C10_wsParsePriorityArray(j_pri, p_cfg.system.webSocket.wsPriority);
-		}
+        // 2) priority(string[]) -> wsPriority[4]
+        JsonArrayConst j_pri = j_ws["priority"].as<JsonArrayConst>();
+        if (!j_pri.isNull() && j_pri.size() > 0) {
+            C10_wsParsePriorityArray(j_pri, p_cfg.system.webSocket.wsPriority);
+        }
 
-		// 3) chartLargeBytes / chartThrottleMul
-		if (!j_ws["chartLargeBytes"].isNull()) {
-			uint32_t v_raw = j_ws["chartLargeBytes"].as<uint32_t>();
-			if (v_raw > 0) p_cfg.system.webSocket.chartLargeBytes = C10_u16Clamp(v_raw, 256, 60000);
-		}
-		if (!j_ws["chartThrottleMul"].isNull()) {
-			uint32_t v_raw = j_ws["chartThrottleMul"].as<uint32_t>();
-			if (v_raw > 0) p_cfg.system.webSocket.chartThrottleMul = C10_u8Clamp(v_raw, 1, 10);
-		}
+        // 3) chartLargeBytes / chartThrottleMul
+        if (!j_ws["chartLargeBytes"].isNull()) {
+            uint32_t v_raw = j_ws["chartLargeBytes"].as<uint32_t>();
+            if (v_raw > 0) p_cfg.system.webSocket.chartLargeBytes = C10_u16Clamp(v_raw, 256, 60000);
+        }
+        if (!j_ws["chartThrottleMul"].isNull()) {
+            uint32_t v_raw = j_ws["chartThrottleMul"].as<uint32_t>();
+            if (v_raw > 0) p_cfg.system.webSocket.chartThrottleMul = C10_u8Clamp(v_raw, 1, 10);
+        }
 
-		// 4) wsCleanupMs
-		if (!j_ws["wsCleanupMs"].isNull()) {
-			uint32_t v_raw = j_ws["wsCleanupMs"].as<uint32_t>();
-			if (v_raw > 0) p_cfg.system.webSocket.wsCleanupMs = C10_u16Clamp(v_raw, 200, 60000);
-		}
-	}
+        // 4) wsCleanupMs
+        if (!j_ws["wsCleanupMs"].isNull()) {
+            uint32_t v_raw = j_ws["wsCleanupMs"].as<uint32_t>();
+            if (v_raw > 0) p_cfg.system.webSocket.wsCleanupMs = C10_u16Clamp(v_raw, 200, 60000);
+        }
+    }
 
-	// -------------------------
-	// hw.fanPwm (있으면 덮어쓰기)
-	// -------------------------
-	JsonObjectConst j_pwm = j_hw["fanPwm"].as<JsonObjectConst>();
-	if (!j_pwm.isNull()) {
-		if (!j_pwm["pin"].isNull())     p_cfg.hw.fanPwm.pin = j_pwm["pin"].as<uint8_t>();
-		if (!j_pwm["channel"].isNull()) p_cfg.hw.fanPwm.channel = j_pwm["channel"].as<uint8_t>();
-		if (!j_pwm["freq"].isNull())    p_cfg.hw.fanPwm.freq = j_pwm["freq"].as<uint32_t>();
-		if (!j_pwm["res"].isNull())     p_cfg.hw.fanPwm.res = j_pwm["res"].as<uint8_t>();
-	}
+    // -------------------------
+    // hw.fanPwm (있으면 덮어쓰기)
+    // -------------------------
+    JsonObjectConst j_pwm = j_hw["fanPwm"].as<JsonObjectConst>();
+    if (!j_pwm.isNull()) {
+        if (!j_pwm["pin"].isNull()) p_cfg.hw.fanPwm.pin = j_pwm["pin"].as<uint8_t>();
+        if (!j_pwm["channel"].isNull()) p_cfg.hw.fanPwm.channel = j_pwm["channel"].as<uint8_t>();
+        if (!j_pwm["freq"].isNull()) p_cfg.hw.fanPwm.freq = j_pwm["freq"].as<uint32_t>();
+        if (!j_pwm["res"].isNull()) p_cfg.hw.fanPwm.res = j_pwm["res"].as<uint8_t>();
+    }
 
-	// hw.fanConfig
-	JsonObjectConst j_fcfg = j_hw["fanConfig"].as<JsonObjectConst>();
-	if (!j_fcfg.isNull()) {
-		if (!j_fcfg["startPercentMin"].isNull())   p_cfg.hw.fanConfig.startPercentMin = j_fcfg["startPercentMin"].as<uint8_t>();
-		if (!j_fcfg["comfortPercentMin"].isNull()) p_cfg.hw.fanConfig.comfortPercentMin = j_fcfg["comfortPercentMin"].as<uint8_t>();
-		if (!j_fcfg["comfortPercentMax"].isNull()) p_cfg.hw.fanConfig.comfortPercentMax = j_fcfg["comfortPercentMax"].as<uint8_t>();
-		if (!j_fcfg["hardPercentMax"].isNull())    p_cfg.hw.fanConfig.hardPercentMax = j_fcfg["hardPercentMax"].as<uint8_t>();
-	}
+    // hw.fanConfig
+    JsonObjectConst j_fcfg = j_hw["fanConfig"].as<JsonObjectConst>();
+    if (!j_fcfg.isNull()) {
+        if (!j_fcfg["startPercentMin"].isNull())
+            p_cfg.hw.fanConfig.startPercentMin = j_fcfg["startPercentMin"].as<uint8_t>();
+        if (!j_fcfg["comfortPercentMin"].isNull())
+            p_cfg.hw.fanConfig.comfortPercentMin = j_fcfg["comfortPercentMin"].as<uint8_t>();
+        if (!j_fcfg["comfortPercentMax"].isNull())
+            p_cfg.hw.fanConfig.comfortPercentMax = j_fcfg["comfortPercentMax"].as<uint8_t>();
+        if (!j_fcfg["hardPercentMax"].isNull())
+            p_cfg.hw.fanConfig.hardPercentMax = j_fcfg["hardPercentMax"].as<uint8_t>();
+    }
 
-	// hw.pir
-	JsonObjectConst j_pir = j_hw["pir"].as<JsonObjectConst>();
-	if (!j_pir.isNull()) {
-		if (!j_pir["enabled"].isNull())     p_cfg.hw.pir.enabled = j_pir["enabled"].as<bool>();
-		if (!j_pir["pin"].isNull())         p_cfg.hw.pir.pin = j_pir["pin"].as<uint8_t>();
-		if (!j_pir["debounceSec"].isNull()) p_cfg.hw.pir.debounceSec = j_pir["debounceSec"].as<uint16_t>();
-		if (!j_pir["holdSec"].isNull())     p_cfg.hw.pir.holdSec = j_pir["holdSec"].as<uint16_t>();
-	}
+    // hw.pir
+    JsonObjectConst j_pir = j_hw["pir"].as<JsonObjectConst>();
+    if (!j_pir.isNull()) {
+        if (!j_pir["enabled"].isNull()) p_cfg.hw.pir.enabled = j_pir["enabled"].as<bool>();
+        if (!j_pir["pin"].isNull()) p_cfg.hw.pir.pin = j_pir["pin"].as<uint8_t>();
+        if (!j_pir["debounceSec"].isNull()) p_cfg.hw.pir.debounceSec = j_pir["debounceSec"].as<uint16_t>();
+        if (!j_pir["holdSec"].isNull()) p_cfg.hw.pir.holdSec = j_pir["holdSec"].as<uint16_t>();
+    }
 
-	// hw.tempHum
-	JsonObjectConst j_th = j_hw["tempHum"].as<JsonObjectConst>();
-	if (!j_th.isNull()) {
-		if (!j_th["enabled"].isNull()) p_cfg.hw.tempHum.enabled = j_th["enabled"].as<bool>();
-		const char* v_type = C10_getStr2(j_th, "type", "type", nullptr);
-		if (v_type && v_type[0]) strlcpy(p_cfg.hw.tempHum.type, v_type, sizeof(p_cfg.hw.tempHum.type));
-		if (!j_th["pin"].isNull())         p_cfg.hw.tempHum.pin = j_th["pin"].as<uint8_t>();
-		if (!j_th["intervalSec"].isNull()) p_cfg.hw.tempHum.intervalSec = j_th["intervalSec"].as<uint16_t>();
-	}
+    // hw.tempHum
+    JsonObjectConst j_th = j_hw["tempHum"].as<JsonObjectConst>();
+    if (!j_th.isNull()) {
+        if (!j_th["enabled"].isNull()) p_cfg.hw.tempHum.enabled = j_th["enabled"].as<bool>();
+        const char* v_type = C10_getStr2(j_th, "type", "type", nullptr);
+        if (v_type && v_type[0]) strlcpy(p_cfg.hw.tempHum.type, v_type, sizeof(p_cfg.hw.tempHum.type));
+        if (!j_th["pin"].isNull()) p_cfg.hw.tempHum.pin = j_th["pin"].as<uint8_t>();
+        if (!j_th["intervalSec"].isNull()) p_cfg.hw.tempHum.intervalSec = j_th["intervalSec"].as<uint16_t>();
+    }
 
-	// hw.ble
-	JsonObjectConst j_ble = j_hw["ble"].as<JsonObjectConst>();
-	if (!j_ble.isNull()) {
-		if (!j_ble["enabled"].isNull())      p_cfg.hw.ble.enabled = j_ble["enabled"].as<bool>();
-		if (!j_ble["scanInterval"].isNull()) p_cfg.hw.ble.scanInterval = j_ble["scanInterval"].as<uint16_t>();
-	}
+    // hw.ble
+    JsonObjectConst j_ble = j_hw["ble"].as<JsonObjectConst>();
+    if (!j_ble.isNull()) {
+        if (!j_ble["enabled"].isNull()) p_cfg.hw.ble.enabled = j_ble["enabled"].as<bool>();
+        if (!j_ble["scanInterval"].isNull()) p_cfg.hw.ble.scanInterval = j_ble["scanInterval"].as<uint16_t>();
+    }
 
-	// security
-	JsonObjectConst j_sec = j_root["security"].as<JsonObjectConst>();
-	if (!j_sec.isNull()) {
-		const char* v_key = C10_getStr2(j_sec, "apiKey", "apiKey", nullptr);
-		if (v_key && v_key[0]) strlcpy(p_cfg.security.apiKey, v_key, sizeof(p_cfg.security.apiKey));
-	}
+    // security
+    JsonObjectConst j_sec = j_root["security"].as<JsonObjectConst>();
+    if (!j_sec.isNull()) {
+        const char* v_key = C10_getStr2(j_sec, "apiKey", "apiKey", nullptr);
+        if (v_key && v_key[0]) strlcpy(p_cfg.security.apiKey, v_key, sizeof(p_cfg.security.apiKey));
+    }
 
-	// time
-	JsonObjectConst j_time = j_root["time"].as<JsonObjectConst>();
-	if (!j_time.isNull()) {
-		const char* v_ntp = C10_getStr2(j_time, "ntpServer", "ntpServer", nullptr);
-		if (v_ntp && v_ntp[0]) strlcpy(p_cfg.time.ntpServer, v_ntp, sizeof(p_cfg.time.ntpServer));
+    // time
+    JsonObjectConst j_time = j_root["time"].as<JsonObjectConst>();
+    if (!j_time.isNull()) {
+        const char* v_ntp = C10_getStr2(j_time, "ntpServer", "ntpServer", nullptr);
+        if (v_ntp && v_ntp[0]) strlcpy(p_cfg.time.ntpServer, v_ntp, sizeof(p_cfg.time.ntpServer));
 
-		const char* v_tz = C10_getStr2(j_time, "timezone", "timezone", nullptr);
-		if (v_tz && v_tz[0]) strlcpy(p_cfg.time.timezone, v_tz, sizeof(p_cfg.time.timezone));
+        const char* v_tz = C10_getStr2(j_time, "timezone", "timezone", nullptr);
+        if (v_tz && v_tz[0]) strlcpy(p_cfg.time.timezone, v_tz, sizeof(p_cfg.time.timezone));
 
-		if (!j_time["syncIntervalMin"].isNull()) p_cfg.time.syncIntervalMin = j_time["syncIntervalMin"].as<uint16_t>();
-	}
+        if (!j_time["syncIntervalMin"].isNull()) p_cfg.time.syncIntervalMin = j_time["syncIntervalMin"].as<uint16_t>();
+    }
 
-	return true;
+    return true;
 }
 
 bool CL_C10_ConfigManager::loadWifiConfig(ST_A20_WifiConfig_t& p_cfg) {
-	// ✅ 기본값 선행
-	A20_resetWifiDefault(p_cfg);
+    // ✅ 기본값 선행
+    A20_resetWifiDefault(p_cfg);
 
-	JsonDocument d;
+    JsonDocument d;
 
-	const char* v_cfgJsonPath = nullptr;
-	if (s_cfgJsonFileMap.wifi[0] != '\0') v_cfgJsonPath = s_cfgJsonFileMap.wifi;
-	else {
-		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWifiConfig: s_cfgJsonFileMap.wifi is empty");
-		return false;
-	}
+    const char* v_cfgJsonPath = nullptr;
+    if (s_cfgJsonFileMap.wifi[0] != '\0')
+        v_cfgJsonPath = s_cfgJsonFileMap.wifi;
+    else {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWifiConfig: s_cfgJsonFileMap.wifi is empty");
+        return false;
+    }
 
-	if (!ioLoadJson(v_cfgJsonPath, d)) {
-		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWifiConfig: ioLoadJson failed (%s)", v_cfgJsonPath);
-		return false;
-	}
+    if (!ioLoadJson(v_cfgJsonPath, d)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWifiConfig: ioLoadJson failed (%s)", v_cfgJsonPath);
+        return false;
+    }
 
-	JsonObjectConst j = d["wifi"].as<JsonObjectConst>();
-	if (j.isNull()) {
-		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWifiConfig: missing 'wifi' object");
-		return false;
-	}
+    JsonObjectConst j = d["wifi"].as<JsonObjectConst>();
+    if (j.isNull()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWifiConfig: missing 'wifi' object");
+        return false;
+    }
 
-	// 있는 키만 덮어쓰기
-	if (!j["wifiMode"].isNull()) p_cfg.wifiMode = (EN_A20_WIFI_MODE_t)j["wifiMode"].as<uint8_t>();
+    // 있는 키만 덮어쓰기
+    if (!j["wifiMode"].isNull()) p_cfg.wifiMode = (EN_A20_WIFI_MODE_t)j["wifiMode"].as<uint8_t>();
 
-	const char* v_desc = j["wifiModeDesc"] | nullptr;
-	if (v_desc && v_desc[0]) strlcpy(p_cfg.wifiModeDesc, v_desc, sizeof(p_cfg.wifiModeDesc));
+    const char* v_desc = j["wifiModeDesc"] | nullptr;
+    if (v_desc && v_desc[0]) strlcpy(p_cfg.wifiModeDesc, v_desc, sizeof(p_cfg.wifiModeDesc));
 
-	JsonObjectConst j_ap = j["ap"].as<JsonObjectConst>();
-	if (!j_ap.isNull()) {
-		const char* v_ssid = j_ap["ssid"] | nullptr;
-		if (v_ssid && v_ssid[0]) strlcpy(p_cfg.ap.ssid, v_ssid, sizeof(p_cfg.ap.ssid));
+    JsonObjectConst j_ap = j["ap"].as<JsonObjectConst>();
+    if (!j_ap.isNull()) {
+        const char* v_ssid = j_ap["ssid"] | nullptr;
+        if (v_ssid && v_ssid[0]) strlcpy(p_cfg.ap.ssid, v_ssid, sizeof(p_cfg.ap.ssid));
 
-		const char* v_pass = C10_getStr2(j_ap, "pass", "pass", nullptr);
-		if (v_pass && v_pass[0]) strlcpy(p_cfg.ap.pass, v_pass, sizeof(p_cfg.ap.pass));
-	}
+        const char* v_pass = C10_getStr2(j_ap, "pass", "pass", nullptr);
+        if (v_pass && v_pass[0]) strlcpy(p_cfg.ap.pass, v_pass, sizeof(p_cfg.ap.pass));
+    }
 
-	// sta[]는 “있으면 교체”, 없으면 default 유지
-	JsonArrayConst j_sta = j["sta"].as<JsonArrayConst>();
-	if (!j_sta.isNull()) {
-		p_cfg.staCount = 0;
-		for (JsonObjectConst v_js : j_sta) {
-			if (p_cfg.staCount >= A20_Const::MAX_STA_NETWORKS) break;
+    // sta[]는 “있으면 교체”, 없으면 default 유지
+    JsonArrayConst j_sta = j["sta"].as<JsonArrayConst>();
+    if (!j_sta.isNull()) {
+        p_cfg.staCount = 0;
+        for (JsonObjectConst v_js : j_sta) {
+            if (p_cfg.staCount >= A20_Const::MAX_STA_NETWORKS) break;
 
-			ST_A20_STANetwork_t& v_net = p_cfg.sta[p_cfg.staCount];
-			memset(&v_net, 0, sizeof(v_net)); // ✅ 찌꺼기 방지
+            ST_A20_STANetwork_t& v_net = p_cfg.sta[p_cfg.staCount];
+            memset(&v_net, 0, sizeof(v_net)); // ✅ 찌꺼기 방지
 
-			const char* v_ssid = v_js["ssid"] | nullptr;
-			if (v_ssid && v_ssid[0]) strlcpy(v_net.ssid, v_ssid, sizeof(v_net.ssid));
+            const char* v_ssid = v_js["ssid"] | nullptr;
+            if (v_ssid && v_ssid[0]) strlcpy(v_net.ssid, v_ssid, sizeof(v_net.ssid));
 
-			const char* v_pw = C10_getStr2(v_js, "pass", "pass", nullptr);
-			if (v_pw && v_pw[0]) strlcpy(v_net.pass, v_pw, sizeof(v_net.pass));
+            const char* v_pw = C10_getStr2(v_js, "pass", "pass", nullptr);
+            if (v_pw && v_pw[0]) strlcpy(v_net.pass, v_pw, sizeof(v_net.pass));
 
-			p_cfg.staCount++;
-		}
-	}
+            p_cfg.staCount++;
+        }
+    }
 
-	return true;
+    return true;
 }
 
 bool CL_C10_ConfigManager::loadMotionConfig(ST_A20_MotionConfig_t& p_cfg) {
-	// ✅ 기본값 선행
-	A20_resetMotionDefault(p_cfg);
+    // ✅ 기본값 선행
+    A20_resetMotionDefault(p_cfg);
 
-	JsonDocument d;
+    JsonDocument d;
 
-	const char* v_cfgJsonPath = nullptr;
-	if (s_cfgJsonFileMap.motion[0] != '\0') v_cfgJsonPath = s_cfgJsonFileMap.motion;
-	else {
-		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadMotionConfig: s_cfgJsonFileMap.motion is empty");
-		return false;
-	}
+    const char* v_cfgJsonPath = nullptr;
+    if (s_cfgJsonFileMap.motion[0] != '\0')
+        v_cfgJsonPath = s_cfgJsonFileMap.motion;
+    else {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadMotionConfig: s_cfgJsonFileMap.motion is empty");
+        return false;
+    }
 
-	if (!ioLoadJson(v_cfgJsonPath, d)) {
-		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadMotionConfig: ioLoadJson failed (%s)", v_cfgJsonPath);
-		return false;
-	}
+    if (!ioLoadJson(v_cfgJsonPath, d)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadMotionConfig: ioLoadJson failed (%s)", v_cfgJsonPath);
+        return false;
+    }
 
-	JsonObjectConst j = d["motion"].as<JsonObjectConst>();
-	if (j.isNull()) {
-		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadMotionConfig: missing 'motion' object");
-		return false;
-	}
+    JsonObjectConst j = d["motion"].as<JsonObjectConst>();
+    if (j.isNull()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadMotionConfig: missing 'motion' object");
+        return false;
+    }
 
-	// pir
-	JsonObjectConst j_pir = j["pir"].as<JsonObjectConst>();
-	if (!j_pir.isNull()) {
-		if (!j_pir["enabled"].isNull()) p_cfg.pir.enabled = j_pir["enabled"].as<bool>();
-		if (!j_pir["holdSec"].isNull()) p_cfg.pir.holdSec = j_pir["holdSec"].as<uint16_t>();
-	}
+    // pir
+    JsonObjectConst j_pir = j["pir"].as<JsonObjectConst>();
+    if (!j_pir.isNull()) {
+        if (!j_pir["enabled"].isNull()) p_cfg.pir.enabled = j_pir["enabled"].as<bool>();
+        if (!j_pir["holdSec"].isNull()) p_cfg.pir.holdSec = j_pir["holdSec"].as<uint16_t>();
+    }
 
-	// ble
-	JsonObjectConst j_ble = j["ble"].as<JsonObjectConst>();
-	if (!j_ble.isNull()) {
-		if (!j_ble["enabled"].isNull()) p_cfg.ble.enabled = j_ble["enabled"].as<bool>();
+    // ble
+    JsonObjectConst j_ble = j["ble"].as<JsonObjectConst>();
+    if (!j_ble.isNull()) {
+        if (!j_ble["enabled"].isNull()) p_cfg.ble.enabled = j_ble["enabled"].as<bool>();
 
-		JsonObjectConst r = j_ble["rssi"].as<JsonObjectConst>();
-		if (!r.isNull()) {
-			if (!r["on"].isNull())  p_cfg.ble.rssi.on  = r["on"].as<int8_t>();
-			if (!r["off"].isNull()) p_cfg.ble.rssi.off = r["off"].as<int8_t>();
+        JsonObjectConst r = j_ble["rssi"].as<JsonObjectConst>();
+        if (!r.isNull()) {
+            if (!r["on"].isNull()) p_cfg.ble.rssi.on = r["on"].as<int8_t>();
+            if (!r["off"].isNull()) p_cfg.ble.rssi.off = r["off"].as<int8_t>();
 
-			uint8_t  v_avg  = C10_getNum2<uint8_t>(r, "avgCount", "avgCount", p_cfg.ble.rssi.avgCount);
-			uint8_t  v_pst  = C10_getNum2<uint8_t>(r, "persistCount", "persistCount", p_cfg.ble.rssi.persistCount);
-			uint16_t v_exit = C10_getNum2<uint16_t>(r, "exitDelaySec", "exitDelaySec", p_cfg.ble.rssi.exitDelaySec);
+            uint8_t  v_avg  = C10_getNum2<uint8_t>(r, "avgCount", "avgCount", p_cfg.ble.rssi.avgCount);
+            uint8_t  v_pst  = C10_getNum2<uint8_t>(r, "persistCount", "persistCount", p_cfg.ble.rssi.persistCount);
+            uint16_t v_exit = C10_getNum2<uint16_t>(r, "exitDelaySec", "exitDelaySec", p_cfg.ble.rssi.exitDelaySec);
 
-			p_cfg.ble.rssi.avgCount     = v_avg;
-			p_cfg.ble.rssi.persistCount = v_pst;
-			p_cfg.ble.rssi.exitDelaySec = v_exit;
-		}
+            p_cfg.ble.rssi.avgCount     = v_avg;
+            p_cfg.ble.rssi.persistCount = v_pst;
+            p_cfg.ble.rssi.exitDelaySec = v_exit;
+        }
 
-		// trustedDevices[] : 있으면 교체, 없으면 default 유지
-		JsonArrayConst v_arr = j_ble["trustedDevices"].as<JsonArrayConst>();
-		if (!v_arr.isNull()) {
-			p_cfg.ble.trustedCount = 0;
-			for (JsonObjectConst v_js : v_arr) {
-				if (p_cfg.ble.trustedCount >= A20_Const::MAX_BLE_DEVICES) break;
+        // trustedDevices[] : 있으면 교체, 없으면 default 유지
+        JsonArrayConst v_arr = j_ble["trustedDevices"].as<JsonArrayConst>();
+        if (!v_arr.isNull()) {
+            p_cfg.ble.trustedCount = 0;
+            for (JsonObjectConst v_js : v_arr) {
+                if (p_cfg.ble.trustedCount >= A20_Const::MAX_BLE_DEVICES) break;
 
-				ST_A20_BLETrustedDevice_t& v_d = p_cfg.ble.trustedDevices[p_cfg.ble.trustedCount++];
-				memset(&v_d, 0, sizeof(v_d)); // ✅ 찌꺼기 방지
+                ST_A20_BLETrustedDevice_t& v_d = p_cfg.ble.trustedDevices[p_cfg.ble.trustedCount++];
+                memset(&v_d, 0, sizeof(v_d)); // ✅ 찌꺼기 방지
 
-				const char* v_alias = v_js["alias"] | nullptr;
-				if (v_alias) strlcpy(v_d.alias, v_alias, sizeof(v_d.alias));
+                const char* v_alias = v_js["alias"] | nullptr;
+                if (v_alias) strlcpy(v_d.alias, v_alias, sizeof(v_d.alias));
 
-				const char* v_name = v_js["name"] | nullptr;
-				if (v_name) strlcpy(v_d.name, v_name, sizeof(v_d.name));
+                const char* v_name = v_js["name"] | nullptr;
+                if (v_name) strlcpy(v_d.name, v_name, sizeof(v_d.name));
 
-				const char* v_mac = v_js["mac"] | nullptr;
-				if (v_mac) strlcpy(v_d.mac, v_mac, sizeof(v_d.mac));
+                const char* v_mac = v_js["mac"] | nullptr;
+                if (v_mac) strlcpy(v_d.mac, v_mac, sizeof(v_d.mac));
 
-				const char* v_mp = C10_getStr2(v_js, "manufPrefix", "manufPrefix", nullptr);
-				if (v_mp) strlcpy(v_d.manufPrefix, v_mp, sizeof(v_d.manufPrefix));
+                const char* v_mp = C10_getStr2(v_js, "manufPrefix", "manufPrefix", nullptr);
+                if (v_mp) strlcpy(v_d.manufPrefix, v_mp, sizeof(v_d.manufPrefix));
 
-				v_d.prefixLen = C10_getNum2<uint8_t>(v_js, "prefixLen", "prefixLen", 0);
-				v_d.enabled   = C10_getBool2(v_js, "enabled", "enabled", true);
-			}
-		}
-	}
+                v_d.prefixLen = C10_getNum2<uint8_t>(v_js, "prefixLen", "prefixLen", 0);
+                v_d.enabled   = C10_getBool2(v_js, "enabled", "enabled", true);
+            }
+        }
+    }
 
-	// timing (있으면 덮어쓰기)
-	JsonObjectConst j_timing = j["timing"].as<JsonObjectConst>();
-	if (!j_timing.isNull()) {
-		if (!j_timing["simIntervalMs"].isNull())     p_cfg.timing.simIntervalMs = j_timing["simIntervalMs"].as<uint16_t>();
-		if (!j_timing["gustIntervalMs"].isNull())    p_cfg.timing.gustIntervalMs = j_timing["gustIntervalMs"].as<uint16_t>();
-		if (!j_timing["thermalIntervalMs"].isNull()) p_cfg.timing.thermalIntervalMs = j_timing["thermalIntervalMs"].as<uint16_t>();
-	}
+    // timing (있으면 덮어쓰기)
+    JsonObjectConst j_timing = j["timing"].as<JsonObjectConst>();
+    if (!j_timing.isNull()) {
+        if (!j_timing["simIntervalMs"].isNull()) p_cfg.timing.simIntervalMs = j_timing["simIntervalMs"].as<uint16_t>();
+        if (!j_timing["gustIntervalMs"].isNull())
+            p_cfg.timing.gustIntervalMs = j_timing["gustIntervalMs"].as<uint16_t>();
+        if (!j_timing["thermalIntervalMs"].isNull())
+            p_cfg.timing.thermalIntervalMs = j_timing["thermalIntervalMs"].as<uint16_t>();
+    }
 
-	return true;
+    return true;
 }
 
 // =====================================================
 // 2-2. 목적물별 Save 구현 (System/Wifi/Motion) - camelCase 저장
 // =====================================================
 bool CL_C10_ConfigManager::saveSystemConfig(const ST_A20_SystemConfig_t& p_cfg) {
-	JsonDocument v;
+    JsonDocument v;
 
-	v["meta"]["version"]    = p_cfg.meta.version;
-	v["meta"]["deviceName"] = p_cfg.meta.deviceName;
-	v["meta"]["lastUpdate"] = p_cfg.meta.lastUpdate;
+    v["meta"]["version"]    = p_cfg.meta.version;
+    v["meta"]["deviceName"] = p_cfg.meta.deviceName;
+    v["meta"]["lastUpdate"] = p_cfg.meta.lastUpdate;
 
-	v["system"]["logging"]["level"]      = p_cfg.system.logging.level;
-	v["system"]["logging"]["maxEntries"] = p_cfg.system.logging.maxEntries;
+    v["system"]["logging"]["level"]      = p_cfg.system.logging.level;
+    v["system"]["logging"]["maxEntries"] = p_cfg.system.logging.maxEntries;
 
-	JsonObject v_ws = v["system"]["webSocket"].to<JsonObject>();
+    JsonObject v_ws = v["system"]["webSocket"].to<JsonObject>();
 
-	// wsIntervalMs[4]
-	JsonArray v_itv = v_ws["wsIntervalMs"].to<JsonArray>();
-	for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
-		v_itv.add(p_cfg.system.webSocket.wsIntervalMs[v_i]);
-	}
+    // wsIntervalMs[4]
+    JsonArray v_itv = v_ws["wsIntervalMs"].to<JsonArray>();
+    for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+        v_itv.add(p_cfg.system.webSocket.wsIntervalMs[v_i]);
+    }
 
-	// priority(string[])
-	JsonArray v_pri = v_ws["priority"].to<JsonArray>();
-	for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
-		uint8_t v_ch = p_cfg.system.webSocket.wsPriority[v_i];
-		if (v_ch >= G_A20_WS_CH_COUNT) v_ch = 0;
-		v_pri.add(G_A20_WS_CH_NAMES_Arr[v_ch]);
-	}
+    // priority(string[])
+    JsonArray v_pri = v_ws["priority"].to<JsonArray>();
+    for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+        uint8_t v_ch = p_cfg.system.webSocket.wsPriority[v_i];
+        if (v_ch >= G_A20_WS_CH_COUNT) v_ch = 0;
+        v_pri.add(G_A20_WS_CH_NAMES_Arr[v_ch]);
+    }
 
-	v_ws["chartLargeBytes"]  = p_cfg.system.webSocket.chartLargeBytes;
-	v_ws["chartThrottleMul"] = p_cfg.system.webSocket.chartThrottleMul;
-	v_ws["wsCleanupMs"]      = p_cfg.system.webSocket.wsCleanupMs;
+    v_ws["chartLargeBytes"]  = p_cfg.system.webSocket.chartLargeBytes;
+    v_ws["chartThrottleMul"] = p_cfg.system.webSocket.chartThrottleMul;
+    v_ws["wsCleanupMs"]      = p_cfg.system.webSocket.wsCleanupMs;
 
-	// hw.fanPwm (camelCase)
-	v["hw"]["fanPwm"]["pin"]     = p_cfg.hw.fanPwm.pin;
-	v["hw"]["fanPwm"]["channel"] = p_cfg.hw.fanPwm.channel;
-	v["hw"]["fanPwm"]["freq"]    = p_cfg.hw.fanPwm.freq;
-	v["hw"]["fanPwm"]["res"]     = p_cfg.hw.fanPwm.res;
+    // hw.fanPwm (camelCase)
+    v["hw"]["fanPwm"]["pin"]     = p_cfg.hw.fanPwm.pin;
+    v["hw"]["fanPwm"]["channel"] = p_cfg.hw.fanPwm.channel;
+    v["hw"]["fanPwm"]["freq"]    = p_cfg.hw.fanPwm.freq;
+    v["hw"]["fanPwm"]["res"]     = p_cfg.hw.fanPwm.res;
 
-	v["hw"]["fanConfig"]["startPercentMin"]   = p_cfg.hw.fanConfig.startPercentMin;
-	v["hw"]["fanConfig"]["comfortPercentMin"] = p_cfg.hw.fanConfig.comfortPercentMin;
-	v["hw"]["fanConfig"]["comfortPercentMax"] = p_cfg.hw.fanConfig.comfortPercentMax;
-	v["hw"]["fanConfig"]["hardPercentMax"]    = p_cfg.hw.fanConfig.hardPercentMax;
+    v["hw"]["fanConfig"]["startPercentMin"]   = p_cfg.hw.fanConfig.startPercentMin;
+    v["hw"]["fanConfig"]["comfortPercentMin"] = p_cfg.hw.fanConfig.comfortPercentMin;
+    v["hw"]["fanConfig"]["comfortPercentMax"] = p_cfg.hw.fanConfig.comfortPercentMax;
+    v["hw"]["fanConfig"]["hardPercentMax"]    = p_cfg.hw.fanConfig.hardPercentMax;
 
-	v["hw"]["pir"]["enabled"]     = p_cfg.hw.pir.enabled;
-	v["hw"]["pir"]["pin"]         = p_cfg.hw.pir.pin;
-	v["hw"]["pir"]["debounceSec"] = p_cfg.hw.pir.debounceSec;
-	v["hw"]["pir"]["holdSec"]     = p_cfg.hw.pir.holdSec;
+    v["hw"]["pir"]["enabled"]     = p_cfg.hw.pir.enabled;
+    v["hw"]["pir"]["pin"]         = p_cfg.hw.pir.pin;
+    v["hw"]["pir"]["debounceSec"] = p_cfg.hw.pir.debounceSec;
+    v["hw"]["pir"]["holdSec"]     = p_cfg.hw.pir.holdSec;
 
-	v["hw"]["tempHum"]["enabled"]     = p_cfg.hw.tempHum.enabled;
-	v["hw"]["tempHum"]["type"]        = p_cfg.hw.tempHum.type;
-	v["hw"]["tempHum"]["pin"]         = p_cfg.hw.tempHum.pin;
-	v["hw"]["tempHum"]["intervalSec"] = p_cfg.hw.tempHum.intervalSec;
+    v["hw"]["tempHum"]["enabled"]     = p_cfg.hw.tempHum.enabled;
+    v["hw"]["tempHum"]["type"]        = p_cfg.hw.tempHum.type;
+    v["hw"]["tempHum"]["pin"]         = p_cfg.hw.tempHum.pin;
+    v["hw"]["tempHum"]["intervalSec"] = p_cfg.hw.tempHum.intervalSec;
 
-	v["hw"]["ble"]["enabled"]      = p_cfg.hw.ble.enabled;
-	v["hw"]["ble"]["scanInterval"] = p_cfg.hw.ble.scanInterval;
+    v["hw"]["ble"]["enabled"]      = p_cfg.hw.ble.enabled;
+    v["hw"]["ble"]["scanInterval"] = p_cfg.hw.ble.scanInterval;
 
-	v["security"]["apiKey"] = p_cfg.security.apiKey;
+    v["security"]["apiKey"] = p_cfg.security.apiKey;
 
-	v["time"]["ntpServer"]       = p_cfg.time.ntpServer;
-	v["time"]["timezone"]        = p_cfg.time.timezone;
-	v["time"]["syncIntervalMin"] = p_cfg.time.syncIntervalMin;
+    v["time"]["ntpServer"]       = p_cfg.time.ntpServer;
+    v["time"]["timezone"]        = p_cfg.time.timezone;
+    v["time"]["syncIntervalMin"] = p_cfg.time.syncIntervalMin;
 
-	return ioSaveJson(s_cfgJsonFileMap.system, v);
+    return ioSaveJson(s_cfgJsonFileMap.system, v);
 }
 
 bool CL_C10_ConfigManager::saveWifiConfig(const ST_A20_WifiConfig_t& p_cfg) {
-	JsonDocument d;
+    JsonDocument d;
 
-	d["wifi"]["wifiMode"]     = p_cfg.wifiMode;
-	d["wifi"]["wifiModeDesc"] = p_cfg.wifiModeDesc;
-	d["wifi"]["ap"]["ssid"]   = p_cfg.ap.ssid;
+    d["wifi"]["wifiMode"]     = p_cfg.wifiMode;
+    d["wifi"]["wifiModeDesc"] = p_cfg.wifiModeDesc;
+    d["wifi"]["ap"]["ssid"]   = p_cfg.ap.ssid;
 
-	// JSON 키 pass 로 통일
-	d["wifi"]["ap"]["pass"] = p_cfg.ap.pass;
+    // JSON 키 pass 로 통일
+    d["wifi"]["ap"]["pass"] = p_cfg.ap.pass;
 
-	JsonArray v_staArr = d["wifi"]["sta"].to<JsonArray>();
-	for (uint8_t v_i = 0; v_i < p_cfg.staCount; v_i++) {
-		JsonObject v_net = v_staArr.add<JsonObject>();
-		v_net["ssid"] = p_cfg.sta[v_i].ssid;
-		v_net["pass"] = p_cfg.sta[v_i].pass;
-	}
+    JsonArray v_staArr = d["wifi"]["sta"].to<JsonArray>();
+    for (uint8_t v_i = 0; v_i < p_cfg.staCount; v_i++) {
+        JsonObject v_net = v_staArr.add<JsonObject>();
+        v_net["ssid"]    = p_cfg.sta[v_i].ssid;
+        v_net["pass"]    = p_cfg.sta[v_i].pass;
+    }
 
-	return ioSaveJson(s_cfgJsonFileMap.wifi, d);
+    return ioSaveJson(s_cfgJsonFileMap.wifi, d);
 }
 
 bool CL_C10_ConfigManager::saveMotionConfig(const ST_A20_MotionConfig_t& p_cfg) {
-	JsonDocument d;
+    JsonDocument d;
 
-	d["motion"]["pir"]["enabled"] = p_cfg.pir.enabled;
-	d["motion"]["pir"]["holdSec"] = p_cfg.pir.holdSec;
+    d["motion"]["pir"]["enabled"] = p_cfg.pir.enabled;
+    d["motion"]["pir"]["holdSec"] = p_cfg.pir.holdSec;
 
-	d["motion"]["ble"]["enabled"]     = p_cfg.ble.enabled;
-	d["motion"]["ble"]["rssi"]["on"]  = p_cfg.ble.rssi.on;
-	d["motion"]["ble"]["rssi"]["off"] = p_cfg.ble.rssi.off;
+    d["motion"]["ble"]["enabled"]     = p_cfg.ble.enabled;
+    d["motion"]["ble"]["rssi"]["on"]  = p_cfg.ble.rssi.on;
+    d["motion"]["ble"]["rssi"]["off"] = p_cfg.ble.rssi.off;
 
-	// camelCase
-	d["motion"]["ble"]["rssi"]["avgCount"]     = p_cfg.ble.rssi.avgCount;
-	d["motion"]["ble"]["rssi"]["persistCount"] = p_cfg.ble.rssi.persistCount;
-	d["motion"]["ble"]["rssi"]["exitDelaySec"] = p_cfg.ble.rssi.exitDelaySec;
+    // camelCase
+    d["motion"]["ble"]["rssi"]["avgCount"]     = p_cfg.ble.rssi.avgCount;
+    d["motion"]["ble"]["rssi"]["persistCount"] = p_cfg.ble.rssi.persistCount;
+    d["motion"]["ble"]["rssi"]["exitDelaySec"] = p_cfg.ble.rssi.exitDelaySec;
 
-	JsonArray v_tdArr = d["motion"]["ble"]["trustedDevices"].to<JsonArray>();
-	for (uint8_t v_i = 0; v_i < p_cfg.ble.trustedCount; v_i++) {
-		const ST_A20_BLETrustedDevice_t& v_d = p_cfg.ble.trustedDevices[v_i];
-		JsonObject v_td = v_tdArr.add<JsonObject>();
+    JsonArray v_tdArr = d["motion"]["ble"]["trustedDevices"].to<JsonArray>();
+    for (uint8_t v_i = 0; v_i < p_cfg.ble.trustedCount; v_i++) {
+        const ST_A20_BLETrustedDevice_t& v_d  = p_cfg.ble.trustedDevices[v_i];
+        JsonObject                       v_td = v_tdArr.add<JsonObject>();
 
-		v_td["alias"]       = v_d.alias;
-		v_td["name"]        = v_d.name;
-		v_td["mac"]         = v_d.mac;
-		v_td["manufPrefix"] = v_d.manufPrefix;
-		v_td["prefixLen"]   = v_d.prefixLen;
-		v_td["enabled"]     = v_d.enabled;
-	}
+        v_td["alias"]       = v_d.alias;
+        v_td["name"]        = v_d.name;
+        v_td["mac"]         = v_d.mac;
+        v_td["manufPrefix"] = v_d.manufPrefix;
+        v_td["prefixLen"]   = v_d.prefixLen;
+        v_td["enabled"]     = v_d.enabled;
+    }
 
-	// Timing (camelCase)
-	d["motion"]["timing"]["simIntervalMs"]     = p_cfg.timing.simIntervalMs;
-	d["motion"]["timing"]["gustIntervalMs"]    = p_cfg.timing.gustIntervalMs;
-	d["motion"]["timing"]["thermalIntervalMs"] = p_cfg.timing.thermalIntervalMs;
+    // Timing (camelCase)
+    d["motion"]["timing"]["simIntervalMs"]     = p_cfg.timing.simIntervalMs;
+    d["motion"]["timing"]["gustIntervalMs"]    = p_cfg.timing.gustIntervalMs;
+    d["motion"]["timing"]["thermalIntervalMs"] = p_cfg.timing.thermalIntervalMs;
 
-	return ioSaveJson(s_cfgJsonFileMap.motion, d);
+    return ioSaveJson(s_cfgJsonFileMap.motion, d);
 }
 
 // =====================================================
@@ -596,517 +604,584 @@ bool CL_C10_ConfigManager::saveMotionConfig(const ST_A20_MotionConfig_t& p_cfg) 
 //  - patch는 "부분 반영"이므로 reset default 호출 금지
 // =====================================================
 bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, const JsonDocument& p_patch) {
-	bool v_changed = false;
+    bool v_changed = false;
 
-	C10_MUTEX_ACQUIRE_BOOL();
+    C10_MUTEX_ACQUIRE_BOOL();
 
-	JsonObjectConst j_meta = p_patch["meta"].as<JsonObjectConst>();
-	JsonObjectConst j_sys  = p_patch["system"].as<JsonObjectConst>();
-	JsonObjectConst j_sec  = p_patch["security"].as<JsonObjectConst>();
-	JsonObjectConst j_hw   = p_patch["hw"].as<JsonObjectConst>();
-	JsonObjectConst j_time = p_patch["time"].as<JsonObjectConst>();
+    JsonObjectConst j_meta = p_patch["meta"].as<JsonObjectConst>();
+    JsonObjectConst j_sys  = p_patch["system"].as<JsonObjectConst>();
+    JsonObjectConst j_sec  = p_patch["security"].as<JsonObjectConst>();
+    JsonObjectConst j_hw   = p_patch["hw"].as<JsonObjectConst>();
+    JsonObjectConst j_time = p_patch["time"].as<JsonObjectConst>();
 
-	if (j_meta.isNull() && j_sys.isNull() && j_sec.isNull() && j_hw.isNull() && j_time.isNull()) {
-		C10_MUTEX_RELEASE();
-		return false;
-	}
+    if (j_meta.isNull() && j_sys.isNull() && j_sec.isNull() && j_hw.isNull() && j_time.isNull()) {
+        C10_MUTEX_RELEASE();
+        return false;
+    }
 
-	// meta
-	if (!j_meta.isNull()) {
-		const char* v_dn = C10_getStr2(j_meta, "deviceName", "deviceName", "");
-		if (v_dn && v_dn[0] && strcmp(v_dn, p_config.meta.deviceName) != 0) {
-			strlcpy(p_config.meta.deviceName, v_dn, sizeof(p_config.meta.deviceName));
-			v_changed = true;
-		}
+    // meta
+    if (!j_meta.isNull()) {
+        const char* v_dn = C10_getStr2(j_meta, "deviceName", "deviceName", "");
+        if (v_dn && v_dn[0] && strcmp(v_dn, p_config.meta.deviceName) != 0) {
+            strlcpy(p_config.meta.deviceName, v_dn, sizeof(p_config.meta.deviceName));
+            v_changed = true;
+        }
 
-		const char* v_lu = C10_getStr2(j_meta, "lastUpdate", "lastUpdate", "");
-		if (v_lu && v_lu[0] && strcmp(v_lu, p_config.meta.lastUpdate) != 0) {
-			strlcpy(p_config.meta.lastUpdate, v_lu, sizeof(p_config.meta.lastUpdate));
-			v_changed = true;
-		}
-	}
+        const char* v_lu = C10_getStr2(j_meta, "lastUpdate", "lastUpdate", "");
+        if (v_lu && v_lu[0] && strcmp(v_lu, p_config.meta.lastUpdate) != 0) {
+            strlcpy(p_config.meta.lastUpdate, v_lu, sizeof(p_config.meta.lastUpdate));
+            v_changed = true;
+        }
+    }
 
-	// system + logging + websocket
-	if (!j_sys.isNull()) {
-		JsonObjectConst j_log = j_sys["logging"].as<JsonObjectConst>();
-		if (!j_log.isNull()) {
-			const char* v_lv = C10_getStr2(j_log, "level", "level", "");
-			if (v_lv && v_lv[0] && strcmp(v_lv, p_config.system.logging.level) != 0) {
-				strlcpy(p_config.system.logging.level, v_lv, sizeof(p_config.system.logging.level));
-				v_changed = true;
-			}
+    // system + logging + websocket
+    if (!j_sys.isNull()) {
+        JsonObjectConst j_log = j_sys["logging"].as<JsonObjectConst>();
+        if (!j_log.isNull()) {
+            const char* v_lv = C10_getStr2(j_log, "level", "level", "");
+            if (v_lv && v_lv[0] && strcmp(v_lv, p_config.system.logging.level) != 0) {
+                strlcpy(p_config.system.logging.level, v_lv, sizeof(p_config.system.logging.level));
+                v_changed = true;
+            }
 
-			uint16_t v_max = C10_getNum2<uint16_t>(j_log, "maxEntries", "maxEntries", p_config.system.logging.maxEntries);
-			if (v_max != p_config.system.logging.maxEntries) {
-				p_config.system.logging.maxEntries = v_max;
-				v_changed = true;
-			}
-		}
+            uint16_t v_max = C10_getNum2<uint16_t>(j_log, "maxEntries", "maxEntries", p_config.system.logging.maxEntries);
+            if (v_max != p_config.system.logging.maxEntries) {
+                p_config.system.logging.maxEntries = v_max;
+                v_changed                          = true;
+            }
+        }
 
-		JsonObjectConst j_ws = j_sys["webSocket"].as<JsonObjectConst>();
-		if (!j_ws.isNull()) {
-			// wsIntervalMs
-			JsonArrayConst j_itv = j_ws["wsIntervalMs"].as<JsonArrayConst>();
-			if (!j_itv.isNull() && j_itv.size() >= G_A20_WS_CH_COUNT) {
-				for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
-					uint16_t v_new = C10_u16Clamp(j_itv[v_i].as<uint32_t>(), 20, 60000);
-					if (v_new != p_config.system.webSocket.wsIntervalMs[v_i]) {
-						p_config.system.webSocket.wsIntervalMs[v_i] = v_new;
-						v_changed = true;
-					}
-				}
-			}
+        JsonObjectConst j_ws = j_sys["webSocket"].as<JsonObjectConst>();
+        if (!j_ws.isNull()) {
+            // wsIntervalMs
+            JsonArrayConst j_itv = j_ws["wsIntervalMs"].as<JsonArrayConst>();
+            if (!j_itv.isNull() && j_itv.size() >= G_A20_WS_CH_COUNT) {
+                for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+                    uint16_t v_new = C10_u16Clamp(j_itv[v_i].as<uint32_t>(), 20, 60000);
+                    if (v_new != p_config.system.webSocket.wsIntervalMs[v_i]) {
+                        p_config.system.webSocket.wsIntervalMs[v_i] = v_new;
+                        v_changed                                   = true;
+                    }
+                }
+            }
 
-			// priority(string[])
-			JsonArrayConst j_pri = j_ws["priority"].as<JsonArrayConst>();
-			if (!j_pri.isNull() && j_pri.size() > 0) {
-				uint8_t v_newOrder[G_A20_WS_CH_COUNT];
-				C10_wsParsePriorityArray(j_pri, v_newOrder);
+            // priority(string[])
+            JsonArrayConst j_pri = j_ws["priority"].as<JsonArrayConst>();
+            if (!j_pri.isNull() && j_pri.size() > 0) {
+                uint8_t v_newOrder[G_A20_WS_CH_COUNT];
+                C10_wsParsePriorityArray(j_pri, v_newOrder);
 
-				for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
-					if (v_newOrder[v_i] != p_config.system.webSocket.wsPriority[v_i]) {
-						p_config.system.webSocket.wsPriority[v_i] = v_newOrder[v_i];
-						v_changed = true;
-					}
-				}
-			}
+                for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+                    if (v_newOrder[v_i] != p_config.system.webSocket.wsPriority[v_i]) {
+                        p_config.system.webSocket.wsPriority[v_i] = v_newOrder[v_i];
+                        v_changed                                 = true;
+                    }
+                }
+            }
 
-			// chartLargeBytes
-			if (!j_ws["chartLargeBytes"].isNull()) {
-				uint16_t v_new = C10_u16Clamp(j_ws["chartLargeBytes"].as<uint32_t>(), 256, 60000);
-				if (v_new != p_config.system.webSocket.chartLargeBytes) {
-					p_config.system.webSocket.chartLargeBytes = v_new;
-					v_changed = true;
-				}
-			}
+            // chartLargeBytes
+            if (!j_ws["chartLargeBytes"].isNull()) {
+                uint16_t v_new = C10_u16Clamp(j_ws["chartLargeBytes"].as<uint32_t>(), 256, 60000);
+                if (v_new != p_config.system.webSocket.chartLargeBytes) {
+                    p_config.system.webSocket.chartLargeBytes = v_new;
+                    v_changed                                 = true;
+                }
+            }
 
-			// chartThrottleMul
-			if (!j_ws["chartThrottleMul"].isNull()) {
-				uint8_t v_new = C10_u8Clamp(j_ws["chartThrottleMul"].as<uint32_t>(), 1, 10);
-				if (v_new != p_config.system.webSocket.chartThrottleMul) {
-					p_config.system.webSocket.chartThrottleMul = v_new;
-					v_changed = true;
-				}
-			}
+            // chartThrottleMul
+            if (!j_ws["chartThrottleMul"].isNull()) {
+                uint8_t v_new = C10_u8Clamp(j_ws["chartThrottleMul"].as<uint32_t>(), 1, 10);
+                if (v_new != p_config.system.webSocket.chartThrottleMul) {
+                    p_config.system.webSocket.chartThrottleMul = v_new;
+                    v_changed                                  = true;
+                }
+            }
 
-			// wsCleanupMs
-			if (!j_ws["wsCleanupMs"].isNull()) {
-				uint16_t v_new = C10_u16Clamp(j_ws["wsCleanupMs"].as<uint32_t>(), 200, 60000);
-				if (v_new != p_config.system.webSocket.wsCleanupMs) {
-					p_config.system.webSocket.wsCleanupMs = v_new;
-					v_changed = true;
-				}
-			}
-		}
-	}
+            // wsCleanupMs
+            if (!j_ws["wsCleanupMs"].isNull()) {
+                uint16_t v_new = C10_u16Clamp(j_ws["wsCleanupMs"].as<uint32_t>(), 200, 60000);
+                if (v_new != p_config.system.webSocket.wsCleanupMs) {
+                    p_config.system.webSocket.wsCleanupMs = v_new;
+                    v_changed                             = true;
+                }
+            }
+        }
+    }
 
-	// security.apiKey
-	if (!j_sec.isNull()) {
-		const char* v_key = C10_getStr2(j_sec, "apiKey", "apiKey", "");
-		if (v_key && v_key[0] && strcmp(v_key, p_config.security.apiKey) != 0) {
-			strlcpy(p_config.security.apiKey, v_key, sizeof(p_config.security.apiKey));
-			v_changed = true;
-		}
-	}
+    // security.apiKey
+    if (!j_sec.isNull()) {
+        const char* v_key = C10_getStr2(j_sec, "apiKey", "apiKey", "");
+        if (v_key && v_key[0] && strcmp(v_key, p_config.security.apiKey) != 0) {
+            strlcpy(p_config.security.apiKey, v_key, sizeof(p_config.security.apiKey));
+            v_changed = true;
+        }
+    }
 
-	// hw
-	if (!j_hw.isNull()) {
-		// fanConfig
-		JsonObjectConst j_fan = j_hw["fanConfig"].as<JsonObjectConst>();
-		if (!j_fan.isNull()) {
-			if (!j_fan["startPercentMin"].isNull()) {
-				uint8_t v_val = j_fan["startPercentMin"].as<uint8_t>();
-				if (v_val != p_config.hw.fanConfig.startPercentMin) { p_config.hw.fanConfig.startPercentMin = v_val; v_changed = true; }
-			}
-			if (!j_fan["comfortPercentMin"].isNull()) {
-				uint8_t v_val = j_fan["comfortPercentMin"].as<uint8_t>();
-				if (v_val != p_config.hw.fanConfig.comfortPercentMin) { p_config.hw.fanConfig.comfortPercentMin = v_val; v_changed = true; }
-			}
-			if (!j_fan["comfortPercentMax"].isNull()) {
-				uint8_t v_val = j_fan["comfortPercentMax"].as<uint8_t>();
-				if (v_val != p_config.hw.fanConfig.comfortPercentMax) { p_config.hw.fanConfig.comfortPercentMax = v_val; v_changed = true; }
-			}
-			if (!j_fan["hardPercentMax"].isNull()) {
-				uint8_t v_val = j_fan["hardPercentMax"].as<uint8_t>();
-				if (v_val != p_config.hw.fanConfig.hardPercentMax) { p_config.hw.fanConfig.hardPercentMax = v_val; v_changed = true; }
-			}
-		}
+    // hw
+    if (!j_hw.isNull()) {
+        // fanConfig
+        JsonObjectConst j_fan = j_hw["fanConfig"].as<JsonObjectConst>();
+        if (!j_fan.isNull()) {
+            if (!j_fan["startPercentMin"].isNull()) {
+                uint8_t v_val = j_fan["startPercentMin"].as<uint8_t>();
+                if (v_val != p_config.hw.fanConfig.startPercentMin) {
+                    p_config.hw.fanConfig.startPercentMin = v_val;
+                    v_changed                             = true;
+                }
+            }
+            if (!j_fan["comfortPercentMin"].isNull()) {
+                uint8_t v_val = j_fan["comfortPercentMin"].as<uint8_t>();
+                if (v_val != p_config.hw.fanConfig.comfortPercentMin) {
+                    p_config.hw.fanConfig.comfortPercentMin = v_val;
+                    v_changed                               = true;
+                }
+            }
+            if (!j_fan["comfortPercentMax"].isNull()) {
+                uint8_t v_val = j_fan["comfortPercentMax"].as<uint8_t>();
+                if (v_val != p_config.hw.fanConfig.comfortPercentMax) {
+                    p_config.hw.fanConfig.comfortPercentMax = v_val;
+                    v_changed                               = true;
+                }
+            }
+            if (!j_fan["hardPercentMax"].isNull()) {
+                uint8_t v_val = j_fan["hardPercentMax"].as<uint8_t>();
+                if (v_val != p_config.hw.fanConfig.hardPercentMax) {
+                    p_config.hw.fanConfig.hardPercentMax = v_val;
+                    v_changed                            = true;
+                }
+            }
+        }
 
-		// pir
-		JsonObjectConst j_pir = j_hw["pir"].as<JsonObjectConst>();
-		if (!j_pir.isNull()) {
-			if (!j_pir["enabled"].isNull()) {
-				bool v_en = j_pir["enabled"].as<bool>();
-				if (v_en != p_config.hw.pir.enabled) { p_config.hw.pir.enabled = v_en; v_changed = true; }
-			}
-			if (!j_pir["pin"].isNull()) {
-				uint8_t v_pin = j_pir["pin"].as<uint8_t>();
-				if (v_pin != p_config.hw.pir.pin) { p_config.hw.pir.pin = v_pin; v_changed = true; }
-			}
-			uint16_t v_db = C10_getNum2<uint16_t>(j_pir, "debounceSec", "debounceSec", p_config.hw.pir.debounceSec);
-			if (v_db != p_config.hw.pir.debounceSec) { p_config.hw.pir.debounceSec = v_db; v_changed = true; }
+        // pir
+        JsonObjectConst j_pir = j_hw["pir"].as<JsonObjectConst>();
+        if (!j_pir.isNull()) {
+            if (!j_pir["enabled"].isNull()) {
+                bool v_en = j_pir["enabled"].as<bool>();
+                if (v_en != p_config.hw.pir.enabled) {
+                    p_config.hw.pir.enabled = v_en;
+                    v_changed               = true;
+                }
+            }
+            if (!j_pir["pin"].isNull()) {
+                uint8_t v_pin = j_pir["pin"].as<uint8_t>();
+                if (v_pin != p_config.hw.pir.pin) {
+                    p_config.hw.pir.pin = v_pin;
+                    v_changed           = true;
+                }
+            }
+            uint16_t v_db = C10_getNum2<uint16_t>(j_pir, "debounceSec", "debounceSec", p_config.hw.pir.debounceSec);
+            if (v_db != p_config.hw.pir.debounceSec) {
+                p_config.hw.pir.debounceSec = v_db;
+                v_changed                   = true;
+            }
 
-			if (!j_pir["holdSec"].isNull()) {
-				uint16_t v_hold = j_pir["holdSec"].as<uint16_t>();
-				if (v_hold != p_config.hw.pir.holdSec) { p_config.hw.pir.holdSec = v_hold; v_changed = true; }
-			}
-		}
+            if (!j_pir["holdSec"].isNull()) {
+                uint16_t v_hold = j_pir["holdSec"].as<uint16_t>();
+                if (v_hold != p_config.hw.pir.holdSec) {
+                    p_config.hw.pir.holdSec = v_hold;
+                    v_changed               = true;
+                }
+            }
+        }
 
-		// tempHum
-		JsonObjectConst j_th = j_hw["tempHum"].as<JsonObjectConst>();
-		if (!j_th.isNull()) {
-			if (!j_th["enabled"].isNull()) {
-				bool v_en = j_th["enabled"].as<bool>();
-				if (v_en != p_config.hw.tempHum.enabled) { p_config.hw.tempHum.enabled = v_en; v_changed = true; }
-			}
-			const char* v_type = j_th["type"] | "";
-			if (v_type && v_type[0] && strcmp(v_type, p_config.hw.tempHum.type) != 0) {
-				strlcpy(p_config.hw.tempHum.type, v_type, sizeof(p_config.hw.tempHum.type));
-				v_changed = true;
-			}
-			if (!j_th["pin"].isNull()) {
-				uint8_t v_pin = j_th["pin"].as<uint8_t>();
-				if (v_pin != p_config.hw.tempHum.pin) { p_config.hw.tempHum.pin = v_pin; v_changed = true; }
-			}
-			uint16_t v_itv = C10_getNum2<uint16_t>(j_th, "intervalSec", "intervalSec", p_config.hw.tempHum.intervalSec);
-			if (v_itv != p_config.hw.tempHum.intervalSec) { p_config.hw.tempHum.intervalSec = v_itv; v_changed = true; }
-		}
+        // tempHum
+        JsonObjectConst j_th = j_hw["tempHum"].as<JsonObjectConst>();
+        if (!j_th.isNull()) {
+            if (!j_th["enabled"].isNull()) {
+                bool v_en = j_th["enabled"].as<bool>();
+                if (v_en != p_config.hw.tempHum.enabled) {
+                    p_config.hw.tempHum.enabled = v_en;
+                    v_changed                   = true;
+                }
+            }
+            const char* v_type = j_th["type"] | "";
+            if (v_type && v_type[0] && strcmp(v_type, p_config.hw.tempHum.type) != 0) {
+                strlcpy(p_config.hw.tempHum.type, v_type, sizeof(p_config.hw.tempHum.type));
+                v_changed = true;
+            }
+            if (!j_th["pin"].isNull()) {
+                uint8_t v_pin = j_th["pin"].as<uint8_t>();
+                if (v_pin != p_config.hw.tempHum.pin) {
+                    p_config.hw.tempHum.pin = v_pin;
+                    v_changed               = true;
+                }
+            }
+            uint16_t v_itv = C10_getNum2<uint16_t>(j_th, "intervalSec", "intervalSec", p_config.hw.tempHum.intervalSec);
+            if (v_itv != p_config.hw.tempHum.intervalSec) {
+                p_config.hw.tempHum.intervalSec = v_itv;
+                v_changed                       = true;
+            }
+        }
 
-		// fanPwm
-		JsonObjectConst j_pwm = j_hw["fanPwm"].as<JsonObjectConst>();
-		if (!j_pwm.isNull()) {
-			if (!j_pwm["pin"].isNull()) {
-				uint8_t v_pin = j_pwm["pin"].as<uint8_t>();
-				if (v_pin != p_config.hw.fanPwm.pin) { p_config.hw.fanPwm.pin = v_pin; v_changed = true; }
-			}
-			if (!j_pwm["channel"].isNull()) {
-				uint8_t v_ch = j_pwm["channel"].as<uint8_t>();
-				if (v_ch != p_config.hw.fanPwm.channel) { p_config.hw.fanPwm.channel = v_ch; v_changed = true; }
-			}
-			if (!j_pwm["freq"].isNull()) {
-				uint32_t v_fr = j_pwm["freq"].as<uint32_t>();
-				if (v_fr != p_config.hw.fanPwm.freq) { p_config.hw.fanPwm.freq = v_fr; v_changed = true; }
-			}
-			if (!j_pwm["res"].isNull()) {
-				uint8_t v_res = j_pwm["res"].as<uint8_t>();
-				if (v_res != p_config.hw.fanPwm.res) { p_config.hw.fanPwm.res = v_res; v_changed = true; }
-			}
-		}
+        // fanPwm
+        JsonObjectConst j_pwm = j_hw["fanPwm"].as<JsonObjectConst>();
+        if (!j_pwm.isNull()) {
+            if (!j_pwm["pin"].isNull()) {
+                uint8_t v_pin = j_pwm["pin"].as<uint8_t>();
+                if (v_pin != p_config.hw.fanPwm.pin) {
+                    p_config.hw.fanPwm.pin = v_pin;
+                    v_changed              = true;
+                }
+            }
+            if (!j_pwm["channel"].isNull()) {
+                uint8_t v_ch = j_pwm["channel"].as<uint8_t>();
+                if (v_ch != p_config.hw.fanPwm.channel) {
+                    p_config.hw.fanPwm.channel = v_ch;
+                    v_changed                  = true;
+                }
+            }
+            if (!j_pwm["freq"].isNull()) {
+                uint32_t v_fr = j_pwm["freq"].as<uint32_t>();
+                if (v_fr != p_config.hw.fanPwm.freq) {
+                    p_config.hw.fanPwm.freq = v_fr;
+                    v_changed               = true;
+                }
+            }
+            if (!j_pwm["res"].isNull()) {
+                uint8_t v_res = j_pwm["res"].as<uint8_t>();
+                if (v_res != p_config.hw.fanPwm.res) {
+                    p_config.hw.fanPwm.res = v_res;
+                    v_changed              = true;
+                }
+            }
+        }
 
-		// ble
-		JsonObjectConst j_ble = j_hw["ble"].as<JsonObjectConst>();
-		if (!j_ble.isNull()) {
-			if (!j_ble["enabled"].isNull()) {
-				bool v_en = j_ble["enabled"].as<bool>();
-				if (v_en != p_config.hw.ble.enabled) { p_config.hw.ble.enabled = v_en; v_changed = true; }
-			}
-			uint16_t v_si = C10_getNum2<uint16_t>(j_ble, "scanInterval", "scanInterval", p_config.hw.ble.scanInterval);
-			if (v_si != p_config.hw.ble.scanInterval) { p_config.hw.ble.scanInterval = v_si; v_changed = true; }
-		}
-	}
+        // ble
+        JsonObjectConst j_ble = j_hw["ble"].as<JsonObjectConst>();
+        if (!j_ble.isNull()) {
+            if (!j_ble["enabled"].isNull()) {
+                bool v_en = j_ble["enabled"].as<bool>();
+                if (v_en != p_config.hw.ble.enabled) {
+                    p_config.hw.ble.enabled = v_en;
+                    v_changed               = true;
+                }
+            }
+            uint16_t v_si = C10_getNum2<uint16_t>(j_ble, "scanInterval", "scanInterval", p_config.hw.ble.scanInterval);
+            if (v_si != p_config.hw.ble.scanInterval) {
+                p_config.hw.ble.scanInterval = v_si;
+                v_changed                    = true;
+            }
+        }
+    }
 
-	// time
-	if (!j_time.isNull()) {
-		const char* v_ntp = C10_getStr2(j_time, "ntpServer", "ntpServer", "");
-		if (v_ntp && v_ntp[0] && strcmp(v_ntp, p_config.time.ntpServer) != 0) {
-			strlcpy(p_config.time.ntpServer, v_ntp, sizeof(p_config.time.ntpServer));
-			v_changed = true;
-		}
+    // time
+    if (!j_time.isNull()) {
+        const char* v_ntp = C10_getStr2(j_time, "ntpServer", "ntpServer", "");
+        if (v_ntp && v_ntp[0] && strcmp(v_ntp, p_config.time.ntpServer) != 0) {
+            strlcpy(p_config.time.ntpServer, v_ntp, sizeof(p_config.time.ntpServer));
+            v_changed = true;
+        }
 
-		const char* v_tz = C10_getStr2(j_time, "timezone", "timezone", "");
-		if (v_tz && v_tz[0] && strcmp(v_tz, p_config.time.timezone) != 0) {
-			strlcpy(p_config.time.timezone, v_tz, sizeof(p_config.time.timezone));
-			v_changed = true;
-		}
+        const char* v_tz = C10_getStr2(j_time, "timezone", "timezone", "");
+        if (v_tz && v_tz[0] && strcmp(v_tz, p_config.time.timezone) != 0) {
+            strlcpy(p_config.time.timezone, v_tz, sizeof(p_config.time.timezone));
+            v_changed = true;
+        }
 
-		uint16_t v_si = C10_getNum2<uint16_t>(j_time, "syncIntervalMin", "syncIntervalMin", p_config.time.syncIntervalMin);
-		if (v_si != p_config.time.syncIntervalMin) {
-			p_config.time.syncIntervalMin = v_si;
-			v_changed = true;
-		}
-	}
+        uint16_t v_si = C10_getNum2<uint16_t>(j_time, "syncIntervalMin", "syncIntervalMin", p_config.time.syncIntervalMin);
+        if (v_si != p_config.time.syncIntervalMin) {
+            p_config.time.syncIntervalMin = v_si;
+            v_changed                     = true;
+        }
+    }
 
-	if (v_changed) {
-		_dirty_system = true;
-		CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] System config patched (Memory Only, camelCase). Dirty=true");
-	}
+    if (v_changed) {
+        _dirty_system = true;
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] System config patched (Memory Only, camelCase). Dirty=true");
+    }
 
-	C10_MUTEX_RELEASE();
-	return v_changed;
+    C10_MUTEX_RELEASE();
+    return v_changed;
 }
 
 bool CL_C10_ConfigManager::patchWifiFromJson(ST_A20_WifiConfig_t& p_config, const JsonDocument& p_patch) {
-	bool v_changed = false;
+    bool v_changed = false;
 
-	C10_MUTEX_ACQUIRE_BOOL();
+    C10_MUTEX_ACQUIRE_BOOL();
 
-	JsonObjectConst j_wifi = p_patch["wifi"].as<JsonObjectConst>();
-	if (j_wifi.isNull()) {
-		C10_MUTEX_RELEASE();
-		return false;
-	}
+    JsonObjectConst j_wifi = p_patch["wifi"].as<JsonObjectConst>();
+    if (j_wifi.isNull()) {
+        C10_MUTEX_RELEASE();
+        return false;
+    }
 
-	if (!j_wifi["wifiMode"].isNull()) {
-		uint8_t v_mode = j_wifi["wifiMode"].as<uint8_t>();
-		if (v_mode != p_config.wifiMode) {
-			if (v_mode >= EN_A20_WIFI_MODE_AP && v_mode <= EN_A20_WIFI_MODE_AP_STA) {
-				p_config.wifiMode = (EN_A20_WIFI_MODE_t)v_mode;
-				v_changed = true;
-			} else {
-				CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] Invalid wifiMode value: %d", v_mode);
-			}
-		}
-	}
+    if (!j_wifi["wifiMode"].isNull()) {
+        uint8_t v_mode = j_wifi["wifiMode"].as<uint8_t>();
+        if (v_mode != p_config.wifiMode) {
+            if (v_mode >= EN_A20_WIFI_MODE_AP && v_mode <= EN_A20_WIFI_MODE_AP_STA) {
+                p_config.wifiMode = (EN_A20_WIFI_MODE_t)v_mode;
+                v_changed         = true;
+            } else {
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] Invalid wifiMode value: %d", v_mode);
+            }
+        }
+    }
 
-	JsonObjectConst j_ap = j_wifi["ap"].as<JsonObjectConst>();
-	if (!j_ap.isNull()) {
-		const char* v_ssid = j_ap["ssid"] | "";
-		if (v_ssid && v_ssid[0] && strcmp(v_ssid, p_config.ap.ssid) != 0) {
-			strlcpy(p_config.ap.ssid, v_ssid, sizeof(p_config.ap.ssid));
-			v_changed = true;
-		}
+    JsonObjectConst j_ap = j_wifi["ap"].as<JsonObjectConst>();
+    if (!j_ap.isNull()) {
+        const char* v_ssid = j_ap["ssid"] | "";
+        if (v_ssid && v_ssid[0] && strcmp(v_ssid, p_config.ap.ssid) != 0) {
+            strlcpy(p_config.ap.ssid, v_ssid, sizeof(p_config.ap.ssid));
+            v_changed = true;
+        }
 
-		const char* v_pwd = C10_getStr2(j_ap, "pass", "pass", "");
-		if (v_pwd && v_pwd[0] && strcmp(v_pwd, p_config.ap.pass) != 0) {
-			strlcpy(p_config.ap.pass, v_pwd, sizeof(p_config.ap.pass));
-			v_changed = true;
-		}
-	}
+        const char* v_pwd = C10_getStr2(j_ap, "pass", "pass", "");
+        if (v_pwd && v_pwd[0] && strcmp(v_pwd, p_config.ap.pass) != 0) {
+            strlcpy(p_config.ap.pass, v_pwd, sizeof(p_config.ap.pass));
+            v_changed = true;
+        }
+    }
 
-	// sta 배열은 있으면 "전체 교체"
-	JsonArrayConst j_sta = j_wifi["sta"].as<JsonArrayConst>();
-	if (!j_sta.isNull()) {
-		p_config.staCount = 0;
-		for (JsonObjectConst v_js : j_sta) {
-			if (p_config.staCount >= A20_Const::MAX_STA_NETWORKS) break;
+    // sta 배열은 있으면 "전체 교체"
+    JsonArrayConst j_sta = j_wifi["sta"].as<JsonArrayConst>();
+    if (!j_sta.isNull()) {
+        p_config.staCount = 0;
+        for (JsonObjectConst v_js : j_sta) {
+            if (p_config.staCount >= A20_Const::MAX_STA_NETWORKS) break;
 
-			ST_A20_STANetwork_t& v_net = p_config.sta[p_config.staCount];
-			memset(&v_net, 0, sizeof(v_net)); // ✅ 찌꺼기 방지
+            ST_A20_STANetwork_t& v_net = p_config.sta[p_config.staCount];
+            memset(&v_net, 0, sizeof(v_net)); // ✅ 찌꺼기 방지
 
-			strlcpy(v_net.ssid, v_js["ssid"] | "", sizeof(v_net.ssid));
+            strlcpy(v_net.ssid, v_js["ssid"] | "", sizeof(v_net.ssid));
 
-			const char* v_pass = C10_getStr2(v_js, "pass", "pass", "");
-			strlcpy(v_net.pass, v_pass, sizeof(v_net.pass));
+            const char* v_pass = C10_getStr2(v_js, "pass", "pass", "");
+            strlcpy(v_net.pass, v_pass, sizeof(v_net.pass));
 
-			p_config.staCount++;
-		}
-		v_changed = true;
-		CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[C10] WiFi STA array fully replaced.");
-	}
+            p_config.staCount++;
+        }
+        v_changed = true;
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[C10] WiFi STA array fully replaced.");
+    }
 
-	if (v_changed) {
-		_dirty_wifi = true;
-		CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] WiFi config patched (Memory Only, camelCase). Dirty=true");
-	}
+    if (v_changed) {
+        _dirty_wifi = true;
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] WiFi config patched (Memory Only, camelCase). Dirty=true");
+    }
 
-	C10_MUTEX_RELEASE();
-	return v_changed;
+    C10_MUTEX_RELEASE();
+    return v_changed;
 }
 
 bool CL_C10_ConfigManager::patchMotionFromJson(ST_A20_MotionConfig_t& p_config, const JsonDocument& p_patch) {
-	C10_MUTEX_ACQUIRE_BOOL();
+    C10_MUTEX_ACQUIRE_BOOL();
 
-	bool v_changed = false;
+    bool v_changed = false;
 
-	JsonObjectConst j_motion = p_patch["motion"].as<JsonObjectConst>();
-	if (j_motion.isNull()) {
-		C10_MUTEX_RELEASE();
-		return false;
-	}
+    JsonObjectConst j_motion = p_patch["motion"].as<JsonObjectConst>();
+    if (j_motion.isNull()) {
+        C10_MUTEX_RELEASE();
+        return false;
+    }
 
-	// pir
-	JsonObjectConst j_pir = j_motion["pir"].as<JsonObjectConst>();
-	if (!j_pir.isNull()) {
-		if (!j_pir["enabled"].isNull() && j_pir["enabled"].as<bool>() != p_config.pir.enabled) {
-			p_config.pir.enabled = j_pir["enabled"].as<bool>();
-			v_changed = true;
-		}
-		if (!j_pir["holdSec"].isNull() && j_pir["holdSec"].as<uint16_t>() != p_config.pir.holdSec) {
-			p_config.pir.holdSec = j_pir["holdSec"].as<uint16_t>();
-			v_changed = true;
-		}
-	}
+    // pir
+    JsonObjectConst j_pir = j_motion["pir"].as<JsonObjectConst>();
+    if (!j_pir.isNull()) {
+        if (!j_pir["enabled"].isNull() && j_pir["enabled"].as<bool>() != p_config.pir.enabled) {
+            p_config.pir.enabled = j_pir["enabled"].as<bool>();
+            v_changed            = true;
+        }
+        if (!j_pir["holdSec"].isNull() && j_pir["holdSec"].as<uint16_t>() != p_config.pir.holdSec) {
+            p_config.pir.holdSec = j_pir["holdSec"].as<uint16_t>();
+            v_changed            = true;
+        }
+    }
 
-	// ble
-	JsonObjectConst j_ble = j_motion["ble"].as<JsonObjectConst>();
-	if (!j_ble.isNull()) {
-		if (!j_ble["enabled"].isNull() && j_ble["enabled"].as<bool>() != p_config.ble.enabled) {
-			p_config.ble.enabled = j_ble["enabled"].as<bool>();
-			v_changed = true;
-		}
+    // ble
+    JsonObjectConst j_ble = j_motion["ble"].as<JsonObjectConst>();
+    if (!j_ble.isNull()) {
+        if (!j_ble["enabled"].isNull() && j_ble["enabled"].as<bool>() != p_config.ble.enabled) {
+            p_config.ble.enabled = j_ble["enabled"].as<bool>();
+            v_changed            = true;
+        }
 
-		JsonObjectConst j_rssi = j_ble["rssi"].as<JsonObjectConst>();
-		if (!j_rssi.isNull()) {
-			if (!j_rssi["on"].isNull() && j_rssi["on"].as<int8_t>() != p_config.ble.rssi.on) {
-				p_config.ble.rssi.on = j_rssi["on"].as<int8_t>();
-				v_changed = true;
-			}
-			if (!j_rssi["off"].isNull() && j_rssi["off"].as<int8_t>() != p_config.ble.rssi.off) {
-				p_config.ble.rssi.off = j_rssi["off"].as<int8_t>();
-				v_changed = true;
-			}
+        JsonObjectConst j_rssi = j_ble["rssi"].as<JsonObjectConst>();
+        if (!j_rssi.isNull()) {
+            if (!j_rssi["on"].isNull() && j_rssi["on"].as<int8_t>() != p_config.ble.rssi.on) {
+                p_config.ble.rssi.on = j_rssi["on"].as<int8_t>();
+                v_changed            = true;
+            }
+            if (!j_rssi["off"].isNull() && j_rssi["off"].as<int8_t>() != p_config.ble.rssi.off) {
+                p_config.ble.rssi.off = j_rssi["off"].as<int8_t>();
+                v_changed             = true;
+            }
 
-			uint8_t v_avg = C10_getNum2<uint8_t>(j_rssi, "avgCount", "avgCount", p_config.ble.rssi.avgCount);
-			if (v_avg != p_config.ble.rssi.avgCount) { p_config.ble.rssi.avgCount = v_avg; v_changed = true; }
+            uint8_t v_avg = C10_getNum2<uint8_t>(j_rssi, "avgCount", "avgCount", p_config.ble.rssi.avgCount);
+            if (v_avg != p_config.ble.rssi.avgCount) {
+                p_config.ble.rssi.avgCount = v_avg;
+                v_changed                  = true;
+            }
 
-			uint8_t v_pst = C10_getNum2<uint8_t>(j_rssi, "persistCount", "persistCount", p_config.ble.rssi.persistCount);
-			if (v_pst != p_config.ble.rssi.persistCount) { p_config.ble.rssi.persistCount = v_pst; v_changed = true; }
+            uint8_t v_pst = C10_getNum2<uint8_t>(j_rssi, "persistCount", "persistCount", p_config.ble.rssi.persistCount);
+            if (v_pst != p_config.ble.rssi.persistCount) {
+                p_config.ble.rssi.persistCount = v_pst;
+                v_changed                      = true;
+            }
 
-			uint16_t v_exit = C10_getNum2<uint16_t>(j_rssi, "exitDelaySec", "exitDelaySec", p_config.ble.rssi.exitDelaySec);
-			if (v_exit != p_config.ble.rssi.exitDelaySec) {
-				p_config.ble.rssi.exitDelaySec = v_exit;
-				v_changed = true;
-			}
-		}
+            uint16_t v_exit = C10_getNum2<uint16_t>(j_rssi, "exitDelaySec", "exitDelaySec", p_config.ble.rssi.exitDelaySec);
+            if (v_exit != p_config.ble.rssi.exitDelaySec) {
+                p_config.ble.rssi.exitDelaySec = v_exit;
+                v_changed                      = true;
+            }
+        }
 
-		// trustedDevices[] : 있으면 "전체 교체"
-		JsonArrayConst j_tdArr = j_ble["trustedDevices"].as<JsonArrayConst>();
-		if (!j_tdArr.isNull()) {
-			p_config.ble.trustedCount = 0;
-			for (JsonObjectConst v_js : j_tdArr) {
-				if (p_config.ble.trustedCount >= A20_Const::MAX_BLE_DEVICES) break;
+        // trustedDevices[] : 있으면 "전체 교체"
+        JsonArrayConst j_tdArr = j_ble["trustedDevices"].as<JsonArrayConst>();
+        if (!j_tdArr.isNull()) {
+            p_config.ble.trustedCount = 0;
+            for (JsonObjectConst v_js : j_tdArr) {
+                if (p_config.ble.trustedCount >= A20_Const::MAX_BLE_DEVICES) break;
 
-				ST_A20_BLETrustedDevice_t& v_d = p_config.ble.trustedDevices[p_config.ble.trustedCount++];
-				memset(&v_d, 0, sizeof(v_d)); // ✅ 찌꺼기 방지
+                ST_A20_BLETrustedDevice_t& v_d = p_config.ble.trustedDevices[p_config.ble.trustedCount++];
+                memset(&v_d, 0, sizeof(v_d)); // ✅ 찌꺼기 방지
 
-				strlcpy(v_d.alias, v_js["alias"] | "", sizeof(v_d.alias));
-				strlcpy(v_d.name, v_js["name"] | "", sizeof(v_d.name));
-				strlcpy(v_d.mac, v_js["mac"] | "", sizeof(v_d.mac));
+                strlcpy(v_d.alias, v_js["alias"] | "", sizeof(v_d.alias));
+                strlcpy(v_d.name, v_js["name"] | "", sizeof(v_d.name));
+                strlcpy(v_d.mac, v_js["mac"] | "", sizeof(v_d.mac));
 
-				const char* v_mp = C10_getStr2(v_js, "manufPrefix", "manufPrefix", "");
-				strlcpy(v_d.manufPrefix, v_mp, sizeof(v_d.manufPrefix));
+                const char* v_mp = C10_getStr2(v_js, "manufPrefix", "manufPrefix", "");
+                strlcpy(v_d.manufPrefix, v_mp, sizeof(v_d.manufPrefix));
 
-				v_d.prefixLen = C10_getNum2<uint8_t>(v_js, "prefixLen", "prefixLen", 0);
-				v_d.enabled   = C10_getBool2(v_js, "enabled", "enabled", true);
-			}
-			v_changed = true;
-			CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[C10] Motion Trusted Devices array fully replaced.");
-		}
-	}
+                v_d.prefixLen = C10_getNum2<uint8_t>(v_js, "prefixLen", "prefixLen", 0);
+                v_d.enabled   = C10_getBool2(v_js, "enabled", "enabled", true);
+            }
+            v_changed = true;
+            CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[C10] Motion Trusted Devices array fully replaced.");
+        }
+    }
 
-	// timing
-	JsonObjectConst j_timing = j_motion["timing"].as<JsonObjectConst>();
-	if (!j_timing.isNull()) {
-		uint16_t v_sim = C10_getNum2<uint16_t>(j_timing, "simIntervalMs", "sim_interval", p_config.timing.simIntervalMs);
-		if (v_sim != p_config.timing.simIntervalMs && v_sim > 0) { p_config.timing.simIntervalMs = v_sim; v_changed = true; }
+    // timing
+    JsonObjectConst j_timing = j_motion["timing"].as<JsonObjectConst>();
+    if (!j_timing.isNull()) {
+        uint16_t v_sim = C10_getNum2<uint16_t>(j_timing, "simIntervalMs", "sim_interval", p_config.timing.simIntervalMs);
+        if (v_sim != p_config.timing.simIntervalMs && v_sim > 0) {
+            p_config.timing.simIntervalMs = v_sim;
+            v_changed                     = true;
+        }
 
-		uint16_t v_gust = C10_getNum2<uint16_t>(j_timing, "gustIntervalMs", "gust_interval", p_config.timing.gustIntervalMs);
-		if (v_gust != p_config.timing.gustIntervalMs && v_gust > 0) { p_config.timing.gustIntervalMs = v_gust; v_changed = true; }
+        uint16_t v_gust =
+            C10_getNum2<uint16_t>(j_timing, "gustIntervalMs", "gust_interval", p_config.timing.gustIntervalMs);
+        if (v_gust != p_config.timing.gustIntervalMs && v_gust > 0) {
+            p_config.timing.gustIntervalMs = v_gust;
+            v_changed                      = true;
+        }
 
-		uint16_t v_thermal = C10_getNum2<uint16_t>(j_timing, "thermalIntervalMs", "thermal_interval", p_config.timing.thermalIntervalMs);
-		if (v_thermal != p_config.timing.thermalIntervalMs && v_thermal > 0) { p_config.timing.thermalIntervalMs = v_thermal; v_changed = true; }
-	}
+        uint16_t v_thermal =
+            C10_getNum2<uint16_t>(j_timing, "thermalIntervalMs", "thermal_interval", p_config.timing.thermalIntervalMs);
+        if (v_thermal != p_config.timing.thermalIntervalMs && v_thermal > 0) {
+            p_config.timing.thermalIntervalMs = v_thermal;
+            v_changed                         = true;
+        }
+    }
 
-	if (v_changed) {
-		_dirty_motion = true;
-		CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] Motion config patched (Memory Only, camelCase). Dirty=true");
-	}
+    if (v_changed) {
+        _dirty_motion = true;
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] Motion config patched (Memory Only, camelCase). Dirty=true");
+    }
 
-	C10_MUTEX_RELEASE();
-	return v_changed;
+    C10_MUTEX_RELEASE();
+    return v_changed;
 }
 
 // =====================================================
 // 3-1. JSON Export (System/Wifi/Motion) - camelCase Export
 // =====================================================
 void CL_C10_ConfigManager::toJson_System(const ST_A20_SystemConfig_t& p, JsonDocument& d) {
-	d["meta"]["version"]    = p.meta.version;
-	d["meta"]["deviceName"] = p.meta.deviceName;
-	d["meta"]["lastUpdate"] = p.meta.lastUpdate;
+    d["meta"]["version"]    = p.meta.version;
+    d["meta"]["deviceName"] = p.meta.deviceName;
+    d["meta"]["lastUpdate"] = p.meta.lastUpdate;
 
-	d["system"]["logging"]["level"]      = p.system.logging.level;
-	d["system"]["logging"]["maxEntries"] = p.system.logging.maxEntries;
+    d["system"]["logging"]["level"]      = p.system.logging.level;
+    d["system"]["logging"]["maxEntries"] = p.system.logging.maxEntries;
 
-	JsonObject d_ws = d["system"]["webSocket"].to<JsonObject>();
+    JsonObject d_ws = d["system"]["webSocket"].to<JsonObject>();
 
-	JsonArray d_itv = d_ws["wsIntervalMs"].to<JsonArray>();
-	for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
-		d_itv.add(p.system.webSocket.wsIntervalMs[v_i]);
-	}
+    JsonArray d_itv = d_ws["wsIntervalMs"].to<JsonArray>();
+    for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+        d_itv.add(p.system.webSocket.wsIntervalMs[v_i]);
+    }
 
-	JsonArray d_pri = d_ws["priority"].to<JsonArray>();
-	for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
-		uint8_t v_ch = p.system.webSocket.wsPriority[v_i];
-		if (v_ch >= G_A20_WS_CH_COUNT) v_ch = 0;
-		d_pri.add(G_A20_WS_CH_NAMES_Arr[v_ch]);
-	}
+    JsonArray d_pri = d_ws["priority"].to<JsonArray>();
+    for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
+        uint8_t v_ch = p.system.webSocket.wsPriority[v_i];
+        if (v_ch >= G_A20_WS_CH_COUNT) v_ch = 0;
+        d_pri.add(G_A20_WS_CH_NAMES_Arr[v_ch]);
+    }
 
-	d_ws["chartLargeBytes"]  = p.system.webSocket.chartLargeBytes;
-	d_ws["chartThrottleMul"] = p.system.webSocket.chartThrottleMul;
-	d_ws["wsCleanupMs"]      = p.system.webSocket.wsCleanupMs;
+    d_ws["chartLargeBytes"]  = p.system.webSocket.chartLargeBytes;
+    d_ws["chartThrottleMul"] = p.system.webSocket.chartThrottleMul;
+    d_ws["wsCleanupMs"]      = p.system.webSocket.wsCleanupMs;
 
-	d["hw"]["fanPwm"]["pin"]     = p.hw.fanPwm.pin;
-	d["hw"]["fanPwm"]["channel"] = p.hw.fanPwm.channel;
-	d["hw"]["fanPwm"]["freq"]    = p.hw.fanPwm.freq;
-	d["hw"]["fanPwm"]["res"]     = p.hw.fanPwm.res;
+    d["hw"]["fanPwm"]["pin"]     = p.hw.fanPwm.pin;
+    d["hw"]["fanPwm"]["channel"] = p.hw.fanPwm.channel;
+    d["hw"]["fanPwm"]["freq"]    = p.hw.fanPwm.freq;
+    d["hw"]["fanPwm"]["res"]     = p.hw.fanPwm.res;
 
-	d["hw"]["fanConfig"]["startPercentMin"]   = p.hw.fanConfig.startPercentMin;
-	d["hw"]["fanConfig"]["comfortPercentMin"] = p.hw.fanConfig.comfortPercentMin;
-	d["hw"]["fanConfig"]["comfortPercentMax"] = p.hw.fanConfig.comfortPercentMax;
-	d["hw"]["fanConfig"]["hardPercentMax"]    = p.hw.fanConfig.hardPercentMax;
+    d["hw"]["fanConfig"]["startPercentMin"]   = p.hw.fanConfig.startPercentMin;
+    d["hw"]["fanConfig"]["comfortPercentMin"] = p.hw.fanConfig.comfortPercentMin;
+    d["hw"]["fanConfig"]["comfortPercentMax"] = p.hw.fanConfig.comfortPercentMax;
+    d["hw"]["fanConfig"]["hardPercentMax"]    = p.hw.fanConfig.hardPercentMax;
 
-	d["hw"]["pir"]["enabled"]     = p.hw.pir.enabled;
-	d["hw"]["pir"]["pin"]         = p.hw.pir.pin;
-	d["hw"]["pir"]["debounceSec"] = p.hw.pir.debounceSec;
-	d["hw"]["pir"]["holdSec"]     = p.hw.pir.holdSec;
+    d["hw"]["pir"]["enabled"]     = p.hw.pir.enabled;
+    d["hw"]["pir"]["pin"]         = p.hw.pir.pin;
+    d["hw"]["pir"]["debounceSec"] = p.hw.pir.debounceSec;
+    d["hw"]["pir"]["holdSec"]     = p.hw.pir.holdSec;
 
-	d["hw"]["tempHum"]["enabled"]     = p.hw.tempHum.enabled;
-	d["hw"]["tempHum"]["type"]        = p.hw.tempHum.type;
-	d["hw"]["tempHum"]["pin"]         = p.hw.tempHum.pin;
-	d["hw"]["tempHum"]["intervalSec"] = p.hw.tempHum.intervalSec;
+    d["hw"]["tempHum"]["enabled"]     = p.hw.tempHum.enabled;
+    d["hw"]["tempHum"]["type"]        = p.hw.tempHum.type;
+    d["hw"]["tempHum"]["pin"]         = p.hw.tempHum.pin;
+    d["hw"]["tempHum"]["intervalSec"] = p.hw.tempHum.intervalSec;
 
-	d["hw"]["ble"]["enabled"]      = p.hw.ble.enabled;
-	d["hw"]["ble"]["scanInterval"] = p.hw.ble.scanInterval;
+    d["hw"]["ble"]["enabled"]      = p.hw.ble.enabled;
+    d["hw"]["ble"]["scanInterval"] = p.hw.ble.scanInterval;
 
-	d["security"]["apiKey"] = p.security.apiKey;
+    d["security"]["apiKey"] = p.security.apiKey;
 
-	d["time"]["ntpServer"]       = p.time.ntpServer;
-	d["time"]["timezone"]        = p.time.timezone;
-	d["time"]["syncIntervalMin"] = p.time.syncIntervalMin;
+    d["time"]["ntpServer"]       = p.time.ntpServer;
+    d["time"]["timezone"]        = p.time.timezone;
+    d["time"]["syncIntervalMin"] = p.time.syncIntervalMin;
 }
 
 void CL_C10_ConfigManager::toJson_Wifi(const ST_A20_WifiConfig_t& p, JsonDocument& d) {
-	d["wifi"]["wifiMode"]     = p.wifiMode;
-	d["wifi"]["wifiModeDesc"] = p.wifiModeDesc;
-	d["wifi"]["ap"]["ssid"]   = p.ap.ssid;
-	d["wifi"]["ap"]["pass"]   = p.ap.pass;
+    d["wifi"]["wifiMode"]     = p.wifiMode;
+    d["wifi"]["wifiModeDesc"] = p.wifiModeDesc;
+    d["wifi"]["ap"]["ssid"]   = p.ap.ssid;
+    d["wifi"]["ap"]["pass"]   = p.ap.pass;
 
-	JsonArray v_staArr = d["wifi"]["sta"].to<JsonArray>();
-	for (uint8_t i = 0; i < p.staCount; i++) {
-		JsonObject v_net = v_staArr.add<JsonObject>();
-		v_net["ssid"] = p.sta[i].ssid;
-		v_net["pass"] = p.sta[i].pass;
-	}
+    JsonArray v_staArr = d["wifi"]["sta"].to<JsonArray>();
+    for (uint8_t i = 0; i < p.staCount; i++) {
+        JsonObject v_net = v_staArr.add<JsonObject>();
+        v_net["ssid"]    = p.sta[i].ssid;
+        v_net["pass"]    = p.sta[i].pass;
+    }
 }
 
 void CL_C10_ConfigManager::toJson_Motion(const ST_A20_MotionConfig_t& p, JsonDocument& d) {
-	d["motion"]["pir"]["enabled"] = p.pir.enabled;
-	d["motion"]["pir"]["holdSec"] = p.pir.holdSec;
+    d["motion"]["pir"]["enabled"] = p.pir.enabled;
+    d["motion"]["pir"]["holdSec"] = p.pir.holdSec;
 
-	d["motion"]["ble"]["enabled"]     = p.ble.enabled;
-	d["motion"]["ble"]["rssi"]["on"]  = p.ble.rssi.on;
-	d["motion"]["ble"]["rssi"]["off"] = p.ble.rssi.off;
+    d["motion"]["ble"]["enabled"]     = p.ble.enabled;
+    d["motion"]["ble"]["rssi"]["on"]  = p.ble.rssi.on;
+    d["motion"]["ble"]["rssi"]["off"] = p.ble.rssi.off;
 
-	d["motion"]["ble"]["rssi"]["avgCount"]     = p.ble.rssi.avgCount;
-	d["motion"]["ble"]["rssi"]["persistCount"] = p.ble.rssi.persistCount;
-	d["motion"]["ble"]["rssi"]["exitDelaySec"] = p.ble.rssi.exitDelaySec;
+    d["motion"]["ble"]["rssi"]["avgCount"]     = p.ble.rssi.avgCount;
+    d["motion"]["ble"]["rssi"]["persistCount"] = p.ble.rssi.persistCount;
+    d["motion"]["ble"]["rssi"]["exitDelaySec"] = p.ble.rssi.exitDelaySec;
 
-	JsonArray v_tdArr = d["motion"]["ble"]["trustedDevices"].to<JsonArray>();
-	for (uint8_t i = 0; i < p.ble.trustedCount; i++) {
-		const ST_A20_BLETrustedDevice_t& v_d = p.ble.trustedDevices[i];
-		JsonObject v_td = v_tdArr.add<JsonObject>();
+    JsonArray v_tdArr = d["motion"]["ble"]["trustedDevices"].to<JsonArray>();
+    for (uint8_t i = 0; i < p.ble.trustedCount; i++) {
+        const ST_A20_BLETrustedDevice_t& v_d  = p.ble.trustedDevices[i];
+        JsonObject                       v_td = v_tdArr.add<JsonObject>();
 
-		v_td["alias"]       = v_d.alias;
-		v_td["name"]        = v_d.name;
-		v_td["mac"]         = v_d.mac;
-		v_td["manufPrefix"] = v_d.manufPrefix;
-		v_td["prefixLen"]   = v_d.prefixLen;
-		v_td["enabled"]     = v_d.enabled;
-	}
+        v_td["alias"]       = v_d.alias;
+        v_td["name"]        = v_d.name;
+        v_td["mac"]         = v_d.mac;
+        v_td["manufPrefix"] = v_d.manufPrefix;
+        v_td["prefixLen"]   = v_d.prefixLen;
+        v_td["enabled"]     = v_d.enabled;
+    }
 
-	// Timing
-	d["motion"]["timing"]["simIntervalMs"]     = p.timing.simIntervalMs;
-	d["motion"]["timing"]["gustIntervalMs"]    = p.timing.gustIntervalMs;
-	d["motion"]["timing"]["thermalIntervalMs"] = p.timing.thermalIntervalMs;
+    // Timing
+    d["motion"]["timing"]["simIntervalMs"]     = p.timing.simIntervalMs;
+    d["motion"]["timing"]["gustIntervalMs"]    = p.timing.gustIntervalMs;
+    d["motion"]["timing"]["thermalIntervalMs"] = p.timing.thermalIntervalMs;
 }
-

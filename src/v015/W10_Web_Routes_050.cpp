@@ -1163,9 +1163,17 @@ void CL_W10_WebAPI::routeTimeSet() {
             if (v_changed && g_A20_config_root.system) {
                 CL_C10_ConfigManager::saveDirtyConfigs();
 
-                WF10_applyTimeConfigFromSystem(*g_A20_config_root.system);
+				TM10_applyTimeConfigFromSystem(*g_A20_config_root.system);   // TZ/NTP 서버/주기 런타임 반영 (비블로킹)
+                TM10_requestTimeSync();                                     // "즉시 동기화 요청"만 큐/플래그로 요청 (콜백/상태머신에서 처리)
+
+                v_res["status"] = "applied";
+                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Time config updated and applied (TM10).");
+				
+                /* 
+				WF10_applyTimeConfigFromSystem(*g_A20_config_root.system);
                 v_res["status"] = "applied";
                 CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Time config updated and applied via TimeManager.");
+				*/
             } else {
                 v_res["status"] = "no_change";
             }

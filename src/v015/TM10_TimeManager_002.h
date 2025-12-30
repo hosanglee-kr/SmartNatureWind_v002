@@ -160,24 +160,26 @@ static inline void TM10_requestTimeSync();
 
 // ======================================================
 // Implementation (header-only)
+// - ⚠️ 여러 cpp에서 include되어도 링크 중복 심볼이 안 나도록
+//   모든 멤버 함수 정의를 inline 처리한다.
 // ======================================================
-bool CL_TM10_TimeManager::_mutexAcquire(const char* p_func) {
+inline bool CL_TM10_TimeManager::_mutexAcquire(const char* p_func) {
 	(void)p_func;
 	if (s_mutex == nullptr) return false;
 	return (xSemaphoreTake(s_mutex, G_TM10_MUTEX_TIMEOUT) == pdTRUE);
 }
 
-void CL_TM10_TimeManager::_mutexRelease() {
+inline void CL_TM10_TimeManager::_mutexRelease() {
 	if (s_mutex) xSemaphoreGive(s_mutex);
 }
 
-uint32_t CL_TM10_TimeManager::_clampU32(uint32_t p_v, uint32_t p_lo, uint32_t p_hi) {
+inline uint32_t CL_TM10_TimeManager::_clampU32(uint32_t p_v, uint32_t p_lo, uint32_t p_hi) {
 	if (p_v < p_lo) return p_lo;
 	if (p_v > p_hi) return p_hi;
 	return p_v;
 }
 
-void CL_TM10_TimeManager::_setDefaults() {
+inline void CL_TM10_TimeManager::_setDefaults() {
 	memset(s_tz, 0, sizeof(s_tz));
 	memset(s_primary, 0, sizeof(s_primary));
 	strlcpy(s_tz, "Asia/Seoul", sizeof(s_tz));
@@ -194,7 +196,7 @@ void CL_TM10_TimeManager::_setDefaults() {
 	}
 }
 
-void CL_TM10_TimeManager::_copySysTime(const ST_A20_SystemConfig_t& p_sys) {
+inline void CL_TM10_TimeManager::_copySysTime(const ST_A20_SystemConfig_t& p_sys) {
 	// TZ
 	if (p_sys.time.timezone[0]) {
 		memset(s_tz, 0, sizeof(s_tz));
@@ -223,7 +225,7 @@ void CL_TM10_TimeManager::_copySysTime(const ST_A20_SystemConfig_t& p_sys) {
 	}
 }
 
-bool CL_TM10_TimeManager::_isTimeSane() {
+inline bool CL_TM10_TimeManager::_isTimeSane() {
 	time_t v_now = time(nullptr);
 	if (v_now < 1700000000) return false; // 2023-11-15 전이면 동기화 실패로 간주
 
@@ -240,7 +242,7 @@ bool CL_TM10_TimeManager::_isTimeSane() {
 	return true;
 }
 
-void CL_TM10_TimeManager::_onSntpTimeSync(struct timeval* p_tv) {
+inline void CL_TM10_TimeManager::_onSntpTimeSync(struct timeval* p_tv) {
 	(void)p_tv;
 
 	// 콜백은 ISR은 아니지만, 짧게 처리
@@ -262,13 +264,13 @@ void CL_TM10_TimeManager::_onSntpTimeSync(struct timeval* p_tv) {
 	xSemaphoreGive(s_mutex);
 }
 
-void CL_TM10_TimeManager::_stopSntp() {
+inline void CL_TM10_TimeManager::_stopSntp() {
 	if (!s_running) return;
 	sntp_stop();
 	s_running = false;
 }
 
-void CL_TM10_TimeManager::_startSntpWithServer(uint8_t p_idx) {
+inline void CL_TM10_TimeManager::_startSntpWithServer(uint8_t p_idx) {
 	if (p_idx >= 4) p_idx = 0;
 
 	// TZ 적용
@@ -305,13 +307,13 @@ void CL_TM10_TimeManager::_startSntpWithServer(uint8_t p_idx) {
 	                   (unsigned long)s_syncIntervalMs);
 }
 
-void CL_TM10_TimeManager::_requestSync() {
+inline void CL_TM10_TimeManager::_requestSync() {
 	// 콜백 only 정책이므로, "즉시 동기화"는 SNTP를 재시작해서 서버에 요청을 강제한다.
 	// (긴 블로킹 폴링 금지)
 	_startSntpWithServer(s_activeServerIdx);
 }
 
-void CL_TM10_TimeManager::_switchToNextServer() {
+inline void CL_TM10_TimeManager::_switchToNextServer() {
 	uint8_t v_next = (uint8_t)(s_activeServerIdx + 1);
 	if (v_next >= 4) v_next = 0;
 
@@ -323,7 +325,7 @@ void CL_TM10_TimeManager::_switchToNextServer() {
 	_startSntpWithServer(v_next);
 }
 
-void CL_TM10_TimeManager::begin() {
+inline void CL_TM10_TimeManager::begin() {
 	if (s_mutex == nullptr) {
 		s_mutex = xSemaphoreCreateMutex();
 		if (!s_mutex) {
@@ -350,7 +352,7 @@ void CL_TM10_TimeManager::begin() {
 	CL_D10_Logger::log(EN_L10_LOG_INFO, "[TM10] begin (timeValid=%d)", (int)s_timeValid);
 }
 
-void CL_TM10_TimeManager::requestTimeSync() {
+inline void CL_TM10_TimeManager::requestTimeSync() {
 	if (!_mutexAcquire(__func__)) return;
 
 	// Wi-Fi가 살아있을 때만 요청 (운영 안전)
@@ -376,7 +378,7 @@ void CL_TM10_TimeManager::requestTimeSync() {
 	_requestSync();
 }
 
-void CL_TM10_TimeManager::applyTimeConfig(const ST_A20_SystemConfig_t& p_sys) {
+inline void CL_TM10_TimeManager::applyTimeConfig(const ST_A20_SystemConfig_t& p_sys) {
 	if (!_mutexAcquire(__func__)) return;
 
 	_copySysTime(p_sys);
@@ -395,7 +397,7 @@ void CL_TM10_TimeManager::applyTimeConfig(const ST_A20_SystemConfig_t& p_sys) {
 	}
 }
 
-void CL_TM10_TimeManager::onWiFiConnected(const ST_A20_SystemConfig_t& p_sys) {
+inline void CL_TM10_TimeManager::onWiFiConnected(const ST_A20_SystemConfig_t& p_sys) {
 	if (!_mutexAcquire(__func__)) return;
 
 	s_wifiUp = true;
@@ -410,7 +412,7 @@ void CL_TM10_TimeManager::onWiFiConnected(const ST_A20_SystemConfig_t& p_sys) {
 	_startSntpWithServer(s_activeServerIdx);
 }
 
-void CL_TM10_TimeManager::onWiFiDisconnected() {
+inline void CL_TM10_TimeManager::onWiFiDisconnected() {
 	if (!_mutexAcquire(__func__)) return;
 
 	s_wifiUp          = false;
@@ -427,7 +429,7 @@ void CL_TM10_TimeManager::onWiFiDisconnected() {
 	CL_D10_Logger::log(EN_L10_LOG_WARN, "[TM10] WiFi down -> SNTP stopped, time invalidated");
 }
 
-void CL_TM10_TimeManager::tick(const ST_A20_SystemConfig_t* p_sysOrNull) {
+inline void CL_TM10_TimeManager::tick(const ST_A20_SystemConfig_t* p_sysOrNull) {
 	// 블로킹 금지: 짧게 잠금
 	if (!_mutexAcquire(__func__)) return;
 
@@ -484,7 +486,7 @@ void CL_TM10_TimeManager::tick(const ST_A20_SystemConfig_t* p_sysOrNull) {
 	_mutexRelease();
 }
 
-void CL_TM10_TimeManager::toJson(JsonDocument& p_doc) {
+inline void CL_TM10_TimeManager::toJson(JsonDocument& p_doc) {
 	if (!_mutexAcquire(__func__)) return;
 
 	JsonObject v_root = p_doc.to<JsonObject>();
@@ -514,4 +516,3 @@ static inline void TM10_requestTimeSync() {
 	// "즉시 동기화 요청" (콜백 only, 블로킹X)
 	CL_TM10_TimeManager::requestTimeSync();
 }
-

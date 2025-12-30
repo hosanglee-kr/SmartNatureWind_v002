@@ -98,6 +98,9 @@ class CL_TM10_TimeManager {
 	static void onWiFiConnected(const ST_A20_SystemConfig_t& p_sys);
 	static void onWiFiDisconnected();
 
+    // (추가) 외부에서 "즉시 동기화 요청" (콜백 only, 블로킹X)
+    static void requestTimeSync();
+
 	// system.time 설정 변경 후 반영(콜백만, 블로킹X)
 	static void applyTimeConfig(const ST_A20_SystemConfig_t& p_sys);
 
@@ -144,6 +147,13 @@ class CL_TM10_TimeManager {
 	static void _requestSync();        // "지금 동기화 해줘" 요청(블로킹X)
 	static void _switchToNextServer(); // fallback 전환(블로킹X)
 };
+
+// ------------------------------------------------------
+// TM10 호환/유틸 전역 함수 (라우트/타 모듈에서 직접 호출)
+// ------------------------------------------------------
+static inline void TM10_applyTimeConfigFromSystem(const ST_A20_SystemConfig_t& p_sys);
+static inline void TM10_requestTimeSync();
+
 
 // ======================================================
 // Static member definitions (header-only)
@@ -361,6 +371,33 @@ void CL_TM10_TimeManager::begin() {
 	CL_D10_Logger::log(EN_L10_LOG_INFO, "[TM10] begin (timeValid=%d)", (int)s_timeValid);
 }
 
+void CL_TM10_TimeManager::requestTimeSync() {
+	if (!_mutexAcquire(__func__)) return;
+
+	// Wi-Fi가 살아있을 때만 요청 (운영 안전)
+	if (!s_wifiUp) {
+		_mutexRelease();
+		return;
+	}
+
+	// 이미 콜백 대기중이면 중복 재시작을 줄이기 위해 그냥 유지(운영급)
+	// 단, 강제 재요청이 꼭 필요하면 아래 if를 제거하면 됨.
+	if (s_waitingCallback) {
+		_mutexRelease();
+		return;
+	}
+
+	// "즉시 동기화 요청"은 SNTP 재시작으로 강제 (콜백 only)
+	s_waitingCallback = true;
+	s_waitStartMs     = millis();
+	s_nextActionMs    = 0;
+
+	_mutexRelease();
+
+	_requestSync();
+}
+
+
 void CL_TM10_TimeManager::applyTimeConfig(const ST_A20_SystemConfig_t& p_sys) {
 	if (!_mutexAcquire(__func__)) return;
 
@@ -481,4 +518,15 @@ void CL_TM10_TimeManager::toJson(JsonDocument& p_doc) {
 	v_time["waitingCallback"]  = s_waitingCallback;
 
 	_mutexRelease();
+}
+
+
+static inline void TM10_applyTimeConfigFromSystem(const ST_A20_SystemConfig_t& p_sys) {
+	// system.time 설정을 런타임에 반영 (콜백 only, 블로킹X)
+	CL_TM10_TimeManager::applyTimeConfig(p_sys);
+}
+
+static inline void TM10_requestTimeSync() {
+	// "즉시 동기화 요청" (콜백 only, 블로킹X)
+	CL_TM10_TimeManager::requestTimeSync();
 }

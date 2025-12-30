@@ -33,7 +33,8 @@
 #include "S10_Simul_040.h"
 #include "S20_WindSolver_040.h"
 #include "W10_Web_051.h"
-#include "WF10_WiFiManager_040.h"
+#include "WF10_WiFiManager_041.h"
+#include "TM10_TimeManager_001.h"
 
 
 // [main.cpp] 또는 [MotionLogic.cpp] 파일에 추가
@@ -134,6 +135,8 @@ void A00_init() {
 
     bool v_wifiOk = CL_WF10_WiFiManager::init(v_wifi, v_sys, g_A00_wifiMulti);
 
+	CL_TM10_TimeManager::begin();
+
     //digitalWrite(G_A00_LED_PIN, v_wifiOk ? HIGH : LOW);
 
     // 5. PWM + Control + Simulation
@@ -198,7 +201,16 @@ void A00_run() {
 
 	*/
 
+	// TM10 시간 상태 감시/서버 fallback 처리(블로킹X)
+    if (g_A20_config_root.system) {
+        CL_TM10_TimeManager::tick(g_A20_config_root.system);
+    } else {
+        CL_TM10_TimeManager::tick(nullptr);
+    }
+
 	A00_LED_run(v_now);
+
+	
 
     delay(10);
 }

@@ -75,16 +75,6 @@ inline float A20_randRange(float p_min, float p_max) {
 }
 
 // ======================================================
-// 2) Segment Mode <-> String 매핑 유틸
-//    (A20_Const_041.h에 이미 존재하면 중복 정의 방지 필요)
-// ======================================================
-#ifndef A20_SEG_MODE_UTIL_DEFINED
-#define A20_SEG_MODE_UTIL_DEFINED
-
-// g_A20_SEG_MODE_NAMES / A20_modeFromString / A20_modeToString 가
-// A20_Const_041.h에 이미 정의되어 있다면 이 블록은 컴파일 중복이 될 수 있습니다.
-// 그 경우 A20_Const_041.h에서 A20_SEG_MODE_UTIL_DEFINED 를 먼저 define 하거나,
-// 아래 블록을 제거하세요.
 
 inline EN_A20_segment_mode_t A20_modeFromString(const char* p_str) {
     if (!p_str) return EN_A20_SEG_MODE_PRESET;
@@ -98,7 +88,6 @@ inline const char* A20_modeToString(EN_A20_segment_mode_t p_mode) {
     if (p_mode >= EN_A20_SEG_MODE_COUNT) return "PRESET";
     return g_A20_SEG_MODE_NAMES[p_mode];
 }
-#endif
 
 // ======================================================
 // 3) Default Reset - WebSocket/System/WiFi/Motion/WindDict

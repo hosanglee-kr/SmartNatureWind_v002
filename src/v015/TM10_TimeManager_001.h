@@ -3,28 +3,25 @@
  * ------------------------------------------------------
  * 소스명 : TM10_TimeManager_001.h
  * 모듈 약어 : TM10
- * 모듈명 : Smart Nature Wind Time Manager (SNTP callback 기반, 운영급)
+ * 모듈명 : Smart Nature Wind Time Manager (SNTP Callback Only + Fallback) (v001)
  * ------------------------------------------------------
  * 기능 요약:
- *  - Wi-Fi 연결 이벤트 기반으로 SNTP 시간 동기화 설정/관리
- *  - 콜백 기반 동기화 완료 처리(긴 블로킹 폴링 없음)
- *  - NTP 서버 fallback(1차/2차/3차) 자동 순환 및 백오프 재시도
- *  - 시간 유효성 검증(time()/localtime_r NULL 방어 포함)
- *  - 런타임 tick() 감시로 “장시간 미동기화” 상황 자동 복구
+ *  - system.time 설정(TZ/NTP/주기)을 런타임에 반영
+ *  - SNTP "콜백 기반" 동기화(긴 블로킹 폴링 금지)
+ *  - NTP 서버 실패 시 fallback 서버로 자동 전환
+ *  - 시간 유효성 검증(localtime_r NULL 방어 + sanity check)
+ *  - Wi-Fi 연결/끊김 이벤트 기반으로 동기화 재요청/상태 리셋
  * ------------------------------------------------------
  * [구현 규칙]
- *  - 항상 소스 시작 주석 부분 체계 유지 및 내용 업데이트
- *  - 소스 시작 주석 부분 구현규칙, 코드네이밍규칙 내용 그대로 유지, 수정금지
+ *  - 항상 소스 시작 주석 체계 유지
  *  - ArduinoJson v7.x.x 사용 (v6 이하 사용 금지)
  *  - JsonDocument 단일 타입만 사용
  *  - createNestedArray/Object/containsKey 사용 금지
  *  - memset + strlcpy 기반 안전 초기화
  *  - 주석/필드명은 JSON 구조와 동일하게 유지
- *  - 변수명은 가능한 해석 가능하게
+ *  - 모듈별 헤더(h) + 목적물별 cpp 분리 구성 (Core/System/Schedule)
  * ------------------------------------------------------
  * [코드 네이밍 규칙]
- *   - namespace 명        : 모듈약어_ 접두사
- *   - namespace 내 상수    : 모둘약어 접두시 미사용
  *   - 전역 상수,매크로      : G_모듈약어_ 접두사
  *   - 전역 변수             : g_모듈약어_ 접두사
  *   - 전역 함수             : 모듈약어_ 접두사
@@ -32,7 +29,7 @@
  *   - typedef               : _t  접미사
  *   - enum 상수             : EN_모듈약어_ 접두사
  *   - 구조체                : ST_모듈약어_ 접두사
- *   - 클래스명              : CL_모듈약어_ 접두사 , 버전 제거
+ *   - 클래스명              : CL_모듈약어_ 접두사
  *   - 클래스 private 멤버   : _ 접두사
  *   - 클래스 멤버(함수/변수) : 모듈약어 접두사 미사용
  *   - 클래스 정적 멤버      : s_ 접두사
@@ -42,85 +39,446 @@
  */
 
 #include <Arduino.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#include <esp_sntp.h>
-
 #include "A20_Const_043.h"
 #include "D10_Logger_040.h"
 
-// ------------------------------------------------------
-// 운영 파라미터 (상수)
-// ------------------------------------------------------
-#ifndef G_TM10_TIME_VALID_EPOCH_MIN
-// 2023-11-15 이후(운영 기준 최소 epoch)
-#	define G_TM10_TIME_VALID_EPOCH_MIN 1700000000
-#endif
-
-#ifndef G_TM10_RETRY_FIRST_MS
-// 최초 미동기화 재시도 시작: 10분
-#	define G_TM10_RETRY_FIRST_MS (10UL * 60UL * 1000UL)
-#endif
-
-#ifndef G_TM10_RETRY_MAX_MS
-// 재시도 백오프 최대: 60분
-#	define G_TM10_RETRY_MAX_MS (60UL * 60UL * 1000UL)
-#endif
-
-#ifndef G_TM10_SNTPSERVERS_MAX
-// SNTP 서버 최대(ESP-IDF 기본은 3이 일반적)
-#	define G_TM10_SNTPSERVERS_MAX 3
-#endif
+// ESP32 SNTP (Arduino-ESP32)
+#include <esp_sntp.h>
 
 // ------------------------------------------------------
-// Time Manager
+// 운영급 튜닝 상수
+// ------------------------------------------------------
+#ifndef G_TM10_MUTEX_TIMEOUT
+#	define G_TM10_MUTEX_TIMEOUT pdMS_TO_TICKS(100)
+#endif
+
+#ifndef G_TM10_SYNC_TIMEOUT_MS
+// 서버 1개당 콜백을 기다리는 시간(블로킹X, tick에서 체크)
+#	define G_TM10_SYNC_TIMEOUT_MS (15000UL)
+#endif
+
+#ifndef G_TM10_RETRY_BACKOFF_MS
+// fallback 서버 전환 후 다음 체크까지 최소 대기
+#	define G_TM10_RETRY_BACKOFF_MS (2000UL)
+#endif
+
+#ifndef G_TM10_MIN_SYNC_INTERVAL_MS
+// SNTP 주기 하한(너무 짧으면 네트워크/서버 부하)
+#	define G_TM10_MIN_SYNC_INTERVAL_MS (5UL * 60UL * 1000UL)   // 5분
+#endif
+
+#ifndef G_TM10_MAX_SYNC_INTERVAL_MS
+#	define G_TM10_MAX_SYNC_INTERVAL_MS (24UL * 60UL * 60UL * 1000UL)  // 24시간
+#endif
+
+// ------------------------------------------------------
+// TM10 Time Manager
 // ------------------------------------------------------
 class CL_TM10_TimeManager {
   public:
-	// 상태 조회
-	static bool isTimeSynced();
-	static uint32_t getLastSyncMs();
-	static const char* getActiveServer();
+	// 상태 (외부 조회용)
+	static bool     s_timeValid;        // "유효한 로컬 시간" 확보 여부
+	static bool     s_wifiUp;           // Wi-Fi 연결 여부
+	static uint32_t s_lastSyncMs;       // 마지막 성공 콜백 시점(ms)
+	static uint32_t s_lastRequestMs;    // 마지막 동기화 요청 시점(ms)
+	static uint8_t  s_activeServerIdx;  // 현재 사용 중인 서버 인덱스
 
-	// Wi-Fi 이벤트 연동
-	static void onWiFiConnected(const ST_A20_SystemConfig_t& p_cfg_system);
+  public:
+	// 초기화 (1회 호출 권장)
+	static void begin();
+
+	// Wi-Fi 연결/끊김 이벤트에서 호출
+	static void onWiFiConnected(const ST_A20_SystemConfig_t& p_sys);
 	static void onWiFiDisconnected();
 
-	// 런타임 감시(메인 루프에서 가볍게 호출)
-	static void tick(bool p_wifiConnected, const ST_A20_SystemConfig_t* p_cfg_system);
+	// system.time 설정 변경 후 반영(콜백만, 블로킹X)
+	static void applyTimeConfig(const ST_A20_SystemConfig_t& p_sys);
 
-	// (외부에서 시간 설정 변경 즉시 반영 요청 시)
-	static void applyTimeConfigFromSystem(const ST_A20_SystemConfig_t& p_cfg_system);
+	// 메인루프에서 주기 호출(블로킹X)
+	static void tick(const ST_A20_SystemConfig_t* p_sysOrNull);
+
+	// 상태 JSON(디버그/웹)
+	static void toJson(JsonDocument& p_doc);
 
   private:
-	// SNTP 콜백
+	// Mutex
+	static SemaphoreHandle_t s_mutex;
+
+	// 설정 캐시
+	static char     s_tz[64];
+	static char     s_primary[64];
+	static uint32_t s_syncIntervalMs;
+
+	// fallback 서버 풀 (primary + fixed fallbacks)
+	static const char* s_fallbackServers[3]; // time.google.com / time.cloudflare.com / pool.ntp.org(최후)
+	static char        s_serverList[4][64];  // [0]=primary, [1..3]=fallbacks
+
+	// 내부 상태
+	static bool     s_running;
+	static bool     s_waitingCallback;
+	static uint32_t s_waitStartMs;
+	static uint32_t s_nextActionMs;
+
+  private:
+	// helpers
+	static bool _mutexAcquire(const char* p_func);
+	static void _mutexRelease();
+	static uint32_t _clampU32(uint32_t p_v, uint32_t p_lo, uint32_t p_hi);
+
+	static void _setDefaults();
+	static void _copySysTime(const ST_A20_SystemConfig_t& p_sys);
+
+	static void _startSntpWithServer(uint8_t p_idx);
+	static void _stopSntp();
+
+	static bool _isTimeSane();
 	static void _onSntpTimeSync(struct timeval* p_tv);
 
-	// 내부 헬퍼
-	static bool _isTimeSane();
-	static void _buildServerList(const ST_A20_SystemConfig_t& p_cfg_system);
-	static void _applySntpConfig(uint32_t p_syncIntervalMs);
-
-	static bool _sameStr(const char* p_a, const char* p_b);
-
-  private:
-	// 상태
-	static volatile bool	  s_timeSynced;
-	static volatile uint32_t s_lastSyncMs;
-
-	static bool			  s_wifiConnected;
-	static uint32_t		  s_wifiUpMs;
-
-	// 서버 목록/인덱스
-	static char			  s_servers[G_TM10_SNTPSERVERS_MAX][64];
-	static uint8_t		  s_serverCount;
-	static uint8_t		  s_activeServerIdx;
-
-	// 재시도 정책
-	static uint32_t		  s_nextRetryMs;	  // 다음 재시도까지 대기(백오프)
-	static uint32_t		  s_lastRetryAttemptMs;
+	static void _requestSync();        // "지금 동기화 해줘" 요청(블로킹X)
+	static void _switchToNextServer(); // fallback 전환(블로킹X)
 };
 
+// ======================================================
+// Static member definitions (header-only)
+// ======================================================
+SemaphoreHandle_t CL_TM10_TimeManager::s_mutex           = nullptr;
+bool              CL_TM10_TimeManager::s_timeValid       = false;
+bool              CL_TM10_TimeManager::s_wifiUp          = false;
+uint32_t          CL_TM10_TimeManager::s_lastSyncMs      = 0;
+uint32_t          CL_TM10_TimeManager::s_lastRequestMs   = 0;
+uint8_t           CL_TM10_TimeManager::s_activeServerIdx = 0;
+
+char              CL_TM10_TimeManager::s_tz[64];
+char              CL_TM10_TimeManager::s_primary[64];
+uint32_t          CL_TM10_TimeManager::s_syncIntervalMs  = (6UL * 60UL * 60UL * 1000UL);
+
+bool              CL_TM10_TimeManager::s_running         = false;
+bool              CL_TM10_TimeManager::s_waitingCallback = false;
+uint32_t          CL_TM10_TimeManager::s_waitStartMs     = 0;
+uint32_t          CL_TM10_TimeManager::s_nextActionMs    = 0;
+
+const char* CL_TM10_TimeManager::s_fallbackServers[3] = {
+	"time.google.com",
+	"time.cloudflare.com",
+	"pool.ntp.org",
+};
+char CL_TM10_TimeManager::s_serverList[4][64];
+
+// ======================================================
+// Implementation
+// ======================================================
+bool CL_TM10_TimeManager::_mutexAcquire(const char* p_func) {
+	(void)p_func;
+	if (s_mutex == nullptr) return false;
+	return (xSemaphoreTake(s_mutex, G_TM10_MUTEX_TIMEOUT) == pdTRUE);
+}
+void CL_TM10_TimeManager::_mutexRelease() {
+	if (s_mutex) xSemaphoreGive(s_mutex);
+}
+uint32_t CL_TM10_TimeManager::_clampU32(uint32_t p_v, uint32_t p_lo, uint32_t p_hi) {
+	if (p_v < p_lo) return p_lo;
+	if (p_v > p_hi) return p_hi;
+	return p_v;
+}
+
+void CL_TM10_TimeManager::_setDefaults() {
+	memset(s_tz, 0, sizeof(s_tz));
+	memset(s_primary, 0, sizeof(s_primary));
+	strlcpy(s_tz, "Asia/Seoul", sizeof(s_tz));
+	strlcpy(s_primary, "pool.ntp.org", sizeof(s_primary));
+	s_syncIntervalMs = (6UL * 60UL * 60UL * 1000UL);
+
+	// 서버 리스트 구성
+	for (uint8_t i = 0; i < 4; i++) {
+		memset(s_serverList[i], 0, sizeof(s_serverList[i]));
+	}
+	strlcpy(s_serverList[0], s_primary, sizeof(s_serverList[0]));
+	for (uint8_t i = 0; i < 3; i++) {
+		strlcpy(s_serverList[i + 1], s_fallbackServers[i], sizeof(s_serverList[i + 1]));
+	}
+}
+
+void CL_TM10_TimeManager::_copySysTime(const ST_A20_SystemConfig_t& p_sys) {
+	// TZ
+	if (p_sys.time.timezone[0]) {
+		memset(s_tz, 0, sizeof(s_tz));
+		strlcpy(s_tz, p_sys.time.timezone, sizeof(s_tz));
+	}
+
+	// primary NTP
+	if (p_sys.time.ntpServer[0]) {
+		memset(s_primary, 0, sizeof(s_primary));
+		strlcpy(s_primary, p_sys.time.ntpServer, sizeof(s_primary));
+	}
+
+	// interval (min -> ms)
+	uint32_t v_ms = (uint32_t)p_sys.time.syncIntervalMin * 60000UL;
+	if (v_ms == 0) v_ms = (6UL * 60UL * 60UL * 1000UL);
+	v_ms = _clampU32(v_ms, (uint32_t)G_TM10_MIN_SYNC_INTERVAL_MS, (uint32_t)G_TM10_MAX_SYNC_INTERVAL_MS);
+	s_syncIntervalMs = v_ms;
+
+	// 서버 리스트 재구성
+	for (uint8_t i = 0; i < 4; i++) {
+		memset(s_serverList[i], 0, sizeof(s_serverList[i]));
+	}
+	strlcpy(s_serverList[0], s_primary, sizeof(s_serverList[0]));
+	for (uint8_t i = 0; i < 3; i++) {
+		strlcpy(s_serverList[i + 1], s_fallbackServers[i], sizeof(s_serverList[i + 1]));
+	}
+}
+
+bool CL_TM10_TimeManager::_isTimeSane() {
+	time_t v_now = time(nullptr);
+	if (v_now < 1700000000) return false; // 2023-11-15 전이면 동기화 실패로 간주
+
+	struct tm v_tm;
+	memset(&v_tm, 0, sizeof(v_tm));
+
+	// ✅ localtime_r NULL 방어 (요구사항 반영)
+	if (localtime_r(&v_now, &v_tm) == nullptr) return false;
+
+	// sanity check
+	int v_year = v_tm.tm_year + 1900;
+	if (v_year < 2023 || v_year > 2099) return false;
+
+	return true;
+}
+
+void CL_TM10_TimeManager::_onSntpTimeSync(struct timeval* p_tv) {
+	(void)p_tv;
+
+	// 콜백은 ISR은 아니지만, 짧게 처리
+	if (!s_mutex) return;
+	if (xSemaphoreTake(s_mutex, 0) != pdTRUE) return;
+
+	bool v_ok = _isTimeSane();
+	if (v_ok) {
+		s_timeValid       = true;
+		s_waitingCallback = false;
+		s_lastSyncMs      = millis();
+		CL_D10_Logger::log(EN_L10_LOG_INFO, "[TM10] SNTP synced OK (server=%s)", s_serverList[s_activeServerIdx]);
+	} else {
+		// 콜백이 왔어도 시간이 이상하면 실패로 본다.
+		s_timeValid = false;
+		CL_D10_Logger::log(EN_L10_LOG_WARN, "[TM10] SNTP callback but time is not sane (server=%s)", s_serverList[s_activeServerIdx]);
+	}
+
+	xSemaphoreGive(s_mutex);
+}
+
+void CL_TM10_TimeManager::_stopSntp() {
+	if (!s_running) return;
+	sntp_stop();
+	s_running = false;
+}
+
+void CL_TM10_TimeManager::_startSntpWithServer(uint8_t p_idx) {
+	if (p_idx >= 4) p_idx = 0;
+
+	// TZ 적용
+	setenv("TZ", s_tz, 1);
+	tzset();
+
+	_stopSntp();
+
+	// SNTP 구성
+	sntp_setoperatingmode(SNTP_OPMODE_POLL);
+
+	// 서버 설정: Arduino-ESP32는 0..N 서버 슬롯 제공
+	sntp_setservername(0, s_serverList[p_idx]);
+
+	// 콜백 등록 (콜백 only)
+	sntp_set_time_sync_notification_cb(&CL_TM10_TimeManager::_onSntpTimeSync);
+
+	// 주기 설정 (ms)
+	sntp_set_sync_interval((uint32_t)s_syncIntervalMs);
+
+	// 시작
+	sntp_init();
+
+	s_running         = true;
+	s_activeServerIdx = p_idx;
+	s_waitingCallback = true;
+	s_waitStartMs     = millis();
+	s_lastRequestMs   = s_waitStartMs;
+
+	CL_D10_Logger::log(EN_L10_LOG_INFO,
+	                   "[TM10] SNTP start: tz=%s, server=%s, intervalMs=%lu",
+	                   s_tz,
+	                   s_serverList[p_idx],
+	                   (unsigned long)s_syncIntervalMs);
+}
+
+void CL_TM10_TimeManager::_requestSync() {
+	// 콜백 only 정책이므로, "즉시 동기화"는 SNTP를 재시작해서 서버에 요청을 강제한다.
+	// (긴 블로킹 폴링 금지)
+	_startSntpWithServer(s_activeServerIdx);
+}
+
+void CL_TM10_TimeManager::_switchToNextServer() {
+	uint8_t v_next = (uint8_t)(s_activeServerIdx + 1);
+	if (v_next >= 4) v_next = 0;
+
+	CL_D10_Logger::log(EN_L10_LOG_WARN,
+	                   "[TM10] NTP fallback switch: %s -> %s",
+	                   s_serverList[s_activeServerIdx],
+	                   s_serverList[v_next]);
+
+	_startSntpWithServer(v_next);
+}
+
+void CL_TM10_TimeManager::begin() {
+	if (s_mutex == nullptr) {
+		s_mutex = xSemaphoreCreateMutex();
+		if (!s_mutex) {
+			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] Mutex create failed");
+			return;
+		}
+	}
+
+	if (!_mutexAcquire(__func__)) return;
+
+	_setDefaults();
+	s_timeValid       = _isTimeSane();
+	s_wifiUp          = false;
+	s_lastSyncMs      = 0;
+	s_lastRequestMs   = 0;
+	s_activeServerIdx = 0;
+	s_running         = false;
+	s_waitingCallback = false;
+	s_waitStartMs     = 0;
+	s_nextActionMs    = 0;
+
+	_mutexRelease();
+
+	CL_D10_Logger::log(EN_L10_LOG_INFO, "[TM10] begin (timeValid=%d)", (int)s_timeValid);
+}
+
+void CL_TM10_TimeManager::applyTimeConfig(const ST_A20_SystemConfig_t& p_sys) {
+	if (!_mutexAcquire(__func__)) return;
+
+	_copySysTime(p_sys);
+
+	// 동기화 상태는 유지하되, 설정이 바뀌었으면 즉시 재요청(콜백 only)
+	// Wi-Fi가 살아있을 때만
+	if (s_wifiUp) {
+		// 서버 인덱스는 primary부터 재시작
+		s_activeServerIdx = 0;
+		_startSntpWithServer(s_activeServerIdx);
+	}
+
+	_mutexRelease();
+}
+
+void CL_TM10_TimeManager::onWiFiConnected(const ST_A20_SystemConfig_t& p_sys) {
+	if (!_mutexAcquire(__func__)) return;
+
+	s_wifiUp = true;
+
+	_copySysTime(p_sys);
+
+	// 연결 직후: primary부터 시작, 즉시 요청(콜백 only)
+	s_activeServerIdx = 0;
+	_startSntpWithServer(s_activeServerIdx);
+
+	_mutexRelease();
+}
+
+void CL_TM10_TimeManager::onWiFiDisconnected() {
+	if (!_mutexAcquire(__func__)) return;
+
+	s_wifiUp          = false;
+	s_timeValid       = false;
+	s_waitingCallback = false;
+	s_lastRequestMs   = 0;
+	s_waitStartMs     = 0;
+	s_nextActionMs    = 0;
+
+	_stopSntp();
+
+	_mutexRelease();
+
+	CL_D10_Logger::log(EN_L10_LOG_WARN, "[TM10] WiFi down -> SNTP stopped, time invalidated");
+}
+
+void CL_TM10_TimeManager::tick(const ST_A20_SystemConfig_t* p_sysOrNull) {
+	// 블로킹 금지: 짧게 잠금
+	if (!_mutexAcquire(__func__)) return;
+
+	uint32_t v_now = millis();
+
+	// Wi-Fi 없으면 아무 것도 하지 않음
+	if (!s_wifiUp) {
+		_mutexRelease();
+		return;
+	}
+
+	// 운영급: system 설정이 주기 중 바뀐 경우 외부에서 applyTimeConfig()로 반영하는 게 정석.
+	// 하지만 안전하게 sysOrNull이 들어오면 interval만 sanity 체크 정도는 가능.
+	if (p_sysOrNull) {
+		// syncIntervalMin이 비정상(0 포함)이면 기본으로 강제
+		uint32_t v_ms = (uint32_t)p_sysOrNull->time.syncIntervalMin * 60000UL;
+		if (v_ms == 0) v_ms = (6UL * 60UL * 60UL * 1000UL);
+		v_ms = _clampU32(v_ms, (uint32_t)G_TM10_MIN_SYNC_INTERVAL_MS, (uint32_t)G_TM10_MAX_SYNC_INTERVAL_MS);
+		s_syncIntervalMs = v_ms;
+		sntp_set_sync_interval((uint32_t)s_syncIntervalMs);
+	}
+
+	// 콜백 대기 중인데 너무 오래 걸리면 fallback 전환(블로킹X)
+	if (s_waitingCallback) {
+		// 다음 액션 제한(backoff)
+		if (s_nextActionMs != 0 && v_now < s_nextActionMs) {
+			_mutexRelease();
+			return;
+		}
+
+		if (v_now - s_waitStartMs >= (uint32_t)G_TM10_SYNC_TIMEOUT_MS) {
+			s_nextActionMs = v_now + (uint32_t)G_TM10_RETRY_BACKOFF_MS;
+			_mutexRelease();
+			_switchToNextServer();
+			return;
+		}
+	}
+
+	// timeValid가 false인데도 콜백이 안 오면 wait 상태가 유지되면서 timeout fallback이 동작
+	// timeValid가 true면 콜백 주기(SNTP)가 알아서 갱신, 우리는 감시만.
+	if (s_timeValid) {
+		// 혹시라도 time이 깨졌으면 재요청
+		if (!_isTimeSane()) {
+			s_timeValid       = false;
+			s_waitingCallback = true;
+			s_waitStartMs     = v_now;
+			s_nextActionMs    = v_now + (uint32_t)G_TM10_RETRY_BACKOFF_MS;
+			_mutexRelease();
+			_requestSync();
+			return;
+		}
+	}
+
+	_mutexRelease();
+}
+
+void CL_TM10_TimeManager::toJson(JsonDocument& p_doc) {
+	if (!_mutexAcquire(__func__)) return;
+
+	JsonObject v_root = p_doc.to<JsonObject>();
+	JsonObject v_time = v_root["time"].to<JsonObject>();
+
+	v_time["wifiUp"]           = s_wifiUp;
+	v_time["timeValid"]        = s_timeValid;
+	v_time["activeServerIdx"]  = s_activeServerIdx;
+	v_time["activeServer"]     = s_serverList[s_activeServerIdx];
+	v_time["syncIntervalMs"]   = (uint32_t)s_syncIntervalMs;
+	v_time["lastSyncMs"]       = (uint32_t)s_lastSyncMs;
+	v_time["lastRequestMs"]    = (uint32_t)s_lastRequestMs;
+	v_time["waitingCallback"]  = s_waitingCallback;
+
+	_mutexRelease();
+}

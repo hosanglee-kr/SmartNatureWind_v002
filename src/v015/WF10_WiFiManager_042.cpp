@@ -177,6 +177,22 @@ bool CL_WF10_WiFiManager::startAP(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t
 	bool v_ok = WiFi.softAP(p_cfg_wifi.ap.ssid, v_pass, p_channel, false, 4);
 
 	if (!p_enableDhcp) {
+        // Arduino-ESP32 (esp-idf 기반) AP netif 기본 키
+        // 일반적으로 "WIFI_AP_DEF"가 맞습니다.
+        esp_netif_t* v_apNetif = esp_netif_get_handle_from_ifkey("WIFI_AP_DEF");
+        if (v_apNetif) {
+            esp_err_t v_err = esp_netif_dhcps_stop(v_apNetif);
+            CL_D10_Logger::log((v_err == ESP_OK) ? EN_L10_LOG_INFO : EN_L10_LOG_WARN,
+                               "[WiFi] AP DHCP disable: %s (err=0x%X)",
+                               (v_err == ESP_OK) ? "OK" : "FAIL",
+                               (unsigned int)v_err);
+        } else {
+            CL_D10_Logger::log(EN_L10_LOG_WARN, "[WiFi] AP DHCP disable requested but esp_netif handle is null");
+        }
+    }
+	
+    /*
+	if (!p_enableDhcp) {
 #if __has_include(<tcpip_adapter.h>)
 		tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
 		CL_D10_Logger::log(EN_L10_LOG_INFO, "[WiFi] AP DHCP disabled (tcpip_adapter)");
@@ -185,6 +201,7 @@ bool CL_WF10_WiFiManager::startAP(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t
 		CL_D10_Logger::log(EN_L10_LOG_WARN, "[WiFi] AP DHCP disable requested but tcpip_adapter.h not found");
 #endif
 	}
+	*/
 
 	CL_D10_Logger::log(v_ok ? EN_L10_LOG_INFO : EN_L10_LOG_ERROR,
 	                   v_ok ? "[WiFi] AP started (%s)" : "[WiFi] AP start ERR",

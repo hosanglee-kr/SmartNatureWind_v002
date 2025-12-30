@@ -173,7 +173,7 @@ void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
 	}
 
 	// ---- (A) 메타/샘플 스냅샷(락 안에서 값만 캡처) ----
-	T_A20_WindPhase_t		   v_phase = EN_A20_WEATHER_PHASE_NORMAL;
+	EN_A20_WindPhase_t		   v_phase = EN_A20_WEATHER_PHASE_NORMAL;
 	float					   v_avg   = 0.0f;
 	bool					   v_gust  = false;
 	bool					   v_therm = false;

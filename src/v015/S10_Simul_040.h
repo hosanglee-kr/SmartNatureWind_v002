@@ -144,7 +144,7 @@ class CL_S10_Simulation {
 	float				 thermalRadius		 = 18.0f;
 
 	// Phase 상태
-	T_A20_WindPhase_t	 phase				 = EN_A20_WEATHER_PHASE_NORMAL;
+	EN_A20_WindPhase_t	 phase				 = EN_A20_WEATHER_PHASE_NORMAL;
 	float				 phaseStartSec		 = 0.0f;	// [s]
 	float				 phaseDurationSec	 = 120.0f;	// [s]
 	float				 phaseMinWind		 = 2.0f;

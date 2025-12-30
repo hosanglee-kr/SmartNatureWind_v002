@@ -41,6 +41,7 @@
 
 #include <FS.h>
 #include <LittleFS.h>
+#include <new>	// std::nothrow
 
 #include "C10_Config_041.h"
 
@@ -145,7 +146,20 @@ bool ioLoadJson(const char* p_path, JsonDocument& p_doc) {
 	}
 
 	p_doc.clear();
-	p_doc.set(v_bakDoc);
+	File v_f2 = LittleFS.open(p_path, "r");
+	if (!v_f2) {
+		return false;
+	}
+	DeserializationError v_e2 = deserializeJson(p_doc, v_f2);
+	v_f2.close();
+
+	if (v_e2) {
+		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] Backup restore parse error(%s): %s", p_path, v_e2.c_str());
+		return false;
+	}
+
+	// p_doc.clear();
+	// p_doc.set(v_bakDoc);
 
 	CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] Restored valid backup to main: %s", p_path);
 	return true;
@@ -536,6 +550,11 @@ void CL_C10_ConfigManager::toJson_All(const ST_A20_ConfigRoot_t& p,
                                      bool                      p_includeUserProfiles,
                                      bool                      p_includeWindDict,
                                      bool                      p_includeWebPage) {
+
+	C10_MUTEX_ACQUIRE_VOID();
+	p_doc.clear();
+
+
 	// read-only이지만, 동시에 데이터가 바뀔 수 있으면 상위 레벨에서 mutex 권장.
 	if (p_includeSystem && p.system) toJson_System(*p.system, p_doc);
 	if (p_includeWifi && p.wifi) toJson_Wifi(*p.wifi, p_doc);
@@ -545,6 +564,8 @@ void CL_C10_ConfigManager::toJson_All(const ST_A20_ConfigRoot_t& p,
 	if (p_includeUserProfiles && p.userProfiles) toJson_UserProfiles(*p.userProfiles, p_doc);
 	if (p_includeWindDict && p.windDict) toJson_WindProfileDict(*p.windDict, p_doc);
 	if (p_includeWebPage && p.webPage) toJson_WebPage(*p.webPage, p_doc);
+
+	C10_MUTEX_RELEASE();
 
 	CL_D10_Logger::log(
 	    EN_L10_LOG_DEBUG,
@@ -634,15 +655,13 @@ bool CL_C10_ConfigManager::factoryResetFromDefault() {
 		}
 
 		// 8) webPage
-		if (v_def["pages"].is<JsonArrayConst>() || v_def["webPage"].is<JsonObjectConst>()) {
+		if (v_def["pages"].is<JsonArrayConst>() ) {
 			JsonDocument v_doc;
-			if (v_def["webPage"].is<JsonObjectConst>()) {
-				v_doc = v_def["webPage"];
-			} else {
-				v_doc["pages"]    = v_def["pages"];
-				v_doc["reDirect"] = v_def["reDirect"];
-				v_doc["assets"]   = v_def["assets"];
-			}
+
+			v_doc["pages"]    = v_def["pages"];
+			v_doc["reDirect"] = v_def["reDirect"];
+			v_doc["assets"]   = v_def["assets"];
+
 			ioSaveJson(s_cfgJsonFileMap.webPage, v_doc);
 		}
 

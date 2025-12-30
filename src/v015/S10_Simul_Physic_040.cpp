@@ -165,7 +165,7 @@ void CL_S10_Simulation::updatePhase() {
 		return;
 	}
 
-	const T_A20_WindPhase_t v_old = phase;
+	const EN_A20_WindPhase_t v_old = phase;
 	const float				v_r	  = A20_getRandom01();	// 0..1
 
 	if (v_old == EN_A20_WEATHER_PHASE_CALM) {

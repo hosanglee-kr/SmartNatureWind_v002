@@ -153,7 +153,7 @@ void CL_S10_Simulation::tick() {
 	float			  v_bc_target	  = 0.0f;
 	uint8_t			  v_bc_samples	  = 0;
 	float			  v_bc_delta	  = 0.0f;
-	T_A20_WindPhase_t v_bc_phase	  = EN_A20_WEATHER_PHASE_NORMAL;
+	EN_A20_WindPhase_t v_bc_phase	  = EN_A20_WEATHER_PHASE_NORMAL;
 
 	portENTER_CRITICAL(&_simMutex);
 
@@ -195,7 +195,7 @@ void CL_S10_Simulation::tick() {
 
 	// 6) 이전 상태 기록(변화 감지)
 	const float				v_prevWind	= currentWindSpeed;
-	const T_A20_WindPhase_t v_prevPhase = phase;
+	const EN_A20_WindPhase_t v_prevPhase = phase;
 
 	// 7) Phase 업데이트
 	updatePhase();

@@ -43,14 +43,13 @@ jobs:
           config = configparser.ConfigParser()
           config.read('platformio.ini')
           
-          # 1. 모든 env: 섹션 추출
-          # envs = [s.split(':', 1)[1] for s in config.sections() if s.startswith('env:')]
+          # 1. 먼저 전체 환경 리스트를 가져옵니다.
+          all_envs = [s.split(':', 1)[1] for s in config.sections() if s.startswith('env:')]
           
-          # 2. (선택 사항) 특정 env만 빌드하고 싶을 경우 아래 주석을 해제하고 리스트를 수정하세요.
-          envs = [e for e in envs if e in ['esp32-s3-n16r8']]
-          # envs = [e for e in envs if e in ['esp32-s3-zero', 'esp32-s3-n16r8']]
+          # 2. 특정 환경만 필터링합니다. (현재 n16r8만 활성화)
+          envs = [e for e in all_envs if e in ['esp32-s3-n16r8']]
           
-          # 3. 만약 env가 없다면 default_envs 추출 시도
+          # 3. 만약 위 필터링 결과가 비어있다면 default_envs를 사용합니다.
           if not envs and 'platformio' in config:
               default = config['platformio'].get('default_envs', '')
               if default: envs = [e.strip() for e in default.split(',')]

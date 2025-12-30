@@ -72,6 +72,12 @@ bool ioSaveJson(const char* p_path, const JsonDocument& p_doc);
 		return false;                                      \
 	}
 
+// ✅ int 반환 함수에서 사용 (addXXX에서 -1로 실패 처리)
+#define C10_MUTEX_ACQUIRE_INT()                            \
+    if (!CL_C10_ConfigManager::_mutex_Acquire(__func__)) { \
+        return -1;                                         \
+    }
+
 #define C10_MUTEX_ACQUIRE_VOID()                           \
 	if (!CL_C10_ConfigManager::_mutex_Acquire(__func__)) { \
 		return;                                            \

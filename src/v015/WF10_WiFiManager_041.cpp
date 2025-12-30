@@ -46,6 +46,13 @@ void CL_WF10_WiFiManager::attachWiFiEvents() {
 			s_lastStaStatus		= WL_CONNECTED;
 			s_reconnectAttempts = 0;
 			WF10_MUTEX_RELEASE();
+
+			// ✅ 시간 동기화는 TM10이 전담 (콜백 only, 블로킹X)
+            if (g_A20_config_root.system) {
+                CL_TM10_TimeManager::onWiFiConnected(*g_A20_config_root.system);
+            } else {
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[WiFi] system config null -> TM10 onWiFiConnected skipped");
+            }
 		},
 		ARDUINO_EVENT_WIFI_STA_GOT_IP);
 
@@ -53,7 +60,8 @@ void CL_WF10_WiFiManager::attachWiFiEvents() {
 		[](arduino_event_id_t event, arduino_event_info_t info) {
 			if (event == ARDUINO_EVENT_WIFI_STA_DISCONNECTED) {
 				WF10_MUTEX_ACQUIRE();
-				CL_D10_Logger::log(EN_L10_LOG_WARN, "[WiFi] STA disconnected (reason=%d)", info.wifi_sta_disconnected.reason);
+				CL_D10_Logger::log(EN_L10_LOG_WARN, "[WiFi] STA disconnected (reason=%d)", info.
+					wifi_sta_disconnected.reason);
 				s_staConnected	= false;
 				s_lastStaStatus = WL_DISCONNECTED;
 				s_timeSynced	= false;

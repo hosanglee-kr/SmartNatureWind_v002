@@ -24,7 +24,7 @@
  * ------------------------------------------------------
  */
 
-#include "A20_Const_040.h"
+#include "A20_Const_041.h"
 
 // ------------------------------------------------------
 // Wind Profile 해석 함수
@@ -102,6 +102,12 @@ inline bool S20_resolveWindParams(const ST_A20_WindProfileDict_t& p_dict, const 
 	p_out.turbulenceIntensitySigma = (v_tS > 0.0f) ? v_tS : 0.0f;
 	p_out.thermalBubbleStrength	 = (v_thB > 0.1f) ? v_thB : 0.1f;
 	p_out.thermalBubbleRadius		 = (v_thR > 1.0f) ? v_thR : 1.0f;
+
+	p_out.baseMinWind     = v_p.base.baseMinWind;
+	p_out.baseMaxWind     = v_p.base.baseMaxWind;
+	p_out.gustProbBase    = v_p.base.gustProbBase;
+	p_out.gustStrengthMax = v_p.base.gustStrengthMax;
+	p_out.thermalFreqBase = v_p.base.thermalFreqBase;
 
 	// 7) 코드 복사
 	strlcpy(p_out.presetCode, p_presetCode ? p_presetCode : "", sizeof(p_out.presetCode));

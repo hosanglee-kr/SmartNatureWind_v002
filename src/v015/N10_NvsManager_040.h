@@ -22,7 +22,7 @@
  * - createNestedArray/Object/containsKey 사용 금지
  * - memset + strlcpy 기반 안전 초기화
  * - 주석/필드명은 JSON/NVS Key 의미와 동일하게 유지
- * - 모듈별 단일 헤더(h)파일로만 구성 (cpp 없음) (<- 이번 분리 요청으로 변경됨)
+ * - memset + strlcpy 기반 안전 초기화
  * ------------------------------------------------------
  * [코드 네이밍 규칙]
  * - 전역 상수,매크로       : G_모듈약어_ 접두사
@@ -46,7 +46,7 @@
 #include <Preferences.h>
 #include <string.h>
 
-#include "A20_Const_040.h"
+#include "A20_Const_041.h"
 #include "C10_Config_041.h"
 #include "D10_Logger_040.h"
 

@@ -269,7 +269,7 @@
 
     const toXY = (key) =>
       recs.map((r) => ({
-        x: new Date(r.t),
+        x: new Date(r.ts),
         y: r[key]
       }));
 
@@ -324,8 +324,9 @@
       if (isPaused) return;
       try {
         const data = JSON.parse(event.data);
-        if (Array.isArray(data.chart)) {
-          processChartRecords(data.chart);
+        if (Array.isArray(data.sim.chart)) {
+        //if (Array.isArray(data.chart)) {
+          processChartRecords(data.sim.chart);
         }
       } catch (e) {
         console.error("[ChartT2] WS 데이터 파싱 오류:", e);

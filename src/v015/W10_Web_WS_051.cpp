@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------
- * 소스명 : W10_Web_WS_050.cpp
+ * 소스명 : W10_Web_WS_051.cpp
  * 모듈 약어 : W10
  * 모듈명 : Smart Nature Wind Web API - Integrated WebSocket & Broadcast (v029)
  * ------------------------------------------------------
@@ -34,12 +34,43 @@
  * ------------------------------------------------------
  */
 
-#include "W10_Web_050.h"
+#include "W10_Web_051.h"
 
 // --------------------------------------------------
 // 브로드캐스트 유틸리티
 // --------------------------------------------------
 void CL_W10_WebAPI::_broadcast(AsyncWebSocket* p_ws, JsonDocument& p_doc, bool p_diffOnly) {
+    if (!p_ws || !p_ws->count()) return;
+
+    String v_json;
+    serializeJson(p_doc, v_json);
+
+    if (p_diffOnly && v_json.length() <= 5) return;
+
+    // ✅ textAll() 대신 client별 전송 (queue 폭주 방지)
+    /*
+    getClients()가 사용 불가한 버전이면, 라이브러리 버전에 맞게:
+    for (AsyncWebSocketClient* c = p_ws->client(i); ... ) 형태로 교체해야 합니다.
+    (현재 ESPAsyncWebServer 버전에 따라 API가 조금씩 다릅니다)
+
+    */
+
+	// 포인터를 직접 다루는 가장 안전한 방법
+    for (uint32_t i = 0; i < p_ws->count(); i++) {
+        AsyncWebSocketClient* c = p_ws->client(i);
+
+        if (c && c->status() == WS_CONNECTED) {
+            if (c->canSend()) {
+                c->text(v_json);
+            }
+        }
+    }
+
+}
+
+/*
+void CL_W10_WebAPI::_broadcast(AsyncWebSocket* p_ws, Jso
+nDocument& p_doc, bool p_diffOnly) {
 	if (!p_ws || !p_ws->count())
 		return;
 
@@ -50,6 +81,31 @@ void CL_W10_WebAPI::_broadcast(AsyncWebSocket* p_ws, JsonDocument& p_doc, bool p
 		p_ws->textAll(v_json);
 	}
 }
+*/
+
+// --------------------------------------------------
+// WS cleanup tick (권장)
+// --------------------------------------------------
+void CL_W10_WebAPI::wsCleanupTick() {
+    if (s_wsServerState)   s_wsServerState->cleanupClients();
+    if (s_wsServerMetrics) s_wsServerMetrics->cleanupClients();
+    if (s_wsServerChart)   s_wsServerChart->cleanupClients();
+    if (s_wsServerSummary) s_wsServerSummary->cleanupClients();
+    if (s_wsServerLogs)    s_wsServerLogs->cleanupClients();
+}
+
+static uint16_t s_wsItvMs[4] = { 800, 1500, 1200, 1500 };
+
+void CL_W10_WebAPI::setWsIntervals(const uint16_t p_itvMs[4]) {
+    if (!p_itvMs) return;
+    for (uint8_t i = 0; i < 4; i++) {
+        // 0 방지(최소 50ms 같은 하한 적용 가능)
+        s_wsItvMs[i] = (p_itvMs[i] > 0) ? p_itvMs[i] : s_wsItvMs[i];
+    }
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WS intervals set: state=%u metrics=%u chart=%u summary=%u",
+                       (unsigned)s_wsItvMs[0], (unsigned)s_wsItvMs[1], (unsigned)s_wsItvMs[2], (unsigned)s_wsItvMs[3]);
+}
+
 
 // --------------------------------------------------
 // WebSocket 초기화 및 라우팅
@@ -85,6 +141,21 @@ void CL_W10_WebAPI::routeWebSocket() {
 		}
 	});
 	s_server->addHandler(s_wsServerChart);
+
+	// 요약 WS
+	s_wsServerSummary->onEvent([](AsyncWebSocket*, AsyncWebSocketClient* client, AwsEventType type, void*, uint8_t*, size_t) {
+		if (type == WS_EVT_CONNECT) {
+			CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WS /summary connected (id=%u)", client->id());
+			if (s_control) {
+				JsonDocument v_doc;
+				s_control->toSummaryJson(v_doc);
+				String v_json;
+				serializeJson(v_doc, v_json);
+				client->text(v_json);
+			}
+		}
+	});
+	s_server->addHandler(s_wsServerSummary);
 
 	// 메트릭 WS
 	s_wsServerMetrics->onEvent([](AsyncWebSocket*, AsyncWebSocketClient* client, AwsEventType type, void*, uint8_t*, size_t) {
@@ -125,4 +196,11 @@ void CL_W10_WebAPI::broadcastMetrics(JsonDocument& p_doc, bool p_diffOnly) {
 // --------------------------------------------------
 void CL_W10_WebAPI::broadcastChart(JsonDocument& p_doc, bool p_diffOnly) {
 	_broadcast(s_wsServerChart, p_doc, p_diffOnly);
+}
+
+// --------------------------------------------------
+// 요약 브로드캐스트
+// --------------------------------------------------
+void CL_W10_WebAPI::broadcastSummary(JsonDocument& p_doc, bool p_diffOnly) {
+	_broadcast(s_wsServerSummary, p_doc, p_diffOnly);
 }

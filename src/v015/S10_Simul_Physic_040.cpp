@@ -39,20 +39,13 @@
 #include "S10_Simul_040.h"
 
 // 외부 종속성 헤더 포함
-#include "A20_Const_040.h"
+#include "A20_Const_041.h"
 #include "C10_Config_041.h"
 #include "D10_Logger_040.h"
 
 // ==================================================
-// [문자열/확률 헬퍼] (파일 내부 전용)
+// [확률 헬퍼] (파일 내부 전용)
 // ==================================================
-static inline bool S10_strEqNoCase(const char* p_a, const char* p_b) {
-	// [입력 방어] null 안전
-	if (!p_a || !p_b) {
-		return false;
-	}
-	return (strcasecmp(p_a, p_b) == 0);
-}
 
 static inline float S10_probFromRatePerSec(float p_ratePerSec, float p_dtSec) {
 	// [정의]
@@ -88,96 +81,26 @@ static inline float S10_probFromRatePerSec(float p_ratePerSec, float p_dtSec) {
  * - 실제 발생 여부는 updateGust/updateThermal에서 dtSec로 확률 변환하여 판단한다.
  */
 void CL_S10_Simulation::applyPresetCore(const char* p_code) {
-	char v_code[24];
-	memset(v_code, 0, sizeof(v_code));
-
-	if (p_code && p_code[0]) {
-		strlcpy(v_code, p_code, sizeof(v_code));
-	} else {
-		strlcpy(v_code, "OCEAN", sizeof(v_code));
+	// (기존) 하드코딩 방식에서 WindDict 참조 방식으로 전환
+	if (g_A20_config_root.windDict != nullptr) {
+		int16_t v_idx = A20_findPresetIndexByCode(*g_A20_config_root.windDict, p_code);
+		if (v_idx >= 0) {
+			const ST_A20_WindBase_t& v_base = g_A20_config_root.windDict->presets[v_idx].base;
+			baseMinWind     = v_base.baseMinWind;
+			baseMaxWind     = v_base.baseMaxWind;
+			gustProbBase    = v_base.gustProbBase;
+			gustStrengthMax = v_base.gustStrengthMax;
+			thermalFreqBase = v_base.thermalFreqBase;
+			return;
+		}
 	}
 
-	// ------------------------------------------------------
-	// 공통 기본값 (OCEAN 기준)
-	// ------------------------------------------------------
-	baseMinWind		= 1.8f;	   // [m/s]
-	baseMaxWind		= 5.5f;	   // [m/s]
-	gustProbBase	= 0.040f;  // [1/sec] 돌풍 초당 기본 발생률(rate)
-	gustStrengthMax = 2.10f;   // [-] 최대 돌풍 배율
-	thermalFreqBase = 0.022f;  // [1/sec] 열기포 초당 기본 발생률(rate)
-
-	// ------------------------------------------------------
-	// Preset Code에 따른 개별 상수 설정
-	// ------------------------------------------------------
-	if (S10_strEqNoCase(v_code, "COUNTRY") || S10_strEqNoCase(v_code, "COUNTRY_BREEZE") || S10_strEqNoCase(v_code, "COUNTRY_B")) {
-		baseMinWind		= 0.7f;
-		baseMaxWind		= 3.4f;
-		gustProbBase	= 0.006f;
-		gustStrengthMax = 1.35f;
-		thermalFreqBase = 0.015f;
-	} else if (S10_strEqNoCase(v_code, "MEDITERRANEAN")) {
-		baseMinWind		= 1.6f;
-		baseMaxWind		= 3.8f;
-		gustProbBase	= 0.012f;
-		gustStrengthMax = 1.55f;
-		thermalFreqBase = 0.035f;
-	} else if (S10_strEqNoCase(v_code, "OCEAN")) {
-		// 기본값 유지
-	} else if (S10_strEqNoCase(v_code, "MOUNTAIN")) {
-		baseMinWind		= 2.2f;
-		baseMaxWind		= 7.5f;
-		gustProbBase	= 0.045f;
-		gustStrengthMax = 2.20f;
-		thermalFreqBase = 0.028f;
-	} else if (S10_strEqNoCase(v_code, "PLAINS")) {
-		baseMinWind		= 4.0f;
-		baseMaxWind		= 8.8f;
-		gustProbBase	= 0.070f;
-		gustStrengthMax = 2.40f;
-		thermalFreqBase = 0.018f;
-	} else if (S10_strEqNoCase(v_code, "HARBOR_BREEZE") || S10_strEqNoCase(v_code, "HARBOUR_BREEZE")) {
-		baseMinWind		= 2.25f;
-		baseMaxWind		= 5.35f;
-		gustProbBase	= 0.025f;
-		gustStrengthMax = 1.80f;
-		thermalFreqBase = 0.026f;
-	} else if (S10_strEqNoCase(v_code, "FOREST_CANOPY")) {
-		baseMinWind		= 1.35f;
-		baseMaxWind		= 4.00f;
-		gustProbBase	= 0.010f;
-		gustStrengthMax = 1.50f;
-		thermalFreqBase = 0.012f;
-	} else if (S10_strEqNoCase(v_code, "URBAN_SUNSET")) {
-		baseMinWind		= 1.80f;
-		baseMaxWind		= 4.90f;
-		gustProbBase	= 0.030f;
-		gustStrengthMax = 2.00f;
-		thermalFreqBase = 0.020f;
-	} else if (S10_strEqNoCase(v_code, "TROPICAL_RAIN")) {
-		baseMinWind		= 3.15f;
-		baseMaxWind		= 8.05f;
-		gustProbBase	= 0.060f;
-		gustStrengthMax = 2.20f;
-		thermalFreqBase = 0.038f;
-	} else if (S10_strEqNoCase(v_code, "DESERT_NIGHT")) {
-		baseMinWind		= 0.90f;
-		baseMaxWind		= 3.10f;
-		gustProbBase	= 0.005f;
-		gustStrengthMax = 1.30f;
-		thermalFreqBase = 0.008f;
-	}
-
-	// [입력 방어/안정성] 최소/최대 범위 보정
-	if (baseMaxWind < baseMinWind) {
-		const float v_tmp = baseMaxWind;
-		baseMaxWind		  = baseMinWind;
-		baseMinWind		  = v_tmp;
-	}
-	baseMinWind		= max(0.2f, baseMinWind);
-	baseMaxWind		= min(11.0f, baseMaxWind);
-	gustStrengthMax = max(1.0f, gustStrengthMax);
-	gustProbBase	= max(0.0f, gustProbBase);
-	thermalFreqBase = max(0.0f, thermalFreqBase);
+	// [Fallback] WindDict에 없거나 로드 전일 경우 최소한의 안전값(OCEAN 기준)
+	baseMinWind		= 1.8f;   // [m/s]
+	baseMaxWind		= 5.5f;   // [m/s]
+	gustProbBase	= 0.040f; // [1/sec]
+	gustStrengthMax = 2.10f;  // [-]
+	thermalFreqBase = 0.022f; // [1/sec]
 }
 
 /**
@@ -448,7 +371,12 @@ void CL_S10_Simulation::updateGust() {
 	const unsigned long v_nowMs		= _tickNowMs;
 	const unsigned long v_elapsedMs = (v_nowMs >= lastGustCheckMs) ? (v_nowMs - lastGustCheckMs) : 0UL;
 
-	if (v_elapsedMs < G_S10_GUST_EVAL_MIN_MS) {
+	uint32_t v_minGustEvalMs = G_S10_GUST_EVAL_MIN_MS;
+	if (g_A20_config_root.motion != nullptr) {
+		v_minGustEvalMs = (uint32_t)g_A20_config_root.motion->timing.gustIntervalMs;
+	}
+
+	if (v_elapsedMs < v_minGustEvalMs) {
 		return;
 	}
 
@@ -515,7 +443,12 @@ void CL_S10_Simulation::updateThermal() {
 	const unsigned long v_nowMs		= _tickNowMs;
 	const unsigned long v_elapsedMs = (v_nowMs >= lastThermalCheckMs) ? (v_nowMs - lastThermalCheckMs) : 0UL;
 
-	if (v_elapsedMs < G_S10_THERM_EVAL_MIN_MS) {
+	uint32_t v_minThermEvalMs = G_S10_THERM_EVAL_MIN_MS;
+	if (g_A20_config_root.motion != nullptr) {
+		v_minThermEvalMs = (uint32_t)g_A20_config_root.motion->timing.thermalIntervalMs;
+	}
+
+	if (v_elapsedMs < v_minThermEvalMs) {
 		return;
 	}
 

@@ -17,7 +17,7 @@
 #include "S10_Simul_040.h"	// (변경 반영) 헤더 포함
 
 // 외부 종속성 헤더 포함
-#include "A20_Const_040.h"
+#include "A20_Const_041.h"
 #include "C10_Config_041.h"
 #include "D10_Logger_040.h"
 #include "P10_PWM_ctrl_040.h"
@@ -175,8 +175,13 @@ void CL_S10_Simulation::tick() {
 
 	// 4) tick 업데이트 최소 간격(지터 포함)
 	// - BASE + [0..RANGE-1]
+	uint32_t v_baseMs = G_S10_TICK_MIN_BASE_MS;
+	if (g_A20_config_root.motion != nullptr) {
+		v_baseMs = (uint32_t)g_A20_config_root.motion->timing.simIntervalMs;
+	}
+
 	const uint32_t v_jitterMs	   = (G_S10_TICK_JITTER_RANGE_MS > 0u) ? (esp_random() % G_S10_TICK_JITTER_RANGE_MS) : 0u;
-	const uint32_t v_minIntervalMs = G_S10_TICK_MIN_BASE_MS + v_jitterMs;
+	const uint32_t v_minIntervalMs = v_baseMs + v_jitterMs;
 
 	if (_tickNowMs - lastUpdateMs < (unsigned long)v_minIntervalMs) {
 		portEXIT_CRITICAL(&_simMutex);
@@ -279,8 +284,12 @@ void CL_S10_Simulation::tick() {
 		v_sim["samples"]   = v_bc_samples;
 		v_sim["delta"]	   = v_bc_delta;
 
-		A00_broadcastChart(v_doc, true);
-		A00_markDirty("chart");
+		CT10_markDirtyFromSim("chart");
+		// 차트 갱신 시 metrics도 같이 갱신되는 정책이면 함께 dirty 권장
+		CT10_markDirtyFromSim("metrics");
+		
+		// A00_broadcastChart(v_doc, true);
+		// A00_markDirty("chart");
 	}
 }
 
@@ -328,6 +337,12 @@ void CL_S10_Simulation::applyResolvedWind(const ST_A20_ResolvedWind_t& p_resolve
 	turbSigma		= max(0.0f, p_resolved.turbulenceIntensitySigma);
 	thermalStrength = max(1.0f, p_resolved.thermalBubbleStrength);
 	thermalRadius	= max(0.0f, p_resolved.thermalBubbleRadius);
+
+	baseMinWind     = p_resolved.baseMinWind;
+	baseMaxWind     = p_resolved.baseMaxWind;
+	gustProbBase    = p_resolved.gustProbBase;
+	gustStrengthMax = p_resolved.gustStrengthMax;
+	thermalFreqBase = p_resolved.thermalFreqBase;
 
 	// Preset 코어 파라미터 재적용
 	applyPresetCore(presetCode);

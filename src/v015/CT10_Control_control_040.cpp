@@ -11,7 +11,7 @@
  * ------------------------------------------------------
  */
 
-#include "CT10_Control_040.h"
+#include "CT10_Control_041.h"
 
 // 외부 전역(프로젝트 기존 전역 PWM 가정)
 extern CL_P10_PWM g_P10_pwm;
@@ -283,7 +283,8 @@ void CL_CT10_ControlManager::tickLoop() {
 	// 4) Schedule
 	if (tickSchedule()) {
 		sim.tick();
-		markDirty("chart");
+		// ✅ chart dirty는 applySegmentOn/off, override 적용, sim 내부 변화에서만 발생하도록
+		// markDirty("chart");
 		maybePushMetricsDirty();
 		return;
 	}

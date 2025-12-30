@@ -1,0 +1,147 @@
+; PlatformIO Project Configuration File
+;
+;   Build options: build flags, source filter
+;   Upload options: custom upload port, speed and extra flags
+;   Library options: dependencies, extra library storages
+;   Advanced options: extra scripting
+;
+; Please visit documentation for the other options and examples
+; https://docs.platformio.org/page/projectconf.html
+
+[platformio]
+    default_envs            = esp32-s3-zero
+    data_dir                = ./src/v015/data_v015
+    build_cache_dir 		= ./.pio/build_cache
+
+;[env:esp32doit]
+;    platform = espressif32
+;    board = esp32doit-devkit-v1
+;    framework = arduino
+;    lib_deps =
+;        bblanchon/ArduinoJson @ ^7.4.2
+;        esp32async/ESPAsyncWebServer@^3.8.0     #me-no-dev/ESP Async WebServer@^1.2.3
+;        #me-no-dev/AsyncTCP@^1.1.1
+;    board_build.filesystem = littlefs
+
+
+[env:esp32-s3-zero]
+    platform = espressif32
+    framework = arduino
+    ; ESP32-S3 DevKitC-1 보드 프로파일을 사용합니다.
+    board = esp32-s3-devkitc-1
+
+    board_build.f_cpu = 240000000L
+    board_build.f_flash = 80000000L
+    board_build.flash_mode = qio
+
+    board_upload.flash_size = 4MB
+    board_build.partitions = default_4MB.csv
+
+    ; 오버클럭된 코어를 사용하는 경우 240MHz로 설정합니다.
+    board_build.mcu = esp32s3
+    monitor_speed = 115200
+
+
+    lib_deps =
+        bblanchon/ArduinoJson @ ^7.4.2
+        esp32async/ESPAsyncWebServer@^3.9.3     #me-no-dev/ESP Async WebServer@^1.2.3
+        #me-no-dev/AsyncTCP@^1.1.1
+
+        h2zero/NimBLE-Arduino @ ^2.3.7
+        adafruit/Adafruit Unified Sensor @ ^1.1.15
+        adafruit/DHT sensor library @ ^1.4.6
+
+    board_build.filesystem = littlefs
+
+    build_unflags = -std=gnu++11
+    ; 빌드 플래그 (일반적으로 사용하지 않아도 되지만, 디버깅 등에 유용)
+    build_flags =
+        -DBOARD_HAS_PSRAM
+        -mfix-esp32-psram-cache-issue
+        -DARDUINO_USB_CDC_ON_BOOT=1 ; USB CDC 활성화 (USB 네이티브 포트 사용 시)
+        -std=gnu++17
+
+        -D ASYNCWEBSERVER_REGEX
+
+        ; ESP32 BLE 스택을 NimBLE로 강제 지정합니다.
+        -DCONFIG_BT_NIMBLE_ENABLED=1
+        -DCONFIG_BT_BLE_ENABLED=1
+
+        ; WDT 비활성화 (권장하지 않음)
+        ;-D CONFIG_FREERTOS_WATCHDOG_CPU_ID=0
+        ;-D CONFIG_TASK_WDT_CHECK_IDLE_TASK=n
+
+
+
+    build_src_filter =
+        +<*>                ; 👈 모든 소스 파일을 기본적으로 포함 (Include all files)
+        -<v014_backup/>     ; 👈 v014_backup 폴더만 명시적으로 제외 (Exclude the backup folder)
+        -<v015_backup/>
+        -<v014/>     ;
+
+[env:esp32-s3-n16r8]
+	platform = espressif32
+	board = esp32s3box
+	framework = arduino
+
+	; 1. 하드웨어 설정 (오타 수정 및 OPI 최적화)
+	board_build.arduino.memory_type = qio_opi ; Flash는 Quad(qio), PSRAM은 Octal(opi)
+	board_build.flash_mode = qio              ; 에러 해결을 위해 qio로 변경
+	board_upload.flash_size = 16MB
+	board_build.arduino.partitions = default_16MB.csv
+	board_build.filesystem = littlefs
+
+	; 2. 소스 필터 설정
+	build_src_filter =
+		+<*>
+		-<v014_backup/>
+		-<v015_backup/>
+		-<v014/>
+
+	; 3. 컴파일러 플래그 (C++17 및 PSRAM 설정)
+	build_unflags =
+		-std=gnu++11
+		-std=gnu++14
+		-std=c++11
+		-std=c++14
+
+	build_flags =
+		-std=gnu++17
+		-D ARDUINO_USB_MODE=1
+		-D ARDUINO_USB_CDC_ON_BOOT=1
+		-D BOARD_HAS_PSRAM
+		-D BOARD_HAS_PSRAM_OPI
+		-mfix-esp32-psram-cache-issue
+		-D ASYNCWEBSERVER_REGEX
+		-D CONFIG_BT_NIMBLE_ENABLED=1
+		-D CONFIG_BT_BLE_ENABLED=1
+
+	; 4. 라이브러리 의존성 (ArduinoJson 7.4.2 포함)
+	lib_deps =
+		bblanchon/ArduinoJson @ ^7.4.2
+		esp32async/ESPAsyncWebServer @ ^3.9.3
+		h2zero/NimBLE-Arduino @ ^2.3.7
+		adafruit/Adafruit Unified Sensor @ ^1.1.15
+		adafruit/DHT sensor library @ ^1.4.6
+
+	; 5. 모니터 설정
+	monitor_speed = 115200
+	monitor_filters = esp32_exception_decoder
+
+	debug_tool = esp-builtin
+	upload_protocol = esp-builtin
+	; 속도를 2000kHz 정도로 낮춰봅니다.
+	debug_speed = 2000
+
+	; GDB 시간 초과 방지 및 초기화 명령
+debug_init_cmds =
+    define pio_reset_halt_target
+        monitor reset halt
+    end
+    define pio_reset_run_target
+        monitor reset run
+    end
+    target remote :3333
+    set remotetimeout 20
+    pio_reset_halt_target
+    $__init_break

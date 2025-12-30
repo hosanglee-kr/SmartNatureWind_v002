@@ -52,6 +52,7 @@ constexpr const char* HTTP_API_CONTROL_SUMMARY	   = HTTP_API_BASE "/control/summ
 // --------------------------------------------------
 // 3. 설정 관리 (Configuration Life Cycle)
 // --------------------------------------------------
+constexpr const char* HTTP_API_CONFIG		   = HTTP_API_BASE "/config";
 constexpr const char* HTTP_API_CONFIG_SAVE		   = HTTP_API_BASE "/config/save";
 constexpr const char* HTTP_API_CONFIG_DIRTY		   = HTTP_API_BASE "/config/dirty";
 constexpr const char* HTTP_API_CONFIG_INIT		   = HTTP_API_BASE "/config/init";
@@ -102,6 +103,7 @@ constexpr const char* WS_API_LOG				   = WS_API_BASE "/log";
 constexpr const char* WS_API_STATE				   = WS_API_BASE "/state";
 constexpr const char* WS_API_CHART				   = WS_API_BASE "/chart";
 constexpr const char* WS_API_METRICS			   = WS_API_BASE "/metrics";
+constexpr const char* WS_API_SUMMARY			   = WS_API_BASE "/summary";
 
 // --------------------------------------------------
 // 10. 파일 시스템 경로 (LittleFS Path)

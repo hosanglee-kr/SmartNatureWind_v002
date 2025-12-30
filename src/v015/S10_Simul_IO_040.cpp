@@ -38,15 +38,24 @@
  * - Function arguments    : p_ prefix
  * ------------------------------------------------------
  */
+#include <Arduino.h>
+#include <ArduinoJson.h>
+#include <freertos/semphr.h>
+#include <cstring>
+#include <cstdio>
+using namespace std;
+
+
 #include <vector>
 
-#include "S10_Simul_040.h"
 
 // 외부 종속성 헤더 포함 (외부에서 제공되어야 함: 시스템 상수, 설정, 로그, PWM 제어)
-#include "A20_Const_040.h"
+#include "A20_Const_041.h"
 #include "C10_Config_041.h"
 #include "D10_Logger_040.h"
 #include "P10_PWM_ctrl_040.h"
+#include "S10_Simul_040.h"
+
 
 // ------------------------------------------------------
 // 정적 멤버 정의 (클래스 인스턴스와 무관하게 유지되는 공유 데이터)
@@ -120,6 +129,12 @@ void CL_S10_Simulation::toJson(JsonDocument& p_doc) {
 
 	v_objSim["thermalStrength"] = thermalStrength;
 	v_objSim["thermalRadius"]	= thermalRadius;
+
+	v_objSim["baseMinWind"]     = baseMinWind;
+	v_objSim["baseMaxWind"]     = baseMaxWind;
+	v_objSim["gustProbBase"]    = gustProbBase;
+	v_objSim["gustStrengthMax"] = gustStrengthMax;
+	v_objSim["thermalFreqBase"] = thermalFreqBase;
 
 	portEXIT_CRITICAL(&_simMutex);
 }

@@ -15,11 +15,14 @@
     {
       "uri": "/P020_chart_t1_008.html",
       "path": "/html_v2/P020_chart_t1_008.html",
-      "label": "Chart T1",
+      "label": "ChartT1",
       "enable": true,
       "isMain": false,
       "order": 20,
-      "pageAssets": []
+      "pageAssets": [
+        { "uri": "/P020_chart_t1_008.css", "path": "/html_v2/P020_chart_t1_008.css" },
+        { "uri": "/P020_chart_t1_008.js", "path": "/html_v2/P020_chart_t1_008.js" }
+      ]
     },
     {
       "uri": "/P030_schedules_t1_006.html",
@@ -37,7 +40,11 @@
       "enable": true,
       "isMain": false,
       "order": 40,
-      "pageAssets": []
+      "pageAssets": [
+        { "uri": "/P040_dashboard_003.css", "path": "/html_v2/P040_dashboard_003.css" },
+        { "uri": "/P040_dashboard_003.js", "path": "/html_v2/P040_dashboard_003.js" }
+      ]
+
     },
     {
       "uri": "/P050_chart_t2_008.html",
@@ -46,7 +53,10 @@
       "enable": true,
       "isMain": false,
       "order": 50,
-      "pageAssets": []
+      "pageAssets": [
+        { "uri": "/P050_chart_t2_008.css", "path": "/html_v2/P050_chart_t2_008.css" },
+        { "uri": "/P050_chart_t2_008.js", "path": "/html_v2/P050_chart_t2_008.js" }
+      ]
     },
     {
       "uri": "/P060_sim_details_001.html",
@@ -55,7 +65,10 @@
       "enable": true,
       "isMain": false,
       "order": 60,
-      "pageAssets": []
+      "pageAssets": [
+        { "uri": "/P060_sim_details_001.css", "path": "/html_v2/P060_sim_details_001.css" },
+        { "uri": "/P060_sim_details_001.js", "path": "/html_v2/P060_sim_details_001.js" }
+      ]
     },
     {
       "uri": "/P070_profile_001.html",
@@ -64,7 +77,10 @@
       "enable": true,
       "isMain": false,
       "order": 70,
-      "pageAssets": []
+      "pageAssets": [
+        { "uri": "/P070_profile_001.css", "path": "/html_v2/P070_profile_001.css" },
+        { "uri": "/P070_profile_001.js", "path": "/html_v2/P070_profile_001.js" }
+      ]
     },
     {
       "uri": "/P080_schedules_t2_003.html",
@@ -73,7 +89,10 @@
       "enable": true,
       "isMain": false,
       "order": 80,
-      "pageAssets": []
+      "pageAssets": [
+        { "uri": "/P080_schedules_t2_003.css", "path": "/html_v2/P080_schedules_t2_003.css" },
+        { "uri": "/P080_schedules_t2_003.js", "path": "/html_v2/P080_schedules_t2_003.js" }
+      ]
     },
     {
       "uri": "/P085_userProfiles_t2_003.html",
@@ -82,7 +101,10 @@
       "enable": true,
       "isMain": false,
       "order": 85,
-      "pageAssets": []
+      "pageAssets": [
+        { "uri": "/P085_userProfiles_t2_003.css", "path": "/html_v2/P085_userProfiles_t2_003.css" },
+        { "uri": "/P085_userProfiles_t2_003.js", "path": "/html_v2/P085_userProfiles_t2_003.js" }
+      ]
     },
     {
       "uri": "/P090_user_001.html",
@@ -91,7 +113,10 @@
       "enable": true,
       "isMain": false,
       "order": 200,
-      "pageAssets": []
+      "pageAssets": [
+        { "uri": "/P090_user_001.css", "path": "/html_v2/P090_user_001.css" },
+        { "uri": "/P090_user_001.js", "path": "/html_v2/P090_user_001.js" }
+      ]
     },
     {
       "uri": "/P100_settings_001.html",
@@ -100,7 +125,10 @@
       "enable": true,
       "isMain": false,
       "order": 100,
-      "pageAssets": []
+      "pageAssets": [
+        { "uri": "/P100_settings_001.css", "path": "/html_v2/P100_settings_001.css" },
+        { "uri": "/P100_settings_002.js", "path": "/html_v2/P100_settings_002.js" }
+      ]
     },
     {
       "uri": "/P110_config_025.html",

@@ -26,7 +26,6 @@
  * - createNestedArray/Object/containsKey 사용 금지
  * - memset + strlcpy 기반 안전 초기화
  * - 주석/필드명은 JSON 구조와 동일하게 유지
- * - 모듈별 단일 헤더(h)파일로만 구성 (cpp 없음) -> 구현부 분리 요청으로 인해 CPP 파일 생성됨.
  * ------------------------------------------------------
  * [코드 네이밍 규칙]
  * - 전역 상수,매크로      : G_모듈약어_ 접두사
@@ -54,17 +53,24 @@
 #include <cmath>
 #include <deque>
 
-#include "A20_Const_040.h"
+#include "A20_Const_041.h"
 #include "C10_Config_041.h"
 #include "D10_Logger_040.h"
 #include "P10_PWM_ctrl_040.h"
 
+
+// ------------------------------------------------------
+// S10 -> CT10 Dirty bridge (forward decl only)
+// ------------------------------------------------------
+extern void CT10_markDirtyFromSim(const char* p_key);
+/*
 // A00(메인 루프)의 전역 함수 전방 선언: WebAPI로 상태를 브로드캐스팅
 extern void A00_broadcastState(ArduinoJson::JsonDocument& doc, bool diffOnly);
 extern void A00_broadcastChart(ArduinoJson::JsonDocument& doc, bool diffOnly);
 extern void A00_broadcastMetrics(ArduinoJson::JsonDocument& doc, bool diffOnly);
 extern void A00_markDirty(const char* key);
 extern int strcasecmp(const char* s1, const char* s2);
+*/
 
 // ==================================================
 // [S10 주기 정책 상수] (시간 단위 주석 필수)

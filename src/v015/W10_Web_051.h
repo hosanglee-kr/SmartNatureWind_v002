@@ -1,7 +1,7 @@
 #pragma once
 /*
  * ------------------------------------------------------
- * 소스명 : W10_Web_050.h
+ * 소스명 : W10_Web_051.h
  * 모듈약어 : W10
  * 모듈명 : Smart Nature Wind Web API Manager (v030)
  * ------------------------------------------------------
@@ -42,9 +42,9 @@
 
 #include <vector>
 
-#include "A20_Const_040.h"
+#include "A20_Const_041.h"
 #include "C10_Config_041.h"
-#include "CT10_Control_040.h"
+#include "CT10_Control_041.h"
 #include "D10_Logger_040.h"
 #include "N10_NvsManager_040.h"
 #include "W10_Web_Const_050.h"
@@ -61,12 +61,22 @@ class CL_W10_WebAPI {
 	// v029: WiFiMulti 인자 포함
 	static void begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_control, WiFiMulti& p_multi);
 
+  // WS 정책 수신 (CT10 policy.itv → W10 반영)
+  // --------------------------------------------------
+  static void setWsIntervals(const uint16_t p_itvMs[4]);
+
+  // cleanupClients 주기 tick (권장)
+  static void wsCleanupTick();
+
 	// --------------------------------------------------
 	// 브로드캐스트 (WebSockets.cpp)
 	// --------------------------------------------------
 	static void broadcastState(JsonDocument& p_doc, bool p_diffOnly = true);
 	static void broadcastMetrics(JsonDocument& p_doc, bool p_diffOnly = true);
 	static void broadcastChart(JsonDocument& p_doc, bool p_diffOnly = true);
+	static void broadcastSummary(JsonDocument& p_doc, bool p_diffOnly = true);
+
+
 
   private:
 	// --------------------------------------------------
@@ -84,6 +94,7 @@ class CL_W10_WebAPI {
 	static AsyncWebSocket*		   s_wsServerLogs;
 	static AsyncWebSocket*		   s_wsServerChart;
 	static AsyncWebSocket*		   s_wsServerMetrics;
+	static AsyncWebSocket*		   s_wsServerSummary;
 
 	// --------------------------------------------------
 	// Static Assets & Menu (W10_Web_Static_032.cpp)
@@ -205,7 +216,7 @@ class CL_W10_WebAPI {
 		p_request->send(v_resp);
 	}
 
-	// W10_Web_050.h 안에서 기존 sendText 교체
+	// W10_Web_051.h 안에서 기존 sendText 교체
 	static inline void sendText(AsyncWebServerRequest* p_request, const String& p_msg, int p_code = 200, const char* p_mime = "text/plain; charset=utf-8") {
 		auto* v_resp = p_request->beginResponse(p_code, p_mime, p_msg);
 		_applyHeaders(v_resp, true);

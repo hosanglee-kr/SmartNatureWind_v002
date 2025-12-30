@@ -298,11 +298,24 @@ void CL_WF10_WiFiManager::scanNetworksToJson(JsonDocument& p_doc) {
 // 상태/헬퍼
 // --------------------------------------------------
 bool CL_WF10_WiFiManager::isStaConnected() {
-	WF10_MUTEX_ACQUIRE();
-	bool v_status = s_staConnected && WiFi.status() == WL_CONNECTED;
-	WF10_MUTEX_RELEASE();
-	return v_status;
+    // 1. 뮤텍스가 생성되지 않았으면 무조건 false 반환 (Crash 방지)
+    if (s_wifiMutex == nullptr) return false;
+
+    // 2. 뮤텍스 획득 시도 (포트 타임아웃을 주어 루프가 굳지 않게 함)
+    if (xSemaphoreTake(s_wifiMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+        bool v_status = s_staConnected && (WiFi.status() == WL_CONNECTED);
+        xSemaphoreGive(s_wifiMutex);
+        return v_status;
+    }
+
+    return false; // 뮤텍스를 얻지 못한 경우
 }
+// bool CL_WF10_WiFiManager::isStaConnected() {
+// 	WF10_MUTEX_ACQUIRE();
+// 	bool v_status = s_staConnected && WiFi.status() == WL_CONNECTED;
+// 	WF10_MUTEX_RELEASE();
+// 	return v_status;
+// }
 
 const char* CL_WF10_WiFiManager::getStaStatusString() {
 	switch (WiFi.status()) {

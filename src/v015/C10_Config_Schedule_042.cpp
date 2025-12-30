@@ -193,6 +193,12 @@ static void C10_fromJson_WindPreset(const JsonObjectConst& p_js, ST_A20_PresetEn
 	p_p.base.turbulenceIntensitySigma = v_b["turbulenceIntensitySigma"] | 0.5f;    // camelCase
 	p_p.base.thermalBubbleStrength    = v_b["thermalBubbleStrength"] | 2.0f;       // camelCase
 	p_p.base.thermalBubbleRadius      = v_b["thermalBubbleRadius"] | 18.0f;        // camelCase
+
+	p_p.base.baseMinWind      = v_b["baseMinWind"] | 1.8f;      // camelCase
+	p_p.base.baseMaxWind      = v_b["baseMaxWind"] | 5.5f;      // camelCase
+	p_p.base.gustProbBase     = v_b["gustProbBase"] | 0.040f;   // camelCase
+	p_p.base.gustStrengthMax  = v_b["gustStrengthMax"] | 2.10f; // camelCase
+	p_p.base.thermalFreqBase  = v_b["thermalFreqBase"] | 0.022f; // camelCase
 }
 
 // =====================================================
@@ -272,7 +278,7 @@ bool CL_C10_ConfigManager::loadWindProfileDict(ST_A20_WindProfileDict_t& p_dict)
 		return false;
 	}
 
-	JsonObjectConst j = d["windProfile"].as<JsonObjectConst>();
+	JsonObjectConst j = d["windDict"].as<JsonObjectConst>();
 
 	p_dict.presetCount = 0;
 	if (j["presets"].is<JsonArrayConst>()) {
@@ -436,7 +442,7 @@ bool CL_C10_ConfigManager::saveWindProfileDict(const ST_A20_WindProfileDict_t& p
 	// presets
 	for (uint8_t v_i = 0; v_i < p_cfg.presetCount; v_i++) {
 		const ST_A20_PresetEntry_t& v_p  = p_cfg.presets[v_i];
-		JsonObject                  v_js = d["windProfile"]["presets"][v_i];
+		JsonObject                  v_js = d["windDict"]["presets"][v_i];
 
 		v_js["name"] = v_p.name;
 		v_js["code"] = v_p.code;
@@ -451,12 +457,18 @@ bool CL_C10_ConfigManager::saveWindProfileDict(const ST_A20_WindProfileDict_t& p
 		v_b["turbulenceIntensitySigma"] = v_p.base.turbulenceIntensitySigma; // camelCase
 		v_b["thermalBubbleStrength"]   = v_p.base.thermalBubbleStrength;    // camelCase
 		v_b["thermalBubbleRadius"]     = v_p.base.thermalBubbleRadius;      // camelCase
+
+		v_b["baseMinWind"]      = v_p.base.baseMinWind;      // camelCase
+		v_b["baseMaxWind"]      = v_p.base.baseMaxWind;      // camelCase
+		v_b["gustProbBase"]     = v_p.base.gustProbBase;     // camelCase
+		v_b["gustStrengthMax"]  = v_p.base.gustStrengthMax;  // camelCase
+		v_b["thermalFreqBase"]  = v_p.base.thermalFreqBase;  // camelCase
 	}
 
 	// styles
 	for (uint8_t v_i = 0; v_i < p_cfg.styleCount; v_i++) {
 		const ST_A20_StyleEntry_t& v_s  = p_cfg.styles[v_i];
-		JsonObject                 v_js = d["windProfile"]["styles"][v_i];
+		JsonObject                 v_js = d["windDict"]["styles"][v_i];
 
 		v_js["name"] = v_s.name;
 		v_js["code"] = v_s.code;
@@ -587,7 +599,7 @@ void CL_C10_ConfigManager::toJson_UserProfiles(const ST_A20_UserProfilesRoot_t& 
 void CL_C10_ConfigManager::toJson_WindProfileDict(const ST_A20_WindProfileDict_t& p_cfg, JsonDocument& d) {
 	for (uint8_t v_i = 0; v_i < p_cfg.presetCount; v_i++) {
 		const ST_A20_PresetEntry_t& v_p  = p_cfg.presets[v_i];
-		JsonObject                  v_js = d["windProfile"]["presets"][v_i];
+		JsonObject                  v_js = d["windDict"]["presets"][v_i];
 
 		v_js["name"] = v_p.name;
 		v_js["code"] = v_p.code;
@@ -602,11 +614,17 @@ void CL_C10_ConfigManager::toJson_WindProfileDict(const ST_A20_WindProfileDict_t
 		v_b["turbulenceIntensitySigma"] = v_p.base.turbulenceIntensitySigma; // camelCase
 		v_b["thermalBubbleStrength"]   = v_p.base.thermalBubbleStrength;    // camelCase
 		v_b["thermalBubbleRadius"]     = v_p.base.thermalBubbleRadius;      // camelCase
+
+		v_b["baseMinWind"]      = v_p.base.baseMinWind;      // camelCase
+		v_b["baseMaxWind"]      = v_p.base.baseMaxWind;      // camelCase
+		v_b["gustProbBase"]     = v_p.base.gustProbBase;     // camelCase
+		v_b["gustStrengthMax"]  = v_p.base.gustStrengthMax;  // camelCase
+		v_b["thermalFreqBase"]  = v_p.base.thermalFreqBase;  // camelCase
 	}
 
 	for (uint8_t v_i = 0; v_i < p_cfg.styleCount; v_i++) {
 		const ST_A20_StyleEntry_t& v_s  = p_cfg.styles[v_i];
-		JsonObject                 v_js = d["windProfile"]["styles"][v_i];
+		JsonObject                 v_js = d["windDict"]["styles"][v_i];
 
 		v_js["name"] = v_s.name;
 		v_js["code"] = v_s.code;

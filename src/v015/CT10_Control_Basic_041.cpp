@@ -10,51 +10,9 @@
  * ------------------------------------------------------
  */
 
-#include "CT10_Control_040.h"
+#include "CT10_Control_041.h"
+#include <DHT.h>
 
-// --------------------------------------------------
-// Dirty flags
-// --------------------------------------------------
-void CL_CT10_ControlManager::markDirty(const char* p_key) {
-	if (!p_key || p_key[0] == '\0')
-		return;
-
-	if (strcmp(p_key, "state") == 0) {
-		_dirtyState = true;
-	} else if (strcmp(p_key, "chart") == 0) {
-		_dirtyChart = true;
-	} else if (strcmp(p_key, "metrics") == 0) {
-		_dirtyMetrics = true;
-	} else if (strcmp(p_key, "summary") == 0) {
-		_dirtySummary = true;
-	} else {
-		CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] markDirty: unknown key=%s", p_key);
-	}
-}
-
-bool CL_CT10_ControlManager::consumeDirtyState() {
-	bool v_ret = _dirtyState;
-	_dirtyState = false;
-	return v_ret;
-}
-
-bool CL_CT10_ControlManager::consumeDirtyMetrics() {
-	bool v_ret = _dirtyMetrics;
-	_dirtyMetrics = false;
-	return v_ret;
-}
-
-bool CL_CT10_ControlManager::consumeDirtyChart() {
-	bool v_ret = _dirtyChart;
-	_dirtyChart = false;
-	return v_ret;
-}
-
-bool CL_CT10_ControlManager::consumeDirtySummary() {
-	bool v_ret = _dirtySummary;
-	_dirtySummary = false;
-	return v_ret;
-}
 
 // --------------------------------------------------
 // override remain sec
@@ -197,7 +155,42 @@ uint16_t CL_CT10_ControlManager::parseHHMMtoMin(const char* p_time) {
 }
 
 float CL_CT10_ControlManager::getCurrentTemperatureMock() {
-	return 24.0f;
+	static DHT* s_dht = nullptr;
+	static uint32_t s_lastRead = 0;
+	static float s_lastTemp = 24.0f; // Default fallback
+
+	// 1. Config Check
+	if (!g_A20_config_root.system) return s_lastTemp;
+	const auto& conf = g_A20_config_root.system->hw.tempHum;
+
+	if (!conf.enabled) return 24.0f; // Sensor disabled
+
+	// 2. Init if needed
+	if (!s_dht) {
+		// Use configured pin or default to 4 if invalid
+		int pin = (conf.pin > 0) ? conf.pin : 4;
+		// Initialize DHT22 (Type) directly
+		s_dht = new DHT(pin, DHT22);
+		s_dht->begin();
+		CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] DHT22 init on pin %d", pin);
+	}
+
+	// 3. Read Interval (e.g., every 2 seconds min for DHT22)
+	uint32_t now = millis();
+	if (now - s_lastRead < 2000) {
+		return s_lastTemp;
+	}
+	s_lastRead = now;
+
+	// 4. Read Temperature
+	float t = s_dht->readTemperature();
+	if (isnan(t)) {
+		CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] DHT read failed");
+	} else {
+		s_lastTemp = t;
+	}
+
+	return s_lastTemp;
 }
 
 // --------------------------------------------------
@@ -267,17 +260,7 @@ bool CL_CT10_ControlManager::isMotionBlocked(const ST_A20_Motion_t& p_motionCfg)
 	return false;
 }
 
-// --------------------------------------------------
-// metrics dirty push
-// --------------------------------------------------
-void CL_CT10_ControlManager::maybePushMetricsDirty() {
-	unsigned long v_nowMs = millis();
-	if (v_nowMs - lastMetricsPushMs < S_METRICS_PUSH_INTERVAL_MS)
-		return;
 
-	lastMetricsPushMs = v_nowMs;
-	markDirty("metrics");
-}
 
 // --------------------------------------------------
 // preset/style name lookup (log 개선용)

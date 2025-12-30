@@ -78,7 +78,7 @@
 
     // ✅ /api/simulation (GET)으로부터 데이터를 로드하여 폼 필드에 채움
     async function loadSimConfig() {
-        const simData = await fetchApi("/api/simulation", "GET", null, "시뮬 설정 불러오기");
+        const simData = await fetchApi("/api/v001/simulation", "GET", null, "시뮬 설정 불러오기");
         if (simData && simData.sim) {
             SIM_FIELDS.forEach(field => {
                 const el = $(`#${field}`);
@@ -93,7 +93,7 @@
 
     // ✅ /api/motion (GET)으로부터 타이밍 데이터를 로드하여 폼 필드에 채움
     async function loadMotionConfig() {
-        const motionData = await fetchApi("/api/motion", "GET", null, "타이밍 설정 불러오기");
+        const motionData = await fetchApi("/api/v001/motion", "GET", null, "타이밍 설정 불러오기");
         if (motionData && motionData.motion && motionData.motion.timing) {
             MOTION_TIMING_FIELDS.forEach(field => {
                 const el = $(`#${field}`);
@@ -108,7 +108,7 @@
 
     // ✅ /api/simulation (POST)에 데이터 패치 (메모리 업데이트)
     async function patchSimConfig(data) {
-        const result = await fetchApi("/api/simulation", "POST", { sim: data }, "시뮬 설정 메모리 패치");
+        const result = await fetchApi("/api/v001/simulation", "POST", { sim: data }, "시뮬 설정 메모리 패치");
         if (result && result.updated) {
             showToast("시뮬레이션 설정 메모리 업데이트됨", "ok");
             checkDirtyStatus();
@@ -118,7 +118,7 @@
     // ✅ /api/motion (POST)에 타이밍 데이터 패치 (메모리 업데이트)
     async function patchMotionConfig(data) {
         // 백엔드 구조가 motion 아래 timing이므로, 전송 시도 마찬가지로 구성
-        const result = await fetchApi("/api/motion", "POST", { motion: { timing: data } }, "타이밍 설정 메모리 패치");
+        const result = await fetchApi("/api/v001/motion", "POST", { motion: { timing: data } }, "타이밍 설정 메모리 패치");
         if (result && result.updated) {
             showToast("타이밍 설정 메모리 업데이트됨", "ok");
             checkDirtyStatus();
@@ -155,7 +155,7 @@
 
     // 전체 설정 파일 저장
     $("#btnSaveConfig")?.addEventListener('click', async () => {
-        await fetchApi("/api/config/save", "POST", null, "전체 설정 파일 저장");
+        await fetchApi("/api/v001/config/save", "POST", null, "전체 설정 파일 저장");
         checkDirtyStatus();
     });
 
@@ -163,7 +163,7 @@
     $("#btnInitConfig")?.addEventListener('click', async () => {
         if (confirm("경고: 시뮬레이션 설정(풍속/타이밍)을 공장 초기값으로 되돌리고 저장하시겠습니까?")) {
             // 백엔드의 /api/config/init은 모든 설정을 초기화하고 재부팅합니다.
-            await fetchApi("/api/config/init", "POST", null, "공장 초기화 및 재부팅");
+            await fetchApi("/api/v001/config/init", "POST", null, "공장 초기화 및 재부팅");
             // 성공 시 페이지 새로고침 또는 재부팅 대기 메시지 표시
             showToast("장치가 재부팅됩니다. 잠시 후 다시 접속해 주세요.", "warn");
         }
@@ -171,7 +171,7 @@
 
     // Dirty 상태 확인 및 표시
     async function checkDirtyStatus() {
-        const dirtyData = await fetchApi("/api/config/dirty", "GET", null, "저장 상태 확인");
+        const dirtyData = await fetchApi("/api/v001/config/dirty", "GET", null, "저장 상태 확인");
         if (dirtyData) {
             const isDirty = dirtyData.sim || dirtyData.motion;
 

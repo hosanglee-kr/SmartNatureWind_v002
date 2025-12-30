@@ -32,6 +32,11 @@
         "persistCount": 5,
         "exitDelaySec": 12
       }
+    },
+    "timing": {
+      "simIntervalMs": 500,
+      "gustIntervalMs": 2000,
+      "thermalIntervalMs": 3000
     }
   }
 }

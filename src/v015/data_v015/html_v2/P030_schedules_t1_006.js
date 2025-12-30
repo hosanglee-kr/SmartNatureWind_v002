@@ -37,12 +37,12 @@ let isAuthReady = false;
 // 🚩 테스트용 임시 수정: 실제 Firebase 설정을 여기에 직접 삽입
 // const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
 const firebaseConfig = {
-    apiKey: "AIzaSyB680oE-OfVzkjHnvmCDD2dWlEjBlOZ-Nc",
-    authDomain: "smartwind-esp32.firebaseapp.com",
-    projectId: "smartwind-esp32",
-    storageBucket: "smartwind-esp32.firebasestorage.app",
-    messagingSenderId: "65871128852",
-    appId: "1:65871128852:web:953510ad4dbbd54f343a01"
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "your-project.firebaseapp.com",
+    projectId: "your-project-id",
+    storageBucket: "your-project.firebasestorage.app",
+    messagingSenderId: "000000000000",
+    appId: "1:000000000000:web:0000000000000000000000"
 };
 
 

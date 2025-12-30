@@ -185,7 +185,7 @@
   // ======================= 4. 초기 상태 로드 =======================
 
   async function refreshInitialState() {
-    const state = await fetchApi("/api/state", "GET", null, "초기 상태 로드");
+    const state = await fetchApi("/api/v001/state", "GET", null, "초기 상태 로드");
     if (state) {
       applyStateJson(state);
       appendLog({
@@ -316,7 +316,7 @@
     // 시뮬 시작: 기본 프로필 id=1 가정
     $("#btnStartSim")?.addEventListener("click", async () => {
       await fetchApi(
-        "/api/control/profile/select",
+        "/api/v001/control/profile/select",
         "POST",
         { id: 1 },
         "시뮬레이션 시작"
@@ -326,7 +326,7 @@
     // 시뮬 중지
     $("#btnStopSim")?.addEventListener("click", async () => {
       await fetchApi(
-        "/api/control/profile/stop",
+        "/api/v001/control/profile/stop",
         "POST",
         {},
         "시뮬레이션 중지"
@@ -335,7 +335,7 @@
 
     // 시스템 진단
     $("#btnDiag")?.addEventListener("click", async () => {
-      const diag = await fetchApi("/api/diag", "GET", null, "시스템 진단 정보 로드");
+      const diag = await fetchApi("/api/v001/diag", "GET", null, "시스템 진단 정보 로드");
       if (diag) {
         appendLog({
           t: Date.now(),

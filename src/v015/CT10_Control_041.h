@@ -1,7 +1,7 @@
 #pragma once
 /*
  * ------------------------------------------------------
- * 소스명 : CT10_Control_040.h
+ * 소스명 : CT10_Control_041.h
  * 모듈약어 : CT10
  * 모듈명 : Smart Nature Wind 제어 통합 Manager (v026)
  * ------------------------------------------------------
@@ -26,7 +26,7 @@
  * - createNestedArray/Object/containsKey 사용 금지
  * - memset + strlcpy 기반 안전 초기화
  * - 주석/필드명은 JSON 구조와 동일하게 유지
- * - 모듈별 단일 헤더(h)파일로만 구성 (cpp 없음)
+
  * ------------------------------------------------------
  * [코드 네이밍 규칙]
  * - 전역 상수,매크로      : G_모듈약어_ 접두사
@@ -51,7 +51,7 @@
 #include <time.h>
 
 // 종속성 모듈 헤더
-#include "A20_Const_040.h"
+#include "A20_Const_041.h"
 #include "C10_Config_041.h"
 #include "D10_Logger_040.h"
 #include "M10_MotionLogic_040.h"
@@ -100,6 +100,27 @@ typedef struct {
 	bool		  offTempEnabled;  // 온도 기반 AutoOff 활성 여부
 	float		  offTemp;		   // AutoOff가 발동되는 온도 (섭씨)
 } ST_CT10_AutoOffRuntime_t;
+
+
+//// void CT10_WS_bindToW10();
+void CT10_WS_begin();
+void CT10_WS_tick();
+
+// ------------------------------------------------------
+// S10 → CT10 Dirty 브리지 (inline, A00 의존 제거)
+// ------------------------------------------------------
+void CT10_markDirtyFromSim(const char* p_key);
+
+
+// WS Broker injection (W10 바인딩용)
+void CT10_WS_setBrokers(
+	void (*p_state)(JsonDocument&, bool),
+	void (*p_metrics)(JsonDocument&, bool),
+	void (*p_chart)(JsonDocument&, bool),
+	void (*p_summary)(JsonDocument&, bool),
+	void (*p_cleanup)(),
+	void (*p_setIntervalsFn)(const uint16_t p_itvMs[G_A20_WS_CH_COUNT])
+);
 
 // ======================================================
 // CL_CT10_ControlManager 클래스
@@ -243,3 +264,5 @@ class CL_CT10_ControlManager {
 	// 생성자 숨김
 	CL_CT10_ControlManager() = default;
 };
+
+

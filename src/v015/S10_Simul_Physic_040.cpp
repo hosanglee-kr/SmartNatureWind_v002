@@ -39,7 +39,7 @@
 #include "S10_Simul_040.h"
 
 // 외부 종속성 헤더 포함
-#include "A20_Const_041.h"
+#include "A20_Const_043.h"
 #include "C10_Config_041.h"
 #include "D10_Logger_040.h"
 

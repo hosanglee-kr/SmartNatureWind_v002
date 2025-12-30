@@ -17,7 +17,7 @@
 #include "S10_Simul_040.h"	// (변경 반영) 헤더 포함
 
 // 외부 종속성 헤더 포함
-#include "A20_Const_041.h"
+#include "A20_Const_043.h"
 #include "C10_Config_041.h"
 #include "D10_Logger_040.h"
 #include "P10_PWM_ctrl_040.h"
@@ -287,7 +287,7 @@ void CL_S10_Simulation::tick() {
 		CT10_markDirtyFromSim("chart");
 		// 차트 갱신 시 metrics도 같이 갱신되는 정책이면 함께 dirty 권장
 		CT10_markDirtyFromSim("metrics");
-		
+
 		// A00_broadcastChart(v_doc, true);
 		// A00_markDirty("chart");
 	}

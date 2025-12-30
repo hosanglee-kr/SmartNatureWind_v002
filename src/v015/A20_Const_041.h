@@ -423,8 +423,11 @@ typedef enum : uint8_t {
 /* ======================================================
  * Segment Mode <-> String 매핑 유틸
  * ====================================================== */
-inline constexpr const char* g_A20_SEG_MODE_NAMES[EN_A20_SEG_MODE_COUNT] = {"PRESET", "FIXED"};
+inline constexpr const char* g_A20_SEG_MODE_NAMES[EN_A20_SEG_MODE_COUNT] = {
+    "PRESET", "FIXED"
+};
 
+/*
 inline EN_A20_segment_mode_t A20_modeFromString(const char* p_str) {
     if (!p_str) return EN_A20_SEG_MODE_PRESET;
     for (uint8_t v_i = 0; v_i < EN_A20_SEG_MODE_COUNT; v_i++) {
@@ -437,6 +440,7 @@ inline const char* A20_modeToString(EN_A20_segment_mode_t p_mode) {
     if (p_mode >= EN_A20_SEG_MODE_COUNT) return "PRESET";
     return g_A20_SEG_MODE_NAMES[p_mode];
 }
+*/
 
 /* ======================================================
  * Wind Dict (cfg_windDict_xxx.json) : camelCase 정합

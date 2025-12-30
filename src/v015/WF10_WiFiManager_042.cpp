@@ -16,9 +16,12 @@
 #include "WF10_WiFiManager_041.h"
 // #include "TM10_TimeManager_002.h"
 
-#if __has_include(<tcpip_adapter.h>)
-	#include <tcpip_adapter.h>
-#endif
+#include <esp_netif.h>
+
+// dns_getserver/ipaddr_ntoa 사용 위해 lwIP 헤더를 직접 포함
+#include <lwip/dns.h>
+#include <lwip/ip_addr.h>
+
 
 // Config 루트 (다른 모듈에서 정의)
 extern ST_A20_ConfigRoot_t g_A20_config_root;

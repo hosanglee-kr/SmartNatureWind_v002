@@ -60,7 +60,7 @@ static void (*s_bcast_metrics)(JsonDocument&, bool) = nullptr;
 static void (*s_bcast_chart)(JsonDocument&, bool)   = nullptr;
 static void (*s_bcast_summary)(JsonDocument&, bool) = nullptr;
 static void (*s_ws_cleanup)()                       = nullptr;
-static void (*s_setIntervals)(const uint16_t p_itvMs[EN_A20_WS_CH_COUNT]) = nullptr;
+// static void (*s_setIntervals)(const uint16_t p_itvMs[EN_A20_WS_CH_COUNT]) = nullptr;
 
 // --------------------------------------------------
 // 내부 상태
@@ -103,15 +103,15 @@ void CT10_WS_setBrokers(
     void (*p_metrics)(JsonDocument&, bool),
     void (*p_chart)(JsonDocument&, bool),
     void (*p_summary)(JsonDocument&, bool),
-    void (*p_cleanup)(),
-    void (*p_setIntervalsFn)(const uint16_t p_itvMs[EN_A20_WS_CH_COUNT])
+    void (*p_cleanup)()
+   //,void (*p_setIntervalsFn)(const uint16_t p_itvMs[EN_A20_WS_CH_COUNT])
 ) {
     s_bcast_state   = p_state;
     s_bcast_metrics = p_metrics;
     s_bcast_chart   = p_chart;
     s_bcast_summary = p_summary;
     s_ws_cleanup    = p_cleanup;
-    s_setIntervals  = p_setIntervalsFn;
+    //s_setIntervals  = p_setIntervalsFn;
 }
 
 // --------------------------------------------------
@@ -196,6 +196,7 @@ static void CT10_WS_applyPolicyFromSystem() {
         s_cleanupMs = v_ws.wsEtcConfig.wsCleanupMs;
     }
 
+    /*
     // 4) W10 setter로도 전달(통합 요구사항) - itv 변경시에만
     if (CT10_WS_intervalsChanged() && s_setIntervals) {
         s_setIntervals(s_itvMs);
@@ -215,6 +216,7 @@ static void CT10_WS_applyPolicyFromSystem() {
             (unsigned)s_cleanupMs
         );
     }
+    */
 }
 
 // --------------------------------------------------

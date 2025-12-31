@@ -34,9 +34,9 @@ void CL_CT10_ControlManager::toJson(JsonDocument& p_doc) {
     instance().exportStateJson(p_doc);
 }
 
-void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
-    instance().exportChartJson(p_doc, p_diffOnly);
-}
+// void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
+//     instance().exportChartJson(p_doc, p_diffOnly);
+// }
 
 void CL_CT10_ControlManager::exportStateJson(JsonDocument& p_doc) {
     // control root
@@ -81,7 +81,10 @@ void CL_CT10_ControlManager::exportStateJson(JsonDocument& p_doc) {
     sim.toJson(p_doc);
 }
 
-void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnly) {
+
+
+void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
+// void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnly) {
     // 1) S10 차트 생성 (p_doc["sim"] 구조는 S10이 책임)
     sim.toChartJson(p_doc, p_diffOnly);
 

@@ -34,9 +34,9 @@ void CL_CT10_ControlManager::toJson(JsonDocument& p_doc) {
     instance().exportStateJson(p_doc);
 }
 
-// void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
-//     instance().exportChartJson(p_doc, p_diffOnly);
-// }
+void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
+     instance().exportChartJson(p_doc, p_diffOnly);
+}
 
 void CL_CT10_ControlManager::exportStateJson(JsonDocument& p_doc) {
     // control root
@@ -83,19 +83,18 @@ void CL_CT10_ControlManager::exportStateJson(JsonDocument& p_doc) {
 
 
 
-void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
-// void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnly) {
+// void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
+void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnly) {
 
-    CL_CT10_ControlManager& v_inst = instance();
     
     // 1) S10 차트 생성 (p_doc["sim"] 구조는 S10이 책임)
-    v_inst.sim.toChartJson(p_doc, p_diffOnly);
+    sim.toChartJson(p_doc, p_diffOnly);
 
     // 2) CT10 메타 병합: p_doc["sim"]["meta"] 안전 확보
     JsonObject v_sim  = CT10_ensureObject(p_doc["sim"]);
     JsonObject v_meta = CT10_ensureObject(v_sim["meta"]);
 
-    v_meta["pwmDuty"]   = v_inst.pwm ? v_inst.pwm->P10_getDutyPercent() : 0.0f;
+    v_meta["pwmDuty"]   = pwm ? pwm->P10_getDutyPercent() : 0.0f;
     v_meta["active"]    = active;
     v_meta["runSource"] = (int)runSource;
     v_meta["override"]  = overrideState.active ? (overrideState.useFixed ? "fixed" : "resolved") : "none";

@@ -161,8 +161,8 @@ void A00_init() {
         CL_W10_WebAPI::broadcastMetrics,
         CL_W10_WebAPI::broadcastChart,
         CL_W10_WebAPI::broadcastSummary,
-        CL_W10_WebAPI::wsCleanupTick,
-        CL_W10_WebAPI::setWsIntervals
+        CL_W10_WebAPI::wsCleanupTick
+//		, CL_W10_WebAPI::setWsIntervals
     );
     CT10_WS_begin();
 

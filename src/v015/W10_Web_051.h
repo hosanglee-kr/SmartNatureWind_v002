@@ -66,7 +66,7 @@ class CL_W10_WebAPI {
 
   // WS 정책 수신 (CT10 policy.itv → W10 반영)
   // --------------------------------------------------
-  static void setWsIntervals(const uint16_t p_itvMs[4]);
+ // static void setWsIntervals(const uint16_t p_itvMs[4]);
 
   // cleanupClients 주기 tick (권장)
   static void wsCleanupTick();

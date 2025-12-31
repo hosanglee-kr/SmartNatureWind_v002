@@ -99,6 +99,15 @@ inline const char* A20_modeToString(EN_A20_segment_mode_t p_mode) {
 // WebSocketConfig
 // -------------------------
 static inline void A20_resetWebSocketDefault(ST_A20_WebSocketConfig_t& p_ws) {
+    for (int v_i = 0; v_i < EN_A20_WS_CH_COUNT; v_i++) {
+        p_ws.wsChConfig[v_i].chIntervalMs = G_A20_WS_CH_Base_Arr[v_i].chDefaultIntervalMs;
+        p_ws.wsChConfig[v_i].priority     = G_A20_WS_CH_Base_Arr[v_i].defaultPriority;
+    }
+    p_ws.wsEtcConfig = G_A20_WS_ETC_DEFAULT_CONFIG;
+    
+}
+/*
+static inline void A20_resetWebSocketDefault(ST_A20_WebSocketConfig_t& p_ws) {
     p_ws.wsIntervalMs[G_A20_WS_CH_STATE]   = G_A20_WS_DEFAULT_ITV_STATE_MS;
     p_ws.wsIntervalMs[G_A20_WS_CH_METRICS] = G_A20_WS_DEFAULT_ITV_METRICS_MS;
     p_ws.wsIntervalMs[G_A20_WS_CH_CHART]   = G_A20_WS_DEFAULT_ITV_CHART_MS;
@@ -114,6 +123,7 @@ static inline void A20_resetWebSocketDefault(ST_A20_WebSocketConfig_t& p_ws) {
 
     p_ws.wsCleanupMs = G_A20_WS_DEFAULT_CLEANUP_MS;
 }
+*/
 
 // -------------------------
 // Motion / AutoOff (Schedule/UserProfile 공통)

@@ -7,10 +7,11 @@
  * 기능 요약:
  * - Dirty 기반 WS 브로드캐스트 스케줄러 (state/metrics/chart/summary)
  * - 전송 스로틀 + pending 플래그 (필수/즉효)
- * - priorityOrder[4] 정책 기반 우선순위 전송
+ * - priority 정책 기반 우선순위 전송
  * - payload 크기 측정(measureJson) → chart 대형이면 자동 강스로틀
  * - W10 cleanupClients 주기 호출(권장)
  * - W10 setWsIntervals(setter)로 CT10 policy.itv 반영(통합)
+ * - (v044) A20_Const_WS_040 구조(wsChConfig/wsEtcConfig) 연동 반영
  * ------------------------------------------------------
  * [구현 규칙]
  *  - 항상 소스 시작 주석 부분 체계 유지 및 내용 업데이트
@@ -42,15 +43,18 @@
  */
 
 #include "CT10_Control_041.h"
+#include "A20_Const_WS_040.h"
 
-
+// --------------------------------------------------
+// S10 → CT10 Dirty 브리지
+// --------------------------------------------------
 void CT10_markDirtyFromSim(const char* p_key) {
-    if (!p_key || !p_key[0]) return;
-    CL_CT10_ControlManager::instance().markDirty(p_key);
+	if (!p_key || !p_key[0]) return;
+	CL_CT10_ControlManager::instance().markDirty(p_key);
 }
 
 // --------------------------------------------------
-// Broker 함수 포인터 (CT10_WS_bindToW10에서 주입)
+// Broker 함수 포인터 (CT10_WS_setBrokers에서 주입)
 // --------------------------------------------------
 static void (*s_bcast_state)(JsonDocument&, bool)   = nullptr;
 static void (*s_bcast_metrics)(JsonDocument&, bool) = nullptr;
@@ -62,372 +66,296 @@ static void (*s_setIntervals)(const uint16_t p_itvMs[EN_A20_WS_CH_COUNT]) = null
 // --------------------------------------------------
 // 내부 상태
 // --------------------------------------------------
-static uint32_t s_lastSendMs[G_A20_WS_CH_COUNT] = {0, 0, 0, 0};
-static bool     s_pending[G_A20_WS_CH_COUNT]    = {false, false, false, false};
+static uint32_t s_lastSendMs[EN_A20_WS_CH_COUNT] = {0, 0, 0, 0};
+static bool     s_pending[EN_A20_WS_CH_COUNT]    = {false, false, false, false};
 
-static uint32_t s_lastCleanupMs    = 0;
-static uint32_t s_lastPolicyApplyMs = 0; // (권장) 런타임 정책 재적용 가드
+static uint32_t s_lastCleanupMs     = 0;
+static uint32_t s_lastPolicyApplyMs = 0; // 런타임 정책 재적용 가드
 
 // 기본 인터벌(ms) (fallback) - 실제는 system.webSocket 정책으로 덮어씀
-static uint16_t s_itvMs[G_A20_WS_CH_COUNT] = {
-    G_A20_WS_DEFAULT_ITV_STATE_MS,
-    G_A20_WS_DEFAULT_ITV_METRICS_MS,
-    G_A20_WS_DEFAULT_ITV_CHART_MS,
-    G_A20_WS_DEFAULT_ITV_SUMMARY_MS
+static uint16_t s_itvMs[EN_A20_WS_CH_COUNT] = {
+	G_A20_WS_CH_Base_Arr[EN_A20_WS_CH_STATE].chDefaultIntervalMs,
+	G_A20_WS_CH_Base_Arr[EN_A20_WS_CH_METRICS].chDefaultIntervalMs,
+	G_A20_WS_CH_Base_Arr[EN_A20_WS_CH_CHART].chDefaultIntervalMs,
+	G_A20_WS_CH_Base_Arr[EN_A20_WS_CH_SUMMARY].chDefaultIntervalMs
 };
 
 // priority order (0~3 채널 인덱스)
-static uint8_t s_prio[G_A20_WS_CH_COUNT] = {
-    G_A20_WS_CH_STATE,
-    G_A20_WS_CH_METRICS,
-    G_A20_WS_CH_CHART,
-    G_A20_WS_CH_SUMMARY
+static uint8_t s_prio[EN_A20_WS_CH_COUNT] = {
+	(uint8_t)EN_A20_WS_CH_STATE,
+	(uint8_t)EN_A20_WS_CH_METRICS,
+	(uint8_t)EN_A20_WS_CH_CHART,
+	(uint8_t)EN_A20_WS_CH_SUMMARY
 };
 
 // chart payload 기반 강스로틀 정책
-static uint16_t s_chartLargeBytes  = G_A20_WS_DEFAULT_CHART_LARGE_BYTES;
-static uint8_t  s_chartThrottleMul = G_A20_WS_DEFAULT_CHART_THROTTLE_MUL;
+static uint16_t s_chartLargeBytes  = G_A20_WS_ETC_DEFAULT_CONFIG.chartLargeBytes;
+static uint8_t  s_chartThrottleMul = G_A20_WS_ETC_DEFAULT_CONFIG.chartThrottleMul;
 static uint32_t s_chartLastPayload = 0;
 
 // cleanupClients 호출 주기
-static uint16_t s_cleanupMs = G_A20_WS_DEFAULT_CLEANUP_MS;
+static uint16_t s_cleanupMs = G_A20_WS_ETC_DEFAULT_CONFIG.wsCleanupMs;
+
+// intervals 변경 감지(중복 setWsIntervals 방지)
+static uint16_t s_lastAppliedItv[EN_A20_WS_CH_COUNT] = {0, 0, 0, 0};
+
+static bool CT10_WS_intervalsChanged() {
+	for (uint8_t i = 0; i < (uint8_t)EN_A20_WS_CH_COUNT; i++) {
+		if (s_lastAppliedItv[i] != s_itvMs[i]) return true;
+	}
+	return false;
+}
 
 // --------------------------------------------------
-// 브로커 주입 API (CT10_Control_WS_Broker_xxx.cpp에서 호출)
+// 브로커 주입 API
 // --------------------------------------------------
 void CT10_WS_setBrokers(
-    void (*p_state)(JsonDocument&, bool),
-    void (*p_metrics)(JsonDocument&, bool),
-    void (*p_chart)(JsonDocument&, bool),
-    void (*p_summary)(JsonDocument&, bool),
-    void (*p_cleanup)(),
-    void (*p_setIntervalsFn)(const uint16_t p_itvMs[G_A20_WS_CH_COUNT])
+	void (*p_state)(JsonDocument&, bool),
+	void (*p_metrics)(JsonDocument&, bool),
+	void (*p_chart)(JsonDocument&, bool),
+	void (*p_summary)(JsonDocument&, bool),
+	void (*p_cleanup)(),
+	void (*p_setIntervalsFn)(const uint16_t p_itvMs[EN_A20_WS_CH_COUNT])
 ) {
-    s_bcast_state   = p_state;
-    s_bcast_metrics = p_metrics;
-    s_bcast_chart   = p_chart;
-    s_bcast_summary = p_summary;
-    s_ws_cleanup    = p_cleanup;
-    s_setIntervals  = p_setIntervalsFn;
+	s_bcast_state   = p_state;
+	s_bcast_metrics = p_metrics;
+	s_bcast_chart   = p_chart;
+	s_bcast_summary = p_summary;
+	s_ws_cleanup    = p_cleanup;
+	s_setIntervals  = p_setIntervalsFn;
 }
 
 // --------------------------------------------------
 // priority 정규화: 중복 제거 + 누락 채움(운영급 방어)
 // --------------------------------------------------
-/*
-static void CT10_WS_fillDefaultPriority(uint8_t p_out[G_A20_WS_CH_COUNT]) {
-    p_out[0] = G_A20_WS_CH_STATE;
-    p_out[1] = G_A20_WS_CH_METRICS;
-    p_out[2] = G_A20_WS_CH_CHART;
-    p_out[3] = G_A20_WS_CH_SUMMARY;
-}
-*/
-
 static void CT10_WS_normalizePriority(
-    const uint8_t p_in[G_A20_WS_CH_COUNT],
-    uint8_t       p_out[G_A20_WS_CH_COUNT]
+	const uint8_t p_in[EN_A20_WS_CH_COUNT],
+	uint8_t       p_out[EN_A20_WS_CH_COUNT]
 ) {
-    bool v_used[G_A20_WS_CH_COUNT] = {false,false,false,false};
-    uint8_t v_w = 0;
+	bool    v_used[EN_A20_WS_CH_COUNT] = {false, false, false, false};
+	uint8_t v_w                        = 0;
 
-    // 1) 유효 + 미사용만 순서 유지
-    for (uint8_t i = 0; i < G_A20_WS_CH_COUNT && v_w < G_A20_WS_CH_COUNT; i++) {
-        uint8_t ch = p_in[i];
-        if (ch >= G_A20_WS_CH_COUNT) continue;
-        if (v_used[ch]) continue;
-        p_out[v_w++] = ch;
-        v_used[ch] = true;
-    }
+	// 1) 유효 + 미사용만 순서 유지
+	for (uint8_t i = 0; i < (uint8_t)EN_A20_WS_CH_COUNT && v_w < (uint8_t)EN_A20_WS_CH_COUNT; i++) {
+		uint8_t ch = p_in[i];
+		if (ch >= (uint8_t)EN_A20_WS_CH_COUNT) continue;
+		if (v_used[ch]) continue;
+		p_out[v_w++] = ch;
+		v_used[ch]   = true;
+	}
 
-    // 2) 누락 채우기
-    for (uint8_t ch = 0; ch < G_A20_WS_CH_COUNT && v_w < G_A20_WS_CH_COUNT; ch++) {
-        if (!v_used[ch]) {
-            p_out[v_w++] = ch;
-            v_used[ch] = true;
-        }
-    }
+	// 2) 누락 채우기
+	for (uint8_t ch = 0; ch < (uint8_t)EN_A20_WS_CH_COUNT && v_w < (uint8_t)EN_A20_WS_CH_COUNT; ch++) {
+		if (!v_used[ch]) {
+			p_out[v_w++] = ch;
+			v_used[ch]   = true;
+		}
+	}
 }
-
-
-
-
-
-/*
-static void CT10_WS_normalizePriority(const uint8_t p_in[G_A20_WS_CH_COUNT], uint8_t p_out[G_A20_WS_CH_COUNT]) {
-    bool v_used[G_A20_WS_CH_COUNT];
-    memset(v_used, 0, sizeof(v_used));
-
-    uint8_t v_w = 0;
-
-    // 1) 유효 + 미사용만 순서대로 반영
-    for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT && v_w < G_A20_WS_CH_COUNT; v_i++) {
-        uint8_t v_ch = p_in[v_i];
-        if (v_ch >= G_A20_WS_CH_COUNT) continue;
-        if (v_used[v_ch]) continue;
-        p_out[v_w++] = v_ch;
-        v_used[v_ch] = true;
-    }
-
-    // 2) 누락은 기본 순서로 채움
-    uint8_t v_def[G_A20_WS_CH_COUNT];
-    CT10_WS_fillDefaultPriority(v_def);
-
-    for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT && v_w < G_A20_WS_CH_COUNT; v_i++) {
-        uint8_t v_ch = v_def[v_i];
-        if (v_used[v_ch]) continue;
-        p_out[v_w++] = v_ch;
-        v_used[v_ch] = true;
-    }
-}
-*/
-
-
-static uint16_t s_lastAppliedItv[G_A20_WS_CH_COUNT] = {0,0,0,0};
-
-static bool CT10_WS_intervalsChanged() {
-    for (uint8_t i = 0; i < G_A20_WS_CH_COUNT; i++) {
-        if (s_lastAppliedItv[i] != s_itvMs[i]) return true;
-    }
-    return false;
-}
-
-
 
 // --------------------------------------------------
-// policy 로드: system.webSocket → s_itvMs / priority / chart 정책 / cleanupMs
+// (v044) policy 로드: system.webSocket(wsChConfig/wsEtcConfig) → s_itvMs / s_prio / chart / cleanup
 // --------------------------------------------------
 static void CT10_WS_applyPolicyFromSystem() {
-    if (!g_A20_config_root.system) return;
+	if (!g_A20_config_root.system) return;
 
-    const ST_A20_SystemConfig_t&     v_sys = *g_A20_config_root.system;
-    const ST_A20_WebSocketConfig_t&  v_ws  = v_sys.system.webSocket;
+	const ST_A20_SystemConfig_t&    v_sys = *g_A20_config_root.system;
+	const ST_A20_WebSocketConfig_t& v_ws  = v_sys.system.webSocket;
 
-    // intervals
-    for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
-        uint16_t v_itv = v_ws.wsIntervalMs[v_i];
-        if (v_itv > 0) s_itvMs[v_i] = v_itv;
-    }
+	// ---------------------------
+	// 1) intervals: wsChConfig[].chIntervalMs
+	// ---------------------------
+	for (uint8_t i = 0; i < (uint8_t)EN_A20_WS_CH_COUNT; i++) {
+		const ST_A20_WS_CH_CONFIG_t& v_ch = v_ws.wsChConfig[i];
 
-    // priority order (normalize)
-    {
-        uint8_t v_tmp[G_A20_WS_CH_COUNT];
-        for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
-            v_tmp[v_i] = v_ws.wsPriority[v_i];
-        }
+		// chIdx 방어: 잘못 들어오면 "배열 인덱스 i"를 우선 사용
+		uint8_t v_idx = (uint8_t)v_ch.chIdx;
+		if (v_idx >= (uint8_t)EN_A20_WS_CH_COUNT) {
+			v_idx = i;
+		}
 
-		CT10_WS_normalizePriority(v_tmp, s_prio);
+		if (v_ch.chIntervalMs > 0) {
+			s_itvMs[v_idx] = v_ch.chIntervalMs;
+		}
+	}
 
-        // CT10_WS_normalizePriority(v_tmp, s_prio);
-    }
+	// ---------------------------
+	// 2) priority: wsChConfig[].priority 기반으로 정렬 → normalize
+	//    - priority 값이 중복/누락/이상이어도 deterministic 하게 정렬
+	// ---------------------------
+	{
+		uint8_t v_idxArr[EN_A20_WS_CH_COUNT] = {
+			(uint8_t)EN_A20_WS_CH_STATE,
+			(uint8_t)EN_A20_WS_CH_METRICS,
+			(uint8_t)EN_A20_WS_CH_CHART,
+			(uint8_t)EN_A20_WS_CH_SUMMARY
+		};
 
-    // chart payload policy
-    if (v_ws.chartLargeBytes > 0)  s_chartLargeBytes  = v_ws.chartLargeBytes;
-    if (v_ws.chartThrottleMul > 0) s_chartThrottleMul = v_ws.chartThrottleMul;
+		// 간단 stable sort (N=4)
+		for (uint8_t a = 0; a < (uint8_t)EN_A20_WS_CH_COUNT; a++) {
+			for (uint8_t b = a + 1; b < (uint8_t)EN_A20_WS_CH_COUNT; b++) {
+				const uint8_t ia = v_idxArr[a];
+				const uint8_t ib = v_idxArr[b];
 
-    // cleanup tick
-    if (v_ws.wsCleanupMs > 0) s_cleanupMs = v_ws.wsCleanupMs;
+				// wsChConfig는 "인덱스=채널"로 관리되는 전제
+				const uint8_t pa = v_ws.wsChConfig[ia].priority;
+				const uint8_t pb = v_ws.wsChConfig[ib].priority;
 
-    // W10 setter로도 전달(통합 요구사항)
-    // if (s_setIntervals) s_setIntervals(s_itvMs);
+				// priority 오름차순, tie면 채널 인덱스 오름차순(결정적)
+				if (pb < pa || (pb == pa && ib < ia)) {
+					uint8_t t   = v_idxArr[a];
+					v_idxArr[a] = v_idxArr[b];
+					v_idxArr[b] = t;
+				}
+			}
+		}
 
+		CT10_WS_normalizePriority(v_idxArr, s_prio);
+	}
+
+	// ---------------------------
+	// 3) etc: wsEtcConfig
+	// ---------------------------
+	if (v_ws.wsEtcConfig.chartLargeBytes > 0) s_chartLargeBytes = v_ws.wsEtcConfig.chartLargeBytes;
+	if (v_ws.wsEtcConfig.chartThrottleMul > 0) s_chartThrottleMul = v_ws.wsEtcConfig.chartThrottleMul;
+	if (v_ws.wsEtcConfig.wsCleanupMs > 0) s_cleanupMs = v_ws.wsEtcConfig.wsCleanupMs;
+
+	// ---------------------------
+	// 4) W10 interval setter 통합 (변경 시에만)
+	// ---------------------------
 	if (CT10_WS_intervalsChanged() && s_setIntervals) {
 		s_setIntervals(s_itvMs);
-		for (uint8_t i = 0; i < G_A20_WS_CH_COUNT; i++) {
+		for (uint8_t i = 0; i < (uint8_t)EN_A20_WS_CH_COUNT; i++) {
 			s_lastAppliedItv[i] = s_itvMs[i];
 		}
 
 		CL_D10_Logger::log(
 			EN_L10_LOG_INFO,
 			"[CT10][WS] policy applied: itv(%u/%u/%u/%u) prio(%u,%u,%u,%u) chart(%u,mul=%u) cleanup=%u",
-			(unsigned)s_itvMs[G_A20_WS_CH_STATE],
-			(unsigned)s_itvMs[G_A20_WS_CH_METRICS],
-			(unsigned)s_itvMs[G_A20_WS_CH_CHART],
-			(unsigned)s_itvMs[G_A20_WS_CH_SUMMARY],
+			(unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_STATE],
+			(unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_METRICS],
+			(unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_CHART],
+			(unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_SUMMARY],
 			(unsigned)s_prio[0], (unsigned)s_prio[1], (unsigned)s_prio[2], (unsigned)s_prio[3],
 			(unsigned)s_chartLargeBytes, (unsigned)s_chartThrottleMul,
 			(unsigned)s_cleanupMs
 		);
-
 	}
-
-
 }
 
 // --------------------------------------------------
 // begin/tick
 // --------------------------------------------------
 void CT10_WS_begin() {
-    CT10_WS_applyPolicyFromSystem();
+	CT10_WS_applyPolicyFromSystem();
 
-    for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
-        s_lastSendMs[v_i] = 0;
-        s_pending[v_i]    = false;
-    }
-
-    s_lastCleanupMs     = 0;
-    s_lastPolicyApplyMs = millis();
-
-	for (uint8_t i = 0; i < G_A20_WS_CH_COUNT; i++) {
+	for (uint8_t i = 0; i < (uint8_t)EN_A20_WS_CH_COUNT; i++) {
+		s_lastSendMs[i] = 0;
+		s_pending[i]    = false;
 		s_lastAppliedItv[i] = s_itvMs[i];
 	}
 
-    CL_D10_Logger::log(
-        EN_L10_LOG_INFO,
-        "[CT10][WS] Scheduler begin: itv(state=%u metrics=%u chart=%u summary=%u) cleanup=%u",
-        (unsigned)s_itvMs[G_A20_WS_CH_STATE],
-        (unsigned)s_itvMs[G_A20_WS_CH_METRICS],
-        (unsigned)s_itvMs[G_A20_WS_CH_CHART],
-        (unsigned)s_itvMs[G_A20_WS_CH_SUMMARY],
-        (unsigned)s_cleanupMs
-    );
+	s_lastCleanupMs     = 0;
+	s_lastPolicyApplyMs = millis();
+	s_chartLastPayload  = 0;
+
+	CL_D10_Logger::log(
+		EN_L10_LOG_INFO,
+		"[CT10][WS] Scheduler begin: itv(state=%u metrics=%u chart=%u summary=%u) cleanup=%u",
+		(unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_STATE],
+		(unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_METRICS],
+		(unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_CHART],
+		(unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_SUMMARY],
+		(unsigned)s_cleanupMs
+	);
 }
 
 // --------------------------------------------------
 // 채널별 dirty 소비 → pending 적립
 // --------------------------------------------------
 static void CT10_WS_collectPending(CL_CT10_ControlManager& p_ctrl) {
-    if (p_ctrl.consumeDirtyState())   s_pending[G_A20_WS_CH_STATE]   = true;
-    if (p_ctrl.consumeDirtyMetrics()) s_pending[G_A20_WS_CH_METRICS] = true;
-    if (p_ctrl.consumeDirtyChart())   s_pending[G_A20_WS_CH_CHART]   = true;
-    if (p_ctrl.consumeDirtySummary()) s_pending[G_A20_WS_CH_SUMMARY] = true;
+	if (p_ctrl.consumeDirtyState())   s_pending[(uint8_t)EN_A20_WS_CH_STATE]   = true;
+	if (p_ctrl.consumeDirtyMetrics()) s_pending[(uint8_t)EN_A20_WS_CH_METRICS] = true;
+	if (p_ctrl.consumeDirtyChart())   s_pending[(uint8_t)EN_A20_WS_CH_CHART]   = true;
+	if (p_ctrl.consumeDirtySummary()) s_pending[(uint8_t)EN_A20_WS_CH_SUMMARY] = true;
 }
 
 // --------------------------------------------------
 // payload 크기 측정
 // --------------------------------------------------
 static uint32_t CT10_WS_measurePayloadBytes(JsonDocument& p_doc) {
-    return (uint32_t)measureJson(p_doc);
+	return (uint32_t)measureJson(p_doc);
 }
 
 // --------------------------------------------------
 // 채널 1회 전송 시도 (스로틀 + pending 해소)
 // --------------------------------------------------
 static bool CT10_WS_trySendOne(uint8_t p_ch, uint32_t p_nowMs) {
-    if (p_ch >= G_A20_WS_CH_COUNT) return false;
-    if (!s_pending[p_ch]) return false;
+	if (p_ch >= (uint8_t)EN_A20_WS_CH_COUNT) return false;
+	if (!s_pending[p_ch]) return false;
 
-    uint16_t v_itv = s_itvMs[p_ch];
+	uint16_t v_itv = s_itvMs[p_ch];
 
-    // chart는 payload 크기에 따라 추가 스로틀
-    if (p_ch == G_A20_WS_CH_CHART && s_chartLastPayload >= s_chartLargeBytes) {
-        uint32_t v_mul = (s_chartThrottleMul > 0) ? s_chartThrottleMul : 2;
-        v_itv = (uint16_t)((uint32_t)v_itv * v_mul);
-    }
+	// chart는 payload 크기에 따라 추가 스로틀
+	if (p_ch == (uint8_t)EN_A20_WS_CH_CHART && s_chartLastPayload >= s_chartLargeBytes) {
+		uint32_t v_mul = (s_chartThrottleMul > 0) ? (uint32_t)s_chartThrottleMul : 2UL;
+		v_itv = (uint16_t)((uint32_t)v_itv * v_mul);
+	}
 
-    if (p_nowMs - s_lastSendMs[p_ch] < v_itv) return false;
+	if (p_nowMs - s_lastSendMs[p_ch] < v_itv) return false;
 
-    JsonDocument v_doc;
+	JsonDocument v_doc;
 
-    // ✅ “인스턴스 오타 호출(v_ctrl.toJson)” 금지
-    // ✅ static wrapper(toJsonxxx)만 사용
-    if (p_ch == G_A20_WS_CH_STATE) {
-        CL_CT10_ControlManager::toJson(v_doc);
-        if (s_bcast_state) s_bcast_state(v_doc, true);
-    } else if (p_ch == G_A20_WS_CH_METRICS) {
-        CL_CT10_ControlManager::toMetricsJson(v_doc);
-        if (s_bcast_metrics) s_bcast_metrics(v_doc, true);
-    } else if (p_ch == G_A20_WS_CH_CHART) {
-        CL_CT10_ControlManager::toChartJson(v_doc, true);
-        s_chartLastPayload = CT10_WS_measurePayloadBytes(v_doc);
-        if (s_bcast_chart) s_bcast_chart(v_doc, true);
-    } else { // summary
-        CL_CT10_ControlManager::toSummaryJson(v_doc);
-        if (s_bcast_summary) s_bcast_summary(v_doc, true);
-    }
+	if (p_ch == (uint8_t)EN_A20_WS_CH_STATE) {
+		CL_CT10_ControlManager::toJson(v_doc);
+		if (s_bcast_state) s_bcast_state(v_doc, true);
+	} else if (p_ch == (uint8_t)EN_A20_WS_CH_METRICS) {
+		CL_CT10_ControlManager::toMetricsJson(v_doc);
+		if (s_bcast_metrics) s_bcast_metrics(v_doc, true);
+	} else if (p_ch == (uint8_t)EN_A20_WS_CH_CHART) {
+		CL_CT10_ControlManager::toChartJson(v_doc, true);
+		s_chartLastPayload = CT10_WS_measurePayloadBytes(v_doc);
+		if (s_bcast_chart) s_bcast_chart(v_doc, true);
+	} else { // summary
+		CL_CT10_ControlManager::toSummaryJson(v_doc);
+		if (s_bcast_summary) s_bcast_summary(v_doc, true);
+	}
 
-    s_lastSendMs[p_ch] = p_nowMs;
-    s_pending[p_ch]    = false;
-    return true;
+	s_lastSendMs[p_ch] = p_nowMs;
+	s_pending[p_ch]    = false;
+	return true;
 }
 
 // --------------------------------------------------
 // tick
 // --------------------------------------------------
 void CT10_WS_tick() {
-    if (!s_bcast_state || !s_bcast_metrics || !s_bcast_chart || !s_bcast_summary) {
-        return; // broker 미바인딩
-    }
-
-    uint32_t v_nowMs = millis();
-
-    // (권장) 정책 변경 반영: 3초마다 1회 재적용 (가벼운 복사)
-    if (v_nowMs - s_lastPolicyApplyMs >= 3000UL) {
-        s_lastPolicyApplyMs = v_nowMs;
-        CT10_WS_applyPolicyFromSystem();
-    }
-
-    // 1) dirty → pending 적립
-    CL_CT10_ControlManager& v_ctrl = CL_CT10_ControlManager::instance();
-    CT10_WS_collectPending(v_ctrl);
-
-    // 2) 우선순위대로 "최대 1개"만 전송
-    for (uint8_t v_i = 0; v_i < G_A20_WS_CH_COUNT; v_i++) {
-        uint8_t v_ch = s_prio[v_i];
-        if (CT10_WS_trySendOne(v_ch, v_nowMs)) break;
-    }
-
-    // 3) cleanupClients 주기 호출
-    if (s_ws_cleanup && (v_nowMs - s_lastCleanupMs >= (uint32_t)s_cleanupMs)) {
-        s_lastCleanupMs = v_nowMs;
-        s_ws_cleanup();
-    }
-}
-
-
-
-// --------------------------------------------------
-// Dirty flags
-// --------------------------------------------------
-void CL_CT10_ControlManager::markDirty(const char* p_key) {
-	if (!p_key || p_key[0] == '\0')
+	// broker 미바인딩 (필수 4채널 브로드캐스트가 준비되지 않으면 스케줄러 비활성)
+	if (!s_bcast_state || !s_bcast_metrics || !s_bcast_chart || !s_bcast_summary) {
 		return;
+	}
 
-	if (strcmp(p_key, "state") == 0) {
-		_dirtyState = true;
-	} else if (strcmp(p_key, "chart") == 0) {
-		_dirtyChart = true;
-	} else if (strcmp(p_key, "metrics") == 0) {
-		_dirtyMetrics = true;
-	} else if (strcmp(p_key, "summary") == 0) {
-		_dirtySummary = true;
-	} else {
-		CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] markDirty: unknown key=%s", p_key);
+	uint32_t v_nowMs = millis();
+
+	// (권장) 정책 변경 반영: 3초마다 1회 재적용 (가벼운 복사)
+	if (v_nowMs - s_lastPolicyApplyMs >= 3000UL) {
+		s_lastPolicyApplyMs = v_nowMs;
+		CT10_WS_applyPolicyFromSystem();
+	}
+
+	// 1) dirty → pending 적립
+	CL_CT10_ControlManager& v_ctrl = CL_CT10_ControlManager::instance();
+	CT10_WS_collectPending(v_ctrl);
+
+	// 2) 우선순위대로 "최대 1개"만 전송
+	for (uint8_t i = 0; i < (uint8_t)EN_A20_WS_CH_COUNT; i++) {
+		uint8_t v_ch = s_prio[i];
+		if (CT10_WS_trySendOne(v_ch, v_nowMs)) break;
+	}
+
+	// 3) cleanupClients 주기 호출
+	if (s_ws_cleanup && (v_nowMs - s_lastCleanupMs >= (uint32_t)s_cleanupMs)) {
+		s_lastCleanupMs = v_nowMs;
+		s_ws_cleanup();
 	}
 }
-
-bool CL_CT10_ControlManager::consumeDirtyState() {
-	bool v_ret = _dirtyState;
-	_dirtyState = false;
-	return v_ret;
-}
-
-bool CL_CT10_ControlManager::consumeDirtyMetrics() {
-	bool v_ret = _dirtyMetrics;
-	_dirtyMetrics = false;
-	return v_ret;
-}
-
-bool CL_CT10_ControlManager::consumeDirtyChart() {
-	bool v_ret = _dirtyChart;
-	_dirtyChart = false;
-	return v_ret;
-}
-
-bool CL_CT10_ControlManager::consumeDirtySummary() {
-	bool v_ret = _dirtySummary;
-	_dirtySummary = false;
-	return v_ret;
-}
-// --------------------------------------------------
-// metrics dirty push
-// --------------------------------------------------
-void CL_CT10_ControlManager::maybePushMetricsDirty() {
-	unsigned long v_nowMs = millis();
-	if (v_nowMs - lastMetricsPushMs < S_METRICS_PUSH_INTERVAL_MS)
-		return;
-
-	lastMetricsPushMs = v_nowMs;
-	markDirty("metrics");
-}
-
-

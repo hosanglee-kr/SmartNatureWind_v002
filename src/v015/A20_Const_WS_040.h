@@ -1,3 +1,5 @@
+#pragma once
+
 // A20_Const_WS_040.h
 
 

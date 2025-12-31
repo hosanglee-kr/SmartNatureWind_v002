@@ -155,7 +155,7 @@ inline void A20_ResetWsConfig() {
   "system": {
     ...
     "webSocket": {
-      "ChConfig": [
+      "wsChConfig": [
         {
           "chIdx": 0,
           "chName": "state",

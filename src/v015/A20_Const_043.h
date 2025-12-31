@@ -251,8 +251,9 @@ typedef struct {
 } ST_A20_FanConfig_t;
 
 // ------------------------------------------------------
-// system.webSocket 설정
+// system.webSocket 설정(A20_Const_WS_xxx.h에서 정의됨)
 // ------------------------------------------------------
+/*
 typedef struct {
     // 채널별 WS 전송 간격(ms)
     // index: 0=state, 1=metrics, 2=chart, 3=summary
@@ -270,6 +271,8 @@ typedef struct {
     uint16_t wsCleanupMs;
 
 } ST_A20_WebSocketConfig_t;
+*/
+
 
 // ------------------------------------------------------
 // SYSTEM 설정 (cfg_system_xxx.json) : camelCase 정합

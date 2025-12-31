@@ -95,7 +95,7 @@ void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
     JsonObject v_sim  = CT10_ensureObject(p_doc["sim"]);
     JsonObject v_meta = CT10_ensureObject(v_sim["meta"]);
 
-    v_meta["pwmDuty"]   = pwm ? pwm->P10_getDutyPercent() : 0.0f;
+    v_meta["pwmDuty"]   = v_inst.pwm ? v_inst.pwm->P10_getDutyPercent() : 0.0f;
     v_meta["active"]    = active;
     v_meta["runSource"] = (int)runSource;
     v_meta["override"]  = overrideState.active ? (overrideState.useFixed ? "fixed" : "resolved") : "none";

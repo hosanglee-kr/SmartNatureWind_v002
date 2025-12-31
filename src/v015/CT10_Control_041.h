@@ -161,7 +161,7 @@ class CL_CT10_ControlManager {
 
 	// JSON 관련(구현은 json cpp)
 	void exportStateJson(JsonDocument& p_doc);
-	void exportChartJson(JsonDocument& p_doc, bool p_diffOnly);
+	// void exportChartJson(JsonDocument& p_doc, bool p_diffOnly);
 	void exportSummaryJson(JsonDocument& p_doc);
 	void exportMetricsJson(JsonDocument& p_doc);
 

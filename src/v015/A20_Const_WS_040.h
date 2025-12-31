@@ -63,6 +63,8 @@ inline constexpr ST_A20_wsEtcConfig_t G_A20_WS_ETC_DEFAULT_CONFIG = {
 
 
 /*
+
+// C10_Config_SysWS_044.cpp
 // ------------------------------------------------------
 // 3. 전역 변수 설정 (RAM)
 // ------------------------------------------------------
@@ -141,4 +143,54 @@ inline void A20_ResetWsConfig() {
     g_A20_wsConfig.wsEtcConfig = G_A20_WS_ETC_DEFAULT_CONFIG;
 }
 
+*/
+
+
+
+/*
+// cfg_system_031.json
+
+{
+  ...
+  "system": {
+    ...
+    "webSocket": {
+      "ChConfig": [
+        {
+          "chIdx": 0,
+          "chName": "state",
+          "chIntervalMs": 800,
+          "priority": 0
+        },
+        {
+          "chIdx": 1,
+          "chName": "metrics",
+          "chIntervalMs": 1500,
+          "priority": 1
+        },
+        {
+          "chIdx": 2,
+          "chName": "chart",
+          "chIntervalMs": 1200,
+          "priority": 2
+        },
+        {
+          "chIdx": 3,
+          "chName": "summary",
+          "chIntervalMs": 1500,
+          "priority": 3
+        }
+      ],
+      "wsEtcConfig": {
+        "chartLargeBytes": 3500,
+        "chartThrottleMul": 2,
+        "wsCleanupMs": 10000
+      }
+    }
+    ...
+  }
+  ...
+}
+    
+        
 */

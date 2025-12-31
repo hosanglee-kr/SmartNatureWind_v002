@@ -118,8 +118,8 @@ void CT10_WS_setBrokers(
 	void (*p_metrics)(JsonDocument&, bool),
 	void (*p_chart)(JsonDocument&, bool),
 	void (*p_summary)(JsonDocument&, bool),
-	void (*p_cleanup)(),
-    void (*p_setIntervalsFn)(const uint16_t p_itvMs[EN_A20_WS_CH_COUNT])
+	void (*p_cleanup)()
+  // ,void (*p_setIntervalsFn)(const uint16_t p_itvMs[EN_A20_WS_CH_COUNT])
 	// void (*p_setIntervalsFn)(const uint16_t p_itvMs[G_A20_WS_CH_COUNT])
   
 );

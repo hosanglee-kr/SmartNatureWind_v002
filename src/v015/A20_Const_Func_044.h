@@ -57,17 +57,34 @@
 // 2) Segment Mode <-> String 매핑 유틸
 // ======================================================
 inline EN_A20_segment_mode_t A20_modeFromString(const char* p_str) {
-    if (!p_str) return EN_A20_SEG_MODE_PRESET;
+    if (!p_str || !p_str[0]) return EN_A20_SEG_MODE_PRESET;
+
     for (uint8_t v_i = 0; v_i < EN_A20_SEG_MODE_COUNT; v_i++) {
-        if (strcasecmp(p_str, g_A20_SEG_MODE_NAMES[v_i]) == 0) return static_cast<EN_A20_segment_mode_t>(v_i);
+        // 구조체 배열의 .code 필드와 비교
+        if (strcasecmp(p_str, G_A20_SegmentMode_Arr[v_i].code) == 0) {
+            return G_A20_SegmentMode_Arr[v_i].idx;
+        }
     }
     return EN_A20_SEG_MODE_PRESET;
 }
 
+// inline EN_A20_segment_mode_t A20_modeFromString(const char* p_str) {
+//     if (!p_str) return EN_A20_SEG_MODE_PRESET;
+//     for (uint8_t v_i = 0; v_i < EN_A20_SEG_MODE_COUNT; v_i++) {
+//         if (strcasecmp(p_str, g_A20_SEG_MODE_NAMES[v_i]) == 0) return static_cast<EN_A20_segment_mode_t>(v_i);
+//     }
+//     return EN_A20_SEG_MODE_PRESET;
+// }
+
 inline const char* A20_modeToString(EN_A20_segment_mode_t p_mode) {
-    if (p_mode >= EN_A20_SEG_MODE_COUNT) return "PRESET";
-    return g_A20_SEG_MODE_NAMES[p_mode];
+    if (p_mode >= EN_A20_SEG_MODE_COUNT) return G_A20_SegmentMode_Arr[EN_A20_SEG_MODE_PRESET].code;
+    return G_A20_SegmentMode_Arr[p_mode].code;
 }
+
+// inline const char* A20_modeToString(EN_A20_segment_mode_t p_mode) {
+//     if (p_mode >= EN_A20_SEG_MODE_COUNT) return "PRESET";
+//     return g_A20_SEG_MODE_NAMES[p_mode];
+// }
 
 // ======================================================
 // 3) 하위 구조체 단위 Reset (누락 방지 목적)
@@ -155,15 +172,32 @@ static inline void A20_resetScheduleSegmentDefault(ST_A20_ScheduleSegment_t& p_s
     p_seg.segNo      = 0;
     p_seg.onMinutes  = 0;
     p_seg.offMinutes = 0;
+    p_seg.mode       = EN_A20_SEG_MODE_PRESET;
 
-    p_seg.mode = EN_A20_SEG_MODE_PRESET;
+    // 초기값으로 OFF 프리셋 코드 설정 (선택 사항)
+    A40_ComFunc::copyStr2Buffer_safe(p_seg.presetCode, G_A20_PresetMode_Arr[EN_A20_PRESET_OFF].code, sizeof(p_seg.presetCode));
+    A40_ComFunc::copyStr2Buffer_safe(p_seg.styleCode, G_A20_WindPhase_Arr[EN_A20_WEATHER_PHASE_NORMAL].code, sizeof(p_seg.styleCode));
 
-    memset(p_seg.presetCode, 0, sizeof(p_seg.presetCode));
-    memset(p_seg.styleCode, 0, sizeof(p_seg.styleCode));
     A20_resetAdjustDeltaDefault(p_seg.adjust);
-
     p_seg.fixedSpeed = 0.0f;
 }
+
+// static inline void A20_resetScheduleSegmentDefault(ST_A20_ScheduleSegment_t& p_seg) {
+//     memset(&p_seg, 0, sizeof(p_seg));
+
+//     p_seg.segId      = 0;
+//     p_seg.segNo      = 0;
+//     p_seg.onMinutes  = 0;
+//     p_seg.offMinutes = 0;
+
+//     p_seg.mode = EN_A20_SEG_MODE_PRESET;
+
+//     memset(p_seg.presetCode, 0, sizeof(p_seg.presetCode));
+//     memset(p_seg.styleCode, 0, sizeof(p_seg.styleCode));
+//     A20_resetAdjustDeltaDefault(p_seg.adjust);
+
+//     p_seg.fixedSpeed = 0.0f;
+// }
 
 static inline void A20_resetUserProfileSegmentDefault(ST_A20_UserProfileSegment_t& p_seg) {
     memset(&p_seg, 0, sizeof(p_seg));
@@ -626,13 +660,31 @@ inline void A20_resetToDefault(ST_A20_ConfigRoot_t& p_root) {
 // ======================================================
 // 6) WindProfileDict 검색 유틸 (누락/축소 방지)
 // ======================================================
-inline int8_t A20_getPresetIndexByCode(const char* p_code) {
-    if (!p_code) return -1;
-    for (int8_t v_i = 0; v_i < EN_A20_PRESET_COUNT; v_i++) {
-        if (strcasecmp(p_code, g_A20_PRESET_CODES[v_i]) == 0) return v_i;
+
+inline int8_t A20_getStaticPresetIndexByCode(const char* p_code) {
+    if (!p_code || !p_code[0]) return -1;
+    for (uint8_t v_i = 0; v_i < EN_A20_PRESET_COUNT; v_i++) {
+        if (strcasecmp(p_code, G_A20_PresetMode_Arr[v_i].code) == 0) return (int8_t)v_i;
     }
     return -1;
 }
+
+// ======================================================
+// 7) 유틸리티: 코드로부터 이름을 즉시 반환 (UI 표시용)
+// ======================================================
+inline const char* A20_getPresetNameByCode(const char* p_code) {
+    int8_t v_idx = A20_getStaticPresetIndexByCode(p_code);
+    if (v_idx >= 0) return G_A20_PresetMode_Arr[v_idx].name;
+    return "Unknown";
+}
+
+// inline int8_t A20_getPresetIndexByCode(const char* p_code) {
+//     if (!p_code) return -1;
+//     for (int8_t v_i = 0; v_i < EN_A20_PRESET_COUNT; v_i++) {
+//         if (strcasecmp(p_code, g_A20_PRESET_CODES[v_i]) == 0) return v_i;
+//     }
+//     return -1;
+// }
 
 inline int16_t A20_findPresetIndexByCode(const ST_A20_WindProfileDict_t& p_dict, const char* p_code) {
     if (!p_code || !p_code[0]) return -1;
@@ -642,6 +694,14 @@ inline int16_t A20_findPresetIndexByCode(const ST_A20_WindProfileDict_t& p_dict,
     return -1;
 }
 
+// inline int16_t A20_findPresetIndexByCode(const ST_A20_WindProfileDict_t& p_dict, const char* p_code) {
+//     if (!p_code || !p_code[0]) return -1;
+//     for (uint8_t v_i = 0; v_i < p_dict.presetCount; v_i++) {
+//         if (strcasecmp(p_dict.presets[v_i].code, p_code) == 0) return (int16_t)v_i;
+//     }
+//     return -1;
+// }
+
 inline int16_t A20_findStyleIndexByCode(const ST_A20_WindProfileDict_t& p_dict, const char* p_code) {
     if (!p_code || !p_code[0]) return -1;
     for (uint8_t v_i = 0; v_i < p_dict.styleCount; v_i++) {
@@ -649,6 +709,14 @@ inline int16_t A20_findStyleIndexByCode(const ST_A20_WindProfileDict_t& p_dict, 
     }
     return -1;
 }
+
+// inline int16_t A20_findStyleIndexByCode(const ST_A20_WindProfileDict_t& p_dict, const char* p_code) {
+//     if (!p_code || !p_code[0]) return -1;
+//     for (uint8_t v_i = 0; v_i < p_dict.styleCount; v_i++) {
+//         if (strcasecmp(p_dict.styles[v_i].code, p_code) == 0) return (int16_t)v_i;
+//     }
+//     return -1;
+// }
 
 
 /*

@@ -62,7 +62,7 @@ bool ioSaveJson(const char* p_path, const JsonDocument& p_doc);
 
 // Mutex Timeout 정의
 #ifndef G_C10_MUTEX_TIMEOUT
-#	define G_C10_MUTEX_TIMEOUT pdMS_TO_TICKS(100)
+	#define G_C10_MUTEX_TIMEOUT pdMS_TO_TICKS(100)
 #endif
 
 

@@ -169,13 +169,13 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
 
                 // chIntervalMs
                 if (!j_ch["chIntervalMs"].isNull()) {
-                    uint16_t v_new = A20_clampVal<uint16_t>(j_ch["chIntervalMs"].as<uint16_t>(), 20, 60000);
+                    uint16_t v_new = A40_ComFunc::clampVal<uint16_t>(j_ch["chIntervalMs"].as<uint16_t>(), 20, 60000);
                     p_cfg.system.webSocket.wsChConfig[v_idx].chIntervalMs = v_new;
                 }
 
                 // priority
                 if (!j_ch["priority"].isNull()) {
-					uint8_t v_new = A20_clampVal<uint8_t>(j_ch["priority"].as<uint8_t>(), 0, 10);
+					uint8_t v_new = A40_ComFunc::clampVal<uint8_t>(j_ch["priority"].as<uint8_t>(), 0, 10);
                     p_cfg.system.webSocket.wsChConfig[v_idx].priority = v_new;
                 }
 
@@ -198,15 +198,15 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
         JsonObjectConst j_etc = j_ws["wsEtcConfig"].as<JsonObjectConst>();
         if (!j_etc.isNull()) {
             if (!j_etc["chartLargeBytes"].isNull()) {
-                uint16_t v_new = A20_clampVal<uint16_t>(j_etc["chartLargeBytes"].as<uint16_t>(), 256, 60000);
+                uint16_t v_new = A40_ComFunc::clampVal<uint16_t>(j_etc["chartLargeBytes"].as<uint16_t>(), 256, 60000);
                 p_cfg.system.webSocket.wsEtcConfig.chartLargeBytes = v_new;
             }
             if (!j_etc["chartThrottleMul"].isNull()) {
-                uint8_t v_new = A20_clampVal<uint8_t>(j_etc["chartThrottleMul"].as<uint8_t>(), 1, 10);
+                uint8_t v_new = A40_ComFunc::clampVal<uint8_t>(j_etc["chartThrottleMul"].as<uint8_t>(), 1, 10);
                 p_cfg.system.webSocket.wsEtcConfig.chartThrottleMul = v_new;
             }
             if (!j_etc["wsCleanupMs"].isNull()) {
-                uint16_t v_new = A20_clampVal<uint16_t>(j_etc["wsCleanupMs"].as<uint16_t>(), 200, 60000);
+                uint16_t v_new = A40_ComFunc::clampVal<uint16_t>(j_etc["wsCleanupMs"].as<uint16_t>(), 200, 60000);
                 p_cfg.system.webSocket.wsEtcConfig.wsCleanupMs = v_new;
             }
         }
@@ -636,7 +636,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
                     if (v_idx >= (uint8_t)EN_A20_WS_CH_COUNT) continue;
 
                     if (!j_ch["chIntervalMs"].isNull()) {
-                        uint16_t v_new = A20_clampVal<uint16_t>(j_ch["chIntervalMs"].as<uint16_t>(), 20, 60000);
+                        uint16_t v_new = A40_ComFunc::clampVal<uint16_t>(j_ch["chIntervalMs"].as<uint16_t>(), 20, 60000);
                         if (v_new != p_config.system.webSocket.wsChConfig[v_idx].chIntervalMs) {
                             p_config.system.webSocket.wsChConfig[v_idx].chIntervalMs = v_new;
                             v_changed = true;
@@ -644,7 +644,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
                     }
 
                     if (!j_ch["priority"].isNull()) {
-						uint8_t v_new = A20_clampVal<uint8_t>(j_ch["priority"].as<uint8_t>(), 0, 10);
+						uint8_t v_new = A40_ComFunc::clampVal<uint8_t>(j_ch["priority"].as<uint8_t>(), 0, 10);
                         if (v_new != p_config.system.webSocket.wsChConfig[v_idx].priority) {
                             p_config.system.webSocket.wsChConfig[v_idx].priority = v_new;
                             v_changed = true;
@@ -659,21 +659,21 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
             JsonObjectConst j_etc = j_ws["wsEtcConfig"].as<JsonObjectConst>();
             if (!j_etc.isNull()) {
                 if (!j_etc["chartLargeBytes"].isNull()) {
-                    uint16_t v_new = A20_clampVal<uint16_t>(j_etc["chartLargeBytes"].as<uint16_t>(), 256, 60000);
+                    uint16_t v_new = A40_ComFunc::clampVal<uint16_t>(j_etc["chartLargeBytes"].as<uint16_t>(), 256, 60000);
                     if (v_new != p_config.system.webSocket.wsEtcConfig.chartLargeBytes) {
                         p_config.system.webSocket.wsEtcConfig.chartLargeBytes = v_new;
                         v_changed = true;
                     }
                 }
                 if (!j_etc["chartThrottleMul"].isNull()) {
-                    uint8_t v_new = A20_clampVal<uint8_t>(j_etc["chartThrottleMul"].as<uint8_t>(), 1, 10);
+                    uint8_t v_new = A40_ComFunc::clampVal<uint8_t>(j_etc["chartThrottleMul"].as<uint8_t>(), 1, 10);
                     if (v_new != p_config.system.webSocket.wsEtcConfig.chartThrottleMul) {
                         p_config.system.webSocket.wsEtcConfig.chartThrottleMul = v_new;
                         v_changed = true;
                     }
                 }
                 if (!j_etc["wsCleanupMs"].isNull()) {
-                    uint16_t v_new = A20_clampVal<uint16_t>(j_etc["wsCleanupMs"].as<uint16_t>(), 200, 60000);
+                    uint16_t v_new = A40_ComFunc::clampVal<uint16_t>(j_etc["wsCleanupMs"].as<uint16_t>(), 200, 60000);
                     if (v_new != p_config.system.webSocket.wsEtcConfig.wsCleanupMs) {
                         p_config.system.webSocket.wsEtcConfig.wsCleanupMs = v_new;
                         v_changed = true;

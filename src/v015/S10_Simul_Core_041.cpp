@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------
- * 소스명 : S10_Simul_Core_040.cpp
+ * 소스명 : S10_Simul_Core_041.cpp
  * 모듈약어 : S10
  * 모듈명 : Smart Nature Wind 풍속 시뮬레이션 Manager (v019, Full)
  * ------------------------------------------------------
@@ -190,7 +190,7 @@ void CL_S10_Simulation::tick() {
 
 	// 5) dt 계산
 	float v_dt							= (_tickNowMs - lastUpdateMs) / 1000.0f;
-	v_dt								= A20_clampVal<float>(v_dt, 0.001f, 0.5f);
+	v_dt								= A40_ComFunc::clampVal<float>(v_dt, 0.001f, 0.5f);
 	lastUpdateMs						= _tickNowMs;
 
 	// 6) 이전 상태 기록(변화 감지)
@@ -220,11 +220,11 @@ void CL_S10_Simulation::tick() {
 	// 11) 목표 재생성(확률)
 	const float v_th	 = 0.5f + (currentWindSpeed / 20.0f);
 	if (fabsf(v_diff) < v_th) {
-		if (A20_randRange(0.0f, 100.0f) < 30.0f) {
+		if (A40_ComFunc::getRandomRange(0.0f, 100.0f) < 30.0f) {
 			generateTarget();
 		}
 	} else {
-		if (A20_randRange(0.0f, 100.0f) < 6.0f) {
+		if (A40_ComFunc::getRandomRange(0.0f, 100.0f) < 6.0f) {
 			generateTarget();
 		}
 	}
@@ -263,7 +263,11 @@ void CL_S10_Simulation::tick() {
 		v_e.intensity		 = userIntensity;
 		v_e.variability		 = userVariability;
 		v_e.turbulence_sigma = turbSigma;
-		v_e.preset_index	 = (uint8_t)A20_getPresetIndexByCode(presetCode);
+
+		// presetCode(문자열)를 기반으로 정적 인덱스를 안전하게 추출
+        v_e.preset_index     = static_cast<uint8_t>(A20_getStaticPresetIndexByCode(presetCode));
+		// v_e.preset_index	 = (uint8_t)A20_getPresetIndexByCode(presetCode);
+
 		v_e.gust_active		 = gustActive;
 		v_e.thermal_active	 = thermalActive;
 
@@ -278,7 +282,16 @@ void CL_S10_Simulation::tick() {
 		JsonDocument v_doc;	 // JsonDocument 단일 타입 사용
 		JsonObject	 v_sim = v_doc["sim"].to<JsonObject>();
 
-		v_sim["phase"]	   = g_A20_WEATHER_PHASE_NAMES_Arr[(uint8_t)v_bc_phase];
+
+		// [수정] phase 인덱스 범위 방어 및 신규 구조체 매핑 적용
+        uint8_t v_phaseIdx = static_cast<uint8_t>(v_bc_phase);
+        if (v_phaseIdx >= EN_A20_WEATHER_PHASE_COUNT) {
+            v_phaseIdx = static_cast<uint8_t>(EN_A20_WEATHER_PHASE_CALM);
+        }
+        // g_A20_WEATHER_PHASE_NAMES_Arr 대신 구조체 배열의 .code 사용
+        v_sim["phase"]   = G_A20_WindPhase_Arr[v_phaseIdx].code;
+		//v_sim["phase"]	   = g_A20_WEATHER_PHASE_NAMES_Arr[(uint8_t)v_bc_phase];
+
 		v_sim["avgWind"]   = v_bc_avgWind;
 		v_sim["target"]	   = v_bc_target;
 		v_sim["samples"]   = v_bc_samples;
@@ -377,10 +390,10 @@ void CL_S10_Simulation::applyFan(float p_pct) {
 	}
 
 	// 1) 요청 duty(%)를 0~1로 정규화
-	float		v_req01 = A20_clampVal<float>(p_pct, 0.0f, 100.0f) / 100.0f;
+	float		v_req01 = A40_ComFunc::clampVal<float>(p_pct, 0.0f, 100.0f) / 100.0f;
 
 	// 2) 사용자 intensity(0~1)
-	const float v_int01 = A20_clampVal<float>(userIntensity, 0.0f, 100.0f) / 100.0f;
+	const float v_int01 = A40_ComFunc::clampVal<float>(userIntensity, 0.0f, 100.0f) / 100.0f;
 
 	// 3) 팬 전원 OFF 또는 intensity가 거의 0이면 정지
 	if (!fanPowerEnabled || v_int01 <= 0.01f) {
@@ -394,8 +407,8 @@ void CL_S10_Simulation::applyFan(float p_pct) {
 	}
 
 	// 5) min/limit(%) -> 0~1 변환 + 관계 보정(min <= limit)
-	float v_min01 = A20_clampVal<float>(minFanPct, 0.0f, 100.0f) / 100.0f;
-	float v_max01 = A20_clampVal<float>(fanLimitPct, 0.0f, 100.0f) / 100.0f;
+	float v_min01 = A40_ComFunc::clampVal<float>(minFanPct, 0.0f, 100.0f) / 100.0f;
+	float v_max01 = A40_ComFunc::clampVal<float>(fanLimitPct, 0.0f, 100.0f) / 100.0f;
 
 	if (v_min01 > v_max01) {
 		v_min01 = v_max01;

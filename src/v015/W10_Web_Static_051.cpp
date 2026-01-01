@@ -121,9 +121,9 @@ void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_fil
     if (!p_uri || !p_file || !p_mime) return;
 
     // 1. 스마트 포인터로 할당 (성공 시 자동 관리 시작)
-    auto v_uri  = A20_makeSharedStr(p_uri);
-    auto v_file = A20_makeSharedStr(p_file);
-    auto v_mime = A20_makeSharedStr(p_mime);
+    auto v_uri  = A40_ComFunc::cloneStr2SharedStr_safe(p_uri);
+    auto v_file = A40_ComFunc::cloneStr2SharedStr_safe(p_file);
+    auto v_mime = A40_ComFunc::cloneStr2SharedStr_safe(p_mime);
 
     if (!v_uri || !v_file || !v_mime) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] Route alloc failed: %s", p_uri);
@@ -301,8 +301,8 @@ void CL_W10_WebAPI::routeStaticAssets() {
 			if (!v_from || !v_to) continue;
 
 			// 수동 W10_allocCString 대신 스마트 포인터 사용
-			auto v_from_sp = A20_makeSharedStr(v_from);
-			auto v_to_sp   = A20_makeSharedStr(v_to);
+			auto v_from_sp = A40_ComFunc::cloneStr2SharedStr_safe(v_from);
+			auto v_to_sp   = A40_ComFunc::cloneStr2SharedStr_safe(v_to);
 
 			if (!v_from_sp || !v_to_sp) continue;
 

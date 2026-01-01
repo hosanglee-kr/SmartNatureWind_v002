@@ -59,7 +59,7 @@ static inline float S10_probFromRatePerSec(float p_ratePerSec, float p_dtSec) {
 		return 0.0f;
 	}
 	const float v_p = 1.0f - expf(-p_ratePerSec * p_dtSec);
-	return A20_clampVal<float>(v_p, 0.0f, 1.0f);
+	return A40_ComFunc::clampVal<float>(v_p, 0.0f, 1.0f);
 }
 
 // ==================================================
@@ -123,7 +123,7 @@ void CL_S10_Simulation::initPhaseFromBase() {
 	phaseMaxWind	  = baseMinWind + v_span * 0.85f;
 
 	// 지속시간(초) 정책 상수는 헤더(S10_Simul_041.h)에서 공유
-	phaseDurationSec  = A20_randRange(G_S10_PHASE_NORM_DUR_MIN_S, G_S10_PHASE_NORM_DUR_MAX_S);
+	phaseDurationSec  = A40_ComFunc::getRandomRange(G_S10_PHASE_NORM_DUR_MIN_S, G_S10_PHASE_NORM_DUR_MAX_S);
 
 	// 초기 풍속/목표
 	const float v_mid = (baseMinWind + baseMaxWind) * 0.5f;
@@ -166,7 +166,7 @@ void CL_S10_Simulation::updatePhase() {
 	}
 
 	const EN_A20_WindPhase_t v_old = phase;
-	const float				v_r	  = A20_getRandom01();	// 0..1
+	const float				v_r	  = A40_ComFunc::getRandom01();	// 0..1
 
 	if (v_old == EN_A20_WEATHER_PHASE_CALM) {
 		phase = (v_r < 0.7f) ? EN_A20_WEATHER_PHASE_NORMAL : EN_A20_WEATHER_PHASE_STRONG;
@@ -191,15 +191,15 @@ void CL_S10_Simulation::updatePhase() {
 
 	// Phase별 지속시간/범위 (정책 상수는 헤더 공유)
 	if (phase == EN_A20_WEATHER_PHASE_CALM) {
-		phaseDurationSec = A20_randRange(G_S10_PHASE_CALM_DUR_MIN_S, G_S10_PHASE_CALM_DUR_MAX_S);
+		phaseDurationSec = A40_ComFunc::getRandomRange(G_S10_PHASE_CALM_DUR_MIN_S, G_S10_PHASE_CALM_DUR_MAX_S);
 		phaseMinWind	 = baseMinWind;
 		phaseMaxWind	 = baseMinWind + v_span * 0.6f;
 	} else if (phase == EN_A20_WEATHER_PHASE_NORMAL) {
-		phaseDurationSec = A20_randRange(G_S10_PHASE_NORM_DUR_MIN_S, G_S10_PHASE_NORM_DUR_MAX_S);
+		phaseDurationSec = A40_ComFunc::getRandomRange(G_S10_PHASE_NORM_DUR_MIN_S, G_S10_PHASE_NORM_DUR_MAX_S);
 		phaseMinWind	 = baseMinWind + v_span * 0.15f;
 		phaseMaxWind	 = baseMinWind + v_span * 0.85f;
 	} else {  // STRONG
-		phaseDurationSec = A20_randRange(G_S10_PHASE_STRONG_DUR_MIN_S, G_S10_PHASE_STRONG_DUR_MAX_S);
+		phaseDurationSec = A40_ComFunc::getRandomRange(G_S10_PHASE_STRONG_DUR_MIN_S, G_S10_PHASE_STRONG_DUR_MAX_S);
 		phaseMinWind	 = baseMinWind + v_span * 0.4f;
 		phaseMaxWind	 = baseMaxWind;
 	}
@@ -250,7 +250,7 @@ void CL_S10_Simulation::calcTurb(float p_dt) {
 		const float v_phaseRate = 2.0f * (float)M_PI * v_f;
 		const float v_phaseInc	= v_phaseRate * p_dt;
 
-		const float v_phase		= spectralPhaseAcc * (float)v_i + v_phaseInc + A20_randRange(-0.1f, 0.1f);
+		const float v_phase		= spectralPhaseAcc * (float)v_i + v_phaseInc + A40_ComFunc::getRandomRange(-0.1f, 0.1f);
 
 		const float v_bandWidth = 0.083f;
 		const float v_amp		= sqrtf(max(0.0f, 2.0f * v_S * v_bandWidth));
@@ -291,7 +291,7 @@ void CL_S10_Simulation::calcThermalEnvelope() {
 		return;
 	}
 
-	const float v_prog = A20_clampVal<float>(v_age / thermalDuration, 0.0f, 1.0f);
+	const float v_prog = A40_ComFunc::clampVal<float>(v_age / thermalDuration, 0.0f, 1.0f);
 	float		v_env  = 0.0f;
 
 	if (v_prog < 0.2f) {
@@ -344,7 +344,7 @@ void CL_S10_Simulation::updateGust() {
 			return;
 		}
 
-		const float v_prog = A20_clampVal<float>(v_age / gustDuration, 0.0f, 1.0f);
+		const float v_prog = A40_ComFunc::clampVal<float>(v_age / gustDuration, 0.0f, 1.0f);
 		float		v_env  = 0.0f;
 
 		if (v_prog < 0.25f) {
@@ -388,7 +388,7 @@ void CL_S10_Simulation::updateGust() {
 	}
 
 	// (3) rate 구성: base * user * wind/phase 가중치
-	const float v_user	   = A20_clampVal<float>(userGustFreq, 0.0f, 100.0f) / 100.0f;
+	const float v_user	   = A40_ComFunc::clampVal<float>(userGustFreq, 0.0f, 100.0f) / 100.0f;
 	const float v_wfac	   = 1.0f + (currentWindSpeed / 8.9f) * 0.5f;
 
 	float		v_phaseMul = 1.0f;
@@ -404,21 +404,21 @@ void CL_S10_Simulation::updateGust() {
 
 	const float v_p			 = S10_probFromRatePerSec(v_ratePerSec, v_dtSec);
 
-	if (A20_getRandom01() < v_p) {
+	if (A40_ComFunc::getRandom01() < v_p) {
 		gustActive			 = true;
 		gustStartSec		 = v_nowSec;
 
 		const float v_speedF = currentWindSpeed / 6.7f;
 
 		if (phase == EN_A20_WEATHER_PHASE_CALM) {
-			gustDuration  = A20_randRange(3.0f, 8.0f);
-			gustIntensity = A20_randRange(1.08f, 1.33f);
+			gustDuration  = A40_ComFunc::getRandomRange(3.0f, 8.0f);
+			gustIntensity = A40_ComFunc::getRandomRange(1.08f, 1.33f);
 		} else if (phase == EN_A20_WEATHER_PHASE_STRONG) {
-			gustDuration  = A20_randRange(0.8f, 3.3f);
-			gustIntensity = A20_randRange(1.3f, 1.3f + 0.9f * (1.0f + v_speedF * 0.3f));
+			gustDuration  = A40_ComFunc::getRandomRange(0.8f, 3.3f);
+			gustIntensity = A40_ComFunc::getRandomRange(1.3f, 1.3f + 0.9f * (1.0f + v_speedF * 0.3f));
 		} else {
-			gustDuration  = A20_randRange(1.8f, 5.8f);
-			gustIntensity = A20_randRange(1.15f, 1.15f + 0.5f * (1.0f + v_speedF * 0.2f));
+			gustDuration  = A40_ComFunc::getRandomRange(1.8f, 5.8f);
+			gustIntensity = A40_ComFunc::getRandomRange(1.15f, 1.15f + 0.5f * (1.0f + v_speedF * 0.2f));
 		}
 
 		const float v_maxMul = max(1.0f, gustStrengthMax);
@@ -472,12 +472,12 @@ void CL_S10_Simulation::updateThermal() {
 
 	const float v_p			  = S10_probFromRatePerSec(v_ratePerSec, v_dtSec);
 
-	if (A20_getRandom01() < v_p) {
+	if (A40_ComFunc::getRandom01() < v_p) {
 		thermalActive	= true;
 		thermalStartSec = _tickNowSec;
 
 		// 지속 시간 정책 상수(헤더 공유) + phase 보정 배율
-		float v_d		= A20_randRange(G_S10_THERM_DUR_MIN_S, G_S10_THERM_DUR_MAX_S);
+		float v_d		= A40_ComFunc::getRandomRange(G_S10_THERM_DUR_MIN_S, G_S10_THERM_DUR_MAX_S);
 		if (phase == EN_A20_WEATHER_PHASE_CALM) {
 			v_d *= G_S10_THERM_DUR_MUL_CALM;
 		} else if (phase == EN_A20_WEATHER_PHASE_STRONG) {
@@ -506,16 +506,16 @@ void CL_S10_Simulation::generateTarget() {
 		v_range = 0.2f;
 	}
 
-	float v_w		   = phaseMinWind + A20_getRandom01() * v_range;
+	float v_w		   = phaseMinWind + A40_ComFunc::getRandom01() * v_range;
 	float v_mid		   = (phaseMinWind + phaseMaxWind) * 0.5f;
-	float v_bias	   = A20_randRange(0.0f, 1.0f);
+	float v_bias	   = A40_ComFunc::getRandomRange(0.0f, 1.0f);
 
 	// 중앙값 바이어스
 	v_w				   = (v_w + v_mid * v_bias) / (1.0f + v_bias);
 	targetWindSpeed	   = v_w;
 
 	// variability(0~100) -> 0~1
-	const float v_var  = A20_clampVal<float>(userVariability, 0.0f, 100.0f) / 100.0f;
+	const float v_var  = A40_ComFunc::clampVal<float>(userVariability, 0.0f, 100.0f) / 100.0f;
 
 	float		v_base = 0.15f;
 
@@ -531,5 +531,5 @@ void CL_S10_Simulation::generateTarget() {
 	const float v_tscale = turbLenScale / v_U;
 	v_base *= (1.0f + v_tscale * 0.1f);
 
-	windChangeRate = constrain(v_base * A20_randRange(0.7f, 1.7f), 0.04f, 0.5f);
+	windChangeRate = constrain(v_base * A40_ComFunc::getRandomRange(0.7f, 1.7f), 0.04f, 0.5f);
 }

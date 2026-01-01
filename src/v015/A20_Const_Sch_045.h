@@ -1,4 +1,4 @@
- // 소스명 : A20_Const_Sch_044.h
+ // 소스명 : A20_Const_Sch_045.h
 
 #pragma once
 #include <Arduino.h>
@@ -19,13 +19,24 @@ typedef enum : uint8_t {
     EN_A20_WEATHER_PHASE_COUNT,
 } EN_A20_WindPhase_t;
 
-inline constexpr const char* g_A20_WEATHER_PHASE_NAMES_Arr[EN_A20_WEATHER_PHASE_COUNT] = {
-    "CALM",
-    "NORMAL",
-    "STRONG",
+// inline constexpr const char* g_A20_WEATHER_PHASE_NAMES_Arr[EN_A20_WEATHER_PHASE_COUNT] = {
+//     "CALM",
+//     "NORMAL",
+//     "STRONG",
+// };
+
+
+typedef struct {
+    const EN_A20_WindPhase_t 	idx;
+	const char* 				code;
+    const char* 				name;
+} ST_A20_WindPhase_t;
+
+inline constexpr ST_A20_WindPhase_t G_A20_WindPhase_Arr[EN_A20_WEATHER_PHASE_COUNT] = {
+    { EN_A20_WEATHER_PHASE_CALM,   "CALM",   "Calm" },
+    { EN_A20_WEATHER_PHASE_NORMAL, "NORMAL", "Normal" },
+    { EN_A20_WEATHER_PHASE_STRONG, "STRONG", "Strong" },
 };
-
-
 
 // 프리셋 (레거시/참고용: 신규 sim은 문자열 preset 사용)
 typedef enum : uint8_t {
@@ -43,52 +54,57 @@ typedef enum : uint8_t {
     EN_A20_PRESET_COUNT
 } EN_A20_PresetMode_t;
 
-// 프리셋 코드 배열 정의 (문자열 상수)  (참고용)
-inline constexpr const char* g_A20_PRESET_CODES[EN_A20_PRESET_COUNT] = {
-    "OFF",
-    "COUNTRY",
-    "MEDITERRANEAN",
-    "OCEAN",
-    "MOUNTAIN",
-    "PLAINS",
-    "HARBOR_BREEZE",
-    "FOREST_CANOPY",
-    "URBAN_SUNSET",
-    "TROPICAL_RAIN",
-    "DESERT_NIGHT",
+// // 프리셋 코드 배열 정의 (문자열 상수)  (참고용)
+// inline constexpr const char* g_A20_PRESET_CODES[EN_A20_PRESET_COUNT] = {
+//     "OFF",
+//     "COUNTRY",
+//     "MEDITERRANEAN",
+//     "OCEAN",
+//     "MOUNTAIN",
+//     "PLAINS",
+//     "HARBOR_BREEZE",
+//     "FOREST_CANOPY",
+//     "URBAN_SUNSET",
+//     "TROPICAL_RAIN",
+//     "DESERT_NIGHT",
+// };
+
+// inline constexpr const char* g_A20_PRESET_MODE_NAMES_Arr[EN_A20_PRESET_COUNT] = {
+//     "Off",
+//     "Country",
+//     "Mediterranean",
+//     "Ocean",
+//     "Mountain",
+//     "Plains",
+//     "Harbor Breeze",
+//     "Forest Canopy",
+//     "Urban Sunset",
+//     "Tropical Rain",
+//     "Desert Night",
+// };
+
+
+typedef struct {
+    const EN_A20_PresetMode_t 	idx;
+	const char* 				code;
+    const char* 				name;
+} ST_A20_Presets_t;
+
+inline constexpr ST_A20_Presets_t G_A20_PresetMode_Arr[EN_A20_PRESET_COUNT] = {
+    { EN_A20_PRESET_OFF,           "OFF",           "Off"           },
+    { EN_A20_PRESET_COUNTRY,       "COUNTRY",       "Country"       },
+    { EN_A20_PRESET_MEDITERRANEAN, "MEDITERRANEAN", "Mediterranean" },
+    { EN_A20_PRESET_OCEAN,         "OCEAN",         "Ocean"         },
+    { EN_A20_PRESET_MOUNTAIN,      "MOUNTAIN",      "Mountain"      },
+    { EN_A20_PRESET_PLAINS,        "PLAINS",        "Plains"        },
+    { EN_A20_PRESET_HARBOR_BREEZE, "HARBOR_BREEZE", "Harbor Breeze" },
+    { EN_A20_PRESET_FOREST_CANOPY, "FOREST_CANOPY", "Forest Canopy" },
+    { EN_A20_PRESET_URBAN_SUNSET,  "URBAN_SUNSET",  "Urban Sunset"  },
+    { EN_A20_PRESET_TROPICAL_RAIN, "TROPICAL_RAIN", "Tropical Rain" },
+    { EN_A20_PRESET_DESERT_NIGHT,  "DESERT_NIGHT",  "Desert Night"  },
 };
 
-inline constexpr const char* g_A20_PRESET_MODE_NAMES_Arr[EN_A20_PRESET_COUNT] = {
-    "Off",
-    "Country",
-    "Mediterranean",
-    "Ocean",
-    "Mountain",
-    "Plains",
-    "Harbor Breeze",
-    "Forest Canopy",
-    "Urban Sunset",
-    "Tropical Rain",
-    "Desert Night",
-};
 
-
-
-/* ======================================================
- * Enum/Code: Segment Mode
- * ====================================================== */
-typedef enum : uint8_t {
-    EN_A20_SEG_MODE_PRESET = 0,
-    EN_A20_SEG_MODE_FIXED  = 1,
-    EN_A20_SEG_MODE_COUNT
-} EN_A20_segment_mode_t;
-
-/* ======================================================
- * Segment Mode <-> String 매핑 유틸
- * ====================================================== */
-inline constexpr const char* g_A20_SEG_MODE_NAMES[EN_A20_SEG_MODE_COUNT] = {
-	"PRESET", "FIXED"
-};
 
 
 
@@ -139,6 +155,35 @@ typedef struct {
     ST_A20_StyleEntry_t  styles[EN_A20_WEATHER_PHASE_COUNT];	// styles[A20_Const::WIND_STYLES_MAX];
 
 } ST_A20_WindProfileDict_t;
+
+
+
+/* ======================================================
+ * Enum/Code: Segment Mode
+ * ====================================================== */
+typedef enum : uint8_t {
+    EN_A20_SEG_MODE_PRESET = 0,
+    EN_A20_SEG_MODE_FIXED  = 1,
+    EN_A20_SEG_MODE_COUNT
+} EN_A20_segment_mode_t;
+
+// /* ======================================================
+//  * Segment Mode <-> String 매핑 유틸
+//  * ====================================================== */
+// inline constexpr const char* g_A20_SEG_MODE_NAMES[EN_A20_SEG_MODE_COUNT] = {
+// 	"PRESET", "FIXED"
+// };
+
+typedef struct {
+    const EN_A20_segment_mode_t idx;
+	const char* 				code;
+    const char* 				name;
+} ST_A20_SegmentMode_t;
+
+inline constexpr ST_A20_SegmentMode_t G_A20_SegmentMode_Arr[EN_A20_SEG_MODE_COUNT] = {
+    { EN_A20_SEG_MODE_PRESET, "PRESET", "Preset" },
+    { EN_A20_SEG_MODE_FIXED,  "FIXED",  "Fixed"  },
+};
 
 
 typedef struct {

@@ -85,12 +85,12 @@ inline bool S20_resolveWindParams(const ST_A20_WindProfileDict_t& p_dict, const 
 	v_min += v_adjMin;
 
 	// 5) clamp + 관계 보정(min <= limit)
-	p_out.windIntensity   = A20_clampf(v_int, 0.0f, 100.0f);
-	p_out.windVariability = A20_clampf(v_var, 0.0f, 100.0f);
-	p_out.gustFrequency   = A20_clampf(v_gust, 0.0f, 100.0f);
+	p_out.windIntensity   = A20_clampVal<float>(v_int, 0.0f, 100.0f);
+	p_out.windVariability = A20_clampVal<float>(v_var, 0.0f, 100.0f);
+	p_out.gustFrequency   = A20_clampVal<float>(v_gust, 0.0f, 100.0f);
 
-	float v_fl_c		   = A20_clampf(v_fl, 0.0f, 100.0f);
-	float v_min_c		   = A20_clampf(v_min, 0.0f, 100.0f);
+	float v_fl_c		   = A20_clampVal<float>(v_fl, 0.0f, 100.0f);
+	float v_min_c		   = A20_clampVal<float>(v_min, 0.0f, 100.0f);
 	if (v_min_c > v_fl_c)
 		v_min_c = v_fl_c;
 

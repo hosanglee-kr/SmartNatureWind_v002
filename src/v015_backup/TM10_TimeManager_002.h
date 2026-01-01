@@ -137,7 +137,6 @@ class CL_TM10_TimeManager {
 	// helpers
 	static bool _mutexAcquire(const char* p_func);
 	static void _mutexRelease();
-	static uint32_t _clampU32(uint32_t p_v, uint32_t p_lo, uint32_t p_hi);
 
 	static void _setDefaults();
 	static void _copySysTime(const ST_A20_SystemConfig_t& p_sys);
@@ -173,11 +172,6 @@ inline void CL_TM10_TimeManager::_mutexRelease() {
 	if (s_mutex) xSemaphoreGive(s_mutex);
 }
 
-inline uint32_t CL_TM10_TimeManager::_clampU32(uint32_t p_v, uint32_t p_lo, uint32_t p_hi) {
-	if (p_v < p_lo) return p_lo;
-	if (p_v > p_hi) return p_hi;
-	return p_v;
-}
 
 inline void CL_TM10_TimeManager::_setDefaults() {
 	memset(s_tz, 0, sizeof(s_tz));
@@ -212,7 +206,7 @@ inline void CL_TM10_TimeManager::_copySysTime(const ST_A20_SystemConfig_t& p_sys
 	// interval (min -> ms)
 	uint32_t v_ms = (uint32_t)p_sys.time.syncIntervalMin * 60000UL;
 	if (v_ms == 0) v_ms = (6UL * 60UL * 60UL * 1000UL);
-	v_ms = _clampU32(v_ms, (uint32_t)G_TM10_MIN_SYNC_INTERVAL_MS, (uint32_t)G_TM10_MAX_SYNC_INTERVAL_MS);
+	v_ms = A20_clampVal(v_ms, (uint32_t)G_TM10_MIN_SYNC_INTERVAL_MS, (uint32_t)G_TM10_MAX_SYNC_INTERVAL_MS);
 	s_syncIntervalMs = v_ms;
 
 	// 서버 리스트 재구성
@@ -447,7 +441,7 @@ inline void CL_TM10_TimeManager::tick(const ST_A20_SystemConfig_t* p_sysOrNull) 
 		// syncIntervalMin이 비정상(0 포함)이면 기본으로 강제
 		uint32_t v_ms = (uint32_t)p_sysOrNull->time.syncIntervalMin * 60000UL;
 		if (v_ms == 0) v_ms = (6UL * 60UL * 60UL * 1000UL);
-		v_ms = _clampU32(v_ms, (uint32_t)G_TM10_MIN_SYNC_INTERVAL_MS, (uint32_t)G_TM10_MAX_SYNC_INTERVAL_MS);
+		v_ms = A20_clampVal(v_ms, (uint32_t)G_TM10_MIN_SYNC_INTERVAL_MS, (uint32_t)G_TM10_MAX_SYNC_INTERVAL_MS);
 		s_syncIntervalMs = v_ms;
 		sntp_set_sync_interval((uint32_t)s_syncIntervalMs);
 	}

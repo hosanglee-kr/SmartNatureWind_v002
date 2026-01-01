@@ -49,10 +49,6 @@
 // CL_W10_WebAPI 정적 멤버 정의 (Static Assets)
 // ------------------------------------------------------
 
-// JSON 파일 경로 (v032)
-// CL_W10_WebAPI::G_W10_PAGES_JSON 정의
-// const char* CL_W10_WebAPI::G_W10_PAGES_JSON = "/json/cfg_pages_032.json";
-
 // 메뉴 상태
 CL_W10_WebAPI::ST_W10_MenuState_t CL_W10_WebAPI::s_menu_state;
 
@@ -60,20 +56,6 @@ CL_W10_WebAPI::ST_W10_MenuState_t CL_W10_WebAPI::s_menu_state;
 // 헬퍼 함수 구현
 // ------------------------------------------------------
 
-// 안전한 C 문자열 복사 (new[] + memset + strlcpy)
-char* CL_W10_WebAPI::W10_allocCString(const char* p_src) {
-	if (!p_src)
-		return nullptr;
-
-	size_t v_len = strlen(p_src) + 1;
-	char*  v_buf = new char[v_len];
-	if (!v_buf)
-		return nullptr;
-
-	memset(v_buf, 0, v_len);
-	strlcpy(v_buf, p_src, v_len);
-	return v_buf;
-}
 
 const char* CL_W10_WebAPI::W10_guessMime(const char* p_path) {
 	if (!p_path)
@@ -117,7 +99,6 @@ bool CL_W10_WebAPI::W10_loadPagesJson(JsonDocument& p_doc, uint16_t& p_page_coun
 
 	JsonObjectConst j_root = p_doc.as<JsonObjectConst>();
 
-	// ✅ camelCase only
 	JsonArrayConst v_pages_array  = j_root["pages"].as<JsonArrayConst>();
 	JsonArrayConst v_assets_array = j_root["assets"].as<JsonArrayConst>();
 
@@ -137,42 +118,34 @@ bool CL_W10_WebAPI::W10_loadPagesJson(JsonDocument& p_doc, uint16_t& p_page_coun
 // - "/html_v2/..." 실제 경로는 serveStatic("/html_v2", ...)에 위임
 // - 여기서는 short URI("/P0xx_...") 등 별칭만 등록하는 것을 기본으로 함
 void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_file, const char* p_mime) {
-	if (!p_uri || !p_file || !p_mime)
-		return;
+    if (!p_uri || !p_file || !p_mime) return;
 
-	if (strlen(p_uri) == 0 || strlen(p_file) == 0)
-		return;
+    // 1. 스마트 포인터로 할당 (성공 시 자동 관리 시작)
+    auto v_uri  = A20_makeSharedStr(p_uri);
+    auto v_file = A20_makeSharedStr(p_file);
+    auto v_mime = A20_makeSharedStr(p_mime);
 
-	char* v_uri	 = W10_allocCString(p_uri);
-	char* v_file = W10_allocCString(p_file);
-	char* v_mime = W10_allocCString(p_mime);
+    if (!v_uri || !v_file || !v_mime) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] Route alloc failed: %s", p_uri);
+        return;
+    }
 
-	if (!v_uri || !v_file || !v_mime) {
-		if (v_uri)
-			delete[] v_uri;
-		if (v_file)
-			delete[] v_file;
-		if (v_mime)
-			delete[] v_mime;
+    // 2. 람다 캡처 (v_uri, v_file, v_mime은 shared_ptr이므로 값 복사 시 참조 카운트가 증가하여 안전함)
+    s_server->on(v_uri.get(), HTTP_GET, [v_file, v_mime](AsyncWebServerRequest* r) {
+        if (LittleFS.exists(v_file.get())) {
+            auto* v_resp = r->beginResponse(LittleFS, v_file.get(), v_mime.get());
+            CL_W10_WebAPI::_applyHeaders(v_resp, false);
+            r->send(v_resp);
+            return;
+        }
 
-		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] Route alloc failed (uri:%s, file:%s)", p_uri, p_file);
-		return;
-	}
-
-	s_server->on(v_uri, HTTP_GET, [v_file, v_mime](AsyncWebServerRequest* r) {
-		if (LittleFS.exists(v_file)) {
-			auto* v_resp = r->beginResponse(LittleFS, v_file, v_mime);
-			CL_W10_WebAPI::_applyHeaders(v_resp, false);
-			r->send(v_resp);
-			return;
-		}
-
-		String v_msg  = "/* missing:" + String(v_file) + " */";
-		auto*  v_resp = r->beginResponse(200, v_mime, v_msg);
-		CL_W10_WebAPI::_applyHeaders(v_resp, true);
-		r->send(v_resp);
-	});
+        String v_msg = "/* missing:" + String(v_file.get()) + " */";
+        auto* v_resp = r->beginResponse(200, v_mime.get(), v_msg);
+        CL_W10_WebAPI::_applyHeaders(v_resp, true);
+        r->send(v_resp);
+    });
 }
+
 
 // ------------------------------------------------------
 // 메뉴 Web API 구현 (/api/v1/menu)
@@ -320,28 +293,23 @@ void CL_W10_WebAPI::routeStaticAssets() {
 	// 3) 루트 및 단축 URI 리다이렉트 (reDirect 배열, camelCase only)
 	bool v_root_redirect_defined = false;
 	if (!v_redirect_array.isNull()) {
+
 		for (JsonObjectConst v_redir : v_redirect_array) {
 			const char* v_from = v_redir["uriFrom"].as<const char*>();
 			const char* v_to   = v_redir["uriTo"].as<const char*>();
 
-			if (!v_from || !v_to || strlen(v_from) == 0 || strlen(v_to) == 0)
-				continue;
+			if (!v_from || !v_to) continue;
 
-			if (strcmp(v_from, "/") == 0) {
-				v_root_redirect_defined = true;
-			}
+			// 수동 W10_allocCString 대신 스마트 포인터 사용
+			auto v_from_sp = A20_makeSharedStr(v_from);
+			auto v_to_sp   = A20_makeSharedStr(v_to);
 
-			// 복사본 생성 (서버 생애 동안 유지)
-			char* v_from_copy = W10_allocCString(v_from);
-			char* v_to_copy	  = W10_allocCString(v_to);
+			if (!v_from_sp || !v_to_sp) continue;
 
-			if (!v_from_copy || !v_to_copy) {
-				CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] Redirect alloc failed (from:%s, to:%s)", v_from, v_to);
-				continue;
-			}
-
-			// 예: "/chart_t1" → "/P020_chart_t1_008.html"
-			s_server->on(v_from_copy, HTTP_GET, [v_to_copy](AsyncWebServerRequest* r) { r->redirect(v_to_copy); });
+			// v_to_sp를 람다에 값으로 전달 (참조 카운트 유지)
+			s_server->on(v_from_sp.get(), HTTP_GET, [v_to_sp](AsyncWebServerRequest* r) {
+				r->redirect(v_to_sp.get());
+			});
 		}
 	}
 

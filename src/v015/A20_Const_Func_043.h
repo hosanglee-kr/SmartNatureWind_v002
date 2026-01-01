@@ -45,35 +45,13 @@
 #include <string.h>
 #include <strings.h>
 
+#include "D10_Logger_040.h"
+
 // NOTE:
 // - 본 헤더는 A20_Const_044.h에서 include하여 사용합니다.
 // - A20_Const_044.h에 정의된 타입/상수/전역(예: A20_Const::*, ST_A20_*, EN_A20_*)에 의존합니다.
 
-// ======================================================
-// 1) 공용 헬퍼
-// ======================================================
-inline float A20_clampf(float p_v, float p_lo, float p_hi) {
-    if (p_v < p_lo) return p_lo;
-    if (p_v > p_hi) return p_hi;
-    return p_v;
-}
 
-inline void A20_safe_strlcpy(char* p_dst, const char* p_src, size_t p_n) {
-    if (!p_dst || p_n == 0) return;
-    if (!p_src) {
-        p_dst[0] = '\0';
-        return;
-    }
-    strlcpy(p_dst, p_src, p_n);
-}
-
-inline float A20_getRandom01() {
-    return (float)esp_random() / (float)UINT32_MAX;
-}
-
-inline float A20_randRange(float p_min, float p_max) {
-    return p_min + (A20_getRandom01() * (p_max - p_min));
-}
 
 // ======================================================
 // 2) Segment Mode <-> String 매핑 유틸
@@ -659,3 +637,40 @@ inline int16_t A20_findStyleIndexByCode(const ST_A20_WindProfileDict_t& p_dict, 
     }
     return -1;
 }
+
+
+/*
+
+// ------------------------------------------------------
+// Factory Reset 유틸 (모든 JSON 삭제 후 기본 복원)
+// ------------------------------------------------------
+bool A00_factoryReset() {
+    CL_D10_Logger::log(EN_L10_LOG_WARN, "[A00] Factory reset initiated...");
+    if (!LittleFS.begin(true)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A00] LittleFS mount failed");
+        return false;
+    }
+
+    File root = LittleFS.open("/json");
+    if (!root || !root.isDirectory()) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A00] No /json directory");
+    } else {
+        File file = root.openNextFile();
+        while (file) {
+            String path = file.name();
+            if (path.endsWith(".json")) {
+                LittleFS.remove(path);
+                CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] Removed: %s", path.c_str());
+            }
+            file = root.openNextFile();
+        }
+    }
+    LittleFS.end();
+
+    delay(500);
+    CL_C10_ConfigManager::factoryResetFromDefault();
+    CL_N10_NvsManager::clearAll();
+    ESP.restart();
+    return true;
+}
+*/

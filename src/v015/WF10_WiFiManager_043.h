@@ -1,7 +1,7 @@
 #pragma once
 /*
  * ------------------------------------------------------
- * 소스명 : WF10_WiFiManager_041.h
+ * 소스명 : WF10_WiFiManager_043.h
  * 모듈약어 : WF10
  * 모듈명 : Smart Nature Wind Wi-Fi Manager + NTP Sync (v024)
  * ------------------------------------------------------
@@ -43,30 +43,28 @@
 #include <time.h>
 
 #include "A20_Const_044.h"
-#include "C10_Config_041.h"	 // ST_A20_WifiConfig_t, ST_A20_SystemConfig_t, ST_A20_ConfigRoot_t
+#include "C10_Config_042.h"	 // ST_A20_WifiConfig_t, ST_A20_SystemConfig_t, ST_A20_ConfigRoot_t
 #include "D10_Logger_040.h"
 
-#include "TM10_TimeManager_002.h"
+#include "TM10_TimeManager_003.h"
 
-// Mutex 보호 매크로 정의
-#define WF10_MUTEX_ACQUIRE() \
-    if (CL_WF10_WiFiManager::s_wifiMutex != nullptr) \
-        xSemaphoreTake(CL_WF10_WiFiManager::s_wifiMutex, portMAX_DELAY)
 
-#define WF10_MUTEX_RELEASE() \
-    if (CL_WF10_WiFiManager::s_wifiMutex != nullptr) \
-        xSemaphoreGive(CL_WF10_WiFiManager::s_wifiMutex)
+// // Mutex 보호 매크로 정의
+// #define WF10_MUTEX_ACQUIRE() \
+//     if (CL_WF10_WiFiManager::s_wifiMutex != nullptr) \
+//         xSemaphoreTake(CL_WF10_WiFiManager::s_wifiMutex, portMAX_DELAY)
 
-// #define WF10_MUTEX_ACQUIRE() xSemaphoreTake(CL_WF10_WiFiManager::s_wifiMutex, portMAX_DELAY)
-// #define WF10_MUTEX_RELEASE() xSemaphoreGive(CL_WF10_WiFiManager::s_wifiMutex)
+// #define WF10_MUTEX_RELEASE() \
+//     if (CL_WF10_WiFiManager::s_wifiMutex != nullptr) \
+//         xSemaphoreGive(CL_WF10_WiFiManager::s_wifiMutex)
+
 
 
 class CL_WF10_WiFiManager {
   public:
 	static bool				 s_staConnected;
 	static wl_status_t		 s_lastStaStatus;
-	// static bool				 s_timeSynced;
-	// static uint32_t			 s_lastSyncMs;
+
 	static uint8_t			 s_reconnectAttempts;
 	static SemaphoreHandle_t s_wifiMutex;  // Mutex 포인터 (init()에서 생성)
 

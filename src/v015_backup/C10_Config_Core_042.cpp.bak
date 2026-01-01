@@ -67,6 +67,7 @@ ST_A20_cfg_jsonFile_t CL_C10_ConfigManager::s_cfgJsonFileMap{};
 // Mutex
 SemaphoreHandle_t CL_C10_ConfigManager::s_configMutex = nullptr;
 
+
 // ------------------------------------------------------
 // JSON IO Helper 구현
 //  - main 파싱 실패 시 .bak을 재시도 및 필요 시 복구

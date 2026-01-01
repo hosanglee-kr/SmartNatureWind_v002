@@ -50,22 +50,3 @@ typedef struct {
 } ST_A20_MotionConfig_t;
 
 
-
-/* ======================================================
- * 공통: Motion, AutoOff  (userProfiles/schedules 공통) : camelCase 정합
- * ====================================================== */
-typedef struct {
-    bool    enabled = false;
-    int32_t holdSec = 0;
-} ST_A20_PIR_t;
-
-typedef struct {
-    bool    enabled       = false;
-    int32_t rssiThreshold = -70;
-    int32_t holdSec       = 0;
-} ST_A20_BLE_t;
-
-typedef struct {
-    ST_A20_PIR_t pir;
-    ST_A20_BLE_t ble;
-} ST_A20_Motion_t;

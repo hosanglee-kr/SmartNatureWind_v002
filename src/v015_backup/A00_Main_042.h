@@ -36,34 +36,37 @@
 #include "WF10_WiFiManager_041.h"
 #include "TM10_TimeManager_002.h"
 
+#include "A30_LED_040.h"
 
 // [main.cpp] 또는 [MotionLogic.cpp] 파일에 추가
-CL_M10_MotionLogic* g_M10_motionLogic = nullptr;
+CL_M10_MotionLogic* 		g_M10_motionLogic = nullptr;
+
+AsyncWebServer   			g_A00_server(80);
+static WiFiMulti 			g_A00_wifiMulti;
+
+CL_CT10_ControlManager& 	g_A00_control = CL_CT10_ControlManager::instance();
+CL_P10_PWM              	g_P10_pwm;
 
 
 
-AsyncWebServer   g_A00_server(80);
-static WiFiMulti g_A00_wifiMulti;
-
-CL_CT10_ControlManager& g_A00_control = CL_CT10_ControlManager::instance();
-CL_P10_PWM              g_P10_pwm;
+CL_A30_LED 					g_A00_ledController(48, 1);
 
 // ------------------------------------------------------
 // LED 핀 설정 (Wi-Fi 상태 표시)
 // ------------------------------------------------------
 
-#include <Adafruit_NeoPixel.h>
-constexpr int G_A00_RGBLED_PIN 		= 48; // RGB LED (ESP32 보드용)
-//constexpr int G_A00_LED_PIN = 38; // 내장 LED (ESP32 보드용)
+// #include <Adafruit_NeoPixel.h>
+// constexpr int G_A00_RGBLED_PIN 		= 48; // RGB LED (ESP32 보드용)
+// //constexpr int G_A00_LED_PIN = 38; // 내장 LED (ESP32 보드용)
 
-#define G_A00_RGBLED_PIXELS_NUMS   	1
+// #define G_A00_RGBLED_PIXELS_NUMS   	1
 
 // NeoPixel 객체 생성 , 매개변수: (개수, 핀번호, 유형)
-Adafruit_NeoPixel g_A00_rgbLED(G_A00_RGBLED_PIXELS_NUMS, G_A00_RGBLED_PIN, NEO_GRB + NEO_KHZ800);
+// Adafruit_NeoPixel g_A00_rgbLED(G_A00_RGBLED_PIXELS_NUMS, G_A00_RGBLED_PIN, NEO_GRB + NEO_KHZ800);
 
 
-void A00_LED_init();
-void A00_LED_run(uint32_t p_now);
+// void A00_LED_init();
+// void A00_LED_run(uint32_t p_now);
 
 
 // ------------------------------------------------------
@@ -216,49 +219,49 @@ void A00_run() {
 }
 
 
-void A00_LED_init(){
-	g_A00_rgbLED.begin();
-	g_A00_rgbLED.setBrightness(20);
+// void A00_LED_init(){
+// 	g_A00_rgbLED.begin();
+// 	g_A00_rgbLED.setBrightness(20);
 
-    //pinMode(G_A00_LED_PIN, OUTPUT);
-    // digitalWrite(G_A00_LED_PIN, LOW);
+//     //pinMode(G_A00_LED_PIN, OUTPUT);
+//     // digitalWrite(G_A00_LED_PIN, LOW);
 
-}
-
-
-void A00_LED_run(uint32_t p_now){
-	static uint32_t v_lastLedMs     = 0;
-	static bool v_ledState = false; // LED 켜짐/꺼짐 상태 저장
-
-		// 1. Wi-Fi 상태에 따라 깜빡임 주기 결정
-    // 연결됨: 1000ms (1초), 연결 안 됨: 500ms
-    bool isConnected = CL_WF10_WiFiManager::isStaConnected();
-    uint32_t v_interval = isConnected ? 1000 : 500;
-
-    // 2. 타이머 체크
-    if (p_now - v_lastLedMs >= v_interval) {
-        v_lastLedMs = p_now;
-        v_ledState = !v_ledState; // 상태 반전 (Toggle)
-
-        if (v_ledState) {
-            // LED 켜기 (상태에 따른 색상 지정)
-            if (isConnected) {
-                // 연결됨: 녹색 (Green)
-                g_A00_rgbLED.setPixelColor(0, g_A00_rgbLED.Color(0, 255, 0));
-            } else {
-                // 연결 안 됨: 빨간색 (Red)
-                g_A00_rgbLED.setPixelColor(0, g_A00_rgbLED.Color(255, 0, 0));
-            }
-        } else {
-            // LED 끄기
-            g_A00_rgbLED.clear();
-        }
-
-        // 실제 LED에 적용
-        g_A00_rgbLED.show();
+// }
 
 
-        // digitalWrite(G_A00_LED_PIN, CL_WF10_WiFiManager::isStaConnected() ? HIGH : LOW);
-    }
+// void A00_LED_run(uint32_t p_now){
+// 	static uint32_t v_lastLedMs     = 0;
+// 	static bool v_ledState = false; // LED 켜짐/꺼짐 상태 저장
 
-}
+// 		// 1. Wi-Fi 상태에 따라 깜빡임 주기 결정
+//     // 연결됨: 1000ms (1초), 연결 안 됨: 500ms
+//     bool isConnected = CL_WF10_WiFiManager::isStaConnected();
+//     uint32_t v_interval = isConnected ? 1000 : 500;
+
+//     // 2. 타이머 체크
+//     if (p_now - v_lastLedMs >= v_interval) {
+//         v_lastLedMs = p_now;
+//         v_ledState = !v_ledState; // 상태 반전 (Toggle)
+
+//         if (v_ledState) {
+//             // LED 켜기 (상태에 따른 색상 지정)
+//             if (isConnected) {
+//                 // 연결됨: 녹색 (Green)
+//                 g_A00_rgbLED.setPixelColor(0, g_A00_rgbLED.Color(0, 255, 0));
+//             } else {
+//                 // 연결 안 됨: 빨간색 (Red)
+//                 g_A00_rgbLED.setPixelColor(0, g_A00_rgbLED.Color(255, 0, 0));
+//             }
+//         } else {
+//             // LED 끄기
+//             g_A00_rgbLED.clear();
+//         }
+
+//         // 실제 LED에 적용
+//         g_A00_rgbLED.show();
+
+
+//         // digitalWrite(G_A00_LED_PIN, CL_WF10_WiFiManager::isStaConnected() ? HIGH : LOW);
+//     }
+
+// }

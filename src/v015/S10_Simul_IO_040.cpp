@@ -9,7 +9,7 @@
  * - 현재 시뮬레이션 상태(toJson) 및 차트 버퍼(toChartJson) JSON 직렬화
  * - patchFromJson()로 시뮬레이션 파라미터 부분 업데이트(패치) 지원
  * - v022 정책 반영:
- *    - Header(S10_Simul_040.h) 사용
+ *    - Header(S10_Simul_041.h) 사용
  *    - 차트 전송 간격: G_S10_CHART_FULL_MIN_MS 정책 상수 사용
  *    - 시간 기준: _tickNowMs 우선(0이면 millis() 1회 fallback)
  *    - JSON Key: camelCase 로 통일
@@ -51,10 +51,10 @@ using namespace std;
 
 // 외부 종속성 헤더 포함 (외부에서 제공되어야 함: 시스템 상수, 설정, 로그, PWM 제어)
 #include "A20_Const_044.h"
-#include "C10_Config_041.h"
+#include "C10_Config_042.h"
 #include "D10_Logger_040.h"
 #include "P10_PWM_ctrl_040.h"
-#include "S10_Simul_040.h"
+#include "S10_Simul_041.h"
 
 
 // ------------------------------------------------------
@@ -165,6 +165,7 @@ void CL_S10_Simulation::toJson(JsonDocument& p_doc) {
  *   }
  * }
  */
+
 void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
 	// 시간 기준: _tickNowMs 우선, 0이면 millis() 1회 fallback
 	unsigned long v_nowMs = _tickNowMs;

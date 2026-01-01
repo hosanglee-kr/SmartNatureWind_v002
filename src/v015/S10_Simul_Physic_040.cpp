@@ -36,11 +36,11 @@
  * ------------------------------------------------------
  */
 
-#include "S10_Simul_040.h"
+#include "S10_Simul_041.h"
 
 // 외부 종속성 헤더 포함
 #include "A20_Const_044.h"
-#include "C10_Config_041.h"
+#include "C10_Config_042.h"
 #include "D10_Logger_040.h"
 
 // ==================================================
@@ -59,7 +59,7 @@ static inline float S10_probFromRatePerSec(float p_ratePerSec, float p_dtSec) {
 		return 0.0f;
 	}
 	const float v_p = 1.0f - expf(-p_ratePerSec * p_dtSec);
-	return A20_clampf(v_p, 0.0f, 1.0f);
+	return A20_clampVal<float>(v_p, 0.0f, 1.0f);
 }
 
 // ==================================================
@@ -122,7 +122,7 @@ void CL_S10_Simulation::initPhaseFromBase() {
 	phaseMinWind	  = baseMinWind + v_span * 0.15f;
 	phaseMaxWind	  = baseMinWind + v_span * 0.85f;
 
-	// 지속시간(초) 정책 상수는 헤더(S10_Simul_040.h)에서 공유
+	// 지속시간(초) 정책 상수는 헤더(S10_Simul_041.h)에서 공유
 	phaseDurationSec  = A20_randRange(G_S10_PHASE_NORM_DUR_MIN_S, G_S10_PHASE_NORM_DUR_MAX_S);
 
 	// 초기 풍속/목표
@@ -291,7 +291,7 @@ void CL_S10_Simulation::calcThermalEnvelope() {
 		return;
 	}
 
-	const float v_prog = A20_clampf(v_age / thermalDuration, 0.0f, 1.0f);
+	const float v_prog = A20_clampVal<float>(v_age / thermalDuration, 0.0f, 1.0f);
 	float		v_env  = 0.0f;
 
 	if (v_prog < 0.2f) {
@@ -344,7 +344,7 @@ void CL_S10_Simulation::updateGust() {
 			return;
 		}
 
-		const float v_prog = A20_clampf(v_age / gustDuration, 0.0f, 1.0f);
+		const float v_prog = A20_clampVal<float>(v_age / gustDuration, 0.0f, 1.0f);
 		float		v_env  = 0.0f;
 
 		if (v_prog < 0.25f) {
@@ -388,7 +388,7 @@ void CL_S10_Simulation::updateGust() {
 	}
 
 	// (3) rate 구성: base * user * wind/phase 가중치
-	const float v_user	   = A20_clampf(userGustFreq, 0.0f, 100.0f) / 100.0f;
+	const float v_user	   = A20_clampVal<float>(userGustFreq, 0.0f, 100.0f) / 100.0f;
 	const float v_wfac	   = 1.0f + (currentWindSpeed / 8.9f) * 0.5f;
 
 	float		v_phaseMul = 1.0f;
@@ -515,7 +515,7 @@ void CL_S10_Simulation::generateTarget() {
 	targetWindSpeed	   = v_w;
 
 	// variability(0~100) -> 0~1
-	const float v_var  = A20_clampf(userVariability, 0.0f, 100.0f) / 100.0f;
+	const float v_var  = A20_clampVal<float>(userVariability, 0.0f, 100.0f) / 100.0f;
 
 	float		v_base = 0.15f;
 

@@ -52,11 +52,11 @@
 
 // 종속성 모듈 헤더
 #include "A20_Const_044.h"
-#include "C10_Config_041.h"
+#include "C10_Config_042.h"
 #include "D10_Logger_040.h"
 #include "M10_MotionLogic_040.h"
 #include "P10_PWM_ctrl_040.h"
-#include "S10_Simul_040.h"
+#include "S10_Simul_041.h"
 #include "S20_WindSolver_040.h"
 
 // ------------------------------------------------------

@@ -14,11 +14,11 @@
  * ------------------------------------------------------
  */
 
-#include "S10_Simul_040.h"	// (변경 반영) 헤더 포함
+#include "S10_Simul_041.h"	// (변경 반영) 헤더 포함
 
 // 외부 종속성 헤더 포함
 #include "A20_Const_044.h"
-#include "C10_Config_041.h"
+#include "C10_Config_042.h"
 #include "D10_Logger_040.h"
 #include "P10_PWM_ctrl_040.h"
 
@@ -190,7 +190,7 @@ void CL_S10_Simulation::tick() {
 
 	// 5) dt 계산
 	float v_dt							= (_tickNowMs - lastUpdateMs) / 1000.0f;
-	v_dt								= A20_clampf(v_dt, 0.001f, 0.5f);
+	v_dt								= A20_clampVal<float>(v_dt, 0.001f, 0.5f);
 	lastUpdateMs						= _tickNowMs;
 
 	// 6) 이전 상태 기록(변화 감지)
@@ -377,10 +377,10 @@ void CL_S10_Simulation::applyFan(float p_pct) {
 	}
 
 	// 1) 요청 duty(%)를 0~1로 정규화
-	float		v_req01 = A20_clampf(p_pct, 0.0f, 100.0f) / 100.0f;
+	float		v_req01 = A20_clampVal<float>(p_pct, 0.0f, 100.0f) / 100.0f;
 
 	// 2) 사용자 intensity(0~1)
-	const float v_int01 = A20_clampf(userIntensity, 0.0f, 100.0f) / 100.0f;
+	const float v_int01 = A20_clampVal<float>(userIntensity, 0.0f, 100.0f) / 100.0f;
 
 	// 3) 팬 전원 OFF 또는 intensity가 거의 0이면 정지
 	if (!fanPowerEnabled || v_int01 <= 0.01f) {
@@ -394,8 +394,8 @@ void CL_S10_Simulation::applyFan(float p_pct) {
 	}
 
 	// 5) min/limit(%) -> 0~1 변환 + 관계 보정(min <= limit)
-	float v_min01 = A20_clampf(minFanPct, 0.0f, 100.0f) / 100.0f;
-	float v_max01 = A20_clampf(fanLimitPct, 0.0f, 100.0f) / 100.0f;
+	float v_min01 = A20_clampVal<float>(minFanPct, 0.0f, 100.0f) / 100.0f;
+	float v_max01 = A20_clampVal<float>(fanLimitPct, 0.0f, 100.0f) / 100.0f;
 
 	if (v_min01 > v_max01) {
 		v_min01 = v_max01;

@@ -46,8 +46,8 @@
 #include <strings.h>
 
 // NOTE:
-// - 본 헤더는 A20_Const_043.h에서 include하여 사용합니다.
-// - A20_Const_043.h에 정의된 타입/상수/전역(예: A20_Const::*, ST_A20_*, EN_A20_*)에 의존합니다.
+// - 본 헤더는 A20_Const_044.h에서 include하여 사용합니다.
+// - A20_Const_044.h에 정의된 타입/상수/전역(예: A20_Const::*, ST_A20_*, EN_A20_*)에 의존합니다.
 
 // ======================================================
 // 1) 공용 헬퍼
@@ -104,7 +104,7 @@ static inline void A20_resetWebSocketDefault(ST_A20_WebSocketConfig_t& p_ws) {
         p_ws.wsChConfig[v_i].priority     = G_A20_WS_CH_Base_Arr[v_i].defaultPriority;
     }
     p_ws.wsEtcConfig = G_A20_WS_ETC_DEFAULT_CONFIG;
-    
+
 }
 /*
 static inline void A20_resetWebSocketDefault(ST_A20_WebSocketConfig_t& p_ws) {

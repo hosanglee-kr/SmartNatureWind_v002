@@ -17,7 +17,7 @@
 #include "S10_Simul_040.h"	// (변경 반영) 헤더 포함
 
 // 외부 종속성 헤더 포함
-#include "A20_Const_043.h"
+#include "A20_Const_044.h"
 #include "C10_Config_041.h"
 #include "D10_Logger_040.h"
 #include "P10_PWM_ctrl_040.h"

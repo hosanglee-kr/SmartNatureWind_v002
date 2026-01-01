@@ -50,7 +50,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "A20_Const_043.h"	 // ST_A20_ConfigRoot_t, ST_A20_* 구조체, 상수 정의
+#include "A20_Const_044.h"	 // ST_A20_ConfigRoot_t, ST_A20_* 구조체, 상수 정의
 #include "D10_Logger_040.h"	 // CL_D10_Logger, EN_L10_LOG_*
 
 // ------------------------------------------------------

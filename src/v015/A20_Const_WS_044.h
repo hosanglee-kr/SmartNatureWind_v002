@@ -1,7 +1,6 @@
+// 소스명 : A20_Const_WS_040.h
+
 #pragma once
-
-// A20_Const_WS_040.h
-
 
 #include <Arduino.h>
 #include <string.h>
@@ -27,15 +26,15 @@ typedef struct {
 
 typedef struct {
     EN_A20_WS_CH_INDEX_t chIdx;
-    const char* chName;       
+    const char* chName;
     uint16_t             chIntervalMs;
     uint8_t              priority;
 } ST_A20_WS_CH_CONFIG_t;
 
 typedef struct {
-    uint16_t chartLargeBytes;   
+    uint16_t chartLargeBytes;
     uint8_t  chartThrottleMul; // 2 (interval * 2)
-    uint16_t wsCleanupMs;       
+    uint16_t wsCleanupMs;
 } ST_A20_wsEtcConfig_t;
 
 typedef struct {
@@ -54,10 +53,10 @@ inline constexpr ST_A20_WS_CH_Base_t G_A20_WS_CH_Base_Arr[EN_A20_WS_CH_COUNT] = 
     { EN_A20_WS_CH_SUMMARY, "summary", 1500, 3 }
 };
 
-inline constexpr ST_A20_wsEtcConfig_t G_A20_WS_ETC_DEFAULT_CONFIG = { 
-    3500, 
-    2, 
-    10000 
+inline constexpr ST_A20_wsEtcConfig_t G_A20_WS_ETC_DEFAULT_CONFIG = {
+    3500,
+    2,
+    10000
 };
 
 
@@ -191,6 +190,6 @@ inline void A20_ResetWsConfig() {
   }
   ...
 }
-    
-        
+
+
 */

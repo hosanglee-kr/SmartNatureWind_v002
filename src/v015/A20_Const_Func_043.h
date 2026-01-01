@@ -106,24 +106,6 @@ static inline void A20_resetWebSocketDefault(ST_A20_WebSocketConfig_t& p_ws) {
     p_ws.wsEtcConfig = G_A20_WS_ETC_DEFAULT_CONFIG;
 
 }
-/*
-static inline void A20_resetWebSocketDefault(ST_A20_WebSocketConfig_t& p_ws) {
-    p_ws.wsIntervalMs[G_A20_WS_CH_STATE]   = G_A20_WS_DEFAULT_ITV_STATE_MS;
-    p_ws.wsIntervalMs[G_A20_WS_CH_METRICS] = G_A20_WS_DEFAULT_ITV_METRICS_MS;
-    p_ws.wsIntervalMs[G_A20_WS_CH_CHART]   = G_A20_WS_DEFAULT_ITV_CHART_MS;
-    p_ws.wsIntervalMs[G_A20_WS_CH_SUMMARY] = G_A20_WS_DEFAULT_ITV_SUMMARY_MS;
-
-    p_ws.wsPriority[0] = G_A20_WS_CH_STATE;
-    p_ws.wsPriority[1] = G_A20_WS_CH_METRICS;
-    p_ws.wsPriority[2] = G_A20_WS_CH_CHART;
-    p_ws.wsPriority[3] = G_A20_WS_CH_SUMMARY;
-
-    p_ws.chartLargeBytes  = G_A20_WS_DEFAULT_CHART_LARGE_BYTES;
-    p_ws.chartThrottleMul = G_A20_WS_DEFAULT_CHART_THROTTLE_MUL;
-
-    p_ws.wsCleanupMs = G_A20_WS_DEFAULT_CLEANUP_MS;
-}
-*/
 
 // -------------------------
 // Motion / AutoOff (Schedule/UserProfile 공통)
@@ -155,7 +137,7 @@ static inline void A20_resetAutoOffDefault(ST_A20_AutoOff_t& p_autoOff) {
     p_autoOff.offTemp.temp    = 0.0f;
 }
 
-static inline void A20_resetSchAutoOffDefault(ST_A20_SchAutoOff_t& p_autoOff) {
+static inline void A20_resetSchAutoOffDefault(ST_A20_AutoOff_t& p_autoOff) {
     A20_resetAutoOffDefault(p_autoOff);
 }
 

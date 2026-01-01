@@ -6,7 +6,6 @@
  * 모듈명 : Smart Nature Wind 공용 헬퍼/기본값 함수 구현 전용 헤더
  * ------------------------------------------------------
  * 기능 요약
- *  - 공용 헬퍼(Clamp/SafeCopy/Random)
  *  - Segment Mode String 매핑 유틸 (A20_modeFromString / A20_modeToString)
  *  - 하위 구조체 단위 Reset(Period/Segment/AutoOff/Motion/Adjust 등)
  *  - Default Reset (System/WiFi/Motion/WindDict/NvsSpec/WebPage/Schedules/UserProfiles/Root)

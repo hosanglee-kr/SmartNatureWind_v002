@@ -1,4 +1,4 @@
- // 소스명 : A40_Com_Func_046.h
+ // 소스명 : A40_Com_Func2_046.h
 
 #pragma once
 

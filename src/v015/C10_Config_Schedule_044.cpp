@@ -273,8 +273,9 @@ bool CL_C10_ConfigManager::loadSchedules(ST_A20_SchedulesRoot_t& p_cfg) {
     // 단독 호출 대비 기본값
     A20_resetSchedulesDefault(p_cfg);
 
-    if (!ioLoadJson(v_cfgJsonPath, d)) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadSchedules: ioLoadJson failed (%s)", v_cfgJsonPath);
+    if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, d, true)) {
+    // if (!ioLoadJson(v_cfgJsonPath, d)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadSchedules: Load_File2JsonDoc_V21 failed (%s)", v_cfgJsonPath);
         return false;
     }
 
@@ -329,8 +330,9 @@ bool CL_C10_ConfigManager::loadUserProfiles(ST_A20_UserProfilesRoot_t& p_cfg) {
     // 단독 호출 대비 기본값
     A20_resetUserProfilesDefault(p_cfg);
 
-    if (!ioLoadJson(v_cfgJsonPath, d)) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadUserProfiles: ioLoadJson failed (%s)", v_cfgJsonPath);
+    if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, d, true)) {
+    // if (!ioLoadJson(v_cfgJsonPath, d)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadUserProfiles: Load_File2JsonDoc_V21 failed (%s)", v_cfgJsonPath);
         return false;
     }
 
@@ -367,8 +369,9 @@ bool CL_C10_ConfigManager::loadWindDict(ST_A20_WindDict_t& p_dict) {
     // 단독 호출 대비 기본값
     A20_resetWindDictDefault(p_dict);
 
-    if (!ioLoadJson(v_cfgJsonPath, d)) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWindDict: ioLoadJson failed (%s)", v_cfgJsonPath);
+    if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, d, true)) {
+    // if (!ioLoadJson(v_cfgJsonPath, d)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWindDict: Load_File2JsonDoc_V21 failed (%s)", v_cfgJsonPath);
         return false;
     }
 
@@ -480,7 +483,8 @@ bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg) {
         js["motion"]["ble"]["holdSec"]       = s.motion.ble.holdSec;
     }
 
-    return ioSaveJson(s_cfgJsonFileMap.schedules, d);
+	return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.schedules, d, true);
+	// return ioSaveJson(s_cfgJsonFileMap.schedules, d);
 }
 
 bool CL_C10_ConfigManager::saveUserProfiles(const ST_A20_UserProfilesRoot_t& p_cfg) {
@@ -537,7 +541,8 @@ bool CL_C10_ConfigManager::saveUserProfiles(const ST_A20_UserProfilesRoot_t& p_c
         jp["motion"]["ble"]["holdSec"]       = up.motion.ble.holdSec;
     }
 
-    return ioSaveJson(s_cfgJsonFileMap.userProfiles, d);
+    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.userProfiles, d, true);
+	// return ioSaveJson(s_cfgJsonFileMap.userProfiles, d);
 }
 
 bool CL_C10_ConfigManager::saveWindDict(const ST_A20_WindDict_t& p_cfg) {
@@ -584,7 +589,8 @@ bool CL_C10_ConfigManager::saveWindDict(const ST_A20_WindDict_t& p_cfg) {
         v_f["thermalFactor"]     = v_s.factors.thermalFactor;
     }
 
-    return ioSaveJson(s_cfgJsonFileMap.windDict, d);
+    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.windDict, d, true);
+	// return ioSaveJson(s_cfgJsonFileMap.windDict, d);
 }
 
 // =====================================================

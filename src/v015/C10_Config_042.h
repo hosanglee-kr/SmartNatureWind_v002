@@ -56,8 +56,8 @@
 // ------------------------------------------------------
 // JSON I/O Helper 함수 선언 (Core cpp에서 구현)
 // ------------------------------------------------------
-bool ioLoadJson(const char* p_path, JsonDocument& p_doc);
-bool ioSaveJson(const char* p_path, const JsonDocument& p_doc);
+// bool ioLoadJson(const char* p_path, JsonDocument& p_doc);			// 변경됨 --> A40_IO::Load_File2JsonDoc_V21
+// bool ioSaveJson(const char* p_path, const JsonDocument& p_doc);		// 변경됨 --> A40_IO::Save_JsonDoc2File_V21
 
 
 // Mutex Timeout 정의

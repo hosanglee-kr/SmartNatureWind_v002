@@ -105,8 +105,9 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
         return false; // 기본값 상태 유지
     }
 
-    if (!ioLoadJson(v_cfgJsonPath, v_doc)) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadSystemConfig: ioLoadJson failed (%s)", v_cfgJsonPath);
+    if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, d, true)) {
+    // if (!ioLoadJson(v_cfgJsonPath, v_doc)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadSystemConfig: Load_File2JsonDoc_V21 failed (%s)", v_cfgJsonPath);
         return false; // 기본값 상태 유지
     }
 
@@ -298,8 +299,9 @@ bool CL_C10_ConfigManager::loadWifiConfig(ST_A20_WifiConfig_t& p_cfg) {
         return false;
     }
 
-    if (!ioLoadJson(v_cfgJsonPath, d)) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWifiConfig: ioLoadJson failed (%s)", v_cfgJsonPath);
+    if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, d, true)) {
+    // if (!ioLoadJson(v_cfgJsonPath, d)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWifiConfig: Load_File2JsonDoc_V21 failed (%s)", v_cfgJsonPath);
         return false;
     }
 
@@ -366,8 +368,9 @@ bool CL_C10_ConfigManager::loadMotionConfig(ST_A20_MotionConfig_t& p_cfg) {
         return false;
     }
 
-    if (!ioLoadJson(v_cfgJsonPath, d)) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadMotionConfig: ioLoadJson failed (%s)", v_cfgJsonPath);
+    if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, d, true)) {
+    // if (!ioLoadJson(v_cfgJsonPath, d)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadMotionConfig: Load_File2JsonDoc_V21 failed (%s)", v_cfgJsonPath);
         return false;
     }
 
@@ -506,7 +509,8 @@ bool CL_C10_ConfigManager::saveSystemConfig(const ST_A20_SystemConfig_t& p_cfg) 
     v["time"]["timezone"]        = p_cfg.time.timezone;
     v["time"]["syncIntervalMin"] = p_cfg.time.syncIntervalMin;
 
-    return ioSaveJson(s_cfgJsonFileMap.system, v);
+    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.system, v, true);
+	// return ioSaveJson(s_cfgJsonFileMap.system, v);
 }
 
 bool CL_C10_ConfigManager::saveWifiConfig(const ST_A20_WifiConfig_t& p_cfg) {
@@ -526,7 +530,8 @@ bool CL_C10_ConfigManager::saveWifiConfig(const ST_A20_WifiConfig_t& p_cfg) {
         v_net["pass"]    = p_cfg.sta[v_i].pass;
     }
 
-    return ioSaveJson(s_cfgJsonFileMap.wifi, d);
+    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.wifi, d, true);
+	// return ioSaveJson(s_cfgJsonFileMap.wifi, d);
 }
 
 bool CL_C10_ConfigManager::saveMotionConfig(const ST_A20_MotionConfig_t& p_cfg) {
@@ -562,7 +567,8 @@ bool CL_C10_ConfigManager::saveMotionConfig(const ST_A20_MotionConfig_t& p_cfg) 
     d["motion"]["timing"]["gustIntervalMs"]    = p_cfg.timing.gustIntervalMs;
     d["motion"]["timing"]["thermalIntervalMs"] = p_cfg.timing.thermalIntervalMs;
 
-    return ioSaveJson(s_cfgJsonFileMap.motion, d);
+    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.motion, d, true);
+	// return ioSaveJson(s_cfgJsonFileMap.motion, d);
 }
 
 // =====================================================

@@ -112,8 +112,10 @@ bool CL_C10_ConfigManager::loadNvsSpecConfig(ST_A20_NvsSpecConfig_t& p_cfg) {
     // ✅ A20 기본값(운영 안전): 먼저 기본 스펙을 깔고, 파일로 덮어씀
     A20_resetNvsSpecDefault(p_cfg);
 
-    if (!ioLoadJson(v_cfgJsonPath, v_doc)) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadNvsSpecConfig: ioLoadJson failed (%s)", v_cfgJsonPath);
+
+	if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, v_doc, true)) {
+    // if (!ioLoadJson(v_cfgJsonPath, v_doc)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadNvsSpecConfig: Load_File2JsonDoc_V21 failed (%s)", v_cfgJsonPath);
         return false;
     }
 
@@ -191,8 +193,9 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
     // ✅ A20 기본값(운영 안전): 먼저 기본 페이지/리다이렉트/공통자산을 깔고, 파일로 덮어씀
     A20_resetWebPageDefault(p_cfg);
 
-    if (!ioLoadJson(v_cfgJsonPath, v_doc)) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWebPageConfig: ioLoadJson failed (%s)", v_cfgJsonPath);
+    if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, v_doc, true)) {
+    // if (!ioLoadJson(v_cfgJsonPath, v_doc)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWebPageConfig: Load_File2JsonDoc_V21 failed (%s)", v_cfgJsonPath);
 
         return false;
     }
@@ -347,7 +350,9 @@ bool CL_C10_ConfigManager::saveNvsSpecConfig(const ST_A20_NvsSpecConfig_t& p_cfg
         v_o["defaultValue"] = v_e.defaultValue;
     }
 
-    bool v_ok = ioSaveJson(s_cfgJsonFileMap.nvsSpec, v_doc);
+
+    bool v_ok = A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.nvsSpec, v_doc, true);
+	// bool v_ok = ioSaveJson(s_cfgJsonFileMap.nvsSpec, v_doc);
 
     return v_ok;
 }
@@ -420,7 +425,8 @@ bool CL_C10_ConfigManager::saveWebPageConfig(const ST_A20_WebPageConfig_t& p_cfg
         v_co["isCommon"] = v_c.isCommon;
     }
 
-    bool v_ok = ioSaveJson(s_cfgJsonFileMap.webPage, v_doc);
+    bool v_ok = A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.webPage, v_doc, true);
+	// bool v_ok = ioSaveJson(s_cfgJsonFileMap.webPage, v_doc);
 
     return v_ok;
 }

@@ -105,7 +105,7 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
         return false; // 기본값 상태 유지
     }
 
-    if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, d, true)) {
+    if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, v_doc, true)) {
     // if (!ioLoadJson(v_cfgJsonPath, v_doc)) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadSystemConfig: Load_File2JsonDoc_V21 failed (%s)", v_cfgJsonPath);
         return false; // 기본값 상태 유지

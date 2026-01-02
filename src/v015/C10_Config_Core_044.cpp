@@ -42,7 +42,7 @@
 #include <LittleFS.h>
 
 #include "C10_Config_042.h"
-#include "A40_Com_Func_046.h"   // A40_IO, CL_A40_MutexGuard_Semaphore
+#include "A40_Com_Func_047.h"   // A40_IO, CL_A40_MutexGuard_Semaphore
 
 // ------------------------------------------------------
 // 전역 Config Root 정의

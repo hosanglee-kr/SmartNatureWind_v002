@@ -128,6 +128,9 @@ class CL_A40_MutexGuard_Semaphore {
 				portENTER_CRITICAL(&v_initMux);
 				if (*_mutexPtr == nullptr) {
 					*_mutexPtr = xSemaphoreCreateRecursiveMutex();
+					if (*_mutexPtr == nullptr) {
+						CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40] CreateRecursiveMutex failed");
+					}
 				}
 				portEXIT_CRITICAL(&v_initMux);
 			}
@@ -135,6 +138,10 @@ class CL_A40_MutexGuard_Semaphore {
 			// 2. 초기 Lock 획득 시도
 			if (*_mutexPtr != nullptr) {
 				_acquired = (xSemaphoreTakeRecursive(*_mutexPtr, p_timeout) == pdTRUE);
+				if (!_acquired) {
+					CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40] CL_A40_MutexGuard_Semaphor Acquire(tick) timeout");
+				}
+
 			}
 		}
 
@@ -155,6 +162,7 @@ class CL_A40_MutexGuard_Semaphore {
 
 			if (_mutexPtr && *_mutexPtr != nullptr) {
 				if (xSemaphoreTakeRecursive(*_mutexPtr, pdMS_TO_TICKS(p_timeoutMs)) == pdTRUE) {
+					CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40] acquire - Acquire timeout");
 					_acquired = true;
 				}
 			}
@@ -167,6 +175,7 @@ class CL_A40_MutexGuard_Semaphore {
 		void unlock() {
 			if (_acquired && _mutexPtr && *_mutexPtr != nullptr) {
 				if (xSemaphoreGiveRecursive(*_mutexPtr) == pdTRUE) {
+					CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40] unlock - unlock error");
 					_acquired = false;
 				}
 			}
@@ -175,7 +184,9 @@ class CL_A40_MutexGuard_Semaphore {
 		/**
 		 * @brief 현재 락 획득 여부 확인
 		 */
-		bool isAcquired() const { return _acquired; }
+		bool isAcquired() const {
+			return _acquired;
+		}
 
 	private:
 		// 복사 및 대입 방지

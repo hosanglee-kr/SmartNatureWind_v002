@@ -338,7 +338,7 @@ bool CL_C10_ConfigManager::loadAll(ST_A20_ConfigRoot_t& p_root) {
 
     // 0) cfg_jsonFile.json 먼저 로드 (옵션 A)
     if (!_loadCfgJsonFile()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadAll: cfg_jsonFile load failed.");
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %S: cfg_jsonFile load failed.", __func__);
         return false;
     }
 
@@ -458,7 +458,7 @@ bool CL_C10_ConfigManager::freeLazySection(const char* p_section, ST_A20_ConfigR
 		return true;
     }
 
-    return true;
+    return false;
 
 }
 

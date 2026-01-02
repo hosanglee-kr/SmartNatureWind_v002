@@ -11,6 +11,9 @@ typedef enum : uint8_t {
     EN_A20_CONTROL_RUN_SCHEDULE = 1,
 } EN_A20_control_runMode_t;
 
+
+
+
 // 바람 단계(참고용)
 typedef enum : uint8_t {
     EN_A20_WEATHER_PHASE_CALM = 0,
@@ -104,9 +107,28 @@ inline constexpr ST_A20_Presets_t G_A20_PresetMode_Arr[EN_A20_PRESET_COUNT] = {
     { EN_A20_PRESET_DESERT_NIGHT,  "DESERT_NIGHT",  "Desert Night"  },
 };
 
+typedef enum : uint8_t {
+    EN_A20_WINDSTYLE_ACTIVE  = 0,
+    EN_A20_WINDSTYLE_FOCUS   = 1,
+    EN_A20_WINDSTYLE_BALANCE = 2,
+    EN_A20_WINDSTYLE_RELAX   = 3,
+    EN_A20_WINDSTYLE_SLEEP   = 4,
+    EN_A20_WINDSTYLE_COUNT
+} EN_A20_WindStyle_t;
 
+typedef struct {
+    const EN_A20_WindStyle_t 	idx;
+	const char* 				code;
+    const char* 				name;
+} ST_A20_WindStyles_t;
 
-
+inline constexpr ST_A20_WindStyles_t G_A20_WindStyle_Arr[EN_A20_WINDSTYLE_COUNT] = {
+	{ EN_A20_WINDSTYLE_ACTIVE,  "ACTIVE",  "Active"},
+	{ EN_A20_WINDSTYLE_FOCUS,   "FOCUS",   "Focus"},
+	{ EN_A20_WINDSTYLE_BALANCE, "BALANCE", "Balance"},
+	{ EN_A20_WINDSTYLE_RELAX,   "RELAX",   "Relax"},
+	{ EN_A20_WINDSTYLE_SLEEP,   "SLEEP",   "Sleep"},
+};
 
 /* ======================================================
  * Wind Dict (cfg_windDict_xxx.json) : camelCase 정합
@@ -152,7 +174,7 @@ typedef struct {
     uint8_t              presetCount = 0;
     uint8_t              styleCount  = 0;
     ST_A20_PresetEntry_t presets[EN_A20_PRESET_COUNT];			// presets[A20_Const::WIND_PRESETS_MAX];
-    ST_A20_StyleEntry_t  styles[EN_A20_WEATHER_PHASE_COUNT];	// styles[A20_Const::WIND_STYLES_MAX];
+    ST_A20_StyleEntry_t  styles[EN_A20_WINDSTYLE_COUNT];  		///styles[EN_A20_WEATHER_PHASE_COUNT];	// styles[A20_Const::WIND_STYLES_MAX];
 
 } ST_A20_WindProfileDict_t;
 

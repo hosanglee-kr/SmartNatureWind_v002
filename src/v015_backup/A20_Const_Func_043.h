@@ -426,7 +426,7 @@ inline void A20_resetWindProfileDictDefault(ST_A20_WindProfileDict_t& p_dict) {
     // for (uint8_t v_i = 0; v_i < EN_A20_PRESET_COUNT; v_i++) {
     //     A20_resetPresetEntryDefault(p_dict.presets[v_i]);
     // }
-    // for (uint8_t v_i = 0; v_i < EN_A20_WEATHER_PHASE_COUNT; v_i++) {
+    // for (uint8_t v_i = 0; v_i < EN_A20_WINDSTYLE_COUNT; v_i++) {
     //     A20_resetStyleEntryDefault(p_dict.styles[v_i]);
     // }
 

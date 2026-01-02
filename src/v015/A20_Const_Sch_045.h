@@ -36,7 +36,7 @@ inline constexpr ST_A20_WindPhase_t G_A20_WindPhase_Arr[EN_A20_WIND_PHASE_COUNT]
 typedef enum : uint8_t {
     // EN_A20_WINDPRESET_OFF           = 0,
     EN_A20_WINDPRESET_OCEAN         = 0,
-    EN_A20_WINDPRESET_COUNTRY       = 1,
+    EN_A20_WINDPRESET_COUNTRY_BREEZE       = 1,
     EN_A20_WINDPRESET_MEDITERRANEAN = 2,
     EN_A20_WINDPRESET_MOUNTAIN      = 3,
     EN_A20_WINDPRESET_PLAINS        = 4,
@@ -58,7 +58,7 @@ typedef struct {
 inline constexpr ST_A20_WindPreset_t G_A20_WindPreset_Arr[EN_A20_WINDPRESET_COUNT] = {
     // { EN_A20_WINDPRESET_OFF,           "OFF",           "Off"           },
     { EN_A20_WINDPRESET_OCEAN,         "OCEAN",         "Ocean"         },
-    { EN_A20_WINDPRESET_COUNTRY,       "COUNTRY",       "Country"       },
+    { EN_A20_WINDPRESET_COUNTRY_BREEZE,       "COUNTRY_BREEZE",       "Country Breeze"       },
     { EN_A20_WINDPRESET_MEDITERRANEAN, "MEDITERRANEAN", "Mediterranean" },
     { EN_A20_WINDPRESET_MOUNTAIN,      "MOUNTAIN",      "Mountain"      },
     { EN_A20_WINDPRESET_PLAINS,        "PLAINS",        "Plains"        },

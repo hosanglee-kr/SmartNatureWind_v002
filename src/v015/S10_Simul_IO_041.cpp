@@ -105,7 +105,11 @@ void CL_S10_Simulation::toJson(JsonDocument& p_doc) {
 	v_objSim["active"]			= active;
 	v_objSim["fanPowerEnabled"] = fanPowerEnabled;
 
-	v_objSim["phase"]			= g_A20_WEATHER_PHASE_NAMES_Arr[(uint8_t)phase];
+	v_objSim["phase"]            = (phase < EN_A20_WEATHER_PHASE_COUNT)
+                                ? G_A20_WindPhase_Arr[(uint8_t)phase].code
+                                : G_A20_WindPhase_Arr[(uint8_t)EN_A20_WEATHER_PHASE_NORMAL].code;
+	// v_objSim["phase"]			= g_A20_WEATHER_PHASE_NAMES_Arr[(uint8_t)phase];
+	
 	v_objSim["windSpeed"]		= currentWindSpeed;
 	v_objSim["targetWind"]		= targetWindSpeed;
 
@@ -223,7 +227,12 @@ void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
 	JsonObject v_objSim		= p_doc["sim"].to<JsonObject>();
 
 	JsonObject v_meta		= v_objSim["meta"].to<JsonObject>();
-	v_meta["phase"]			= g_A20_WEATHER_PHASE_NAMES_Arr[(uint8_t)v_phase];
+	
+	v_meta["phase"]         = (v_phase < EN_A20_WEATHER_PHASE_COUNT)
+                           ? G_A20_WindPhase_Arr[(uint8_t)v_phase].code
+                           : G_A20_WindPhase_Arr[(uint8_t)EN_A20_WEATHER_PHASE_NORMAL].code;
+	// v_meta["phase"]			= g_A20_WEATHER_PHASE_NAMES_Arr[(uint8_t)v_phase];
+	
 	v_meta["avgWind"]		= v_avg;
 	v_meta["gustActive"]	= v_gust;
 	v_meta["thermalActive"] = v_therm;

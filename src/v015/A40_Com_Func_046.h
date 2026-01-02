@@ -114,11 +114,81 @@ namespace A40_ComFunc {
  */
 
 class CL_A40_MutexGuard_Semaphore {
+  public:
+    CL_A40_MutexGuard_Semaphore(SemaphoreHandle_t& p_mutex, TickType_t p_timeout = pdMS_TO_TICKS(100))
+      : _mutexPtr(&p_mutex) {
+
+        if (*_mutexPtr == nullptr) {
+            static portMUX_TYPE v_initMux = portMUX_INITIALIZER_UNLOCKED;
+            portENTER_CRITICAL(&v_initMux);
+            if (*_mutexPtr == nullptr) {
+                *_mutexPtr = xSemaphoreCreateRecursiveMutex();
+                if (*_mutexPtr == nullptr) {
+                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40] CreateRecursiveMutex failed");
+                }
+            }
+            portEXIT_CRITICAL(&v_initMux);
+        }
+
+        if (*_mutexPtr != nullptr) {
+            _acquired = (xSemaphoreTakeRecursive(*_mutexPtr, p_timeout) == pdTRUE);
+            if (!_acquired) {
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40] Mutex acquire timeout (ctor)");
+            }
+        }
+    }
+
+    ~CL_A40_MutexGuard_Semaphore() {
+        unlock();
+    }
+
+    // ms 기반 acquire (운영급: portMAX_DELAY 혼선 방지)
+    bool acquire(uint32_t p_timeoutMs = UINT32_MAX) {
+        if (_acquired) return true;
+        if (!_mutexPtr || *_mutexPtr == nullptr) return false;
+
+        TickType_t v_ticks = (p_timeoutMs == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(p_timeoutMs);
+
+        if (xSemaphoreTakeRecursive(*_mutexPtr, v_ticks) == pdTRUE) {
+            _acquired = true;
+            return true;
+        }
+
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40] Mutex acquire timeout (acquire)");
+        return false;
+    }
+
+    void unlock() {
+        if (!_acquired) return;
+        if (!_mutexPtr || *_mutexPtr == nullptr) return;
+
+        if (xSemaphoreGiveRecursive(*_mutexPtr) == pdTRUE) {
+            _acquired = false;
+            return;
+        }
+
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40] Mutex unlock failed");
+        // 실패 시 _acquired는 true 유지 (실제로 락이 유지됐을 가능성)
+    }
+
+    bool isAcquired() const { return _acquired; }
+
+  private:
+    CL_A40_MutexGuard_Semaphore(const CL_A40_MutexGuard_Semaphore&) = delete;
+    CL_A40_MutexGuard_Semaphore& operator=(const CL_A40_MutexGuard_Semaphore&) = delete;
+
+    SemaphoreHandle_t* _mutexPtr = nullptr;
+    bool _acquired = false;
+};
+
+
+/*
+class CL_A40_MutexGuard_Semaphore {
 	public:
-		/**
-		 * @param p_mutex 원본 SemaphoreHandle_t의 참조 (외부 static 변수 등)
-		 * @param p_timeout 락 획득 대기 시간
-		 */
+		
+		// * @param p_mutex 원본 SemaphoreHandle_t의 참조 (외부 static 변수 등)
+		// * @param p_timeout 락 획득 대기 시간
+
 		CL_A40_MutexGuard_Semaphore(SemaphoreHandle_t& p_mutex, TickType_t p_timeout = pdMS_TO_TICKS(100))
 			: _mutexPtr(&p_mutex) {
 
@@ -145,18 +215,14 @@ class CL_A40_MutexGuard_Semaphore {
 			}
 		}
 
-		/**
-		 * @brief 소멸자: 객체 소멸 시 자동으로 락을 해제합니다.
-		 */
+		// @brief 소멸자: 객체 소멸 시 자동으로 락을 해제합니다.
 		~CL_A40_MutexGuard_Semaphore() {
 			unlock();
 		}
 
-		/**
-		 * @brief 명시적 뮤텍스 획득
-		 * @param p_timeoutMs 획득 대기 시간 (ms)
-		 * @return true 획득 성공, false 실패
-		 */
+		/// * @brief 명시적 뮤텍스 획득
+		// * @param p_timeoutMs 획득 대기 시간 (ms)
+		// * @return true 획득 성공, false 실패
 		bool acquire(uint32_t p_timeoutMs = portMAX_DELAY) {
 			if (_acquired) return true; // 이미 획득 상태인 경우
 
@@ -169,9 +235,7 @@ class CL_A40_MutexGuard_Semaphore {
 			return _acquired;
 		}
 
-		/**
-		 * @brief 명시적 뮤텍스 해제
-		 */
+		// @brief 명시적 뮤텍스 해제
 		void unlock() {
 			if (_acquired && _mutexPtr && *_mutexPtr != nullptr) {
 				if (xSemaphoreGiveRecursive(*_mutexPtr) == pdTRUE) {
@@ -181,9 +245,7 @@ class CL_A40_MutexGuard_Semaphore {
 			}
 		}
 
-		/**
-		 * @brief 현재 락 획득 여부 확인
-		 */
+		// @brief 현재 락 획득 여부 확인
 		bool isAcquired() const {
 			return _acquired;
 		}
@@ -196,6 +258,8 @@ class CL_A40_MutexGuard_Semaphore {
 		SemaphoreHandle_t* _mutexPtr; // 원본 핸들의 주소 보관 (Lazy Init 반영용)
 		bool _acquired = false;
 };
+
+*/
 
 
 

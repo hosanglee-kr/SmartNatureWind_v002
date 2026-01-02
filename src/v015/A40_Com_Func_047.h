@@ -217,15 +217,20 @@ class CL_A40_muxGuard_Critical {
 
 
 
-
 namespace A40_IO {
 
-static inline void _buildPathWithSuffix(char* p_dst, size_t p_dstSize, const char* p_path, const char* p_suffix) {
-    if (!p_dst || p_dstSize == 0) return;
+static inline bool _buildPathWithSuffix(char* p_dst, size_t p_dstSize, const char* p_path, const char* p_suffix) {
+    if (!p_dst || p_dstSize == 0) return false;
     memset(p_dst, 0, p_dstSize);
-    if (!p_path) return;
-    // p_suffix 포함해서 snprintf 사용
-    snprintf(p_dst, p_dstSize, "%s%s", p_path, (p_suffix ? p_suffix : ""));
+    if (!p_path || !p_path[0]) return false;
+
+    int v_n = snprintf(p_dst, p_dstSize, "%s%s", p_path, (p_suffix ? p_suffix : ""));
+    if (v_n < 0 || (size_t)v_n >= p_dstSize) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Path overflow: base=%s suffix=%s", p_path, (p_suffix ? p_suffix : ""));
+        p_dst[0] = '\0';
+        return false;
+    }
+    return true;
 }
 
 static inline bool _parseJsonFileToDoc(const char* p_path, JsonDocument& p_doc, bool p_isBackupTag) {
@@ -251,28 +256,37 @@ static inline bool _parseJsonFileToDoc(const char* p_path, JsonDocument& p_doc, 
  * @note  - p_useBackup=false면 .bak 관련 경로/복구 동작을 하지 않습니다.
  *        - 최초 실행으로 main/bak 둘 다 없을 수 있으므로 false 반환 + INFO 로그.
  */
-inline bool Load_File2JsonDoc_V2(const char* p_path, JsonDocument& p_doc, bool p_useBackup = true) {
+inline bool Load_File2JsonDoc_V21(const char* p_path, JsonDocument& p_doc, bool p_useBackup = true) {
     if (!p_path || !p_path[0]) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Load failed: Invalid path");
         return false;
     }
 
     char v_bakPath[A20_Const::LEN_PATH + 8];
-    _buildPathWithSuffix(v_bakPath, sizeof(v_bakPath), p_path, ".bak");
+    if (!_buildPathWithSuffix(v_bakPath, sizeof(v_bakPath), p_path, ".bak")) {
+        return false;
+    }
 
-    // 0) main 자체가 없을 때
+    // 0) main이 없을 때: (운영급) bak를 "먼저 파싱 성공 확인" 후 main으로 복구
     if (!LittleFS.exists(p_path)) {
         if (p_useBackup && LittleFS.exists(v_bakPath)) {
-            // bak -> main 복구 시도
-            if (LittleFS.rename(v_bakPath, p_path)) {
-                CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO] Main missing. Restored from .bak: %s", p_path);
+            p_doc.clear();
+            if (_parseJsonFileToDoc(v_bakPath, p_doc, true)) {
+                // bak 유효 → main으로 복구 시도
+                if (LittleFS.rename(v_bakPath, p_path)) {
+                    CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO] Main missing. Restored from valid .bak: %s", p_path);
+                    return true;
+                } else {
+                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Restore rename failed: %s -> %s", v_bakPath, p_path);
+                    // doc은 이미 유효(=bak에서 읽음). 파일 복구만 실패한 상태이므로 true 반환(운영 정책)
+                    return true;
+                }
             } else {
-                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Restore rename failed: %s -> %s", v_bakPath, p_path);
-                // rename 실패했어도 bak에서 직접 로드라도 시도
+                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Backup exists but invalid: %s", v_bakPath);
+                return false;
             }
         } else {
-            CL_D10_Logger::log(EN_L10_LOG_INFO, "[IO] No file%s: %s",
-                               p_useBackup ? " & No backup" : "", p_path);
+            CL_D10_Logger::log(EN_L10_LOG_INFO, "[IO] No file%s: %s", p_useBackup ? " & No backup" : "", p_path);
             return false;
         }
     }
@@ -285,14 +299,9 @@ inline bool Load_File2JsonDoc_V2(const char* p_path, JsonDocument& p_doc, bool p
 
     // 2) main 파싱 실패 -> bak 최종 시도
     if (p_useBackup && LittleFS.exists(v_bakPath)) {
-        JsonDocument v_tmpDoc; // ❗규칙이 "함수당 JsonDocument 1개" 강제라면 제거해야 함
-        // 하지만 현재 규칙이 “함수 내 단일 타입”인지 “단일 객체”인지 혼재되어 있어,
-        // 완전 준수하려면 아래처럼 p_doc 하나로만 처리하세요(아래가 단일-doc 버전)
-
-        // ---- 단일 JsonDocument 버전(권장) ----
         p_doc.clear();
         if (_parseJsonFileToDoc(v_bakPath, p_doc, true)) {
-            // bak이 유효하니 main을 교체(복구)
+            // bak 유효 → main 교체(복구)
             if (LittleFS.exists(p_path)) {
                 LittleFS.remove(p_path);
             }
@@ -301,7 +310,7 @@ inline bool Load_File2JsonDoc_V2(const char* p_path, JsonDocument& p_doc, bool p
                 return true;
             } else {
                 CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Backup rename->main failed: %s -> %s", v_bakPath, p_path);
-                // bak 로드는 성공했으니, 일단 doc은 유효. 다만 파일 복구는 실패.
+                // doc은 유효. 파일 복구만 실패.
                 return true;
             }
         }
@@ -316,7 +325,7 @@ inline bool Load_File2JsonDoc_V2(const char* p_path, JsonDocument& p_doc, bool p
  * @note  - 전원차단/중간쓰기 대비: tmp에 먼저 기록 후 rename으로 반영
  *        - p_useBackup=true면 기존 main을 .bak으로 보관
  */
-inline bool Save_JsonDoc2File_V2(const char* p_path, const JsonDocument& p_doc, bool p_useBackup = true) {
+inline bool Save_JsonDoc2File_V21(const char* p_path, const JsonDocument& p_doc, bool p_useBackup = true) {
     if (!p_path || !p_path[0]) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Save failed: Invalid path");
         return false;
@@ -324,8 +333,8 @@ inline bool Save_JsonDoc2File_V2(const char* p_path, const JsonDocument& p_doc, 
 
     char v_bakPath[A20_Const::LEN_PATH + 8];
     char v_tmpPath[A20_Const::LEN_PATH + 8];
-    _buildPathWithSuffix(v_bakPath, sizeof(v_bakPath), p_path, ".bak");
-    _buildPathWithSuffix(v_tmpPath, sizeof(v_tmpPath), p_path, ".tmp");
+    if (!_buildPathWithSuffix(v_bakPath, sizeof(v_bakPath), p_path, ".bak")) return false;
+    if (!_buildPathWithSuffix(v_tmpPath, sizeof(v_tmpPath), p_path, ".tmp")) return false;
 
     // 0) tmp 청소
     if (LittleFS.exists(v_tmpPath)) {
@@ -357,12 +366,10 @@ inline bool Save_JsonDoc2File_V2(const char* p_path, const JsonDocument& p_doc, 
         }
         if (!LittleFS.rename(p_path, v_bakPath)) {
             CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Save failed: Cannot create .bak for %s", p_path);
-            // tmp는 남아있으니 삭제
             LittleFS.remove(v_tmpPath);
             return false;
         }
     } else if (v_hadMain && !p_useBackup) {
-        // 백업 미사용이면 기존 main 제거 후 교체
         LittleFS.remove(p_path);
     }
 
@@ -370,14 +377,15 @@ inline bool Save_JsonDoc2File_V2(const char* p_path, const JsonDocument& p_doc, 
     if (!LittleFS.rename(v_tmpPath, p_path)) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Save failed: tmp rename->main error %s", p_path);
 
-        // rollback: bak가 있으면 복원 시도
+        // rollback(1): main이 없다면 bak 복구
         if (p_useBackup && LittleFS.exists(v_bakPath)) {
-            if (!LittleFS.exists(p_path)) {
-                if (LittleFS.rename(v_bakPath, p_path)) {
-                    CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO] Rollback restored from .bak: %s", p_path);
-                } else {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Rollback rename failed: %s -> %s", v_bakPath, p_path);
-                }
+            if (LittleFS.exists(p_path)) {
+                LittleFS.remove(p_path);
+            }
+            if (LittleFS.rename(v_bakPath, p_path)) {
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO] Rollback restored from .bak: %s", p_path);
+            } else {
+                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Rollback rename failed: %s -> %s", v_bakPath, p_path);
             }
         }
 
@@ -388,7 +396,11 @@ inline bool Save_JsonDoc2File_V2(const char* p_path, const JsonDocument& p_doc, 
         return false;
     }
 
-    // 성공 시 로그 최소화(FLASH/시리얼 부담)
+    // (옵션) 저장 성공 후 bak 유지 정책:
+    // - 유지: 안전(추가 복구 가능) / 공간 사용
+    // - 삭제: 공간 절약 / 복구 옵션 감소
+    // 여기서는 "유지"가 운영급 기본값.
+
     return true;
 }
 

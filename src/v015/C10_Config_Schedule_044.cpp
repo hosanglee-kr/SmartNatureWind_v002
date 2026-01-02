@@ -5,7 +5,7 @@
  * 모듈명 : Smart Nature Wind Configuration Manager - Schedule/UserProfiles/WindProfile
  * ------------------------------------------------------
  * 기능 요약:
- *  - Schedules / UserProfiles / WindProfileDict Load/Save
+ *  - Schedules / UserProfiles / WindDict Load/Save
  *  - 위 섹션들의 JSON Export / Patch
  *  - Schedule / UserProfiles / WindProfile CRUD
  * ------------------------------------------------------
@@ -236,27 +236,27 @@ static void C10_fromJson_WindPreset(const JsonObjectConst& p_js, ST_A20_PresetEn
     strlcpy(p_p.name, p_js["name"] | "", sizeof(p_p.name));
     strlcpy(p_p.code, p_js["code"] | "", sizeof(p_p.code));
 
-    JsonObjectConst v_b = p_js["base"].as<JsonObjectConst>();
+    JsonObjectConst v_b = p_js["factors"].as<JsonObjectConst>();
 
-    p_p.base.windIntensity            = v_b["windIntensity"] | 70.0f;
-    p_p.base.gustFrequency            = v_b["gustFrequency"] | 40.0f;
-    p_p.base.windVariability          = v_b["windVariability"] | 50.0f;
-    p_p.base.fanLimit                 = v_b["fanLimit"] | 95.0f;
-    p_p.base.minFan                   = v_b["minFan"] | 10.0f;
-    p_p.base.turbulenceLengthScale    = v_b["turbulenceLengthScale"] | 40.0f;
-    p_p.base.turbulenceIntensitySigma = v_b["turbulenceIntensitySigma"] | 0.5f;
-    p_p.base.thermalBubbleStrength    = v_b["thermalBubbleStrength"] | 2.0f;
-    p_p.base.thermalBubbleRadius      = v_b["thermalBubbleRadius"] | 18.0f;
+    p_p.factors.windIntensity            = v_b["windIntensity"] | 70.0f;
+    p_p.factors.gustFrequency            = v_b["gustFrequency"] | 40.0f;
+    p_p.factors.windVariability          = v_b["windVariability"] | 50.0f;
+    p_p.factors.fanLimit                 = v_b["fanLimit"] | 95.0f;
+    p_p.factors.minFan                   = v_b["minFan"] | 10.0f;
+    p_p.factors.turbulenceLengthScale    = v_b["turbulenceLengthScale"] | 40.0f;
+    p_p.factors.turbulenceIntensitySigma = v_b["turbulenceIntensitySigma"] | 0.5f;
+    p_p.factors.thermalBubbleStrength    = v_b["thermalBubbleStrength"] | 2.0f;
+    p_p.factors.thermalBubbleRadius      = v_b["thermalBubbleRadius"] | 18.0f;
 
-    p_p.base.baseMinWind     = v_b["baseMinWind"] | 1.8f;
-    p_p.base.baseMaxWind     = v_b["baseMaxWind"] | 5.5f;
-    p_p.base.gustProbBase    = v_b["gustProbBase"] | 0.040f;
-    p_p.base.gustStrengthMax = v_b["gustStrengthMax"] | 2.10f;
-    p_p.base.thermalFreqBase = v_b["thermalFreqBase"] | 0.022f;
+    p_p.factors.baseMinWind     = v_b["baseMinWind"] | 1.8f;
+    p_p.factors.baseMaxWind     = v_b["baseMaxWind"] | 5.5f;
+    p_p.factors.gustProbBase    = v_b["gustProbBase"] | 0.040f;
+    p_p.factors.gustStrengthMax = v_b["gustStrengthMax"] | 2.10f;
+    p_p.factors.thermalFreqBase = v_b["thermalFreqBase"] | 0.022f;
 }
 
 // =====================================================
-// 2-1. 목적물별 Load 구현 (Schedules/UserProfiles/WindProfileDict)
+// 2-1. 목적물별 Load 구현 (Schedules/UserProfiles/WindDict)
 //  - 단독 호출(섹션 lazy-load) 대비: resetxxxdefault 적용
 // =====================================================
 bool CL_C10_ConfigManager::loadSchedules(ST_A20_SchedulesRoot_t& p_cfg) {
@@ -353,28 +353,28 @@ bool CL_C10_ConfigManager::loadUserProfiles(ST_A20_UserProfilesRoot_t& p_cfg) {
     return true;
 }
 
-bool CL_C10_ConfigManager::loadWindProfileDict(ST_A20_WindProfileDict_t& p_dict) {
+bool CL_C10_ConfigManager::loadWindDict(ST_A20_WindDict_t& p_dict) {
     JsonDocument d;
 
     const char* v_cfgJsonPath = nullptr;
     if (s_cfgJsonFileMap.windDict[0] != '\0') v_cfgJsonPath = s_cfgJsonFileMap.windDict;
 
     if (!v_cfgJsonPath) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWindProfileDict: s_cfgJsonFileMap.windDict empty");
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWindDict: s_cfgJsonFileMap.windDict empty");
         return false;
     }
 
     // 단독 호출 대비 기본값
-    A20_resetWindProfileDictDefault(p_dict);
+    A20_resetWindDictDefault(p_dict);
 
     if (!ioLoadJson(v_cfgJsonPath, d)) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWindProfileDict: ioLoadJson failed (%s)", v_cfgJsonPath);
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWindDict: ioLoadJson failed (%s)", v_cfgJsonPath);
         return false;
     }
 
     JsonObjectConst j = d["windDict"].as<JsonObjectConst>();
     if (j.isNull()) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] loadWindProfileDict: missing 'windDict' (empty)");
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] loadWindDict: missing 'windDict' (empty)");
         p_dict.presetCount = 0;
         p_dict.styleCount  = 0;
         return true;
@@ -383,27 +383,27 @@ bool CL_C10_ConfigManager::loadWindProfileDict(ST_A20_WindProfileDict_t& p_dict)
     p_dict.presetCount = 0;
     if (j["presets"].is<JsonArrayConst>()) {
         JsonArrayConst v_arr = j["presets"].as<JsonArrayConst>();
-        for (JsonObjectConst v_js : v_arr) {
+        for (JsonObjectConst v_jsonObj_preset : v_arr) {
             if (p_dict.presetCount >= 16) break; // TODO: A20_Const 상수로 교체 권장
-            ST_A20_PresetEntry_t& v_p = p_dict.presets[p_dict.presetCount++];
-            memset(&v_p, 0, sizeof(v_p));
-            C10_fromJson_WindPreset(v_js, v_p);
+            ST_A20_PresetEntry_t& v_preset = p_dict.presets[p_dict.presetCount++];
+            memset(&v_preset, 0, sizeof(v_preset));
+            C10_fromJson_WindPreset(v_jsonObj_preset, v_preset);
         }
     }
 
     p_dict.styleCount = 0;
     if (j["styles"].is<JsonArrayConst>()) {
         JsonArrayConst v_arr = j["styles"].as<JsonArrayConst>();
-        for (JsonObjectConst v_js : v_arr) {
+        for (JsonObjectConst v_jsonObj_style : v_arr) {
             if (p_dict.styleCount >= 16) break; // TODO: A20_Const 상수로 교체 권장
 
             ST_A20_StyleEntry_t& v_s = p_dict.styles[p_dict.styleCount++];
             memset(&v_s, 0, sizeof(v_s));
 
-            strlcpy(v_s.name, v_js["name"] | "", sizeof(v_s.name));
-            strlcpy(v_s.code, v_js["code"] | "", sizeof(v_s.code));
+            strlcpy(v_s.name, v_jsonObj_style["name"] | "", sizeof(v_s.name));
+            strlcpy(v_s.code, v_jsonObj_style["code"] | "", sizeof(v_s.code));
 
-            JsonObjectConst v_f           = v_js["factors"].as<JsonObjectConst>();
+            JsonObjectConst v_f           = v_jsonObj_style["factors"].as<JsonObjectConst>();
             v_s.factors.intensityFactor   = v_f["intensityFactor"] | 1.0f;
             v_s.factors.variabilityFactor = v_f["variabilityFactor"] | 1.0f;
             v_s.factors.gustFactor        = v_f["gustFactor"] | 1.0f;
@@ -415,7 +415,7 @@ bool CL_C10_ConfigManager::loadWindProfileDict(ST_A20_WindProfileDict_t& p_dict)
 }
 
 // =====================================================
-// 2-2. 목적물별 Save 구현 (Schedules/UserProfiles/WindProfileDict)
+// 2-2. 목적물별 Save 구현 (Schedules/UserProfiles/WindDict)
 // =====================================================
 bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg) {
     JsonDocument d;
@@ -540,44 +540,44 @@ bool CL_C10_ConfigManager::saveUserProfiles(const ST_A20_UserProfilesRoot_t& p_c
     return ioSaveJson(s_cfgJsonFileMap.userProfiles, d);
 }
 
-bool CL_C10_ConfigManager::saveWindProfileDict(const ST_A20_WindProfileDict_t& p_cfg) {
+bool CL_C10_ConfigManager::saveWindDict(const ST_A20_WindDict_t& p_cfg) {
     JsonDocument d;
 
     // presets
     for (uint8_t v_i = 0; v_i < p_cfg.presetCount; v_i++) {
-        const ST_A20_PresetEntry_t& v_p  = p_cfg.presets[v_i];
-        JsonObject                  v_js = d["windDict"]["presets"][v_i].to<JsonObject>();
+        const ST_A20_PresetEntry_t& v_preset  	= p_cfg.presets[v_i];
+        JsonObject                  v_jsonObj_preset 		= d["windDict"]["presets"][v_i].to<JsonObject>();
 
-        v_js["name"] = v_p.name;
-        v_js["code"] = v_p.code;
+        v_jsonObj_preset["name"] = v_preset.name;
+        v_jsonObj_preset["code"] = v_preset.code;
 
-        JsonObject v_b                  = v_js["base"].to<JsonObject>();
-        v_b["windIntensity"]            = v_p.base.windIntensity;
-        v_b["gustFrequency"]            = v_p.base.gustFrequency;
-        v_b["windVariability"]          = v_p.base.windVariability;
-        v_b["fanLimit"]                 = v_p.base.fanLimit;
-        v_b["minFan"]                   = v_p.base.minFan;
-        v_b["turbulenceLengthScale"]    = v_p.base.turbulenceLengthScale;
-        v_b["turbulenceIntensitySigma"] = v_p.base.turbulenceIntensitySigma;
-        v_b["thermalBubbleStrength"]    = v_p.base.thermalBubbleStrength;
-        v_b["thermalBubbleRadius"]      = v_p.base.thermalBubbleRadius;
+        JsonObject v_b                  = v_jsonObj_preset["factors"].to<JsonObject>();
+        v_b["windIntensity"]            = v_preset.factors.windIntensity;
+        v_b["gustFrequency"]            = v_preset.factors.gustFrequency;
+        v_b["windVariability"]          = v_preset.factors.windVariability;
+        v_b["fanLimit"]                 = v_preset.factors.fanLimit;
+        v_b["minFan"]                   = v_preset.factors.minFan;
+        v_b["turbulenceLengthScale"]    = v_preset.factors.turbulenceLengthScale;
+        v_b["turbulenceIntensitySigma"] = v_preset.factors.turbulenceIntensitySigma;
+        v_b["thermalBubbleStrength"]    = v_preset.factors.thermalBubbleStrength;
+        v_b["thermalBubbleRadius"]      = v_preset.factors.thermalBubbleRadius;
 
-        v_b["baseMinWind"]     = v_p.base.baseMinWind;
-        v_b["baseMaxWind"]     = v_p.base.baseMaxWind;
-        v_b["gustProbBase"]    = v_p.base.gustProbBase;
-        v_b["gustStrengthMax"] = v_p.base.gustStrengthMax;
-        v_b["thermalFreqBase"] = v_p.base.thermalFreqBase;
+        v_b["baseMinWind"]     			= v_preset.factors.baseMinWind;
+        v_b["baseMaxWind"]     			= v_preset.factors.baseMaxWind;
+        v_b["gustProbBase"]    			= v_preset.factors.gustProbBase;
+        v_b["gustStrengthMax"] 			= v_preset.factors.gustStrengthMax;
+        v_b["thermalFreqBase"] 			= v_preset.factors.thermalFreqBase;
     }
 
     // styles
     for (uint8_t v_i = 0; v_i < p_cfg.styleCount; v_i++) {
         const ST_A20_StyleEntry_t& v_s  = p_cfg.styles[v_i];
-        JsonObject                 v_js = d["windDict"]["styles"][v_i].to<JsonObject>();
+        JsonObject                 v_jsonObj_style = d["windDict"]["styles"][v_i].to<JsonObject>();
 
-        v_js["name"] = v_s.name;
-        v_js["code"] = v_s.code;
+        v_jsonObj_style["name"] = v_s.name;
+        v_jsonObj_style["code"] = v_s.code;
 
-        JsonObject v_f           = v_js["factors"].to<JsonObject>();
+        JsonObject v_f           = v_jsonObj_style["factors"].to<JsonObject>();
         v_f["intensityFactor"]   = v_s.factors.intensityFactor;
         v_f["variabilityFactor"] = v_s.factors.variabilityFactor;
         v_f["gustFactor"]        = v_s.factors.gustFactor;
@@ -588,7 +588,7 @@ bool CL_C10_ConfigManager::saveWindProfileDict(const ST_A20_WindProfileDict_t& p
 }
 
 // =====================================================
-// 3. JSON Export (Schedules/UserProfiles/WindProfileDict)
+// 3. JSON Export (Schedules/UserProfiles/WindDict)
 // =====================================================
 void CL_C10_ConfigManager::toJson_Schedules(const ST_A20_SchedulesRoot_t& p_cfg, JsonDocument& d) {
     for (uint8_t v_i = 0; v_i < p_cfg.count && v_i < A20_Const::MAX_SCHEDULES; v_i++) {
@@ -701,40 +701,40 @@ void CL_C10_ConfigManager::toJson_UserProfiles(const ST_A20_UserProfilesRoot_t& 
 }
 
 
-void CL_C10_ConfigManager::toJson_WindProfileDict(const ST_A20_WindProfileDict_t& p_cfg, JsonDocument& d) {
+void CL_C10_ConfigManager::toJson_WindDict(const ST_A20_WindDict_t& p_cfg, JsonDocument& d) {
     for (uint8_t v_i = 0; v_i < p_cfg.presetCount; v_i++) {
-        const ST_A20_PresetEntry_t& v_p  = p_cfg.presets[v_i];
-        JsonObject                  v_js = d["windDict"]["presets"][v_i].to<JsonObject>();
+        const ST_A20_PresetEntry_t& v_preset  = p_cfg.presets[v_i];
+        JsonObject                  v_jsonObj_preset = d["windDict"]["presets"][v_i].to<JsonObject>();
 
-        v_js["name"] = v_p.name;
-        v_js["code"] = v_p.code;
+        v_jsonObj_preset["name"] = v_preset.name;
+        v_jsonObj_preset["code"] = v_preset.code;
 
-        JsonObject v_b                  = v_js["base"].to<JsonObject>();
-        v_b["windIntensity"]            = v_p.base.windIntensity;
-        v_b["gustFrequency"]            = v_p.base.gustFrequency;
-        v_b["windVariability"]          = v_p.base.windVariability;
-        v_b["fanLimit"]                 = v_p.base.fanLimit;
-        v_b["minFan"]                   = v_p.base.minFan;
-        v_b["turbulenceLengthScale"]    = v_p.base.turbulenceLengthScale;
-        v_b["turbulenceIntensitySigma"] = v_p.base.turbulenceIntensitySigma;
-        v_b["thermalBubbleStrength"]    = v_p.base.thermalBubbleStrength;
-        v_b["thermalBubbleRadius"]      = v_p.base.thermalBubbleRadius;
+        JsonObject v_b                  = v_jsonObj_preset["factors"].to<JsonObject>();
+        v_b["windIntensity"]            = v_preset.factors.windIntensity;
+        v_b["gustFrequency"]            = v_preset.factors.gustFrequency;
+        v_b["windVariability"]          = v_preset.factors.windVariability;
+        v_b["fanLimit"]                 = v_preset.factors.fanLimit;
+        v_b["minFan"]                   = v_preset.factors.minFan;
+        v_b["turbulenceLengthScale"]    = v_preset.factors.turbulenceLengthScale;
+        v_b["turbulenceIntensitySigma"] = v_preset.factors.turbulenceIntensitySigma;
+        v_b["thermalBubbleStrength"]    = v_preset.factors.thermalBubbleStrength;
+        v_b["thermalBubbleRadius"]      = v_preset.factors.thermalBubbleRadius;
 
-        v_b["baseMinWind"]     = v_p.base.baseMinWind;
-        v_b["baseMaxWind"]     = v_p.base.baseMaxWind;
-        v_b["gustProbBase"]    = v_p.base.gustProbBase;
-        v_b["gustStrengthMax"] = v_p.base.gustStrengthMax;
-        v_b["thermalFreqBase"] = v_p.base.thermalFreqBase;
+        v_b["baseMinWind"]     			= v_preset.factors.baseMinWind;
+        v_b["baseMaxWind"]     			= v_preset.factors.baseMaxWind;
+        v_b["gustProbBase"]    			= v_preset.factors.gustProbBase;
+        v_b["gustStrengthMax"] 			= v_preset.factors.gustStrengthMax;
+        v_b["thermalFreqBase"] 			= v_preset.factors.thermalFreqBase;
     }
 
     for (uint8_t v_i = 0; v_i < p_cfg.styleCount; v_i++) {
         const ST_A20_StyleEntry_t& v_s  = p_cfg.styles[v_i];
-        JsonObject                 v_js = d["windDict"]["styles"][v_i].to<JsonObject>();
+        JsonObject                 v_jsonObj_style = d["windDict"]["styles"][v_i].to<JsonObject>();
 
-        v_js["name"] = v_s.name;
-        v_js["code"] = v_s.code;
+        v_jsonObj_style["name"] = v_s.name;
+        v_jsonObj_style["code"] = v_s.code;
 
-        JsonObject v_f           = v_js["factors"].to<JsonObject>();
+        JsonObject v_f           = v_jsonObj_style["factors"].to<JsonObject>();
         v_f["intensityFactor"]   = v_s.factors.intensityFactor;
         v_f["variabilityFactor"] = v_s.factors.variabilityFactor;
         v_f["gustFactor"]        = v_s.factors.gustFactor;
@@ -743,7 +743,7 @@ void CL_C10_ConfigManager::toJson_WindProfileDict(const ST_A20_WindProfileDict_t
 }
 
 // =====================================================
-// 4. JSON Patch (Schedules/UserProfiles/WindProfileDict)
+// 4. JSON Patch (Schedules/UserProfiles/WindDict)
 //  - windProfile → windDict 통일( fallback 미적용 )
 //  - schedules PUT: schId는 자동 재발급(10,20,...) / schNo 중복이면 실패
 // =====================================================
@@ -824,7 +824,7 @@ bool CL_C10_ConfigManager::patchUserProfilesFromJson(ST_A20_UserProfilesRoot_t& 
     return true;
 }
 
-bool CL_C10_ConfigManager::patchWindProfileDictFromJson(ST_A20_WindProfileDict_t& p_cfg, const JsonDocument& p_patch) {
+bool CL_C10_ConfigManager::patchWindDictFromJson(ST_A20_WindDict_t& p_cfg, const JsonDocument& p_patch) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
     CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
     if (!v_MutxGuard.isAcquired()) {
@@ -838,32 +838,32 @@ bool CL_C10_ConfigManager::patchWindProfileDictFromJson(ST_A20_WindProfileDict_t
         return false;
     }
 
-    A20_resetWindProfileDictDefault(p_cfg);
+    A20_resetWindDictDefault(p_cfg);
 
     p_cfg.presetCount = 0;
     if (j["presets"].is<JsonArrayConst>()) {
         JsonArrayConst v_arr = j["presets"].as<JsonArrayConst>();
-        for (JsonObjectConst v_js : v_arr) {
+        for (JsonObjectConst v_jsonObj_preset : v_arr) {
             if (p_cfg.presetCount >= 16) break; // TODO: A20_Const 상수로 교체 권장
-            ST_A20_PresetEntry_t& v_p = p_cfg.presets[p_cfg.presetCount++];
-            memset(&v_p, 0, sizeof(v_p));
-            C10_fromJson_WindPreset(v_js, v_p);
+            ST_A20_PresetEntry_t& v_preset = p_cfg.presets[p_cfg.presetCount++];
+            memset(&v_preset, 0, sizeof(v_preset));
+            C10_fromJson_WindPreset(v_jsonObj_preset, v_preset);
         }
     }
 
     p_cfg.styleCount = 0;
     if (j["styles"].is<JsonArrayConst>()) {
         JsonArrayConst v_arr = j["styles"].as<JsonArrayConst>();
-        for (JsonObjectConst v_js : v_arr) {
+        for (JsonObjectConst v_jsonObj_style : v_arr) {
             if (p_cfg.styleCount >= 16) break; // TODO: A20_Const 상수로 교체 권장
 
             ST_A20_StyleEntry_t& v_s = p_cfg.styles[p_cfg.styleCount++];
             memset(&v_s, 0, sizeof(v_s));
 
-            strlcpy(v_s.name, v_js["name"] | "", sizeof(v_s.name));
-            strlcpy(v_s.code, v_js["code"] | "", sizeof(v_s.code));
+            strlcpy(v_s.name, v_jsonObj_style["name"] | "", sizeof(v_s.name));
+            strlcpy(v_s.code, v_jsonObj_style["code"] | "", sizeof(v_s.code));
 
-            JsonObjectConst v_f           = v_js["factors"].as<JsonObjectConst>();
+            JsonObjectConst v_f           = v_jsonObj_style["factors"].as<JsonObjectConst>();
             v_s.factors.intensityFactor   = v_f["intensityFactor"] | 1.0f;
             v_s.factors.variabilityFactor = v_f["variabilityFactor"] | 1.0f;
             v_s.factors.gustFactor        = v_f["gustFactor"] | 1.0f;
@@ -872,7 +872,7 @@ bool CL_C10_ConfigManager::patchWindProfileDictFromJson(ST_A20_WindProfileDict_t
     }
 
     _dirty_windDict = true;
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] WindProfileDict patched (PUT). Dirty=true");
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] WindDict patched (PUT). Dirty=true");
 
     return true;
 }
@@ -1160,28 +1160,28 @@ int CL_C10_ConfigManager::addWindProfileFromJson(const JsonDocument& p_doc) {
     }
 
     if (!g_A20_config_root.windDict) {
-        g_A20_config_root.windDict = new (std::nothrow) ST_A20_WindProfileDict_t();
+        g_A20_config_root.windDict = new (std::nothrow) ST_A20_WindDict_t();
         if (!g_A20_config_root.windDict) {
             CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] addWindPreset: new failed (out of memory)");
 
             return -1;
         }
-        A20_resetWindProfileDictDefault(*g_A20_config_root.windDict);
+        A20_resetWindDictDefault(*g_A20_config_root.windDict);
     }
 
-    ST_A20_WindProfileDict_t& v_root = *g_A20_config_root.windDict;
+    ST_A20_WindDict_t& v_root = *g_A20_config_root.windDict;
 
     if (v_root.presetCount >= 16) { // TODO: A20_Const 상수로 교체 권장
 
         return -1;
     }
 
-    JsonObjectConst v_js = p_doc["preset"].is<JsonObjectConst>() ? p_doc["preset"].as<JsonObjectConst>()
+    JsonObjectConst v_jsonObj_preset = p_doc["preset"].is<JsonObjectConst>() ? p_doc["preset"].as<JsonObjectConst>()
                                                                  : p_doc.as<JsonObjectConst>();
 
-    ST_A20_PresetEntry_t& v_p = v_root.presets[v_root.presetCount];
-    memset(&v_p, 0, sizeof(v_p));
-    C10_fromJson_WindPreset(v_js, v_p);
+    ST_A20_PresetEntry_t& v_preset = v_root.presets[v_root.presetCount];
+    memset(&v_preset, 0, sizeof(v_preset));
+    C10_fromJson_WindPreset(v_jsonObj_preset, v_preset);
 
     int v_index = v_root.presetCount;
     v_root.presetCount++;
@@ -1204,16 +1204,16 @@ bool CL_C10_ConfigManager::updateWindProfileFromJson(uint16_t p_id, const JsonDo
         return false;
     }
 
-    ST_A20_WindProfileDict_t& v_root = *g_A20_config_root.windDict;
+    ST_A20_WindDict_t& v_root = *g_A20_config_root.windDict;
 
     if (p_id >= v_root.presetCount) {
         return false;
     }
 
-    JsonObjectConst v_js = p_patch["preset"].is<JsonObjectConst>() ? p_patch["preset"].as<JsonObjectConst>()
+    JsonObjectConst v_jsonObj_preset = p_patch["preset"].is<JsonObjectConst>() ? p_patch["preset"].as<JsonObjectConst>()
                                                                    : p_patch.as<JsonObjectConst>();
 
-    C10_fromJson_WindPreset(v_js, v_root.presets[p_id]);
+    C10_fromJson_WindPreset(v_jsonObj_preset, v_root.presets[p_id]);
 
     _dirty_windDict = true;
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] WindPreset updated (index=%u)", (unsigned)p_id);
@@ -1233,7 +1233,7 @@ bool CL_C10_ConfigManager::deleteWindProfile(uint16_t p_id) {
         return false;
     }
 
-    ST_A20_WindProfileDict_t& v_root = *g_A20_config_root.windDict;
+    ST_A20_WindDict_t& v_root = *g_A20_config_root.windDict;
 
     if (p_id >= v_root.presetCount) {
         return false;

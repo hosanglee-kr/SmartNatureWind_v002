@@ -29,8 +29,8 @@ namespace A20_Const {
 	constexpr uint8_t MAX_BLE_DEVICES  = 8;
 	constexpr uint8_t MAX_STA_NETWORKS = 5;
 
-	constexpr uint8_t WIND_PRESETS_MAX = 16;
-	constexpr uint8_t WIND_STYLES_MAX  = 16;
+	// constexpr uint8_t WIND_PRESETS_MAX = 16;
+	// constexpr uint8_t WIND_STYLES_MAX  = 16;
 
 	// 배열 개수 제한
 	constexpr uint8_t MAX_SCHEDULES             = 8;

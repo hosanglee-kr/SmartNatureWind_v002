@@ -265,11 +265,11 @@ void CL_W10_WebAPI::routeWindProfile() {
 		}
 
 		JsonDocument			 v_doc;
-		ST_A20_WindProfileDict_t v_dict;
+		ST_A20_WindDict_t v_dict;
 		memset(&v_dict, 0, sizeof(v_dict));
 
-		if (CL_C10_ConfigManager::loadWindProfileDict(v_dict)) {
-			CL_C10_ConfigManager::toJson_WindProfileDict(v_dict, v_doc);
+		if (CL_C10_ConfigManager::loadWindDict(v_dict)) {
+			CL_C10_ConfigManager::toJson_WindDict(v_dict, v_doc);
 			sendJson(p_request, v_doc);
 		} else {
 			p_request->send(500, "application/json", "{\"error\":\"load failed\"}");

@@ -85,12 +85,12 @@ void CL_S10_Simulation::applyPresetCore(const char* p_code) {
 	if (g_A20_config_root.windDict != nullptr) {
 		int16_t v_idx = A20_findPresetIndexByCode(*g_A20_config_root.windDict, p_code);
 		if (v_idx >= 0) {
-			const ST_A20_WindBase_t& v_base = g_A20_config_root.windDict->presets[v_idx].base;
-			baseMinWind     = v_base.baseMinWind;
-			baseMaxWind     = v_base.baseMaxWind;
-			gustProbBase    = v_base.gustProbBase;
-			gustStrengthMax = v_base.gustStrengthMax;
-			thermalFreqBase = v_base.thermalFreqBase;
+			const ST_A20_WindPresetFactors_t& v_presetFactors = g_A20_config_root.windDict->presets[v_idx].factors;
+			baseMinWind     = v_presetFactors.baseMinWind;
+			baseMaxWind     = v_presetFactors.baseMaxWind;
+			gustProbBase    = v_presetFactors.gustProbBase;
+			gustStrengthMax = v_presetFactors.gustStrengthMax;
+			thermalFreqBase = v_presetFactors.thermalFreqBase;
 			return;
 		}
 	}
@@ -110,7 +110,7 @@ void CL_S10_Simulation::applyPresetCore(const char* p_code) {
  * - millis()를 직접 호출하지 않고 tick()에서 캡처한 _tickNowSec 사용.
  */
 void CL_S10_Simulation::initPhaseFromBase() {
-	phase		  = EN_A20_WEATHER_PHASE_NORMAL;  // NORMAL 상태로 시작
+	phase		  = EN_A20_WIND_PHASE_NORMAL;  // NORMAL 상태로 시작
 	phaseStartSec = _tickNowSec;				  // tick() 스냅샷 시간 기반
 
 	float v_span  = baseMaxWind - baseMinWind;
@@ -168,17 +168,17 @@ void CL_S10_Simulation::updatePhase() {
 	const EN_A20_WindPhase_t v_old = phase;
 	const float				v_r	  = A40_ComFunc::getRandom01();	// 0..1
 
-	if (v_old == EN_A20_WEATHER_PHASE_CALM) {
-		phase = (v_r < 0.7f) ? EN_A20_WEATHER_PHASE_NORMAL : EN_A20_WEATHER_PHASE_STRONG;
-	} else if (v_old == EN_A20_WEATHER_PHASE_STRONG) {
-		phase = (v_r < 0.7f) ? EN_A20_WEATHER_PHASE_NORMAL : EN_A20_WEATHER_PHASE_CALM;
+	if (v_old == EN_A20_WIND_PHASE_CALM) {
+		phase = (v_r < 0.7f) ? EN_A20_WIND_PHASE_NORMAL : EN_A20_WIND_PHASE_STRONG;
+	} else if (v_old == EN_A20_WIND_PHASE_STRONG) {
+		phase = (v_r < 0.7f) ? EN_A20_WIND_PHASE_NORMAL : EN_A20_WIND_PHASE_CALM;
 	} else {  // NORMAL
 		if (v_r < 0.4f) {
-			phase = EN_A20_WEATHER_PHASE_CALM;
+			phase = EN_A20_WIND_PHASE_CALM;
 		} else if (v_r < 0.8f) {
-			phase = EN_A20_WEATHER_PHASE_NORMAL;
+			phase = EN_A20_WIND_PHASE_NORMAL;
 		} else {
-			phase = EN_A20_WEATHER_PHASE_STRONG;
+			phase = EN_A20_WIND_PHASE_STRONG;
 		}
 	}
 
@@ -190,11 +190,11 @@ void CL_S10_Simulation::updatePhase() {
 	}
 
 	// Phase별 지속시간/범위 (정책 상수는 헤더 공유)
-	if (phase == EN_A20_WEATHER_PHASE_CALM) {
+	if (phase == EN_A20_WIND_PHASE_CALM) {
 		phaseDurationSec = A40_ComFunc::getRandomRange(G_S10_PHASE_CALM_DUR_MIN_S, G_S10_PHASE_CALM_DUR_MAX_S);
 		phaseMinWind	 = baseMinWind;
 		phaseMaxWind	 = baseMinWind + v_span * 0.6f;
-	} else if (phase == EN_A20_WEATHER_PHASE_NORMAL) {
+	} else if (phase == EN_A20_WIND_PHASE_NORMAL) {
 		phaseDurationSec = A40_ComFunc::getRandomRange(G_S10_PHASE_NORM_DUR_MIN_S, G_S10_PHASE_NORM_DUR_MAX_S);
 		phaseMinWind	 = baseMinWind + v_span * 0.15f;
 		phaseMaxWind	 = baseMinWind + v_span * 0.85f;
@@ -392,9 +392,9 @@ void CL_S10_Simulation::updateGust() {
 	const float v_wfac	   = 1.0f + (currentWindSpeed / 8.9f) * 0.5f;
 
 	float		v_phaseMul = 1.0f;
-	if (phase == EN_A20_WEATHER_PHASE_CALM) {
+	if (phase == EN_A20_WIND_PHASE_CALM) {
 		v_phaseMul = 0.3f * v_wfac;
-	} else if (phase == EN_A20_WEATHER_PHASE_STRONG) {
+	} else if (phase == EN_A20_WIND_PHASE_STRONG) {
 		v_phaseMul = 2.2f * v_wfac;
 	} else {
 		v_phaseMul = 0.9f * v_wfac;
@@ -410,10 +410,10 @@ void CL_S10_Simulation::updateGust() {
 
 		const float v_speedF = currentWindSpeed / 6.7f;
 
-		if (phase == EN_A20_WEATHER_PHASE_CALM) {
+		if (phase == EN_A20_WIND_PHASE_CALM) {
 			gustDuration  = A40_ComFunc::getRandomRange(3.0f, 8.0f);
 			gustIntensity = A40_ComFunc::getRandomRange(1.08f, 1.33f);
-		} else if (phase == EN_A20_WEATHER_PHASE_STRONG) {
+		} else if (phase == EN_A20_WIND_PHASE_STRONG) {
 			gustDuration  = A40_ComFunc::getRandomRange(0.8f, 3.3f);
 			gustIntensity = A40_ComFunc::getRandomRange(1.3f, 1.3f + 0.9f * (1.0f + v_speedF * 0.3f));
 		} else {
@@ -466,7 +466,7 @@ void CL_S10_Simulation::updateThermal() {
 	const float v_wfac		  = 1.0f + (currentWindSpeed / 8.0f) * 0.3f;
 
 	// 약풍에서 더 잘 발생한다는 가정
-	const float v_phaseMul	  = (phase == EN_A20_WEATHER_PHASE_CALM) ? 1.2f : (phase == EN_A20_WEATHER_PHASE_STRONG ? 0.7f : 1.0f);
+	const float v_phaseMul	  = (phase == EN_A20_WIND_PHASE_CALM) ? 1.2f : (phase == EN_A20_WIND_PHASE_STRONG ? 0.7f : 1.0f);
 
 	const float v_ratePerSec  = max(0.0f, thermalFreqBase) * v_strengthMul * v_wfac * v_phaseMul;
 
@@ -478,9 +478,9 @@ void CL_S10_Simulation::updateThermal() {
 
 		// 지속 시간 정책 상수(헤더 공유) + phase 보정 배율
 		float v_d		= A40_ComFunc::getRandomRange(G_S10_THERM_DUR_MIN_S, G_S10_THERM_DUR_MAX_S);
-		if (phase == EN_A20_WEATHER_PHASE_CALM) {
+		if (phase == EN_A20_WIND_PHASE_CALM) {
 			v_d *= G_S10_THERM_DUR_MUL_CALM;
-		} else if (phase == EN_A20_WEATHER_PHASE_STRONG) {
+		} else if (phase == EN_A20_WIND_PHASE_STRONG) {
 			v_d *= G_S10_THERM_DUR_MUL_STRONG;
 		}
 
@@ -519,9 +519,9 @@ void CL_S10_Simulation::generateTarget() {
 
 	float		v_base = 0.15f;
 
-	if (phase == EN_A20_WEATHER_PHASE_CALM) {
+	if (phase == EN_A20_WIND_PHASE_CALM) {
 		v_base = 0.08f + v_var * 0.12f;
-	} else if (phase == EN_A20_WEATHER_PHASE_STRONG) {
+	} else if (phase == EN_A20_WIND_PHASE_STRONG) {
 		v_base = 0.25f + v_var * 0.35f;
 	} else {
 		v_base = 0.15f + v_var * 0.25f;

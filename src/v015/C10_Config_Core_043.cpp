@@ -367,7 +367,7 @@ bool CL_C10_ConfigManager::loadAll(ST_A20_ConfigRoot_t& p_root) {
     A20_resetWifiDefault(*p_root.wifi);
     A20_resetMotionDefault(*p_root.motion);
     A20_resetNvsSpecDefault(*p_root.nvsSpec);
-    A20_resetWindProfileDictDefault(*p_root.windDict);
+    A20_resetWindDictDefault(*p_root.windDict);
     A20_resetSchedulesDefault(*p_root.schedules);
     A20_resetUserProfilesDefault(*p_root.userProfiles);
     A20_resetWebPageDefault(*p_root.webPage);
@@ -378,7 +378,7 @@ bool CL_C10_ConfigManager::loadAll(ST_A20_ConfigRoot_t& p_root) {
     if (!loadWifiConfig(*p_root.wifi)) v_ok = false;
     if (!loadMotionConfig(*p_root.motion)) v_ok = false;
     if (!loadNvsSpecConfig(*p_root.nvsSpec)) v_ok = false;
-    if (!loadWindProfileDict(*p_root.windDict)) v_ok = false;
+    if (!loadWindDict(*p_root.windDict)) v_ok = false;
     if (!loadSchedules(*p_root.schedules)) v_ok = false;
     if (!loadUserProfiles(*p_root.userProfiles)) v_ok = false;
     if (!loadWebPageConfig(*p_root.webPage)) v_ok = false;
@@ -561,7 +561,7 @@ void CL_C10_ConfigManager::saveDirtyConfigs() {
         return CL_C10_ConfigManager::saveUserProfiles(*reinterpret_cast<const ST_A20_UserProfilesRoot_t*>(p));
     };
     static auto saveWind_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveWindProfileDict(*reinterpret_cast<const ST_A20_WindProfileDict_t*>(p));
+        return CL_C10_ConfigManager::saveWindDict(*reinterpret_cast<const ST_A20_WindDict_t*>(p));
     };
     static auto saveWeb_wrap = [](const void* p) -> bool {
         return CL_C10_ConfigManager::saveWebPageConfig(*reinterpret_cast<const ST_A20_WebPageConfig_t*>(p));
@@ -623,7 +623,7 @@ void CL_C10_ConfigManager::saveAll(const ST_A20_ConfigRoot_t& p_root) {
     if (p_root.nvsSpec) saveNvsSpecConfig(*p_root.nvsSpec);
     if (p_root.schedules) saveSchedules(*p_root.schedules);
     if (p_root.userProfiles) saveUserProfiles(*p_root.userProfiles);
-    if (p_root.windDict) saveWindProfileDict(*p_root.windDict);
+    if (p_root.windDict) saveWindDict(*p_root.windDict);
     if (p_root.webPage) saveWebPageConfig(*p_root.webPage);
 
 }
@@ -657,7 +657,7 @@ void CL_C10_ConfigManager::toJson_All(const ST_A20_ConfigRoot_t& p,
     if (p_includeNvsSpec && p.nvsSpec) toJson_NvsSpec(*p.nvsSpec, p_doc);
     if (p_includeSchedules && p.schedules) toJson_Schedules(*p.schedules, p_doc);
     if (p_includeUserProfiles && p.userProfiles) toJson_UserProfiles(*p.userProfiles, p_doc);
-    if (p_includeWindDict && p.windDict) toJson_WindProfileDict(*p.windDict, p_doc);
+    if (p_includeWindDict && p.windDict) toJson_WindDict(*p.windDict, p_doc);
     if (p_includeWebPage && p.webPage) toJson_WebPage(*p.webPage, p_doc);
 
     CL_D10_Logger::log(EN_L10_LOG_DEBUG,

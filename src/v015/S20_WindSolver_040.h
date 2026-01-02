@@ -6,7 +6,7 @@
  * 모듈명 : Smart Nature Wind - Wind Parameter Solver
  * ------------------------------------------------------
  * 기능 요약:
- *  - WindProfileDict 기반 프리셋/스타일/보정값을 조합하여
+ *  - WindDict 기반 프리셋/스타일/보정값을 조합하여
  *    최종 제어용 바람 파라미터(ResolvedWind) 계산
  *  - ControlManager(CT10), Simulation(S10) 등에서 공용 사용
  * ------------------------------------------------------
@@ -30,7 +30,7 @@
 // Wind Profile 해석 함수
 // ------------------------------------------------------
 
-inline bool S20_resolveWindParams(const ST_A20_WindProfileDict_t& p_dict, const char* p_presetCode, const char* p_styleCode, const ST_A20_AdjustDelta_t* p_adj, ST_A20_ResolvedWind_t& p_out) {
+inline bool S20_resolveWindParams(const ST_A20_WindDict_t& p_dict, const char* p_presetCode, const char* p_styleCode, const ST_A20_AdjustDelta_t* p_adj, ST_A20_ResolvedWind_t& p_out) {
 	// 0) 출력 안전 초기화 (실패해도 안전)
 	memset(&p_out, 0, sizeof(p_out));
 	p_out.valid	 = false;
@@ -44,19 +44,19 @@ inline bool S20_resolveWindParams(const ST_A20_WindProfileDict_t& p_dict, const 
 		return false;
 	}
 
-	const ST_A20_PresetEntry_t& v_p	   = p_dict.presets[v_pi];
+	const ST_A20_PresetEntry_t& v_preset	   = p_dict.presets[v_pi];
 
 	// 2) base 로드
-	float						v_int  = v_p.base.windIntensity;
-	float						v_var  = v_p.base.windVariability;
-	float						v_gust = v_p.base.gustFrequency;
-	float						v_fl   = v_p.base.fanLimit;
-	float						v_min  = v_p.base.minFan;
+	float						v_int  = v_preset.factors.windIntensity;
+	float						v_var  = v_preset.factors.windVariability;
+	float						v_gust = v_preset.factors.gustFrequency;
+	float						v_fl   = v_preset.factors.fanLimit;
+	float						v_min  = v_preset.factors.minFan;
 
-	float						v_tL   = v_p.base.turbulenceLengthScale;
-	float						v_tS   = v_p.base.turbulenceIntensitySigma;
-	float						v_thB  = v_p.base.thermalBubbleStrength;
-	float						v_thR  = v_p.base.thermalBubbleRadius;
+	float						v_tL   = v_preset.factors.turbulenceLengthScale;
+	float						v_tS   = v_preset.factors.turbulenceIntensitySigma;
+	float						v_thB  = v_preset.factors.thermalBubbleStrength;
+	float						v_thR  = v_preset.factors.thermalBubbleRadius;
 
 	// 3) style factor 적용(스타일 없으면 스킵)
 	if (p_styleCode && p_styleCode[0]) {
@@ -78,11 +78,11 @@ inline bool S20_resolveWindParams(const ST_A20_WindProfileDict_t& p_dict, const 
 	const float v_adjFL	  = p_adj ? p_adj->fanLimit : 0.0f;
 	const float v_adjMin  = p_adj ? p_adj->minFan : 0.0f;
 
-	v_int += v_adjInt;
-	v_var += v_adjVar;
-	v_gust += v_adjGust;
-	v_fl += v_adjFL;
-	v_min += v_adjMin;
+	v_int 	+= v_adjInt;
+	v_var 	+= v_adjVar;
+	v_gust 	+= v_adjGust;
+	v_fl 	+= v_adjFL;
+	v_min 	+= v_adjMin;
 
 	// 5) clamp + 관계 보정(min <= limit)
 	p_out.windIntensity   = A40_ComFunc::clampVal<float>(v_int, 0.0f, 100.0f);
@@ -103,11 +103,11 @@ inline bool S20_resolveWindParams(const ST_A20_WindProfileDict_t& p_dict, const 
 	p_out.thermalBubbleStrength	 = (v_thB > 0.1f) ? v_thB : 0.1f;
 	p_out.thermalBubbleRadius		 = (v_thR > 1.0f) ? v_thR : 1.0f;
 
-	p_out.baseMinWind     = v_p.base.baseMinWind;
-	p_out.baseMaxWind     = v_p.base.baseMaxWind;
-	p_out.gustProbBase    = v_p.base.gustProbBase;
-	p_out.gustStrengthMax = v_p.base.gustStrengthMax;
-	p_out.thermalFreqBase = v_p.base.thermalFreqBase;
+	p_out.baseMinWind     = v_preset.factors.baseMinWind;
+	p_out.baseMaxWind     = v_preset.factors.baseMaxWind;
+	p_out.gustProbBase    = v_preset.factors.gustProbBase;
+	p_out.gustStrengthMax = v_preset.factors.gustStrengthMax;
+	p_out.thermalFreqBase = v_preset.factors.thermalFreqBase;
 
 	// 7) 코드 복사
 	strlcpy(p_out.presetCode, p_presetCode ? p_presetCode : "", sizeof(p_out.presetCode));

@@ -105,13 +105,13 @@ void CL_CT10_ControlManager::exportSummaryJson(JsonDocument& p_doc) {
 
 	// 1. Phase 인덱스 범위 방어 및 매핑 (A20_Const_Sch_044.h 기반)
     uint8_t v_phaseIdx = static_cast<uint8_t>(sim.phase);
-    if (v_phaseIdx >= EN_A20_WEATHER_PHASE_COUNT) {
-        v_phaseIdx = static_cast<uint8_t>(EN_A20_WEATHER_PHASE_CALM);
+    if (v_phaseIdx >= EN_A20_WIND_PHASE_COUNT) {
+        v_phaseIdx = static_cast<uint8_t>(EN_A20_WIND_PHASE_CALM);
     }
 
 	// // phase index range 방어
     // uint8_t v_phase = (uint8_t)sim.phase;
-    // if (v_phase >= (uint8_t)EN_A20_WEATHER_PHASE_COUNT) v_phase = 0;
+    // if (v_phase >= (uint8_t)EN_A20_WIND_PHASE_COUNT) v_phase = 0;
 
     // 2. 구조체 배열 G_A20_WindPhase_Arr에서 코드명 추출
     // UI에서 "CALM", "NORMAL" 등을 원하면 .code를, "Calm", "Normal"을 원하면 .name 사용
@@ -145,12 +145,12 @@ void CL_CT10_ControlManager::exportMetricsJson(JsonDocument& p_doc) {
 	////////////
 	// 1. Sim metrics: Phase 범위 방어 및 신규 구조체 매핑 적용
     uint8_t v_phaseIdx = static_cast<uint8_t>(sim.phase);
-    if (v_phaseIdx >= EN_A20_WEATHER_PHASE_COUNT) {
-        v_phaseIdx = static_cast<uint8_t>(EN_A20_WEATHER_PHASE_CALM);
+    if (v_phaseIdx >= EN_A20_WIND_PHASE_COUNT) {
+        v_phaseIdx = static_cast<uint8_t>(EN_A20_WIND_PHASE_CALM);
     }
 	// sim metrics (phase 범위 방어)
     // uint8_t v_phase = (uint8_t)sim.phase;
-    // if (v_phase >= (uint8_t)EN_A20_WEATHER_PHASE_COUNT) v_phase = 0;
+    // if (v_phase >= (uint8_t)EN_A20_WIND_PHASE_COUNT) v_phase = 0;
 
 
     v_m["simActive"]  = sim.active;

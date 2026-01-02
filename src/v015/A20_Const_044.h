@@ -65,7 +65,7 @@ typedef struct {
     ST_A20_WifiConfig_t*       wifi         = nullptr;
     ST_A20_MotionConfig_t*     motion       = nullptr;
     ST_A20_NvsSpecConfig_t*    nvsSpec      = nullptr;
-    ST_A20_WindProfileDict_t*  windDict     = nullptr;
+    ST_A20_WindDict_t*  windDict     = nullptr;
     ST_A20_SchedulesRoot_t*    schedules    = nullptr;
     ST_A20_UserProfilesRoot_t* userProfiles = nullptr;
     ST_A20_WebPageConfig_t*    webPage      = nullptr;

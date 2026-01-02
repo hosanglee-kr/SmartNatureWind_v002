@@ -96,7 +96,7 @@ class CL_C10_ConfigManager {
 
 	static bool loadSchedules(ST_A20_SchedulesRoot_t& p_cfg);
 	static bool loadUserProfiles(ST_A20_UserProfilesRoot_t& p_cfg);
-	static bool loadWindProfileDict(ST_A20_WindProfileDict_t& p_cfg);
+	static bool loadWindDict(ST_A20_WindDict_t& p_cfg);
 
 	static bool loadNvsSpecConfig(ST_A20_NvsSpecConfig_t& p_cfg);
 	static bool loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg);
@@ -107,7 +107,7 @@ class CL_C10_ConfigManager {
 
 	static bool saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg);
 	static bool saveUserProfiles(const ST_A20_UserProfilesRoot_t& p_cfg);
-	static bool saveWindProfileDict(const ST_A20_WindProfileDict_t& p_cfg);
+	static bool saveWindDict(const ST_A20_WindDict_t& p_cfg);
 
 	static bool saveNvsSpecConfig(const ST_A20_NvsSpecConfig_t& p_cfg);
 	static bool saveWebPageConfig(const ST_A20_WebPageConfig_t& p_cfg);
@@ -136,13 +136,13 @@ class CL_C10_ConfigManager {
 
 	static void toJson_Schedules(const ST_A20_SchedulesRoot_t& p_cfg, JsonDocument& p_doc);
 	static void toJson_UserProfiles(const ST_A20_UserProfilesRoot_t& p_cfg, JsonDocument& p_doc);
-	static void toJson_WindProfileDict(const ST_A20_WindProfileDict_t& p_cfg, JsonDocument& p_doc);
+	static void toJson_WindDict(const ST_A20_WindDict_t& p_cfg, JsonDocument& p_doc);
 
 	static void toJson_NvsSpec(const ST_A20_NvsSpecConfig_t& p_cfg, JsonDocument& p_doc);
 	static void toJson_WebPage(const ST_A20_WebPageConfig_t& p_cfg, JsonDocument& p_doc);
 
 	// =====================================================
-	// 4. JSON Patch (System/Wifi/Motion/Schedules/UserProfiles/WindProfileDict/NvsSpec/WebPage)
+	// 4. JSON Patch (System/Wifi/Motion/Schedules/UserProfiles/WindDict/NvsSpec/WebPage)
 	// =====================================================
 	static bool patchSystemFromJson(ST_A20_SystemConfig_t& p_config, const JsonDocument& p_patch);
 	static bool patchWifiFromJson(ST_A20_WifiConfig_t& p_config, const JsonDocument& p_patch);
@@ -150,7 +150,7 @@ class CL_C10_ConfigManager {
 
 	static bool patchSchedulesFromJson(ST_A20_SchedulesRoot_t& p_cfg, const JsonDocument& p_patch);
 	static bool patchUserProfilesFromJson(ST_A20_UserProfilesRoot_t& p_cfg, const JsonDocument& p_patch);
-	static bool patchWindProfileDictFromJson(ST_A20_WindProfileDict_t& p_cfg, const JsonDocument& p_patch);
+	static bool patchWindDictFromJson(ST_A20_WindDict_t& p_cfg, const JsonDocument& p_patch);
 
 	static bool patchNvsSpecFromJson(ST_A20_NvsSpecConfig_t& p_cfg, const JsonDocument& p_patch);
 	static bool patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, const JsonDocument& p_patch);

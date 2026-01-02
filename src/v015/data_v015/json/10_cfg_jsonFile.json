@@ -6,7 +6,7 @@
 		"nvsSpec"        : "/json/cfg_nvsSpec_030.json",
 		"schedules"      : "/json/cfg_schedules_030.json",
 		"userProfiles"   : "/json/cfg_userProfile_030.json",
-		"windDict"       : "/json/cfg_windDict_030.json",
+		"windDict"       : "/json/cfg_windDict_031.json",
 
         "webPage"        : "/json/cfg_pages_040.json"
   }

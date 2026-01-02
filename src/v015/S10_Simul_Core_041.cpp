@@ -56,7 +56,7 @@ void CL_S10_Simulation::stop() {
 	active				= false;
 	_fanCfgSnap			= nullptr;
 
-	phase				= EN_A20_WEATHER_PHASE_CALM;
+	phase				= EN_A20_WIND_PHASE_CALM;
 	targetWindSpeed		= 0.0f;
 	currentWindSpeed	= 0.0f;
 
@@ -82,8 +82,21 @@ void CL_S10_Simulation::resetDefaults() {
 	// 기본 Preset/Style
 	memset(presetCode, 0, sizeof(presetCode));
 	memset(styleCode, 0, sizeof(styleCode));
-	strlcpy(presetCode, "OCEAN", sizeof(presetCode));
-	strlcpy(styleCode, "BALANCE", sizeof(styleCode));
+
+	A40_ComFunc::copyStr2Buffer_safe(
+        presetCode,
+        G_A20_WindPreset_Arr[EN_A20_WINDPRESET_OCEAN].code,
+        sizeof(presetCode)
+    );
+
+    A40_ComFunc::copyStr2Buffer_safe(
+        styleCode,
+        G_A20_WindStyle_Arr[EN_A20_WINDSTYLE_BALANCE].code,
+        sizeof(styleCode)
+    );
+
+	// strlcpy(presetCode, "OCEAN", sizeof(presetCode));
+	// strlcpy(styleCode, "BALANCE", sizeof(styleCode));
 
 	// 사용자 설정
 	userIntensity		= 70.0f;
@@ -153,7 +166,7 @@ void CL_S10_Simulation::tick() {
 	float			  v_bc_target	  = 0.0f;
 	uint8_t			  v_bc_samples	  = 0;
 	float			  v_bc_delta	  = 0.0f;
-	EN_A20_WindPhase_t v_bc_phase	  = EN_A20_WEATHER_PHASE_NORMAL;
+	EN_A20_WindPhase_t v_bc_phase	  = EN_A20_WIND_PHASE_NORMAL;
 
 	portENTER_CRITICAL(&_simMutex);
 
@@ -285,8 +298,8 @@ void CL_S10_Simulation::tick() {
 
 		// [수정] phase 인덱스 범위 방어 및 신규 구조체 매핑 적용
         uint8_t v_phaseIdx = static_cast<uint8_t>(v_bc_phase);
-        if (v_phaseIdx >= EN_A20_WEATHER_PHASE_COUNT) {
-            v_phaseIdx = static_cast<uint8_t>(EN_A20_WEATHER_PHASE_CALM);
+        if (v_phaseIdx >= EN_A20_WIND_PHASE_COUNT) {
+            v_phaseIdx = static_cast<uint8_t>(EN_A20_WIND_PHASE_CALM);
         }
         // g_A20_WEATHER_PHASE_NAMES_Arr 대신 구조체 배열의 .code 사용
         v_sim["phase"]   = G_A20_WindPhase_Arr[v_phaseIdx].code;

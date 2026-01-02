@@ -12,22 +12,13 @@ typedef enum : uint8_t {
 } EN_A20_control_runMode_t;
 
 
-
-
 // 바람 단계(참고용)
 typedef enum : uint8_t {
-    EN_A20_WEATHER_PHASE_CALM = 0,
-    EN_A20_WEATHER_PHASE_NORMAL,
-    EN_A20_WEATHER_PHASE_STRONG,
-    EN_A20_WEATHER_PHASE_COUNT,
+    EN_A20_WIND_PHASE_CALM = 0,
+    EN_A20_WIND_PHASE_NORMAL,
+    EN_A20_WIND_PHASE_STRONG,
+    EN_A20_WIND_PHASE_COUNT,
 } EN_A20_WindPhase_t;
-
-// inline constexpr const char* g_A20_WEATHER_PHASE_NAMES_Arr[EN_A20_WEATHER_PHASE_COUNT] = {
-//     "CALM",
-//     "NORMAL",
-//     "STRONG",
-// };
-
 
 typedef struct {
     const EN_A20_WindPhase_t 	idx;
@@ -35,82 +26,53 @@ typedef struct {
     const char* 				name;
 } ST_A20_WindPhase_t;
 
-inline constexpr ST_A20_WindPhase_t G_A20_WindPhase_Arr[EN_A20_WEATHER_PHASE_COUNT] = {
-    { EN_A20_WEATHER_PHASE_CALM,   "CALM",   "Calm" },
-    { EN_A20_WEATHER_PHASE_NORMAL, "NORMAL", "Normal" },
-    { EN_A20_WEATHER_PHASE_STRONG, "STRONG", "Strong" },
+inline constexpr ST_A20_WindPhase_t G_A20_WindPhase_Arr[EN_A20_WIND_PHASE_COUNT] = {
+    { EN_A20_WIND_PHASE_CALM,   "CALM",   "Calm" },
+    { EN_A20_WIND_PHASE_NORMAL, "NORMAL", "Normal" },
+    { EN_A20_WIND_PHASE_STRONG, "STRONG", "Strong" },
 };
 
 // 프리셋 (레거시/참고용: 신규 sim은 문자열 preset 사용)
 typedef enum : uint8_t {
-    EN_A20_PRESET_OFF           = 0,
-    EN_A20_PRESET_COUNTRY       = 1,
-    EN_A20_PRESET_MEDITERRANEAN = 2,
-    EN_A20_PRESET_OCEAN         = 3,
-    EN_A20_PRESET_MOUNTAIN      = 4,
-    EN_A20_PRESET_PLAINS        = 5,
-    EN_A20_PRESET_HARBOR_BREEZE = 6,
-    EN_A20_PRESET_FOREST_CANOPY = 7,
-    EN_A20_PRESET_URBAN_SUNSET  = 8,
-    EN_A20_PRESET_TROPICAL_RAIN = 9,
-    EN_A20_PRESET_DESERT_NIGHT  = 10,
-    EN_A20_PRESET_COUNT
-} EN_A20_PresetMode_t;
-
-// // 프리셋 코드 배열 정의 (문자열 상수)  (참고용)
-// inline constexpr const char* g_A20_PRESET_CODES[EN_A20_PRESET_COUNT] = {
-//     "OFF",
-//     "COUNTRY",
-//     "MEDITERRANEAN",
-//     "OCEAN",
-//     "MOUNTAIN",
-//     "PLAINS",
-//     "HARBOR_BREEZE",
-//     "FOREST_CANOPY",
-//     "URBAN_SUNSET",
-//     "TROPICAL_RAIN",
-//     "DESERT_NIGHT",
-// };
-
-// inline constexpr const char* g_A20_PRESET_MODE_NAMES_Arr[EN_A20_PRESET_COUNT] = {
-//     "Off",
-//     "Country",
-//     "Mediterranean",
-//     "Ocean",
-//     "Mountain",
-//     "Plains",
-//     "Harbor Breeze",
-//     "Forest Canopy",
-//     "Urban Sunset",
-//     "Tropical Rain",
-//     "Desert Night",
-// };
+    // EN_A20_WINDPRESET_OFF           = 0,
+    EN_A20_WINDPRESET_OCEAN         = 0,
+    EN_A20_WINDPRESET_COUNTRY       = 1,
+    EN_A20_WINDPRESET_MEDITERRANEAN = 2,
+    EN_A20_WINDPRESET_MOUNTAIN      = 3,
+    EN_A20_WINDPRESET_PLAINS        = 4,
+    EN_A20_WINDPRESET_HARBOR_BREEZE = 5,
+    EN_A20_WINDPRESET_FOREST_CANOPY = 6,
+    EN_A20_WINDPRESET_URBAN_SUNSET  = 7,
+    EN_A20_WINDPRESET_TROPICAL_RAIN = 8,
+    EN_A20_WINDPRESET_DESERT_NIGHT  = 9,
+    EN_A20_WINDPRESET_COUNT
+} EN_A20_WindPreset_t;
 
 
 typedef struct {
-    const EN_A20_PresetMode_t 	idx;
+    const EN_A20_WindPreset_t 	idx;
 	const char* 				code;
     const char* 				name;
-} ST_A20_Presets_t;
+} ST_A20_WindPreset_t;
 
-inline constexpr ST_A20_Presets_t G_A20_PresetMode_Arr[EN_A20_PRESET_COUNT] = {
-    { EN_A20_PRESET_OFF,           "OFF",           "Off"           },
-    { EN_A20_PRESET_COUNTRY,       "COUNTRY",       "Country"       },
-    { EN_A20_PRESET_MEDITERRANEAN, "MEDITERRANEAN", "Mediterranean" },
-    { EN_A20_PRESET_OCEAN,         "OCEAN",         "Ocean"         },
-    { EN_A20_PRESET_MOUNTAIN,      "MOUNTAIN",      "Mountain"      },
-    { EN_A20_PRESET_PLAINS,        "PLAINS",        "Plains"        },
-    { EN_A20_PRESET_HARBOR_BREEZE, "HARBOR_BREEZE", "Harbor Breeze" },
-    { EN_A20_PRESET_FOREST_CANOPY, "FOREST_CANOPY", "Forest Canopy" },
-    { EN_A20_PRESET_URBAN_SUNSET,  "URBAN_SUNSET",  "Urban Sunset"  },
-    { EN_A20_PRESET_TROPICAL_RAIN, "TROPICAL_RAIN", "Tropical Rain" },
-    { EN_A20_PRESET_DESERT_NIGHT,  "DESERT_NIGHT",  "Desert Night"  },
+inline constexpr ST_A20_WindPreset_t G_A20_WindPreset_Arr[EN_A20_WINDPRESET_COUNT] = {
+    // { EN_A20_WINDPRESET_OFF,           "OFF",           "Off"           },
+    { EN_A20_WINDPRESET_OCEAN,         "OCEAN",         "Ocean"         },
+    { EN_A20_WINDPRESET_COUNTRY,       "COUNTRY",       "Country"       },
+    { EN_A20_WINDPRESET_MEDITERRANEAN, "MEDITERRANEAN", "Mediterranean" },
+    { EN_A20_WINDPRESET_MOUNTAIN,      "MOUNTAIN",      "Mountain"      },
+    { EN_A20_WINDPRESET_PLAINS,        "PLAINS",        "Plains"        },
+    { EN_A20_WINDPRESET_HARBOR_BREEZE, "HARBOR_BREEZE", "Harbor Breeze" },
+    { EN_A20_WINDPRESET_FOREST_CANOPY, "FOREST_CANOPY", "Forest Canopy" },
+    { EN_A20_WINDPRESET_URBAN_SUNSET,  "URBAN_SUNSET",  "Urban Sunset"  },
+    { EN_A20_WINDPRESET_TROPICAL_RAIN, "TROPICAL_RAIN", "Tropical Rain" },
+    { EN_A20_WINDPRESET_DESERT_NIGHT,  "DESERT_NIGHT",  "Desert Night"  },
 };
 
 typedef enum : uint8_t {
-    EN_A20_WINDSTYLE_ACTIVE  = 0,
-    EN_A20_WINDSTYLE_FOCUS   = 1,
-    EN_A20_WINDSTYLE_BALANCE = 2,
+    EN_A20_WINDSTYLE_BALANCE = 0,
+    EN_A20_WINDSTYLE_ACTIVE  = 1,
+    EN_A20_WINDSTYLE_FOCUS   = 2,
     EN_A20_WINDSTYLE_RELAX   = 3,
     EN_A20_WINDSTYLE_SLEEP   = 4,
     EN_A20_WINDSTYLE_COUNT
@@ -123,9 +85,9 @@ typedef struct {
 } ST_A20_WindStyles_t;
 
 inline constexpr ST_A20_WindStyles_t G_A20_WindStyle_Arr[EN_A20_WINDSTYLE_COUNT] = {
+	{ EN_A20_WINDSTYLE_BALANCE, "BALANCE", "Balance"},
 	{ EN_A20_WINDSTYLE_ACTIVE,  "ACTIVE",  "Active"},
 	{ EN_A20_WINDSTYLE_FOCUS,   "FOCUS",   "Focus"},
-	{ EN_A20_WINDSTYLE_BALANCE, "BALANCE", "Balance"},
 	{ EN_A20_WINDSTYLE_RELAX,   "RELAX",   "Relax"},
 	{ EN_A20_WINDSTYLE_SLEEP,   "SLEEP",   "Sleep"},
 };
@@ -149,12 +111,12 @@ typedef struct {
     float gustProbBase;
     float gustStrengthMax;
     float thermalFreqBase;
-} ST_A20_WindBase_t;
+} ST_A20_WindPresetFactors_t;
 
 typedef struct {
     char              code[A20_Const::MAX_CODE_LEN];
     char              name[A20_Const::MAX_NAME_LEN];
-    ST_A20_WindBase_t base;
+	ST_A20_WindPresetFactors_t factors;     // ST_A20_WindPresetFactors_t base;
 } ST_A20_PresetEntry_t;
 
 typedef struct {
@@ -173,10 +135,10 @@ typedef struct {
 typedef struct {
     uint8_t              presetCount = 0;
     uint8_t              styleCount  = 0;
-    ST_A20_PresetEntry_t presets[EN_A20_PRESET_COUNT];			// presets[A20_Const::WIND_PRESETS_MAX];
-    ST_A20_StyleEntry_t  styles[EN_A20_WINDSTYLE_COUNT];  		///styles[EN_A20_WEATHER_PHASE_COUNT];	// styles[A20_Const::WIND_STYLES_MAX];
+    ST_A20_PresetEntry_t presets[EN_A20_WINDPRESET_COUNT];			// presets[A20_Const::WIND_PRESETS_MAX];
+    ST_A20_StyleEntry_t  styles[EN_A20_WINDSTYLE_COUNT];  		// styles[A20_Const::WIND_STYLES_MAX];
 
-} ST_A20_WindProfileDict_t;
+} ST_A20_WindDict_t;
 
 
 
@@ -207,22 +169,20 @@ inline constexpr ST_A20_SegmentMode_t G_A20_SegmentMode_Arr[EN_A20_SEG_MODE_COUN
     { EN_A20_SEG_MODE_FIXED,  "FIXED",  "Fixed"  },
 };
 
-
 typedef struct {
     struct {
         bool     enabled = false;
         uint32_t minutes = 0;
     } timer;
     struct {
-        bool enabled = false;
-        char time[6] = {0};
+        bool 	enabled = false;
+        char 	time[6] = {0};
     } offTime; // "HH:MM"
     struct {
-        bool  enabled = false;
-        float temp    = 0.0f;
+        bool  	enabled = false;
+        float 	temp    = 0.0f;
     } offTemp;
 } ST_A20_AutoOff_t;
-
 
 /* ======================================================
  * 공통: Motion, AutoOff  (userProfiles/schedules 공통) : camelCase 정합

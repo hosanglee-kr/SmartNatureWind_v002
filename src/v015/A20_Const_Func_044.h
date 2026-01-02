@@ -9,7 +9,7 @@
  *  - Segment Mode String 매핑 유틸 (A20_modeFromString / A20_modeToString)
  *  - 하위 구조체 단위 Reset(Period/Segment/AutoOff/Motion/Adjust 등)
  *  - Default Reset (System/WiFi/Motion/WindDict/NvsSpec/WebPage/Schedules/UserProfiles/Root)
- *  - WindProfileDict 검색 유틸
+ *  - WindDict 검색 유틸
  * ------------------------------------------------------
  * [구현 규칙]
  *  - 항상 소스 시작 주석 부분 체계 유지 및 내용 업데이트
@@ -173,9 +173,9 @@ static inline void A20_resetScheduleSegmentDefault(ST_A20_ScheduleSegment_t& p_s
     p_seg.offMinutes = 0;
     p_seg.mode       = EN_A20_SEG_MODE_PRESET;
 
-    // 초기값으로 OFF 프리셋 코드 설정 (선택 사항)
-    A40_ComFunc::copyStr2Buffer_safe(p_seg.presetCode, G_A20_PresetMode_Arr[EN_A20_PRESET_OFF].code, sizeof(p_seg.presetCode));
-    A40_ComFunc::copyStr2Buffer_safe(p_seg.styleCode, G_A20_WindPhase_Arr[EN_A20_WEATHER_PHASE_NORMAL].code, sizeof(p_seg.styleCode));
+    // 초기값으로 EN_A20_WINDPRESET_OCEAN 프리셋 코드 설정 (선택 사항)
+    A40_ComFunc::copyStr2Buffer_safe(p_seg.presetCode, G_A20_WindPreset_Arr[EN_A20_WINDPRESET_OCEAN].code, sizeof(p_seg.presetCode));
+    A40_ComFunc::copyStr2Buffer_safe(p_seg.styleCode, G_A20_WindStyle_Arr[EN_A20_WINDSTYLE_BALANCE].code, sizeof(p_seg.styleCode));
 
     A20_resetAdjustDeltaDefault(p_seg.adjust);
     p_seg.fixedSpeed = 0.0f;
@@ -248,29 +248,29 @@ static inline void A20_resetResolvedWindDefault(ST_A20_ResolvedWind_t& p_r) {
 // -------------------------
 // Wind Dict entries
 // -------------------------
-static inline void A20_resetWindBaseDefault(ST_A20_WindBase_t& p_b) {
-    p_b.windIntensity            = 70.0f;
-    p_b.gustFrequency            = 40.0f;
-    p_b.windVariability          = 50.0f;
-    p_b.fanLimit                 = 95.0f;
-    p_b.minFan                   = 10.0f;
-    p_b.turbulenceLengthScale    = 40.0f;
-    p_b.turbulenceIntensitySigma = 0.5f;
-    p_b.thermalBubbleStrength    = 2.0f;
-    p_b.thermalBubbleRadius      = 18.0f;
+static inline void A20_resetWindPresetFactorsDefault(ST_A20_WindPresetFactors_t& p_factors) {
+    p_factors.windIntensity            = 70.0f;
+    p_factors.gustFrequency            = 40.0f;
+    p_factors.windVariability          = 50.0f;
+    p_factors.fanLimit                 = 95.0f;
+    p_factors.minFan                   = 10.0f;
+    p_factors.turbulenceLengthScale    = 40.0f;
+    p_factors.turbulenceIntensitySigma = 0.5f;
+    p_factors.thermalBubbleStrength    = 2.0f;
+    p_factors.thermalBubbleRadius      = 18.0f;
 
-    p_b.baseMinWind     = 1.8f;
-    p_b.baseMaxWind     = 5.5f;
-    p_b.gustProbBase    = 0.040f;
-    p_b.gustStrengthMax = 2.10f;
-    p_b.thermalFreqBase = 0.022f;
+    p_factors.baseMinWind     = 1.8f;
+    p_factors.baseMaxWind     = 5.5f;
+    p_factors.gustProbBase    = 0.040f;
+    p_factors.gustStrengthMax = 2.10f;
+    p_factors.thermalFreqBase = 0.022f;
 }
 
 static inline void A20_resetPresetEntryDefault(ST_A20_PresetEntry_t& p_p) {
     memset(&p_p, 0, sizeof(p_p));
     A40_ComFunc::copyStr2Buffer_safe(p_p.code, "", sizeof(p_p.code));
     A40_ComFunc::copyStr2Buffer_safe(p_p.name, "", sizeof(p_p.name));
-    A20_resetWindBaseDefault(p_p.base);
+    A20_resetWindPresetFactorsDefault(p_p.factors);
 }
 
 static inline void A20_resetStyleFactorsDefault(ST_A20_StyleFactors_t& p_f) {
@@ -438,11 +438,11 @@ inline void A20_resetMotionDefault(ST_A20_MotionConfig_t& p_cfg) {
 }
 
 // -------------------------
-// WindProfileDict (cfg_windDict_xxx.json)
+// WindDict (cfg_windDict_xxx.json)
 // -------------------------
-inline void A20_resetWindProfileDictDefault(ST_A20_WindProfileDict_t& p_dict) {
+inline void A20_resetWindDictDefault(ST_A20_WindDict_t& p_dict) {
 	// 1. C++ 스타일의 안전한 초기화 (memset 대체)
-    p_dict = ST_A20_WindProfileDict_t{};
+    p_dict = ST_A20_WindDict_t{};
 	// memset(&p_dict, 0, sizeof(p_dict));
 
 	constexpr size_t v_presetMax = sizeof(p_dict.presets) / sizeof(p_dict.presets[0]);
@@ -456,7 +456,7 @@ inline void A20_resetWindProfileDictDefault(ST_A20_WindProfileDict_t& p_dict) {
     }
 
     // // 전체 엔트리 기본값(누락 방지)
-    // for (uint8_t v_i = 0; v_i < EN_A20_PRESET_COUNT; v_i++) {
+    // for (uint8_t v_i = 0; v_i < EN_A20_WINDPRESET_COUNT; v_i++) {
     //     A20_resetPresetEntryDefault(p_dict.presets[v_i]);
     // }
     // for (uint8_t v_i = 0; v_i < EN_A20_WINDSTYLE_COUNT; v_i++) {
@@ -465,11 +465,14 @@ inline void A20_resetWindProfileDictDefault(ST_A20_WindProfileDict_t& p_dict) {
 
     // 샘플 기본 1개
     p_dict.presetCount = 1;
+
+	// G_A20_WindPreset_Arr[EN_A20_WINDPRESET_OCEAN].code
+
     A40_ComFunc::copyStr2Buffer_safe(p_dict.presets[0].code, "OCEAN", sizeof(p_dict.presets[0].code));
     A40_ComFunc::copyStr2Buffer_safe(p_dict.presets[0].name, "Ocean Breeze", sizeof(p_dict.presets[0].name));
-    // base는 resetWindBaseDefault로 이미 채워졌지만, 일부 값을 덮어씌울 수 있음(필요 시)
-    p_dict.presets[0].base.gustFrequency = 45.0f;
-    p_dict.presets[0].base.fanLimit      = 90.0f;
+    // base는 resetWindPresetFactorsDefault로 이미 채워졌지만, 일부 값을 덮어씌울 수 있음(필요 시)
+    p_dict.presets[0].factors.gustFrequency = 45.0f;
+    p_dict.presets[0].factors.fanLimit      = 90.0f;
 
     p_dict.styleCount = 1;
     A40_ComFunc::copyStr2Buffer_safe(p_dict.styles[0].code, "BALANCE", sizeof(p_dict.styles[0].code));
@@ -650,20 +653,20 @@ inline void A20_resetToDefault(ST_A20_ConfigRoot_t& p_root) {
     if (p_root.wifi)         A20_resetWifiDefault(*p_root.wifi);
     if (p_root.motion)       A20_resetMotionDefault(*p_root.motion);
     if (p_root.nvsSpec)      A20_resetNvsSpecDefault(*p_root.nvsSpec);
-    if (p_root.windDict)     A20_resetWindProfileDictDefault(*p_root.windDict);
+    if (p_root.windDict)     A20_resetWindDictDefault(*p_root.windDict);
     if (p_root.schedules)    A20_resetSchedulesDefault(*p_root.schedules);
     if (p_root.userProfiles) A20_resetUserProfilesDefault(*p_root.userProfiles);
     if (p_root.webPage)      A20_resetWebPageDefault(*p_root.webPage);
 }
 
 // ======================================================
-// 6) WindProfileDict 검색 유틸 (누락/축소 방지)
+// 6) WindDict 검색 유틸 (누락/축소 방지)
 // ======================================================
 
 inline int8_t A20_getStaticPresetIndexByCode(const char* p_code) {
     if (!p_code || !p_code[0]) return -1;
-    for (uint8_t v_i = 0; v_i < EN_A20_PRESET_COUNT; v_i++) {
-        if (strcasecmp(p_code, G_A20_PresetMode_Arr[v_i].code) == 0) return (int8_t)v_i;
+    for (uint8_t v_i = 0; v_i < EN_A20_WINDPRESET_COUNT; v_i++) {
+        if (strcasecmp(p_code, G_A20_WindPreset_Arr[v_i].code) == 0) return (int8_t)v_i;
     }
     return -1;
 }
@@ -673,19 +676,19 @@ inline int8_t A20_getStaticPresetIndexByCode(const char* p_code) {
 // ======================================================
 inline const char* A20_getPresetNameByCode(const char* p_code) {
     int8_t v_idx = A20_getStaticPresetIndexByCode(p_code);
-    if (v_idx >= 0) return G_A20_PresetMode_Arr[v_idx].name;
+    if (v_idx >= 0) return G_A20_WindPreset_Arr[v_idx].name;
     return "Unknown";
 }
 
 // inline int8_t A20_getPresetIndexByCode(const char* p_code) {
 //     if (!p_code) return -1;
-//     for (int8_t v_i = 0; v_i < EN_A20_PRESET_COUNT; v_i++) {
+//     for (int8_t v_i = 0; v_i < EN_A20_WINDPRESET_COUNT; v_i++) {
 //         if (strcasecmp(p_code, g_A20_PRESET_CODES[v_i]) == 0) return v_i;
 //     }
 //     return -1;
 // }
 
-inline int16_t A20_findPresetIndexByCode(const ST_A20_WindProfileDict_t& p_dict, const char* p_code) {
+inline int16_t A20_findPresetIndexByCode(const ST_A20_WindDict_t& p_dict, const char* p_code) {
     if (!p_code || !p_code[0]) return -1;
     for (uint8_t v_i = 0; v_i < p_dict.presetCount; v_i++) {
         if (strcasecmp(p_dict.presets[v_i].code, p_code) == 0) return (int16_t)v_i;
@@ -693,7 +696,7 @@ inline int16_t A20_findPresetIndexByCode(const ST_A20_WindProfileDict_t& p_dict,
     return -1;
 }
 
-// inline int16_t A20_findPresetIndexByCode(const ST_A20_WindProfileDict_t& p_dict, const char* p_code) {
+// inline int16_t A20_findPresetIndexByCode(const ST_A20_WindDict_t& p_dict, const char* p_code) {
 //     if (!p_code || !p_code[0]) return -1;
 //     for (uint8_t v_i = 0; v_i < p_dict.presetCount; v_i++) {
 //         if (strcasecmp(p_dict.presets[v_i].code, p_code) == 0) return (int16_t)v_i;
@@ -701,7 +704,7 @@ inline int16_t A20_findPresetIndexByCode(const ST_A20_WindProfileDict_t& p_dict,
 //     return -1;
 // }
 
-inline int16_t A20_findStyleIndexByCode(const ST_A20_WindProfileDict_t& p_dict, const char* p_code) {
+inline int16_t A20_findStyleIndexByCode(const ST_A20_WindDict_t& p_dict, const char* p_code) {
     if (!p_code || !p_code[0]) return -1;
     for (uint8_t v_i = 0; v_i < p_dict.styleCount; v_i++) {
         if (strcasecmp(p_dict.styles[v_i].code, p_code) == 0) return (int16_t)v_i;
@@ -709,7 +712,7 @@ inline int16_t A20_findStyleIndexByCode(const ST_A20_WindProfileDict_t& p_dict, 
     return -1;
 }
 
-// inline int16_t A20_findStyleIndexByCode(const ST_A20_WindProfileDict_t& p_dict, const char* p_code) {
+// inline int16_t A20_findStyleIndexByCode(const ST_A20_WindDict_t& p_dict, const char* p_code) {
 //     if (!p_code || !p_code[0]) return -1;
 //     for (uint8_t v_i = 0; v_i < p_dict.styleCount; v_i++) {
 //         if (strcasecmp(p_dict.styles[v_i].code, p_code) == 0) return (int16_t)v_i;

@@ -83,7 +83,7 @@
 
 	// 프리셋 한글 매핑 (백엔드 code/name과 무관하게 표시용)
 	const presetNameMap = {
-		OFF           : "고정풍속",
+	//	OFF           : "고정풍속",
 		COUNTRY       : "들판",
 		MEDITERRANEAN : "지중해",
 		OCEAN         : "바다",

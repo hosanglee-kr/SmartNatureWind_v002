@@ -213,3 +213,183 @@ class CL_A40_muxGuard_Critical {
   private:
     portMUX_TYPE* _mux = nullptr;
 };
+
+
+
+
+
+namespace A40_IO {
+
+static inline void _buildPathWithSuffix(char* p_dst, size_t p_dstSize, const char* p_path, const char* p_suffix) {
+    if (!p_dst || p_dstSize == 0) return;
+    memset(p_dst, 0, p_dstSize);
+    if (!p_path) return;
+    // p_suffix 포함해서 snprintf 사용
+    snprintf(p_dst, p_dstSize, "%s%s", p_path, (p_suffix ? p_suffix : ""));
+}
+
+static inline bool _parseJsonFileToDoc(const char* p_path, JsonDocument& p_doc, bool p_isBackupTag) {
+    File v_f = LittleFS.open(p_path, "r");
+    if (!v_f) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] %s open failed: %s", p_isBackupTag ? "Bak" : "Main", p_path);
+        return false;
+    }
+
+    DeserializationError v_err = deserializeJson(p_doc, v_f);
+    v_f.close();
+
+    if (v_err) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] %s parse error: %s (%s)",
+                           p_isBackupTag ? "Bak" : "Main", v_err.c_str(), p_path);
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief 파일 -> JsonDocument 로드 (main 우선, 실패 시 .bak로 복구/복원)
+ * @note  - p_useBackup=false면 .bak 관련 경로/복구 동작을 하지 않습니다.
+ *        - 최초 실행으로 main/bak 둘 다 없을 수 있으므로 false 반환 + INFO 로그.
+ */
+inline bool Load_File2JsonDoc_V2(const char* p_path, JsonDocument& p_doc, bool p_useBackup = true) {
+    if (!p_path || !p_path[0]) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Load failed: Invalid path");
+        return false;
+    }
+
+    char v_bakPath[A20_Const::LEN_PATH + 8];
+    _buildPathWithSuffix(v_bakPath, sizeof(v_bakPath), p_path, ".bak");
+
+    // 0) main 자체가 없을 때
+    if (!LittleFS.exists(p_path)) {
+        if (p_useBackup && LittleFS.exists(v_bakPath)) {
+            // bak -> main 복구 시도
+            if (LittleFS.rename(v_bakPath, p_path)) {
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO] Main missing. Restored from .bak: %s", p_path);
+            } else {
+                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Restore rename failed: %s -> %s", v_bakPath, p_path);
+                // rename 실패했어도 bak에서 직접 로드라도 시도
+            }
+        } else {
+            CL_D10_Logger::log(EN_L10_LOG_INFO, "[IO] No file%s: %s",
+                               p_useBackup ? " & No backup" : "", p_path);
+            return false;
+        }
+    }
+
+    // 1) main 로드 시도
+    p_doc.clear();
+    if (_parseJsonFileToDoc(p_path, p_doc, false)) {
+        return true;
+    }
+
+    // 2) main 파싱 실패 -> bak 최종 시도
+    if (p_useBackup && LittleFS.exists(v_bakPath)) {
+        JsonDocument v_tmpDoc; // ❗규칙이 "함수당 JsonDocument 1개" 강제라면 제거해야 함
+        // 하지만 현재 규칙이 “함수 내 단일 타입”인지 “단일 객체”인지 혼재되어 있어,
+        // 완전 준수하려면 아래처럼 p_doc 하나로만 처리하세요(아래가 단일-doc 버전)
+
+        // ---- 단일 JsonDocument 버전(권장) ----
+        p_doc.clear();
+        if (_parseJsonFileToDoc(v_bakPath, p_doc, true)) {
+            // bak이 유효하니 main을 교체(복구)
+            if (LittleFS.exists(p_path)) {
+                LittleFS.remove(p_path);
+            }
+            if (LittleFS.rename(v_bakPath, p_path)) {
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO] Recovered from valid backup: %s", p_path);
+                return true;
+            } else {
+                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Backup rename->main failed: %s -> %s", v_bakPath, p_path);
+                // bak 로드는 성공했으니, 일단 doc은 유효. 다만 파일 복구는 실패.
+                return true;
+            }
+        }
+    }
+
+    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Critical: All load attempts failed: %s", p_path);
+    return false;
+}
+
+/**
+ * @brief JsonDocument -> 파일 저장 (tmp -> main, 옵션: main->bak)
+ * @note  - 전원차단/중간쓰기 대비: tmp에 먼저 기록 후 rename으로 반영
+ *        - p_useBackup=true면 기존 main을 .bak으로 보관
+ */
+inline bool Save_JsonDoc2File_V2(const char* p_path, const JsonDocument& p_doc, bool p_useBackup = true) {
+    if (!p_path || !p_path[0]) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Save failed: Invalid path");
+        return false;
+    }
+
+    char v_bakPath[A20_Const::LEN_PATH + 8];
+    char v_tmpPath[A20_Const::LEN_PATH + 8];
+    _buildPathWithSuffix(v_bakPath, sizeof(v_bakPath), p_path, ".bak");
+    _buildPathWithSuffix(v_tmpPath, sizeof(v_tmpPath), p_path, ".tmp");
+
+    // 0) tmp 청소
+    if (LittleFS.exists(v_tmpPath)) {
+        LittleFS.remove(v_tmpPath);
+    }
+
+    // 1) tmp로 먼저 저장
+    File v_f = LittleFS.open(v_tmpPath, "w");
+    if (!v_f) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Save failed: tmp open error %s", v_tmpPath);
+        return false;
+    }
+
+    size_t v_bytes = serializeJsonPretty(p_doc, v_f);
+    v_f.close();
+
+    if (v_bytes == 0) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Save failed: Zero bytes written %s", v_tmpPath);
+        LittleFS.remove(v_tmpPath);
+        return false;
+    }
+
+    bool v_hadMain = LittleFS.exists(p_path);
+
+    // 2) main -> bak (옵션)
+    if (v_hadMain && p_useBackup) {
+        if (LittleFS.exists(v_bakPath)) {
+            LittleFS.remove(v_bakPath);
+        }
+        if (!LittleFS.rename(p_path, v_bakPath)) {
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Save failed: Cannot create .bak for %s", p_path);
+            // tmp는 남아있으니 삭제
+            LittleFS.remove(v_tmpPath);
+            return false;
+        }
+    } else if (v_hadMain && !p_useBackup) {
+        // 백업 미사용이면 기존 main 제거 후 교체
+        LittleFS.remove(p_path);
+    }
+
+    // 3) tmp -> main 반영
+    if (!LittleFS.rename(v_tmpPath, p_path)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Save failed: tmp rename->main error %s", p_path);
+
+        // rollback: bak가 있으면 복원 시도
+        if (p_useBackup && LittleFS.exists(v_bakPath)) {
+            if (!LittleFS.exists(p_path)) {
+                if (LittleFS.rename(v_bakPath, p_path)) {
+                    CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO] Rollback restored from .bak: %s", p_path);
+                } else {
+                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO] Rollback rename failed: %s -> %s", v_bakPath, p_path);
+                }
+            }
+        }
+
+        // tmp 청소
+        if (LittleFS.exists(v_tmpPath)) {
+            LittleFS.remove(v_tmpPath);
+        }
+        return false;
+    }
+
+    // 성공 시 로그 최소화(FLASH/시리얼 부담)
+    return true;
+}
+
+} // namespace A40_IO

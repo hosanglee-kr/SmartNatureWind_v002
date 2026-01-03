@@ -1,7 +1,7 @@
 #pragma once
 /*
  * ------------------------------------------------------
- * 소스명 : C10_Config_comUtil_001.h
+ * 소스명 : C10_Config_ComFunc_001.h
  * 모듈 약어 : C10
  * 모듈명 : Smart Nature Wind Configuration Manager - Common Util
  * ------------------------------------------------------

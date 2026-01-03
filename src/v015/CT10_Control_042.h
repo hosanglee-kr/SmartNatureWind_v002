@@ -1,7 +1,7 @@
 #pragma once
 /*
  * ------------------------------------------------------
- * 소스명 : CT10_Control_041.h
+ * 소스명 : CT10_Control_042.h
  * 모듈약어 : CT10
  * 모듈명 : Smart Nature Wind 제어 통합 Manager (v026)
  * ------------------------------------------------------
@@ -51,12 +51,12 @@
 #include <time.h>
 
 // 종속성 모듈 헤더
-#include "A20_Const_041.h"
-#include "C10_Config_041.h"
+#include "A20_Const_044.h"
+#include "C10_Config_042.h"
 #include "D10_Logger_040.h"
 #include "M10_MotionLogic_040.h"
 #include "P10_PWM_ctrl_040.h"
-#include "S10_Simul_040.h"
+#include "S10_Simul_041.h"
 #include "S20_WindSolver_040.h"
 
 // ------------------------------------------------------
@@ -101,8 +101,9 @@ typedef struct {
 	float		  offTemp;		   // AutoOff가 발동되는 온도 (섭씨)
 } ST_CT10_AutoOffRuntime_t;
 
-
-//// void CT10_WS_bindToW10();
+// ------------------------------------------------------
+// WS Scheduler (CT10_Control_WS_xxx.cpp)
+// ------------------------------------------------------
 void CT10_WS_begin();
 void CT10_WS_tick();
 
@@ -111,15 +112,15 @@ void CT10_WS_tick();
 // ------------------------------------------------------
 void CT10_markDirtyFromSim(const char* p_key);
 
-
+// ------------------------------------------------------
 // WS Broker injection (W10 바인딩용)
+// ------------------------------------------------------
 void CT10_WS_setBrokers(
 	void (*p_state)(JsonDocument&, bool),
 	void (*p_metrics)(JsonDocument&, bool),
 	void (*p_chart)(JsonDocument&, bool),
 	void (*p_summary)(JsonDocument&, bool),
-	void (*p_cleanup)(),
-	void (*p_setIntervalsFn)(const uint16_t p_itvMs[G_A20_WS_CH_COUNT])
+	void (*p_cleanup)()
 );
 
 // ======================================================
@@ -215,7 +216,7 @@ class CL_CT10_ControlManager {
 	// --------------------------------------------------
 	// 내부 상수 (Magic number)
 	// --------------------------------------------------
-	static constexpr uint32_t S_TICK_MIN_INTERVAL_MS	 = 40UL;	// 25Hz
+	static constexpr uint32_t S_TICK_MIN_INTERVAL_MS	   = 40UL;		// 25Hz
 	static constexpr uint32_t S_METRICS_PUSH_INTERVAL_MS = 1500UL;	// metrics dirty 주기
 
   private:
@@ -237,7 +238,6 @@ class CL_CT10_ControlManager {
 
 	// segment 처리: schedule/profile 오버로드(템플릿 제거)
 	bool tickSegmentSequence(bool p_repeat, uint8_t p_repeatCount, ST_A20_ScheduleSegment_t* p_segs, uint8_t p_count, ST_CT10_SegmentRuntime_t& p_rt);
-
 	bool tickSegmentSequence(bool p_repeat, uint8_t p_repeatCount, ST_A20_UserProfileSegment_t* p_segs, uint8_t p_count, ST_CT10_SegmentRuntime_t& p_rt);
 
 	void applySegmentOn(const ST_A20_ScheduleSegment_t& p_seg);
@@ -264,5 +264,3 @@ class CL_CT10_ControlManager {
 	// 생성자 숨김
 	CL_CT10_ControlManager() = default;
 };
-
-

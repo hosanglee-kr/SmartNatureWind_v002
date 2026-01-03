@@ -1,9 +1,9 @@
 #pragma once
 /*
  * ------------------------------------------------------
- * 소스명 : A20_Const_041.h
+ * 소스명 : A20_Const_043.h
  * 모듈약어 : A20
- * 모듈명 : Smart Nature Wind 공용 상수/타입/구조체 선언 (v030)
+ * 모듈명 : Smart Nature Wind 공용 상수/타입/구조체 선언
  * ------------------------------------------------------
  * 기능 요약
  *  - 파일 경로/버퍼/개수 제한 상수
@@ -46,69 +46,71 @@
 #include <string.h>
 #include <strings.h>
 
+
+#include "A20_Const_WS_040.h"
+
 /* ======================================================
  * 경로/파일 이름 (최신 스펙)
  * ====================================================== */
 namespace A20_Const {
 
-// 펌웨어/파일버전
-constexpr char FW_VERSION[]    = "FW_Ver_1.0.0";
-constexpr char CFG_JSON_FILE[] = "/json/10_cfg_jsonFile.json";
+	// 펌웨어/파일버전
+	constexpr char FW_VERSION[]    = "FW_Ver_1.0.0";
+	constexpr char CFG_JSON_FILE[] = "/json/10_cfg_jsonFile.json";
 
-// 모듈별 버전 (Web API 응답용)
-constexpr char VER_CONTROL[] = "CT10_ControlManager_026";
-constexpr char VER_CONFIG[]  = "C10_ConfigManager_041";
-constexpr char VER_API[]     = "W10_WebAPI_050";
-constexpr char VER_SIMUL[]   = "S10_Simul_040";
+	// 모듈별 버전 (Web API 응답용)
+	constexpr char VER_CONTROL[] = "CT10_ControlManager_026";
+	constexpr char VER_CONFIG[]  = "C10_ConfigManager_041";
+	constexpr char VER_API[]     = "W10_WebAPI_050";
+	constexpr char VER_SIMUL[]   = "S10_Simul_040";
 
-// 문자열 및 배열 길이 정의
-constexpr uint8_t LEN_NAME   = 64;
-constexpr uint8_t LEN_PATH   = 160;
-constexpr uint8_t LEN_SSID   = 32;
-constexpr uint8_t LEN_PASS   = 32;
-constexpr uint8_t LEN_PRESET = 32;
-constexpr uint8_t LEN_ALIAS  = 32;
-constexpr uint8_t LEN_TIME   = 8;
-constexpr uint8_t LEN_LEVEL  = 16;
+	// 문자열 및 배열 길이 정의
+	constexpr uint8_t LEN_NAME   = 64;
+	constexpr uint8_t LEN_PATH   = 160;
+	constexpr uint8_t LEN_SSID   = 32;
+	constexpr uint8_t LEN_PASS   = 32;
+	constexpr uint8_t LEN_PRESET = 32;
+	constexpr uint8_t LEN_ALIAS  = 32;
+	constexpr uint8_t LEN_TIME   = 8;
+	constexpr uint8_t LEN_LEVEL  = 16;
 
-// 배열 개수
-constexpr uint8_t MAX_BLE_DEVICES  = 8;
-constexpr uint8_t MAX_STA_NETWORKS = 5;
+	// 배열 개수
+	constexpr uint8_t MAX_BLE_DEVICES  = 8;
+	constexpr uint8_t MAX_STA_NETWORKS = 5;
 
-constexpr uint8_t WIND_PRESETS_MAX = 16;
-constexpr uint8_t WIND_STYLES_MAX  = 16;
+	constexpr uint8_t WIND_PRESETS_MAX = 16;
+	constexpr uint8_t WIND_STYLES_MAX  = 16;
 
-// 배열 개수 제한
-constexpr uint8_t MAX_SCHEDULES             = 8;
-constexpr uint8_t MAX_SEGMENTS_PER_SCHEDULE = 8;
-constexpr uint8_t MAX_USER_PROFILES         = 6; // 최신 스펙: 6개
-constexpr uint8_t MAX_SEGMENTS_PER_PROFILE  = 8;
+	// 배열 개수 제한
+	constexpr uint8_t MAX_SCHEDULES             = 8;
+	constexpr uint8_t MAX_SEGMENTS_PER_SCHEDULE = 8;
+	constexpr uint8_t MAX_USER_PROFILES         = 6; // 최신 스펙: 6개
+	constexpr uint8_t MAX_SEGMENTS_PER_PROFILE  = 8;
 
-// 문자열 길이 제한
-constexpr size_t MAX_NAME_LEN = 32;
-constexpr size_t MAX_CODE_LEN = 24;
+	// 문자열 길이 제한
+	constexpr size_t MAX_NAME_LEN = 32;
+	constexpr size_t MAX_CODE_LEN = 24;
 
-// NVS Spec 상수(배열 제한)
-constexpr uint8_t MAX_NVS_ENTRIES     = 32;
-constexpr uint8_t LEN_NVS_KEY         = 32;
-constexpr uint8_t LEN_NVS_TYPE        = 16;
-constexpr uint8_t LEN_NVS_DEFAULT_STR = 64;
-constexpr uint8_t LEN_NVS_NAMESPACE   = 16;
+	// NVS Spec 상수(배열 제한)
+	constexpr uint8_t MAX_NVS_ENTRIES     = 32;
+	constexpr uint8_t LEN_NVS_KEY         = 32;
+	constexpr uint8_t LEN_NVS_TYPE        = 16;
+	constexpr uint8_t LEN_NVS_DEFAULT_STR = 64;
+	constexpr uint8_t LEN_NVS_NAMESPACE   = 16;
 
-// WebPage 상수(배열 제한)
-constexpr uint8_t MAX_PAGES         = 24;
-constexpr uint8_t MAX_PAGE_ASSETS   = 8;
-constexpr uint8_t MAX_REDIRECTS     = 32;
-constexpr uint8_t MAX_COMMON_ASSETS = 16;
+	// WebPage 상수(배열 제한)
+	constexpr uint8_t MAX_PAGES         = 24;
+	constexpr uint8_t MAX_PAGE_ASSETS   = 8;
+	constexpr uint8_t MAX_REDIRECTS     = 32;
+	constexpr uint8_t MAX_COMMON_ASSETS = 16;
 
-constexpr uint8_t LEN_URI   = 96;
-constexpr uint8_t LEN_LABEL = 32;
+	constexpr uint8_t LEN_URI   = 96;
+	constexpr uint8_t LEN_LABEL = 32;
 
 } // namespace A20_Const
 
 
-
-
+/*
 // ------------------------------------------------------
 // WS 채널 인덱스 (0=state,1=metrics,2=chart,3=summary)
 // ------------------------------------------------------
@@ -119,9 +121,7 @@ inline constexpr uint8_t G_A20_WS_CH_SUMMARY = 3;
 inline constexpr uint8_t G_A20_WS_CH_COUNT   = 4;
 
 // (옵션) 채널 이름 (로그/디버그용)
-inline constexpr const char* G_A20_WS_CH_NAMES_Arr[G_A20_WS_CH_COUNT] = {
-    "state", "metrics", "chart", "summary"
-};
+inline constexpr const char* G_A20_WS_CH_NAMES_Arr[G_A20_WS_CH_COUNT] = {"state", "metrics", "chart", "summary"};
 
 // ------------------------------------------------------
 // WS 기본 인터벌(ms) (fallback)
@@ -134,16 +134,14 @@ inline constexpr uint16_t G_A20_WS_DEFAULT_ITV_SUMMARY_MS = 1500;
 // ------------------------------------------------------
 // chart payload 기반 강스로틀 기본값
 // ------------------------------------------------------
-inline constexpr uint16_t G_A20_WS_DEFAULT_CHART_LARGE_BYTES = 3500;
+inline constexpr uint16_t G_A20_WS_DEFAULT_CHART_LARGE_BYTES  = 3500;
 inline constexpr uint8_t  G_A20_WS_DEFAULT_CHART_THROTTLE_MUL = 2;
 
 // ------------------------------------------------------
 // cleanupClients 호출 주기 기본값(ms)
 // ------------------------------------------------------
 inline constexpr uint16_t G_A20_WS_DEFAULT_CLEANUP_MS = 2000;
-
-
-
+*/
 
 // ======================================================
 // ENUM 정의
@@ -158,7 +156,7 @@ typedef enum : uint8_t {
 typedef enum : uint8_t {
     EN_A20_CONTROL_RUN_CONTINUE = 0,
     EN_A20_CONTROL_RUN_SCHEDULE = 1,
-} T_A20_control_runMode_t;
+} EN_A20_control_runMode_t;
 
 // 바람 단계(참고용)
 typedef enum : uint8_t {
@@ -166,7 +164,7 @@ typedef enum : uint8_t {
     EN_A20_WEATHER_PHASE_NORMAL,
     EN_A20_WEATHER_PHASE_STRONG,
     EN_A20_WEATHER_PHASE_COUNT,
-} T_A20_WindPhase_t;
+} EN_A20_WindPhase_t;
 
 inline constexpr const char* g_A20_WEATHER_PHASE_NAMES_Arr[EN_A20_WEATHER_PHASE_COUNT] = {
     "CALM",
@@ -188,7 +186,7 @@ typedef enum : uint8_t {
     EN_A20_PRESET_TROPICAL_RAIN = 9,
     EN_A20_PRESET_DESERT_NIGHT  = 10,
     EN_A20_PRESET_COUNT
-} T_A20_PresetMode_t;
+} EN_A20_PresetMode_t;
 
 // 프리셋 코드 배열 정의 (문자열 상수)  (참고용)
 inline constexpr const char* g_A20_PRESET_CODES[EN_A20_PRESET_COUNT] = {
@@ -252,10 +250,10 @@ typedef struct {
     uint8_t hardPercentMax;    // 팬/소음/내구성 상으로 무리 없는 상한 (예: 90)
 } ST_A20_FanConfig_t;
 
-
 // ------------------------------------------------------
-// system.webSocket 설정
+// system.webSocket 설정(A20_Const_WS_xxx.h에서 정의됨)
 // ------------------------------------------------------
+/*
 typedef struct {
     // 채널별 WS 전송 간격(ms)
     // index: 0=state, 1=metrics, 2=chart, 3=summary
@@ -263,16 +261,17 @@ typedef struct {
 
     // 채널 우선순위 순서(인덱스)
     // 예: [0,1,2,3] => state > metrics > chart > summary
-    uint8_t  wsPriority[G_A20_WS_CH_COUNT];
+    uint8_t wsPriority[G_A20_WS_CH_COUNT];
 
     // chart payload(bytes)가 크면 chart interval을 곱으로 늘림
-    uint16_t chartLargeBytes;   // ex) 3500
-    uint8_t  chartThrottleMul;  // ex) 2 (interval * 2)
+    uint16_t chartLargeBytes;  // ex) 3500
+    uint8_t  chartThrottleMul; // ex) 2 (interval * 2)
 
     // W10 cleanupClients 호출 주기(ms)
     uint16_t wsCleanupMs;
 
 } ST_A20_WebSocketConfig_t;
+*/
 
 
 // ------------------------------------------------------
@@ -424,19 +423,6 @@ typedef enum : uint8_t {
  * Segment Mode <-> String 매핑 유틸
  * ====================================================== */
 inline constexpr const char* g_A20_SEG_MODE_NAMES[EN_A20_SEG_MODE_COUNT] = {"PRESET", "FIXED"};
-
-inline EN_A20_segment_mode_t A20_modeFromString(const char* p_str) {
-    if (!p_str) return EN_A20_SEG_MODE_PRESET;
-    for (uint8_t v_i = 0; v_i < EN_A20_SEG_MODE_COUNT; v_i++) {
-        if (strcasecmp(p_str, g_A20_SEG_MODE_NAMES[v_i]) == 0) return static_cast<EN_A20_segment_mode_t>(v_i);
-    }
-    return EN_A20_SEG_MODE_PRESET;
-}
-
-inline const char* A20_modeToString(EN_A20_segment_mode_t p_mode) {
-    if (p_mode >= EN_A20_SEG_MODE_COUNT) return "PRESET";
-    return g_A20_SEG_MODE_NAMES[p_mode];
-}
 
 /* ======================================================
  * Wind Dict (cfg_windDict_xxx.json) : camelCase 정합
@@ -684,8 +670,8 @@ typedef struct ST_A20_PageItem_t {
 } ST_A20_PageItem_t;
 
 typedef struct ST_A20_ReDirectItem_t {
-    char uriFrom[A20_Const::LEN_URI]; // JSON tag: "uriFrom"
-    char uriTo[A20_Const::LEN_URI];   // JSON tag: "uriTo"
+    char uriFrom[A20_Const::LEN_URI];
+    char uriTo[A20_Const::LEN_URI];
 } ST_A20_ReDirectItem_t;
 
 typedef struct ST_A20_CommonAsset_t {
@@ -696,14 +682,14 @@ typedef struct ST_A20_CommonAsset_t {
 
 typedef struct ST_A20_WebPageConfig_t {
     // JSON 루트 그대로: pages[], reDirect[], assets[]
-    uint8_t           pageCount = 0;
-    ST_A20_PageItem_t pages[A20_Const::MAX_PAGES];
+    uint8_t           		pageCount = 0;
+    ST_A20_PageItem_t 		pages[A20_Const::MAX_PAGES];
 
-    uint8_t               reDirectCount = 0;
-    ST_A20_ReDirectItem_t reDirect[A20_Const::MAX_REDIRECTS]; // JSON tag: "reDirect"
+    uint8_t               	reDirectCount = 0;
+    ST_A20_ReDirectItem_t 	reDirect[A20_Const::MAX_REDIRECTS]; // JSON tag: "reDirect"
 
-    uint8_t              assetCount = 0;
-    ST_A20_CommonAsset_t assets[A20_Const::MAX_COMMON_ASSETS];
+    uint8_t              	assetCount = 0;
+    ST_A20_CommonAsset_t 	assets[A20_Const::MAX_COMMON_ASSETS];
 } ST_A20_WebPageConfig_t;
 
 /* ======================================================
@@ -713,11 +699,11 @@ typedef struct {
     ST_A20_SystemConfig_t*     system       = nullptr;
     ST_A20_WifiConfig_t*       wifi         = nullptr;
     ST_A20_MotionConfig_t*     motion       = nullptr;
-    ST_A20_NvsSpecConfig_t*    nvsSpec      = nullptr; // ★ add
+    ST_A20_NvsSpecConfig_t*    nvsSpec      = nullptr;
     ST_A20_WindProfileDict_t*  windDict     = nullptr;
     ST_A20_SchedulesRoot_t*    schedules    = nullptr;
     ST_A20_UserProfilesRoot_t* userProfiles = nullptr;
-    ST_A20_WebPageConfig_t*    webPage      = nullptr; // ★ add
+    ST_A20_WebPageConfig_t*    webPage      = nullptr;
 } ST_A20_ConfigRoot_t;
 
 extern ST_A20_ConfigRoot_t g_A20_config_root;
@@ -725,373 +711,4 @@ extern ST_A20_ConfigRoot_t g_A20_config_root;
 class CL_M10_MotionLogic; // 전방 선언
 extern CL_M10_MotionLogic* g_M10_motionLogic;
 
-
-#include "A20_Const_Func_042.h"
-
-/*
-
-// ======================================================
-// * 헬퍼 함수 선언
-// * ====================================================== 
-inline float A20_clampf(float v, float lo, float hi) {
-    if (v < lo) return lo;
-    if (v > hi) return hi;
-    return v;
-}
-
-inline void A20_safe_strlcpy(char* dst, const char* src, size_t n) {
-    if (!dst || n == 0) return;
-    if (!src) {
-        dst[0] = '\0';
-        return;
-    }
-    strlcpy(dst, src, n);
-}
-
-// ------------------------------------------------------
-// 랜덤 유틸
-// ------------------------------------------------------
-inline float A20_getRandom01() {
-    return (float)esp_random() / (float)UINT32_MAX;
-}
-
-inline float A20_randRange(float p_min, float p_max) {
-    return p_min + (A20_getRandom01() * (p_max - p_min));
-}
-
-// ======================================================
-// Default 초기화 헬퍼
-// ======================================================
-
-// // ------------------------------------------------------
-// // 기본값 세팅 예시 (memset 이후)
-// // ------------------------------------------------------
-// static inline void A20_applyDefaultWebSocketConfig(ST_A20_WebSocketConfig_t& p_web) {
-//     // intervals
-//     p_web.wsIntervalMs[G_A20_WS_CH_STATE]   = G_A20_WS_DEFAULT_ITV_STATE_MS;
-//     p_web.wsIntervalMs[G_A20_WS_CH_METRICS] = G_A20_WS_DEFAULT_ITV_METRICS_MS;
-//     p_web.wsIntervalMs[G_A20_WS_CH_CHART]   = G_A20_WS_DEFAULT_ITV_CHART_MS;
-//     p_web.wsIntervalMs[G_A20_WS_CH_SUMMARY] = G_A20_WS_DEFAULT_ITV_SUMMARY_MS;
-
-//     // priority default: state -> metrics -> chart -> summary
-//     p_web.wsPriority[0] = G_A20_WS_CH_STATE;
-//     p_web.wsPriority[1] = G_A20_WS_CH_METRICS;
-//     p_web.wsPriority[2] = G_A20_WS_CH_CHART;
-//     p_web.wsPriority[3] = G_A20_WS_CH_SUMMARY;
-
-//     // chart payload throttle
-//     p_web.chartLargeBytes  = G_A20_WS_DEFAULT_CHART_LARGE_BYTES;
-//     p_web.chartThrottleMul = G_A20_WS_DEFAULT_CHART_THROTTLE_MUL;
-
-//     // cleanup tick
-//     p_web.wsCleanupMs = G_A20_WS_DEFAULT_CLEANUP_MS;
-// }
-
-static inline void A20_resetWebSocketDefault(ST_A20_WebSocketConfig_t& p_ws) {
-  p_ws.wsIntervalMs[G_A20_WS_CH_STATE]   = G_A20_WS_DEFAULT_ITV_STATE_MS;
-  p_ws.wsIntervalMs[G_A20_WS_CH_METRICS] = G_A20_WS_DEFAULT_ITV_METRICS_MS;
-  p_ws.wsIntervalMs[G_A20_WS_CH_CHART]   = G_A20_WS_DEFAULT_ITV_CHART_MS;
-  p_ws.wsIntervalMs[G_A20_WS_CH_SUMMARY] = G_A20_WS_DEFAULT_ITV_SUMMARY_MS;
-
-  p_ws.wsPriority[0] = G_A20_WS_CH_STATE;
-  p_ws.wsPriority[1] = G_A20_WS_CH_METRICS;
-  p_ws.wsPriority[2] = G_A20_WS_CH_CHART;
-  p_ws.wsPriority[3] = G_A20_WS_CH_SUMMARY;
-
-  p_ws.chartLargeBytes  = G_A20_WS_DEFAULT_CHART_LARGE_BYTES;
-  p_ws.chartThrottleMul = G_A20_WS_DEFAULT_CHART_THROTTLE_MUL;
-  p_ws.wsCleanupMs      = G_A20_WS_DEFAULT_CLEANUP_MS;
-}
-
-// System 기본값
-inline void A20_resetSystemDefault(ST_A20_SystemConfig_t& p_cfg) {
-    memset(&p_cfg, 0, sizeof(p_cfg));
-
-    A20_safe_strlcpy(p_cfg.meta.version, A20_Const::FW_VERSION, sizeof(p_cfg.meta.version));
-    A20_safe_strlcpy(p_cfg.meta.deviceName, "SmartNatureWind", sizeof(p_cfg.meta.deviceName));
-    A20_safe_strlcpy(p_cfg.meta.lastUpdate, "", sizeof(p_cfg.meta.lastUpdate));
-
-    A20_safe_strlcpy(p_cfg.system.logging.level, "INFO", sizeof(p_cfg.system.logging.level));
-    p_cfg.system.logging.maxEntries = 300;
-
-
-	A20_resetWebSocketDefault(p_cfg.system.webSocket);
-
-	/*
-	    // intervals
-    p_cfg.system.webSocket.wsIntervalMs[G_A20_WS_CH_STATE]   = G_A20_WS_DEFAULT_ITV_STATE_MS;
-    p_cfg.system.webSocket.wsIntervalMs[G_A20_WS_CH_METRICS] = G_A20_WS_DEFAULT_ITV_METRICS_MS;
-    p_cfg.system.webSocket.wsIntervalMs[G_A20_WS_CH_CHART]   = G_A20_WS_DEFAULT_ITV_CHART_MS;
-    p_cfg.system.webSocket.wsIntervalMs[G_A20_WS_CH_SUMMARY] = G_A20_WS_DEFAULT_ITV_SUMMARY_MS;
-
-    // priority default: state -> metrics -> chart -> summary
-    p_cfg.system.webSocket.wsPriority[0] = G_A20_WS_CH_STATE;
-    p_cfg.system.webSocket.wsPriority[1] = G_A20_WS_CH_METRICS;
-    p_cfg.system.webSocket.wsPriority[2] = G_A20_WS_CH_CHART;
-    p_cfg.system.webSocket.wsPriority[3] = G_A20_WS_CH_SUMMARY;
-
-    // chart payload throttle
-    p_cfg.system.webSocket.chartLargeBytes  = G_A20_WS_DEFAULT_CHART_LARGE_BYTES;
-    p_cfg.system.webSocket.chartThrottleMul = G_A20_WS_DEFAULT_CHART_THROTTLE_MUL;
-
-    // cleanup tick
-    p_cfg.system.webSocket.wsCleanupMs = G_A20_WS_DEFAULT_CLEANUP_MS;
-	*/
-
-/*
-    // HW: fanPwm
-    p_cfg.hw.fanPwm.pin     = 6;
-    p_cfg.hw.fanPwm.channel = 0;
-    p_cfg.hw.fanPwm.freq    = 25000;
-    p_cfg.hw.fanPwm.res     = 10;
-
-    // HW: fanConfig
-    p_cfg.hw.fanConfig.startPercentMin   = 10;
-    p_cfg.hw.fanConfig.comfortPercentMin = 20;
-    p_cfg.hw.fanConfig.comfortPercentMax = 80;
-    p_cfg.hw.fanConfig.hardPercentMax    = 95;
-
-    // HW: pir
-    p_cfg.hw.pir.enabled     = true;
-    p_cfg.hw.pir.pin         = 13;
-    p_cfg.hw.pir.debounceSec = 5;
-    p_cfg.hw.pir.holdSec     = 120;
-
-    // HW: tempHum
-    p_cfg.hw.tempHum.enabled = true;
-    A20_safe_strlcpy(p_cfg.hw.tempHum.type, "DHT22", sizeof(p_cfg.hw.tempHum.type));
-    p_cfg.hw.tempHum.pin         = 23;
-    p_cfg.hw.tempHum.intervalSec = 30;
-
-    // HW: ble
-    p_cfg.hw.ble.enabled      = true;
-    p_cfg.hw.ble.scanInterval = 5;
-
-    // security
-    A20_safe_strlcpy(p_cfg.security.apiKey, "", sizeof(p_cfg.security.apiKey));
-
-    // time
-    A20_safe_strlcpy(p_cfg.time.ntpServer, "pool.ntp.org", sizeof(p_cfg.time.ntpServer));
-    A20_safe_strlcpy(p_cfg.time.timezone, "Asia/Seoul", sizeof(p_cfg.time.timezone));
-    p_cfg.time.syncIntervalMin = 60;
-}
-
-// WiFi 기본값
-inline void A20_resetWifiDefault(ST_A20_WifiConfig_t& p_cfg) {
-    memset(&p_cfg, 0, sizeof(p_cfg));
-
-    p_cfg.wifiMode = EN_A20_WIFI_MODE_AP_STA;
-    A20_safe_strlcpy(p_cfg.wifiModeDesc, "0=AP,1=STA,2=AP+STA", sizeof(p_cfg.wifiModeDesc));
-
-    A20_safe_strlcpy(p_cfg.ap.ssid, "NatureWind", sizeof(p_cfg.ap.ssid));
-    A20_safe_strlcpy(p_cfg.ap.pass, "2540", sizeof(p_cfg.ap.pass));
-
-    p_cfg.staCount = 0;
-}
-
-// Motion 기본값
-inline void A20_resetMotionDefault(ST_A20_MotionConfig_t& p_cfg) {
-    memset(&p_cfg, 0, sizeof(p_cfg));
-
-    p_cfg.pir.enabled = true;
-    p_cfg.pir.holdSec = 120;
-
-    p_cfg.ble.enabled      = true;
-    p_cfg.ble.trustedCount = 0;
-
-    p_cfg.ble.rssi.on           = -65;
-    p_cfg.ble.rssi.off          = -75;
-    p_cfg.ble.rssi.avgCount     = 8;
-    p_cfg.ble.rssi.persistCount = 5;
-    p_cfg.ble.rssi.exitDelaySec = 12;
-
-    // Timing 기본값
-    p_cfg.timing.simIntervalMs     = 500;  // 0.5초
-    p_cfg.timing.gustIntervalMs    = 2000; // 2초
-    p_cfg.timing.thermalIntervalMs = 3000; // 3초
-}
-
-// WindProfile Dict 기본값
-inline void A20_resetWindProfileDictDefault(ST_A20_WindProfileDict_t& p_dict) {
-    memset(&p_dict, 0, sizeof(p_dict));
-
-    p_dict.presetCount = 1;
-    A20_safe_strlcpy(p_dict.presets[0].code, "OCEAN", sizeof(p_dict.presets[0].code));
-    A20_safe_strlcpy(p_dict.presets[0].name, "Ocean Breeze", sizeof(p_dict.presets[0].name));
-
-    p_dict.presets[0].base.windIntensity            = 70.0f;
-    p_dict.presets[0].base.windVariability          = 50.0f;
-    p_dict.presets[0].base.gustFrequency            = 45.0f;
-    p_dict.presets[0].base.fanLimit                 = 90.0f;
-    p_dict.presets[0].base.minFan                   = 10.0f;
-    p_dict.presets[0].base.turbulenceLengthScale    = 40.0f;
-    p_dict.presets[0].base.turbulenceIntensitySigma = 0.5f;
-    p_dict.presets[0].base.thermalBubbleStrength    = 2.0f;
-    p_dict.presets[0].base.thermalBubbleRadius      = 18.0f;
-
-    p_dict.styleCount = 1;
-    A20_safe_strlcpy(p_dict.styles[0].code, "BALANCE", sizeof(p_dict.styles[0].code));
-    A20_safe_strlcpy(p_dict.styles[0].name, "Balance", sizeof(p_dict.styles[0].name));
-
-    p_dict.styles[0].factors.intensityFactor   = 1.0f;
-    p_dict.styles[0].factors.variabilityFactor = 1.0f;
-    p_dict.styles[0].factors.gustFactor        = 1.0f;
-    p_dict.styles[0].factors.thermalFactor     = 1.0f;
-}
-
-// Schedules 기본값
-inline void A20_resetSchedulesDefault(ST_A20_SchedulesRoot_t& p_cfg) {
-    memset(&p_cfg, 0, sizeof(p_cfg));
-    p_cfg.count = 0;
-}
-
-// UserProfiles 기본값
-inline void A20_resetUserProfilesDefault(ST_A20_UserProfilesRoot_t& p_cfg) {
-    memset(&p_cfg, 0, sizeof(p_cfg));
-    p_cfg.count = 0;
-}
-
-// ------------------------------------------------------
-// NVS Spec 기본값
-// ------------------------------------------------------
-inline void A20_resetNvsSpecDefault(ST_A20_NvsSpecConfig_t& p_cfg) {
-    memset(&p_cfg, 0, sizeof(p_cfg));
-
-    // namespace
-    A20_safe_strlcpy(p_cfg.namespaceName, "SNW", sizeof(p_cfg.namespaceName));
-
-    // entries (기본 스펙)
-    p_cfg.entryCount = 0;
-
-    auto addEntry = [&](const char* p_key, const char* p_type, const char* p_def) {
-        if (p_cfg.entryCount >= A20_Const::MAX_NVS_ENTRIES) return;
-        ST_A20_NvsEntry_t& v_e = p_cfg.entries[p_cfg.entryCount];
-        memset(&v_e, 0, sizeof(v_e));
-        A20_safe_strlcpy(v_e.key, p_key, sizeof(v_e.key));
-        A20_safe_strlcpy(v_e.type, p_type, sizeof(v_e.type));
-        A20_safe_strlcpy(v_e.defaultValue, p_def, sizeof(v_e.defaultValue));
-        p_cfg.entryCount++;
-    };
-
-    addEntry("runMode", "uint8", "0");
-    addEntry("activeProfileNo", "uint8", "0");
-    addEntry("activeSegmentNo", "uint8", "0");
-    addEntry("presetCode", "string", "");
-    addEntry("styleCode", "string", "");
-    addEntry("wifiConnected", "bool", "false");
-}
-
-// ------------------------------------------------------
-// WebPage 기본값
-// ------------------------------------------------------
-inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
-    memset(&p_cfg, 0, sizeof(p_cfg));
-
-    // pages[] : 최소 1개 메인 페이지 기본값
-    if (A20_Const::MAX_PAGES > 0) {
-        p_cfg.pageCount = 1;
-
-        ST_A20_PageItem_t& v_p = p_cfg.pages[0];
-        memset(&v_p, 0, sizeof(v_p));
-
-        A20_safe_strlcpy(v_p.uri, "/P010_main_021.html", sizeof(v_p.uri));
-        A20_safe_strlcpy(v_p.path, "/html_v2/P010_main_021.html", sizeof(v_p.path));
-        A20_safe_strlcpy(v_p.label, "Main", sizeof(v_p.label));
-
-        v_p.enable = true;
-        v_p.isMain = true;
-        v_p.order  = 10;
-
-        // pageAssets[] : css/js (있으면)
-        v_p.pageAssetCount = 0;
-        if (A20_Const::MAX_PAGE_ASSETS >= 1) {
-            ST_A20_PageAsset_t& v_a0 = v_p.pageAssets[v_p.pageAssetCount++];
-            memset(&v_a0, 0, sizeof(v_a0));
-            A20_safe_strlcpy(v_a0.uri, "/P010_main_021.css", sizeof(v_a0.uri));
-            A20_safe_strlcpy(v_a0.path, "/html_v2/P010_main_021.css", sizeof(v_a0.path));
-        }
-        if (A20_Const::MAX_PAGE_ASSETS >= 2) {
-            ST_A20_PageAsset_t& v_a1 = v_p.pageAssets[v_p.pageAssetCount++];
-            memset(&v_a1, 0, sizeof(v_a1));
-            A20_safe_strlcpy(v_a1.uri, "/P010_main_021.js", sizeof(v_a1.uri));
-            A20_safe_strlcpy(v_a1.path, "/html_v2/P010_main_021.js", sizeof(v_a1.path));
-        }
-    }
-
-    // reDirect[] : 최소 홈 리다이렉트
-    p_cfg.reDirectCount = 0;
-    auto addRedirect    = [&](const char* p_from, const char* p_to) {
-        if (p_cfg.reDirectCount >= A20_Const::MAX_REDIRECTS) return;
-        ST_A20_ReDirectItem_t& v_r = p_cfg.reDirect[p_cfg.reDirectCount];
-        memset(&v_r, 0, sizeof(v_r));
-        A20_safe_strlcpy(v_r.uriFrom, p_from, sizeof(v_r.uriFrom));
-        A20_safe_strlcpy(v_r.uriTo, p_to, sizeof(v_r.uriTo));
-        p_cfg.reDirectCount++;
-    };
-
-    addRedirect("/", "/P010_main_021.html");
-    addRedirect("/index.html", "/P010_main_021.html");
-    addRedirect("/P010_main", "/P010_main_021.html");
-
-    // assets[] : 공통 자산 기본값
-    p_cfg.assetCount    = 0;
-    auto addCommonAsset = [&](const char* p_uri, const char* p_path, bool p_isCommon) {
-        if (p_cfg.assetCount >= A20_Const::MAX_COMMON_ASSETS) return;
-        ST_A20_CommonAsset_t& v_c = p_cfg.assets[p_cfg.assetCount];
-        memset(&v_c, 0, sizeof(v_c));
-        A20_safe_strlcpy(v_c.uri, p_uri, sizeof(v_c.uri));
-        A20_safe_strlcpy(v_c.path, p_path, sizeof(v_c.path));
-        v_c.isCommon = p_isCommon;
-        p_cfg.assetCount++;
-    };
-
-    addCommonAsset("/P000_common_001.css", "/html_v2/P000_common_001.css", true);
-    addCommonAsset("/P000_common_006.js", "/html_v2/P000_common_006.js", true);
-}
-
-// ------------------------------------------------------
-// A20_resetToDefault
-// ------------------------------------------------------
-inline void A20_resetToDefault(ST_A20_ConfigRoot_t& p_root) {
-
-    if (p_root.system) A20_resetSystemDefault(*p_root.system);
-    if (p_root.wifi) A20_resetWifiDefault(*p_root.wifi);
-    if (p_root.motion) A20_resetMotionDefault(*p_root.motion);
-    if (p_root.windDict) A20_resetWindProfileDictDefault(*p_root.windDict);
-    if (p_root.schedules) A20_resetSchedulesDefault(*p_root.schedules);
-    if (p_root.userProfiles) A20_resetUserProfilesDefault(*p_root.userProfiles);
-
-    if (p_root.webPage) A20_resetWebPageDefault(*p_root.webPage);
-    if (p_root.nvsSpec) A20_resetNvsSpecDefault(*p_root.nvsSpec);
-}
-
-// 프리셋 코드 → 인덱스 매핑 (참고용)
-inline int8_t A20_getPresetIndexByCode(const char* code) {
-    if (!code) return -1;
-    for (int8_t i = 0; i < EN_A20_PRESET_COUNT; i++) {
-        if (strcasecmp(code, g_A20_PRESET_CODES[i]) == 0) return i;
-    }
-    return -1;
-}
-
-// ------------------------------------------------------
-// WindProfileDict 검색 유틸리티
-// ------------------------------------------------------
-inline int16_t A20_findPresetIndexByCode(const ST_A20_WindProfileDict_t& p_dict, const char* p_code) {
-    if (!p_code || !p_code[0]) return -1;
-    for (uint8_t v_i = 0; v_i < p_dict.presetCount; v_i++) {
-        if (strcasecmp(p_dict.presets[v_i].code, p_code) == 0) return (int16_t)v_i;
-    }
-    return -1;
-}
-
-inline int16_t A20_findStyleIndexByCode(const ST_A20_WindProfileDict_t& p_dict, const char* p_code) {
-    if (!p_code || !p_code[0]) return -1;
-    for (uint8_t v_i = 0; v_i < p_dict.styleCount; v_i++) {
-        if (strcasecmp(p_dict.styles[v_i].code, p_code) == 0) return (int16_t)v_i;
-    }
-    return -1;
-}
-
-
-*/
+#include "A20_Const_Func_043.h"

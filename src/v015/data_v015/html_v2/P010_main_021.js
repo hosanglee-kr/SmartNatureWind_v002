@@ -409,7 +409,7 @@ function loadPresetsFromConfig(cfg) {
 
 	presets.forEach((p, idx) => {
 		const opt = document.createElement("option");
-		// {code, name} 형식을 가정 (Backend WindProfileDict 기준)
+		// {code, name} 형식을 가정 (Backend WindDict 기준)
 		opt.value = p.id != null ? p.id : (p.code || p.name || String(idx));
 		opt.textContent = p.label || p.name || `Preset ${idx + 1}`;
 		sel.appendChild(opt);

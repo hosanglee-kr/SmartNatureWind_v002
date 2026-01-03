@@ -1,7 +1,7 @@
 #pragma once
 /*
  * ------------------------------------------------------
- * 소스명 : WF10_WiFiManager_040.h
+ * 소스명 : WF10_WiFiManager_043.h
  * 모듈약어 : WF10
  * 모듈명 : Smart Nature Wind Wi-Fi Manager + NTP Sync (v024)
  * ------------------------------------------------------
@@ -42,37 +42,29 @@
 #include <lwip/dns.h>
 #include <time.h>
 
-#include "A20_Const_041.h"
-#include "C10_Config_041.h"	 // ST_A20_WifiConfig_t, ST_A20_SystemConfig_t, ST_A20_ConfigRoot_t
+#include "A20_Const_044.h"
+#include "C10_Config_042.h"	 // ST_A20_WifiConfig_t, ST_A20_SystemConfig_t, ST_A20_ConfigRoot_t
 #include "D10_Logger_040.h"
 
-// Mutex 보호 매크로 정의
-#define WF10_MUTEX_ACQUIRE() \
-    if (CL_WF10_WiFiManager::s_wifiMutex != nullptr) \
-        xSemaphoreTake(CL_WF10_WiFiManager::s_wifiMutex, portMAX_DELAY)
+#include "TM10_TimeManager_003.h"
 
-#define WF10_MUTEX_RELEASE() \
-    if (CL_WF10_WiFiManager::s_wifiMutex != nullptr) \
-        xSemaphoreGive(CL_WF10_WiFiManager::s_wifiMutex)
 
-// #define WF10_MUTEX_ACQUIRE() xSemaphoreTake(CL_WF10_WiFiManager::s_wifiMutex, portMAX_DELAY)
-// #define WF10_MUTEX_RELEASE() xSemaphoreGive(CL_WF10_WiFiManager::s_wifiMutex)
+// // Mutex 보호 매크로 정의
+// #define WF10_MUTEX_ACQUIRE() \
+//     if (CL_WF10_WiFiManager::s_wifiMutex != nullptr) \
+//         xSemaphoreTake(CL_WF10_WiFiManager::s_wifiMutex, portMAX_DELAY)
 
-// --------------------------------------------------
-// Time 설정 적용 전역 함수 선언 (Web API / Config에서 호출)
-// --------------------------------------------------
-/**
- * @brief system.time 설정을 기준으로 TZ/NTP/주기 설정을 런타임에 반영
- * @param p_cfg 시스템 설정 구조체 (ST_A20_SystemConfig_t)
- */
-void WF10_applyTimeConfigFromSystem(const ST_A20_SystemConfig_t& p_cfg);
+// #define WF10_MUTEX_RELEASE() \
+//     if (CL_WF10_WiFiManager::s_wifiMutex != nullptr) \
+//         xSemaphoreGive(CL_WF10_WiFiManager::s_wifiMutex)
+
+
 
 class CL_WF10_WiFiManager {
   public:
 	static bool				 s_staConnected;
 	static wl_status_t		 s_lastStaStatus;
-	static bool				 s_timeSynced;
-	static uint32_t			 s_lastSyncMs;
+
 	static uint8_t			 s_reconnectAttempts;
 	static SemaphoreHandle_t s_wifiMutex;  // Mutex 포인터 (init()에서 생성)
 
@@ -95,7 +87,7 @@ class CL_WF10_WiFiManager {
 	// --------------------------------------------------
 	// 초기화
 	// --------------------------------------------------
-	static bool init(const ST_A20_WifiConfig_t& p_cfg_wifi, const ST_A20_SystemConfig_t& p_cfg_system, WiFiMulti& p_multi, uint8_t p_apChannel = 1, uint8_t p_staMaxTries = 15, bool p_enableApDhcp = true);
+	static bool init(const ST_A20_WifiConfig_t& p_cfg_wifi, const ST_A20_SystemConfig_t& p_cfg_system, WiFiMulti& p_multi, uint8_t p_apChannel = 1, uint8_t p_staMaxTries = 5, bool p_enableApDhcp = true);
 
 	// --------------------------------------------------
 	// AP 시작 (고정 IP + DHCP On/Off)
@@ -128,3 +120,4 @@ class CL_WF10_WiFiManager {
   private:
 	static const char* _encTypeToString(wifi_auth_mode_t p_mode);
 };
+

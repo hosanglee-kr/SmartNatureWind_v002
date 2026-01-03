@@ -7,7 +7,7 @@
  * ------------------------------------------------------
  * 기능 요약:
  *  - Smart Nature Wind 전체 설정(JSON 기반) 관리 매니저
- *  - 설정 파일 단위 분리 관리 (system / wifi / motion / schedules / userProfiles / windProfile / nvsSpec / webPage)
+ *  - 설정 파일 단위 분리 관리 (system / wifi / motion / schedules / userProfiles / windDict / nvsSpec / webPage)
  *  - 구조체 ↔ JSON 직렬화 및 역직렬화 (ArduinoJson v7 전용)
  *  - 파일 백업(.bak) / 복구 / 공장초기화(factoryResetFromDefault) 지원
  *  - PATCH 기반 부분 업데이트(patchConfigFromJson) 지원
@@ -50,7 +50,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "A20_Const_041.h"	 // ST_A20_ConfigRoot_t, ST_A20_* 구조체, 상수 정의
+#include "A20_Const_044.h"	 // ST_A20_ConfigRoot_t, ST_A20_* 구조체, 상수 정의
 #include "D10_Logger_040.h"	 // CL_D10_Logger, EN_L10_LOG_*
 
 // ------------------------------------------------------
@@ -59,25 +59,34 @@
 bool ioLoadJson(const char* p_path, JsonDocument& p_doc);
 bool ioSaveJson(const char* p_path, const JsonDocument& p_doc);
 
+
 // Mutex Timeout 정의
 #ifndef G_C10_MUTEX_TIMEOUT
 #	define G_C10_MUTEX_TIMEOUT pdMS_TO_TICKS(100)
 #endif
 
-// ------------------------------------------------------
-// 뮤텍스 매크로 (bool / void 함수용 분리)
-// ------------------------------------------------------
-#define C10_MUTEX_ACQUIRE_BOOL()                           \
-	if (!CL_C10_ConfigManager::_mutex_Acquire(__func__)) { \
-		return false;                                      \
-	}
 
-#define C10_MUTEX_ACQUIRE_VOID()                           \
-	if (!CL_C10_ConfigManager::_mutex_Acquire(__func__)) { \
-		return;                                            \
-	}
+// // ------------------------------------------------------
+// // 뮤텍스 매크로 (bool / void 함수용 분리)
+// // ------------------------------------------------------
+// #define C10_MUTEX_ACQUIRE_BOOL()                           \
+// 	if (!CL_C10_ConfigManager::_mutex_Acquire(__func__)) { \
+// 		return false;                                      \
+// 	}
 
-#define C10_MUTEX_RELEASE() CL_C10_ConfigManager::_mutex_Release();
+// // ✅ int 반환 함수에서 사용 (addXXX에서 -1로 실패 처리)
+// #define C10_MUTEX_ACQUIRE_INT()                            \
+//     if (!CL_C10_ConfigManager::_mutex_Acquire(__func__)) { \
+//         return -1;                                         \
+//     }
+
+// #define C10_MUTEX_ACQUIRE_VOID()                           \
+// 	if (!CL_C10_ConfigManager::_mutex_Acquire(__func__)) { \
+// 		return;                                            \
+// 	}
+
+// #define C10_MUTEX_RELEASE() CL_C10_ConfigManager::_mutex_Release();
+
 
 // 전역 Config Root (Core cpp에서 정의)
 extern ST_A20_ConfigRoot_t g_A20_config_root;
@@ -95,7 +104,7 @@ class CL_C10_ConfigManager {
 	}
 
 	static bool loadAll(ST_A20_ConfigRoot_t& p_root);
-	static void freeLazySection(const char* p_section, ST_A20_ConfigRoot_t& p_root);
+	static bool freeLazySection(const char* p_section, ST_A20_ConfigRoot_t& p_root);
 	static void freeAll(ST_A20_ConfigRoot_t& p_root);
 
 	static bool factoryResetFromDefault();
@@ -169,7 +178,7 @@ class CL_C10_ConfigManager {
 	static bool patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, const JsonDocument& p_patch);
 
 	// =====================================================
-	// 5. CRUD - Schedules, UserProfiles, WindProfile
+	// 5. CRUD - Schedules, UserProfiles, windDict
 	//    (전역 g_A20_config_root를 대상으로 동작)
 	// =====================================================
 	static int addScheduleFromJson(const JsonDocument& p_doc);
@@ -191,7 +200,7 @@ class CL_C10_ConfigManager {
 	static bool _dirty_motion;
 	static bool _dirty_schedules;
 	static bool _dirty_userProfiles;
-	static bool _dirty_windProfile;
+	static bool _dirty_windDict;
 	static bool _dirty_nvsSpec;
 	static bool _dirty_webPage;
 
@@ -202,9 +211,11 @@ class CL_C10_ConfigManager {
 	static bool _loadCfgJsonFile();
 
 	// Mutex
-	static SemaphoreHandle_t s_configMutex;
+	/// static SemaphoreHandle_t s_configMutex;
 
-	// 뮤텍스 관리 헬퍼 (Core cpp에서 구현)
-	static bool _mutex_Acquire(const char* p_funcName);
-	static void _mutex_Release();
+	static SemaphoreHandle_t s_configMutex_v2;
+
+	// // 뮤텍스 관리 헬퍼 (Core cpp에서 구현)
+	// static bool _mutex_Acquire(const char* p_funcName);
+	// static void _mutex_Release();
 };

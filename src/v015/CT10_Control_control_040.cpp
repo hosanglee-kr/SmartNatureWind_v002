@@ -11,7 +11,7 @@
  * ------------------------------------------------------
  */
 
-#include "CT10_Control_041.h"
+#include "CT10_Control_042.h"
 
 // 외부 전역(프로젝트 기존 전역 PWM 가정)
 extern CL_P10_PWM g_P10_pwm;

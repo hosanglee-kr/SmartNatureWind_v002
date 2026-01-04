@@ -219,6 +219,129 @@ namespace A40_ComFunc {
 
 } // namespace A40_ComFunc
 
+/**
+ * @class CL_A40_MutexGuard_Semaphore
+ * @brief FreeRTOS Recursive Mutex 가드 (Lazy Init + RAII)
+ *
+ * - ctor에서 mutex가 nullptr이면 자동 생성 (Race Condition 방지: critical section)
+ * - ctor에서 take 시도
+ * - dtor에서 자동 unlock
+ * - acquire()로 추가 대기 가능
+ *
+ * @note p_mutex는 반드시 "SemaphoreHandle_t 변수 자체"를 참조로 전달해야 합니다.
+ *       (SemaphoreHandle_t* 포인터를 넘기면 컴파일/동작이 꼬입니다)
+ */
+class CL_A40_MutexGuard_Semaphore {
+  public:
+    /**
+     * @param p_mutex     원본 핸들 참조 (SemaphoreHandle_t 변수)
+     * @param p_timeout   대기 시간 (Tick)
+     * @param p_caller    호출자 함수명 (매크로로 __func__ 주입 권장)
+     */
+    explicit CL_A40_MutexGuard_Semaphore(SemaphoreHandle_t& p_mutex,
+                                         TickType_t         p_timeout,
+                                         const char*        p_caller)
+        : _mutexPtr(&p_mutex),
+          _caller((p_caller && p_caller[0]) ? p_caller : "?") {
+        _internalInitAndTake(p_timeout);
+    }
+
+    ~CL_A40_MutexGuard_Semaphore() {
+        unlock();
+    }
+
+    /**
+     * @brief 명시적 뮤텍스 획득 (추가 대기가 필요한 경우)
+     * @param p_timeoutMs 대기 시간 (ms). UINT32_MAX이면 portMAX_DELAY로 대기
+     * @return true 성공, false 실패
+     */
+    bool acquire(uint32_t p_timeoutMs = UINT32_MAX) {
+        if (_acquired) return true;
+        if (!_mutexPtr || (*_mutexPtr == nullptr)) return false;
+
+        const TickType_t v_ticks =
+            (p_timeoutMs == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(p_timeoutMs);
+
+        if (xSemaphoreTakeRecursive(*_mutexPtr, v_ticks) == pdTRUE) {
+            _acquired = true;
+            return true;
+        }
+
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Mutex acquire timeout (manual)", _caller);
+        return false;
+    }
+
+    /**
+     * @brief 명시적 뮤텍스 해제
+     */
+    void unlock() {
+        if (!_acquired) return;
+        if (!_mutexPtr || (*_mutexPtr == nullptr)) return;
+
+        if (xSemaphoreGiveRecursive(*_mutexPtr) == pdTRUE) {
+            _acquired = false;
+        } else {
+            // give 실패면 실제 락이 유지됐을 수 있으므로 _acquired는 true 유지 (운영 안전)
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] Mutex unlock failed", _caller);
+        }
+    }
+
+    /**
+     * @brief 현재 락 점유 상태
+     */
+    bool isAcquired() const { return _acquired; }
+
+  private:
+    CL_A40_MutexGuard_Semaphore(const CL_A40_MutexGuard_Semaphore&) = delete;
+    CL_A40_MutexGuard_Semaphore& operator=(const CL_A40_MutexGuard_Semaphore&) = delete;
+
+    /**
+     * @brief 내부: Lazy Init + Take (ctor 전용)
+     */
+    void _internalInitAndTake(TickType_t p_timeout) {
+        if (!_mutexPtr) return;
+
+        // 1) Lazy init (Double-Checked Locking)
+        if (*_mutexPtr == nullptr) {
+            static portMUX_TYPE v_initMux = portMUX_INITIALIZER_UNLOCKED;
+            portENTER_CRITICAL(&v_initMux);
+            if (*_mutexPtr == nullptr) {
+                *_mutexPtr = xSemaphoreCreateRecursiveMutex();
+                if (*_mutexPtr == nullptr) {
+                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] CreateRecursiveMutex failed", _caller);
+                }
+            }
+            portEXIT_CRITICAL(&v_initMux);
+        }
+
+        // 2) Take
+        if (*_mutexPtr != nullptr) {
+            if (xSemaphoreTakeRecursive(*_mutexPtr, p_timeout) == pdTRUE) {
+                _acquired = true;
+            } else {
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Mutex acquire timeout (ctor)", _caller);
+            }
+        }
+    }
+
+    SemaphoreHandle_t* _mutexPtr = nullptr; // 원본 핸들 주소 (Lazy Init 반영)
+    const char*        _caller   = "?";
+    bool               _acquired = false;
+};
+
+// ======================================================
+// ✅ 실수 방지 강화 매크로
+//  - __func__ : 표준/안전 (ESP32 GCC에서 안정적)
+//  - p_mutexRef는 "SemaphoreHandle_t 변수"를 넣어야 함 (포인터 금지)
+// ======================================================
+
+// 일반: 변수명/타임아웃 지정
+#define CL_A40_MutexGuard(p_guardName, p_mutexRef, p_timeoutTicks) \
+    CL_A40_MutexGuard_Semaphore p_guardName((p_mutexRef), (p_timeoutTicks), __func__)
+
+// 기본 100ms
+#define LOCK_GUARD_DEFAULT(p_guardName, p_mutexRef) \
+    CL_A40_MutexGuard_Semaphore p_guardName((p_mutexRef), pdMS_TO_TICKS(100), __func__)
 
 /**
  * @brief FreeRTOS Recursive Mutex 전용 가드 (자동 지연 초기화 포함)

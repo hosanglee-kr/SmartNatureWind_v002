@@ -180,7 +180,7 @@ namespace A40_ComFunc {
     //  - JsonVariantConst null 체크 방식
     //  - 랩핑 루트 선택 지원
     // ======================================================
-    static inline const char* J_getStr(JsonObjectConst p_obj, const char* p_key, const char* p_def) {
+    static inline const char* Json_getStr(JsonObjectConst p_obj, const char* p_key, const char* p_def) {
         if (p_obj.isNull()) return p_def;
         JsonVariantConst v = p_obj[p_key];
         if (v.isNull()) return p_def;
@@ -189,21 +189,21 @@ namespace A40_ComFunc {
     }
 
     template <typename T>
-    static inline T J_getNum(JsonObjectConst p_obj, const char* p_key, T p_def) {
+    static inline T Json_getNum(JsonObjectConst p_obj, const char* p_key, T p_def) {
         if (p_obj.isNull()) return p_def;
         JsonVariantConst v = p_obj[p_key];
         if (v.isNull()) return p_def;
         return v.as<T>();
     }
 
-    static inline bool J_getBool(JsonObjectConst p_obj, const char* p_key, bool p_def) {
+    static inline bool Json_getBool(JsonObjectConst p_obj, const char* p_key, bool p_def) {
         if (p_obj.isNull()) return p_def;
         JsonVariantConst v = p_obj[p_key];
         if (v.isNull()) return p_def;
         return v.as<bool>();
     }
 
-    static inline JsonArrayConst J_getArr(JsonObjectConst p_obj, const char* p_key) {
+    static inline JsonArrayConst Json_getArr(JsonObjectConst p_obj, const char* p_key) {
         if (p_obj.isNull()) return JsonArrayConst();
         JsonVariantConst v = p_obj[p_key];
         if (v.isNull()) return JsonArrayConst();
@@ -211,7 +211,7 @@ namespace A40_ComFunc {
     }
 
     // 랩핑 키가 있으면 우선 사용, 없으면 루트 자체를 사용
-    static inline JsonObjectConst J_pickRootObject(JsonDocument& p_doc, const char* p_wrapKey) {
+    static inline JsonObjectConst Json_pickRootObject(JsonDocument& p_doc, const char* p_wrapKey) {
         JsonObjectConst v_wrapped = p_doc[p_wrapKey].as<JsonObjectConst>();
         if (!v_wrapped.isNull()) return v_wrapped;
         return p_doc.as<JsonObjectConst>();
@@ -351,13 +351,13 @@ class CL_A40_MutexGuard_Semaphore {
  * 3) RAII: scope 종료 시 unlock()
  * 4) 명시적 acquire/unlock 제공 (ms 기반, portMAX_DELAY 혼선 방지)
  */
-class CL_A40_MutexGuard_Semaphore {
+class CL_A40_MutexGuard_Semaphore_old {
   public:
     /**
      * @param p_mutex   원본 SemaphoreHandle_t 참조 (외부 static 변수 등)
      * @param p_timeout ctor에서 초기 lock 획득 대기 시간(tick)
      */
-    CL_A40_MutexGuard_Semaphore(SemaphoreHandle_t& p_mutex,
+    CL_A40_MutexGuard_Semaphore_old(SemaphoreHandle_t& p_mutex,
                                 TickType_t p_timeout = pdMS_TO_TICKS(100))
         : _mutexPtr(&p_mutex) {
 
@@ -383,7 +383,7 @@ class CL_A40_MutexGuard_Semaphore {
         }
     }
 
-    ~CL_A40_MutexGuard_Semaphore() {
+    ~CL_A40_MutexGuard_Semaphore_old() {
         unlock();
     }
 
@@ -429,8 +429,8 @@ class CL_A40_MutexGuard_Semaphore {
     bool isAcquired() const { return _acquired; }
 
   private:
-    CL_A40_MutexGuard_Semaphore(const CL_A40_MutexGuard_Semaphore&) = delete;
-    CL_A40_MutexGuard_Semaphore& operator=(const CL_A40_MutexGuard_Semaphore&) = delete;
+    CL_A40_MutexGuard_Semaphore_old(const CL_A40_MutexGuard_Semaphore_old&) = delete;
+    CL_A40_MutexGuard_Semaphore<old& operator=(const CL_A40_MutexGuard_Semaphore_old&) = delete;
 
     SemaphoreHandle_t* _mutexPtr = nullptr; // 원본 핸들 주소 (Lazy Init 반영용)
     bool _acquired = false;

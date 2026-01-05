@@ -45,19 +45,27 @@ static inline const char* _A40__callerOrUnknown(const char* p_callerFunc) {
 }
 
 // ======================================================
-// 공통: A40 로그 wrapper (caller 포함)
-//  - ⚠️ 주의: 아래 매크로는 "A40 공용함수 내부"에서 호출될 때 __func__는
-//    "공용함수명"이 됩니다. 따라서 '호출자'를 찍고 싶다면 p_callerFunc 기반 로그를 사용하세요.
-//  - 본 파일에서는 혼동 방지를 위해, 내부에서는 주로 CL_D10_Logger::log + p_callerFunc 사용.
+// 공통: A40 로그 매크로
+//  - A40_LOG*   : 현재 함수(__func__) 기준 (공용함수 내부에서 쓰면 "공용함수명" 찍힘)
+//  - A40_LOG*_C : callerFunc 기반(요구사항 충족, 공용함수 내부에서 권장)
 // ======================================================
 #define A40_LOGE(_fmt, ...) \
     CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] " _fmt, _A40__callerOrUnknown(__func__), ##__VA_ARGS__)
 #define A40_LOGW(_fmt, ...) \
-    CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] " _fmt, _A40__callerOrUnknown(__func__), ##__VA_ARGS__)
+    CL_D10_Logger::log(EN_L10_LOG_WARN,  "[A40][%s] " _fmt, _A40__callerOrUnknown(__func__), ##__VA_ARGS__)
 #define A40_LOGI(_fmt, ...) \
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[A40][%s] " _fmt, _A40__callerOrUnknown(__func__), ##__VA_ARGS__)
+    CL_D10_Logger::log(EN_L10_LOG_INFO,  "[A40][%s] " _fmt, _A40__callerOrUnknown(__func__), ##__VA_ARGS__)
 #define A40_LOGD(_fmt, ...) \
     CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A40][%s] " _fmt, _A40__callerOrUnknown(__func__), ##__VA_ARGS__)
+
+#define A40_LOGE_C(_caller, _fmt, ...) \
+    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] " _fmt, _A40__callerOrUnknown((_caller)), ##__VA_ARGS__)
+#define A40_LOGW_C(_caller, _fmt, ...) \
+    CL_D10_Logger::log(EN_L10_LOG_WARN,  "[A40][%s] " _fmt, _A40__callerOrUnknown((_caller)), ##__VA_ARGS__)
+#define A40_LOGI_C(_caller, _fmt, ...) \
+    CL_D10_Logger::log(EN_L10_LOG_INFO,  "[A40][%s] " _fmt, _A40__callerOrUnknown((_caller)), ##__VA_ARGS__)
+#define A40_LOGD_C(_caller, _fmt, ...) \
+    CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A40][%s] " _fmt, _A40__callerOrUnknown((_caller)), ##__VA_ARGS__)
 
 // ======================================================
 // 1) 공용 헬퍼

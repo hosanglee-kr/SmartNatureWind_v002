@@ -91,7 +91,7 @@ static JsonObjectConst C10_pickRootObject(JsonDocument& p_doc, const char* p_wra
 bool CL_C10_ConfigManager::loadNvsSpecConfig(ST_A20_NvsSpecConfig_t& p_cfg) {
 
 	// Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -173,7 +173,7 @@ bool CL_C10_ConfigManager::loadNvsSpecConfig(ST_A20_NvsSpecConfig_t& p_cfg) {
 bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -319,7 +319,7 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
 bool CL_C10_ConfigManager::saveNvsSpecConfig(const ST_A20_NvsSpecConfig_t& p_cfg) {
 
 	// Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -360,7 +360,7 @@ bool CL_C10_ConfigManager::saveNvsSpecConfig(const ST_A20_NvsSpecConfig_t& p_cfg
 bool CL_C10_ConfigManager::saveWebPageConfig(const ST_A20_WebPageConfig_t& p_cfg) {
 
 	// Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -441,7 +441,7 @@ bool CL_C10_ConfigManager::patchNvsSpecFromJson(ST_A20_NvsSpecConfig_t& p_cfg, c
 
 
 	// Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -512,7 +512,7 @@ bool CL_C10_ConfigManager::patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, c
     bool v_changed = false;
 
 	// Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -651,7 +651,7 @@ bool CL_C10_ConfigManager::patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, c
 void CL_C10_ConfigManager::toJson_NvsSpec(const ST_A20_NvsSpecConfig_t& p_cfg, JsonDocument& p_doc) {
 
 	// Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return;
@@ -686,7 +686,7 @@ void CL_C10_ConfigManager::toJson_NvsSpec(const ST_A20_NvsSpecConfig_t& p_cfg, J
 void CL_C10_ConfigManager::toJson_WebPage(const ST_A20_WebPageConfig_t& p_cfg, JsonDocument& p_doc) {
 
 	// Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return;

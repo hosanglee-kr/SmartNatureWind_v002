@@ -1,4 +1,4 @@
-// 소스명 : A40_Com_Func_049.h
+// 소스명 : A40_Com_Func_050.h
 #pragma once
 
 #include <Arduino.h>
@@ -40,7 +40,7 @@
 // ------------------------------------------------------
 // 공통: caller func 문자열 방어
 // ------------------------------------------------------
-static inline const char* A40__callerOrUnknown(const char* p_callerFunc) {
+static inline const char* _A40__callerOrUnknown(const char* p_callerFunc) {
     return (p_callerFunc && p_callerFunc[0]) ? p_callerFunc : "?";
 }
 
@@ -50,10 +50,10 @@ static inline const char* A40__callerOrUnknown(const char* p_callerFunc) {
 //    "공용함수명"이 됩니다. 따라서 '호출자'를 찍고 싶다면 p_callerFunc 기반 로그를 사용하세요.
 //  - 본 파일에서는 혼동 방지를 위해, 내부에서는 주로 CL_D10_Logger::log + p_callerFunc 사용.
 // ======================================================
-#define A40_LOGE(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] " _fmt, A40__callerOrUnknown(__func__), ##__VA_ARGS__)
-#define A40_LOGW(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_WARN,  "[A40][%s] " _fmt, A40__callerOrUnknown(__func__), ##__VA_ARGS__)
-#define A40_LOGI(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_INFO,  "[A40][%s] " _fmt, A40__callerOrUnknown(__func__), ##__VA_ARGS__)
-#define A40_LOGD(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A40][%s] " _fmt, A40__callerOrUnknown(__func__), ##__VA_ARGS__)
+#define A40_LOGE(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] " _fmt, _A40__callerOrUnknown(__func__), ##__VA_ARGS__)
+#define A40_LOGW(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_WARN,  "[A40][%s] " _fmt, _A40__callerOrUnknown(__func__), ##__VA_ARGS__)
+#define A40_LOGI(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_INFO,  "[A40][%s] " _fmt, _A40__callerOrUnknown(__func__), ##__VA_ARGS__)
+#define A40_LOGD(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A40][%s] " _fmt, _A40__callerOrUnknown(__func__), ##__VA_ARGS__)
 
 // ======================================================
 // 1) 공용 헬퍼
@@ -73,12 +73,17 @@ namespace A40_ComFunc {
      * @param p_n 목적지 버퍼의 전체 크기 (sizeof(dst))
      * @return size_t 복사하려 했던 원본 문자열의 길이
      */
+
     inline size_t copyStr2Buffer_safe(char* p_dst, const char* p_src, size_t p_n) {
         // 기존 API 유지(Caller 미전달 -> 로그에 '?' 찍힘)
-        if (!p_dst || p_n == 0) return 0;
+        if (!p_dst || p_n == 0) {
+			return 0;
+			CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][?] copyStr2Buffer_safe: invalid dst or size");
+		}
 
         if (!p_src) {
             p_dst[0] = '\0';
+			CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][?] copyStr2Buffer_safe: src is null");
             return 0;
         }
 
@@ -90,7 +95,7 @@ namespace A40_ComFunc {
      * @param p_callerFunc 호출자 함수명(__func__ 전달)
      */
     inline size_t copyStr2Buffer_safe(char* p_dst, const char* p_src, size_t p_n, const char* p_callerFunc) {
-        const char* v_caller = A40__callerOrUnknown(p_callerFunc);
+        const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
         if (!p_dst || p_n == 0) {
             CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] copyStr2Buffer_safe: invalid dst or size", v_caller);
@@ -143,7 +148,7 @@ namespace A40_ComFunc {
      * @brief cloneStr2SharedStr_safe (Caller 전달 버전)
      */
     inline std::shared_ptr<char[]> cloneStr2SharedStr_safe(const char* p_src, const char* p_callerFunc) {
-        const char* v_caller = A40__callerOrUnknown(p_callerFunc);
+        const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
         if (!p_src) {
             CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] cloneStr2SharedStr_safe: Input p_src is null", v_caller);
@@ -246,12 +251,11 @@ class CL_A40_MutexGuard_Semaphore {
      * @param p_timeout   대기 시간 (Tick)
      * @param p_caller    호출자 함수명 (매크로로 __func__ 주입 권장)
      */
-
-	 explicit CL_A40_MutexGuard_Semaphore(SemaphoreHandle_t& p_mutex,
+    explicit CL_A40_MutexGuard_Semaphore(SemaphoreHandle_t& p_mutex,
                                          TickType_t         p_timeout,
                                          const char*        p_caller)
         : _mutexPtr(&p_mutex),
-          _caller(A40__callerOrUnknown(p_caller)) {
+          _caller(_A40__callerOrUnknown(p_caller)) {
         _internalInitAndTake(p_timeout);
     }
 
@@ -395,19 +399,7 @@ namespace A40_ComFunc {
 
 } // namespace A40_ComFunc
 
-// ======================================================
-// ✅ 실수 방지 강화 매크로
-//  - __func__ : 표준/안전 (ESP32 GCC에서 안정적)
-//  - p_mutexRef는 "SemaphoreHandle_t 변수"를 넣어야 함 (포인터 금지)
-// ======================================================
 
-// 일반: 변수명/타임아웃 지정
-#define CL_A40_MutexGuard(p_guardName, p_mutexRef, p_timeoutTicks) \
-    CL_A40_MutexGuard_Semaphore p_guardName((p_mutexRef), (p_timeoutTicks), __func__)
-
-// 기본 100ms
-#define LOCK_GUARD_DEFAULT(p_guardName, p_mutexRef) \
-    CL_A40_MutexGuard_Semaphore p_guardName((p_mutexRef), pdMS_TO_TICKS(100), __func__)
 
 // ======================================================
 // 2) IO 유틸 (LittleFS JSON + .bak 자동 복구)
@@ -421,7 +413,7 @@ namespace A40_IO {
                                             const char* p_path,
                                             const char* p_suffix,
                                             const char* p_callerFunc) {
-        const char* v_caller = A40__callerOrUnknown(p_callerFunc);
+        const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
         if (!p_dst || p_dstSize == 0) {
             CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] Path build failed: invalid dst/size", v_caller);
@@ -448,7 +440,7 @@ namespace A40_IO {
                                           JsonDocument& p_doc,
                                           bool p_isBackupTag,
                                           const char* p_callerFunc) {
-        const char* v_caller = A40__callerOrUnknown(p_callerFunc);
+        const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
         File v_f = LittleFS.open(p_path, "r");
         if (!v_f) {
@@ -468,15 +460,6 @@ namespace A40_IO {
         return true;
     }
 
-    /**
-     * @brief 파일 -> JsonDocument 로드 (main 우선, 실패 시 .bak로 복구/복원)
-     * @note  - p_useBackup=false면 .bak 관련 경로/복구 동작을 하지 않습니다.
-     *        - 최초 실행으로 main/bak 둘 다 없을 수 있으므로 false 반환 + INFO 로그.
-     */
-    inline bool Load_File2JsonDoc_V21(const char* p_path, JsonDocument& p_doc, bool p_useBackup = true) {
-        // 기존 API 유지: callerFunc 모름
-        return Load_File2JsonDoc_V21(p_path, p_doc, p_useBackup, "?");
-    }
 
     /**
      * @brief Load_File2JsonDoc_V21 (Caller 전달 버전)
@@ -485,7 +468,7 @@ namespace A40_IO {
                                       JsonDocument& p_doc,
                                       bool p_useBackup,
                                       const char* p_callerFunc) {
-        const char* v_caller = A40__callerOrUnknown(p_callerFunc);
+        const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
         if (!p_path || !p_path[0]) {
             CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] Load failed: Invalid path", v_caller);
@@ -552,15 +535,22 @@ namespace A40_IO {
         return false;
     }
 
+	/**
+     * @brief 파일 -> JsonDocument 로드 (main 우선, 실패 시 .bak로 복구/복원)
+     * @note  - p_useBackup=false면 .bak 관련 경로/복구 동작을 하지 않습니다.
+     *        - 최초 실행으로 main/bak 둘 다 없을 수 있으므로 false 반환 + INFO 로그.
+     */
+    inline bool Load_File2JsonDoc_V21(const char* p_path, JsonDocument& p_doc, bool p_useBackup = true) {
+        // 기존 API 유지: callerFunc 모름
+        return Load_File2JsonDoc_V21(p_path, p_doc, p_useBackup, "?");
+    }
+
+
     /**
      * @brief JsonDocument -> 파일 저장 (tmp -> main, 옵션: main->bak)
      * @note  - 전원차단/중간쓰기 대비: tmp에 먼저 기록 후 rename으로 반영
      *        - p_useBackup=true면 기존 main을 .bak으로 보관
      */
-    inline bool Save_JsonDoc2File_V21(const char* p_path, const JsonDocument& p_doc, bool p_useBackup = true) {
-        // 기존 API 유지: callerFunc 모름
-        return Save_JsonDoc2File_V21(p_path, p_doc, p_useBackup, "?");
-    }
 
     /**
      * @brief Save_JsonDoc2File_V21 (Caller 전달 버전)
@@ -569,7 +559,7 @@ namespace A40_IO {
                                       const JsonDocument& p_doc,
                                       bool p_useBackup,
                                       const char* p_callerFunc) {
-        const char* v_caller = A40__callerOrUnknown(p_callerFunc);
+        const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
         if (!p_path || !p_path[0]) {
             CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] Save failed: Invalid path", v_caller);
@@ -645,7 +635,30 @@ namespace A40_IO {
         return true;
     }
 
+	inline bool Save_JsonDoc2File_V21(const char* p_path, const JsonDocument& p_doc, bool p_useBackup = true) {
+        // 기존 API 유지: callerFunc 모름
+        return Save_JsonDoc2File_V21(p_path, p_doc, p_useBackup, "?");
+    }
+
+
 } // namespace A40_IO
+
+
+
+// ======================================================
+// ✅ 실수 방지 강화 매크로
+//  - __func__ : 표준/안전 (ESP32 GCC에서 안정적)
+//  - p_mutexRef는 "SemaphoreHandle_t 변수"를 넣어야 함 (포인터 금지)
+// ======================================================
+
+// 일반: 변수명/타임아웃 지정
+#define CL_A40_MutexGuard(p_guardName, p_mutexRef, p_timeoutTicks) \
+    CL_A40_MutexGuard_Semaphore p_guardName((p_mutexRef), (p_timeoutTicks), __func__)
+
+// 기본 100ms
+#define LOCK_GUARD_DEFAULT(p_guardName, p_mutexRef) \
+    CL_A40_MutexGuard_Semaphore p_guardName((p_mutexRef), pdMS_TO_TICKS(100), __func__)
+
 
 // ======================================================
 // 3) 권장 매크로 (caller=__func__ 자동 전달)

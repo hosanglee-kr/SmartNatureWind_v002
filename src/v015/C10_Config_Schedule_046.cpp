@@ -1,40 +1,40 @@
-/*  
- * ------------------------------------------------------  
- * 소스명 : C10_Config_Schedule_046.cpp  
- * 모듈 약어 : C10  
- * 모듈명 : Smart Nature Wind Configuration Manager - Schedule/UserProfiles/WindDict  
- * ------------------------------------------------------  
- * 기능 요약:  
- *  - Schedules / UserProfiles / WindDict Load/Save  
- *  - 위 섹션들의 JSON Export / Patch  
- *  - Schedule / UserProfiles / WindDict CRUD  
- *  - windDict 운영급 검증(코드/이름 trim, 길이/공백/문자, code 중복)  
- * ------------------------------------------------------  
- * [구현 규칙]  
- *  - 항상 소스 시작 주석 체계 유지  
- *  - ArduinoJson v7.x.x 사용 (v6 이하 사용 금지)  
- *  - JsonDocument 단일 타입만 사용  
- *  - createNestedArray/Object/containsKey 사용 금지  
- *  - memset + strlcpy 기반 안전 초기화  
- *  - 주석/필드명은 JSON 구조와 동일하게 유지  
- *  - 모듈별 헤더(h) + 목적물별 cpp 분리 구성 (Core/System/Schedule)  
- * ------------------------------------------------------  
- * [코드 네이밍 규칙]  
- *   - 전역 상수,매크로      : G_모듈약어_ 접두사  
- *   - 전역 변수             : g_모듈약어_ 접두사  
- *   - 전역 함수             : 모듈약어_ 접두사  
- *   - type                  : T_모듈약어_ 접두사  
- *   - typedef               : _t  접미사  
- *   - enum 상수             : EN_모듈약어_ 접두사  
- *   - 구조체                : ST_모듈약어_ 접두사  
- *   - 클래스명              : CL_모듈약어_ 접두사  
- *   - 클래스 private 멤버   : _ 접두사  
- *   - 클래스 멤버(함수/변수) : 모듈약어 접두사 미사용  
- *   - 클래스 정적 멤버      : s_ 접두사  
- *   - 함수 로컬 변수        : v_ 접두사  
- *   - 함수 인자             : p_ 접두사  
- * ------------------------------------------------------  
- */  
+/*
+ * ------------------------------------------------------
+ * 소스명 : C10_Config_Schedule_046.cpp
+ * 모듈 약어 : C10
+ * 모듈명 : Smart Nature Wind Configuration Manager - Schedule/UserProfiles/WindDict
+ * ------------------------------------------------------
+ * 기능 요약:
+ *  - Schedules / UserProfiles / WindDict Load/Save
+ *  - 위 섹션들의 JSON Export / Patch
+ *  - Schedule / UserProfiles / WindDict CRUD
+ *  - windDict 운영급 검증(코드/이름 trim, 길이/공백/문자, code 중복)
+ * ------------------------------------------------------
+ * [구현 규칙]
+ *  - 항상 소스 시작 주석 체계 유지
+ *  - ArduinoJson v7.x.x 사용 (v6 이하 사용 금지)
+ *  - JsonDocument 단일 타입만 사용
+ *  - createNestedArray/Object/containsKey 사용 금지
+ *  - memset + strlcpy 기반 안전 초기화
+ *  - 주석/필드명은 JSON 구조와 동일하게 유지
+ *  - 모듈별 헤더(h) + 목적물별 cpp 분리 구성 (Core/System/Schedule)
+ * ------------------------------------------------------
+ * [코드 네이밍 규칙]
+ *   - 전역 상수,매크로      : G_모듈약어_ 접두사
+ *   - 전역 변수             : g_모듈약어_ 접두사
+ *   - 전역 함수             : 모듈약어_ 접두사
+ *   - type                  : T_모듈약어_ 접두사
+ *   - typedef               : _t  접미사
+ *   - enum 상수             : EN_모듈약어_ 접두사
+ *   - 구조체                : ST_모듈약어_ 접두사
+ *   - 클래스명              : CL_모듈약어_ 접두사
+ *   - 클래스 private 멤버   : _ 접두사
+ *   - 클래스 멤버(함수/변수) : 모듈약어 접두사 미사용
+ *   - 클래스 정적 멤버      : s_ 접두사
+ *   - 함수 로컬 변수        : v_ 접두사
+ *   - 함수 인자             : p_ 접두사
+ * ------------------------------------------------------
+ */
 
 #include <new>
 #include <Arduino.h>
@@ -960,7 +960,7 @@ void CL_C10_ConfigManager::toJson_WindDict(const ST_A20_WindDict_t& p_cfg, JsonD
 //  - windDict는 운영급 검증(코드/이름 trim, 길이/문자/공백, code 중복)
 // =====================================================
 bool CL_C10_ConfigManager::patchSchedulesFromJson(ST_A20_SchedulesRoot_t& p_cfg, const JsonDocument& p_patch) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1001,7 +1001,7 @@ bool CL_C10_ConfigManager::patchSchedulesFromJson(ST_A20_SchedulesRoot_t& p_cfg,
 }
 
 bool CL_C10_ConfigManager::patchUserProfilesFromJson(ST_A20_UserProfilesRoot_t& p_cfg, const JsonDocument& p_patch) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1030,7 +1030,7 @@ bool CL_C10_ConfigManager::patchUserProfilesFromJson(ST_A20_UserProfilesRoot_t& 
 }
 
 bool CL_C10_ConfigManager::patchWindDictFromJson(ST_A20_WindDict_t& p_cfg, const JsonDocument& p_patch) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1065,7 +1065,7 @@ bool CL_C10_ConfigManager::patchWindDictFromJson(ST_A20_WindDict_t& p_cfg, const
 
 // ---------- Schedule CRUD ----------
 int CL_C10_ConfigManager::addScheduleFromJson(const JsonDocument& p_doc) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return -1;
@@ -1115,7 +1115,7 @@ int CL_C10_ConfigManager::addScheduleFromJson(const JsonDocument& p_doc) {
 }
 
 bool CL_C10_ConfigManager::updateScheduleFromJson(uint16_t p_id, const JsonDocument& p_patch) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1166,7 +1166,7 @@ bool CL_C10_ConfigManager::updateScheduleFromJson(uint16_t p_id, const JsonDocum
 }
 
 bool CL_C10_ConfigManager::deleteSchedule(uint16_t p_id) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1202,7 +1202,7 @@ bool CL_C10_ConfigManager::deleteSchedule(uint16_t p_id) {
 
 // ---------- UserProfiles CRUD ----------
 int CL_C10_ConfigManager::addUserProfilesFromJson(const JsonDocument& p_doc) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return -1;
@@ -1240,7 +1240,7 @@ int CL_C10_ConfigManager::addUserProfilesFromJson(const JsonDocument& p_doc) {
 }
 
 bool CL_C10_ConfigManager::updateUserProfilesFromJson(uint16_t p_id, const JsonDocument& p_patch) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1275,7 +1275,7 @@ bool CL_C10_ConfigManager::updateUserProfilesFromJson(uint16_t p_id, const JsonD
 }
 
 bool CL_C10_ConfigManager::deleteUserProfiles(uint16_t p_id) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1311,7 +1311,7 @@ bool CL_C10_ConfigManager::deleteUserProfiles(uint16_t p_id) {
 
 // ---------- WindDict CRUD (Preset 중심) ----------
 int CL_C10_ConfigManager::addWindProfileFromJson(const JsonDocument& p_doc) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return -1;
@@ -1359,7 +1359,7 @@ int CL_C10_ConfigManager::addWindProfileFromJson(const JsonDocument& p_doc) {
 }
 
 bool CL_C10_ConfigManager::updateWindProfileFromJson(uint16_t p_id, const JsonDocument& p_patch) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1397,7 +1397,7 @@ bool CL_C10_ConfigManager::updateWindProfileFromJson(uint16_t p_id, const JsonDo
 }
 
 bool CL_C10_ConfigManager::deleteWindProfile(uint16_t p_id) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;

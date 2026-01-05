@@ -755,7 +755,7 @@ void CL_C10_ConfigManager::toJson_WindDict(const ST_A20_WindDict_t& p_cfg, JsonD
 // =====================================================
 bool CL_C10_ConfigManager::patchSchedulesFromJson(ST_A20_SchedulesRoot_t& p_cfg, const JsonDocument& p_patch) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -802,7 +802,7 @@ bool CL_C10_ConfigManager::patchSchedulesFromJson(ST_A20_SchedulesRoot_t& p_cfg,
 
 bool CL_C10_ConfigManager::patchUserProfilesFromJson(ST_A20_UserProfilesRoot_t& p_cfg, const JsonDocument& p_patch) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -832,7 +832,7 @@ bool CL_C10_ConfigManager::patchUserProfilesFromJson(ST_A20_UserProfilesRoot_t& 
 
 bool CL_C10_ConfigManager::patchWindDictFromJson(ST_A20_WindDict_t& p_cfg, const JsonDocument& p_patch) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -893,7 +893,7 @@ bool CL_C10_ConfigManager::patchWindDictFromJson(ST_A20_WindDict_t& p_cfg, const
 // ---------- Schedule CRUD ----------
 int CL_C10_ConfigManager::addScheduleFromJson(const JsonDocument& p_doc) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return -1;
@@ -953,7 +953,7 @@ int CL_C10_ConfigManager::addScheduleFromJson(const JsonDocument& p_doc) {
 
 bool CL_C10_ConfigManager::updateScheduleFromJson(uint16_t p_id, const JsonDocument& p_patch) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1009,7 +1009,7 @@ bool CL_C10_ConfigManager::updateScheduleFromJson(uint16_t p_id, const JsonDocum
 
 bool CL_C10_ConfigManager::deleteSchedule(uint16_t p_id) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1046,7 +1046,7 @@ bool CL_C10_ConfigManager::deleteSchedule(uint16_t p_id) {
 // ---------- UserProfiles CRUD ----------
 int CL_C10_ConfigManager::addUserProfilesFromJson(const JsonDocument& p_doc) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return -1;
@@ -1086,7 +1086,7 @@ int CL_C10_ConfigManager::addUserProfilesFromJson(const JsonDocument& p_doc) {
 
 bool CL_C10_ConfigManager::updateUserProfilesFromJson(uint16_t p_id, const JsonDocument& p_patch) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1122,7 +1122,7 @@ bool CL_C10_ConfigManager::updateUserProfilesFromJson(uint16_t p_id, const JsonD
 
 bool CL_C10_ConfigManager::deleteUserProfiles(uint16_t p_id) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1159,7 +1159,7 @@ bool CL_C10_ConfigManager::deleteUserProfiles(uint16_t p_id) {
 // ---------- WindProfile CRUD (Preset 중심) ----------
 int CL_C10_ConfigManager::addWindProfileFromJson(const JsonDocument& p_doc) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return -1;
@@ -1200,7 +1200,7 @@ int CL_C10_ConfigManager::addWindProfileFromJson(const JsonDocument& p_doc) {
 
 bool CL_C10_ConfigManager::updateWindProfileFromJson(uint16_t p_id, const JsonDocument& p_patch) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1229,7 +1229,7 @@ bool CL_C10_ConfigManager::updateWindProfileFromJson(uint16_t p_id, const JsonDo
 
 bool CL_C10_ConfigManager::deleteWindProfile(uint16_t p_id) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;

@@ -474,7 +474,7 @@ static inline bool _parseJsonFileToDoc(const char* p_path, JsonDocument& p_doc, 
 /**
  * @brief Load_File2JsonDoc_V21 (Caller 전달 버전)
  */
-inline bool Load_File2JsonDoc_V21(const char* p_path, JsonDocument& p_doc, bool p_useBackup, const char* p_callerFunc) {
+inline bool Load_File2JsonDoc_V21(const char* p_path, JsonDocument& p_doc, bool p_useBackup, const char* p_callerFunc = nullptr) {
     const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
     if (!p_path || !p_path[0]) {
@@ -543,10 +543,12 @@ inline bool Load_File2JsonDoc_V21(const char* p_path, JsonDocument& p_doc, bool 
  * @note  - p_useBackup=false면 .bak 관련 경로/복구 동작을 하지 않습니다.
  *        - 최초 실행으로 main/bak 둘 다 없을 수 있으므로 false 반환 + INFO 로그.
  */
+/*
 inline bool Load_File2JsonDoc_V21(const char* p_path, JsonDocument& p_doc, bool p_useBackup = true) {
     // 기존 API 유지: callerFunc 모름
     return Load_File2JsonDoc_V21(p_path, p_doc, p_useBackup, "?");
 }
+*/
 
 /**
  * @brief JsonDocument -> 파일 저장 (tmp -> main, 옵션: main->bak)
@@ -557,7 +559,7 @@ inline bool Load_File2JsonDoc_V21(const char* p_path, JsonDocument& p_doc, bool 
 /**
  * @brief Save_JsonDoc2File_V21 (Caller 전달 버전)
  */
-inline bool Save_JsonDoc2File_V21(const char* p_path, const JsonDocument& p_doc, bool p_useBackup, bool p_jsonPretty = true, const char* p_callerFunc) {
+inline bool Save_JsonDoc2File_V21(const char* p_path, const JsonDocument& p_doc, bool p_useBackup, bool p_jsonPretty = true, const char* p_callerFunc = nullptr) {
     const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
     if (!p_path || !p_path[0]) {
@@ -639,10 +641,12 @@ inline bool Save_JsonDoc2File_V21(const char* p_path, const JsonDocument& p_doc,
     return true;
 }
 
+/*
 inline bool Save_JsonDoc2File_V21(const char* p_path, const JsonDocument& p_doc, bool p_useBackup = true) {
     // 기존 API 유지: callerFunc 모름
     return Save_JsonDoc2File_V21(p_path, p_doc, p_useBackup, "?");
 }
+*/
 
 } // namespace A40_IO
 

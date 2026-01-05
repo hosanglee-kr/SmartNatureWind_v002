@@ -41,8 +41,12 @@
 // 공통: caller func 문자열 방어
 // ------------------------------------------------------
 static inline const char* _A40__callerOrUnknown(const char* p_callerFunc) {
-    return (p_callerFunc && p_callerFunc[0]) ? p_callerFunc : "?";
+    if (p_callerFunc == nullptr || p_callerFunc[0] == '\0') {
+        return "?";
+    }
+    return p_callerFunc;
 }
+
 
 // ======================================================
 // 공통: A40 로그 매크로

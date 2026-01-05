@@ -621,6 +621,8 @@ inline bool Save_JsonDoc2File_V21(const char* p_path, const JsonDocument& p_doc,
 
 } // namespace A40_IO
 
+
+/*
 // ======================================================
 // ✅ 실수 방지 강화 매크로
 //  - __func__ : 표준/안전 (ESP32 GCC에서 안정적)
@@ -644,3 +646,5 @@ inline bool Save_JsonDoc2File_V21(const char* p_path, const JsonDocument& p_doc,
 
 #define A40_COPY_STR(_dst, _src, _n)      A40_ComFunc::copyStr2Buffer_safe((_dst), (_src), (_n), __func__)
 #define A40_CLONE_STR(_src)               A40_ComFunc::cloneStr2SharedStr_safe((_src), __func__)
+
+*/

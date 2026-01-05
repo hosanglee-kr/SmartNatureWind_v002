@@ -199,22 +199,27 @@ static inline const char* Json_getStr(JsonObjectConst p_obj, const char* p_key, 
     if (p_obj.isNull()) return p_def;
     JsonVariantConst v = p_obj[p_key];
     if (v.isNull()) return p_def;
+    if (!v.is<const char*>()) return p_def;   // ✅ 추가
     const char* s = v.as<const char*>();
     return (s && s[0]) ? s : p_def;
 }
+
+
 
 template <typename T>
 static inline T Json_getNum(JsonObjectConst p_obj, const char* p_key, T p_def) {
     if (p_obj.isNull()) return p_def;
     JsonVariantConst v = p_obj[p_key];
     if (v.isNull()) return p_def;
-    return v.as<T>();
+    if (v.is<T>()) return v.as<T>();          // ✅ 추가(핵심)
+    return p_def;                             // ✅ 추가(핵심)
 }
 
 static inline bool Json_getBool(JsonObjectConst p_obj, const char* p_key, bool p_def) {
     if (p_obj.isNull()) return p_def;
     JsonVariantConst v = p_obj[p_key];
     if (v.isNull()) return p_def;
+    if (!v.is<bool>()) return p_def;          // ✅ 추가
     return v.as<bool>();
 }
 
@@ -222,6 +227,7 @@ static inline JsonArrayConst Json_getArr(JsonObjectConst p_obj, const char* p_ke
     if (p_obj.isNull()) return JsonArrayConst();
     JsonVariantConst v = p_obj[p_key];
     if (v.isNull()) return JsonArrayConst();
+    if (!v.is<JsonArrayConst>()) return JsonArrayConst(); // ✅ 추가
     return v.as<JsonArrayConst>();
 }
 

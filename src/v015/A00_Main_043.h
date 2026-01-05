@@ -39,24 +39,21 @@
 #include "A30_LED_041.h"
 
 // [main.cpp] 또는 [MotionLogic.cpp] 파일에 추가
-CL_M10_MotionLogic* 		g_M10_motionLogic = nullptr;
+CL_M10_MotionLogic* 	g_M10_motionLogic = nullptr;
 
-AsyncWebServer   			g_A00_server(80);
-static WiFiMulti 			g_A00_wifiMulti;
+AsyncWebServer   		g_A00_server(80);
+static WiFiMulti 		g_A00_wifiMulti;
 
-CL_CT10_ControlManager& 	g_A00_control = CL_CT10_ControlManager::instance();
-CL_P10_PWM              	g_P10_pwm;
+CL_CT10_ControlManager& g_A00_control = CL_CT10_ControlManager::instance();
+CL_P10_PWM              g_P10_pwm;
 
-
-CL_A30_LED 					g_A00_ledController;
-
+CL_A30_LED g_A00_ledController;
 
 // ------------------------------------------------------
 // 메인 초기화
 // ------------------------------------------------------
 void A00_init() {
-
-	// LED 초기화
+    // LED 초기화
     g_A00_ledController.begin();
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "=== Smart Nature Wind Boot (v002) ===");
@@ -82,16 +79,14 @@ void A00_init() {
     }
 
     // 4. Wi-Fi 초기화
-    const ST_A20_WifiConfig_t&   v_wifi = *g_A20_config_root.wifi;
-    const ST_A20_SystemConfig_t& v_sys  = *g_A20_config_root.system;
-    bool v_wifiOk = CL_WF10_WiFiManager::init(v_wifi, v_sys, g_A00_wifiMulti);
+    const ST_A20_WifiConfig_t&   v_wifi   = *g_A20_config_root.wifi;
+    const ST_A20_SystemConfig_t& v_sys    = *g_A20_config_root.system;
+    bool                         v_wifiOk = CL_WF10_WiFiManager::init(v_wifi, v_sys, g_A00_wifiMulti);
 
-	CL_TM10_TimeManager::begin();
-
+    CL_TM10_TimeManager::begin();
 
     // 5. PWM + Control + Simulation
     g_P10_pwm.P10_begin(*g_A20_config_root.system);
-
 
     CL_CT10_ControlManager::begin();
 
@@ -104,15 +99,13 @@ void A00_init() {
 
     g_A00_server.begin();
 
-	  // ✅ 7.5 CT10 WS Broker 주입 + Scheduler 시작
+    // ✅ 7.5 CT10 WS Broker 주입 + Scheduler 시작
     // - 이제 CT10_WS_bindToW10()는 완전히 제거해도 됨
-    CT10_WS_setBrokers(
-        CL_W10_WebAPI::broadcastState,
-        CL_W10_WebAPI::broadcastMetrics,
-        CL_W10_WebAPI::broadcastChart,
-        CL_W10_WebAPI::broadcastSummary,
-        CL_W10_WebAPI::wsCleanupTick
-    );
+    CT10_WS_setBrokers(CL_W10_WebAPI::broadcastState,
+                       CL_W10_WebAPI::broadcastMetrics,
+                       CL_W10_WebAPI::broadcastChart,
+                       CL_W10_WebAPI::broadcastSummary,
+                       CL_W10_WebAPI::wsCleanupTick);
     CT10_WS_begin();
 
     // 8. Watchdog 초기화 (10초)
@@ -126,7 +119,6 @@ void A00_init() {
 // 메인 루프
 // ------------------------------------------------------
 void A00_run() {
-
     uint32_t v_now = millis();
 
     esp_task_wdt_reset(); // Watchdog feed
@@ -136,29 +128,28 @@ void A00_run() {
     // CT10 Dirty 플래그 기반 브로드캐스트 (책임 위임)
     CL_CT10_ControlManager& v_ctrl = g_A00_control;
 
-	// ✅ CT10 WS 스케줄러가 dirty 기반으로 전송/스로틀/우선순위를 수행
+    // ✅ CT10 WS 스케줄러가 dirty 기반으로 전송/스로틀/우선순위를 수행
     CT10_WS_tick();
 
     // --------------------------------------------------
-	/*
+    /*
     // NVS Dirty Flush (10초마다)
     if (v_now - v_lastFlush >= 10000) {
         v_lastFlush = v_now;
         CL_N10_NvsManager::flushIfNeeded();
     }
-	*/
+    */
 
-	// TM10 시간 상태 감시/서버 fallback 처리(블로킹X)
+    // TM10 시간 상태 감시/서버 fallback 처리(블로킹X)
     if (g_A20_config_root.system) {
         CL_TM10_TimeManager::tick(g_A20_config_root.system);
     } else {
         CL_TM10_TimeManager::tick(nullptr);
     }
 
-	// 2. LED 업데이트
+    // 2. LED 업데이트
     bool v_wifiStatus = CL_WF10_WiFiManager::isStaConnected();
     g_A00_ledController.run(v_wifiStatus);
-
 
     delay(10);
 }

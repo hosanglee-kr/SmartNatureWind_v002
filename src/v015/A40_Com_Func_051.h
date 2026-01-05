@@ -242,11 +242,6 @@ class CL_A40_MutexGuard_Semaphore {
     bool _acquired = false;
 };
 
-// 권장 매크로 (caller 주입 강제)
-#define A40_MUTEX_GUARD(_name, _mutex, _timeout) \
-    CL_A40_MutexGuard_Semaphore _name((_mutex), (_timeout), __func__)
-#define A40_MUTEX_GUARD_DEFAULT(_name, _mutex) \
-    CL_A40_MutexGuard_Semaphore _name((_mutex), G_A40_MUTEX_TIMEOUT_100, __func__)
 
 // ======================================================
 // 3) Critical Section Guard
@@ -434,6 +429,17 @@ inline bool Save_JsonDoc2File_V21(
 
 } // namespace A40_IO
 
+
+/*
+
+// 권장 매크로 (caller 주입 강제)
+#define A40_MUTEX_GUARD(_name, _mutex, _timeout) \
+    CL_A40_MutexGuard_Semaphore _name((_mutex), (_timeout), __func__)
+#define A40_MUTEX_GUARD_DEFAULT(_name, _mutex) \
+    CL_A40_MutexGuard_Semaphore _name((_mutex), G_A40_MUTEX_TIMEOUT_100, __func__)
+
+
+
 // ======================================================
 // 권장 호출 매크로 (caller 자동 주입)
 // ======================================================
@@ -452,4 +458,4 @@ inline bool Save_JsonDoc2File_V21(
 #define A40_IO_SAVE_MIN(path, doc, useBackup) \
     A40_IO::Save_JsonDoc2File_V21((path), (doc), (useBackup), false, __func__)
 
-
+*/

@@ -54,13 +54,13 @@ static inline const char* _A40__callerOrUnknown(const char* p_callerFunc) {
 //  - A40_LOG*_C : callerFunc 기반(요구사항 충족, 공용함수 내부에서 권장)
 // ======================================================
 #define A40_LOGE(_fmt, ...) \
-    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] " _fmt, _A40__callerOrUnknown(__func__), ##__VA_ARGS__)
+    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
 #define A40_LOGW(_fmt, ...) \
-    CL_D10_Logger::log(EN_L10_LOG_WARN,  "[A40][%s] " _fmt, _A40__callerOrUnknown(__func__), ##__VA_ARGS__)
+    CL_D10_Logger::log(EN_L10_LOG_WARN,  "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
 #define A40_LOGI(_fmt, ...) \
-    CL_D10_Logger::log(EN_L10_LOG_INFO,  "[A40][%s] " _fmt, _A40__callerOrUnknown(__func__), ##__VA_ARGS__)
+    CL_D10_Logger::log(EN_L10_LOG_INFO,  "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
 #define A40_LOGD(_fmt, ...) \
-    CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A40][%s] " _fmt, _A40__callerOrUnknown(__func__), ##__VA_ARGS__)
+    CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
 
 #define A40_LOGE_C(_caller, _fmt, ...) \
     CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] " _fmt, _A40__callerOrUnknown((_caller)), ##__VA_ARGS__)

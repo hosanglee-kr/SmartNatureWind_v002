@@ -46,7 +46,7 @@ void CL_WF10_WiFiManager::attachWiFiEvents() {
     WiFi.onEvent(
         [](arduino_event_id_t, arduino_event_info_t) {
             // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
-			CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_TM10_MUTEX_TIMEOUT);
+			CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
             if (!v_guard.isAcquired()) {
                 CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout (GOT_IP)", __func__);
                 return;
@@ -67,7 +67,7 @@ void CL_WF10_WiFiManager::attachWiFiEvents() {
         [](arduino_event_id_t event, arduino_event_info_t info) {
             if (event == ARDUINO_EVENT_WIFI_STA_DISCONNECTED) {
                 // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
-				CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_TM10_MUTEX_TIMEOUT);
+				CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
                 if (!v_guard.isAcquired()) {
                     CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout (DISCONN)", __func__);
                     return;
@@ -104,7 +104,7 @@ bool CL_WF10_WiFiManager::init(const ST_A20_WifiConfig_t& p_cfg_wifi,
                                bool p_enableApDhcp) {
 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
-	CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_TM10_MUTEX_TIMEOUT);
+	CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
     if (!v_guard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout", __func__);
         return false;
@@ -194,7 +194,7 @@ bool CL_WF10_WiFiManager::startAP(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t
 // STA 시작 (전략적 락 해제 적용)
 // --------------------------------------------------
 bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, WiFiMulti& p_multi, uint8_t p_maxTries) {
-    CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_TM10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
     if (!v_guard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout", __func__);
         return false;
@@ -230,7 +230,7 @@ bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, WiFiMu
     }
 
     // [재획득] 결과 업데이트를 위해 다시 락
-    if (!v_guard.acquire(G_TM10_MUTEX_TIMEOUT)) {
+    if (!v_guard.acquire(G_A40_MUTEX_TIMEOUT_100)) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex re-acquire fail", __func__);
         return false;
     }
@@ -253,7 +253,7 @@ bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, WiFiMu
 // 상태 JSON (읽기 보호)
 // --------------------------------------------------
 void CL_WF10_WiFiManager::getWifiStateJson(JsonDocument& p_doc) {
-    CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_TM10_MUTEX_TIMEOUT);
+    CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
     if (!v_guard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout", __func__);
         return;
@@ -306,7 +306,7 @@ void CL_WF10_WiFiManager::scanNetworksToJson(JsonDocument& p_doc) {
 // 헬퍼 메서드
 // --------------------------------------------------
 bool CL_WF10_WiFiManager::isStaConnected() {
-    CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, 0); // 즉시 확인
+    CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, 0, __func__ ); // 즉시 확인
     if (!v_guard.isAcquired()) {
 		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
 		return false;

@@ -55,9 +55,9 @@
 // ------------------------------------------------------
 // 운영급 튜닝 상수
 // ------------------------------------------------------
-#ifndef G_TM10_MUTEX_TIMEOUT
-# define G_TM10_MUTEX_TIMEOUT pdMS_TO_TICKS(100)
-#endif
+// #ifndef G_TM10_MUTEX_TIMEOUT
+// # define G_TM10_MUTEX_TIMEOUT pdMS_TO_TICKS(100)
+// #endif
 
 #ifndef G_TM10_SYNC_TIMEOUT_MS
 // 서버 1개당 콜백을 기다리는 시간(블로킹X, tick에서 체크)
@@ -309,7 +309,7 @@ inline void CL_TM10_TimeManager::_switchToNextServer() {
 
 inline void CL_TM10_TimeManager::begin() {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
-    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_TM10_MUTEX_TIMEOUT, __func__);
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
         return;
@@ -332,7 +332,7 @@ inline void CL_TM10_TimeManager::begin() {
 
 inline void CL_TM10_TimeManager::requestTimeSync() {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
-    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_TM10_MUTEX_TIMEOUT, __func__);
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
         return;
@@ -359,7 +359,7 @@ inline void CL_TM10_TimeManager::requestTimeSync() {
 
 inline void CL_TM10_TimeManager::applyTimeConfig(const ST_A20_SystemConfig_t& p_sys) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
-    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_TM10_MUTEX_TIMEOUT, __func__);
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
         return;
@@ -381,7 +381,7 @@ inline void CL_TM10_TimeManager::applyTimeConfig(const ST_A20_SystemConfig_t& p_
 
 inline void CL_TM10_TimeManager::onWiFiConnected(const ST_A20_SystemConfig_t& p_sys) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
-    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_TM10_MUTEX_TIMEOUT, __func__);
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
         return;
@@ -399,7 +399,7 @@ inline void CL_TM10_TimeManager::onWiFiConnected(const ST_A20_SystemConfig_t& p_
 
 inline void CL_TM10_TimeManager::onWiFiDisconnected() {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
-    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_TM10_MUTEX_TIMEOUT, __func__);
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
         return;
@@ -419,7 +419,7 @@ inline void CL_TM10_TimeManager::onWiFiDisconnected() {
 
 inline void CL_TM10_TimeManager::tick(const ST_A20_SystemConfig_t* p_sysOrNull) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
-    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_TM10_MUTEX_TIMEOUT, __func__);
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
         return;
@@ -476,7 +476,7 @@ inline void CL_TM10_TimeManager::tick(const ST_A20_SystemConfig_t* p_sysOrNull) 
 
 inline void CL_TM10_TimeManager::toJson(JsonDocument& p_doc) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
-    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_TM10_MUTEX_TIMEOUT, __func__);
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
         return;

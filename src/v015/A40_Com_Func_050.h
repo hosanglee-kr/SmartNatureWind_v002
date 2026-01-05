@@ -232,6 +232,16 @@ namespace A40_ComFunc {
 // 2) Mutex Guard (caller 주입)
 // ======================================================
 
+
+#ifndef G_A40_MUTEX_TIMEOUT_100
+	# define G_A40_MUTEX_TIMEOUT_100 pdMS_TO_TICKS(100)
+#endif
+
+
+#ifndef G_A40_MUTEX_TIMEOUT_0
+	# define G_A40_MUTEX_TIMEOUT_100 pdMS_TO_TICKS(0)
+#endif
+
 /**
  * @class CL_A40_MutexGuard_Semaphore
  * @brief FreeRTOS Recursive Mutex 가드 (Lazy Init + RAII)
@@ -657,7 +667,7 @@ namespace A40_IO {
 
 // 기본 100ms
 #define LOCK_GUARD_DEFAULT(p_guardName, p_mutexRef) \
-    CL_A40_MutexGuard_Semaphore p_guardName((p_mutexRef), pdMS_TO_TICKS(100), __func__)
+    CL_A40_MutexGuard_Semaphore p_guardName((p_mutexRef), G_A40_MUTEX_TIMEOUT_100, __func__)
 
 
 // ======================================================

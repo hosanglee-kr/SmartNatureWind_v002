@@ -587,7 +587,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
     bool v_changed = false;
 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_A40_MUTEX_TIMEOUT_100, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -885,7 +885,7 @@ bool CL_C10_ConfigManager::patchWifiFromJson(ST_A20_WifiConfig_t& p_config, cons
     bool v_changed = false;
 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_A40_MUTEX_TIMEOUT_100, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -952,7 +952,7 @@ bool CL_C10_ConfigManager::patchWifiFromJson(ST_A20_WifiConfig_t& p_config, cons
 
 bool CL_C10_ConfigManager::patchMotionFromJson(ST_A20_MotionConfig_t& p_config, const JsonDocument& p_patch) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_C10_MUTEX_TIMEOUT, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_A40_MUTEX_TIMEOUT_100, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;

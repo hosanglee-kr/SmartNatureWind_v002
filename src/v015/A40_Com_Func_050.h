@@ -239,7 +239,7 @@ namespace A40_ComFunc {
 
 
 #ifndef G_A40_MUTEX_TIMEOUT_0
-	# define G_A40_MUTEX_TIMEOUT_100 pdMS_TO_TICKS(0)
+	# define G_A40_MUTEX_TIMEOUT_0 pdMS_TO_TICKS(0)
 #endif
 
 /**

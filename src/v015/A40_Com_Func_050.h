@@ -204,15 +204,13 @@ static inline const char* Json_getStr(JsonObjectConst p_obj, const char* p_key, 
     return (s && s[0]) ? s : p_def;
 }
 
-
-
 template <typename T>
 static inline T Json_getNum(JsonObjectConst p_obj, const char* p_key, T p_def) {
     if (p_obj.isNull()) return p_def;
     JsonVariantConst v = p_obj[p_key];
     if (v.isNull()) return p_def;
-    if (v.is<T>()) return v.as<T>();          // ✅ 추가(핵심)
-    return p_def;                             // ✅ 추가(핵심)
+    if (!v.is<T>()) return p_def;
+    return v.as<T>();
 }
 
 static inline bool Json_getBool(JsonObjectConst p_obj, const char* p_key, bool p_def) {
@@ -552,7 +550,7 @@ inline bool Load_File2JsonDoc_V21(const char* p_path, JsonDocument& p_doc, bool 
 /**
  * @brief Save_JsonDoc2File_V21 (Caller 전달 버전)
  */
-inline bool Save_JsonDoc2File_V21(const char* p_path, const JsonDocument& p_doc, bool p_useBackup, const char* p_callerFunc) {
+inline bool Save_JsonDoc2File_V21(const char* p_path, const JsonDocument& p_doc, bool p_useBackup, bool p_jsonPretty = true, const char* p_callerFunc) {
     const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
     if (!p_path || !p_path[0]) {
@@ -577,7 +575,13 @@ inline bool Save_JsonDoc2File_V21(const char* p_path, const JsonDocument& p_doc,
         return false;
     }
 
-    size_t v_bytes = serializeJsonPretty(p_doc, v_f);
+    size_t v_bytes = 0;
+    if (p_jsonPretty == true){
+        v_bytes = serializeJsonPretty(p_doc, v_f);
+    } else {
+        v_bytes = serializeJson(p_doc, v_f);
+    }
+    
     v_f.close();
 
     if (v_bytes == 0) {

@@ -89,7 +89,7 @@ inline constexpr T clampVal(T p_value, T p_lowValue, T p_highValue) {
  * @param p_n 목적지 버퍼의 전체 크기 (sizeof(dst))
  * @return size_t 복사하려 했던 원본 문자열의 길이
  */
-
+/*
 inline size_t copyStr2Buffer_safe(char* p_dst, const char* p_src, size_t p_n) {
     // 기존 API 유지(Caller 미전달 -> 로그에 '?' 찍힘)
     if (!p_dst || p_n == 0) {
@@ -105,12 +105,13 @@ inline size_t copyStr2Buffer_safe(char* p_dst, const char* p_src, size_t p_n) {
 
     return strlcpy(p_dst, p_src, p_n);
 }
+*/
 
 /**
  * @brief 안전한 문자열 복사 함수 (Caller 전달 버전)
  * @param p_callerFunc 호출자 함수명(__func__ 전달)
  */
-inline size_t copyStr2Buffer_safe(char* p_dst, const char* p_src, size_t p_n, const char* p_callerFunc) {
+inline size_t copyStr2Buffer_safe(char* p_dst, const char* p_src, size_t p_n, const char* p_callerFunc = nullptr) {
     const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
     if (!p_dst || p_n == 0) {
@@ -135,6 +136,7 @@ inline size_t copyStr2Buffer_safe(char* p_dst, const char* p_src, size_t p_n, co
  * @param p_src 복사할 원본 문자열 포인터
  * @return std::shared_ptr<char[]> 관리되는 문자열 (할당 실패 시 nullptr)
  */
+/*
 inline std::shared_ptr<char[]> cloneStr2SharedStr_safe(const char* p_src) {
     // 기존 API 유지(Caller 미전달 -> 로그에 '?' 찍힘)
     if (!p_src) {
@@ -156,11 +158,12 @@ inline std::shared_ptr<char[]> cloneStr2SharedStr_safe(const char* p_src) {
     strlcpy(v_buf.get(), p_src, v_len);
     return v_buf;
 }
+*/
 
 /**
  * @brief cloneStr2SharedStr_safe (Caller 전달 버전)
  */
-inline std::shared_ptr<char[]> cloneStr2SharedStr_safe(const char* p_src, const char* p_callerFunc) {
+inline std::shared_ptr<char[]> cloneStr2SharedStr_safe(const char* p_src, const char* p_callerFunc = nullptr) {
     const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
     if (!p_src) {

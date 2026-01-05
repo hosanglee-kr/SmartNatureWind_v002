@@ -81,8 +81,8 @@ inline constexpr T clampVal(T p_value, T p_lowValue, T p_highValue) {
 inline size_t copyStr2Buffer_safe(char* p_dst, const char* p_src, size_t p_n) {
     // 기존 API 유지(Caller 미전달 -> 로그에 '?' 찍힘)
     if (!p_dst || p_n == 0) {
-        return 0;
         CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][?] copyStr2Buffer_safe: invalid dst or size");
+        return 0;
     }
 
     if (!p_src) {

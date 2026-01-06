@@ -308,7 +308,7 @@ void CL_WF10_WiFiManager::scanNetworksToJson(JsonDocument& p_doc) {
 bool CL_WF10_WiFiManager::isStaConnected() {
     CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, 0, __func__ ); // 즉시 확인
     if (!v_guard.isAcquired()) {
-		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout", __func__);
 		return false;
 	}
     return s_staConnected && (WiFi.status() == WL_CONNECTED);

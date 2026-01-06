@@ -99,7 +99,7 @@ bool CL_C10_ConfigManager::_loadCfgJsonFile() {
     JsonDocument v_doc;
 
     // 공통함수 직접 호출 (thin wrapper 사용 금지)
-    if (!A40_IO::Load_File2JsonDoc_V21(A20_Const::CFG_JSON_FILE, v_doc, true)) {
+    if (!A40_IO::Load_File2JsonDoc_V21(A20_Const::CFG_JSON_FILE, v_doc, true, __func__)) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] Failed to load cfg json map: %s", A20_Const::CFG_JSON_FILE);
         return false; // 옵션 A: 로드 실패시 에러로 종료
     }
@@ -492,7 +492,7 @@ bool CL_C10_ConfigManager::factoryResetFromDefault() {
     JsonDocument v_def;
 
     // 공통함수 직접 호출 (thin wrapper 사용 금지)
-    if (A40_IO::Load_File2JsonDoc_V21(A20_Const::CFG_DEFAULT_FILE, v_def, true)) {
+    if (A40_IO::Load_File2JsonDoc_V21(A20_Const::CFG_DEFAULT_FILE, v_def, true, __func__)) {
         v_fileFound = true;
 
         // cfg_jsonFile 매핑이 비어있을 경우를 대비해 재로드 시도
@@ -507,49 +507,49 @@ bool CL_C10_ConfigManager::factoryResetFromDefault() {
         if (v_def["system"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["system"] = v_def["system"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.system, v_doc, true);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.system, v_doc, true, __func__);
         }
 
         // 2) wifi
         if (v_def["wifi"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["wifi"] = v_def["wifi"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.wifi, v_doc, true);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.wifi, v_doc, true, __func__);
         }
 
         // 3) motion
         if (v_def["motion"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["motion"] = v_def["motion"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.motion, v_doc, true);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.motion, v_doc, true, __func__);
         }
 
         // 4) nvsSpec
         if (v_def["nvsSpec"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["nvsSpec"] = v_def["nvsSpec"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.nvsSpec, v_doc, true);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.nvsSpec, v_doc, true, __func__);
         }
 
         // 5) windDict (legacy: windProfile)
         if (v_def["windDict"].is<JsonObjectConst>() || v_def["windProfile"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["windDict"] = v_def["windDict"].is<JsonObjectConst>() ? v_def["windDict"] : v_def["windProfile"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.windDict, v_doc, true);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.windDict, v_doc, true, __func__);
         }
 
         // 6) schedules (object/array 모두 허용)
         if (v_def["schedules"].is<JsonObjectConst>() || v_def["schedules"].is<JsonArrayConst>()) {
             JsonDocument v_doc;
             v_doc["schedules"] = v_def["schedules"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.schedules, v_doc, true);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.schedules, v_doc, true, __func__);
         }
 
         // 7) userProfiles
         if (v_def["userProfiles"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["userProfiles"] = v_def["userProfiles"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.userProfiles, v_doc, true);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.userProfiles, v_doc, true, __func__);
         }
 
         // 8) webPage (pages/reDirect/assets or webPage object)
@@ -566,7 +566,7 @@ bool CL_C10_ConfigManager::factoryResetFromDefault() {
                 v_web["assets"]   = v_def["assets"];
             }
 
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.webPage, v_doc, true);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.webPage, v_doc, true, __func__);
         }
 
         CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] Factory Reset: Restored from default master file.");

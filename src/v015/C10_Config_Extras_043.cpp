@@ -48,26 +48,26 @@
 //  - WebPage: 루트형 확정 -> pages/reDirect/assets는 문서 루트에서 직접 사용
 //  - NvsSpec: {"nvsSpec":{...}} 또는 루트형 {...} 둘 다 허용(로드/패치)
 // =====================================================
-static const char* C10_getStr(JsonObjectConst p_obj, const char* p_key, const char* p_def) {
-    if (p_obj.isNull()) return p_def;
+static const char* C10_getStr(JsonObjectConst p_obj, const char* p_key, const char* p_defaultVal) {
+    if (p_obj.isNull()) return p_defaultVal;
     if (p_obj[p_key].is<const char*>()) {
         const char* v = p_obj[p_key].as<const char*>();
-        return v ? v : p_def;
+        return v ? v : p_defaultVal;
     }
-    return p_def;
+    return p_defaultVal;
 }
 
 template <typename T>
-static T C10_getNum(JsonObjectConst p_obj, const char* p_key, T p_def) {
-    if (p_obj.isNull()) return p_def;
+static T C10_getNum(JsonObjectConst p_obj, const char* p_key, T p_defaultVal) {
+    if (p_obj.isNull()) return p_defaultVal;
     if (p_obj[p_key].is<T>()) return p_obj[p_key].as<T>();
-    return p_def;
+    return p_defaultVal;
 }
 
-static bool C10_getBool(JsonObjectConst p_obj, const char* p_key, bool p_def) {
-    if (p_obj.isNull()) return p_def;
+static bool C10_getBool(JsonObjectConst p_obj, const char* p_key, bool p_defaultVal) {
+    if (p_obj.isNull()) return p_defaultVal;
     if (p_obj[p_key].is<bool>()) return p_obj[p_key].as<bool>();
-    return p_def;
+    return p_defaultVal;
 }
 
 static JsonArrayConst C10_getArr(JsonObjectConst p_obj, const char* p_key) {
@@ -113,7 +113,7 @@ bool CL_C10_ConfigManager::loadNvsSpecConfig(ST_A20_NvsSpecConfig_t& p_cfg) {
     A20_resetNvsSpecDefault(p_cfg);
 
 
-	if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, v_doc, true)) {
+	if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, v_doc, true, __func__)) {
     // if (!ioLoadJson(v_cfgJsonPath, v_doc)) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadNvsSpecConfig: Load_File2JsonDoc_V21 failed (%s)", v_cfgJsonPath);
         return false;
@@ -193,7 +193,7 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
     // ✅ A20 기본값(운영 안전): 먼저 기본 페이지/리다이렉트/공통자산을 깔고, 파일로 덮어씀
     A20_resetWebPageDefault(p_cfg);
 
-    if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, v_doc, true)) {
+    if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, v_doc, true, __func__)) {
     // if (!ioLoadJson(v_cfgJsonPath, v_doc)) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWebPageConfig: Load_File2JsonDoc_V21 failed (%s)", v_cfgJsonPath);
 
@@ -351,7 +351,7 @@ bool CL_C10_ConfigManager::saveNvsSpecConfig(const ST_A20_NvsSpecConfig_t& p_cfg
     }
 
 
-    bool v_ok = A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.nvsSpec, v_doc, true);
+    bool v_ok = A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.nvsSpec, v_doc, true, __func__);
 	// bool v_ok = ioSaveJson(s_cfgJsonFileMap.nvsSpec, v_doc);
 
     return v_ok;
@@ -425,7 +425,7 @@ bool CL_C10_ConfigManager::saveWebPageConfig(const ST_A20_WebPageConfig_t& p_cfg
         v_co["isCommon"] = v_c.isCommon;
     }
 
-    bool v_ok = A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.webPage, v_doc, true);
+    bool v_ok = A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.webPage, v_doc, true, __func__);
 	// bool v_ok = ioSaveJson(s_cfgJsonFileMap.webPage, v_doc);
 
     return v_ok;

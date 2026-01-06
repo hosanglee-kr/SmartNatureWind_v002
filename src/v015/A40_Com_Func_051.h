@@ -129,26 +129,26 @@ inline float getRandomRange(float p_min, float p_max) {
 // ======================================================
 // JSON Helper (containsKey 금지 정책)
 // ======================================================
-static inline const char* Json_getStr(JsonObjectConst p_obj, const char* p_key, const char* p_def) {
-    if (p_obj.isNull()) return p_def;
+static inline const char* Json_getStr(JsonObjectConst p_obj, const char* p_key, const char* p_defaultVal) {
+    if (p_obj.isNull()) return p_defaultVal;
     JsonVariantConst v = p_obj[p_key];
-    if (v.isNull() || !v.is<const char*>()) return p_def;
+    if (v.isNull() || !v.is<const char*>()) return p_defaultVal;
     const char* s = v.as<const char*>();
-    return (s && s[0]) ? s : p_def;
+    return (s && s[0]) ? s : p_defaultVal;
 }
 
 template <typename T>
-static inline T Json_getNum(JsonObjectConst p_obj, const char* p_key, T p_def) {
-    if (p_obj.isNull()) return p_def;
+static inline T Json_getNum(JsonObjectConst p_obj, const char* p_key, T p_defaultVal) {
+    if (p_obj.isNull()) return p_defaultVal;
     JsonVariantConst v = p_obj[p_key];
-    if (v.isNull() || !v.is<T>()) return p_def;
+    if (v.isNull() || !v.is<T>()) return p_defaultVal;
     return v.as<T>();
 }
 
-static inline bool Json_getBool(JsonObjectConst p_obj, const char* p_key, bool p_def) {
-    if (p_obj.isNull()) return p_def;
+static inline bool Json_getBool(JsonObjectConst p_obj, const char* p_key, bool p_defaultVal) {
+    if (p_obj.isNull()) return p_defaultVal;
     JsonVariantConst v = p_obj[p_key];
-    if (v.isNull() || !v.is<bool>()) return p_def;
+    if (v.isNull() || !v.is<bool>()) return p_defaultVal;
     return v.as<bool>();
 }
 
@@ -185,8 +185,8 @@ class CL_A40_MutexGuard_Semaphore {
         _internalInitAndTake(p_timeout);
     }
 
-    ~CL_A40_MutexGuard_Semaphore() { 
-        unlock(); 
+    ~CL_A40_MutexGuard_Semaphore() {
+        unlock();
     }
 
     bool acquireTicks(TickType_t p_timeoutTicks) {
@@ -355,61 +355,61 @@ inline bool Load_File2JsonDoc_V21(
     bool p_useBackup,
     const char* p_caller = nullptr)
 {
-    const char* v = _A40__callerOrUnknown(p_caller);
+    const char* v_caller = _A40__callerOrUnknown(p_caller);
 
     if (!p_path || !p_path[0]) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] invalid path", v);
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] invalid path", v_caller);
         return false;
     }
 
     char bak[A20_Const::LEN_PATH + 8];
-    if (!_buildPathWithSuffix(bak, sizeof(bak), p_path, ".bak", v)) return false;
+    if (!_buildPathWithSuffix(bak, sizeof(bak), p_path, ".bak", v_caller)) return false;
 
     if (!LittleFS.exists(p_path)) {
         if (p_useBackup && LittleFS.exists(bak)) {
             p_doc.clear();
-            if (_parseJsonFileToDoc(bak, p_doc, true, v)) {
+            if (_parseJsonFileToDoc(bak, p_doc, true, v_caller)) {
                 // rename 실패 체크/로그 보강 (정책 유지: doc 유효면 true)
                 if (LittleFS.rename(bak, p_path)) {
-                    CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] restored from bak: %s", v, p_path);
+                    CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] restored from bak: %s", v_caller, p_path);
                 } else {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] restore rename failed: %s -> %s", v, bak, p_path);
+                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] restore rename failed: %s -> %s", v_caller, bak, p_path);
                     // doc은 유효하므로 true 반환(운영 정책)
                 }
                 // LittleFS.rename(bak, p_path);
-                // CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] restored from bak: %s", v, p_path);
+                // CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] restored from bak: %s", v_caller, p_path);
                 return true;
             }
         }
-        CL_D10_Logger::log(EN_L10_LOG_INFO, "[IO][%s] file not found: %s", v, p_path);
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[IO][%s] file not found: %s", v_caller, p_path);
         return false;
     }
 
     p_doc.clear();
-    if (_parseJsonFileToDoc(p_path, p_doc, false, v)) {
+    if (_parseJsonFileToDoc(p_path, p_doc, false, v_caller)) {
         return true;
     }
 
     if (p_useBackup && LittleFS.exists(bak)) {
         p_doc.clear();
-        if (_parseJsonFileToDoc(bak, p_doc, true, v)) {
+        if (_parseJsonFileToDoc(bak, p_doc, true, v_caller)) {
             if (!LittleFS.remove(p_path)) {
-                    CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] main remove failed (continue): %s", v, p_path);
+                    CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] main remove failed (continue): %s", v_caller, p_path);
             }
             if (LittleFS.rename(bak, p_path)) {
-                CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] recovered from bak: %s", v, p_path);
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] recovered from bak: %s", v_caller, p_path);
             } else {
-                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] recover rename failed: %s -> %s", v, bak, p_path);
+                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] recover rename failed: %s -> %s", v_caller, bak, p_path);
                 // doc은 유효하므로 true 반환(운영 정책)
             }
             // LittleFS.remove(p_path);
             // LittleFS.rename(bak, p_path);
-            //CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] recovered from bak: %s", v, p_path);
+            //CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] recovered from bak: %s", v_caller, p_path);
             return true;
         }
     }
 
-    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] load failed: %s", v, p_path);
+    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] load failed: %s", v_caller, p_path);
     return false;
 }
 
@@ -421,18 +421,18 @@ inline bool Save_JsonDoc2File_V21(
     bool p_pretty = true,
     const char* p_caller = nullptr)
 {
-    const char* v = _A40__callerOrUnknown(p_caller);
+    const char* v_caller = _A40__callerOrUnknown(p_caller);
 
     char bak[A20_Const::LEN_PATH + 8];
     char tmp[A20_Const::LEN_PATH + 8];
-    if (!_buildPathWithSuffix(bak, sizeof(bak), p_path, ".bak", v)) return false;
-    if (!_buildPathWithSuffix(tmp, sizeof(tmp), p_path, ".tmp", v)) return false;
+    if (!_buildPathWithSuffix(bak, sizeof(bak), p_path, ".bak", v_caller)) return false;
+    if (!_buildPathWithSuffix(tmp, sizeof(tmp), p_path, ".tmp", v_caller)) return false;
 
     if (LittleFS.exists(tmp)) LittleFS.remove(tmp);
 
     File f = LittleFS.open(tmp, "w");
     if (!f) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] tmp open failed: %s", v, tmp);
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] tmp open failed: %s", v_caller, tmp);
         return false;
     }
 
@@ -440,7 +440,7 @@ inline bool Save_JsonDoc2File_V21(
     f.close();
 
     if (bytes == 0) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] write failed: %s", v, tmp);
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] write failed: %s", v_caller, tmp);
         LittleFS.remove(tmp);
         return false;
     }
@@ -453,7 +453,7 @@ inline bool Save_JsonDoc2File_V21(
     }
 
     if (!LittleFS.rename(tmp, p_path)) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] rename failed: %s", v, p_path);
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] rename failed: %s", v_caller, p_path);
         if (p_useBackup && LittleFS.exists(bak)) {
             LittleFS.rename(bak, p_path);
         }

@@ -227,7 +227,7 @@ inline void CL_TM10_TimeManager::_onSntpTimeSync(struct timeval* p_tv) {
 
     // 콜백은 ISR은 아니지만, 짧게 처리
     if (!s_mutex) return;
-    if ((xSemaphoreTakeRecursive(s_mutex, 0) != pdTRUE) return;
+    if (xSemaphoreTakeRecursive(s_mutex, 0) != pdTRUE) return;
 
     bool v_ok = _isTimeSane();
     if (v_ok) {

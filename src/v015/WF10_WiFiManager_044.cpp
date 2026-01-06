@@ -230,7 +230,7 @@ bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, WiFiMu
     }
 
     // [재획득] 결과 업데이트를 위해 다시 락
-    if (!v_guard.acquire(G_A40_MUTEX_TIMEOUT_100)) {
+    if (!v_guard.acquireTicks(G_A40_MUTEX_TIMEOUT_100)) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex re-acquire fail", __func__);
         return false;
     }

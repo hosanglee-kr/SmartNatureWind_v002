@@ -351,8 +351,15 @@ inline bool Load_File2JsonDoc_V21(
         if (p_useBackup && LittleFS.exists(bak)) {
             p_doc.clear();
             if (_parseJsonFileToDoc(bak, p_doc, true, v)) {
-                LittleFS.rename(bak, p_path);
-                CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] restored from bak: %s", v, p_path);
+                // rename 실패 체크/로그 보강 (정책 유지: doc 유효면 true)
+                if (LittleFS.rename(bak, p_path)) {
+                    CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] restored from bak: %s", v, p_path);
+                } else {
+                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] restore rename failed: %s -> %s", v, bak, p_path);
+                    // doc은 유효하므로 true 반환(운영 정책)
+                }
+                // LittleFS.rename(bak, p_path);
+                // CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] restored from bak: %s", v, p_path);
                 return true;
             }
         }
@@ -361,14 +368,25 @@ inline bool Load_File2JsonDoc_V21(
     }
 
     p_doc.clear();
-    if (_parseJsonFileToDoc(p_path, p_doc, false, v)) return true;
+    if (_parseJsonFileToDoc(p_path, p_doc, false, v)) {
+        return true;
+    }
 
     if (p_useBackup && LittleFS.exists(bak)) {
         p_doc.clear();
         if (_parseJsonFileToDoc(bak, p_doc, true, v)) {
-            LittleFS.remove(p_path);
-            LittleFS.rename(bak, p_path);
-            CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] recovered from bak: %s", v, p_path);
+            if (!LittleFS.remove(p_path)) {
+                    CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] main remove failed (continue): %s", v, p_path);
+            }
+            if (LittleFS.rename(bak, p_path)) {
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] recovered from bak: %s", v, p_path);
+            } else {
+                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] recover rename failed: %s -> %s", v, bak, p_path);
+                // doc은 유효하므로 true 반환(운영 정책)
+            }
+            // LittleFS.remove(p_path);
+            // LittleFS.rename(bak, p_path);
+            //CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] recovered from bak: %s", v, p_path);
             return true;
         }
     }

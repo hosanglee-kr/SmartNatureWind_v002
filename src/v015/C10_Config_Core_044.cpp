@@ -82,6 +82,11 @@ static bool C10_allocSection(T*& p_ptr, const char* p_name) {
     return true;
 }
 
+
+CL_C10_ConfigManager::CL_C10_ConfigManager(){
+    _dirty_Mux = portMUX_INITIALIZER_UNLOCKED;
+}
+
 // =====================================================
 // cfg_jsonFile.json 로드
 //  - 파일명: A20_Const::CFG_JSON_FILE (10_cfg_jsonFile.json)

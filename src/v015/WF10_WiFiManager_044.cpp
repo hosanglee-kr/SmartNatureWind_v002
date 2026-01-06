@@ -48,7 +48,7 @@ void CL_WF10_WiFiManager::attachWiFiEvents() {
             // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
 			CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
             if (!v_guard.isAcquired()) {
-                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout (GOT_IP)", __func__);
+                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout (GOT_IP)", "WF10::EVT_STA_GOT_IP");
                 return;
             }
 
@@ -67,7 +67,7 @@ void CL_WF10_WiFiManager::attachWiFiEvents() {
         [](arduino_event_id_t event, arduino_event_info_t info) {
             if (event == ARDUINO_EVENT_WIFI_STA_DISCONNECTED) {
                 // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
-				CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+				CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, "WF10::EVT_STA_DISCONNECTED" );
                 if (!v_guard.isAcquired()) {
                     CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout (DISCONN)", __func__);
                     return;

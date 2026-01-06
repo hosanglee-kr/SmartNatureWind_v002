@@ -61,6 +61,8 @@ bool CL_C10_ConfigManager::_dirty_windDict     = false;
 bool CL_C10_ConfigManager::_dirty_nvsSpec      = false;
 bool CL_C10_ConfigManager::_dirty_webPage      = false;
 
+portMUX_TYPE CL_C10_ConfigManager::s_dirtyMux = portMUX_INITIALIZER_UNLOCKED;
+
 // cfg_jsonFile.json 매핑 초기값 (비어있는 상태)
 ST_A20_cfg_jsonFile_t CL_C10_ConfigManager::s_cfgJsonFileMap{};
 
@@ -83,9 +85,6 @@ static bool C10_allocSection(T*& p_ptr, const char* p_name) {
 }
 
 
-CL_C10_ConfigManager::CL_C10_ConfigManager(){
-    _dirty_Mux = portMUX_INITIALIZER_UNLOCKED;
-}
 
 // =====================================================
 // cfg_jsonFile.json 로드

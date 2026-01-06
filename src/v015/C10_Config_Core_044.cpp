@@ -507,49 +507,49 @@ bool CL_C10_ConfigManager::factoryResetFromDefault() {
         if (v_def["system"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["system"] = v_def["system"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.system, v_doc, true, __func__);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.system, v_doc, true, true, __func__);
         }
 
         // 2) wifi
         if (v_def["wifi"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["wifi"] = v_def["wifi"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.wifi, v_doc, true, __func__);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.wifi, v_doc, true, true, __func__);
         }
 
         // 3) motion
         if (v_def["motion"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["motion"] = v_def["motion"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.motion, v_doc, true, __func__);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.motion, v_doc, true, true, __func__);
         }
 
         // 4) nvsSpec
         if (v_def["nvsSpec"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["nvsSpec"] = v_def["nvsSpec"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.nvsSpec, v_doc, true, __func__);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.nvsSpec, v_doc, true, true, __func__);
         }
 
         // 5) windDict (legacy: windProfile)
         if (v_def["windDict"].is<JsonObjectConst>() || v_def["windProfile"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["windDict"] = v_def["windDict"].is<JsonObjectConst>() ? v_def["windDict"] : v_def["windProfile"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.windDict, v_doc, true, __func__);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.windDict, v_doc, true, true, __func__);
         }
 
         // 6) schedules (object/array 모두 허용)
         if (v_def["schedules"].is<JsonObjectConst>() || v_def["schedules"].is<JsonArrayConst>()) {
             JsonDocument v_doc;
             v_doc["schedules"] = v_def["schedules"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.schedules, v_doc, true, __func__);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.schedules, v_doc, true, true, __func__);
         }
 
         // 7) userProfiles
         if (v_def["userProfiles"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["userProfiles"] = v_def["userProfiles"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.userProfiles, v_doc, true, __func__);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.userProfiles, v_doc, true, true, __func__);
         }
 
         // 8) webPage (pages/reDirect/assets or webPage object)
@@ -566,7 +566,7 @@ bool CL_C10_ConfigManager::factoryResetFromDefault() {
                 v_web["assets"]   = v_def["assets"];
             }
 
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.webPage, v_doc, true, __func__);
+            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.webPage, v_doc, true, true, __func__);
         }
 
         CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] Factory Reset: Restored from default master file.");

@@ -185,9 +185,27 @@ class CL_A40_MutexGuard_Semaphore {
         _internalInitAndTake(p_timeout);
     }
 
-    ~CL_A40_MutexGuard_Semaphore() { unlock(); }
+    ~CL_A40_MutexGuard_Semaphore() { 
+        unlock(); 
+    }
 
-    bool acquire(uint32_t p_timeoutMs = UINT32_MAX) {
+    bool acquireTicks(TickType_t p_timeoutTicks) {
+        if (_acquired) return true;
+        if (!_mutexPtr || !*_mutexPtr) return false;
+
+        if (xSemaphoreTakeRecursive(*_mutexPtr, p_timeoutTicks) == pdTRUE) {
+            _acquired = true;
+            return true;
+        }
+
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[A40][%s] Mutex acquire timeout (ticks=%u)",
+                           _caller,
+                           (unsigned)p_timeoutTicks);
+        return false;
+    }
+
+    bool acquireMs(uint32_t p_timeoutMs = UINT32_MAX) {
         if (_acquired || !_mutexPtr || !*_mutexPtr) return _acquired;
         TickType_t v_ticks =
             (p_timeoutMs == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(p_timeoutMs);

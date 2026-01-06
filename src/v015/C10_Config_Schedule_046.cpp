@@ -616,7 +616,7 @@ bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg) {
         js["motion"]["ble"]["holdSec"]       = s.motion.ble.holdSec;
     }
 
-    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.schedules, d, true, __func__);
+    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.schedules, d, true, true, __func__);
 }
 
 bool CL_C10_ConfigManager::saveUserProfiles(const ST_A20_UserProfilesRoot_t& p_cfg) {
@@ -675,7 +675,7 @@ bool CL_C10_ConfigManager::saveUserProfiles(const ST_A20_UserProfilesRoot_t& p_c
         jp["motion"]["ble"]["holdSec"]       = up.motion.ble.holdSec;
     }
 
-    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.userProfiles, d, true, __func__);
+    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.userProfiles, d, true, true, __func__);
 }
 
 bool CL_C10_ConfigManager::saveWindDict(const ST_A20_WindDict_t& p_cfg) {
@@ -787,7 +787,7 @@ bool CL_C10_ConfigManager::saveWindDict(const ST_A20_WindDict_t& p_cfg) {
         v_f["thermalFactor"]     = v_s.factors.thermalFactor;
     }
 
-    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.windDict, d, true, __func__);
+    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.windDict, d, true, true, __func__);
 }
 
 // =====================================================

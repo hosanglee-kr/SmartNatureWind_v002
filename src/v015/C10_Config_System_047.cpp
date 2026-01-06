@@ -522,7 +522,7 @@ bool CL_C10_ConfigManager::saveSystemConfig(const ST_A20_SystemConfig_t& p_cfg) 
     v["time"]["timezone"]        = p_cfg.time.timezone;
     v["time"]["syncIntervalMin"] = p_cfg.time.syncIntervalMin;
 
-    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.system, v, true, __func__);
+    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.system, v, true, true, __func__);
 }
 
 bool CL_C10_ConfigManager::saveWifiConfig(const ST_A20_WifiConfig_t& p_cfg) {
@@ -542,7 +542,7 @@ bool CL_C10_ConfigManager::saveWifiConfig(const ST_A20_WifiConfig_t& p_cfg) {
         v_net["pass"]    = p_cfg.sta[v_i].pass;
     }
 
-    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.wifi, d, true, __func__);
+    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.wifi, d, true, true, __func__);
 }
 
 bool CL_C10_ConfigManager::saveMotionConfig(const ST_A20_MotionConfig_t& p_cfg) {
@@ -578,7 +578,7 @@ bool CL_C10_ConfigManager::saveMotionConfig(const ST_A20_MotionConfig_t& p_cfg) 
     d["motion"]["timing"]["gustIntervalMs"]    = p_cfg.timing.gustIntervalMs;
     d["motion"]["timing"]["thermalIntervalMs"] = p_cfg.timing.thermalIntervalMs;
 
-    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.motion, d, true, __func__);
+    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.motion, d, true, true, __func__);
 }
 
 // =====================================================

@@ -351,7 +351,7 @@ bool CL_C10_ConfigManager::saveNvsSpecConfig(const ST_A20_NvsSpecConfig_t& p_cfg
     }
 
 
-    bool v_ok = A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.nvsSpec, v_doc, true, __func__);
+    bool v_ok = A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.nvsSpec, v_doc, true, true, __func__);
 	// bool v_ok = ioSaveJson(s_cfgJsonFileMap.nvsSpec, v_doc);
 
     return v_ok;
@@ -425,7 +425,7 @@ bool CL_C10_ConfigManager::saveWebPageConfig(const ST_A20_WebPageConfig_t& p_cfg
         v_co["isCommon"] = v_c.isCommon;
     }
 
-    bool v_ok = A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.webPage, v_doc, true, __func__);
+    bool v_ok = A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.webPage, v_doc, true, true, __func__);
 	// bool v_ok = ioSaveJson(s_cfgJsonFileMap.webPage, v_doc);
 
     return v_ok;

@@ -164,6 +164,161 @@ static inline JsonObjectConst Json_pickRootObject(JsonDocument& p_doc, const cha
     return v.isNull() ? p_doc.as<JsonObjectConst>() : v;
 }
 
+
+
+
+// ------------------------------------------------------
+// Json_copyStr (Silent-safe)
+//  - JSON에서 문자열 추출 후 dst에 복사
+//  - key 없음/타입불일치/null/빈문자열 => defaultVal 사용
+//  - dst는 항상 0으로 초기화(찌꺼기 방지)
+//  - 로그는 "복사 실패(인자 문제)" 같은 케이스만 (필요 시)
+// ------------------------------------------------------
+static inline bool Json_copyStr(
+    JsonObjectConst p_obj,
+    const char*     p_key,
+    char*           p_dst,
+    size_t          p_dstSize,
+    const char*     p_defaultVal = "",
+    const char*     p_callerFunc = nullptr)
+{
+    const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
+
+    // dst 안전성
+    if (!p_dst || p_dstSize == 0) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStr: invalid dst/size", v_caller);
+        return false;
+    }
+
+    // 항상 찌꺼기 제거
+    memset(p_dst, 0, p_dstSize);
+
+    // key 안전성
+    if (!p_key || !p_key[0]) {
+        // key 자체가 비정상인 경우만 경고 (운영에서도 유의미)
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStr: invalid key", v_caller);
+        // default로 채움
+        const char* v_def = (p_defaultVal ? p_defaultVal : "");
+        strlcpy(p_dst, v_def, p_dstSize);
+        return false;
+    }
+
+    // 기존 공통함수 활용 (조용한 기본 정책)
+    const char* v_src = A40_ComFunc::Json_getStr(p_obj, p_key, p_defaultVal ? p_defaultVal : "");
+    // Json_getStr가 빈문자열 방어까지 해서 반환하므로 그대로 복사
+    strlcpy(p_dst, (v_src ? v_src : ""), p_dstSize);
+    return true;
+}
+
+// ------------------------------------------------------
+// Json_copyStr_LogPolicy (copyStr2Buffer_safe log policy)
+//  - JSON에서 문자열 추출 후 dst에 복사
+//  - src null / dst 문제 등은 copyStr2Buffer_safe 정책으로 로그 남김
+//  - dst는 항상 0으로 초기화(찌꺼기 방지)
+//  - key가 없거나 타입 불일치면 defaultVal로 대체 (여기서는 "src null"이 아님)
+// ------------------------------------------------------
+static inline bool Json_copyStr_LogPolicy(
+    JsonObjectConst p_obj,
+    const char*     p_key,
+    char*           p_dst,
+    size_t          p_dstSize,
+    const char*     p_defaultVal = "",
+    const char*     p_callerFunc = nullptr)
+{
+    const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
+
+    if (!p_dst || p_dstSize == 0) {
+        // copyStr2Buffer_safe도 로그를 찍지만, 여기서도 명시적으로 찍어도 됨
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStr_LogPolicy: invalid dst/size", v_caller);
+        return false;
+    }
+
+    // 항상 찌꺼기 제거
+    memset(p_dst, 0, p_dstSize);
+
+    if (!p_key || !p_key[0]) {
+        // key 자체 비정상 -> 강경 정책에서도 경고
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStr_LogPolicy: invalid key", v_caller);
+        // default 복사도 log policy로 처리
+        A40_ComFunc::copyStr2Buffer_safe(p_dst, (p_defaultVal ? p_defaultVal : ""), p_dstSize, v_caller);
+        return false;
+    }
+
+    // JSON에서 문자열 후보를 얻되, "없으면 default"는 정상 흐름으로 간주
+    // (즉, src가 null이 되지 않게 default를 주입)
+    const char* v_src = A40_ComFunc::Json_getStr(p_obj, p_key, p_defaultVal ? p_defaultVal : "");
+
+    // copyStr2Buffer_safe는 src==null 등을 로그로 남김.
+    // 여기서는 v_src가 null일 가능성을 최소화했지만, 그래도 방어.
+    size_t v_copied = A40_ComFunc::copyStr2Buffer_safe(p_dst, (v_src ? v_src : ""), p_dstSize, v_caller);
+    return (v_copied > 0);
+}
+
+// ------------------------------------------------------
+// Json_copyStrReq (Required-key policy)
+//  - "필수 키" 용도: 키가 없거나 타입이 문자열이 아니거나 빈 문자열이면 경고 로그
+//  - fallback(defaultVal)로는 채우되, 반환값은 false로 처리(=입력 JSON이 요구사항 불만족)
+//  - dst는 항상 memset(0)으로 초기화(찌꺼기 방지)
+//  - 기존 공통함수(Json_getStr, copyStr2Buffer_safe) 활용
+// ------------------------------------------------------
+
+static inline bool Json_copyStrReq(
+    JsonObjectConst p_obj,
+    const char*     p_key,
+    char*           p_dst,
+    size_t          p_dstSize,
+    const char*     p_defaultVal = "",
+    const char*     p_callerFunc = nullptr)
+{
+    const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
+
+    if (!p_dst || p_dstSize == 0) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStrReq: invalid dst/size", v_caller);
+        return false;
+    }
+
+    // 항상 찌꺼기 제거
+    memset(p_dst, 0, p_dstSize);
+
+    if (!p_key || !p_key[0]) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] Json_copyStrReq: invalid key", v_caller);
+        A40_ComFunc::copyStr2Buffer_safe(p_dst, (p_defaultVal ? p_defaultVal : ""), p_dstSize, v_caller);
+        return false;
+    }
+
+    // containsKey 금지 -> JsonVariantConst 기반 필수성 체크
+    if (p_obj.isNull()) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStrReq: obj is null (key=%s)", v_caller, p_key);
+        A40_ComFunc::copyStr2Buffer_safe(p_dst, (p_defaultVal ? p_defaultVal : ""), p_dstSize, v_caller);
+        return false;
+    }
+
+    JsonVariantConst v = p_obj[p_key];
+    if (v.isNull()) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStrReq: missing key=%s", v_caller, p_key);
+        A40_ComFunc::copyStr2Buffer_safe(p_dst, (p_defaultVal ? p_defaultVal : ""), p_dstSize, v_caller);
+        return false;
+    }
+
+    if (!v.is<const char*>()) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStrReq: type mismatch (key=%s)", v_caller, p_key);
+        A40_ComFunc::copyStr2Buffer_safe(p_dst, (p_defaultVal ? p_defaultVal : ""), p_dstSize, v_caller);
+        return false;
+    }
+
+    const char* v_src = v.as<const char*>();
+    if (!v_src || !v_src[0]) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStrReq: empty string (key=%s)", v_caller, p_key);
+        A40_ComFunc::copyStr2Buffer_safe(p_dst, (p_defaultVal ? p_defaultVal : ""), p_dstSize, v_caller);
+        return false;
+    }
+
+    // 정상: 요구사항 충족
+    A40_ComFunc::copyStr2Buffer_safe(p_dst, v_src, p_dstSize, v_caller);
+    return true;
+}
+
+
 } // namespace A40_ComFunc
 
 

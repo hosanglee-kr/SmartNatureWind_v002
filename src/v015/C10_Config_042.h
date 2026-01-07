@@ -74,6 +74,8 @@ extern ST_A20_ConfigRoot_t g_A20_config_root;
 // ------------------------------------------------------
 class CL_C10_ConfigManager {
   public:
+	static bool begin();
+
 	// =====================================================
 	// 1. 전체 관리 (Load/Free/Save)
 	// =====================================================
@@ -183,7 +185,11 @@ class CL_C10_ConfigManager {
 	static bool _dirty_webPage;
 
     // ✅ Dirty 보호용 mux (클래스 소유)
-    static portMUX_TYPE s_dirtyMux;
+    static portMUX_TYPE 	s_dirtyflagSpinlock;			// 	s_dirtyMux --> s_dirtyflagSpinlock
+
+	// Mutex
+	static SemaphoreHandle_t s_recursiveMutex; 	//s_configMutex_v2 --> s_recursiveMutex
+
 
 	// cfg_jsonFile.json 매핑
 	static ST_A20_cfg_jsonFile_t s_cfgJsonFileMap;
@@ -191,6 +197,4 @@ class CL_C10_ConfigManager {
 	// cfg_jsonFile.json 로더
 	static bool _loadCfgJsonFile();
 
-	// Mutex
-	static SemaphoreHandle_t s_configMutex_v2;
 };

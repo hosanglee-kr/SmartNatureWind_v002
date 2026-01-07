@@ -176,14 +176,16 @@ class CL_S10_Simulation {
 	void toChartJson(JsonDocument& p_doc, bool p_diffOnly = false);
 
   private:
-	CL_P10_PWM*				  _pwm		  = nullptr;
 
-	const ST_A20_FanConfig_t* _fanCfgSnap = nullptr;
+	CL_P10_PWM*				  	_pwm		  	= nullptr;
 
-	portMUX_TYPE			  _simMutex	  = portMUX_INITIALIZER_UNLOCKED;
+	const ST_A20_FanConfig_t* 	_fanCfgSnap 	= nullptr;
 
-	unsigned long			  _tickNowMs  = 0;
-	float					  _tickNowSec = 0.0f;
+	SemaphoreHandle_t 			_recursiveMutex 	= nullptr;
+	portMUX_TYPE			  	_flagSpinlock	  	= portMUX_INITIALIZER_UNLOCKED; // _flagMutex
+
+	unsigned long			  	_tickNowMs  	= 0;
+	float					  	_tickNowSec 	= 0.0f;
 
 	void applyFan(float p_pct);
 	void applyPresetCore(const char* p_code);

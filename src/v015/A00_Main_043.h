@@ -66,6 +66,7 @@ void A00_init() {
     }
 
     // 3. Config + NVS 초기화
+	CL_C10_ConfigManager::begin();
     CL_C10_ConfigManager::loadAll(g_A20_config_root);
     CL_N10_NvsManager::begin();
 

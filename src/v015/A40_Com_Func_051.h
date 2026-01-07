@@ -166,6 +166,7 @@ static inline JsonObjectConst Json_pickRootObject(JsonDocument& p_doc, const cha
 
 } // namespace A40_ComFunc
 
+
 // ======================================================
 // 2) Mutex Guard (Recursive Mutex, RAII, Lazy Init)
 // ======================================================
@@ -266,14 +267,14 @@ class CL_A40_MutexGuard_Semaphore {
 // ======================================================
 class CL_A40_muxGuard_Critical {
   public:
-    explicit CL_A40_muxGuard_Critical(portMUX_TYPE* p_mux) : _mux(p_mux) {
-        if (_mux) portENTER_CRITICAL(_mux);
+    explicit CL_A40_muxGuard_Critical(portMUX_TYPE* p_flagSpinlock) : _flagSpinlock(p_flagSpinlock) {
+        if (_flagSpinlock) portENTER_CRITICAL(_flagSpinlock);
     }
     ~CL_A40_muxGuard_Critical() {
-        if (_mux) portEXIT_CRITICAL(_mux);
+        if (_flagSpinlock) portEXIT_CRITICAL(_flagSpinlock);
     }
   private:
-    portMUX_TYPE* _mux = nullptr;
+    portMUX_TYPE* _flagSpinlock = nullptr;
 };
 
 // ======================================================
@@ -281,18 +282,18 @@ class CL_A40_muxGuard_Critical {
 // ======================================================
 namespace A40_ComFunc {
 
-static inline void Dirty_setAtomic(bool& p_flag, portMUX_TYPE& p_mux) {
-    CL_A40_muxGuard_Critical g(&p_mux);
+static inline void Dirty_setAtomic(bool& p_flag, portMUX_TYPE& p_flagSpinlock) {
+    CL_A40_muxGuard_Critical g(&p_flagSpinlock);
     p_flag = true;
 }
 
-static inline void Dirty_clearAtomic(bool& p_flag, portMUX_TYPE& p_mux) {
-    CL_A40_muxGuard_Critical g(&p_mux);
+static inline void Dirty_clearAtomic(bool& p_flag, portMUX_TYPE& p_flagSpinlock) {
+    CL_A40_muxGuard_Critical g(&p_flagSpinlock);
     p_flag = false;
 }
 
-static inline bool Dirty_readAtomic(const bool& p_flag, portMUX_TYPE& p_mux) {
-    CL_A40_muxGuard_Critical g(&p_mux);
+static inline bool Dirty_readAtomic(const bool& p_flag, portMUX_TYPE& p_flagSpinlock) {
+    CL_A40_muxGuard_Critical g(&p_flagSpinlock);
     return p_flag;
 }
 

@@ -32,6 +32,11 @@
 void CL_S10_Simulation::begin(CL_P10_PWM& p_pwm) {
 	_pwm		= &p_pwm;
 
+	// 1. Mutex 생성 (중복 생성 방지)
+    if (_recursiveMutex == nullptr) {
+        _recursiveMutex = xSemaphoreCreateRecursiveMutex();
+    }
+
 	// fanConfig 스냅샷 초기화
 	_fanCfgSnap = nullptr;
 
@@ -168,11 +173,19 @@ void CL_S10_Simulation::tick() {
 	float			  v_bc_delta	  = 0.0f;
 	EN_A20_WindPhase_t v_bc_phase	  = EN_A20_WIND_PHASE_NORMAL;
 
-	portENTER_CRITICAL(&_simMutex);
+	// 가드 생성 (RecursiveMutex이므로 내부 함수 호출 시에도 안전)
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+
+    if (!v_MutxGuard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[S10] %s: Mutex timeout", __func__);
+        return; // 반환 타입 bool인 경우 false 반환
+    }
+
+	// portENTER_CRITICAL(&_flagSpinlock);
 
 	// 1) 비활성 상태면 종료
 	if (!active) {
-		portEXIT_CRITICAL(&_simMutex);
+		// // portEXIT_CRITICAL(&_flagSpinlock);
 		return;
 	}
 
@@ -197,7 +210,7 @@ void CL_S10_Simulation::tick() {
 	const uint32_t v_minIntervalMs = v_baseMs + v_jitterMs;
 
 	if (_tickNowMs - lastUpdateMs < (unsigned long)v_minIntervalMs) {
-		portEXIT_CRITICAL(&_simMutex);
+		// portEXIT_CRITICAL(&_flagSpinlock);
 		return;
 	}
 
@@ -288,7 +301,7 @@ void CL_S10_Simulation::tick() {
 		s_lastChartLogMs = _tickNowMs;
 	}
 
-	portEXIT_CRITICAL(&_simMutex);
+	// portEXIT_CRITICAL(&_flagSpinlock);
 
 	// ---- (B) 락 밖에서 브로드캐스트 수행 ----
 	if (v_needBroadcast) {
@@ -325,8 +338,17 @@ void CL_S10_Simulation::tick() {
 /**
  * @brief WindParam 해석 결과(ST_A20_ResolvedWind_t)를 시뮬레이션 파라미터에 적용합니다.
  */
+
 void CL_S10_Simulation::applyResolvedWind(const ST_A20_ResolvedWind_t& p_resolved) {
-	portENTER_CRITICAL(&_simMutex);
+	// 가드 생성 (RecursiveMutex이므로 내부 함수 호출 시에도 안전)
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+
+    if (!v_MutxGuard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[S10] %s: Mutex timeout", __func__);
+        return; // 반환 타입 bool인 경우 false 반환
+    }
+
+	// portENTER_CRITICAL(&_flagSpinlock);
 
 	// 시간 캡처(Phase 초기화 시 사용하는 _tickNowSec 일관성 보장)
 	_tickNowMs	= millis();
@@ -390,8 +412,77 @@ void CL_S10_Simulation::applyResolvedWind(const ST_A20_ResolvedWind_t& p_resolve
 	// 새 목표 생성
 	generateTarget();
 
-	portEXIT_CRITICAL(&_simMutex);
+	// portEXIT_CRITICAL(&_flagSpinlock);
 }
+
+
+// void CL_S10_Simulation::applyResolvedWind(const ST_A20_ResolvedWind_t& p_resolved) {
+// 	portENTER_CRITICAL(&_flagSpinlock);
+
+// 	// 시간 캡처(Phase 초기화 시 사용하는 _tickNowSec 일관성 보장)
+// 	_tickNowMs	= millis();
+// 	_tickNowSec = (float)_tickNowMs / 1000.0f;
+
+// 	// fanConfig 스냅샷(락 내 1회 캡처)
+// 	_fanCfgSnap = nullptr;
+// 	if (g_A20_config_root.system != nullptr) {
+// 		_fanCfgSnap = &g_A20_config_root.system->hw.fanConfig;
+// 	}
+
+// 	// preset/style 코드
+// 	memset(presetCode, 0, sizeof(presetCode));
+// 	memset(styleCode, 0, sizeof(styleCode));
+// 	strlcpy(presetCode, p_resolved.presetCode, sizeof(presetCode));
+// 	strlcpy(styleCode, p_resolved.styleCode, sizeof(styleCode));
+
+// 	// 사용자 파라미터
+// 	userIntensity	= constrain(p_resolved.windIntensity, 0.0f, 100.0f);
+// 	userVariability = constrain(p_resolved.windVariability, 0.0f, 100.0f);
+// 	userGustFreq	= constrain(p_resolved.gustFrequency, 0.0f, 100.0f);
+
+// 	// min/limit 관계 보정(min <= limit)
+// 	float v_limit	= constrain(p_resolved.fanLimit, 0.0f, 100.0f);
+// 	float v_min		= constrain(p_resolved.minFan, 0.0f, 100.0f);
+// 	if (v_min > v_limit) {
+// 		v_min = v_limit;
+// 	}
+// 	fanLimitPct		= v_limit;
+// 	minFanPct		= v_min;
+
+// 	// 물리 파라미터 최소값 보정
+// 	turbLenScale	= max(1.0f, p_resolved.turbulenceLengthScale);
+// 	turbSigma		= max(0.0f, p_resolved.turbulenceIntensitySigma);
+// 	thermalStrength = max(1.0f, p_resolved.thermalBubbleStrength);
+// 	thermalRadius	= max(0.0f, p_resolved.thermalBubbleRadius);
+
+// 	baseMinWind     = p_resolved.baseMinWind;
+// 	baseMaxWind     = p_resolved.baseMaxWind;
+// 	gustProbBase    = p_resolved.gustProbBase;
+// 	gustStrengthMax = p_resolved.gustStrengthMax;
+// 	thermalFreqBase = p_resolved.thermalFreqBase;
+
+// 	// Preset 코어 파라미터 재적용
+// 	applyPresetCore(presetCode);
+
+// 	// variability -> windChangeRate
+// 	const float v_varNorm = userVariability / 100.0f;
+// 	windChangeRate		  = constrain(0.10f + v_varNorm * 0.20f, 0.06f, 0.34f);
+
+// 	// Phase/상태 초기화
+// 	initPhaseFromBase();
+
+// 	// 이벤트 리셋
+// 	active				= true;
+// 	gustActive			= false;
+// 	thermalActive		= false;
+// 	gustIntensity		= 1.0f;
+// 	thermalContribution = 0.0f;
+
+// 	// 새 목표 생성
+// 	generateTarget();
+
+// 	portEXIT_CRITICAL(&_flagSpinlock);
+// }
 
 /**
  * @brief 최종 계산된 풍속 기반 Duty Percent를 PWM 모듈에 적용합니다.

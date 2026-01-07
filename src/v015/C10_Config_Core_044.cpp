@@ -61,13 +61,13 @@ bool CL_C10_ConfigManager::_dirty_windDict     = false;
 bool CL_C10_ConfigManager::_dirty_nvsSpec      = false;
 bool CL_C10_ConfigManager::_dirty_webPage      = false;
 
-portMUX_TYPE CL_C10_ConfigManager::s_dirtyMux = portMUX_INITIALIZER_UNLOCKED;
+portMUX_TYPE CL_C10_ConfigManager::s_dirtyflagSpinlock = portMUX_INITIALIZER_UNLOCKED;
 
 // cfg_jsonFile.json 매핑 초기값 (비어있는 상태)
 ST_A20_cfg_jsonFile_t CL_C10_ConfigManager::s_cfgJsonFileMap{};
 
 // Mutex
-SemaphoreHandle_t CL_C10_ConfigManager::s_configMutex_v2 = nullptr;
+SemaphoreHandle_t CL_C10_ConfigManager::s_recursiveMutex = nullptr;
 
 // =====================================================
 // 내부 유틸: 섹션 new 할당 헬퍼(메모리 부족 방어)
@@ -84,6 +84,21 @@ static bool C10_allocSection(T*& p_ptr, const char* p_name) {
     return true;
 }
 
+bool CL_C10_ConfigManager::begin() {
+    // 이미 생성되었다면 true 반환 (멱등성 보장)
+    if (s_recursiveMutex != nullptr) return true;
+
+    s_recursiveMutex = xSemaphoreCreateRecursiveMutex();
+
+    if (s_recursiveMutex == nullptr) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] Mutex Creation Failed!");
+        return false;
+    }
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] Mutex initialized successfully.");
+    return true;
+}
+
 
 
 // =====================================================
@@ -94,7 +109,7 @@ static bool C10_allocSection(T*& p_ptr, const char* p_name) {
 bool CL_C10_ConfigManager::_loadCfgJsonFile() {
 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -195,7 +210,7 @@ bool CL_C10_ConfigManager::loadAll(ST_A20_ConfigRoot_t& p_root) {
     bool v_ok = true;
 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_A40_MUTEX_TIMEOUT_100, __func__);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -254,7 +269,7 @@ bool CL_C10_ConfigManager::loadAll(ST_A20_ConfigRoot_t& p_root) {
 bool CL_C10_ConfigManager::freeLazySection(const char* p_section, ST_A20_ConfigRoot_t& p_root) {
 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -297,7 +312,7 @@ bool CL_C10_ConfigManager::freeLazySection(const char* p_section, ST_A20_ConfigR
 void CL_C10_ConfigManager::freeAll(ST_A20_ConfigRoot_t& p_root) {
 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_A40_MUTEX_TIMEOUT_100, __func__);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return;
@@ -322,7 +337,7 @@ void CL_C10_ConfigManager::freeAll(ST_A20_ConfigRoot_t& p_root) {
 void CL_C10_ConfigManager::saveDirtyConfigs() {
 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_A40_MUTEX_TIMEOUT_100, __func__);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return;
@@ -397,7 +412,7 @@ void CL_C10_ConfigManager::saveDirtyConfigs() {
 void CL_C10_ConfigManager::getDirtyStatus(JsonDocument& p_doc) {
 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_A40_MUTEX_TIMEOUT_100, __func__);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return;
@@ -416,7 +431,7 @@ void CL_C10_ConfigManager::getDirtyStatus(JsonDocument& p_doc) {
 void CL_C10_ConfigManager::saveAll(const ST_A20_ConfigRoot_t& p_root) {
 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_A40_MUTEX_TIMEOUT_100, __func__);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return;
@@ -448,7 +463,7 @@ void CL_C10_ConfigManager::toJson_All(const ST_A20_ConfigRoot_t& p,
                                      bool                       p_includeWebPage) {
 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_A40_MUTEX_TIMEOUT_100, __func__);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return;
@@ -484,7 +499,7 @@ void CL_C10_ConfigManager::toJson_All(const ST_A20_ConfigRoot_t& p,
 bool CL_C10_ConfigManager::factoryResetFromDefault() {
 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_configMutex_v2, G_A40_MUTEX_TIMEOUT_100, __func__);
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;

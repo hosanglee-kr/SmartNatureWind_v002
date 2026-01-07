@@ -98,7 +98,15 @@ unsigned long								 CL_S10_Simulation::s_lastChartSampleMs = 0;
  */
 void CL_S10_Simulation::toJson(JsonDocument& p_doc) {
 	// 상태 읽기 중 변수 변경 방지
-	portENTER_CRITICAL(&_simMutex);
+	// 가드 생성 (RecursiveMutex이므로 내부 함수 호출 시에도 안전)
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+
+    if (!v_MutxGuard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[S10] %s: Mutex timeout", __func__);
+        return; // 반환 타입 bool인 경우 false 반환
+    }
+
+	// portENTER_CRITICAL(&_flagSpinlock);
 
 	JsonObject v_objSim			= p_doc["sim"].to<JsonObject>();
 
@@ -140,7 +148,7 @@ void CL_S10_Simulation::toJson(JsonDocument& p_doc) {
 	v_objSim["gustStrengthMax"] = gustStrengthMax;
 	v_objSim["thermalFreqBase"] = thermalFreqBase;
 
-	portEXIT_CRITICAL(&_simMutex);
+	// portEXIT_CRITICAL(&_flagSpinlock);
 }
 
 // ==================================================
@@ -188,7 +196,15 @@ void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
 	std::vector<ST_ChartEntry> v_entries;
 	v_entries.clear();
 
-	portENTER_CRITICAL(&_simMutex);
+	// 가드 생성 (RecursiveMutex이므로 내부 함수 호출 시에도 안전)
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+
+    if (!v_MutxGuard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[S10] %s: Mutex timeout", __func__);
+        return; // 반환 타입 bool인 경우 false 반환
+    }
+
+	// portENTER_CRITICAL(&_flagSpinlock);
 
 	v_phase = phase;
 	v_avg	= _getAvgWindFast();
@@ -200,14 +216,14 @@ void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
 	if (!p_diffOnly) {
 		const unsigned long v_elapsedMs = (v_nowMs >= s_lastChartSampleMs) ? (v_nowMs - s_lastChartSampleMs) : 0UL;
 		if (v_elapsedMs < G_S10_CHART_FULL_MIN_MS) {
-			portEXIT_CRITICAL(&_simMutex);
+			// portEXIT_CRITICAL(&_flagSpinlock);
 			return;
 		}
 		s_lastChartSampleMs = v_nowMs;
 	}
 
 	if (s_chartBuffer.empty()) {
-		portEXIT_CRITICAL(&_simMutex);
+		// portEXIT_CRITICAL(&_flagSpinlock);
 		return;
 	}
 
@@ -221,7 +237,7 @@ void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
 		}
 	}
 
-	portEXIT_CRITICAL(&_simMutex);
+	// portEXIT_CRITICAL(&_flagSpinlock);
 
 	// ---- (B) 락 밖에서 JSON 생성 ----
 	JsonObject v_objSim		= p_doc["sim"].to<JsonObject>();
@@ -300,12 +316,20 @@ bool CL_S10_Simulation::patchFromJson(const JsonDocument& p_doc) {
 	bool v_needPresetReapply = false;
 	bool v_needPhaseReset	 = false;
 
-	portENTER_CRITICAL(&_simMutex);
+	// 가드 생성 (RecursiveMutex이므로 내부 함수 호출 시에도 안전)
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+
+    if (!v_MutxGuard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[S10] %s: Mutex timeout", __func__);
+        return false; // 반환 타입 bool인 경우 false 반환
+    }
+
+	// portENTER_CRITICAL(&_flagSpinlock);
 
 	JsonObjectConst v_sim = p_doc["sim"].as<JsonObjectConst>();
 	if (v_sim.isNull()) {
 		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[S10] patchFromJson failed: 'sim' object not found.");
-		portEXIT_CRITICAL(&_simMutex);
+		// portEXIT_CRITICAL(&_flagSpinlock);
 		return false;
 	}
 
@@ -456,7 +480,7 @@ bool CL_S10_Simulation::patchFromJson(const JsonDocument& p_doc) {
 		CL_D10_Logger::log(EN_L10_LOG_INFO, "[S10] patchFromJson applied. preset=%s style=%s intensity=%.1f var=%.1f gust=%.1f fanLimit=%.1f minFan=%.1f turbSigma=%.2f", presetCode, styleCode, userIntensity, userVariability, userGustFreq, fanLimitPct, minFanPct, turbSigma);
 	}
 
-	portEXIT_CRITICAL(&_simMutex);
+	// portEXIT_CRITICAL(&_flagSpinlock);
 	return v_changed;
 }
 

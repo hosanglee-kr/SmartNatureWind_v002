@@ -48,39 +48,39 @@
 //  - WebPage: 루트형 확정 -> pages/reDirect/assets는 문서 루트에서 직접 사용
 //  - NvsSpec: {"nvsSpec":{...}} 또는 루트형 {...} 둘 다 허용(로드/패치)
 // =====================================================
-static const char* C10_getStr(JsonObjectConst p_obj, const char* p_key, const char* p_defaultVal) {
-    if (p_obj.isNull()) return p_defaultVal;
-    if (p_obj[p_key].is<const char*>()) {
-        const char* v = p_obj[p_key].as<const char*>();
-        return v ? v : p_defaultVal;
-    }
-    return p_defaultVal;
-}
+// static const char* C10_getStr(JsonObjectConst p_obj, const char* p_key, const char* p_defaultVal) {
+//     if (p_obj.isNull()) return p_defaultVal;
+//     if (p_obj[p_key].is<const char*>()) {
+//         const char* v = p_obj[p_key].as<const char*>();
+//         return v ? v : p_defaultVal;
+//     }
+//     return p_defaultVal;
+// }
 
-template <typename T>
-static T C10_getNum(JsonObjectConst p_obj, const char* p_key, T p_defaultVal) {
-    if (p_obj.isNull()) return p_defaultVal;
-    if (p_obj[p_key].is<T>()) return p_obj[p_key].as<T>();
-    return p_defaultVal;
-}
+// template <typename T>
+// static T C10_getNum(JsonObjectConst p_obj, const char* p_key, T p_defaultVal) {
+//     if (p_obj.isNull()) return p_defaultVal;
+//     if (p_obj[p_key].is<T>()) return p_obj[p_key].as<T>();
+//     return p_defaultVal;
+// }
 
-static bool C10_getBool(JsonObjectConst p_obj, const char* p_key, bool p_defaultVal) {
-    if (p_obj.isNull()) return p_defaultVal;
-    if (p_obj[p_key].is<bool>()) return p_obj[p_key].as<bool>();
-    return p_defaultVal;
-}
+// static bool C10_getBool(JsonObjectConst p_obj, const char* p_key, bool p_defaultVal) {
+//     if (p_obj.isNull()) return p_defaultVal;
+//     if (p_obj[p_key].is<bool>()) return p_obj[p_key].as<bool>();
+//     return p_defaultVal;
+// }
 
-static JsonArrayConst C10_getArr(JsonObjectConst p_obj, const char* p_key) {
-    if (p_obj.isNull()) return JsonArrayConst();
-    return p_obj[p_key].as<JsonArrayConst>();
-}
+// static JsonArrayConst C10_getArr(JsonObjectConst p_obj, const char* p_key) {
+//     if (p_obj.isNull()) return JsonArrayConst();
+//     return p_obj[p_key].as<JsonArrayConst>();
+// }
 
-// 랩핑 키가 있으면 우선 사용, 없으면 루트 자체를 사용
-static JsonObjectConst C10_pickRootObject(JsonDocument& p_doc, const char* p_wrapKey) {
-    JsonObjectConst v_wrapped = p_doc[p_wrapKey].as<JsonObjectConst>();
-    if (!v_wrapped.isNull()) return v_wrapped;
-    return p_doc.as<JsonObjectConst>();
-}
+// // 랩핑 키가 있으면 우선 사용, 없으면 루트 자체를 사용
+// static JsonObjectConst C10_pickRootObject(JsonDocument& p_doc, const char* p_wrapKey) {
+//     JsonObjectConst v_wrapped = p_doc[p_wrapKey].as<JsonObjectConst>();
+//     if (!v_wrapped.isNull()) return v_wrapped;
+//     return p_doc.as<JsonObjectConst>();
+// }
 
 // =====================================================
 // 2-x. 목적물별 Load 구현 (NvsSpec / WebPage)
@@ -120,7 +120,10 @@ bool CL_C10_ConfigManager::loadNvsSpecConfig(ST_A20_NvsSpecConfig_t& p_cfg) {
     }
 
     // {"nvsSpec":{...}} 또는 루트 자체 {...} 지원
-    JsonObjectConst j_root = C10_pickRootObject(v_doc, "nvsSpec");
+
+
+	JsonObjectConst j_root = A40_ComFunc::Json_pickRootObject(v_doc, "nvsSpec");
+    ///////     JsonObjectConst j_root = C10_pickRootObject(v_doc, "nvsSpec");
     if (j_root.isNull()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadNvsSpecConfig: root object invalid");
         return false;
@@ -128,7 +131,7 @@ bool CL_C10_ConfigManager::loadNvsSpecConfig(ST_A20_NvsSpecConfig_t& p_cfg) {
 
     // namespaceName: JSON key "namespace"
     {
-        const char* v_ns = C10_getStr(j_root, "namespace", p_cfg.namespaceName[0] ? p_cfg.namespaceName : "SNW");
+        const char* v_ns = A40_ComFunc::Json_getStr(j_root, "namespace", p_cfg.namespaceName[0] ? p_cfg.namespaceName : "SNW");
         if (v_ns && v_ns[0]) {
             strlcpy(p_cfg.namespaceName, v_ns, sizeof(p_cfg.namespaceName));
         }
@@ -136,7 +139,7 @@ bool CL_C10_ConfigManager::loadNvsSpecConfig(ST_A20_NvsSpecConfig_t& p_cfg) {
 
     // entries[]
     {
-        JsonArrayConst j_entries = C10_getArr(j_root, "entries");
+        JsonArrayConst j_entries = A40_ComFunc::Json_getArr(j_root, "entries");
         if (j_entries.isNull()) {
             // 파일이 비었거나 키가 없으면 "기본값 유지" (A20_resetNvsSpecDefault 결과)
             CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] loadNvsSpecConfig: missing 'entries' (keep defaults)");
@@ -150,9 +153,9 @@ bool CL_C10_ConfigManager::loadNvsSpecConfig(ST_A20_NvsSpecConfig_t& p_cfg) {
         for (JsonObjectConst j_e : j_entries) {
             if (p_cfg.entryCount >= A20_Const::MAX_NVS_ENTRIES) break;
 
-            const char* v_key  = C10_getStr(j_e, "key", "");
-            const char* v_type = C10_getStr(j_e, "type", "");
-            const char* v_def  = C10_getStr(j_e, "defaultValue", "");
+            const char* v_key  = A40_ComFunc::Json_getStr(j_e, "key", "");
+            const char* v_type = A40_ComFunc::Json_getStr(j_e, "type", "");
+            const char* v_def  = A40_ComFunc::Json_getStr(j_e, "defaultValue", "");
 
             if (!v_key || v_key[0] == '\0') continue;
 
@@ -210,7 +213,7 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
 
     // pages[] (파일에 있으면 전체 교체)
     {
-        JsonArrayConst j_pages = C10_getArr(j_root, "pages");
+        JsonArrayConst j_pages = A40_ComFunc::Json_getArr(j_root, "pages");
         if (!j_pages.isNull()) {
             memset(p_cfg.pages, 0, sizeof(p_cfg.pages));
             p_cfg.pageCount = 0;
@@ -221,17 +224,17 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
                 ST_A20_PageItem_t& v_p = p_cfg.pages[p_cfg.pageCount];
                 memset(&v_p, 0, sizeof(v_p));
 
-                strlcpy(v_p.uri, C10_getStr(j_p, "uri", ""), sizeof(v_p.uri));
-                strlcpy(v_p.path, C10_getStr(j_p, "path", ""), sizeof(v_p.path));
-                strlcpy(v_p.label, C10_getStr(j_p, "label", ""), sizeof(v_p.label));
+                strlcpy(v_p.uri, A40_ComFunc::Json_getStr(j_p, "uri", ""), sizeof(v_p.uri));
+                strlcpy(v_p.path, A40_ComFunc::Json_getStr(j_p, "path", ""), sizeof(v_p.path));
+                strlcpy(v_p.label, A40_ComFunc::Json_getStr(j_p, "label", ""), sizeof(v_p.label));
 
-                v_p.enable = C10_getBool(j_p, "enable", true);
-                v_p.isMain = C10_getBool(j_p, "isMain", false);
-                v_p.order  = C10_getNum<uint16_t>(j_p, "order", 0);
+                v_p.enable = A40_ComFunc::Json_getBool(j_p, "enable", true);
+                v_p.isMain = A40_ComFunc::Json_getBool(j_p, "isMain", false);
+                v_p.order  = A40_ComFunc::Json_getNum<uint16_t>(j_p, "order", 0);
 
                 // pageAssets[]
                 v_p.pageAssetCount      = 0;
-                JsonArrayConst j_assets = C10_getArr(j_p, "pageAssets");
+                JsonArrayConst j_assets = A40_ComFunc::Json_getArr(j_p, "pageAssets");
                 if (!j_assets.isNull()) {
                     for (JsonObjectConst j_a : j_assets) {
                         if (v_p.pageAssetCount >= A20_Const::MAX_PAGE_ASSETS) break;
@@ -239,8 +242,8 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
                         ST_A20_PageAsset_t& v_a = v_p.pageAssets[v_p.pageAssetCount];
                         memset(&v_a, 0, sizeof(v_a));
 
-                        strlcpy(v_a.uri, C10_getStr(j_a, "uri", ""), sizeof(v_a.uri));
-                        strlcpy(v_a.path, C10_getStr(j_a, "path", ""), sizeof(v_a.path));
+                        strlcpy(v_a.uri, A40_ComFunc::Json_getStr(j_a, "uri", ""), sizeof(v_a.uri));
+                        strlcpy(v_a.path, A40_ComFunc::Json_getStr(j_a, "path", ""), sizeof(v_a.path));
 
                         // 불량 방지
                         if (v_a.uri[0] == '\0' || v_a.path[0] == '\0') continue;
@@ -261,7 +264,7 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
 
     // reDirect[] (파일에 있으면 전체 교체)
     {
-        JsonArrayConst j_red = C10_getArr(j_root, "reDirect");
+        JsonArrayConst j_red = A40_ComFunc::Json_getArr(j_root, "reDirect");
         if (!j_red.isNull()) {
             memset(p_cfg.reDirect, 0, sizeof(p_cfg.reDirect));
             p_cfg.reDirectCount = 0;
@@ -272,8 +275,8 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
                 ST_A20_ReDirectItem_t& v_r = p_cfg.reDirect[p_cfg.reDirectCount];
                 memset(&v_r, 0, sizeof(v_r));
 
-                strlcpy(v_r.uriFrom, C10_getStr(j_r, "uriFrom", ""), sizeof(v_r.uriFrom));
-                strlcpy(v_r.uriTo, C10_getStr(j_r, "uriTo", ""), sizeof(v_r.uriTo));
+                strlcpy(v_r.uriFrom, A40_ComFunc::Json_getStr(j_r, "uriFrom", ""), sizeof(v_r.uriFrom));
+                strlcpy(v_r.uriTo, A40_ComFunc::Json_getStr(j_r, "uriTo", ""), sizeof(v_r.uriTo));
 
                 if (v_r.uriFrom[0] == '\0' || v_r.uriTo[0] == '\0') continue;
 
@@ -284,7 +287,7 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
 
     // assets[] (파일에 있으면 전체 교체)
     {
-        JsonArrayConst j_cas = C10_getArr(j_root, "assets");
+        JsonArrayConst j_cas = A40_ComFunc::Json_getArr(j_root, "assets");
         if (!j_cas.isNull()) {
             memset(p_cfg.assets, 0, sizeof(p_cfg.assets));
             p_cfg.assetCount = 0;
@@ -295,9 +298,9 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
                 ST_A20_CommonAsset_t& v_c = p_cfg.assets[p_cfg.assetCount];
                 memset(&v_c, 0, sizeof(v_c));
 
-                strlcpy(v_c.uri, C10_getStr(j_c, "uri", ""), sizeof(v_c.uri));
-                strlcpy(v_c.path, C10_getStr(j_c, "path", ""), sizeof(v_c.path));
-                v_c.isCommon = C10_getBool(j_c, "isCommon", false);
+                strlcpy(v_c.uri, A40_ComFunc::Json_getStr(j_c, "uri", ""), sizeof(v_c.uri));
+                strlcpy(v_c.path, A40_ComFunc::Json_getStr(j_c, "path", ""), sizeof(v_c.path));
+                v_c.isCommon = A40_ComFunc::Json_getBool(j_c, "isCommon", false);
 
                 if (v_c.uri[0] == '\0' || v_c.path[0] == '\0') continue;
 
@@ -474,9 +477,9 @@ bool CL_C10_ConfigManager::patchNvsSpecFromJson(ST_A20_NvsSpecConfig_t& p_cfg, c
         for (JsonObjectConst j_e : j_entries) {
             if (p_cfg.entryCount >= A20_Const::MAX_NVS_ENTRIES) break;
 
-            const char* v_key  = C10_getStr(j_e, "key", "");
-            const char* v_type = C10_getStr(j_e, "type", "");
-            const char* v_def  = C10_getStr(j_e, "defaultValue", "");
+            const char* v_key  = A40_ComFunc::Json_getStr(j_e, "key", "");
+            const char* v_type = A40_ComFunc::Json_getStr(j_e, "type", "");
+            const char* v_def  = A40_ComFunc::Json_getStr(j_e, "defaultValue", "");
 
             if (!v_key || v_key[0] == '\0') continue;
 
@@ -544,16 +547,16 @@ bool CL_C10_ConfigManager::patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, c
             ST_A20_PageItem_t& v_p = p_cfg.pages[p_cfg.pageCount];
             memset(&v_p, 0, sizeof(v_p));
 
-            strlcpy(v_p.uri, C10_getStr(j_p, "uri", ""), sizeof(v_p.uri));
-            strlcpy(v_p.path, C10_getStr(j_p, "path", ""), sizeof(v_p.path));
-            strlcpy(v_p.label, C10_getStr(j_p, "label", ""), sizeof(v_p.label));
+            strlcpy(v_p.uri, A40_ComFunc::Json_getStr(j_p, "uri", ""), sizeof(v_p.uri));
+            strlcpy(v_p.path, A40_ComFunc::Json_getStr(j_p, "path", ""), sizeof(v_p.path));
+            strlcpy(v_p.label, A40_ComFunc::Json_getStr(j_p, "label", ""), sizeof(v_p.label));
 
-            v_p.enable = C10_getBool(j_p, "enable", true);
-            v_p.isMain = C10_getBool(j_p, "isMain", false);
-            v_p.order  = C10_getNum<uint16_t>(j_p, "order", 0);
+            v_p.enable = A40_ComFunc::Json_getBool(j_p, "enable", true);
+            v_p.isMain = A40_ComFunc::Json_getBool(j_p, "isMain", false);
+            v_p.order  = A40_ComFunc::Json_getNum<uint16_t>(j_p, "order", 0);
 
             v_p.pageAssetCount  = 0;
-            JsonArrayConst j_pa = C10_getArr(j_p, "pageAssets");
+            JsonArrayConst j_pa = A40_ComFunc::Json_getArr(j_p, "pageAssets");
             if (!j_pa.isNull()) {
                 for (JsonObjectConst j_a : j_pa) {
                     if (v_p.pageAssetCount >= A20_Const::MAX_PAGE_ASSETS) break;
@@ -561,8 +564,8 @@ bool CL_C10_ConfigManager::patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, c
                     ST_A20_PageAsset_t& v_a = v_p.pageAssets[v_p.pageAssetCount];
                     memset(&v_a, 0, sizeof(v_a));
 
-                    strlcpy(v_a.uri, C10_getStr(j_a, "uri", ""), sizeof(v_a.uri));
-                    strlcpy(v_a.path, C10_getStr(j_a, "path", ""), sizeof(v_a.path));
+                    strlcpy(v_a.uri, A40_ComFunc::Json_getStr(j_a, "uri", ""), sizeof(v_a.uri));
+                    strlcpy(v_a.path, A40_ComFunc::Json_getStr(j_a, "path", ""), sizeof(v_a.path));
 
                     if (v_a.uri[0] == '\0' || v_a.path[0] == '\0') continue;
 
@@ -591,8 +594,8 @@ bool CL_C10_ConfigManager::patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, c
             ST_A20_ReDirectItem_t& v_r = p_cfg.reDirect[p_cfg.reDirectCount];
             memset(&v_r, 0, sizeof(v_r));
 
-            strlcpy(v_r.uriFrom, C10_getStr(j_r, "uriFrom", ""), sizeof(v_r.uriFrom));
-            strlcpy(v_r.uriTo, C10_getStr(j_r, "uriTo", ""), sizeof(v_r.uriTo));
+            strlcpy(v_r.uriFrom, A40_ComFunc::Json_getStr(j_r, "uriFrom", ""), sizeof(v_r.uriFrom));
+            strlcpy(v_r.uriTo, A40_ComFunc::Json_getStr(j_r, "uriTo", ""), sizeof(v_r.uriTo));
 
             if (v_r.uriFrom[0] == '\0' || v_r.uriTo[0] == '\0') continue;
 
@@ -615,9 +618,9 @@ bool CL_C10_ConfigManager::patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, c
             ST_A20_CommonAsset_t& v_c = p_cfg.assets[p_cfg.assetCount];
             memset(&v_c, 0, sizeof(v_c));
 
-            strlcpy(v_c.uri, C10_getStr(j_c, "uri", ""), sizeof(v_c.uri));
-            strlcpy(v_c.path, C10_getStr(j_c, "path", ""), sizeof(v_c.path));
-            v_c.isCommon = C10_getBool(j_c, "isCommon", false);
+            strlcpy(v_c.uri, A40_ComFunc::Json_getStr(j_c, "uri", ""), sizeof(v_c.uri));
+            strlcpy(v_c.path, A40_ComFunc::Json_getStr(j_c, "path", ""), sizeof(v_c.path));
+            v_c.isCommon = A40_ComFunc::Json_getBool(j_c, "isCommon", false);
 
             if (v_c.uri[0] == '\0' || v_c.path[0] == '\0') continue;
 
@@ -633,7 +636,7 @@ bool CL_C10_ConfigManager::patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, c
         A40_ComFunc::Dirty_setAtomic(_dirty_webPage, s_dirtyMux);
 
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] WebPage config patched. Dirty=true");
-		
+
         /*
 			// Dirty Flag 설정 시 Critical Section 적용
         {

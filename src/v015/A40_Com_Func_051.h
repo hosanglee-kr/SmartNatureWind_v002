@@ -12,6 +12,9 @@
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+
 #include <memory> // std::shared_ptr
 #include <new>    // std::nothrow
 
@@ -160,6 +163,11 @@ static inline JsonArrayConst Json_getArr(JsonObjectConst p_obj, const char* p_ke
 }
 
 static inline JsonObjectConst Json_pickRootObject(JsonDocument& p_doc, const char* p_wrapKey) {
+    JsonObjectConst v = p_doc[p_wrapKey].as<JsonObjectConst>();
+    return v.isNull() ? p_doc.as<JsonObjectConst>() : v;
+}
+
+static inline JsonObjectConst Json_pickRootObject(const JsonDocument& p_doc, const char* p_wrapKey) {
     JsonObjectConst v = p_doc[p_wrapKey].as<JsonObjectConst>();
     return v.isNull() ? p_doc.as<JsonObjectConst>() : v;
 }

@@ -692,6 +692,7 @@ void CL_C10_ConfigManager::getDirtyStatus(JsonDocument& p_doc) {
     p_doc["windDict"]     = _dirty_windDict;
     p_doc["webPage"]      = _dirty_webPage;
 }
+*/
 
 void CL_C10_ConfigManager::saveAll(const ST_A20_ConfigRoot_t& p_root) {
 
@@ -712,7 +713,7 @@ void CL_C10_ConfigManager::saveAll(const ST_A20_ConfigRoot_t& p_root) {
     if (p_root.webPage) saveWebPageConfig(*p_root.webPage);
 }
 
-*/
+
 
 // -----------------------------------------------------
 // 3. All Config → JSON Export

@@ -351,7 +351,7 @@ bool CL_C10_ConfigManager::saveNvsSpecConfig(const ST_A20_NvsSpecConfig_t& p_cfg
     }
 
 
-    bool v_ok = A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.nvsSpec, v_doc, true, __func__);
+    bool v_ok = A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.nvsSpec, v_doc, true, true, __func__);
 	// bool v_ok = ioSaveJson(s_cfgJsonFileMap.nvsSpec, v_doc);
 
     return v_ok;
@@ -425,7 +425,7 @@ bool CL_C10_ConfigManager::saveWebPageConfig(const ST_A20_WebPageConfig_t& p_cfg
         v_co["isCommon"] = v_c.isCommon;
     }
 
-    bool v_ok = A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.webPage, v_doc, true, __func__);
+    bool v_ok = A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.webPage, v_doc, true, true, __func__);
 	// bool v_ok = ioSaveJson(s_cfgJsonFileMap.webPage, v_doc);
 
     return v_ok;
@@ -495,13 +495,19 @@ bool CL_C10_ConfigManager::patchNvsSpecFromJson(ST_A20_NvsSpecConfig_t& p_cfg, c
     }
 
 	if (v_changed) {
-        // ✅ [수정] Dirty Flag 설정 시 Critical Section 적용 (원자성 보장)
+		// Dirty Flag 원자성: A40 helper + 클래스 소유 mux 사용
+        A40_ComFunc::Dirty_setAtomic(_dirty_nvsSpec, s_dirtyMux);
+
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] NvsSpec config patched. Dirty=true");
+		/*
+        // Dirty Flag 설정 시 Critical Section 적용 (원자성 보장)
         {
             static portMUX_TYPE v_dirtyMux = portMUX_INITIALIZER_UNLOCKED;
             CL_A40_muxGuard_Critical v_dirtyGuard(&v_dirtyMux);
             _dirty_nvsSpec = true;
         }
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] NvsSpec config patched. Dirty=true");
+		*/
     }
 
 
@@ -623,13 +629,20 @@ bool CL_C10_ConfigManager::patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, c
     }
 
 	if (v_changed) {
-        // Dirty Flag 설정 시 Critical Section 적용
+		// Dirty Flag 원자성: A40 helper + 클래스 소유 mux 사용
+        A40_ComFunc::Dirty_setAtomic(_dirty_webPage, s_dirtyMux);
+
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] WebPage config patched. Dirty=true");
+		
+        /*
+			// Dirty Flag 설정 시 Critical Section 적용
         {
             static portMUX_TYPE v_dirtyMux = portMUX_INITIALIZER_UNLOCKED;
             CL_A40_muxGuard_Critical v_dirtyGuard(&v_dirtyMux);
             _dirty_webPage = true;
         }
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] WebPage config patched. Dirty=true");
+		*/
     }
 
     // if (v_changed) {

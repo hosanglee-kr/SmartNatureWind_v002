@@ -43,34 +43,37 @@
 // 내부 Helper: 단일 key 전용 (fallback 금지)
 //  - containsKey 사용 금지 -> JsonVariantConst null 체크 기반
 // =====================================================
-static const char* C10_getStr1(JsonObjectConst p_obj, const char* p_k1, const char* p_def) {
-    if (p_obj.isNull()) return p_def;
+// static const char* A40_ComFunc::Json_getStr(JsonObjectConst p_obj, const char* p_k1, const char* p_def) {
+//     if (p_obj.isNull()) return p_def;
 
-    JsonVariantConst v1 = p_obj[p_k1];
-    if (v1.isNull()) return p_def;
+//     JsonVariantConst v1 = p_obj[p_k1];
+//     if (v1.isNull()) return p_def;
 
-    const char* s = v1.as<const char*>();
-    return (s && s[0]) ? s : p_def;
-}
+//     const char* s = v1.as<const char*>();
+//     return (s && s[0]) ? s : p_def;
+// }
 
-template <typename T>
-static T C10_getNum1(JsonObjectConst p_obj, const char* p_k1, T p_def) {
-    if (p_obj.isNull()) return p_def;
+// template <typename T>
+// static T C10_getNum1(JsonObjectConst p_obj, const char* p_k1, T p_def) {
+//     if (p_obj.isNull()) return p_def;
 
-    JsonVariantConst v1 = p_obj[p_k1];
-    if (v1.isNull()) return p_def;
+//     JsonVariantConst v1 = p_obj[p_k1];
+//     if (v1.isNull()) return p_def;
 
-    return (T)(v1.as<T>());
-}
+//     return (T)(v1.as<T>());
+// }
 
-static bool C10_getBool1(JsonObjectConst p_obj, const char* p_k1, bool p_def) {
-    if (p_obj.isNull()) return p_def;
+// static bool C10_getBool1(JsonObjectConst p_obj, const char* p_k1, bool p_def) {
+//     if (p_obj.isNull()) return p_def;
 
-    JsonVariantConst v1 = p_obj[p_k1];
-    if (v1.isNull()) return p_def;
+//     JsonVariantConst v1 = p_obj[p_k1];
+//     if (v1.isNull()) return p_def;
 
-    return v1.as<bool>();
-}
+//     return v1.as<bool>();
+// }
+
+
+
 
 // =====================================================
 // AutoOff 시간(localtime null) 방어
@@ -144,14 +147,14 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
     // -------------------------
     if (!j_meta.isNull()) {
 
-		const char* v_ver = C10_getStr1(j_meta, "version", nullptr);
+		const char* v_ver = A40_ComFunc::Json_getStr(j_meta, "version", nullptr);
 
         if (v_ver && v_ver[0]) strlcpy(p_cfg.meta.version, v_ver, sizeof(p_cfg.meta.version));
 
-        const char* v_dn = C10_getStr1(j_meta, "deviceName", nullptr);
+        const char* v_dn = A40_ComFunc::Json_getStr(j_meta, "deviceName", nullptr);
         if (v_dn && v_dn[0]) strlcpy(p_cfg.meta.deviceName, v_dn, sizeof(p_cfg.meta.deviceName));
 
-        const char* v_lu = C10_getStr1(j_meta, "lastUpdate", nullptr);
+        const char* v_lu = A40_ComFunc::Json_getStr(j_meta, "lastUpdate", nullptr);
         if (v_lu && v_lu[0]) strlcpy(p_cfg.meta.lastUpdate, v_lu, sizeof(p_cfg.meta.lastUpdate));
     }
 
@@ -160,7 +163,7 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
     // -------------------------
     JsonObjectConst j_log = j_sys["logging"].as<JsonObjectConst>();
     if (!j_log.isNull()) {
-        const char* v_lv = C10_getStr1(j_log, "level", nullptr);
+        const char* v_lv = A40_ComFunc::Json_getStr(j_log, "level", nullptr);
         if (v_lv && v_lv[0]) strlcpy(p_cfg.system.logging.level, v_lv, sizeof(p_cfg.system.logging.level));
 
         if (!j_log["maxEntries"].isNull()) {
@@ -180,7 +183,7 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
             for (JsonObjectConst j_ch : j_chArr) {
                 if (j_ch.isNull()) continue;
 
-                uint8_t v_idx = (uint8_t)C10_getNum1<uint8_t>(j_ch, "chIdx", 255);
+                uint8_t v_idx = (uint8_t)A40_ComFunc::Json_getNum<uint8_t>(j_ch, "chIdx", 255);
                 if (v_idx >= (uint8_t)EN_A20_WS_CH_COUNT) continue;
 
                 // chIntervalMs
@@ -265,7 +268,7 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
     JsonObjectConst j_th = j_hw["tempHum"].as<JsonObjectConst>();
     if (!j_th.isNull()) {
         if (!j_th["enabled"].isNull()) p_cfg.hw.tempHum.enabled = j_th["enabled"].as<bool>();
-        const char* v_type = C10_getStr1(j_th, "type", nullptr);
+        const char* v_type = A40_ComFunc::Json_getStr(j_th, "type", nullptr);
         if (v_type && v_type[0]) strlcpy(p_cfg.hw.tempHum.type, v_type, sizeof(p_cfg.hw.tempHum.type));
         if (!j_th["pin"].isNull()) p_cfg.hw.tempHum.pin = j_th["pin"].as<uint8_t>();
         if (!j_th["intervalSec"].isNull()) p_cfg.hw.tempHum.intervalSec = j_th["intervalSec"].as<uint16_t>();
@@ -281,17 +284,17 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
     // security
     JsonObjectConst j_sec = j_root["security"].as<JsonObjectConst>();
     if (!j_sec.isNull()) {
-        const char* v_key = C10_getStr1(j_sec, "apiKey", nullptr);
+        const char* v_key = A40_ComFunc::Json_getStr(j_sec, "apiKey", nullptr);
         if (v_key && v_key[0]) strlcpy(p_cfg.security.apiKey, v_key, sizeof(p_cfg.security.apiKey));
     }
 
     // time
     JsonObjectConst j_time = j_root["time"].as<JsonObjectConst>();
     if (!j_time.isNull()) {
-        const char* v_ntp = C10_getStr1(j_time, "ntpServer", nullptr);
+        const char* v_ntp = A40_ComFunc::Json_getStr(j_time, "ntpServer", nullptr);
         if (v_ntp && v_ntp[0]) strlcpy(p_cfg.time.ntpServer, v_ntp, sizeof(p_cfg.time.ntpServer));
 
-        const char* v_tz = C10_getStr1(j_time, "timezone", nullptr);
+        const char* v_tz = A40_ComFunc::Json_getStr(j_time, "timezone", nullptr);
         if (v_tz && v_tz[0]) strlcpy(p_cfg.time.timezone, v_tz, sizeof(p_cfg.time.timezone));
 
         if (!j_time["syncIntervalMin"].isNull()) p_cfg.time.syncIntervalMin = j_time["syncIntervalMin"].as<uint16_t>();
@@ -336,7 +339,7 @@ bool CL_C10_ConfigManager::loadWifiConfig(ST_A20_WifiConfig_t& p_cfg) {
         const char* v_ssid = j_ap["ssid"] | nullptr;
         if (v_ssid && v_ssid[0]) strlcpy(p_cfg.ap.ssid, v_ssid, sizeof(p_cfg.ap.ssid));
 
-        const char* v_pass = C10_getStr1(j_ap, "pass", nullptr);
+        const char* v_pass = A40_ComFunc::Json_getStr(j_ap, "pass", nullptr);
         if (v_pass && v_pass[0]) strlcpy(p_cfg.ap.pass, v_pass, sizeof(p_cfg.ap.pass));
     }
 
@@ -410,9 +413,9 @@ bool CL_C10_ConfigManager::loadMotionConfig(ST_A20_MotionConfig_t& p_cfg) {
             if (!r["on"].isNull()) p_cfg.ble.rssi.on = r["on"].as<int8_t>();
             if (!r["off"].isNull()) p_cfg.ble.rssi.off = r["off"].as<int8_t>();
 
-            uint8_t  v_avg  = C10_getNum1<uint8_t>(r, "avgCount", p_cfg.ble.rssi.avgCount);
-            uint8_t  v_pst  = C10_getNum1<uint8_t>(r, "persistCount", p_cfg.ble.rssi.persistCount);
-            uint16_t v_exit = C10_getNum1<uint16_t>(r, "exitDelaySec", p_cfg.ble.rssi.exitDelaySec);
+            uint8_t  v_avg  = A40_ComFunc::Json_getNum<uint8_t>(r, "avgCount", p_cfg.ble.rssi.avgCount);
+            uint8_t  v_pst  = A40_ComFunc::Json_getNum<uint8_t>(r, "persistCount", p_cfg.ble.rssi.persistCount);
+            uint16_t v_exit = A40_ComFunc::Json_getNum<uint16_t>(r, "exitDelaySec", p_cfg.ble.rssi.exitDelaySec);
 
             p_cfg.ble.rssi.avgCount     = v_avg;
             p_cfg.ble.rssi.persistCount = v_pst;
@@ -438,11 +441,11 @@ bool CL_C10_ConfigManager::loadMotionConfig(ST_A20_MotionConfig_t& p_cfg) {
                 const char* v_mac = v_js["mac"] | nullptr;
                 if (v_mac) strlcpy(v_d.mac, v_mac, sizeof(v_d.mac));
 
-                const char* v_mp = C10_getStr1(v_js, "manufPrefix", nullptr);
+                const char* v_mp = A40_ComFunc::Json_getStr(v_js, "manufPrefix", nullptr);
                 if (v_mp) strlcpy(v_d.manufPrefix, v_mp, sizeof(v_d.manufPrefix));
 
-                v_d.prefixLen = C10_getNum1<uint8_t>(v_js, "prefixLen", 0);
-                v_d.enabled   = C10_getBool1(v_js, "enabled", true);
+                v_d.prefixLen = A40_ComFunc::Json_getNum<uint8_t>(v_js, "prefixLen", 0);
+                v_d.enabled   = A40_ComFunc::Json_getBool(v_js, "enabled", true);
             }
         }
     }
@@ -522,7 +525,7 @@ bool CL_C10_ConfigManager::saveSystemConfig(const ST_A20_SystemConfig_t& p_cfg) 
     v["time"]["timezone"]        = p_cfg.time.timezone;
     v["time"]["syncIntervalMin"] = p_cfg.time.syncIntervalMin;
 
-    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.system, v, true, __func__);
+    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.system, v, true, true, __func__);
 }
 
 bool CL_C10_ConfigManager::saveWifiConfig(const ST_A20_WifiConfig_t& p_cfg) {
@@ -542,7 +545,7 @@ bool CL_C10_ConfigManager::saveWifiConfig(const ST_A20_WifiConfig_t& p_cfg) {
         v_net["pass"]    = p_cfg.sta[v_i].pass;
     }
 
-    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.wifi, d, true, __func__);
+    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.wifi, d, true, true, __func__);
 }
 
 bool CL_C10_ConfigManager::saveMotionConfig(const ST_A20_MotionConfig_t& p_cfg) {
@@ -578,7 +581,7 @@ bool CL_C10_ConfigManager::saveMotionConfig(const ST_A20_MotionConfig_t& p_cfg) 
     d["motion"]["timing"]["gustIntervalMs"]    = p_cfg.timing.gustIntervalMs;
     d["motion"]["timing"]["thermalIntervalMs"] = p_cfg.timing.thermalIntervalMs;
 
-    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.motion, d, true, __func__);
+    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.motion, d, true, true, __func__);
 }
 
 // =====================================================
@@ -607,13 +610,13 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
 
     // meta
     if (!j_meta.isNull()) {
-        const char* v_dn = C10_getStr1(j_meta, "deviceName", "");
+        const char* v_dn = A40_ComFunc::Json_getStr(j_meta, "deviceName", "");
         if (v_dn && v_dn[0] && strcmp(v_dn, p_config.meta.deviceName) != 0) {
             strlcpy(p_config.meta.deviceName, v_dn, sizeof(p_config.meta.deviceName));
             v_changed = true;
         }
 
-        const char* v_lu = C10_getStr1(j_meta, "lastUpdate", "");
+        const char* v_lu = A40_ComFunc::Json_getStr(j_meta, "lastUpdate", "");
         if (v_lu && v_lu[0] && strcmp(v_lu, p_config.meta.lastUpdate) != 0) {
             strlcpy(p_config.meta.lastUpdate, v_lu, sizeof(p_config.meta.lastUpdate));
             v_changed = true;
@@ -624,13 +627,13 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
     if (!j_sys.isNull()) {
         JsonObjectConst j_log = j_sys["logging"].as<JsonObjectConst>();
         if (!j_log.isNull()) {
-            const char* v_lv = C10_getStr1(j_log, "level", "");
+            const char* v_lv = A40_ComFunc::Json_getStr(j_log, "level", "");
             if (v_lv && v_lv[0] && strcmp(v_lv, p_config.system.logging.level) != 0) {
                 strlcpy(p_config.system.logging.level, v_lv, sizeof(p_config.system.logging.level));
                 v_changed = true;
             }
 
-            uint16_t v_max = C10_getNum1<uint16_t>(j_log, "maxEntries", p_config.system.logging.maxEntries);
+            uint16_t v_max = A40_ComFunc::Json_getNum<uint16_t>(j_log, "maxEntries", p_config.system.logging.maxEntries);
             if (v_max != p_config.system.logging.maxEntries) {
                 p_config.system.logging.maxEntries = v_max;
                 v_changed                          = true;
@@ -646,7 +649,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
                 for (JsonObjectConst j_ch : j_chArr) {
                     if (j_ch.isNull()) continue;
 
-                    uint8_t v_idx = (uint8_t)C10_getNum1<uint8_t>(j_ch, "chIdx", 255);
+                    uint8_t v_idx = (uint8_t)A40_ComFunc::Json_getNum<uint8_t>(j_ch, "chIdx", 255);
                     if (v_idx >= (uint8_t)EN_A20_WS_CH_COUNT) continue;
 
                     if (!j_ch["chIntervalMs"].isNull()) {
@@ -700,7 +703,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
 
     // security.apiKey
     if (!j_sec.isNull()) {
-        const char* v_key = C10_getStr1(j_sec, "apiKey", "");
+        const char* v_key = A40_ComFunc::Json_getStr(j_sec, "apiKey", "");
         if (v_key && v_key[0] && strcmp(v_key, p_config.security.apiKey) != 0) {
             strlcpy(p_config.security.apiKey, v_key, sizeof(p_config.security.apiKey));
             v_changed = true;
@@ -759,7 +762,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
                     v_changed           = true;
                 }
             }
-            uint16_t v_db = C10_getNum1<uint16_t>(j_pir, "debounceSec", p_config.hw.pir.debounceSec);
+            uint16_t v_db = A40_ComFunc::Json_getNum<uint16_t>(j_pir, "debounceSec", p_config.hw.pir.debounceSec);
             if (v_db != p_config.hw.pir.debounceSec) {
                 p_config.hw.pir.debounceSec = v_db;
                 v_changed                   = true;
@@ -796,7 +799,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
                     v_changed               = true;
                 }
             }
-            uint16_t v_itv = C10_getNum1<uint16_t>(j_th, "intervalSec", p_config.hw.tempHum.intervalSec);
+            uint16_t v_itv = A40_ComFunc::Json_getNum<uint16_t>(j_th, "intervalSec", p_config.hw.tempHum.intervalSec);
             if (v_itv != p_config.hw.tempHum.intervalSec) {
                 p_config.hw.tempHum.intervalSec = v_itv;
                 v_changed                       = true;
@@ -846,7 +849,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
                     v_changed               = true;
                 }
             }
-            uint16_t v_si = C10_getNum1<uint16_t>(j_ble, "scanInterval", p_config.hw.ble.scanInterval);
+            uint16_t v_si = A40_ComFunc::Json_getNum<uint16_t>(j_ble, "scanInterval", p_config.hw.ble.scanInterval);
             if (v_si != p_config.hw.ble.scanInterval) {
                 p_config.hw.ble.scanInterval = v_si;
                 v_changed                    = true;
@@ -856,19 +859,19 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
 
     // time
     if (!j_time.isNull()) {
-        const char* v_ntp = C10_getStr1(j_time, "ntpServer", "");
+        const char* v_ntp = A40_ComFunc::Json_getStr(j_time, "ntpServer", "");
         if (v_ntp && v_ntp[0] && strcmp(v_ntp, p_config.time.ntpServer) != 0) {
             strlcpy(p_config.time.ntpServer, v_ntp, sizeof(p_config.time.ntpServer));
             v_changed = true;
         }
 
-        const char* v_tz = C10_getStr1(j_time, "timezone", "");
+        const char* v_tz = A40_ComFunc::Json_getStr(j_time, "timezone", "");
         if (v_tz && v_tz[0] && strcmp(v_tz, p_config.time.timezone) != 0) {
             strlcpy(p_config.time.timezone, v_tz, sizeof(p_config.time.timezone));
             v_changed = true;
         }
 
-        uint16_t v_si = C10_getNum1<uint16_t>(j_time, "syncIntervalMin", p_config.time.syncIntervalMin);
+        uint16_t v_si = A40_ComFunc::Json_getNum<uint16_t>(j_time, "syncIntervalMin", p_config.time.syncIntervalMin);
         if (v_si != p_config.time.syncIntervalMin) {
             p_config.time.syncIntervalMin = v_si;
             v_changed                     = true;
@@ -918,7 +921,7 @@ bool CL_C10_ConfigManager::patchWifiFromJson(ST_A20_WifiConfig_t& p_config, cons
             v_changed = true;
         }
 
-        const char* v_pwd = C10_getStr1(j_ap, "pass", "");
+        const char* v_pwd = A40_ComFunc::Json_getStr(j_ap, "pass", "");
         if (v_pwd && v_pwd[0] && strcmp(v_pwd, p_config.ap.pass) != 0) {
             strlcpy(p_config.ap.pass, v_pwd, sizeof(p_config.ap.pass));
             v_changed = true;
@@ -999,19 +1002,19 @@ bool CL_C10_ConfigManager::patchMotionFromJson(ST_A20_MotionConfig_t& p_config, 
                 v_changed             = true;
             }
 
-            uint8_t v_avg = C10_getNum1<uint8_t>(j_rssi, "avgCount", p_config.ble.rssi.avgCount);
+            uint8_t v_avg = A40_ComFunc::Json_getNum<uint8_t>(j_rssi, "avgCount", p_config.ble.rssi.avgCount);
             if (v_avg != p_config.ble.rssi.avgCount) {
                 p_config.ble.rssi.avgCount = v_avg;
                 v_changed                  = true;
             }
 
-            uint8_t v_pst = C10_getNum1<uint8_t>(j_rssi, "persistCount", p_config.ble.rssi.persistCount);
+            uint8_t v_pst = A40_ComFunc::Json_getNum<uint8_t>(j_rssi, "persistCount", p_config.ble.rssi.persistCount);
             if (v_pst != p_config.ble.rssi.persistCount) {
                 p_config.ble.rssi.persistCount = v_pst;
                 v_changed                      = true;
             }
 
-            uint16_t v_exit = C10_getNum1<uint16_t>(j_rssi, "exitDelaySec", p_config.ble.rssi.exitDelaySec);
+            uint16_t v_exit = A40_ComFunc::Json_getNum<uint16_t>(j_rssi, "exitDelaySec", p_config.ble.rssi.exitDelaySec);
             if (v_exit != p_config.ble.rssi.exitDelaySec) {
                 p_config.ble.rssi.exitDelaySec = v_exit;
                 v_changed                      = true;
@@ -1032,11 +1035,11 @@ bool CL_C10_ConfigManager::patchMotionFromJson(ST_A20_MotionConfig_t& p_config, 
                 strlcpy(v_d.name, v_js["name"] | "", sizeof(v_d.name));
                 strlcpy(v_d.mac, v_js["mac"] | "", sizeof(v_d.mac));
 
-                const char* v_mp = C10_getStr1(v_js, "manufPrefix", "");
+                const char* v_mp = A40_ComFunc::Json_getStr(v_js, "manufPrefix", "");
                 strlcpy(v_d.manufPrefix, v_mp, sizeof(v_d.manufPrefix));
 
-                v_d.prefixLen = C10_getNum1<uint8_t>(v_js, "prefixLen", 0);
-                v_d.enabled   = C10_getBool1(v_js, "enabled", true);
+                v_d.prefixLen = A40_ComFunc::Json_getNum<uint8_t>(v_js, "prefixLen", 0);
+                v_d.enabled   = A40_ComFunc::Json_getBool(v_js, "enabled", true);
             }
             v_changed = true;
             CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[C10] Motion Trusted Devices array fully replaced.");
@@ -1046,19 +1049,19 @@ bool CL_C10_ConfigManager::patchMotionFromJson(ST_A20_MotionConfig_t& p_config, 
     // timing (fallback 적용 금지: camelCase만)
     JsonObjectConst j_timing = j_motion["timing"].as<JsonObjectConst>();
     if (!j_timing.isNull()) {
-        uint16_t v_sim = C10_getNum1<uint16_t>(j_timing, "simIntervalMs", p_config.timing.simIntervalMs);
+        uint16_t v_sim = A40_ComFunc::Json_getNum<uint16_t>(j_timing, "simIntervalMs", p_config.timing.simIntervalMs);
         if (v_sim != p_config.timing.simIntervalMs && v_sim > 0) {
             p_config.timing.simIntervalMs = v_sim;
             v_changed                     = true;
         }
 
-        uint16_t v_gust = C10_getNum1<uint16_t>(j_timing, "gustIntervalMs", p_config.timing.gustIntervalMs);
+        uint16_t v_gust = A40_ComFunc::Json_getNum<uint16_t>(j_timing, "gustIntervalMs", p_config.timing.gustIntervalMs);
         if (v_gust != p_config.timing.gustIntervalMs && v_gust > 0) {
             p_config.timing.gustIntervalMs = v_gust;
             v_changed                      = true;
         }
 
-        uint16_t v_thermal = C10_getNum1<uint16_t>(j_timing, "thermalIntervalMs", p_config.timing.thermalIntervalMs);
+        uint16_t v_thermal = A40_ComFunc::Json_getNum<uint16_t>(j_timing, "thermalIntervalMs", p_config.timing.thermalIntervalMs);
         if (v_thermal != p_config.timing.thermalIntervalMs && v_thermal > 0) {
             p_config.timing.thermalIntervalMs = v_thermal;
             v_changed                         = true;

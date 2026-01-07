@@ -593,6 +593,36 @@ bool CL_C10_ConfigManager::factoryResetFromDefault() {
 #endif
 
     if (!v_fileFound) {
+        // ==========================================================
+        // ✅ nullptr 크래시 방지: 섹션 포인터를 먼저 확보
+        //  - A20_resetToDefault / saveAll 은 섹션 포인터가 유효하다는 전제일 수 있음
+        // ==========================================================
+        bool v_allocOk = true;
+
+        if (!C10_allocSection(g_A20_config_root.system,       "system"))       v_allocOk = false;
+        if (!C10_allocSection(g_A20_config_root.wifi,         "wifi"))         v_allocOk = false;
+        if (!C10_allocSection(g_A20_config_root.motion,       "motion"))       v_allocOk = false;
+        if (!C10_allocSection(g_A20_config_root.nvsSpec,      "nvsSpec"))      v_allocOk = false;
+        if (!C10_allocSection(g_A20_config_root.windDict,     "windDict"))     v_allocOk = false;
+        if (!C10_allocSection(g_A20_config_root.schedules,    "schedules"))    v_allocOk = false;
+        if (!C10_allocSection(g_A20_config_root.userProfiles, "userProfiles")) v_allocOk = false;
+        if (!C10_allocSection(g_A20_config_root.webPage,      "webPage"))      v_allocOk = false;
+
+        if (!v_allocOk) {
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] Factory Reset: allocation failed. abort.");
+            // 누수 방지: 확보된 것만 정리
+            freeAll(g_A20_config_root);
+            return false;
+        }
+
+        // cfg_jsonFile 매핑이 비어있으면 로드 (saveAll이 s_cfgJsonFileMap를 사용)
+        if (s_cfgJsonFileMap.system[0] == '\0') {
+            if (!_loadCfgJsonFile()) {
+                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] Factory Reset: cfg_jsonFile load failed.");
+                return false;
+            }
+        }
+
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] Factory Reset: Using hardcoded defaults in C++.");
         A20_resetToDefault(g_A20_config_root);
         saveAll(g_A20_config_root);

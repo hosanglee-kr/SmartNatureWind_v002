@@ -182,6 +182,9 @@ class CL_C10_ConfigManager {
 	static bool _dirty_nvsSpec;
 	static bool _dirty_webPage;
 
+    // ✅ Dirty 보호용 mux (클래스 소유)
+    static portMUX_TYPE s_dirtyMux;
+
 	// cfg_jsonFile.json 매핑
 	static ST_A20_cfg_jsonFile_t s_cfgJsonFileMap;
 

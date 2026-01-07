@@ -347,6 +347,94 @@ void CL_C10_ConfigManager::saveDirtyConfigs() {
     uint8_t v_saved   = 0;
     uint8_t v_failed  = 0;
 
+    // =====================================================
+    // 방안 1) trySave 템플릿(callable) 방식
+    //  - p_saveFn: 함수포인터/람다/펑터 모두 허용
+    //  - 기존 "bool (*)(const void*)" 타입 강제 제거 → 컴파일 에러 회피
+    // =====================================================
+    auto trySave = [&](bool& p_dirty, const char* p_name, auto&& p_saveFn, const void* p_obj) {
+        if (!p_dirty || !p_obj) return;
+
+        v_attempt++;
+
+        bool v_ok = p_saveFn(p_obj);
+        if (v_ok) {
+            p_dirty = false;
+            v_saved++;
+            CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] dirty-save ok: %s", p_name);
+        } else {
+            v_failed++;
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] dirty-save failed: %s", p_name);
+        }
+    };
+
+    // =====================================================
+    // 섹션별 저장 (람다 wrapper)
+    //  - 각 saveXxxConfig는 강타입을 받으므로 const void* → reinterpret_cast
+    // =====================================================
+    auto saveSystem_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveSystemConfig(*reinterpret_cast<const ST_A20_SystemConfig_t*>(p));
+    };
+    auto saveWifi_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveWifiConfig(*reinterpret_cast<const ST_A20_WifiConfig_t*>(p));
+    };
+    auto saveMotion_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveMotionConfig(*reinterpret_cast<const ST_A20_MotionConfig_t*>(p));
+    };
+    auto saveNvs_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveNvsSpecConfig(*reinterpret_cast<const ST_A20_NvsSpecConfig_t*>(p));
+    };
+    auto saveSchedules_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveSchedules(*reinterpret_cast<const ST_A20_SchedulesRoot_t*>(p));
+    };
+    auto saveUserProfiles_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveUserProfiles(*reinterpret_cast<const ST_A20_UserProfilesRoot_t*>(p));
+    };
+    auto saveWind_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveWindDict(*reinterpret_cast<const ST_A20_WindDict_t*>(p));
+    };
+    auto saveWeb_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveWebPageConfig(*reinterpret_cast<const ST_A20_WebPageConfig_t*>(p));
+    };
+
+    // =====================================================
+    // Dirty Flag 기반 저장 시도
+    // =====================================================
+    trySave(_dirty_system, "system", saveSystem_wrap, g_A20_config_root.system);
+    trySave(_dirty_wifi, "wifi", saveWifi_wrap, g_A20_config_root.wifi);
+    trySave(_dirty_motion, "motion", saveMotion_wrap, g_A20_config_root.motion);
+    trySave(_dirty_nvsSpec, "nvsSpec", saveNvs_wrap, g_A20_config_root.nvsSpec);
+    trySave(_dirty_schedules, "schedules", saveSchedules_wrap, g_A20_config_root.schedules);
+    trySave(_dirty_userProfiles, "userProfiles", saveUserProfiles_wrap, g_A20_config_root.userProfiles);
+    trySave(_dirty_windDict, "windDict", saveWind_wrap, g_A20_config_root.windDict);
+    trySave(_dirty_webPage, "webPage", saveWeb_wrap, g_A20_config_root.webPage);
+
+    // =====================================================
+    // 결과 로그
+    // =====================================================
+    if (v_attempt == 0) {
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[C10] saveDirtyConfigs: nothing to save (no dirty flags).");
+    } else if (v_failed == 0) {
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] saveDirtyConfigs: saved=%u/%u (all ok)", v_saved, v_attempt);
+    } else {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] saveDirtyConfigs: saved=%u failed=%u attempted=%u", v_saved, v_failed, v_attempt);
+    }
+}
+
+/*
+void CL_C10_ConfigManager::saveDirtyConfigs() {
+
+    // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_MutxGuard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
+        return;
+    }
+
+    uint8_t v_attempt = 0;
+    uint8_t v_saved   = 0;
+    uint8_t v_failed  = 0;
+
     // ✅ thin wrapper(전역 함수) 금지 조건이 있으므로:
     //    - 여기서 말하는 "thin wrapper"는 IO 래퍼 금지로 이해했고,
     //      save 함수 포인터용 람다는 기존 기능 유지 위해 그대로 둡니다(기능 축소 방지).
@@ -407,6 +495,7 @@ void CL_C10_ConfigManager::saveDirtyConfigs() {
         CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] saveDirtyConfigs: saved=%u failed=%u attempted=%u", v_saved, v_failed, v_attempt);
     }
 }
+*/
 
 // 현재 Dirty 상태 조회
 void CL_C10_ConfigManager::getDirtyStatus(JsonDocument& p_doc) {

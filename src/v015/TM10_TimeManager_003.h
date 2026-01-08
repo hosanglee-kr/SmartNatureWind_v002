@@ -192,7 +192,7 @@ inline void CL_TM10_TimeManager::_copySysTime(const ST_A20_SystemConfig_t& p_sys
     // interval (min -> ms)
     uint32_t v_ms = (uint32_t)p_sys.time.syncIntervalMin * 60000UL;
     if (v_ms == 0) v_ms = (6UL * 60UL * 60UL * 1000UL);
-    v_ms             = A40_ComFunc::clampVal(v_ms, (uint32_t)G_TM10_MIN_SYNC_INTERVAL_MS, (uint32_t)G_TM10_MAX_SYNC_INTERVAL_MS);
+    v_ms = A40_ComFunc::clampVal(v_ms, (uint32_t)G_TM10_MIN_SYNC_INTERVAL_MS, (uint32_t)G_TM10_MAX_SYNC_INTERVAL_MS);
     s_syncIntervalMs = v_ms;
 
     // 서버 리스트 재구성

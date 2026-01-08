@@ -177,9 +177,9 @@ class CL_S10_Simulation {
 
   private:
 
-	CL_P10_PWM*				  	_pwm		  	= nullptr;
+	CL_P10_PWM*				  	_pwm		  		= nullptr;
 
-	const ST_A20_FanConfig_t* 	_fanCfgSnap 	= nullptr;
+	const ST_A20_FanConfig_t* 	_fanCfgSnap 		= nullptr;
 
 	SemaphoreHandle_t 			_recursiveMutex 	= nullptr;
 	portMUX_TYPE			  	_flagSpinlock	  	= portMUX_INITIALIZER_UNLOCKED; // _flagMutex

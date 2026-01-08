@@ -98,7 +98,7 @@ void CL_WF10_WiFiManager::attachWiFiEvents() {
 // --------------------------------------------------
 bool CL_WF10_WiFiManager::init(const ST_A20_WifiConfig_t& p_cfg_wifi,
                                const ST_A20_SystemConfig_t& p_cfg_system,
-                               WiFiMulti& p_multi,
+                               // WiFiMulti& p_multi,
                                uint8_t p_apChannel,
                                uint8_t p_staMaxTries,
                                bool p_enableApDhcp) {
@@ -124,6 +124,9 @@ bool CL_WF10_WiFiManager::init(const ST_A20_WifiConfig_t& p_cfg_wifi,
 
     bool v_ap_ok  = false;
     bool v_sta_ok = false;
+
+	// ✅ WiFiMulti 상태 리셋(후보 중복 방지)
+    s_wifiMulti = WiFiMulti();
 
     switch (p_cfg_wifi.wifiMode) {
         case 0:  // AP Only
@@ -193,7 +196,8 @@ bool CL_WF10_WiFiManager::startAP(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t
 // --------------------------------------------------
 // STA 시작 (전략적 락 해제 적용)
 // --------------------------------------------------
-bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, WiFiMulti& p_multi, uint8_t p_maxTries) {
+bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t p_maxTries) {
+// bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, WiFiMulti& p_multi, uint8_t p_maxTries) {
     CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
     if (!v_guard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout", __func__);
@@ -213,7 +217,8 @@ bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, WiFiMu
     // WiFiMulti 후보 추가
 	for (uint8_t i = 0; i < p_cfg_wifi.staCount; i++) {
         if (p_cfg_wifi.sta[i].ssid[0] == '\0') continue;
-        p_multi.addAP(p_cfg_wifi.sta[i].ssid, p_cfg_wifi.sta[i].pass);
+        s_wifiMulti.addAP(p_cfg_wifi.sta[i].ssid, p_cfg_wifi.sta[i].pass);
+		// p_multi.addAP(p_cfg_wifi.sta[i].ssid, p_cfg_wifi.sta[i].pass);
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] %s: candidate: %s", __func__, p_cfg_wifi.sta[i].ssid);
     }
 
@@ -223,7 +228,8 @@ bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, WiFiMu
     uint8_t  v_try  = 0;
     uint32_t v_wait = 500;
     while (WiFi.status() != WL_CONNECTED && v_try < p_maxTries) {
-        if (p_multi.run(2000) == WL_CONNECTED) break;
+        if (s_wifiMulti.run(2000) == WL_CONNECTED) break;
+		// if (p_multi.run(2000) == WL_CONNECTED) break;
         v_try++;
         delay(v_wait);
         v_wait = (v_wait < 4000) ? (v_wait * 2) : 4000;
@@ -349,7 +355,10 @@ bool CL_WF10_WiFiManager::applyConfig(const ST_A20_WifiConfig_t& p_cfg) {
 	WiFi.softAPdisconnect(true);
 
 	// 2) WiFiMulti 준비
-	WiFiMulti v_multi;
+	 // ✅ 후보 중복 방지: 내부 WiFiMulti 리셋
+    s_wifiMulti = WiFiMulti();
+
+	//WiFiMulti v_multi;
 
 	// 3) system config 존재 여부 확인
 	if (!g_A20_config_root.system) {
@@ -364,12 +373,14 @@ bool CL_WF10_WiFiManager::applyConfig(const ST_A20_WifiConfig_t& p_cfg) {
 		strlcpy(v_sys.time.timezone, "Asia/Seoul", sizeof(v_sys.time.timezone));
 		v_sys.time.syncIntervalMin = 360;  // 6시간
 
-		bool v_ok = init(p_cfg, v_sys, v_multi, 1, 15, true);
+		bool v_ok = init(p_cfg, v_sys, 1, 15, true);
+	    // bool v_ok = init(p_cfg, v_sys, v_multi, 1, 15, true);
 		return v_ok;
 	}
 
 	// 4) 기존 init() 로직 재사용 (AP/STA까지)
-	bool v_ok = init(p_cfg, *g_A20_config_root.system, v_multi, 1, 15, true);
+	bool v_ok = init(p_cfg, *g_A20_config_root.system, 1, 15, true);
+    // bool v_ok = init(p_cfg, *g_A20_config_root.system, v_multi, 1, 15, true);
 
 	CL_D10_Logger::log(EN_L10_LOG_INFO, "[WiFi] Configuration applied (ok=%d, mode=%d)", (int)v_ok, (int)p_cfg.wifiMode);
 	return v_ok;

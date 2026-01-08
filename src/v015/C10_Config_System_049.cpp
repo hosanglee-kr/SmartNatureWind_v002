@@ -39,7 +39,6 @@
 #include <cstring>
 #include <ctime>
 
-
 // =====================================================
 // AutoOff 시간(localtime null) 방어
 //  - 타임이 아직 동기화되지 않아 localtime()이 null일 수 있음
@@ -111,8 +110,7 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
     // meta (있으면 덮어쓰기)
     // -------------------------
     if (!j_meta.isNull()) {
-
-		const char* v_ver = A40_ComFunc::Json_getStr(j_meta, "version", nullptr);
+        const char* v_ver = A40_ComFunc::Json_getStr(j_meta, "version", nullptr);
 
         if (v_ver && v_ver[0]) strlcpy(p_cfg.meta.version, v_ver, sizeof(p_cfg.meta.version));
 
@@ -448,7 +446,7 @@ bool CL_C10_ConfigManager::saveSystemConfig(const ST_A20_SystemConfig_t& p_cfg) 
     for (uint8_t v_i = 0; v_i < (uint8_t)EN_A20_WS_CH_COUNT; v_i++) {
         const ST_A20_WS_CH_CONFIG_t& v_ch = p_cfg.system.webSocket.wsChConfig[v_i];
 
-        JsonObject o = v_chArr.add<JsonObject>();
+        JsonObject o      = v_chArr.add<JsonObject>();
         o["chIdx"]        = (uint8_t)v_ch.chIdx;
         o["chName"]       = v_ch.chName;
         o["chIntervalMs"] = v_ch.chIntervalMs;
@@ -558,7 +556,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
     bool v_changed = false;
 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -622,7 +620,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
                         uint16_t v_new = A40_ComFunc::clampVal<uint16_t>(j_ch["chIntervalMs"].as<uint16_t>(), 20, 60000);
                         if (v_new != p_config.system.webSocket.wsChConfig[v_idx].chIntervalMs) {
                             p_config.system.webSocket.wsChConfig[v_idx].chIntervalMs = v_new;
-                            v_changed = true;
+                            v_changed                                                = true;
                         }
                     }
 
@@ -630,7 +628,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
                         uint8_t v_new = A40_ComFunc::clampVal<uint8_t>(j_ch["priority"].as<uint8_t>(), 0, 10);
                         if (v_new != p_config.system.webSocket.wsChConfig[v_idx].priority) {
                             p_config.system.webSocket.wsChConfig[v_idx].priority = v_new;
-                            v_changed = true;
+                            v_changed                                            = true;
                         }
                     }
 
@@ -645,21 +643,21 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
                     uint16_t v_new = A40_ComFunc::clampVal<uint16_t>(j_etc["chartLargeBytes"].as<uint16_t>(), 256, 60000);
                     if (v_new != p_config.system.webSocket.wsEtcConfig.chartLargeBytes) {
                         p_config.system.webSocket.wsEtcConfig.chartLargeBytes = v_new;
-                        v_changed = true;
+                        v_changed                                             = true;
                     }
                 }
                 if (!j_etc["chartThrottleMul"].isNull()) {
                     uint8_t v_new = A40_ComFunc::clampVal<uint8_t>(j_etc["chartThrottleMul"].as<uint8_t>(), 1, 10);
                     if (v_new != p_config.system.webSocket.wsEtcConfig.chartThrottleMul) {
                         p_config.system.webSocket.wsEtcConfig.chartThrottleMul = v_new;
-                        v_changed = true;
+                        v_changed                                              = true;
                     }
                 }
                 if (!j_etc["wsCleanupMs"].isNull()) {
                     uint16_t v_new = A40_ComFunc::clampVal<uint16_t>(j_etc["wsCleanupMs"].as<uint16_t>(), 200, 60000);
                     if (v_new != p_config.system.webSocket.wsEtcConfig.wsCleanupMs) {
                         p_config.system.webSocket.wsEtcConfig.wsCleanupMs = v_new;
-                        v_changed = true;
+                        v_changed                                         = true;
                     }
                 }
             }
@@ -856,7 +854,7 @@ bool CL_C10_ConfigManager::patchWifiFromJson(ST_A20_WifiConfig_t& p_config, cons
     bool v_changed = false;
 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -924,7 +922,7 @@ bool CL_C10_ConfigManager::patchWifiFromJson(ST_A20_WifiConfig_t& p_config, cons
 
 bool CL_C10_ConfigManager::patchMotionFromJson(ST_A20_MotionConfig_t& p_config, const JsonDocument& p_patch) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1028,7 +1026,8 @@ bool CL_C10_ConfigManager::patchMotionFromJson(ST_A20_MotionConfig_t& p_config, 
             v_changed                      = true;
         }
 
-        uint16_t v_thermal = A40_ComFunc::Json_getNum<uint16_t>(j_timing, "thermalIntervalMs", p_config.timing.thermalIntervalMs);
+        uint16_t v_thermal =
+            A40_ComFunc::Json_getNum<uint16_t>(j_timing, "thermalIntervalMs", p_config.timing.thermalIntervalMs);
         if (v_thermal != p_config.timing.thermalIntervalMs && v_thermal > 0) {
             p_config.timing.thermalIntervalMs = v_thermal;
             v_changed                         = true;
@@ -1043,498 +1042,6 @@ bool CL_C10_ConfigManager::patchMotionFromJson(ST_A20_MotionConfig_t& p_config, 
 
     return v_changed;
 }
-
-
-/*
-bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, const JsonDocument& p_patch) {
-    bool v_changed = false;
-
-    // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
-    if (!v_MutxGuard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
-        return false;
-    }
-
-    JsonObjectConst j_meta = p_patch["meta"].as<JsonObjectConst>();
-    JsonObjectConst j_sys  = p_patch["system"].as<JsonObjectConst>();
-    JsonObjectConst j_sec  = p_patch["security"].as<JsonObjectConst>();
-    JsonObjectConst j_hw   = p_patch["hw"].as<JsonObjectConst>();
-    JsonObjectConst j_time = p_patch["time"].as<JsonObjectConst>();
-
-    if (j_meta.isNull() && j_sys.isNull() && j_sec.isNull() && j_hw.isNull() && j_time.isNull()) {
-        return false;
-    }
-
-    // meta
-    if (!j_meta.isNull()) {
-        const char* v_dn = A40_ComFunc::Json_getStr(j_meta, "deviceName", "");
-        if (v_dn && v_dn[0] && strcmp(v_dn, p_config.meta.deviceName) != 0) {
-            strlcpy(p_config.meta.deviceName, v_dn, sizeof(p_config.meta.deviceName));
-            v_changed = true;
-        }
-
-        const char* v_lu = A40_ComFunc::Json_getStr(j_meta, "lastUpdate", "");
-        if (v_lu && v_lu[0] && strcmp(v_lu, p_config.meta.lastUpdate) != 0) {
-            strlcpy(p_config.meta.lastUpdate, v_lu, sizeof(p_config.meta.lastUpdate));
-            v_changed = true;
-        }
-    }
-
-    // system + logging + websocket
-    if (!j_sys.isNull()) {
-        JsonObjectConst j_log = j_sys["logging"].as<JsonObjectConst>();
-        if (!j_log.isNull()) {
-            const char* v_lv = A40_ComFunc::Json_getStr(j_log, "level", "");
-            if (v_lv && v_lv[0] && strcmp(v_lv, p_config.system.logging.level) != 0) {
-                strlcpy(p_config.system.logging.level, v_lv, sizeof(p_config.system.logging.level));
-                v_changed = true;
-            }
-
-            uint16_t v_max = A40_ComFunc::Json_getNum<uint16_t>(j_log, "maxEntries", p_config.system.logging.maxEntries);
-            if (v_max != p_config.system.logging.maxEntries) {
-                p_config.system.logging.maxEntries = v_max;
-                v_changed                          = true;
-            }
-        }
-
-        // webSocket (NEW SCHEMA)
-        JsonObjectConst j_ws = j_sys["webSocket"].as<JsonObjectConst>();
-        if (!j_ws.isNull()) {
-            // wsChConfig[] : 부분 반영
-            JsonArrayConst j_chArr = j_ws["wsChConfig"].as<JsonArrayConst>();
-            if (!j_chArr.isNull()) {
-                for (JsonObjectConst j_ch : j_chArr) {
-                    if (j_ch.isNull()) continue;
-
-                    uint8_t v_idx = (uint8_t)A40_ComFunc::Json_getNum<uint8_t>(j_ch, "chIdx", 255);
-                    if (v_idx >= (uint8_t)EN_A20_WS_CH_COUNT) continue;
-
-                    if (!j_ch["chIntervalMs"].isNull()) {
-                        uint16_t v_new = A40_ComFunc::clampVal<uint16_t>(j_ch["chIntervalMs"].as<uint16_t>(), 20, 60000);
-                        if (v_new != p_config.system.webSocket.wsChConfig[v_idx].chIntervalMs) {
-                            p_config.system.webSocket.wsChConfig[v_idx].chIntervalMs = v_new;
-                            v_changed = true;
-                        }
-                    }
-
-                    if (!j_ch["priority"].isNull()) {
-                        uint8_t v_new = A40_ComFunc::clampVal<uint8_t>(j_ch["priority"].as<uint8_t>(), 0, 10);
-                        if (v_new != p_config.system.webSocket.wsChConfig[v_idx].priority) {
-                            p_config.system.webSocket.wsChConfig[v_idx].priority = v_new;
-                            v_changed = true;
-                        }
-                    }
-
-                    // chName은 patch로 덮지 않음 (표준 이름 유지)
-                }
-            }
-
-            // wsEtcConfig : 부분 반영
-            JsonObjectConst j_etc = j_ws["wsEtcConfig"].as<JsonObjectConst>();
-            if (!j_etc.isNull()) {
-                if (!j_etc["chartLargeBytes"].isNull()) {
-                    uint16_t v_new = A40_ComFunc::clampVal<uint16_t>(j_etc["chartLargeBytes"].as<uint16_t>(), 256, 60000);
-                    if (v_new != p_config.system.webSocket.wsEtcConfig.chartLargeBytes) {
-                        p_config.system.webSocket.wsEtcConfig.chartLargeBytes = v_new;
-                        v_changed = true;
-                    }
-                }
-                if (!j_etc["chartThrottleMul"].isNull()) {
-                    uint8_t v_new = A40_ComFunc::clampVal<uint8_t>(j_etc["chartThrottleMul"].as<uint8_t>(), 1, 10);
-                    if (v_new != p_config.system.webSocket.wsEtcConfig.chartThrottleMul) {
-                        p_config.system.webSocket.wsEtcConfig.chartThrottleMul = v_new;
-                        v_changed = true;
-                    }
-                }
-                if (!j_etc["wsCleanupMs"].isNull()) {
-                    uint16_t v_new = A40_ComFunc::clampVal<uint16_t>(j_etc["wsCleanupMs"].as<uint16_t>(), 200, 60000);
-                    if (v_new != p_config.system.webSocket.wsEtcConfig.wsCleanupMs) {
-                        // ✅ FIX: 오타/중첩 대입 방지 - 정상 경로로만 대입
-                        p_config.system.webSocket.wsEtcConfig.wsCleanupMs = v_new;
-                        v_changed = true;
-                    }
-                }
-            }
-        }
-    }
-
-    // security.apiKey
-    if (!j_sec.isNull()) {
-        const char* v_key = A40_ComFunc::Json_getStr(j_sec, "apiKey", "");
-        if (v_key && v_key[0] && strcmp(v_key, p_config.security.apiKey) != 0) {
-            strlcpy(p_config.security.apiKey, v_key, sizeof(p_config.security.apiKey));
-            v_changed = true;
-        }
-    }
-
-    // hw
-    if (!j_hw.isNull()) {
-        // fanConfig
-        JsonObjectConst j_fan = j_hw["fanConfig"].as<JsonObjectConst>();
-        if (!j_fan.isNull()) {
-            if (!j_fan["startPercentMin"].isNull()) {
-                uint8_t v_val = j_fan["startPercentMin"].as<uint8_t>();
-                if (v_val != p_config.hw.fanConfig.startPercentMin) {
-                    p_config.hw.fanConfig.startPercentMin = v_val;
-                    v_changed                             = true;
-                }
-            }
-            if (!j_fan["comfortPercentMin"].isNull()) {
-                uint8_t v_val = j_fan["comfortPercentMin"].as<uint8_t>();
-                if (v_val != p_config.hw.fanConfig.comfortPercentMin) {
-                    p_config.hw.fanConfig.comfortPercentMin = v_val;
-                    v_changed                               = true;
-                }
-            }
-            if (!j_fan["comfortPercentMax"].isNull()) {
-                uint8_t v_val = j_fan["comfortPercentMax"].as<uint8_t>();
-                if (v_val != p_config.hw.fanConfig.comfortPercentMax) {
-                    p_config.hw.fanConfig.comfortPercentMax = v_val;
-                    v_changed                               = true;
-                }
-            }
-            if (!j_fan["hardPercentMax"].isNull()) {
-                uint8_t v_val = j_fan["hardPercentMax"].as<uint8_t>();
-                if (v_val != p_config.hw.fanConfig.hardPercentMax) {
-                    p_config.hw.fanConfig.hardPercentMax = v_val;
-                    v_changed                            = true;
-                }
-            }
-        }
-
-        // pir
-        JsonObjectConst j_pir = j_hw["pir"].as<JsonObjectConst>();
-        if (!j_pir.isNull()) {
-            if (!j_pir["enabled"].isNull()) {
-                bool v_en = j_pir["enabled"].as<bool>();
-                if (v_en != p_config.hw.pir.enabled) {
-                    p_config.hw.pir.enabled = v_en;
-                    v_changed               = true;
-                }
-            }
-            if (!j_pir["pin"].isNull()) {
-                uint8_t v_pin = j_pir["pin"].as<uint8_t>();
-                if (v_pin != p_config.hw.pir.pin) {
-                    p_config.hw.pir.pin = v_pin;
-                    v_changed           = true;
-                }
-            }
-            uint16_t v_db = A40_ComFunc::Json_getNum<uint16_t>(j_pir, "debounceSec", p_config.hw.pir.debounceSec);
-            if (v_db != p_config.hw.pir.debounceSec) {
-                p_config.hw.pir.debounceSec = v_db;
-                v_changed                   = true;
-            }
-
-            if (!j_pir["holdSec"].isNull()) {
-                uint16_t v_hold = j_pir["holdSec"].as<uint16_t>();
-                if (v_hold != p_config.hw.pir.holdSec) {
-                    p_config.hw.pir.holdSec = v_hold;
-                    v_changed               = true;
-                }
-            }
-        }
-
-        // tempHum
-        JsonObjectConst j_th = j_hw["tempHum"].as<JsonObjectConst>();
-        if (!j_th.isNull()) {
-            if (!j_th["enabled"].isNull()) {
-                bool v_en = j_th["enabled"].as<bool>();
-                if (v_en != p_config.hw.tempHum.enabled) {
-                    p_config.hw.tempHum.enabled = v_en;
-                    v_changed                   = true;
-                }
-            }
-            const char* v_type = j_th["type"] | "";
-            if (v_type && v_type[0] && strcmp(v_type, p_config.hw.tempHum.type) != 0) {
-                strlcpy(p_config.hw.tempHum.type, v_type, sizeof(p_config.hw.tempHum.type));
-                v_changed = true;
-            }
-            if (!j_th["pin"].isNull()) {
-                uint8_t v_pin = j_th["pin"].as<uint8_t>();
-                if (v_pin != p_config.hw.tempHum.pin) {
-                    p_config.hw.tempHum.pin = v_pin;
-                    v_changed               = true;
-                }
-            }
-            uint16_t v_itv = A40_ComFunc::Json_getNum<uint16_t>(j_th, "intervalSec", p_config.hw.tempHum.intervalSec);
-            if (v_itv != p_config.hw.tempHum.intervalSec) {
-                p_config.hw.tempHum.intervalSec = v_itv;
-                v_changed                       = true;
-            }
-        }
-
-        // fanPwm
-        JsonObjectConst j_pwm = j_hw["fanPwm"].as<JsonObjectConst>();
-        if (!j_pwm.isNull()) {
-            if (!j_pwm["pin"].isNull()) {
-                uint8_t v_pin = j_pwm["pin"].as<uint8_t>();
-                if (v_pin != p_config.hw.fanPwm.pin) {
-                    p_config.hw.fanPwm.pin = v_pin;
-                    v_changed              = true;
-                }
-            }
-            if (!j_pwm["channel"].isNull()) {
-                uint8_t v_ch = j_pwm["channel"].as<uint8_t>();
-                if (v_ch != p_config.hw.fanPwm.channel) {
-                    p_config.hw.fanPwm.channel = v_ch;
-                    v_changed                  = true;
-                }
-            }
-            if (!j_pwm["freq"].isNull()) {
-                uint32_t v_fr = j_pwm["freq"].as<uint32_t>();
-                if (v_fr != p_config.hw.fanPwm.freq) {
-                    p_config.hw.fanPwm.freq = v_fr;
-                    v_changed               = true;
-                }
-            }
-            if (!j_pwm["res"].isNull()) {
-                uint8_t v_res = j_pwm["res"].as<uint8_t>();
-                if (v_res != p_config.hw.fanPwm.res) {
-                    p_config.hw.fanPwm.res = v_res;
-                    v_changed              = true;
-                }
-            }
-        }
-
-        // ble
-        JsonObjectConst j_ble = j_hw["ble"].as<JsonObjectConst>();
-        if (!j_ble.isNull()) {
-            if (!j_ble["enabled"].isNull()) {
-                bool v_en = j_ble["enabled"].as<bool>();
-                if (v_en != p_config.hw.ble.enabled) {
-                    p_config.hw.ble.enabled = v_en;
-                    v_changed               = true;
-                }
-            }
-            uint16_t v_si = A40_ComFunc::Json_getNum<uint16_t>(j_ble, "scanInterval", p_config.hw.ble.scanInterval);
-            if (v_si != p_config.hw.ble.scanInterval) {
-                p_config.hw.ble.scanInterval = v_si;
-                v_changed                    = true;
-            }
-        }
-    }
-
-    // time
-    if (!j_time.isNull()) {
-        const char* v_ntp = A40_ComFunc::Json_getStr(j_time, "ntpServer", "");
-        if (v_ntp && v_ntp[0] && strcmp(v_ntp, p_config.time.ntpServer) != 0) {
-            strlcpy(p_config.time.ntpServer, v_ntp, sizeof(p_config.time.ntpServer));
-            v_changed = true;
-        }
-
-        const char* v_tz = A40_ComFunc::Json_getStr(j_time, "timezone", "");
-        if (v_tz && v_tz[0] && strcmp(v_tz, p_config.time.timezone) != 0) {
-            strlcpy(p_config.time.timezone, v_tz, sizeof(p_config.time.timezone));
-            v_changed = true;
-        }
-
-        uint16_t v_si = A40_ComFunc::Json_getNum<uint16_t>(j_time, "syncIntervalMin", p_config.time.syncIntervalMin);
-        if (v_si != p_config.time.syncIntervalMin) {
-            p_config.time.syncIntervalMin = v_si;
-            v_changed                     = true;
-        }
-    }
-
-    if (v_changed) {
-        _dirty_system = true;
-        CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] System config patched (Memory Only, camelCase). Dirty=true");
-    }
-
-    return v_changed;
-}
-
-bool CL_C10_ConfigManager::patchWifiFromJson(ST_A20_WifiConfig_t& p_config, const JsonDocument& p_patch) {
-    bool v_changed = false;
-
-    // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
-    if (!v_MutxGuard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
-        return false;
-    }
-
-    JsonObjectConst j_wifi = p_patch["wifi"].as<JsonObjectConst>();
-    if (j_wifi.isNull()) {
-        return false;
-    }
-
-    if (!j_wifi["wifiMode"].isNull()) {
-        uint8_t v_mode = j_wifi["wifiMode"].as<uint8_t>();
-        if (v_mode != (uint8_t)p_config.wifiMode) {
-            if (v_mode >= (uint8_t)EN_A20_WIFI_MODE_AP && v_mode <= (uint8_t)EN_A20_WIFI_MODE_AP_STA) {
-                p_config.wifiMode = (EN_A20_WIFI_MODE_t)v_mode;
-                v_changed         = true;
-            } else {
-                CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] Invalid wifiMode value: %u", (unsigned)v_mode);
-            }
-        }
-    }
-
-    JsonObjectConst j_ap = j_wifi["ap"].as<JsonObjectConst>();
-    if (!j_ap.isNull()) {
-        const char* v_ssid = j_ap["ssid"] | "";
-        if (v_ssid && v_ssid[0] && strcmp(v_ssid, p_config.ap.ssid) != 0) {
-            strlcpy(p_config.ap.ssid, v_ssid, sizeof(p_config.ap.ssid));
-            v_changed = true;
-        }
-
-        const char* v_pwd = A40_ComFunc::Json_getStr(j_ap, "pass", "");
-        if (v_pwd && v_pwd[0] && strcmp(v_pwd, p_config.ap.pass) != 0) {
-            strlcpy(p_config.ap.pass, v_pwd, sizeof(p_config.ap.pass));
-            v_changed = true;
-        }
-    }
-
-    // sta 배열은 있으면 "전체 교체"
-    JsonArrayConst j_sta = j_wifi["sta"].as<JsonArrayConst>();
-    if (!j_sta.isNull()) {
-        p_config.staCount = 0;
-        for (JsonObjectConst v_js : j_sta) {
-            if (p_config.staCount >= A20_Const::MAX_STA_NETWORKS) break;
-
-            ST_A20_STANetwork_t& v_net = p_config.sta[p_config.staCount];
-            memset(&v_net, 0, sizeof(v_net)); // ✅ 찌꺼기 방지
-
-            strlcpy(v_net.ssid, v_js["ssid"] | "", sizeof(v_net.ssid));
-            strlcpy(v_net.pass, v_js["pass"] | "", sizeof(v_net.pass));
-
-            p_config.staCount++;
-        }
-        v_changed = true;
-        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[C10] WiFi STA array fully replaced.");
-    }
-
-    if (v_changed) {
-        _dirty_wifi = true;
-        CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] WiFi config patched (Memory Only, camelCase). Dirty=true");
-    }
-
-    return v_changed;
-}
-
-bool CL_C10_ConfigManager::patchMotionFromJson(ST_A20_MotionConfig_t& p_config, const JsonDocument& p_patch) {
-    // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
-    if (!v_MutxGuard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
-        return false;
-    }
-
-    bool v_changed = false;
-
-    JsonObjectConst j_motion = p_patch["motion"].as<JsonObjectConst>();
-    if (j_motion.isNull()) {
-        return false;
-    }
-
-    // pir
-    JsonObjectConst j_pir = j_motion["pir"].as<JsonObjectConst>();
-    if (!j_pir.isNull()) {
-        if (!j_pir["enabled"].isNull() && j_pir["enabled"].as<bool>() != p_config.pir.enabled) {
-            p_config.pir.enabled = j_pir["enabled"].as<bool>();
-            v_changed            = true;
-        }
-        if (!j_pir["holdSec"].isNull() && j_pir["holdSec"].as<uint16_t>() != p_config.pir.holdSec) {
-            p_config.pir.holdSec = j_pir["holdSec"].as<uint16_t>();
-            v_changed            = true;
-        }
-    }
-
-    // ble
-    JsonObjectConst j_ble = j_motion["ble"].as<JsonObjectConst>();
-    if (!j_ble.isNull()) {
-        if (!j_ble["enabled"].isNull() && j_ble["enabled"].as<bool>() != p_config.ble.enabled) {
-            p_config.ble.enabled = j_ble["enabled"].as<bool>();
-            v_changed            = true;
-        }
-
-        JsonObjectConst j_rssi = j_ble["rssi"].as<JsonObjectConst>();
-        if (!j_rssi.isNull()) {
-            if (!j_rssi["on"].isNull() && j_rssi["on"].as<int8_t>() != p_config.ble.rssi.on) {
-                p_config.ble.rssi.on = j_rssi["on"].as<int8_t>();
-                v_changed            = true;
-            }
-            if (!j_rssi["off"].isNull() && j_rssi["off"].as<int8_t>() != p_config.ble.rssi.off) {
-                p_config.ble.rssi.off = j_rssi["off"].as<int8_t>();
-                v_changed             = true;
-            }
-
-            uint8_t v_avg = A40_ComFunc::Json_getNum<uint8_t>(j_rssi, "avgCount", p_config.ble.rssi.avgCount);
-            if (v_avg != p_config.ble.rssi.avgCount) {
-                p_config.ble.rssi.avgCount = v_avg;
-                v_changed                  = true;
-            }
-
-            uint8_t v_pst = A40_ComFunc::Json_getNum<uint8_t>(j_rssi, "persistCount", p_config.ble.rssi.persistCount);
-            if (v_pst != p_config.ble.rssi.persistCount) {
-                p_config.ble.rssi.persistCount = v_pst;
-                v_changed                      = true;
-            }
-
-            uint16_t v_exit = A40_ComFunc::Json_getNum<uint16_t>(j_rssi, "exitDelaySec", p_config.ble.rssi.exitDelaySec);
-            if (v_exit != p_config.ble.rssi.exitDelaySec) {
-                p_config.ble.rssi.exitDelaySec = v_exit;
-                v_changed                      = true;
-            }
-        }
-
-        // trustedDevices[] : 있으면 "전체 교체"
-        JsonArrayConst j_tdArr = j_ble["trustedDevices"].as<JsonArrayConst>();
-        if (!j_tdArr.isNull()) {
-            p_config.ble.trustedCount = 0;
-            for (JsonObjectConst v_js : j_tdArr) {
-                if (p_config.ble.trustedCount >= A20_Const::MAX_BLE_DEVICES) break;
-
-                ST_A20_BLETrustedDevice_t& v_d = p_config.ble.trustedDevices[p_config.ble.trustedCount++];
-                memset(&v_d, 0, sizeof(v_d)); // ✅ 찌꺼기 방지
-
-                strlcpy(v_d.alias, v_js["alias"] | "", sizeof(v_d.alias));
-                strlcpy(v_d.name, v_js["name"] | "", sizeof(v_d.name));
-                strlcpy(v_d.mac, v_js["mac"] | "", sizeof(v_d.mac));
-
-                const char* v_mp = A40_ComFunc::Json_getStr(v_js, "manufPrefix", "");
-                strlcpy(v_d.manufPrefix, v_mp, sizeof(v_d.manufPrefix));
-
-                v_d.prefixLen = A40_ComFunc::Json_getNum<uint8_t>(v_js, "prefixLen", 0);
-                v_d.enabled   = A40_ComFunc::Json_getBool(v_js, "enabled", true);
-            }
-            v_changed = true;
-            CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[C10] Motion Trusted Devices array fully replaced.");
-        }
-    }
-
-    // timing (fallback 적용 금지: camelCase만)
-    JsonObjectConst j_timing = j_motion["timing"].as<JsonObjectConst>();
-    if (!j_timing.isNull()) {
-        uint16_t v_sim = A40_ComFunc::Json_getNum<uint16_t>(j_timing, "simIntervalMs", p_config.timing.simIntervalMs);
-        if (v_sim != p_config.timing.simIntervalMs && v_sim > 0) {
-            p_config.timing.simIntervalMs = v_sim;
-            v_changed                     = true;
-        }
-
-        uint16_t v_gust = A40_ComFunc::Json_getNum<uint16_t>(j_timing, "gustIntervalMs", p_config.timing.gustIntervalMs);
-        if (v_gust != p_config.timing.gustIntervalMs && v_gust > 0) {
-            p_config.timing.gustIntervalMs = v_gust;
-            v_changed                      = true;
-        }
-
-        uint16_t v_thermal = A40_ComFunc::Json_getNum<uint16_t>(j_timing, "thermalIntervalMs", p_config.timing.thermalIntervalMs);
-        if (v_thermal != p_config.timing.thermalIntervalMs && v_thermal > 0) {
-            p_config.timing.thermalIntervalMs = v_thermal;
-            v_changed                         = true;
-        }
-    }
-
-    if (v_changed) {
-        _dirty_motion = true;
-        CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] Motion config patched (Memory Only, camelCase). Dirty=true");
-    }
-
-    return v_changed;
-}
-
-*/
 
 // =====================================================
 // 3-1. JSON Export (System/Wifi/Motion) - camelCase Export
@@ -1554,7 +1061,7 @@ void CL_C10_ConfigManager::toJson_System(const ST_A20_SystemConfig_t& p, JsonDoc
     for (uint8_t v_i = 0; v_i < (uint8_t)EN_A20_WS_CH_COUNT; v_i++) {
         const ST_A20_WS_CH_CONFIG_t& v_ch = p.system.webSocket.wsChConfig[v_i];
 
-        JsonObject o = d_chArr.add<JsonObject>();
+        JsonObject o      = d_chArr.add<JsonObject>();
         o["chIdx"]        = (uint8_t)v_ch.chIdx;
         o["chName"]       = v_ch.chName;
         o["chIntervalMs"] = v_ch.chIntervalMs;
@@ -1639,4 +1146,3 @@ void CL_C10_ConfigManager::toJson_Motion(const ST_A20_MotionConfig_t& p, JsonDoc
     d["motion"]["timing"]["gustIntervalMs"]    = p.timing.gustIntervalMs;
     d["motion"]["timing"]["thermalIntervalMs"] = p.timing.thermalIntervalMs;
 }
-

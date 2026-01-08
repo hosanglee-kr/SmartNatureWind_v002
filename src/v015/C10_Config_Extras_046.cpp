@@ -51,7 +51,6 @@
 //    (B) A20_resetxxxDefault로 "기본값" 먼저 채운 뒤 파일 값을 오버레이
 // =====================================================
 bool CL_C10_ConfigManager::loadNvsSpecConfig(ST_A20_NvsSpecConfig_t& p_cfg) {
-
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
     CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
@@ -89,13 +88,12 @@ bool CL_C10_ConfigManager::loadNvsSpecConfig(ST_A20_NvsSpecConfig_t& p_cfg) {
         // key가 존재할 때만 반영(없으면 defaults 유지)
         JsonVariantConst v_nsVar = j_root["namespace"];
         if (!v_nsVar.isNull()) {
-            A40_ComFunc::Json_copyStr(
-                j_root,
-                "namespace",
-                p_cfg.namespaceName,
-                sizeof(p_cfg.namespaceName),
-                (p_cfg.namespaceName[0] ? p_cfg.namespaceName : "SNW"),
-                __func__);
+            A40_ComFunc::Json_copyStr(j_root,
+                                      "namespace",
+                                      p_cfg.namespaceName,
+                                      sizeof(p_cfg.namespaceName),
+                                      (p_cfg.namespaceName[0] ? p_cfg.namespaceName : "SNW"),
+                                      __func__);
         }
     }
 
@@ -119,10 +117,7 @@ bool CL_C10_ConfigManager::loadNvsSpecConfig(ST_A20_NvsSpecConfig_t& p_cfg) {
             memset(&v_ent, 0, sizeof(v_ent));
 
             // key는 필수
-            bool v_keyOk = A40_ComFunc::Json_copyStrReq(
-                j_e, "key",
-                v_ent.key, sizeof(v_ent.key),
-                "", __func__);
+            bool v_keyOk = A40_ComFunc::Json_copyStrReq(j_e, "key", v_ent.key, sizeof(v_ent.key), "", __func__);
             if (!v_keyOk || v_ent.key[0] == '\0') continue;
 
             // type/defaultValue는 옵션(없으면 빈 문자열)
@@ -137,7 +132,6 @@ bool CL_C10_ConfigManager::loadNvsSpecConfig(ST_A20_NvsSpecConfig_t& p_cfg) {
 }
 
 bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
-
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
     CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
@@ -184,7 +178,7 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
                 memset(&v_p, 0, sizeof(v_p));
 
                 // uri/path는 필수
-                bool v_uriOk  = A40_ComFunc::Json_copyStrReq(j_p, "uri",  v_p.uri,  sizeof(v_p.uri),  "", __func__);
+                bool v_uriOk  = A40_ComFunc::Json_copyStrReq(j_p, "uri", v_p.uri, sizeof(v_p.uri), "", __func__);
                 bool v_pathOk = A40_ComFunc::Json_copyStrReq(j_p, "path", v_p.path, sizeof(v_p.path), "", __func__);
                 if (!v_uriOk || !v_pathOk || v_p.uri[0] == '\0' || v_p.path[0] == '\0') {
                     continue;
@@ -198,7 +192,7 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
                 v_p.order  = A40_ComFunc::Json_getNum<uint16_t>(j_p, "order", 0);
 
                 // pageAssets[]
-                v_p.pageAssetCount = 0;
+                v_p.pageAssetCount      = 0;
                 JsonArrayConst j_assets = A40_ComFunc::Json_getArr(j_p, "pageAssets");
                 if (!j_assets.isNull()) {
                     for (JsonObjectConst j_a : j_assets) {
@@ -207,8 +201,9 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
                         ST_A20_PageAsset_t& v_a = v_p.pageAssets[v_p.pageAssetCount];
                         memset(&v_a, 0, sizeof(v_a));
 
-                        bool v_aUriOk  = A40_ComFunc::Json_copyStrReq(j_a, "uri",  v_a.uri,  sizeof(v_a.uri),  "", __func__);
-                        bool v_aPathOk = A40_ComFunc::Json_copyStrReq(j_a, "path", v_a.path, sizeof(v_a.path), "", __func__);
+                        bool v_aUriOk = A40_ComFunc::Json_copyStrReq(j_a, "uri", v_a.uri, sizeof(v_a.uri), "", __func__);
+                        bool v_aPathOk =
+                            A40_ComFunc::Json_copyStrReq(j_a, "path", v_a.path, sizeof(v_a.path), "", __func__);
                         if (!v_aUriOk || !v_aPathOk || v_a.uri[0] == '\0' || v_a.path[0] == '\0') {
                             continue;
                         }
@@ -237,8 +232,9 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
                 ST_A20_ReDirectItem_t& v_r = p_cfg.reDirect[p_cfg.reDirectCount];
                 memset(&v_r, 0, sizeof(v_r));
 
-                bool v_fromOk = A40_ComFunc::Json_copyStrReq(j_r, "uriFrom", v_r.uriFrom, sizeof(v_r.uriFrom), "", __func__);
-                bool v_toOk   = A40_ComFunc::Json_copyStrReq(j_r, "uriTo",   v_r.uriTo,   sizeof(v_r.uriTo),   "", __func__);
+                bool v_fromOk =
+                    A40_ComFunc::Json_copyStrReq(j_r, "uriFrom", v_r.uriFrom, sizeof(v_r.uriFrom), "", __func__);
+                bool v_toOk = A40_ComFunc::Json_copyStrReq(j_r, "uriTo", v_r.uriTo, sizeof(v_r.uriTo), "", __func__);
                 if (!v_fromOk || !v_toOk || v_r.uriFrom[0] == '\0' || v_r.uriTo[0] == '\0') {
                     continue;
                 }
@@ -261,7 +257,7 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
                 ST_A20_CommonAsset_t& v_c = p_cfg.assets[p_cfg.assetCount];
                 memset(&v_c, 0, sizeof(v_c));
 
-                bool v_uriOk  = A40_ComFunc::Json_copyStrReq(j_c, "uri",  v_c.uri,  sizeof(v_c.uri),  "", __func__);
+                bool v_uriOk  = A40_ComFunc::Json_copyStrReq(j_c, "uri", v_c.uri, sizeof(v_c.uri), "", __func__);
                 bool v_pathOk = A40_ComFunc::Json_copyStrReq(j_c, "path", v_c.path, sizeof(v_c.path), "", __func__);
                 if (!v_uriOk || !v_pathOk || v_c.uri[0] == '\0' || v_c.path[0] == '\0') {
                     continue;
@@ -284,7 +280,6 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
 //    (B) path empty 방어 + 명확 로그
 // =====================================================
 bool CL_C10_ConfigManager::saveNvsSpecConfig(const ST_A20_NvsSpecConfig_t& p_cfg) {
-
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
     CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
@@ -320,7 +315,6 @@ bool CL_C10_ConfigManager::saveNvsSpecConfig(const ST_A20_NvsSpecConfig_t& p_cfg
 }
 
 bool CL_C10_ConfigManager::saveWebPageConfig(const ST_A20_WebPageConfig_t& p_cfg) {
-
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
     CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
@@ -419,10 +413,8 @@ bool CL_C10_ConfigManager::patchNvsSpecFromJson(ST_A20_NvsSpecConfig_t& p_cfg, c
             memset(v_nsBuf, 0, sizeof(v_nsBuf));
 
             // 필수 수준으로 취급(키가 있는데 빈문자열/타입불일치면 경고 로그)
-            bool v_ok = A40_ComFunc::Json_copyStrReq(
-                j_root, "namespace",
-                v_nsBuf, sizeof(v_nsBuf),
-                p_cfg.namespaceName, __func__);
+            bool v_ok =
+                A40_ComFunc::Json_copyStrReq(j_root, "namespace", v_nsBuf, sizeof(v_nsBuf), p_cfg.namespaceName, __func__);
 
             if (v_ok && v_nsBuf[0] != '\0' && strcmp(v_nsBuf, p_cfg.namespaceName) != 0) {
                 strlcpy(p_cfg.namespaceName, v_nsBuf, sizeof(p_cfg.namespaceName));
@@ -443,10 +435,7 @@ bool CL_C10_ConfigManager::patchNvsSpecFromJson(ST_A20_NvsSpecConfig_t& p_cfg, c
             ST_A20_NvsEntry_t& v_ent = p_cfg.entries[p_cfg.entryCount];
             memset(&v_ent, 0, sizeof(v_ent));
 
-            bool v_keyOk = A40_ComFunc::Json_copyStrReq(
-                j_e, "key",
-                v_ent.key, sizeof(v_ent.key),
-                "", __func__);
+            bool v_keyOk = A40_ComFunc::Json_copyStrReq(j_e, "key", v_ent.key, sizeof(v_ent.key), "", __func__);
             if (!v_keyOk || v_ent.key[0] == '\0') continue;
 
             A40_ComFunc::Json_copyStr(j_e, "type", v_ent.type, sizeof(v_ent.type), "", __func__);
@@ -496,7 +485,7 @@ bool CL_C10_ConfigManager::patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, c
             ST_A20_PageItem_t& v_p = p_cfg.pages[p_cfg.pageCount];
             memset(&v_p, 0, sizeof(v_p));
 
-            bool v_uriOk  = A40_ComFunc::Json_copyStrReq(j_p, "uri",  v_p.uri,  sizeof(v_p.uri),  "", __func__);
+            bool v_uriOk  = A40_ComFunc::Json_copyStrReq(j_p, "uri", v_p.uri, sizeof(v_p.uri), "", __func__);
             bool v_pathOk = A40_ComFunc::Json_copyStrReq(j_p, "path", v_p.path, sizeof(v_p.path), "", __func__);
             if (!v_uriOk || !v_pathOk || v_p.uri[0] == '\0' || v_p.path[0] == '\0') continue;
 
@@ -515,7 +504,7 @@ bool CL_C10_ConfigManager::patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, c
                     ST_A20_PageAsset_t& v_a = v_p.pageAssets[v_p.pageAssetCount];
                     memset(&v_a, 0, sizeof(v_a));
 
-                    bool v_aUriOk  = A40_ComFunc::Json_copyStrReq(j_a, "uri",  v_a.uri,  sizeof(v_a.uri),  "", __func__);
+                    bool v_aUriOk = A40_ComFunc::Json_copyStrReq(j_a, "uri", v_a.uri, sizeof(v_a.uri), "", __func__);
                     bool v_aPathOk = A40_ComFunc::Json_copyStrReq(j_a, "path", v_a.path, sizeof(v_a.path), "", __func__);
                     if (!v_aUriOk || !v_aPathOk || v_a.uri[0] == '\0' || v_a.path[0] == '\0') continue;
 
@@ -543,7 +532,7 @@ bool CL_C10_ConfigManager::patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, c
             memset(&v_r, 0, sizeof(v_r));
 
             bool v_fromOk = A40_ComFunc::Json_copyStrReq(j_r, "uriFrom", v_r.uriFrom, sizeof(v_r.uriFrom), "", __func__);
-            bool v_toOk   = A40_ComFunc::Json_copyStrReq(j_r, "uriTo",   v_r.uriTo,   sizeof(v_r.uriTo),   "", __func__);
+            bool v_toOk = A40_ComFunc::Json_copyStrReq(j_r, "uriTo", v_r.uriTo, sizeof(v_r.uriTo), "", __func__);
             if (!v_fromOk || !v_toOk || v_r.uriFrom[0] == '\0' || v_r.uriTo[0] == '\0') continue;
 
             p_cfg.reDirectCount++;
@@ -565,7 +554,7 @@ bool CL_C10_ConfigManager::patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, c
             ST_A20_CommonAsset_t& v_c = p_cfg.assets[p_cfg.assetCount];
             memset(&v_c, 0, sizeof(v_c));
 
-            bool v_uriOk  = A40_ComFunc::Json_copyStrReq(j_c, "uri",  v_c.uri,  sizeof(v_c.uri),  "", __func__);
+            bool v_uriOk  = A40_ComFunc::Json_copyStrReq(j_c, "uri", v_c.uri, sizeof(v_c.uri), "", __func__);
             bool v_pathOk = A40_ComFunc::Json_copyStrReq(j_c, "path", v_c.path, sizeof(v_c.path), "", __func__);
             if (!v_uriOk || !v_pathOk || v_c.uri[0] == '\0' || v_c.path[0] == '\0') continue;
 
@@ -594,7 +583,6 @@ bool CL_C10_ConfigManager::patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, c
 //    (B) doc 잔재 방지: remove로 해당 키 정리 후 재생성
 // =====================================================
 void CL_C10_ConfigManager::toJson_NvsSpec(const ST_A20_NvsSpecConfig_t& p_cfg, JsonDocument& p_doc) {
-
     // Mutex 가드 생성
     CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
@@ -624,7 +612,6 @@ void CL_C10_ConfigManager::toJson_NvsSpec(const ST_A20_NvsSpecConfig_t& p_cfg, J
 }
 
 void CL_C10_ConfigManager::toJson_WebPage(const ST_A20_WebPageConfig_t& p_cfg, JsonDocument& p_doc) {
-
     // Mutex 가드 생성
     CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {

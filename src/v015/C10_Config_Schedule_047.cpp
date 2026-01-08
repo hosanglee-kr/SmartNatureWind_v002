@@ -93,13 +93,7 @@ static bool C10_isScheduleNoDuplicatedInList(const ST_A20_SchedulesRoot_t& p_roo
 //  - 비가시/제어문자/한글 등(32~126 범위 밖)은 reject(운영 정책)
 //  - 빈 문자열 reject(필수)
 static bool C10_sanitizeAndValidateText(
-    const char* p_src,
-    char* p_dst,
-    size_t p_dstSize,
-    bool p_disallowInnerSpace,
-    const char* p_tagForLog,
-    bool p_required
-) {
+    const char* p_src, char* p_dst, size_t p_dstSize, bool p_disallowInnerSpace, const char* p_tagForLog, bool p_required) {
     if (!p_dst || p_dstSize == 0) return false;
     memset(p_dst, 0, p_dstSize);
 
@@ -116,7 +110,7 @@ static bool C10_sanitizeAndValidateText(
     while (*v_p == ' ' || *v_p == '\t' || *v_p == '\r' || *v_p == '\n') v_p++;
 
     // copy while tracking last non-space
-    size_t v_w = 0;
+    size_t  v_w            = 0;
     int32_t v_lastNonSpace = -1;
 
     while (*v_p && v_w + 1 < p_dstSize) {
@@ -124,11 +118,17 @@ static bool C10_sanitizeAndValidateText(
 
         // 허용 문자 정책: ASCII printable (32~126), 단 \t/\r/\n은 불허
         if (c < 32 || c > 126) {
-            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s invalid char(0x%02X)", (p_tagForLog ? p_tagForLog : "text"), (unsigned)c);
+            CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                               "[C10] %s invalid char(0x%02X)",
+                               (p_tagForLog ? p_tagForLog : "text"),
+                               (unsigned)c);
             return false;
         }
         if (c == '\t' || c == '\r' || c == '\n') {
-            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s invalid whitespace(0x%02X)", (p_tagForLog ? p_tagForLog : "text"), (unsigned)c);
+            CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                               "[C10] %s invalid whitespace(0x%02X)",
+                               (p_tagForLog ? p_tagForLog : "text"),
+                               (unsigned)c);
             return false;
         }
         if (p_disallowInnerSpace && c == ' ') {
@@ -192,7 +192,7 @@ static void C10_fromJson_ScheduleItem(const JsonObjectConst& p_js, ST_A20_Schedu
         p_s.period.days[v_d] = p_js["period"]["days"][v_d] | 1;
     }
     strlcpy(p_s.period.startTime, p_js["period"]["startTime"] | "00:00", sizeof(p_s.period.startTime));
-    strlcpy(p_s.period.endTime,   p_js["period"]["endTime"]   | "23:59", sizeof(p_s.period.endTime));
+    strlcpy(p_s.period.endTime, p_js["period"]["endTime"] | "23:59", sizeof(p_s.period.endTime));
 
     p_s.segCount = 0;
     if (p_js["segments"].is<JsonArrayConst>()) {
@@ -211,7 +211,7 @@ static void C10_fromJson_ScheduleItem(const JsonObjectConst& p_js, ST_A20_Schedu
             sg.mode            = A20_modeFromString(v_mode);
 
             strlcpy(sg.presetCode, jseg["presetCode"] | "", sizeof(sg.presetCode));
-            strlcpy(sg.styleCode,  jseg["styleCode"]  | "", sizeof(sg.styleCode));
+            strlcpy(sg.styleCode, jseg["styleCode"] | "", sizeof(sg.styleCode));
 
             memset(&sg.adjust, 0, sizeof(sg.adjust));
             if (jseg["adjust"].is<JsonObjectConst>()) {
@@ -277,7 +277,7 @@ static void C10_fromJson_UserProfile(const JsonObjectConst& p_jp, ST_A20_UserPro
             sg.mode            = A20_modeFromString(v_mode);
 
             strlcpy(sg.presetCode, jseg["presetCode"] | "", sizeof(sg.presetCode));
-            strlcpy(sg.styleCode,  jseg["styleCode"]  | "", sizeof(sg.styleCode));
+            strlcpy(sg.styleCode, jseg["styleCode"] | "", sizeof(sg.styleCode));
 
             memset(&sg.adjust, 0, sizeof(sg.adjust));
             if (jseg["adjust"].is<JsonObjectConst>()) {
@@ -365,8 +365,10 @@ static bool C10_loadWindDictFromJsonChecked(const JsonObjectConst& p_windDictObj
             char v_code[A20_Const::MAX_CODE_LEN];
             char v_name[A20_Const::MAX_NAME_LEN];
 
-            if (!C10_sanitizeAndValidateText(v_preset.code, v_code, sizeof(v_code), true, "windDict.presets.code", true)) return false;
-            if (!C10_sanitizeAndValidateText(v_preset.name, v_name, sizeof(v_name), false, "windDict.presets.name", true)) return false;
+            if (!C10_sanitizeAndValidateText(v_preset.code, v_code, sizeof(v_code), true, "windDict.presets.code", true))
+                return false;
+            if (!C10_sanitizeAndValidateText(v_preset.name, v_name, sizeof(v_name), false, "windDict.presets.name", true))
+                return false;
 
             if (C10_hasDupCode(v_code, v_seenPresetCodes, p_out.presetCount)) {
                 CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] windDict preset code duplicated: %s", v_code);
@@ -404,8 +406,10 @@ static bool C10_loadWindDictFromJsonChecked(const JsonObjectConst& p_windDictObj
             char v_code[A20_Const::MAX_CODE_LEN];
             char v_name[A20_Const::MAX_NAME_LEN];
 
-            if (!C10_sanitizeAndValidateText(v_s.code, v_code, sizeof(v_code), true, "windDict.styles.code", true)) return false;
-            if (!C10_sanitizeAndValidateText(v_s.name, v_name, sizeof(v_name), false, "windDict.styles.name", true)) return false;
+            if (!C10_sanitizeAndValidateText(v_s.code, v_code, sizeof(v_code), true, "windDict.styles.code", true))
+                return false;
+            if (!C10_sanitizeAndValidateText(v_s.name, v_name, sizeof(v_name), false, "windDict.styles.name", true))
+                return false;
 
             if (C10_hasDupCode(v_code, v_seenStyleCodes, p_out.styleCount)) {
                 CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] windDict style code duplicated: %s", v_code);
@@ -742,13 +746,19 @@ bool CL_C10_ConfigManager::saveWindDict(const ST_A20_WindDict_t& p_cfg) {
     uint8_t v_styleCount  = p_cfg.styleCount;
 
     if (v_presetCount > (uint8_t)EN_A20_WINDPRESET_COUNT) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: presetCount overflow(%u > %u)",
-                           __func__, (unsigned)v_presetCount, (unsigned)EN_A20_WINDPRESET_COUNT);
+        CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                           "[C10] %s: presetCount overflow(%u > %u)",
+                           __func__,
+                           (unsigned)v_presetCount,
+                           (unsigned)EN_A20_WINDPRESET_COUNT);
         return false;
     }
     if (v_styleCount > (uint8_t)EN_A20_WINDSTYLE_COUNT) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: styleCount overflow(%u > %u)",
-                           __func__, (unsigned)v_styleCount, (unsigned)EN_A20_WINDSTYLE_COUNT);
+        CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                           "[C10] %s: styleCount overflow(%u > %u)",
+                           __func__,
+                           (unsigned)v_styleCount,
+                           (unsigned)EN_A20_WINDSTYLE_COUNT);
         return false;
     }
 
@@ -764,8 +774,10 @@ bool CL_C10_ConfigManager::saveWindDict(const ST_A20_WindDict_t& p_cfg) {
         char v_code[A20_Const::MAX_CODE_LEN];
         char v_name[A20_Const::MAX_NAME_LEN];
 
-        if (!C10_sanitizeAndValidateText(v_p.code, v_code, sizeof(v_code), true,  "windDict.presets.code", true)) return false;
-        if (!C10_sanitizeAndValidateText(v_p.name, v_name, sizeof(v_name), false, "windDict.presets.name", true)) return false;
+        if (!C10_sanitizeAndValidateText(v_p.code, v_code, sizeof(v_code), true, "windDict.presets.code", true))
+            return false;
+        if (!C10_sanitizeAndValidateText(v_p.name, v_name, sizeof(v_name), false, "windDict.presets.name", true))
+            return false;
 
         if (C10_hasDupCode(v_code, v_seenPresetCodes, v_i)) {
             CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: duplicated preset.code=%s", __func__, v_code);
@@ -781,8 +793,10 @@ bool CL_C10_ConfigManager::saveWindDict(const ST_A20_WindDict_t& p_cfg) {
         char v_code[A20_Const::MAX_CODE_LEN];
         char v_name[A20_Const::MAX_NAME_LEN];
 
-        if (!C10_sanitizeAndValidateText(v_s.code, v_code, sizeof(v_code), true,  "windDict.styles.code", true)) return false;
-        if (!C10_sanitizeAndValidateText(v_s.name, v_name, sizeof(v_name), false, "windDict.styles.name", true)) return false;
+        if (!C10_sanitizeAndValidateText(v_s.code, v_code, sizeof(v_code), true, "windDict.styles.code", true))
+            return false;
+        if (!C10_sanitizeAndValidateText(v_s.name, v_name, sizeof(v_name), false, "windDict.styles.name", true))
+            return false;
 
         if (C10_hasDupCode(v_code, v_seenStyleCodes, v_i)) {
             CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: duplicated style.code=%s", __func__, v_code);
@@ -797,8 +811,10 @@ bool CL_C10_ConfigManager::saveWindDict(const ST_A20_WindDict_t& p_cfg) {
 
         char v_code[A20_Const::MAX_CODE_LEN];
         char v_name[A20_Const::MAX_NAME_LEN];
-        if (!C10_sanitizeAndValidateText(v_preset.code, v_code, sizeof(v_code), true,  "windDict.presets.code", false)) return false;
-        if (!C10_sanitizeAndValidateText(v_preset.name, v_name, sizeof(v_name), false, "windDict.presets.name", false)) return false;
+        if (!C10_sanitizeAndValidateText(v_preset.code, v_code, sizeof(v_code), true, "windDict.presets.code", false))
+            return false;
+        if (!C10_sanitizeAndValidateText(v_preset.name, v_name, sizeof(v_name), false, "windDict.presets.name", false))
+            return false;
 
         JsonObject v_jsonObj_preset = d["windDict"]["presets"][v_i].to<JsonObject>();
 
@@ -816,11 +832,11 @@ bool CL_C10_ConfigManager::saveWindDict(const ST_A20_WindDict_t& p_cfg) {
         v_b["thermalBubbleStrength"]    = v_preset.factors.thermalBubbleStrength;
         v_b["thermalBubbleRadius"]      = v_preset.factors.thermalBubbleRadius;
 
-        v_b["baseMinWind"]      = v_preset.factors.baseMinWind;
-        v_b["baseMaxWind"]      = v_preset.factors.baseMaxWind;
-        v_b["gustProbBase"]     = v_preset.factors.gustProbBase;
-        v_b["gustStrengthMax"]  = v_preset.factors.gustStrengthMax;
-        v_b["thermalFreqBase"]  = v_preset.factors.thermalFreqBase;
+        v_b["baseMinWind"]     = v_preset.factors.baseMinWind;
+        v_b["baseMaxWind"]     = v_preset.factors.baseMaxWind;
+        v_b["gustProbBase"]    = v_preset.factors.gustProbBase;
+        v_b["gustStrengthMax"] = v_preset.factors.gustStrengthMax;
+        v_b["thermalFreqBase"] = v_preset.factors.thermalFreqBase;
     }
 
     // styles write
@@ -829,8 +845,10 @@ bool CL_C10_ConfigManager::saveWindDict(const ST_A20_WindDict_t& p_cfg) {
 
         char v_code[A20_Const::MAX_CODE_LEN];
         char v_name[A20_Const::MAX_NAME_LEN];
-        if (!C10_sanitizeAndValidateText(v_s.code, v_code, sizeof(v_code), true,  "windDict.styles.code", false)) return false;
-        if (!C10_sanitizeAndValidateText(v_s.name, v_name, sizeof(v_name), false, "windDict.styles.name", false)) return false;
+        if (!C10_sanitizeAndValidateText(v_s.code, v_code, sizeof(v_code), true, "windDict.styles.code", false))
+            return false;
+        if (!C10_sanitizeAndValidateText(v_s.name, v_name, sizeof(v_name), false, "windDict.styles.name", false))
+            return false;
 
         JsonObject v_jsonObj_style = d["windDict"]["styles"][v_i].to<JsonObject>();
 
@@ -997,10 +1015,10 @@ void CL_C10_ConfigManager::toJson_WindDict(const ST_A20_WindDict_t& p_cfg, JsonD
     uint8_t v_styleCount  = p_cfg.styleCount;
 
     if (v_presetCount > (uint8_t)EN_A20_WINDPRESET_COUNT) v_presetCount = (uint8_t)EN_A20_WINDPRESET_COUNT;
-    if (v_styleCount > (uint8_t)EN_A20_WINDSTYLE_COUNT)  v_styleCount  = (uint8_t)EN_A20_WINDSTYLE_COUNT;
+    if (v_styleCount > (uint8_t)EN_A20_WINDSTYLE_COUNT) v_styleCount = (uint8_t)EN_A20_WINDSTYLE_COUNT;
 
     for (uint8_t v_i = 0; v_i < v_presetCount; v_i++) {
-        const ST_A20_PresetEntry_t& v_preset  = p_cfg.presets[v_i];
+        const ST_A20_PresetEntry_t& v_preset         = p_cfg.presets[v_i];
         JsonObject                  v_jsonObj_preset = d["windDict"]["presets"][v_i].to<JsonObject>();
 
         v_jsonObj_preset["name"] = v_preset.name;
@@ -1017,15 +1035,15 @@ void CL_C10_ConfigManager::toJson_WindDict(const ST_A20_WindDict_t& p_cfg, JsonD
         v_b["thermalBubbleStrength"]    = v_preset.factors.thermalBubbleStrength;
         v_b["thermalBubbleRadius"]      = v_preset.factors.thermalBubbleRadius;
 
-        v_b["baseMinWind"]      = v_preset.factors.baseMinWind;
-        v_b["baseMaxWind"]      = v_preset.factors.baseMaxWind;
-        v_b["gustProbBase"]     = v_preset.factors.gustProbBase;
-        v_b["gustStrengthMax"]  = v_preset.factors.gustStrengthMax;
-        v_b["thermalFreqBase"]  = v_preset.factors.thermalFreqBase;
+        v_b["baseMinWind"]     = v_preset.factors.baseMinWind;
+        v_b["baseMaxWind"]     = v_preset.factors.baseMaxWind;
+        v_b["gustProbBase"]    = v_preset.factors.gustProbBase;
+        v_b["gustStrengthMax"] = v_preset.factors.gustStrengthMax;
+        v_b["thermalFreqBase"] = v_preset.factors.thermalFreqBase;
     }
 
     for (uint8_t v_i = 0; v_i < v_styleCount; v_i++) {
-        const ST_A20_StyleEntry_t& v_s  = p_cfg.styles[v_i];
+        const ST_A20_StyleEntry_t& v_s             = p_cfg.styles[v_i];
         JsonObject                 v_jsonObj_style = d["windDict"]["styles"][v_i].to<JsonObject>();
 
         v_jsonObj_style["name"] = v_s.name;
@@ -1046,7 +1064,7 @@ void CL_C10_ConfigManager::toJson_WindDict(const ST_A20_WindDict_t& p_cfg, JsonD
 //  - mutex 보호 / dirty flag 원자성(setAtomic)
 // =====================================================
 bool CL_C10_ConfigManager::patchSchedulesFromJson(ST_A20_SchedulesRoot_t& p_cfg, const JsonDocument& p_patch) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1088,7 +1106,7 @@ bool CL_C10_ConfigManager::patchSchedulesFromJson(ST_A20_SchedulesRoot_t& p_cfg,
 }
 
 bool CL_C10_ConfigManager::patchUserProfilesFromJson(ST_A20_UserProfilesRoot_t& p_cfg, const JsonDocument& p_patch) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1117,7 +1135,7 @@ bool CL_C10_ConfigManager::patchUserProfilesFromJson(ST_A20_UserProfilesRoot_t& 
 }
 
 bool CL_C10_ConfigManager::patchWindDictFromJson(ST_A20_WindDict_t& p_cfg, const JsonDocument& p_patch) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1152,7 +1170,7 @@ bool CL_C10_ConfigManager::patchWindDictFromJson(ST_A20_WindDict_t& p_cfg, const
 
 // ---------- Schedule CRUD ----------
 int CL_C10_ConfigManager::addScheduleFromJson(const JsonDocument& p_doc) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return -1;
@@ -1202,7 +1220,7 @@ int CL_C10_ConfigManager::addScheduleFromJson(const JsonDocument& p_doc) {
 }
 
 bool CL_C10_ConfigManager::updateScheduleFromJson(uint16_t p_id, const JsonDocument& p_patch) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1253,7 +1271,7 @@ bool CL_C10_ConfigManager::updateScheduleFromJson(uint16_t p_id, const JsonDocum
 }
 
 bool CL_C10_ConfigManager::deleteSchedule(uint16_t p_id) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1289,7 +1307,7 @@ bool CL_C10_ConfigManager::deleteSchedule(uint16_t p_id) {
 
 // ---------- UserProfiles CRUD ----------
 int CL_C10_ConfigManager::addUserProfilesFromJson(const JsonDocument& p_doc) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return -1;
@@ -1327,7 +1345,7 @@ int CL_C10_ConfigManager::addUserProfilesFromJson(const JsonDocument& p_doc) {
 }
 
 bool CL_C10_ConfigManager::updateUserProfilesFromJson(uint16_t p_id, const JsonDocument& p_patch) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1362,7 +1380,7 @@ bool CL_C10_ConfigManager::updateUserProfilesFromJson(uint16_t p_id, const JsonD
 }
 
 bool CL_C10_ConfigManager::deleteUserProfiles(uint16_t p_id) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1398,7 +1416,7 @@ bool CL_C10_ConfigManager::deleteUserProfiles(uint16_t p_id) {
 
 // ---------- WindDict CRUD (Preset 중심) ----------
 int CL_C10_ConfigManager::addWindProfileFromJson(const JsonDocument& p_doc) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return -1;
@@ -1430,8 +1448,10 @@ int CL_C10_ConfigManager::addWindProfileFromJson(const JsonDocument& p_doc) {
     {
         char v_code[A20_Const::MAX_CODE_LEN];
         char v_name[A20_Const::MAX_NAME_LEN];
-        if (!C10_sanitizeAndValidateText(v_preset.code, v_code, sizeof(v_code), true,  "windDict.presets.code", true)) return -2;
-        if (!C10_sanitizeAndValidateText(v_preset.name, v_name, sizeof(v_name), false, "windDict.presets.name", true)) return -2;
+        if (!C10_sanitizeAndValidateText(v_preset.code, v_code, sizeof(v_code), true, "windDict.presets.code", true))
+            return -2;
+        if (!C10_sanitizeAndValidateText(v_preset.name, v_name, sizeof(v_name), false, "windDict.presets.name", true))
+            return -2;
         strlcpy(v_preset.code, v_code, sizeof(v_preset.code));
         strlcpy(v_preset.name, v_name, sizeof(v_preset.name));
     }
@@ -1446,7 +1466,7 @@ int CL_C10_ConfigManager::addWindProfileFromJson(const JsonDocument& p_doc) {
 }
 
 bool CL_C10_ConfigManager::updateWindProfileFromJson(uint16_t p_id, const JsonDocument& p_patch) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;
@@ -1471,8 +1491,20 @@ bool CL_C10_ConfigManager::updateWindProfileFromJson(uint16_t p_id, const JsonDo
     {
         char v_code[A20_Const::MAX_CODE_LEN];
         char v_name[A20_Const::MAX_NAME_LEN];
-        if (!C10_sanitizeAndValidateText(v_root.presets[p_id].code, v_code, sizeof(v_code), true,  "windDict.presets.code", true)) return false;
-        if (!C10_sanitizeAndValidateText(v_root.presets[p_id].name, v_name, sizeof(v_name), false, "windDict.presets.name", true)) return false;
+        if (!C10_sanitizeAndValidateText(v_root.presets[p_id].code,
+                                         v_code,
+                                         sizeof(v_code),
+                                         true,
+                                         "windDict.presets.code",
+                                         true))
+            return false;
+        if (!C10_sanitizeAndValidateText(v_root.presets[p_id].name,
+                                         v_name,
+                                         sizeof(v_name),
+                                         false,
+                                         "windDict.presets.name",
+                                         true))
+            return false;
         strlcpy(v_root.presets[p_id].code, v_code, sizeof(v_root.presets[p_id].code));
         strlcpy(v_root.presets[p_id].name, v_name, sizeof(v_root.presets[p_id].name));
     }
@@ -1484,7 +1516,7 @@ bool CL_C10_ConfigManager::updateWindProfileFromJson(uint16_t p_id, const JsonDo
 }
 
 bool CL_C10_ConfigManager::deleteWindProfile(uint16_t p_id) {
-    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__ );
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
         return false;

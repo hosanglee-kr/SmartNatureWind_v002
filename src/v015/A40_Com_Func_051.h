@@ -36,21 +36,17 @@ static inline const char* _A40__callerOrUnknown(const char* p_callerFunc) {
 // ======================================================
 // 공통 로그 매크로
 // ======================================================
-#define A40_LOGE(_fmt, ...) \
-    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
-#define A40_LOGW(_fmt, ...) \
-    CL_D10_Logger::log(EN_L10_LOG_WARN,  "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
-#define A40_LOGI(_fmt, ...) \
-    CL_D10_Logger::log(EN_L10_LOG_INFO,  "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
-#define A40_LOGD(_fmt, ...) \
-    CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
+#define A40_LOGE(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
+#define A40_LOGW(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
+#define A40_LOGI(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_INFO, "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
+#define A40_LOGD(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
 
 #define A40_LOGE_C(_caller, _fmt, ...) \
     CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] " _fmt, _A40__callerOrUnknown((_caller)), ##__VA_ARGS__)
 #define A40_LOGW_C(_caller, _fmt, ...) \
-    CL_D10_Logger::log(EN_L10_LOG_WARN,  "[A40][%s] " _fmt, _A40__callerOrUnknown((_caller)), ##__VA_ARGS__)
+    CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] " _fmt, _A40__callerOrUnknown((_caller)), ##__VA_ARGS__)
 #define A40_LOGI_C(_caller, _fmt, ...) \
-    CL_D10_Logger::log(EN_L10_LOG_INFO,  "[A40][%s] " _fmt, _A40__callerOrUnknown((_caller)), ##__VA_ARGS__)
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[A40][%s] " _fmt, _A40__callerOrUnknown((_caller)), ##__VA_ARGS__)
 #define A40_LOGD_C(_caller, _fmt, ...) \
     CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A40][%s] " _fmt, _A40__callerOrUnknown((_caller)), ##__VA_ARGS__)
 
@@ -67,12 +63,7 @@ inline constexpr T clampVal(T p_value, T p_lowValue, T p_highValue) {
 // -------------------------
 // 문자열 유틸
 // -------------------------
-inline size_t copyStr2Buffer_safe(
-    char* p_dst,
-    const char* p_src,
-    size_t p_n,
-    const char* p_callerFunc = nullptr)
-{
+inline size_t copyStr2Buffer_safe(char* p_dst, const char* p_src, size_t p_n, const char* p_callerFunc = nullptr) {
     const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
     if (!p_dst || p_n == 0) {
@@ -89,10 +80,7 @@ inline size_t copyStr2Buffer_safe(
     return strlcpy(p_dst, p_src, p_n);
 }
 
-inline std::shared_ptr<char[]> cloneStr2SharedStr_safe(
-    const char* p_src,
-    const char* p_callerFunc = nullptr)
-{
+inline std::shared_ptr<char[]> cloneStr2SharedStr_safe(const char* p_src, const char* p_callerFunc = nullptr) {
     const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
     if (!p_src) {
@@ -100,15 +88,14 @@ inline std::shared_ptr<char[]> cloneStr2SharedStr_safe(
         return nullptr;
     }
 
-    const size_t v_len = strlen(p_src) + 1;
+    const size_t            v_len = strlen(p_src) + 1;
     std::shared_ptr<char[]> v_buf(new (std::nothrow) char[v_len], std::default_delete<char[]>());
 
     if (!v_buf) {
-        CL_D10_Logger::log(
-            EN_L10_LOG_ERROR,
-            "[A40][%s] cloneStr2SharedStr_safe: alloc failed (%u bytes)",
-            v_caller,
-            (unsigned)v_len);
+        CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                           "[A40][%s] cloneStr2SharedStr_safe: alloc failed (%u bytes)",
+                           v_caller,
+                           (unsigned)v_len);
         return nullptr;
     }
 
@@ -120,8 +107,7 @@ inline std::shared_ptr<char[]> cloneStr2SharedStr_safe(
 // Random
 // -------------------------
 inline float getRandom01() {
-    return static_cast<float>(esp_random()) /
-           (static_cast<float>(UINT32_MAX) + 1.0f);
+    return static_cast<float>(esp_random()) / (static_cast<float>(UINT32_MAX) + 1.0f);
 }
 
 inline float getRandomRange(float p_min, float p_max) {
@@ -172,9 +158,6 @@ static inline JsonObjectConst Json_pickRootObject(const JsonDocument& p_doc, con
     return v.isNull() ? p_doc.as<JsonObjectConst>() : v;
 }
 
-
-
-
 // ------------------------------------------------------
 // Json_copyStr (Silent-safe)
 //  - JSON에서 문자열 추출 후 dst에 복사
@@ -182,14 +165,12 @@ static inline JsonObjectConst Json_pickRootObject(const JsonDocument& p_doc, con
 //  - dst는 항상 0으로 초기화(찌꺼기 방지)
 //  - 로그는 "복사 실패(인자 문제)" 같은 케이스만 (필요 시)
 // ------------------------------------------------------
-static inline bool Json_copyStr(
-    JsonObjectConst p_obj,
-    const char*     p_key,
-    char*           p_dst,
-    size_t          p_dstSize,
-    const char*     p_defaultVal = "",
-    const char*     p_callerFunc = nullptr)
-{
+static inline bool Json_copyStr(JsonObjectConst p_obj,
+                                const char*     p_key,
+                                char*           p_dst,
+                                size_t          p_dstSize,
+                                const char*     p_defaultVal = "",
+                                const char*     p_callerFunc = nullptr) {
     const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
     // dst 안전성
@@ -225,14 +206,12 @@ static inline bool Json_copyStr(
 //  - dst는 항상 0으로 초기화(찌꺼기 방지)
 //  - key가 없거나 타입 불일치면 defaultVal로 대체 (여기서는 "src null"이 아님)
 // ------------------------------------------------------
-static inline bool Json_copyStr_LogPolicy(
-    JsonObjectConst p_obj,
-    const char*     p_key,
-    char*           p_dst,
-    size_t          p_dstSize,
-    const char*     p_defaultVal = "",
-    const char*     p_callerFunc = nullptr)
-{
+static inline bool Json_copyStr_LogPolicy(JsonObjectConst p_obj,
+                                          const char*     p_key,
+                                          char*           p_dst,
+                                          size_t          p_dstSize,
+                                          const char*     p_defaultVal = "",
+                                          const char*     p_callerFunc = nullptr) {
     const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
     if (!p_dst || p_dstSize == 0) {
@@ -270,14 +249,12 @@ static inline bool Json_copyStr_LogPolicy(
 //  - 기존 공통함수(Json_getStr, copyStr2Buffer_safe) 활용
 // ------------------------------------------------------
 
-static inline bool Json_copyStrReq(
-    JsonObjectConst p_obj,
-    const char*     p_key,
-    char*           p_dst,
-    size_t          p_dstSize,
-    const char*     p_defaultVal = "",
-    const char*     p_callerFunc = nullptr)
-{
+static inline bool Json_copyStrReq(JsonObjectConst p_obj,
+                                   const char*     p_key,
+                                   char*           p_dst,
+                                   size_t          p_dstSize,
+                                   const char*     p_defaultVal = "",
+                                   const char*     p_callerFunc = nullptr) {
     const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
 
     if (!p_dst || p_dstSize == 0) {
@@ -326,32 +303,23 @@ static inline bool Json_copyStrReq(
     return true;
 }
 
-
 } // namespace A40_ComFunc
-
 
 // ======================================================
 // 2) Mutex Guard (Recursive Mutex, RAII, Lazy Init)
 // ======================================================
 #ifndef G_A40_MUTEX_TIMEOUT_100
-#define G_A40_MUTEX_TIMEOUT_100 pdMS_TO_TICKS(100)
+# define G_A40_MUTEX_TIMEOUT_100 pdMS_TO_TICKS(100)
 #endif
 
 class CL_A40_MutexGuard_Semaphore {
   public:
-    explicit CL_A40_MutexGuard_Semaphore(
-        SemaphoreHandle_t& p_mutex,
-        TickType_t p_timeout,
-        const char* p_caller)
-        : _mutexPtr(&p_mutex),
-          _caller(_A40__callerOrUnknown(p_caller))
-    {
+    explicit CL_A40_MutexGuard_Semaphore(SemaphoreHandle_t& p_mutex, TickType_t p_timeout, const char* p_caller)
+        : _mutexPtr(&p_mutex), _caller(_A40__callerOrUnknown(p_caller)) {
         _internalInitAndTake(p_timeout);
     }
 
-    ~CL_A40_MutexGuard_Semaphore() {
-        unlock();
-    }
+    ~CL_A40_MutexGuard_Semaphore() { unlock(); }
 
     bool acquireTicks(TickType_t p_timeoutTicks) {
         if (_acquired) return true;
@@ -362,17 +330,13 @@ class CL_A40_MutexGuard_Semaphore {
             return true;
         }
 
-        CL_D10_Logger::log(EN_L10_LOG_WARN,
-                           "[A40][%s] Mutex acquire timeout (ticks=%u)",
-                           _caller,
-                           (unsigned)p_timeoutTicks);
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Mutex acquire timeout (ticks=%u)", _caller, (unsigned)p_timeoutTicks);
         return false;
     }
 
     bool acquireMs(uint32_t p_timeoutMs = UINT32_MAX) {
         if (_acquired || !_mutexPtr || !*_mutexPtr) return _acquired;
-        TickType_t v_ticks =
-            (p_timeoutMs == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(p_timeoutMs);
+        TickType_t v_ticks = (p_timeoutMs == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(p_timeoutMs);
 
         if (xSemaphoreTakeRecursive(*_mutexPtr, v_ticks) == pdTRUE) {
             _acquired = true;
@@ -404,26 +368,21 @@ class CL_A40_MutexGuard_Semaphore {
             if (*_mutexPtr == nullptr) {
                 *_mutexPtr = xSemaphoreCreateRecursiveMutex();
                 if (*_mutexPtr == nullptr) {
-                    CL_D10_Logger::log(
-                        EN_L10_LOG_ERROR,
-                        "[A40][%s] CreateRecursiveMutex failed",
-                        _caller);
+                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] CreateRecursiveMutex failed", _caller);
                 }
             }
             portEXIT_CRITICAL(&s_initMux);
         }
 
-        if (*_mutexPtr &&
-            xSemaphoreTakeRecursive(*_mutexPtr, p_timeout) == pdTRUE) {
+        if (*_mutexPtr && xSemaphoreTakeRecursive(*_mutexPtr, p_timeout) == pdTRUE) {
             _acquired = true;
         }
     }
 
     SemaphoreHandle_t* _mutexPtr = nullptr;
-    const char* _caller = "?";
-    bool _acquired = false;
+    const char*        _caller   = "?";
+    bool               _acquired = false;
 };
-
 
 // ======================================================
 // 3) Critical Section Guard
@@ -436,6 +395,7 @@ class CL_A40_muxGuard_Critical {
     ~CL_A40_muxGuard_Critical() {
         if (_flagSpinlock) portEXIT_CRITICAL(_flagSpinlock);
     }
+
   private:
     portMUX_TYPE* _flagSpinlock = nullptr;
 };
@@ -469,10 +429,7 @@ namespace A40_IO {
 
 // 내부 유틸
 static inline bool _buildPathWithSuffix(
-    char* p_dst, size_t p_dstSize,
-    const char* p_path, const char* p_suffix,
-    const char* p_caller)
-{
+    char* p_dst, size_t p_dstSize, const char* p_path, const char* p_suffix, const char* p_caller) {
     const char* v = _A40__callerOrUnknown(p_caller);
 
     if (!p_dst || p_dstSize == 0 || !p_path || !p_path[0]) {
@@ -488,12 +445,9 @@ static inline bool _buildPathWithSuffix(
     return true;
 }
 
-static inline bool _parseJsonFileToDoc(
-    const char* p_path, JsonDocument& p_doc,
-    bool p_isBackup, const char* p_caller)
-{
+static inline bool _parseJsonFileToDoc(const char* p_path, JsonDocument& p_doc, bool p_isBackup, const char* p_caller) {
     const char* v = _A40__callerOrUnknown(p_caller);
-    File f = LittleFS.open(p_path, "r");
+    File        f = LittleFS.open(p_path, "r");
     if (!f) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] open failed: %s", v, p_path);
         return false;
@@ -503,22 +457,14 @@ static inline bool _parseJsonFileToDoc(
     f.close();
 
     if (err) {
-        CL_D10_Logger::log(
-            EN_L10_LOG_ERROR,
-            "[IO][%s] %s parse error: %s (%s)",
-            v, p_isBackup ? "bak" : "main", err.c_str(), p_path);
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] %s parse error: %s (%s)", v, p_isBackup ? "bak" : "main", err.c_str(), p_path);
         return false;
     }
     return true;
 }
 
 // Load
-inline bool Load_File2JsonDoc_V21(
-    const char* p_path,
-    JsonDocument& p_doc,
-    bool p_useBackup,
-    const char* p_caller = nullptr)
-{
+inline bool Load_File2JsonDoc_V21(const char* p_path, JsonDocument& p_doc, bool p_useBackup, const char* p_caller = nullptr) {
     const char* v_caller = _A40__callerOrUnknown(p_caller);
 
     if (!p_path || !p_path[0]) {
@@ -558,7 +504,7 @@ inline bool Load_File2JsonDoc_V21(
         p_doc.clear();
         if (_parseJsonFileToDoc(bak, p_doc, true, v_caller)) {
             if (!LittleFS.remove(p_path)) {
-                    CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] main remove failed (continue): %s", v_caller, p_path);
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] main remove failed (continue): %s", v_caller, p_path);
             }
             if (LittleFS.rename(bak, p_path)) {
                 CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] recovered from bak: %s", v_caller, p_path);
@@ -568,7 +514,7 @@ inline bool Load_File2JsonDoc_V21(
             }
             // LittleFS.remove(p_path);
             // LittleFS.rename(bak, p_path);
-            //CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] recovered from bak: %s", v_caller, p_path);
+            // CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] recovered from bak: %s", v_caller, p_path);
             return true;
         }
     }
@@ -578,13 +524,11 @@ inline bool Load_File2JsonDoc_V21(
 }
 
 // Save
-inline bool Save_JsonDoc2File_V21(
-    const char* p_path,
-    const JsonDocument& p_doc,
-    bool p_useBackup,
-    bool p_pretty = true,
-    const char* p_caller = nullptr)
-{
+inline bool Save_JsonDoc2File_V21(const char*         p_path,
+                                  const JsonDocument& p_doc,
+                                  bool                p_useBackup,
+                                  bool                p_pretty = true,
+                                  const char*         p_caller = nullptr) {
     const char* v_caller = _A40__callerOrUnknown(p_caller);
 
     char bak[A20_Const::LEN_PATH + 8];
@@ -628,7 +572,6 @@ inline bool Save_JsonDoc2File_V21(
 }
 
 } // namespace A40_IO
-
 
 /*
 

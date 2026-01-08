@@ -96,7 +96,7 @@ typedef struct {
     char     ntpServer[64];
     char     timezone[64];
     uint16_t syncIntervalMin;
-} ST_A20_SystemTimeConfig_t;
+} ST_A20_SysTimeConfig_t;
 
 typedef struct {
     struct {
@@ -146,12 +146,13 @@ typedef struct {
     struct {
         char apiKey[64];
     } security;
-
-    struct {
-        char     ntpServer[64];
-        char     timezone[32];
-        uint16_t syncIntervalMin;
-    } time;
+   
+    ST_A20_SysTimeConfig_t timeCfg;
+    //// struct {
+     /////   char     ntpServer[64];
+     ////   char     timezone[32];
+     ////   uint16_t syncIntervalMin;
+    ////} time;
 } ST_A20_SystemConfig_t;
 
 

@@ -62,7 +62,9 @@ class CL_W10_WebAPI {
     // 초기화
     // --------------------------------------------------
     // v029: WiFiMulti 인자 포함
-    static void begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_control, WiFiMulti& p_multi);
+    static void begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_control);
+
+    // static void begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_control, WiFiMulti& p_multi);
 
     // cleanupClients 주기 tick (권장)
     static void wsCleanupTick();
@@ -81,7 +83,7 @@ class CL_W10_WebAPI {
     // --------------------------------------------------
     static AsyncWebServer*         	s_server;
     static CL_CT10_ControlManager* 	s_control;
-    static WiFiMulti*              	s_multi;
+    // static WiFiMulti*              	s_multi;
 
     static fs::File 				s_upFile;
 

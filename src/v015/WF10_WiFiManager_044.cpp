@@ -135,7 +135,8 @@ bool CL_WF10_WiFiManager::init(const ST_A20_WifiConfig_t& p_cfg_wifi,
 
         case 1:  // STA Only
             WiFi.mode(WIFI_STA);
-            v_sta_ok = startSTA(p_cfg_wifi, p_multi, p_staMaxTries);
+            v_sta_ok = startSTA(p_cfg_wifi, p_staMaxTries);
+            // v_sta_ok = startSTA(p_cfg_wifi, p_multi, p_staMaxTries);
             if (!v_sta_ok) {
                 CL_D10_Logger::log(EN_L10_LOG_WARN, "[WF10] %s: STA fail -> Fallback AP", __func__);
                 WiFi.mode(WIFI_AP_STA);
@@ -146,7 +147,8 @@ bool CL_WF10_WiFiManager::init(const ST_A20_WifiConfig_t& p_cfg_wifi,
         default: // AP+STA
             WiFi.mode(WIFI_AP_STA);
             v_ap_ok  = startAP(p_cfg_wifi, p_apChannel, p_enableApDhcp);
-            v_sta_ok = startSTA(p_cfg_wifi, p_multi, p_staMaxTries);
+            v_sta_ok = startSTA(p_cfg_wifi, p_staMaxTries);
+            // v_sta_ok = startSTA(p_cfg_wifi, p_multi, p_staMaxTries);
             return v_ap_ok || v_sta_ok;  // 둘 중 하나라도 성공하면 true
     }
 }

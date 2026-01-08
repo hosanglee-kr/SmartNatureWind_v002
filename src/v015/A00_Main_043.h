@@ -44,7 +44,7 @@ CL_M10_MotionLogic* 	g_M10_motionLogic = nullptr;
 AsyncWebServer   		g_A00_server(80);
 static WiFiMulti 		g_A00_wifiMulti;
 
-CL_CT10_ControlManager& g_A00_control = CL_CT10_ControlManager::instance();
+//// CL_CT10_ControlManager& g_A00_control = CL_CT10_ControlManager::instance();
 CL_P10_PWM              g_P10_pwm;
 
 CL_A30_LED g_A00_ledController;
@@ -52,6 +52,111 @@ CL_A30_LED g_A00_ledController;
 // ------------------------------------------------------
 // 메인 초기화
 // ------------------------------------------------------
+void A00_init() {
+    // ------------------------------------------------------
+    // 0. LED 초기화
+    // ------------------------------------------------------
+    g_A00_ledController.begin();
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "=== Smart Nature Wind Boot (v002) ===");
+
+    // ------------------------------------------------------
+    // 1. LittleFS 마운트
+    // ------------------------------------------------------
+    if (!LittleFS.begin(true)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[FS] LittleFS mount failed");
+    } else {
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[FS] LittleFS mounted OK");
+    }
+
+    // ------------------------------------------------------
+    // 2. Config + NVS 초기화
+    // ------------------------------------------------------
+    if (!CL_C10_ConfigManager::begin()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A00] C10 begin failed. Abort init.");
+        return;
+    }
+
+    bool v_cfgOk = CL_C10_ConfigManager::loadAll(g_A20_config_root);
+    if (!v_cfgOk) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A00] C10 loadAll returned false (partial/default may be used).");
+    }
+
+    // NVS begin (Config 이후가 자연스러움)
+    CL_N10_NvsManager::begin();
+
+    // ------------------------------------------------------
+    // 3. 필수 섹션 null 방어
+    // ------------------------------------------------------
+    if (!g_A20_config_root.system || !g_A20_config_root.wifi) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A00] Config root invalid (system or wifi is null).");
+
+        // 선택: 여기서 factoryReset 시도 가능(정책에 따라)
+        // CL_D10_Logger::log(EN_L10_LOG_WARN, "[A00] Trying factory reset due to invalid config.");
+        // if (CL_C10_ConfigManager::factoryResetFromDefault()) {
+        //     ESP.restart();
+        // }
+        return;
+    }
+
+    const ST_A20_WifiConfig_t&   v_wifi = *g_A20_config_root.wifi;
+    const ST_A20_SystemConfig_t& v_sys  = *g_A20_config_root.system;
+
+    // ------------------------------------------------------
+    // 4. Wi-Fi 초기화
+    // ------------------------------------------------------
+    bool v_wifiOk = CL_WF10_WiFiManager::init(v_wifi, v_sys, g_A00_wifiMulti);
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] WiFi init result=%d", v_wifiOk ? 1 : 0);
+
+    // ------------------------------------------------------
+    // 5. Time Manager 초기화
+    //  - localtime() null 방어는 TM10 내부에서도 해야 하지만,
+    //    여기서도 "시간 준비 전" 상태를 전제로 동작하도록 함
+    // ------------------------------------------------------
+    CL_TM10_TimeManager::begin();
+
+    // ------------------------------------------------------
+    // 6. PWM + Control + Simulation
+    // ------------------------------------------------------
+    g_P10_pwm.P10_begin(*g_A20_config_root.system);
+
+    CL_CT10_ControlManager::begin();
+
+    // ------------------------------------------------------
+    // 7. Motion Logic
+    //  - 전역 포인터(g_M10_motionLogic)는 여기서 직접 new 하지 않는 정책이면 nullptr 유지
+    //  - M10_begin() 내부에서 singleton/정적 관리라면 OK
+    // ------------------------------------------------------
+    CL_M10_MotionLogic::M10_begin();
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[M10] Motion Logic started");
+
+    // ------------------------------------------------------
+    // 8. Web API + Web UI
+    // ------------------------------------------------------
+    CL_W10_WebAPI::begin(g_A00_server, g_A00_control, g_A00_wifiMulti);
+    g_A00_server.begin();
+
+    // ------------------------------------------------------
+    // 9. CT10 WS Broker 주입 + Scheduler 시작
+    // ------------------------------------------------------
+    CT10_WS_setBrokers(CL_W10_WebAPI::broadcastState,
+                       CL_W10_WebAPI::broadcastMetrics,
+                       CL_W10_WebAPI::broadcastChart,
+                       CL_W10_WebAPI::broadcastSummary,
+                       CL_W10_WebAPI::wsCleanupTick);
+    CT10_WS_begin();
+
+    // ------------------------------------------------------
+    // 10. Watchdog 초기화
+    //  - init 후 add(NULL) 순서 유지
+    // ------------------------------------------------------
+    esp_task_wdt_init(10, true);
+    esp_task_wdt_add(NULL);
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] Init complete. Ready.");
+}
+
+/*
 void A00_init() {
     // LED 초기화
     g_A00_ledController.begin();
@@ -115,10 +220,55 @@ void A00_init() {
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] Init complete. Ready.");
 }
+*/
 
 // ------------------------------------------------------
 // 메인 루프
 // ------------------------------------------------------
+void A00_run() {
+    uint32_t v_now = millis();
+
+    // Watchdog feed
+    esp_task_wdt_reset();
+
+    // ------------------------------------------------------
+    // 1) Control tick
+    // ------------------------------------------------------
+    CL_CT10_ControlManager::tick();
+
+    // ------------------------------------------------------
+    // 2) CT10 WS 스케줄러 tick
+    // ------------------------------------------------------
+    CT10_WS_tick();
+
+    // ------------------------------------------------------
+    // 3) Time Manager tick
+    //  - localtime() null 방어는 TM10 내부에서도 필수
+    //  - system nullptr 방어 유지
+    // ------------------------------------------------------
+    if (g_A20_config_root.system) {
+        CL_TM10_TimeManager::tick(g_A20_config_root.system);
+    } else {
+        CL_TM10_TimeManager::tick(nullptr);
+    }
+
+	 //// // NVS Dirty Flush (10초마다)
+   //// if (v_now - v_lastFlush >= 10000) {
+   ////     v_lastFlush = v_now;
+   ////     CL_N10_NvsManager::flushIfNeeded();
+   //// }
+
+    // ------------------------------------------------------
+    // 4) LED 업데이트
+    // ------------------------------------------------------
+    bool v_wifiStatus = CL_WF10_WiFiManager::isStaConnected();
+    g_A00_ledController.run(v_wifiStatus);
+
+    delay(10);
+}
+
+
+/*
 void A00_run() {
     uint32_t v_now = millis();
 
@@ -133,13 +283,8 @@ void A00_run() {
     CT10_WS_tick();
 
     // --------------------------------------------------
-    /*
-    // NVS Dirty Flush (10초마다)
-    if (v_now - v_lastFlush >= 10000) {
-        v_lastFlush = v_now;
-        CL_N10_NvsManager::flushIfNeeded();
-    }
-    */
+    
+
 
     // TM10 시간 상태 감시/서버 fallback 처리(블로킹X)
     if (g_A20_config_root.system) {
@@ -154,3 +299,6 @@ void A00_run() {
 
     delay(10);
 }
+
+
+*/

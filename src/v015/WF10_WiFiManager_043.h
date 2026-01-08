@@ -68,6 +68,9 @@ class CL_WF10_WiFiManager {
 	static uint8_t			 s_reconnectAttempts;
 	static SemaphoreHandle_t s_wifiMutex;  // Mutex 포인터 (init()에서 생성)
 
+    // WF10이 WiFiMulti를 소유 (A00 전역 제거)
+    inline static WiFiMulti   s_wifiMulti;
+
   public:
 	// --------------------------------------------------
 	// Wi-Fi 설정 적용 함수 (Web API에서 호출)
@@ -87,7 +90,8 @@ class CL_WF10_WiFiManager {
 	// --------------------------------------------------
 	// 초기화
 	// --------------------------------------------------
-	static bool init(const ST_A20_WifiConfig_t& p_cfg_wifi, const ST_A20_SystemConfig_t& p_cfg_system, WiFiMulti& p_multi, uint8_t p_apChannel = 1, uint8_t p_staMaxTries = 5, bool p_enableApDhcp = true);
+	static bool init(const ST_A20_WifiConfig_t& p_cfg_wifi, const ST_A20_SystemConfig_t& p_cfg_system, uint8_t p_apChannel = 1, uint8_t p_staMaxTries = 5, bool p_enableApDhcp = true);
+    // static bool init(const ST_A20_WifiConfig_t& p_cfg_wifi, const ST_A20_SystemConfig_t& p_cfg_system, WiFiMulti& p_multi, uint8_t p_apChannel = 1, uint8_t p_staMaxTries = 5, bool p_enableApDhcp = true);
 
 	// --------------------------------------------------
 	// AP 시작 (고정 IP + DHCP On/Off)
@@ -97,7 +101,8 @@ class CL_WF10_WiFiManager {
 	// --------------------------------------------------
 	// STA 시작
 	// --------------------------------------------------
-	static bool startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, WiFiMulti& p_multi, uint8_t p_maxTries);
+	static bool startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t p_maxTries);
+    // static bool startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, WiFiMulti& p_multi, uint8_t p_maxTries);
 
 	// --------------------------------------------------
 	// NTP 동기화 (구성값 기반 주기)

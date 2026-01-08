@@ -44,7 +44,7 @@ CL_M10_MotionLogic* 	g_M10_motionLogic = nullptr;
 AsyncWebServer   		g_A00_server(80);
 static WiFiMulti 		g_A00_wifiMulti;
 
-//// CL_CT10_ControlManager& g_A00_control = CL_CT10_ControlManager::instance();
+CL_CT10_ControlManager& g_A00_control = CL_CT10_ControlManager::instance();
 CL_P10_PWM              g_P10_pwm;
 
 CL_A30_LED g_A00_ledController;

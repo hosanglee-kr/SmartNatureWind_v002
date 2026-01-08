@@ -41,7 +41,7 @@
 // ------------------------------------------------------
 AsyncWebServer*			CL_W10_WebAPI::s_server	 = nullptr;
 CL_CT10_ControlManager* CL_W10_WebAPI::s_control = nullptr;
-WiFiMulti*				CL_W10_WebAPI::s_multi	 = nullptr;
+// WiFiMulti*				CL_W10_WebAPI::s_multi	 = nullptr;
 File					CL_W10_WebAPI::s_upFile;
 
 AsyncWebSocket			s_wsLogs(W10_Const::WS_API_LOG);
@@ -66,10 +66,11 @@ AsyncWebSocket*			CL_W10_WebAPI::s_wsServerSummary = &s_wsSummary;
 // --------------------------------------------------
 // 초기화
 // --------------------------------------------------
-void CL_W10_WebAPI::begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_control, WiFiMulti& p_multi) {
+void CL_W10_WebAPI::begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_control) {
+// void CL_W10_WebAPI::begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_control, WiFiMulti& p_multi) {
 	s_server  = &p_server;
 	s_control = &p_control;
-	s_multi	  = &p_multi;
+	// s_multi	  = &p_multi;
 
 	// 1. 시스템 정보 및 상태
 	routeVersion();

@@ -7,5 +7,11 @@ esp32-s3-zero
 
 
 esp32-s3-n16r8
+
+
+RAM:   [===       ]  27.0% (used 88,328 bytes from 327,680 bytes)
+Flash: [==        ]  20.2% (used 1,324,353 bytes from 6,553,600 bytes)
+
+
 	RAM:   [===       ]  27.0% (used    88,312 bytes from   327,680 bytes)
 	Flash: [==        ]  20.1% (used 1,319,633 bytes from 6,553,600 bytes)

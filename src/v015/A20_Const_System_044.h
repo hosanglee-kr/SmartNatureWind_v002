@@ -92,6 +92,11 @@ typedef struct ST_A20_WebPageConfig_t {
 //   security.apiKey
 //   time.ntpServer, time.timezone, time.syncIntervalMin
 // ------------------------------------------------------
+typedef struct {
+    char     ntpServer[64];
+    char     timezone[64];
+    uint16_t syncIntervalMin;
+} ST_A20_SystemTimeConfig_t;
 
 typedef struct {
     struct {

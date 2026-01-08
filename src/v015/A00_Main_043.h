@@ -42,7 +42,7 @@
 CL_M10_MotionLogic* 	g_M10_motionLogic = nullptr;
 
 AsyncWebServer   		g_A00_server(80);
-static WiFiMulti 		g_A00_wifiMulti;
+//static WiFiMulti 		g_A00_wifiMulti;
 
 CL_CT10_ControlManager& g_A00_control = CL_CT10_ControlManager::instance();
 CL_P10_PWM              g_P10_pwm;
@@ -105,7 +105,8 @@ void A00_init() {
     // ------------------------------------------------------
     // 4. Wi-Fi 초기화
     // ------------------------------------------------------
-    bool v_wifiOk = CL_WF10_WiFiManager::init(v_wifi, v_sys, g_A00_wifiMulti);
+	bool v_wifiOk = CL_WF10_WiFiManager::init(v_wifi, v_sys);
+    // bool v_wifiOk = CL_WF10_WiFiManager::init(v_wifi, v_sys, g_A00_wifiMulti);
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] WiFi init result=%d", v_wifiOk ? 1 : 0);
 
     // ------------------------------------------------------
@@ -133,7 +134,8 @@ void A00_init() {
     // ------------------------------------------------------
     // 8. Web API + Web UI
     // ------------------------------------------------------
-    CL_W10_WebAPI::begin(g_A00_server, g_A00_control, g_A00_wifiMulti);
+	CL_W10_WebAPI::begin(g_A00_server, g_A00_control);
+    // CL_W10_WebAPI::begin(g_A00_server, g_A00_control, g_A00_wi);
     g_A00_server.begin();
 
     // ------------------------------------------------------

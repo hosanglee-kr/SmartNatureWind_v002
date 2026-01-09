@@ -21,6 +21,44 @@ typedef struct {
 } ST_A20_BLETrustedDevice_t;
 
 typedef struct {
+    bool     enabled;
+    uint16_t holdSec;
+} ST_A20_MotPirCfg_t;
+
+typedef struct {
+    int16_t  on;
+    int16_t  off;
+    uint8_t  avgCount;
+    uint8_t  persistCount;
+    uint16_t exitDelaySec
+} ST_A20_MotBleRssiCfg_t;
+
+typedef struct {
+    bool enabled;
+
+    ST_A20_BLETrustedDevice_t trustedDevices[A20_Const::MAX_BLE_DEVICES];
+    uint8_t                   trustedCount;
+
+    ST_A20_MotBleRssiCfg_t rssi;
+} ST_A20_MotBleCfg_t;
+
+
+// Timing 설정 (Frontend P060/P010 지원)
+typedef struct {
+        uint16_t simIntervalMs;     // Simulation tick interval (ms)
+        uint16_t gustIntervalMs;    // Gust evaluation interval (ms)
+        uint16_t thermalIntervalMs; // Thermal evaluation interval (ms)
+} ST_A20_MotTiming_t;
+
+
+
+typedef struct {
+    ST_A20_MotPirCfg_t pir;
+    ST_A20_MotBleCfg_t ble;
+    ST_A20_MotTiming_t timing;
+} ST_A20_MotionConfig_t;
+/*
+typedef struct {
     struct {
         bool     enabled;
         uint16_t holdSec;
@@ -48,5 +86,5 @@ typedef struct {
         uint16_t thermalIntervalMs; // Thermal evaluation interval (ms)
     } timing;
 } ST_A20_MotionConfig_t;
-
+*/
 

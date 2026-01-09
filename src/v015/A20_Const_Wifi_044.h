@@ -18,7 +18,13 @@ typedef enum : uint8_t {
 //   wifi.wifiMode, wifi.wifiModeDesc
 //   wifi.ap{ssid,password}
 //   wifi.sta[]{ssid,pass}
-// ------------------------------------------------------
+// -----------------------------------------------------
+typedef struct {
+    char ssid[A20_Const::LEN_SSID];
+    char pass[A20_Const::LEN_PASS];
+} ST_A20_ApNetwork_t;
+
+
 typedef struct {
     char ssid[A20_Const::LEN_SSID];
     char pass[A20_Const::LEN_PASS];
@@ -28,10 +34,13 @@ typedef struct {
     EN_A20_WIFI_MODE_t wifiMode;
     char               wifiModeDesc[48];
 
+    ST_A20_ApNetwork_t ap;
+    /*
     struct {
         char ssid[A20_Const::LEN_SSID];
         char pass[A20_Const::LEN_PASS];
     } ap;
+    */
 
     ST_A20_STANetwork_t sta[A20_Const::MAX_STA_NETWORKS];
     uint8_t             staCount; // 파싱 시 채움

@@ -30,7 +30,7 @@ typedef struct {
     int16_t  off;
     uint8_t  avgCount;
     uint8_t  persistCount;
-    uint16_t exitDelaySec
+    uint16_t exitDelaySec;
 } ST_A20_MotBleRssiCfg_t;
 
 typedef struct {

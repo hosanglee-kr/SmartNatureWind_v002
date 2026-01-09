@@ -371,9 +371,9 @@ bool CL_WF10_WiFiManager::applyConfig(const ST_A20_WifiConfig_t& p_cfg) {
 		ST_A20_SystemConfig_t v_sys;
 		memset(&v_sys, 0, sizeof(v_sys));
 		// 최소 안전 기본값(타임존/서버는 TM10에서 fallback을 갖는 전제)
-		strlcpy(v_sys.time.ntpServer, "pool.ntp.org", sizeof(v_sys.time.ntpServer));
-		strlcpy(v_sys.time.timezone, "Asia/Seoul", sizeof(v_sys.time.timezone));
-		v_sys.time.syncIntervalMin = 360;  // 6시간
+		strlcpy(v_sys.timeCfg.ntpServer, "pool.ntp.org", sizeof(v_sys.timeCfg.ntpServer));
+		strlcpy(v_sys.timeCfg.timezone, "Asia/Seoul", sizeof(v_sys.timeCfg.timezone));
+		v_sys.timeCfg.syncIntervalMin = 360;  // 6시간
 
 		bool v_ok = init(p_cfg, v_sys, 1, 15, true);
 	    // bool v_ok = init(p_cfg, v_sys, v_multi, 1, 15, true);

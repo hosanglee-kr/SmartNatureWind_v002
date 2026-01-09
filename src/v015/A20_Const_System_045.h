@@ -147,7 +147,7 @@ typedef struct {
         
         ST_A20_SysPirHWCfg pir;
         ST_A20_SysDhtHWCfg tempHum;
-        ST_A20_SysBLEHWCfg
+        ST_A20_SysBLEHWCfg ble;
         
         /*
         struct {

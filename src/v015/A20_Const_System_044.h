@@ -141,12 +141,15 @@ typedef struct {
     } system;
 
     struct {
+        ST_A20_SysFanPwmHWCfg fanPwm;
+        /*
         struct {
             int16_t  pin;
             uint8_t  channel;
             uint32_t freq;
             uint8_t  res;
         } fanPwm;
+        */
 
         ST_A20_FanConfig_t fanConfig;
 

@@ -30,12 +30,6 @@ typedef struct ST_A20_cfg_jsonFile_t {
     char webPage[A20_Const::LEN_PATH];
 } ST_A20_cfg_jsonFile_t;
 
-typedef struct {
-    uint8_t startPercentMin;   // 시동이 확실히 거는 최소 구간 (예: 18)
-    uint8_t comfortPercentMin; // “편안한 바람” 구간 시작 (예: 22), “체감 바람” 시작점 (예: 22%)
-    uint8_t comfortPercentMax; // “편안한 바람” 구간 끝   (예: 65)  소음/체감 균형 좋은 상한 (예: 65%)
-    uint8_t hardPercentMax;    // 팬/소음/내구성 상으로 무리 없는 상한 (예: 90)
-} ST_A20_FanConfig_t;
 
 
 //  ======================================================
@@ -92,6 +86,39 @@ typedef struct ST_A20_WebPageConfig_t {
 //   security.apiKey
 //   time.ntpServer, time.timezone, time.syncIntervalMin
 // ------------------------------------------------------
+typedef struct {
+    uint8_t startPercentMin;   // 시동이 확실히 거는 최소 구간 (예: 18)
+    uint8_t comfortPercentMin; // “편안한 바람” 구간 시작 (예: 22), “체감 바람” 시작점 (예: 22%)
+    uint8_t comfortPercentMax; // “편안한 바람” 구간 끝   (예: 65)  소음/체감 균형 좋은 상한 (예: 65%)
+    uint8_t hardPercentMax;    // 팬/소음/내구성 상으로 무리 없는 상한 (예: 90)
+} ST_A20_FanConfig_t;
+
+typedef struct {
+    int16_t  pin;
+    uint8_t  channel;
+    uint32_t freq;
+    uint8_t  res;
+} ST_A20_SysFanPwmHWCfg;
+
+typedef struct {
+    bool     enabled;
+    int16_t  pin;
+    uint16_t debounceSec;
+    uint16_t holdSec;
+} ST_A20_SysPirHWCfg;
+
+typedef struct {
+    bool     enabled;
+    char     type[16];
+    int16_t  pin;
+    uint16_t intervalSec;
+} ST_A20_SysDhtHWCfg;
+
+typedef struct {
+    bool     enabled;
+    uint16_t scanInterval;
+} ST_A20_SysBLECfg;
+
 typedef struct {
     char     ntpServer[64];
     char     timezone[64];

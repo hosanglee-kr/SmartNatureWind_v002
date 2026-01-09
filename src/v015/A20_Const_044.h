@@ -47,7 +47,7 @@
 #include <strings.h>
 
 #include "A20_Const_Const_044.h"
-#include "A20_Const_WS_044.h"
+#include "A20_Const_WS_045.h"
 #include "A20_Const_Wifi_044.h"
 #include "A20_Const_Motion_044.h"
 #include "A20_Const_Sch_046.h"
@@ -77,6 +77,6 @@ class CL_M10_MotionLogic; // 전방 선언
 extern CL_M10_MotionLogic* g_M10_motionLogic;
 
 
-#include "A40_Com_Func_051.h"
-#include "A20_Com_Func_045.h"
-#include "A20_Com_FuncRst_045.h"
+#include "A40_Com_Func_052.h"
+#include "A20_Com_Func_046.h"
+#include "A20_Com_FuncRst_046.h"

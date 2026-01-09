@@ -1097,9 +1097,9 @@ void CL_C10_ConfigManager::toJson_System(const ST_A20_SystemConfig_t& p, JsonDoc
 
     d["security"]["apiKey"] = p.security.apiKey;
 
-    d["time"]["ntpServer"]       = p.time.ntpServer;
-    d["time"]["timezone"]        = p.time.timezone;
-    d["time"]["syncIntervalMin"] = p.time.syncIntervalMin;
+    d["timeCfg"]["ntpServer"]       = p.timeCfg.ntpServer;
+    d["timeCfg"]["timezone"]        = p.timeCfg.timezone;
+    d["timeCfg"]["syncIntervalMin"] = p.timeCfg.syncIntervalMin;
 }
 
 void CL_C10_ConfigManager::toJson_Wifi(const ST_A20_WifiConfig_t& p, JsonDocument& d) {

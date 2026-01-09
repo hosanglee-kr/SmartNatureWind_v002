@@ -145,13 +145,15 @@ typedef struct {
 
         ST_A20_FanConfig_t fanConfig;
         
-        ST_A20_SysPirHWCfg 
+        ST_A20_SysPirHWCfg pir;
+        /*
         struct {
             bool     enabled;
             int16_t  pin;
             uint16_t debounceSec;
             uint16_t holdSec;
         } pir;
+        */
 
         struct {
             bool     enabled;

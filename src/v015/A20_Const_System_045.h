@@ -117,7 +117,7 @@ typedef struct {
 typedef struct {
     bool     enabled;
     uint16_t scanInterval;
-} ST_A20_SysBLECfg;
+} ST_A20_SysBLEHWCfg;
 
 typedef struct {
     char     ntpServer[64];
@@ -146,6 +146,9 @@ typedef struct {
         ST_A20_FanConfig_t fanConfig;
         
         ST_A20_SysPirHWCfg pir;
+        ST_A20_SysDhtHWCfg tempHum;
+        ST_A20_SysBLEHWCfg
+        
         /*
         struct {
             bool     enabled;
@@ -153,7 +156,7 @@ typedef struct {
             uint16_t debounceSec;
             uint16_t holdSec;
         } pir;
-        */
+        
 
         struct {
             bool     enabled;
@@ -166,6 +169,7 @@ typedef struct {
             bool     enabled;
             uint16_t scanInterval;
         } ble;
+        */
     } hw;
 
     struct {

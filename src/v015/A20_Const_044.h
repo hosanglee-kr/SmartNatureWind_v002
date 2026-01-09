@@ -77,6 +77,6 @@ class CL_M10_MotionLogic; // 전방 선언
 extern CL_M10_MotionLogic* g_M10_motionLogic;
 
 
+#include "A40_Com_Func_051.h"
 #include "A20_Com_Func_045.h"
 #include "A20_Com_FuncRst_046.h"
-#include "A40_Com_Func_051.h"

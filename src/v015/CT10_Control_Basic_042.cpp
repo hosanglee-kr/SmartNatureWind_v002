@@ -210,7 +210,7 @@ float CL_CT10_ControlManager::getCurrentTemperatureMock() {
 	// - 센서 비활성 시 고정 fallback
 	// - DHT는 2초 주기 읽기
 	static DHT* s_dht          = nullptr;
-	static int  s_dhtPin       = -1;
+	static uint8_t  s_dhtPin   = 0;
 	static uint32_t s_lastRead = 0;
 	static float s_lastTemp    = 24.0f;  // Default fallback
 
@@ -221,7 +221,7 @@ float CL_CT10_ControlManager::getCurrentTemperatureMock() {
 	if (!conf.enabled) return 24.0f;
 
 	// 2) Pin 결정(0이면 무효)
-	int v_pin = (conf.pin > 0) ? (int)conf.pin : 4;
+	uint8_t v_pin = (conf.pin > 0) ? (uint8_t)conf.pin : 4;
 
 	// 3) Init/Re-init if needed (핀 변경 시 재초기화)
 	if (!s_dht || s_dhtPin != v_pin) {

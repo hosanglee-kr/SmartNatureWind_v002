@@ -94,7 +94,7 @@ typedef struct {
 } ST_A20_FanConfig_t;
 
 typedef struct {
-    int16_t  pin;
+    uint8_t  pin;
     uint8_t  channel;
     uint32_t freq;
     uint8_t  res;
@@ -102,7 +102,7 @@ typedef struct {
 
 typedef struct {
     bool     enabled;
-    int16_t  pin;
+    uint8_t  pin;
     uint16_t debounceSec;
     uint16_t holdSec;
 } ST_A20_SysPirHWCfg;
@@ -110,7 +110,7 @@ typedef struct {
 typedef struct {
     bool     enabled;
     char     type[16];
-    int16_t  pin;
+    uint8_t  pin;
     uint16_t intervalSec;
 } ST_A20_SysDhtHWCfg;
 

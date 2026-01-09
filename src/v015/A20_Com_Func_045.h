@@ -115,3 +115,37 @@ inline int16_t A20_findStyleIndexByCode(const ST_A20_WindDict_t& p_dict, const c
 }
 
 
+/* ======================================================
+ * Lookup Utils (운영급 공용 유틸) - 헤더만으로 사용 가능
+ * ====================================================== */
+namespace A20_SchConst {
+
+inline const ST_A20_WindPreset_t* findPresetByCode(const char* p_code) {
+    if (!p_code || !p_code[0]) return nullptr;
+    for (uint8_t i = 0; i < EN_A20_WINDPRESET_COUNT; i++) {
+        const char* v_code = G_A20_WindPreset_Arr[i].code;
+        if (v_code && strcasecmp(p_code, v_code) == 0) return &G_A20_WindPreset_Arr[i];
+    }
+    return nullptr;
+}
+
+inline const ST_A20_WindStyles_t* findStyleByCode(const char* p_code) {
+    if (!p_code || !p_code[0]) return nullptr;
+    for (uint8_t i = 0; i < EN_A20_WINDSTYLE_COUNT; i++) {
+        const char* v_code = G_A20_WindStyle_Arr[i].code;
+        if (v_code && strcasecmp(p_code, v_code) == 0) return &G_A20_WindStyle_Arr[i];
+    }
+    return nullptr;
+}
+
+inline const ST_A20_SegmentMode_t* findSegModeByCode(const char* p_code) {
+    if (!p_code || !p_code[0]) return nullptr;
+    for (uint8_t i = 0; i < EN_A20_SEG_MODE_COUNT; i++) {
+        const char* v_code = G_A20_SegmentMode_Arr[i].code;
+        if (v_code && strcasecmp(p_code, v_code) == 0) return &G_A20_SegmentMode_Arr[i];
+    }
+    return nullptr;
+}
+
+} // namespace A20_SchConst
+

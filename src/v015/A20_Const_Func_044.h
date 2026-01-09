@@ -380,9 +380,9 @@ inline void A20_resetSystemDefault(ST_A20_SystemConfig_t& p_cfg) {
     A40_ComFunc::copyStr2Buffer_safe(p_cfg.security.apiKey, "", sizeof(p_cfg.security.apiKey));
 
     // time
-    A40_ComFunc::copyStr2Buffer_safe(p_cfg.time.ntpServer, "pool.ntp.org", sizeof(p_cfg.time.ntpServer));
-    A40_ComFunc::copyStr2Buffer_safe(p_cfg.time.timezone, "Asia/Seoul", sizeof(p_cfg.time.timezone));
-    p_cfg.time.syncIntervalMin = 60;
+    A40_ComFunc::copyStr2Buffer_safe(p_cfg.timeCfg.ntpServer, "pool.ntp.org", sizeof(p_cfg.timeCfg.ntpServer));
+    A40_ComFunc::copyStr2Buffer_safe(p_cfg.timeCfg.timezone, "Asia/Seoul", sizeof(p_cfg.timeCfg.timezone));
+    p_cfg.timeCfg.syncIntervalMin = 60;
 }
 
 // -------------------------

@@ -436,7 +436,7 @@ inline void CL_TM10_TimeManager::tick(const ST_A20_SystemConfig_t* p_sysOrNull) 
     // 하지만 안전하게 sysOrNull이 들어오면 interval만 sanity 체크 정도는 가능.
     if (p_sysOrNull) {
         // syncIntervalMin이 비정상(0 포함)이면 기본으로 강제
-        uint32_t v_ms = (uint32_t)p_sysOrNull->time.syncIntervalMin * 60000UL;
+        uint32_t v_ms = (uint32_t)p_sysOrNull->timeCfg.syncIntervalMin * 60000UL;
         if (v_ms == 0) v_ms = (6UL * 60UL * 60UL * 1000UL);
         v_ms = A40_ComFunc::clampVal(v_ms, (uint32_t)G_TM10_MIN_SYNC_INTERVAL_MS, (uint32_t)G_TM10_MAX_SYNC_INTERVAL_MS);
         s_syncIntervalMs = v_ms;

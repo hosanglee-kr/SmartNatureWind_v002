@@ -252,15 +252,15 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
     }
 
     // time
-    JsonObjectConst j_time = j_root["time"].as<JsonObjectConst>();
+    JsonObjectConst j_time = j_root["timeCfg"].as<JsonObjectConst>();
     if (!j_time.isNull()) {
         const char* v_ntp = A40_ComFunc::Json_getStr(j_time, "ntpServer", nullptr);
-        if (v_ntp && v_ntp[0]) strlcpy(p_cfg.time.ntpServer, v_ntp, sizeof(p_cfg.time.ntpServer));
+        if (v_ntp && v_ntp[0]) strlcpy(p_cfg.timeCfg.ntpServer, v_ntp, sizeof(p_cfg.timeCfg.ntpServer));
 
         const char* v_tz = A40_ComFunc::Json_getStr(j_time, "timezone", nullptr);
-        if (v_tz && v_tz[0]) strlcpy(p_cfg.time.timezone, v_tz, sizeof(p_cfg.time.timezone));
+        if (v_tz && v_tz[0]) strlcpy(p_cfg.timeCfg.timezone, v_tz, sizeof(p_cfg.timeCfg.timezone));
 
-        if (!j_time["syncIntervalMin"].isNull()) p_cfg.time.syncIntervalMin = j_time["syncIntervalMin"].as<uint16_t>();
+        if (!j_time["syncIntervalMin"].isNull()) p_cfg.timeCfg.syncIntervalMin = j_time["syncIntervalMin"].as<uint16_t>();
     }
 
     return true;
@@ -484,9 +484,9 @@ bool CL_C10_ConfigManager::saveSystemConfig(const ST_A20_SystemConfig_t& p_cfg) 
 
     v["security"]["apiKey"] = p_cfg.security.apiKey;
 
-    v["time"]["ntpServer"]       = p_cfg.time.ntpServer;
-    v["time"]["timezone"]        = p_cfg.time.timezone;
-    v["time"]["syncIntervalMin"] = p_cfg.time.syncIntervalMin;
+    v["timeCfg"]["ntpServer"]       = p_cfg.timeCfg.ntpServer;
+    v["timeCfg"]["timezone"]        = p_cfg.timeCfg.timezone;
+    v["timeCfg"]["syncIntervalMin"] = p_cfg.timeCfg.syncIntervalMin;
 
     return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.system, v, true, true, __func__);
 }
@@ -566,7 +566,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
     JsonObjectConst j_sys  = p_patch["system"].as<JsonObjectConst>();
     JsonObjectConst j_sec  = p_patch["security"].as<JsonObjectConst>();
     JsonObjectConst j_hw   = p_patch["hw"].as<JsonObjectConst>();
-    JsonObjectConst j_time = p_patch["time"].as<JsonObjectConst>();
+    JsonObjectConst j_time = p_patch["timeCfg"].as<JsonObjectConst>();
 
     if (j_meta.isNull() && j_sys.isNull() && j_sec.isNull() && j_hw.isNull() && j_time.isNull()) {
         return false;
@@ -823,20 +823,20 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
     // time
     if (!j_time.isNull()) {
         const char* v_ntp = A40_ComFunc::Json_getStr(j_time, "ntpServer", "");
-        if (v_ntp && v_ntp[0] && strcmp(v_ntp, p_config.time.ntpServer) != 0) {
-            strlcpy(p_config.time.ntpServer, v_ntp, sizeof(p_config.time.ntpServer));
+        if (v_ntp && v_ntp[0] && strcmp(v_ntp, p_config.timeCfg.ntpServer) != 0) {
+            strlcpy(p_config.timeCfg.ntpServer, v_ntp, sizeof(p_config.timeCfg.ntpServer));
             v_changed = true;
         }
 
         const char* v_tz = A40_ComFunc::Json_getStr(j_time, "timezone", "");
-        if (v_tz && v_tz[0] && strcmp(v_tz, p_config.time.timezone) != 0) {
-            strlcpy(p_config.time.timezone, v_tz, sizeof(p_config.time.timezone));
+        if (v_tz && v_tz[0] && strcmp(v_tz, p_config.timeCfg.timezone) != 0) {
+            strlcpy(p_config.timeCfg.timezone, v_tz, sizeof(p_config.timeCfg.timezone));
             v_changed = true;
         }
 
-        uint16_t v_si = A40_ComFunc::Json_getNum<uint16_t>(j_time, "syncIntervalMin", p_config.time.syncIntervalMin);
-        if (v_si != p_config.time.syncIntervalMin) {
-            p_config.time.syncIntervalMin = v_si;
+        uint16_t v_si = A40_ComFunc::Json_getNum<uint16_t>(j_time, "syncIntervalMin", p_config.timeCfg.syncIntervalMin);
+        if (v_si != p_config.timeCfg.syncIntervalMin) {
+            p_config.timeCfg.syncIntervalMin = v_si;
             v_changed                     = true;
         }
     }

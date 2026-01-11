@@ -201,7 +201,7 @@ typedef struct {
 
 typedef struct {
     bool    enabled       = false;
-    int32_t rssiThreshold = -70;
+    int16_t rssiThreshold = -70;
     int16_t holdSec       = 0;
 } ST_A20_BLE_t;
 

@@ -286,6 +286,92 @@ static inline bool Json_copyStrReq(JsonObjectConst p_obj,
     return true;
 }
 
+
+// ------------------------------------------------------
+// Json_removeKey
+//  - doc의 root를 JsonObject로 보고 특정 key를 제거(remove)
+//  - key가 없거나 root가 object가 아니면 아무것도 하지 않음
+// ------------------------------------------------------
+static inline void Json_removeKey(JsonDocument& p_doc, const char* p_key) {
+    if (!p_key || p_key[0] == '\0') return;
+    JsonObject v_root = p_doc.as<JsonObject>();
+    if (v_root.isNull()) return;
+    v_root.remove(p_key);
+}
+
+
+// ------------------------------------------------------
+// Json_writeAutoOff
+//  - autoOff 구조체를 JSON object에 기록
+// ------------------------------------------------------
+static inline void Json_writeAutoOff(JsonObject p_ao, const ST_A20_AutoOff_t& p_src) {
+    p_ao["timer"]["enabled"]   = p_src.timer.enabled;
+    p_ao["timer"]["minutes"]   = p_src.timer.minutes;
+
+    p_ao["offTime"]["enabled"] = p_src.offTime.enabled;
+    p_ao["offTime"]["time"]    = p_src.offTime.time;
+
+    p_ao["offTemp"]["enabled"] = p_src.offTemp.enabled;
+    p_ao["offTemp"]["temp"]    = p_src.offTemp.temp;
+}
+
+
+// ------------------------------------------------------
+// Json_writeMotion
+//  - motion 구조체를 JSON object(상위 root)에 기록
+//  - p_root는 schedule/profile JSON object (js/jp 등)
+// ------------------------------------------------------
+static inline void Json_writeMotion(JsonObject p_root, const ST_A20_Motion_t& p_m) {
+    p_root["motion"]["pir"]["enabled"]       = p_m.pir.enabled;
+    p_root["motion"]["pir"]["holdSec"]       = p_m.pir.holdSec;
+
+    p_root["motion"]["ble"]["enabled"]       = p_m.ble.enabled;
+    p_root["motion"]["ble"]["rssiThreshold"] = p_m.ble.rssiThreshold;
+    p_root["motion"]["ble"]["holdSec"]       = p_m.ble.holdSec;
+}
+
+
+
+
+// ======================================================
+// Ptr Utility (delete + nullptr, Silent Policy)
+// ======================================================
+
+// ------------------------------------------------------
+// freeObject
+//  - 단일 객체 포인터용 delete 헬퍼
+//  - nullptr 체크 후 delete 수행
+//  - delete 이후 반드시 nullptr로 초기화
+//  - 정상 흐름이므로 로그 출력 없음 (Silent 정책)
+//  - 메모리 해제 누락 / 이중 delete 방지 목적
+// ------------------------------------------------------
+template <typename T>
+static inline void freeObject(T*& p_ptr, const char* p_callerFunc = nullptr) {
+    (void)p_callerFunc; // Silent 정책: 미사용 (확장 대비 유지)
+    if (p_ptr) {
+        delete p_ptr;
+        p_ptr = nullptr;
+    }
+}
+
+// ------------------------------------------------------
+// Ptr_deleteArrayNull
+//  - 배열(new[]) 포인터용 delete 헬퍼
+//  - nullptr 체크 후 delete[] 수행
+//  - delete[] 이후 반드시 nullptr로 초기화
+//  - Silent 정책 (로그 없음)
+// ------------------------------------------------------
+template <typename T>
+static inline void freeArray(T*& p_ptr, const char* p_callerFunc = nullptr) {
+    (void)p_callerFunc; // Silent 정책
+    if (p_ptr) {
+        delete[] p_ptr;
+        p_ptr = nullptr;
+    }
+}
+
+
+
 } // namespace A40_ComFunc
 
 // ======================================================

@@ -57,7 +57,7 @@ typedef enum : uint8_t {
 } EN_A20_WindPreset_t;
 
 typedef struct {
-    const EN_A20_WindPreset_t idx;
+    EN_A20_WindPreset_t       idx;
     const char*               code;
     const char*               name;
 } ST_A20_WindPreset_t;
@@ -196,13 +196,13 @@ typedef struct {
  * ====================================================== */
 typedef struct {
     bool    enabled = false;
-    int32_t holdSec = 0;
+    int16_t holdSec = 0;
 } ST_A20_PIR_t;
 
 typedef struct {
     bool    enabled       = false;
     int32_t rssiThreshold = -70;
-    int32_t holdSec       = 0;
+    int16_t holdSec       = 0;
 } ST_A20_BLE_t;
 
 typedef struct {
@@ -319,8 +319,8 @@ typedef struct {
  * 시뮬레이션에 전달할 해석된 파라미터 : camelCase 정합
  * ====================================================== */
 typedef struct {
-    char presetCode[A20_Const::MAX_CODE_LEN];
-    char styleCode[A20_Const::MAX_CODE_LEN];
+    char presetCode[A20_Const::MAX_CODE_LEN] = {0}};
+    char styleCode[A20_Const::MAX_CODE_LEN] ={0}};
 
     bool  valid      = false;
     bool  fixedMode  = false;

@@ -239,7 +239,7 @@ class CL_M10_MotionLogic {
 	bool isActive() const {
 		unsigned long v_now	 = millis();
 		// holdSec 로직은 외부 config 사용 (예: g_A20_config_root.motion)
-		uint32_t	  v_hold = 0;
+		uint16_t	  v_hold = 0;
 		if (g_A20_config_root.motion) {
 			v_hold = (uint32_t)g_A20_config_root.motion->pir.holdSec;
 		}

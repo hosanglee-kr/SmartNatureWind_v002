@@ -62,7 +62,7 @@
 
 // [A20_resetWebSocketDefault] WebSocket 채널/기타 설정을 기본값으로 초기화
 static inline void A20_resetWebSocketDefault(ST_A20_WebSocketConfig_t& p_ws) {
-    for (int v_i = 0; v_i < EN_A20_WS_CH_COUNT; v_i++) {
+    for (uint8_t v_i = 0; v_i < EN_A20_WS_CH_COUNT; v_i++) {
         p_ws.wsChConfig[v_i].chIntervalMs = G_A20_WS_CH_Base_Arr[v_i].chDefaultIntervalMs;
         p_ws.wsChConfig[v_i].priority     = G_A20_WS_CH_Base_Arr[v_i].defaultPriority;
     }

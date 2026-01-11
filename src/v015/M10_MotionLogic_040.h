@@ -241,7 +241,7 @@ class CL_M10_MotionLogic {
 		// holdSec 로직은 외부 config 사용 (예: g_A20_config_root.motion)
 		uint16_t	  v_hold = 0;
 		if (g_A20_config_root.motion) {
-			v_hold = (uint32_t)g_A20_config_root.motion->pir.holdSec;
+			v_hold = (uint16_t)g_A20_config_root.motion->pir.holdSec;
 		}
 		if (_state.pirActive || _state.bleActive)
 			// if (pirActive || bleActive)

@@ -196,13 +196,13 @@ typedef struct {
  * ====================================================== */
 typedef struct {
     bool    enabled = false;
-    int16_t holdSec = 0;
+    uint16_t holdSec = 0;
 } ST_A20_PIR_t;
 
 typedef struct {
     bool    enabled       = false;
     int16_t rssiThreshold = -70;
-    int16_t holdSec       = 0;
+    uint16_t holdSec       = 0;
 } ST_A20_BLE_t;
 
 typedef struct {

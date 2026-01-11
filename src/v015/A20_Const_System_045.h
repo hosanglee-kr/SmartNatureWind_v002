@@ -5,7 +5,6 @@
 
 #include "A20_Const_Const_044.h"
 
-//#include "A20_Const_WS_044.h"
 
 
 // ------------------------------------------------------
@@ -84,7 +83,7 @@ typedef struct ST_A20_WebPageConfig_t {
 //   hw.tempHum{enabled,type,pin,intervalSec}
 //   hw.ble{enabled,scanInterval}
 //   security.apiKey
-//   time.ntpServer, time.timezone, time.syncIntervalMin
+//   timeCfg.ntpServer, timeCfg.timezone, timeCfg.syncIntervalMin
 // ------------------------------------------------------
 typedef struct {
     uint8_t startPercentMin;   // 시동이 확실히 거는 최소 구간 (예: 18)
@@ -149,27 +148,6 @@ typedef struct {
         ST_A20_SysDhtHWCfg tempHum;
         ST_A20_SysBLEHWCfg ble;
         
-        /*
-        struct {
-            bool     enabled;
-            int16_t  pin;
-            uint16_t debounceSec;
-            uint16_t holdSec;
-        } pir;
-        
-
-        struct {
-            bool     enabled;
-            char     type[16];
-            int16_t  pin;
-            uint16_t intervalSec;
-        } tempHum;
-
-        struct {
-            bool     enabled;
-            uint16_t scanInterval;
-        } ble;
-        */
     } hw;
 
     struct {
@@ -177,11 +155,6 @@ typedef struct {
     } security;
    
     ST_A20_SysTimeConfig_t timeCfg;
-    //// struct {
-     /////   char     ntpServer[64];
-     ////   char     timezone[32];
-     ////   uint16_t syncIntervalMin;
-    ////} time;
 } ST_A20_SystemConfig_t;
 
 

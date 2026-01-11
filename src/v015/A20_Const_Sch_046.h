@@ -1,7 +1,7 @@
 // 소스명 : A20_Const_Sch_046.h
 #pragma once
 #include <Arduino.h>
-#include <strings.h> // strcasecmp
+// #include <strings.h> // strcasecmp
 
 #include "A20_Const_Const_044.h"
 
@@ -319,8 +319,8 @@ typedef struct {
  * 시뮬레이션에 전달할 해석된 파라미터 : camelCase 정합
  * ====================================================== */
 typedef struct {
-    char presetCode[A20_Const::MAX_CODE_LEN] = {0}};
-    char styleCode[A20_Const::MAX_CODE_LEN] ={0}};
+    char presetCode[A20_Const::MAX_CODE_LEN] = {0};
+    char styleCode[A20_Const::MAX_CODE_LEN] ={0};
 
     bool  valid      = false;
     bool  fixedMode  = false;

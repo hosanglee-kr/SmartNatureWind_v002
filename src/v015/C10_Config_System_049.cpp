@@ -313,7 +313,7 @@ bool CL_C10_ConfigManager::loadWifiConfig(ST_A20_WifiConfig_t& p_cfg) {
         for (JsonObjectConst v_js : j_sta) {
             if (p_cfg.staCount >= A20_Const::MAX_STA_NETWORKS) break;
 
-            ST_A20_STANetwork_t& v_net = p_cfg.sta[p_cfg.staCount];
+            ST_A20_WifiCredentials_t& v_net = p_cfg.sta[p_cfg.staCount];
             memset(&v_net, 0, sizeof(v_net)); // ✅ 찌꺼기 방지
 
             const char* v_ssid = v_js["ssid"] | "";
@@ -899,7 +899,7 @@ bool CL_C10_ConfigManager::patchWifiFromJson(ST_A20_WifiConfig_t& p_config, cons
         for (JsonObjectConst v_js : j_sta) {
             if (p_config.staCount >= A20_Const::MAX_STA_NETWORKS) break;
 
-            ST_A20_STANetwork_t& v_net = p_config.sta[p_config.staCount];
+            ST_A20_WifiCredentials_t& v_net = p_config.sta[p_config.staCount];
             memset(&v_net, 0, sizeof(v_net)); // ✅ 찌꺼기 방지
 
             strlcpy(v_net.ssid, v_js["ssid"] | "", sizeof(v_net.ssid));

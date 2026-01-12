@@ -199,7 +199,7 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
     // -------------------------
     JsonObjectConst j_pwm = j_hw["fanPwm"].as<JsonObjectConst>();
     if (!j_pwm.isNull()) {
-        if (!j_pwm["pin"].isNull()) p_cfg.hw.fanPwm.pin = j_pwm["pin"].as<uint8_t>();
+        if (!j_pwm["pin"].isNull()) p_cfg.hw.fanPwm.pin = j_pwm["pin"].as<int16_t>();
         if (!j_pwm["channel"].isNull()) p_cfg.hw.fanPwm.channel = j_pwm["channel"].as<uint8_t>();
         if (!j_pwm["freq"].isNull()) p_cfg.hw.fanPwm.freq = j_pwm["freq"].as<uint32_t>();
         if (!j_pwm["res"].isNull()) p_cfg.hw.fanPwm.res = j_pwm["res"].as<uint8_t>();
@@ -222,7 +222,7 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
     JsonObjectConst j_pir = j_hw["pir"].as<JsonObjectConst>();
     if (!j_pir.isNull()) {
         if (!j_pir["enabled"].isNull()) p_cfg.hw.pir.enabled = j_pir["enabled"].as<bool>();
-        if (!j_pir["pin"].isNull()) p_cfg.hw.pir.pin = j_pir["pin"].as<uint8_t>();
+        if (!j_pir["pin"].isNull()) p_cfg.hw.pir.pin = j_pir["pin"].as<int16_t>();
         if (!j_pir["debounceSec"].isNull()) p_cfg.hw.pir.debounceSec = j_pir["debounceSec"].as<uint16_t>();
         if (!j_pir["holdSec"].isNull()) p_cfg.hw.pir.holdSec = j_pir["holdSec"].as<uint16_t>();
     }
@@ -233,7 +233,7 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
         if (!j_th["enabled"].isNull()) p_cfg.hw.tempHum.enabled = j_th["enabled"].as<bool>();
         const char* v_type = A40_ComFunc::Json_getStr(j_th, "type", nullptr);
         if (v_type && v_type[0]) strlcpy(p_cfg.hw.tempHum.type, v_type, sizeof(p_cfg.hw.tempHum.type));
-        if (!j_th["pin"].isNull()) p_cfg.hw.tempHum.pin = j_th["pin"].as<uint8_t>();
+        if (!j_th["pin"].isNull()) p_cfg.hw.tempHum.pin = j_th["pin"].as<int16_t>();
         if (!j_th["intervalSec"].isNull()) p_cfg.hw.tempHum.intervalSec = j_th["intervalSec"].as<uint16_t>();
     }
 
@@ -719,7 +719,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
                 }
             }
             if (!j_pir["pin"].isNull()) {
-                uint8_t v_pin = j_pir["pin"].as<uint8_t>();
+                int16_t v_pin = j_pir["pin"].as<int16_t>();
                 if (v_pin != p_config.hw.pir.pin) {
                     p_config.hw.pir.pin = v_pin;
                     v_changed           = true;
@@ -756,7 +756,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
                 v_changed = true;
             }
             if (!j_th["pin"].isNull()) {
-                uint8_t v_pin = j_th["pin"].as<uint8_t>();
+                int16_t v_pin = j_th["pin"].as<int16_t>();
                 if (v_pin != p_config.hw.tempHum.pin) {
                     p_config.hw.tempHum.pin = v_pin;
                     v_changed               = true;
@@ -773,7 +773,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
         JsonObjectConst j_pwm = j_hw["fanPwm"].as<JsonObjectConst>();
         if (!j_pwm.isNull()) {
             if (!j_pwm["pin"].isNull()) {
-                uint8_t v_pin = j_pwm["pin"].as<uint8_t>();
+                int16_t v_pin = j_pwm["pin"].as<int16_t>();
                 if (v_pin != p_config.hw.fanPwm.pin) {
                     p_config.hw.fanPwm.pin = v_pin;
                     v_changed              = true;

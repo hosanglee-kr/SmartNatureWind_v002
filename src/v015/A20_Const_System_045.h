@@ -93,30 +93,30 @@ typedef struct {
 } ST_A20_FanConfig_t;
 
 typedef struct {
-    uint8_t  pin;
+    int16_t  pin;
     uint8_t  channel;
     uint32_t freq;
     uint8_t  res;
-} ST_A20_SysFanPwmHWCfg;
+} ST_A20_SysFanPwmHWCfg_t;
 
 typedef struct {
     bool     enabled;
-    uint8_t  pin;
+    int16_t  pin;
     uint16_t debounceSec;
     uint16_t holdSec;
-} ST_A20_SysPirHWCfg;
+} ST_A20_SysPirHWCfg_t;
 
 typedef struct {
     bool     enabled;
     char     type[16];
-    uint8_t  pin;
+    int16_t  pin;
     uint16_t intervalSec;
-} ST_A20_SysDhtHWCfg;
+} ST_A20_SysDhtHWCfg_t;
 
 typedef struct {
     bool     enabled;
     uint16_t scanInterval;
-} ST_A20_SysBLEHWCfg;
+} ST_A20_SysBLEHWCfg_t;
 
 typedef struct {
     char     ntpServer[64];
@@ -140,13 +140,13 @@ typedef struct {
     } system;
 
     struct {
-        ST_A20_SysFanPwmHWCfg fanPwm;
+        ST_A20_SysFanPwmHWCfg_t fanPwm;
 
         ST_A20_FanConfig_t fanConfig;
         
-        ST_A20_SysPirHWCfg pir;
-        ST_A20_SysDhtHWCfg tempHum;
-        ST_A20_SysBLEHWCfg ble;
+        ST_A20_SysPirHWCfg_t pir;
+        ST_A20_SysDhtHWCfg_t tempHum;
+        ST_A20_SysBLEHWCfg_t ble;
         
     } hw;
 

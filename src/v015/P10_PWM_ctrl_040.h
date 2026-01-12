@@ -50,7 +50,7 @@
 typedef struct {
 	bool	 initialized;
 	bool	 enabled;
-	uint8_t	 pin;
+	int16_t	 pin;
 	uint8_t	 channel;
 	uint32_t freq;
 	uint8_t	 resolutionBits;
@@ -90,7 +90,7 @@ class CL_P10_PWM {
 		_state.initialized	  = false;
 
 		if (_state.pin < 0) {
-			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[P10] invalid fan pin=%d", (uint8_t)_state.pin);
+			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[P10] invalid fan pin=%d", (int16_t)_state.pin);
 			return;
 		}
 
@@ -111,7 +111,7 @@ class CL_P10_PWM {
 		_setRawDuty(0);
 		_state.initialized = true;
 
-		CL_D10_Logger::log(EN_L10_LOG_INFO, "[P10] begin pin=%d ch=%u freq=%lu res=%u", (uint8_t)_state.pin, (unsigned)_state.channel, (unsigned long)_state.freq, (unsigned)_state.resolutionBits);
+		CL_D10_Logger::log(EN_L10_LOG_INFO, "[P10] begin pin=%d ch=%u freq=%lu res=%u", (int16_t)_state.pin, (unsigned)_state.channel, (unsigned long)_state.freq, (unsigned)_state.resolutionBits);
 	}
 
 	// ==================================================

@@ -221,7 +221,7 @@ float CL_CT10_ControlManager::getCurrentTemperatureMock() {
 	if (!conf.enabled) return 24.0f;
 
 	// 2) Pin 결정(0이면 무효)
-	uint8_t v_pin = (conf.pin > 0) ? (uint8_t)conf.pin : 4;
+	int16_t v_pin = (conf.pin > 0) ? (int16_t)conf.pin : 4;
 
 	// 3) Init/Re-init if needed (핀 변경 시 재초기화)
 	if (!s_dht || s_dhtPin != v_pin) {

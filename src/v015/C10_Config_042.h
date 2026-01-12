@@ -60,10 +60,6 @@
 // bool ioSaveJson(const char* p_path, const JsonDocument& p_doc);		// 변경됨 --> A40_IO::Save_JsonDoc2File_V21
 
 
-// Mutex Timeout 정의
-// #ifndef G_C10_MUTEX_TIMEOUT
-// 	#define G_C10_MUTEX_TIMEOUT pdMS_TO_TICKS(100)
-// #endif
 
 
 // 전역 Config Root (Core cpp에서 정의)

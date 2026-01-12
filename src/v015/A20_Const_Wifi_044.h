@@ -16,7 +16,7 @@ typedef enum : uint8_t {
 // ------------------------------------------------------
 // WIFI 설정 (cfg_wifi_xxx.json) : camelCase 정합
 //   wifi.wifiMode, wifi.wifiModeDesc
-//   wifi.ap{ssid,password}
+//   wifi.ap{ssid,pass}
 //   wifi.sta[]{ssid,pass}
 // -----------------------------------------------------
 typedef struct {

@@ -210,7 +210,7 @@ float CL_CT10_ControlManager::getCurrentTemperatureMock() {
 	// - 센서 비활성 시 고정 fallback
 	// - DHT는 2초 주기 읽기
 	static DHT* s_dht          = nullptr;
-	static uint8_t  s_dhtPin   = 0;
+	static int16_t  s_dhtPin   = 0;
 	static uint32_t s_lastRead = 0;
 	static float s_lastTemp    = 24.0f;  // Default fallback
 

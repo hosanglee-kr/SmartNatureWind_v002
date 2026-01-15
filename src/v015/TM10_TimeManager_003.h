@@ -172,7 +172,6 @@ class CL_TM10_TimeManager {
 // ------------------------------------------------------
 static inline void TM10_applyTimeConfigFromSystem(const ST_A20_SystemConfig_t& p_sys);
 
-static inline void TM10_requestTimeSync(bool p_force = false);
 //static inline void TM10_requestTimeSync();
 
 // // ======================================================

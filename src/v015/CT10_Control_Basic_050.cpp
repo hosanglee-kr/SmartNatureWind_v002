@@ -448,6 +448,98 @@ float CL_CT10_ControlManager::getCurrentTemperatureMock() {
 int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg) {
     // --------------------------------------------------
     // 기능:
+    //  - 현재 로컬 시간 기준으로 활성 스케줄 후보들을 찾고,
+    //  - 겹침이 있을 수 있으므로 "schNo가 가장 큰 스케줄"을 선택한다.
+    //
+    // 정책:
+    //  - 스케줄 겹침 허용
+    //  - 우선순위 = schNo 큰 것
+    //  - tie-breaker:
+    //      1) schNo 동일이면 schId 큰 것(안정적/결정적 선택)
+    //      2) 그래도 동일이면 더 뒤 인덱스(마지막 매치)로 선택 (결정성 확보)
+    //
+    // 시간:
+    //  - TM10::getLocalTime() 성공 시에만 시간 기반 평가
+    //  - 실패 시 -1(스케줄 미적용)
+    //
+    // 자정 넘어감:
+    //  - start < end : same-day
+    //  - start > end : cross-midnight (예: 23:00~07:00)
+    // --------------------------------------------------
+    if (p_cfg.count == 0) return -1;
+
+    struct tm v_tm;
+    if (!CL_TM10_TimeManager::getLocalTime(v_tm)) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] findActiveScheduleIndex: time invalid (TM10)");
+        return -1;
+    }
+
+    // Arduino tm_wday: 0=Sun..6=Sat
+    // Config days: [0]=Mon..[6]=Sun
+    uint8_t  v_wday   = (v_tm.tm_wday == 0) ? 6 : (uint8_t)(v_tm.tm_wday - 1);
+    uint16_t v_curMin = (uint16_t)v_tm.tm_hour * 60 + (uint16_t)v_tm.tm_min;
+
+    int    v_bestIdx  = -1;
+    int16_t v_bestNo  = INT16_MIN;
+    int16_t v_bestId  = INT16_MIN;
+
+    for (int v_i = 0; v_i < (int)p_cfg.count; v_i++) {
+        const ST_A20_ScheduleItem_t& v_s = p_cfg.items[v_i];
+        if (!v_s.enabled) continue;
+
+        // 요일 체크
+        if (v_wday >= 7 || !v_s.period.days[v_wday]) continue;
+
+        uint16_t v_startMin = parseHHMMtoMin(v_s.period.startTime);
+        uint16_t v_endMin   = parseHHMMtoMin(v_s.period.endTime);
+
+        // start==end 정책: 비활성(항상 OFF)
+        if (v_startMin == v_endMin) continue;
+
+        // 활성 여부 판정
+        bool v_active = false;
+        if (v_startMin < v_endMin) {
+            // same-day
+            v_active = (v_curMin >= v_startMin && v_curMin < v_endMin);
+        } else {
+            // cross-midnight
+            v_active = (v_curMin >= v_startMin || v_curMin < v_endMin);
+        }
+        if (!v_active) continue;
+
+        // 우선순위 비교: schNo 큰 것 우선
+        // schNo 타입이 uint16_t라면 안전하게 int로 캐스팅
+        int16_t v_no = (int16_t)v_s.schNo;
+        int16_t v_id = (int16_t)v_s.schId;
+
+        bool v_take = false;
+        if (v_bestIdx < 0) {
+            v_take = true;
+        } else if (v_no > v_bestNo) {
+            v_take = true;
+        } else if (v_no == v_bestNo) {
+            // tie-breaker: schId 큰 것
+            if (v_id > v_bestId) v_take = true;
+            else if (v_id == v_bestId) {
+                // 마지막 tie-breaker: 더 뒤 인덱스를 선택해도 됨(결정성)
+                v_take = true;
+            }
+        }
+
+        if (v_take) {
+            v_bestIdx = v_i;
+            v_bestNo  = v_no;
+            v_bestId  = v_id;
+        }
+    }
+
+    return v_bestIdx;
+}
+
+/*
+int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg) {
+    // --------------------------------------------------
+    // 기능:
     //  - 현재 로컬 시간 기준으로 "활성 스케줄 1개"를 찾는다.
     //  - 자정 넘어감(cross-midnight) 구간 지원
     //  - 시간 미동기/유효하지 않으면 스케줄 동작을 멈춘다(운영 안전)
@@ -507,6 +599,7 @@ int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t
 
     return -1;
 }
+*/
 
 
 /*

@@ -134,6 +134,7 @@ day 체크가 “today / yesterday”로 갈라지는지
 
 findActiveScheduleIndex() 내부에서 스케줄 하나의 활성 판정은 최소 아래 형태여야 합니다.
 
+```cpp
 startMin < endMin:
 
 if days[today] && startMin <= nowMin && nowMin < endMin => active
@@ -147,6 +148,8 @@ else if (nowMin < endMin && days[yesterday]) => active
 
 
 startMin == endMin:
+
+```
 
 정책(24h 또는 invalid)
 
@@ -178,11 +181,14 @@ startMin == endMin:
 
 현재 문제
 
+```cpp
 // days 체크 (오늘 요일만 체크)
 if (v_wday >= 7 || !v_s.period.days[v_wday]) continue;
 
 // cross midnight
 if (v_curMin >= v_startMin || v_curMin < v_endMin) return v_i;
+
+```
 
 이러면 예를 들어:
 
@@ -206,7 +212,8 @@ now >= start 구간은 오늘 요일로 days 체크
 
 아래처럼 함수 교체/패치하세요.
 
-// --------------------------------------------------
+```cpp
+// -*-------------------------------------------------
 // find active schedule (FIX: cross-midnight + day mapping)
 // --------------------------------------------------
 int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg) {
@@ -257,6 +264,7 @@ int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t
 
     return -1;
 }
+```
 
 ✅ 이걸로 23:00~07:00 + 월요일 체크가 화요일 새벽까지 정상 유지됩니다.
 
@@ -267,11 +275,14 @@ int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t
 
 현재 버그
 
+```cpp
+
 // 정책: 지정 시각 "도달 시"부터 트리거(>=)
 if (v_curMin >= autoOffRt.offTimeMinutes) {
     s_lastTriggeredMinute = (int32_t)v_curMin;
     return true;
 }
+```
 
 이러면 offTime=06:30일 때:
 
@@ -294,6 +305,8 @@ if (v_curMin >= autoOffRt.offTimeMinutes) {
 아래처럼 바꾸면 안전합니다.
 
 // 2) offTime (RTC) - FIX: 하루 1회 트리거
+
+```cpp
 if (autoOffRt.offTimeEnabled) {
     static int32_t s_lastTriggeredDayKey = -1;
 
@@ -330,7 +343,7 @@ if (autoOffRt.offTimeEnabled) {
         }
     }
 }
-
+```
 
 ---
 
@@ -367,7 +380,7 @@ AutoOff offTime을
 
 ===
 
-'''
+```cpp
 
 // --------------------------------------------------
 // find active schedule (FULL, with cross-midnight + day rule comments)
@@ -490,4 +503,4 @@ int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t
     return -1;
 }
 
-'''
+```

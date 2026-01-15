@@ -540,6 +540,180 @@ static uint16_t C10_parseHHMMtoMin_24h(const char* p_time) {
 
 */
 
+
+// ------------------------------------------------------
+// C10_validateNoOverlapByDay()
+//  - Schedules의 "요일별 시간 구간 겹침"을 검증한다.
+//  - cross-midnight(자정 넘김)을 정확히 분해하여 요일별로 검사한다.
+//  - p_failOnOverlap:
+//      * true  : 겹치면 false 반환(저장 중단)
+//      * false : warning 로그만 남기고 true 반환(저장 허용)
+//
+// 전제:
+//  - A40_parseHHMMtoMin_24h()를 사용(24:00=1440 허용)
+//  - start==end : "항상 OFF"로 처리하여 검증 대상에서 제외
+//  - 구간은 [start,end) (end 미포함)으로 해석
+// ------------------------------------------------------
+static bool C10_validateNoOverlapByDay(const ST_A20_SchedulesRoot_t& p_root,
+                                      bool p_failOnOverlap,
+                                      const char* p_callerFunc = nullptr) {
+    const char* v_caller = p_callerFunc ? p_callerFunc : "?";
+
+    // 요일: 0=Mon..6=Sun (Config의 days[] 기준)
+    // 분 단위 타임라인: 0..1440
+    typedef struct {
+        uint16_t startMin;
+        uint16_t endMin;     // end는 1..1440 가능(24:00 포함)
+        uint16_t schNo;
+        uint8_t  schId;
+        char     name[A20_Const::LEN_NAME];
+    } ST_C10_Range_t;
+
+    // day별 수집 버퍼 (스케줄 개수 * 최대 2구간)
+    // 동적할당 피하려면 상한 기반 정적 배열로 처리
+    ST_C10_Range_t v_ranges[7][A20_Const::MAX_SCHEDULES * 2];
+    uint16_t       v_counts[7];
+    memset(v_counts, 0, sizeof(v_counts));
+    memset(v_ranges, 0, sizeof(v_ranges));
+
+    // 1) day별 구간 수집
+    for (uint8_t v_i = 0; v_i < p_root.count; v_i++) {
+        const ST_A20_ScheduleItem_t& v_s = p_root.items[v_i];
+        if (!v_s.enabled) continue;
+
+        uint16_t v_start = A40_parseHHMMtoMin_24h(v_s.period.startTime);
+        uint16_t v_end   = A40_parseHHMMtoMin_24h(v_s.period.endTime);
+
+        // start/end 둘 중 하나라도 파싱 실패(0)인 경우 방어 로그 (단, "00:00"은 0이므로 구분 필요)
+        // A40 파서의 반환 0은 "00:00"도 가능하므로 문자열을 같이 확인.
+        // 여기서는 최소한 colon 여부가 없는 등 포맷 오류가 있을 수 있으니,
+        // 포맷 검증은 C10 parse 레벨에서 이미 했다는 전제를 권장.
+        // (운영: 필요하면 A40 파서 실패 구분을 별도 함수로 강화)
+        // 정책: start==end는 항상OFF로 스킵
+        if (v_start == v_end) {
+            continue;
+        }
+
+        // end가 0이 되는 입력(예: "00:00")은 정상 -> end==0이면 다음날 0시 의미(허용)
+        // 단, end==0이면 구간 계산은 [start,1440) 또는 [0,0) 등이 될 수 있어 정책이 필요.
+        // 여기서는 end==0도 허용하며, cross-midnight 규칙으로 자연 처리됨.
+
+        for (uint8_t v_day = 0; v_day < 7; v_day++) {
+            if (!v_s.period.days[v_day]) continue;
+
+            // same-day
+            if (v_start < v_end) {
+                uint16_t& v_cnt = v_counts[v_day];
+                if (v_cnt < (A20_Const::MAX_SCHEDULES * 2)) {
+                    ST_C10_Range_t& r = v_ranges[v_day][v_cnt++];
+                    r.startMin = v_start;
+                    r.endMin   = v_end;
+                    r.schNo    = v_s.schNo;
+                    r.schId    = v_s.schId;
+                    memset(r.name, 0, sizeof(r.name));
+                    strlcpy(r.name, v_s.name, sizeof(r.name));
+                }
+            } else {
+                // cross-midnight: [start,1440) + [0,end)
+                // part1
+                {
+                    uint16_t& v_cnt = v_counts[v_day];
+                    if (v_cnt < (A20_Const::MAX_SCHEDULES * 2)) {
+                        ST_C10_Range_t& r = v_ranges[v_day][v_cnt++];
+                        r.startMin = v_start;
+                        r.endMin   = 1440;
+                        r.schNo    = v_s.schNo;
+                        r.schId    = v_s.schId;
+                        memset(r.name, 0, sizeof(r.name));
+                        strlcpy(r.name, v_s.name, sizeof(r.name));
+                    }
+                }
+                // part2
+                {
+                    uint16_t& v_cnt = v_counts[v_day];
+                    if (v_cnt < (A20_Const::MAX_SCHEDULES * 2)) {
+                        ST_C10_Range_t& r = v_ranges[v_day][v_cnt++];
+                        r.startMin = 0;
+                        r.endMin   = v_end;   // v_end가 0이면 [0,0)이라 의미없으니 아래에서 스킵될 수 있음
+                        r.schNo    = v_s.schNo;
+                        r.schId    = v_s.schId;
+                        memset(r.name, 0, sizeof(r.name));
+                        strlcpy(r.name, v_s.name, sizeof(r.name));
+                    }
+                }
+            }
+        }
+    }
+
+    // 2) day별 overlap 검사
+    bool v_anyOverlap = false;
+
+    for (uint8_t v_day = 0; v_day < 7; v_day++) {
+        uint16_t v_cnt = v_counts[v_day];
+        if (v_cnt <= 1) continue;
+
+        // day 범위들을 startMin 기준 오름차순으로 정렬
+        // (간단 삽입정렬: 데이터가 작고 임베디드에서 충분)
+        for (uint16_t a = 1; a < v_cnt; a++) {
+            ST_C10_Range_t key = v_ranges[v_day][a];
+            int16_t b = (int16_t)a - 1;
+            while (b >= 0) {
+                ST_C10_Range_t& cur = v_ranges[v_day][(uint16_t)b];
+                bool move = false;
+                if (cur.startMin > key.startMin) move = true;
+                else if (cur.startMin == key.startMin) {
+                    // tie-breaker: endMin 큰 것 먼저로 두면 overlap 검사가 더 직관적
+                    if (cur.endMin < key.endMin) move = true;
+                }
+                if (!move) break;
+                v_ranges[v_day][(uint16_t)(b + 1)] = cur;
+                b--;
+            }
+            v_ranges[v_day][(uint16_t)(b + 1)] = key;
+        }
+
+        // 정렬 후, 인접 구간만 보면 overlap 여부 판정 가능
+        // overlap 조건: next.start < prev.end (half-open)
+        for (uint16_t i = 0; i + 1 < v_cnt; i++) {
+            const ST_C10_Range_t& r1 = v_ranges[v_day][i];
+            const ST_C10_Range_t& r2 = v_ranges[v_day][i + 1];
+
+            // [0,0) 같은 무의미 구간 방어
+            if (r1.startMin >= r1.endMin) continue;
+            if (r2.startMin >= r2.endMin) continue;
+
+            if (r2.startMin < r1.endMin) {
+                v_anyOverlap = true;
+
+                // 요일 로그용 문자열
+                static const char* s_dayName[7] = {"Mon","Tue","Wed","Thu","Fri","Sat","Sun"};
+
+                CL_D10_Logger::log(
+                    EN_L10_LOG_WARN,
+                    "[C10][%s] Overlap detected day=%s: "
+                    "A(schId=%u schNo=%u name=%s %u-%u) vs "
+                    "B(schId=%u schNo=%u name=%s %u-%u)",
+                    v_caller,
+                    s_dayName[v_day],
+                    (unsigned)r1.schId, (unsigned)r1.schNo, r1.name, (unsigned)r1.startMin, (unsigned)r1.endMin,
+                    (unsigned)r2.schId, (unsigned)r2.schNo, r2.name, (unsigned)r2.startMin, (unsigned)r2.endMin
+                );
+
+                if (p_failOnOverlap) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    if (v_anyOverlap && !p_failOnOverlap) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10][%s] Overlap exists but allowed by policy(warn-only)", v_caller);
+    }
+
+    return true;
+}
+
+/*
 // =====================================================
 // [C10] Save 직전 겹침 검증: 요일 단위로 시간구간 overlap 금지(운영 정책)
 // -----------------------------------------------------
@@ -644,6 +818,41 @@ static bool C10_validateNoOverlapByDay(const ST_A20_SchedulesRoot_t& p_cfg, cons
 	return true;
 }
 
+*/
+
+// ------------------------------------------------------
+// C10_sortSchedulesBySchNoDesc()
+//  - schedules.items[]를 schNo 내림차순으로 정렬한다.
+//  - tie-breaker: schId 내림차순 (결정성 확보)
+// ------------------------------------------------------
+static void C10_sortSchedulesBySchNoDesc(ST_A20_SchedulesRoot_t& p_root) {
+    if (p_root.count <= 1) return;
+
+    // 삽입정렬 (임베디드에서 단순/안전)
+    for (uint8_t i = 1; i < p_root.count; i++) {
+        ST_A20_ScheduleItem_t key = p_root.items[i];
+        int16_t j = (int16_t)i - 1;
+
+        while (j >= 0) {
+            ST_A20_ScheduleItem_t& cur = p_root.items[(uint8_t)j];
+
+            bool move = false;
+            if (cur.schNo < key.schNo) move = true;                 // schNo desc
+            else if (cur.schNo == key.schNo) {
+                if (cur.schId < key.schId) move = true;             // schId desc
+            }
+
+            if (!move) break;
+
+            p_root.items[(uint8_t)(j + 1)] = cur;
+            j--;
+        }
+
+        p_root.items[(uint8_t)(j + 1)] = key;
+    }
+}
+
+
 
 // =====================================================
 // 2-1. Load (Schedules)
@@ -716,8 +925,148 @@ bool CL_C10_ConfigManager::loadSchedules(ST_A20_SchedulesRoot_t& p_cfg) {
 // 2-2. Save (Schedules)
 //  - mutex 보호 / path empty 방어
 //  - save 직전 마지막 방어선 검증(schId/schNo/segId/segNo 필수/중복)
+//  - overlap 검증(cross-midnight 분해 포함, C10 구현)
+//    - p_failOnOverlap=true  -> 겹치면 저장 실패
+//    - p_failOnOverlap=false -> warning만 남기고 저장은 진행
+//  - 저장 시 schNo desc 정렬 저장(결정성/가독성/향후 정책 변경 대비)
 // =====================================================
-bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg) {
+bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg, bool p_failOnOverlap = false) {
+    CL_A40_MutexGuard_Semaphore v_guard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
+        return false;
+    }
+
+    if (s_cfgJsonFileMap.schedules[0] == '\0') {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: path empty (cfg map not loaded?)", __func__);
+        return false;
+    }
+
+    // --------------------------------------------------
+    // ✅ 마지막 방어선 1) 필수/0금지/중복 검증
+    //  - schId/schNo/segId/segNo: 필수 + 0 금지 + 중복 금지
+    //  - segNo/schNo는 사용자 정렬 목적이므로 중복 금지가 특히 중요(정렬/우선순위 불명확 방지)
+    // --------------------------------------------------
+    if (!C10_validateSchedulesBeforeSave(p_cfg, __func__)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: validation failed. Save aborted.", __func__);
+        return false;
+    }
+
+    // --------------------------------------------------
+    // ✅ 마지막 방어선 2) 요일/시간 구간 overlap 검증
+    //  - C10_validateNoOverlapByDay()는 cross-midnight를 [start,1440)+[0,end)로 분해하여 검사
+    //  - 정책:
+    //     * failOnOverlap=true  -> 저장 실패(운영 강제)
+    //     * failOnOverlap=false -> 경고만 로그, 저장은 허용(운영 완화)
+    // --------------------------------------------------
+    if (!C10_validateNoOverlapByDay(p_cfg, p_failOnOverlap, __func__)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                           "[C10] %s: overlap validation failed (failOnOverlap=1). Save aborted.",
+                           __func__);
+        return false;
+    }
+
+    // --------------------------------------------------
+    // ✅ 저장 순서 결정성: schNo desc 정렬 저장
+    //  - p_cfg는 const 이므로 로컬 복사본을 만들어 정렬 후 사용
+    //  - (향후) CT10 우선순위 정책 변경/디버깅 시 파일이 항상 우선순위 순으로 보여 유리
+    // --------------------------------------------------
+    ST_A20_SchedulesRoot_t v_sorted = p_cfg;
+    C10_sortSchedulesBySchNoDesc(v_sorted);
+
+    // --------------------------------------------------
+    // JSON 구성
+    //  - ArduinoJson v7 단일 JsonDocument 정책 준수
+    //  - createNestedArray/Object 금지: .to<JsonObject>(), .to<JsonArray>() 사용은 허용 정책으로 간주
+    // --------------------------------------------------
+    JsonDocument d;
+    JsonObject v_root = d.to<JsonObject>();
+
+    // 샘플 cfg 형식 반영(있어도 되고 없어도 되는 메타이지만, 파일 식별/호환성에 도움)
+    v_root["version"]  = "025";
+    v_root["jsonFile"] = "cfg_schedules_025.json";
+
+    // schedules 배열
+    JsonArray v_jsSchedules = v_root["schedules"].to<JsonArray>();
+
+    const uint8_t v_maxSch = (v_sorted.count < A20_Const::MAX_SCHEDULES) ? v_sorted.count : A20_Const::MAX_SCHEDULES;
+
+    for (uint8_t v_i = 0; v_i < v_maxSch; v_i++) {
+        const ST_A20_ScheduleItem_t& s = v_sorted.items[v_i];
+
+        JsonObject js = v_jsSchedules.add().to<JsonObject>();
+
+        js["schId"]          = s.schId;
+        js["schNo"]          = s.schNo;
+        js["name"]           = s.name;
+        js["enabled"]        = s.enabled;
+        js["repeatSegments"] = s.repeatSegments;
+        js["repeatCount"]    = s.repeatCount;
+
+        // period
+        JsonObject jp = js["period"].to<JsonObject>();
+        JsonArray  jd = jp["days"].to<JsonArray>();
+        for (uint8_t v_d = 0; v_d < 7; v_d++) {
+            jd.add((bool)s.period.days[v_d]);
+        }
+        jp["startTime"] = s.period.startTime;
+        jp["endTime"]   = s.period.endTime;
+
+        // segments
+        JsonArray v_jsSegs = js["segments"].to<JsonArray>();
+        const uint8_t v_maxSeg = (s.segCount < A20_Const::MAX_SEGMENTS_PER_SCHEDULE) ? s.segCount : A20_Const::MAX_SEGMENTS_PER_SCHEDULE;
+
+        for (uint8_t v_k = 0; v_k < v_maxSeg; v_k++) {
+            const ST_A20_ScheduleSegment_t& sg = s.segments[v_k];
+
+            JsonObject jseg = v_jsSegs.add().to<JsonObject>();
+
+            jseg["segId"]      = sg.segId;
+            jseg["segNo"]      = sg.segNo;
+            jseg["onMinutes"]  = sg.onMinutes;
+            jseg["offMinutes"] = sg.offMinutes;
+
+            // mode/preset/style
+            jseg["mode"]       = A20_modeToString(sg.mode);
+            jseg["presetCode"] = sg.presetCode;
+            jseg["styleCode"]  = sg.styleCode;
+
+            // adjust
+            JsonObject adj = jseg["adjust"].to<JsonObject>();
+            adj["windIntensity"]            = sg.adjust.windIntensity;
+            adj["windVariability"]          = sg.adjust.windVariability;
+            adj["gustFrequency"]            = sg.adjust.gustFrequency;
+            adj["fanLimit"]                 = sg.adjust.fanLimit;
+            adj["minFan"]                   = sg.adjust.minFan;
+            adj["turbulenceLengthScale"]    = sg.adjust.turbulenceLengthScale;
+            adj["turbulenceIntensitySigma"] = sg.adjust.turbulenceIntensitySigma;
+            adj["thermalBubbleStrength"]    = sg.adjust.thermalBubbleStrength;
+            adj["thermalBubbleRadius"]      = sg.adjust.thermalBubbleRadius;
+
+            // fixed
+            jseg["fixedSpeed"] = sg.fixedSpeed;
+        }
+
+        // ✅ A40 공통 writer 사용(필드 누락/오타 방지)
+        A40_ComFunc::Json_writeAutoOff(js["autoOff"].to<JsonObject>(), s.autoOff);
+        A40_ComFunc::Json_writeMotion(js, s.motion);
+    }
+
+    // --------------------------------------------------
+    // 파일 저장(.tmp atomic + .bak) - A40 IO
+    // --------------------------------------------------
+    return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.schedules, d, true, true, __func__);
+}
+
+/*
+// =====================================================
+// 2-2. Save (Schedules)
+//  - mutex 보호 / path empty 방어
+//  - save 직전 마지막 방어선 검증(schId/schNo/segId/segNo 필수/중복)
+//    - p_failOnOverlap=true  -> 겹치면 저장 실패
+//    - p_failOnOverlap=false -> warning만 남기고 저장은 진행
+// =====================================================
+bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg, bool p_failOnOverlap=false) {
     CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
@@ -737,11 +1086,16 @@ bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg) {
 	}
 
 	// ✅ 마지막 방어선 2) 요일/시간 구간 overlap 금지(운영 정책)
-	if (!C10_validateNoOverlapByDay(p_cfg, __func__)) {
-		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: overlap detected. Save aborted.", __func__);
+	if (!C10_validateNoOverlapByDay(p_cfg, p_failOnOverlap, __func__)) {
+		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] saveSchedules: overlap validation failed (failOnOverlap=1)");
 		return false;
 	}
 	
+    // --------------------------------------------------
+    // 2) schNo desc 정렬 저장
+    //    - 향후 정책 변경 대비(우선순위 시각화/결정성)
+    // --------------------------------------------------
+    C10_sortSchedulesBySchNoDesc(p_cfg);
 
     JsonDocument d;
 
@@ -797,7 +1151,7 @@ bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg) {
 
     return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.schedules, d, true, true, __func__);
 }
-
+*/
 // =====================================================
 // 3. JSON Export (Schedules)
 //  - mutex 보호 / doc 잔재 방지(remove)

@@ -124,7 +124,8 @@ class CL_C10_ConfigManager {
 	static bool saveWifiConfig(const ST_A20_WifiConfig_t& p_cfg);
 	static bool saveMotionConfig(const ST_A20_MotionConfig_t& p_cfg);
 
-	static bool saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg);
+	static bool saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg, bool p_failOnOverlap);
+    // static bool saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg);
 	static bool saveUserProfiles(const ST_A20_UserProfilesRoot_t& p_cfg);
 	static bool saveWindDict(const ST_A20_WindDict_t& p_cfg);
 

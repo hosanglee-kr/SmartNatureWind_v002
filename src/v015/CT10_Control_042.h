@@ -250,7 +250,7 @@ class CL_CT10_ControlManager {
 	void initAutoOffFromSchedule(const ST_A20_ScheduleItem_t& p_s);
 	bool checkAutoOff();
 
-	static uint16_t parseHHMMtoMin(const char* p_time);
+	// static uint16_t parseHHMMtoMin(const char* p_time);
 	static float getCurrentTemperatureMock();
 
 	int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg);

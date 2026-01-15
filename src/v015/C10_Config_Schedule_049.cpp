@@ -484,7 +484,7 @@ static bool C10_validateSchedulesBeforeSave(const ST_A20_SchedulesRoot_t& p_cfg,
 }
 
 
-
+/*
 
 // =====================================================
 // [C10] 내부 Helper: "HH:MM" → minutes (0..1440)
@@ -538,6 +538,8 @@ static uint16_t C10_parseHHMMtoMin_24h(const char* p_time) {
 	return (uint16_t)(v_hh * 60 + v_mm);
 }
 
+*/
+
 // =====================================================
 // [C10] Save 직전 겹침 검증: 요일 단위로 시간구간 overlap 금지(운영 정책)
 // -----------------------------------------------------
@@ -570,8 +572,8 @@ static bool C10_validateNoOverlapByDay(const ST_A20_SchedulesRoot_t& p_cfg, cons
 			const ST_A20_ScheduleItem_t& A = p_cfg.items[v_i];
 			if (!A.enabled) continue;
 
-			uint16_t A_start = C10_parseHHMMtoMin_24h(A.period.startTime);
-			uint16_t A_end   = C10_parseHHMMtoMin_24h(A.period.endTime);
+			uint16_t A_start = A40_parseHHMMtoMin_24h(A.period.startTime);
+			uint16_t A_end   = A40_parseHHMMtoMin_24h(A.period.endTime);
 
 			struct _Seg { uint8_t day; uint16_t s; uint16_t e; };
 			_Seg A_segs[2];
@@ -601,8 +603,8 @@ static bool C10_validateNoOverlapByDay(const ST_A20_SchedulesRoot_t& p_cfg, cons
 				const ST_A20_ScheduleItem_t& B = p_cfg.items[v_j];
 				if (!B.enabled) continue;
 
-				uint16_t B_start = C10_parseHHMMtoMin_24h(B.period.startTime);
-				uint16_t B_end   = C10_parseHHMMtoMin_24h(B.period.endTime);
+				uint16_t B_start = A40_parseHHMMtoMin_24h(B.period.startTime);
+				uint16_t B_end   = A40_parseHHMMtoMin_24h(B.period.endTime);
 
 				_Seg B_segs[2];
 				uint8_t B_segCnt = 0;

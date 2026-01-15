@@ -60,6 +60,27 @@
 // bool ioSaveJson(const char* p_path, const JsonDocument& p_doc);		// 변경됨 --> A40_IO::Save_JsonDoc2File_V21
 
 
+// ------------------------------------------------------
+// [C10] NoOverlap 검증 정책 플래그
+//  - FAIL_ON_OVERLAP : 겹치면 실패 반환(save 중단)
+//  - WARN_ONLY       : 겹쳐도 계속 진행(로그만)
+//  - SKIP_DISABLED   : disabled schedule은 검사 제외(기본 on 권장)
+// ------------------------------------------------------
+typedef enum : uint8_t {
+    EN_C10_OVL_FAIL_ON_OVERLAP = 0,
+    EN_C10_OVL_WARN_ONLY       = 1,
+    EN_C10_OVL_SKIP_DISABLED   = 2,
+} EN_C10_NoOverlapPolicy_t;
+
+// ------------------------------------------------------
+// [C10] 검증 결과 (운영 점검/로그용)
+// ------------------------------------------------------
+typedef struct {
+    bool     ok;              // FAIL 정책이면 overlap 발견 시 false
+    uint16_t overlapCount;    // 발견된 overlap 개수(대략)
+    uint16_t checkedCount;    // 검사한 schedule count
+} ST_C10_NoOverlapResult_t;
+
 
 
 // 전역 Config Root (Core cpp에서 정의)

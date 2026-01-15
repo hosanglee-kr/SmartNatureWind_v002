@@ -645,3 +645,72 @@ inline bool Save_JsonDoc2File_V21(const char*         p_path,
 }
 
 } // namespace A40_IO
+
+
+
+// =============================================================================
+// [A40] 내부 Helper: "HH:MM" 문자열을 분(Minutes) 단위로 변환
+// -----------------------------------------------------------------------------
+// * 기능 개요:
+//   - "HH:MM" 형식의 문자열을 파싱하여 0~1440 범위의 uint16_t 값을 반환합니다.
+//   - 앞뒤 공백(Space, Tab, CR, LF)을 자동으로 제거(Trim)합니다.
+// * 특이 사항 및 제약 조건:
+//   - 24시간 표기법 지원: "24:00" 입력 시 1440분으로 처리하여 하루의 끝을 허용합니다.
+//   - 엄격한 포맷: 반드시 콜론(:)이 포함되어야 하며, "HHMM" 형식은 오류(0)로 처리합니다.
+//   - 안전 장치: 분(MM)이 2자리를 초과하거나, 24:01 이상의 잘못된 시간은 방어적으로 처리합니다.
+// * 의존성: 타 모듈(CT10 등)과의 의존성을 배제하기 위해 로컬 static 함수로 유지합니다.
+// =============================================================================
+static uint16_t A40_parseHHMMtoMin_24h(const char* p_time) {
+	if (!p_time || p_time[0] == '\0') return 0;
+
+	// 1. 앞 공백 스킵
+	while (*p_time == ' ' || *p_time == '\t' || *p_time == '\r' || *p_time == '\n') p_time++;
+	if (p_time[0] == '\0') return 0;
+
+	// 2. 콜론 위치 확인 (HH:MM 포맷 검증)
+	const char* v_colon = strchr(p_time, ':');
+	if (!v_colon) return 0;
+
+	// 3. 시간(HH) 파싱
+	char v_hhBuf[4];
+	memset(v_hhBuf, 0, sizeof(v_hhBuf));
+	size_t v_hhLen = (size_t)(v_colon - p_time);
+	if (v_hhLen == 0 || v_hhLen >= sizeof(v_hhBuf)) return 0;
+	memcpy(v_hhBuf, p_time, v_hhLen);
+
+	// 4. 분(MM) 파싱 및 뒤 공백 제거
+	const char* v_mmStr = v_colon + 1;
+	if (!v_mmStr || v_mmStr[0] == '\0') return 0;
+
+	char v_mmBuf[4];
+	memset(v_mmBuf, 0, sizeof(v_mmBuf));
+
+	size_t v_mmLen = strlen(v_mmStr);
+	while (v_mmLen > 0) {
+		char c = v_mmStr[v_mmLen - 1];
+		if (c == ' ' || c == '\t' || c == '\r' || c == '\n') v_mmLen--;
+		else break;
+	}
+	// 분은 최대 2자리(00~59)만 허용하는 엄격한 규칙 적용
+	if (v_mmLen == 0 || v_mmLen > 2) return 0;
+	memcpy(v_mmBuf, v_mmStr, v_mmLen);
+
+	int v_hh = atoi(v_hhBuf);
+	int v_mm = atoi(v_mmBuf);
+
+	// 5. 수치 범위 방어 및 특수 케이스 처리
+	if (v_hh < 0) v_hh = 0;
+	if (v_mm < 0) v_mm = 0;
+
+	// [특수 처리] 24:00 허용 (종료 시간 설정 등에 사용)
+	if (v_hh == 24) {
+		if (v_mm == 0) return 1440; 
+		return 0; // 24:01 등은 무효 처리
+	}
+
+	// [일반 처리] 범위 초과 시 Clamp 처리
+	if (v_hh > 23) v_hh = 23;
+	if (v_mm > 59) v_mm = 59;
+
+	return (uint16_t)(v_hh * 60 + v_mm);
+}

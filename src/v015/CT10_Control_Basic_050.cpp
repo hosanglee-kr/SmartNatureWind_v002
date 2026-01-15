@@ -86,7 +86,7 @@ void CL_CT10_ControlManager::initAutoOffFromUserProfile(const ST_A20_UserProfile
 	}
 	if (p_up.autoOff.offTime.enabled) {
 		autoOffRt.offTimeEnabled = true;
-		autoOffRt.offTimeMinutes = parseHHMMtoMin(p_up.autoOff.offTime.time);
+		autoOffRt.offTimeMinutes = A40_parseHHMMtoMin_24h(p_up.autoOff.offTime.time);
 	}
 	if (p_up.autoOff.offTemp.enabled) {
 		autoOffRt.offTempEnabled = true;
@@ -104,7 +104,7 @@ void CL_CT10_ControlManager::initAutoOffFromSchedule(const ST_A20_ScheduleItem_t
 	}
 	if (p_s.autoOff.offTime.enabled) {
 		autoOffRt.offTimeEnabled = true;
-		autoOffRt.offTimeMinutes = parseHHMMtoMin(p_s.autoOff.offTime.time);
+		autoOffRt.offTimeMinutes = A40_parseHHMMtoMin_24h(p_s.autoOff.offTime.time);
 	}
 	if (p_s.autoOff.offTemp.enabled) {
 		autoOffRt.offTempEnabled = true;
@@ -260,6 +260,7 @@ bool CL_CT10_ControlManager::checkAutoOff() {
 }
 */
 
+/*
 // --------------------------------------------------
 // helpers
 // --------------------------------------------------
@@ -271,6 +272,7 @@ bool CL_CT10_ControlManager::checkAutoOff() {
 // - "24:xx"(xx!=00)는 비정상으로 보고 0 반환(운영 안전)
 // - 공백/이상문자 방어(최소한의 방어만)
 // - ":" 없는 "HHMM" 포맷은 미지원(0 반환)
+
 uint16_t CL_CT10_ControlManager::parseHHMMtoMin(const char* p_time) {
 	// expected: "HH:MM" (H:MM도 허용)
 	if (!p_time || p_time[0] == '\0') return 0;
@@ -336,7 +338,7 @@ uint16_t CL_CT10_ControlManager::parseHHMMtoMin(const char* p_time) {
 	return (uint16_t)(v_hh * 60 + v_mm);
 }
 
-
+*/
 /*
 uint16_t CL_CT10_ControlManager::parseHHMMtoMin(const char* p_time) {
 	// expected: "HH:MM" (H:MM도 허용)
@@ -440,7 +442,7 @@ float CL_CT10_ControlManager::getCurrentTemperatureMock() {
 //      (즉, 전날 밤에 시작한 스케줄이 자정 넘어 계속되는 것을 정상 반영)
 //
 // [주의]
-// - parseHHMMtoMin()이 "24:00"을 1440으로 반환하도록 보완되면,
+// - A40_parseHHMMtoMin_24h()이 "24:00"을 1440으로 반환하도록 보완되면,
 //   endMin==1440 케이스는 same-day window로 자연스럽게 동작한다.
 // - 이 함수는 "겹침을 허용"하되, 우선순위로 1개만 선택한다.
 //   (저장 시 겹침 예외 처리/차단은 별도 save 검증에서 수행 권장)
@@ -490,8 +492,8 @@ int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t
         // 요일 체크
         if (v_wday >= 7 || !v_s.period.days[v_wday]) continue;
 
-        uint16_t v_startMin = parseHHMMtoMin(v_s.period.startTime);
-        uint16_t v_endMin   = parseHHMMtoMin(v_s.period.endTime);
+        uint16_t v_startMin = A40_parseHHMMtoMin_24h(v_s.period.startTime);
+        uint16_t v_endMin   = A40_parseHHMMtoMin_24h(v_s.period.endTime);
 
         // start==end 정책: 비활성(항상 OFF)
         if (v_startMin == v_endMin) continue;

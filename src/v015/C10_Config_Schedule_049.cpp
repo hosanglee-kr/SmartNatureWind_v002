@@ -483,6 +483,166 @@ static bool C10_validateSchedulesBeforeSave(const ST_A20_SchedulesRoot_t& p_cfg,
     return C10_validateSchedulesLoaded(p_cfg, p_callerForLog);
 }
 
+
+
+
+// =====================================================
+// [C10] 내부 Helper: "HH:MM" → minutes (0..1440)
+// - CT10 parseHHMMtoMin 정책과 동일(24:00=1440 허용)
+// - C10 모듈은 CT10 의존 금지 → 로컬 함수로 유지
+// =====================================================
+static uint16_t C10_parseHHMMtoMin_24h(const char* p_time) {
+	if (!p_time || p_time[0] == '\0') return 0;
+
+	while (*p_time == ' ' || *p_time == '\t' || *p_time == '\r' || *p_time == '\n') p_time++;
+	if (p_time[0] == '\0') return 0;
+
+	const char* v_colon = strchr(p_time, ':');
+	if (!v_colon) return 0;
+
+	char v_hhBuf[4];
+	memset(v_hhBuf, 0, sizeof(v_hhBuf));
+	size_t v_hhLen = (size_t)(v_colon - p_time);
+	if (v_hhLen == 0 || v_hhLen >= sizeof(v_hhBuf)) return 0;
+	memcpy(v_hhBuf, p_time, v_hhLen);
+
+	const char* v_mmStr = v_colon + 1;
+	if (!v_mmStr || v_mmStr[0] == '\0') return 0;
+
+	char v_mmBuf[4];
+	memset(v_mmBuf, 0, sizeof(v_mmBuf));
+
+	size_t v_mmLen = strlen(v_mmStr);
+	while (v_mmLen > 0) {
+		char c = v_mmStr[v_mmLen - 1];
+		if (c == ' ' || c == '\t' || c == '\r' || c == '\n') v_mmLen--;
+		else break;
+	}
+	if (v_mmLen == 0 || v_mmLen > 2) return 0;
+	memcpy(v_mmBuf, v_mmStr, v_mmLen);
+
+	int v_hh = atoi(v_hhBuf);
+	int v_mm = atoi(v_mmBuf);
+
+	if (v_hh < 0) v_hh = 0;
+	if (v_mm < 0) v_mm = 0;
+
+	if (v_hh == 24) {
+		if (v_mm == 0) return 1440;
+		return 0;
+	}
+
+	if (v_hh > 23) v_hh = 23;
+	if (v_mm > 59) v_mm = 59;
+
+	return (uint16_t)(v_hh * 60 + v_mm);
+}
+
+// =====================================================
+// [C10] Save 직전 겹침 검증: 요일 단위로 시간구간 overlap 금지(운영 정책)
+// -----------------------------------------------------
+// [기능/정책]
+// - 같은 요일에 활성(enabled) 스케줄들 사이에 시간 구간이 겹치면 false
+// - 구간 판정: [start, end)  (end 미포함)
+// - start==end: 24시간(0..1440) 활성로 간주(CT10 정책과 일치)
+// - overnight(start > end): 두 조각으로 분해
+//    1) (해당 요일) [start, 1440)
+//    2) (다음 요일) [0, end)
+// - days[]는 Config 기준: 0=Mon..6=Sun
+//
+// [왜 C10에서?]
+// - 데이터 무결성/운영 안전을 위해 "저장 시점" 마지막 방어선에서 차단.
+// - CT10은 런타임 우선순위(schNo 큰 것)로 1개 선택 가능하지만,
+//   겹침 데이터는 UI/운영 혼선을 유발하므로 저장 자체를 거부하는 정책 권장.
+// =====================================================
+static bool C10_validateNoOverlapByDay(const ST_A20_SchedulesRoot_t& p_cfg, const char* p_callerForLog) {
+	if (p_cfg.count <= 1) return true;
+
+	auto v_isOverlap = [](uint16_t a0, uint16_t a1, uint16_t b0, uint16_t b1) -> bool {
+		// empty guard
+		if (a0 == a1 || b0 == b1) return false;
+		return (a0 < b1) && (b0 < a1);
+	};
+
+	// 요일 0..6 각각 검사
+	for (uint8_t v_day = 0; v_day < 7; v_day++) {
+		for (uint8_t v_i = 0; v_i < p_cfg.count && v_i < A20_Const::MAX_SCHEDULES; v_i++) {
+			const ST_A20_ScheduleItem_t& A = p_cfg.items[v_i];
+			if (!A.enabled) continue;
+
+			uint16_t A_start = C10_parseHHMMtoMin_24h(A.period.startTime);
+			uint16_t A_end   = C10_parseHHMMtoMin_24h(A.period.endTime);
+
+			struct _Seg { uint8_t day; uint16_t s; uint16_t e; };
+			_Seg A_segs[2];
+			uint8_t A_segCnt = 0;
+
+			// 24h
+			if (A_start == A_end) {
+				if (A.period.days[v_day]) A_segs[A_segCnt++] = {v_day, 0, 1440};
+			}
+			// same-day
+			else if (A_start < A_end) {
+				if (A.period.days[v_day]) A_segs[A_segCnt++] = {v_day, A_start, A_end};
+			}
+			// overnight
+			else {
+				// today part
+				if (A.period.days[v_day]) A_segs[A_segCnt++] = {v_day, A_start, 1440};
+
+				// next-day part: v_day가 "A가 체크된 전날의 다음날"인 경우에 해당
+				uint8_t v_prev = (v_day == 0) ? 6 : (uint8_t)(v_day - 1);
+				if (A.period.days[v_prev]) A_segs[A_segCnt++] = {v_day, 0, A_end};
+			}
+
+			if (A_segCnt == 0) continue;
+
+			for (uint8_t v_j = (uint8_t)(v_i + 1); v_j < p_cfg.count && v_j < A20_Const::MAX_SCHEDULES; v_j++) {
+				const ST_A20_ScheduleItem_t& B = p_cfg.items[v_j];
+				if (!B.enabled) continue;
+
+				uint16_t B_start = C10_parseHHMMtoMin_24h(B.period.startTime);
+				uint16_t B_end   = C10_parseHHMMtoMin_24h(B.period.endTime);
+
+				_Seg B_segs[2];
+				uint8_t B_segCnt = 0;
+
+				if (B_start == B_end) {
+					if (B.period.days[v_day]) B_segs[B_segCnt++] = {v_day, 0, 1440};
+				} else if (B_start < B_end) {
+					if (B.period.days[v_day]) B_segs[B_segCnt++] = {v_day, B_start, B_end};
+				} else {
+					if (B.period.days[v_day]) B_segs[B_segCnt++] = {v_day, B_start, 1440};
+					uint8_t v_prev2 = (v_day == 0) ? 6 : (uint8_t)(v_day - 1);
+					if (B.period.days[v_prev2]) B_segs[B_segCnt++] = {v_day, 0, B_end};
+				}
+
+				if (B_segCnt == 0) continue;
+
+				for (uint8_t a = 0; a < A_segCnt; a++) {
+					for (uint8_t b = 0; b < B_segCnt; b++) {
+						if (v_isOverlap(A_segs[a].s, A_segs[a].e, B_segs[b].s, B_segs[b].e)) {
+							CL_D10_Logger::log(
+								EN_L10_LOG_ERROR,
+								"[C10] %s: schedule overlap day=%u "
+								"(A schId=%u schNo=%u %s~%s, B schId=%u schNo=%u %s~%s)",
+								(p_callerForLog ? p_callerForLog : "?"),
+								(unsigned)v_day,
+								(unsigned)A.schId, (unsigned)A.schNo, A.period.startTime, A.period.endTime,
+								(unsigned)B.schId, (unsigned)B.schNo, B.period.startTime, B.period.endTime
+							);
+							return false;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
+
 // =====================================================
 // 2-1. Load (Schedules)
 //  - 단독 호출(섹션 lazy-load) 대비: reset default 적용
@@ -567,11 +727,19 @@ bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg) {
         return false;
     }
 
-    // ✅ 마지막 방어선: 저장 직전 검증
-    if (!C10_validateSchedulesBeforeSave(p_cfg, __func__)) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: validation failed. Save aborted.", __func__);
-        return false;
-    }
+    
+    // ✅ 마지막 방어선 1) 필수/0금지/중복 검증
+	if (!C10_validateSchedulesBeforeSave(p_cfg, __func__)) {
+		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: validation failed. Save aborted.", __func__);
+		return false;
+	}
+
+	// ✅ 마지막 방어선 2) 요일/시간 구간 overlap 금지(운영 정책)
+	if (!C10_validateNoOverlapByDay(p_cfg, __func__)) {
+		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: overlap detected. Save aborted.", __func__);
+		return false;
+	}
+	
 
     JsonDocument d;
 

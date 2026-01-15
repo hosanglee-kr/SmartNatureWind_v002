@@ -504,3 +504,35 @@ int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t
 }
 
 ```
+
+
+
+erDiagram
+    USER ||--o{ ORDER : "주문하다"
+    ORDER ||--|{ ORDER_ITEM : "포함하다"
+    PRODUCT ||--o{ ORDER_ITEM : "판매되다"
+
+    USER {
+        long id PK
+        string email UK
+        string nickname
+    }
+
+    ORDER {
+        long id PK
+        long user_id FK
+        datetime order_date
+    }
+
+    ORDER_ITEM {
+        long id PK
+        long order_id FK
+        long product_id FK
+        int quantity
+    }
+
+    PRODUCT {
+        long id PK
+        string name
+        int price
+    }

@@ -109,8 +109,26 @@ class CL_TM10_TimeManager {
 
     // 상태 JSON(디버그/웹)
     static void toJson(JsonDocument& p_doc);
+    
+    // ------------------------------------------------------
+    // (추가) 외부 조회 API
+    // ------------------------------------------------------
+    static bool isTimeValid();
+    static bool isTimeSyncedRecently(uint32_t p_windowMs = 0);
+    static bool getLocalTime(struct tm& p_outTm);
+    static void requestTimeSync(bool p_force);
+
 
   private:
+    #ifndef G_TM10_SYNC_RECENT_WINDOW_MS
+        // “최근 동기화”로 인정할 시간 창(기본 10분)
+        # define G_TM10_SYNC_RECENT_WINDOW_MS (10UL * 60UL * 1000UL)
+    #endif
+
+    // (추가) “최근 동기화” 플래그 (timeValid와 분리)
+    inline static bool     s_timeSyncedRecently = false;
+
+
     // Mutex (이제 초기화 로직은 가드 클래스가 담당)
     inline static SemaphoreHandle_t s_mutex = nullptr;
 
@@ -145,6 +163,8 @@ class CL_TM10_TimeManager {
 
     static void _requestSync();        // "지금 동기화 해줘" 요청(블로킹X)
     static void _switchToNextServer(); // fallback 전환(블로킹X)
+    
+    static void _updateSyncedRecently(uint32_t p_nowMs); // 최근동기화 플래그 갱신
 };
 
 // ------------------------------------------------------
@@ -234,6 +254,9 @@ inline void CL_TM10_TimeManager::_onSntpTimeSync(struct timeval* p_tv) {
         s_timeValid       = true;
         s_waitingCallback = false;
         s_lastSyncMs      = millis();
+        
+        _updateSyncedRecently(millis());
+        
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[TM10] SNTP synced OK (server=%s)", s_serverList[s_activeServerIdx]);
     } else {
         // 콜백이 왔어도 시간이 이상하면 실패로 본다.
@@ -357,6 +380,33 @@ inline void CL_TM10_TimeManager::requestTimeSync() {
     _requestSync();
 }
 
+inline void CL_TM10_TimeManager::requestTimeSync(bool p_force) {
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        return;
+    }
+
+    // Wi-Fi가 살아있을 때만 요청 (운영 안전)
+    if (!s_wifiUp) {
+        return;
+    }
+
+    // 기존 정책: waitingCallback이면 중복 재시작 방지
+    // 개선: force=true면 즉시 재요청 허용
+    if (s_waitingCallback && !p_force) {
+        return;
+    }
+
+    s_waitingCallback = true;
+    s_waitStartMs     = millis();
+    s_nextActionMs    = 0;
+
+    // ✅ force 또는 wait가 아니면 즉시 재시작으로 “즉시 동기화” 강제
+    _requestSync();
+}
+
+
 inline void CL_TM10_TimeManager::applyTimeConfig(const ST_A20_SystemConfig_t& p_sys) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
@@ -379,6 +429,8 @@ inline void CL_TM10_TimeManager::applyTimeConfig(const ST_A20_SystemConfig_t& p_
     }
 }
 
+
+
 inline void CL_TM10_TimeManager::onWiFiConnected(const ST_A20_SystemConfig_t& p_sys) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
@@ -396,6 +448,35 @@ inline void CL_TM10_TimeManager::onWiFiConnected(const ST_A20_SystemConfig_t& p_
 
     _startSntpWithServer(s_activeServerIdx);
 }
+
+inline void CL_TM10_TimeManager::onWiFiDisconnected() {
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        return;
+    }
+
+    s_wifiUp          = false;
+    s_waitingCallback = false;
+    s_lastRequestMs   = 0;
+    s_waitStartMs     = 0;
+    s_nextActionMs    = 0;
+
+    // ✅ 완화 정책:
+    // - Wi-Fi가 끊겨도 현재 시간이 sane이면 timeValid는 유지
+    // - 다만 “최근 동기화”는 시간이 지나면 false가 되도록 별도 플래그로 관리
+    s_timeValid = _isTimeSane();
+    _updateSyncedRecently(millis());
+
+    _stopSntp();
+
+    CL_D10_Logger::log(EN_L10_LOG_WARN,
+                       "[TM10] WiFi down -> SNTP stopped (timeValid=%d, syncedRecently=%d)",
+                       (int)s_timeValid,
+                       (int)s_timeSyncedRecently);
+}
+
+/*
 
 inline void CL_TM10_TimeManager::onWiFiDisconnected() {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
@@ -416,6 +497,8 @@ inline void CL_TM10_TimeManager::onWiFiDisconnected() {
 
     CL_D10_Logger::log(EN_L10_LOG_WARN, "[TM10] WiFi down -> SNTP stopped, time invalidated");
 }
+*/
+
 
 inline void CL_TM10_TimeManager::tick(const ST_A20_SystemConfig_t* p_sysOrNull) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
@@ -426,6 +509,10 @@ inline void CL_TM10_TimeManager::tick(const ST_A20_SystemConfig_t* p_sysOrNull) 
     }
 
     uint32_t v_now = millis();
+    
+    _updateSyncedRecently(v_now);
+    
+    
 
     // Wi-Fi 없으면 아무 것도 하지 않음
     if (!s_wifiUp) {
@@ -493,7 +580,98 @@ inline void CL_TM10_TimeManager::toJson(JsonDocument& p_doc) {
     v_time["lastSyncMs"]      = (uint32_t)s_lastSyncMs;
     v_time["lastRequestMs"]   = (uint32_t)s_lastRequestMs;
     v_time["waitingCallback"] = s_waitingCallback;
+    
+    v_time["syncedRecently"] = s_timeSyncedRecently;
+    
 }
+
+
+inline bool CL_TM10_TimeManager::isTimeValid() {
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        return false;
+    }
+    return s_timeValid;
+}
+
+inline bool CL_TM10_TimeManager::isTimeSyncedRecently(uint32_t p_windowMs) {
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        return false;
+    }
+
+    uint32_t v_win = (p_windowMs == 0) ? (uint32_t)G_TM10_SYNC_RECENT_WINDOW_MS : p_windowMs;
+
+    // lastSyncMs==0이면 최근 동기화 아님
+    if (s_lastSyncMs == 0) return false;
+
+    uint32_t v_now = millis();
+    if (v_now >= s_lastSyncMs && (v_now - s_lastSyncMs) <= v_win) return true;
+
+    return false;
+}
+
+inline bool CL_TM10_TimeManager::getLocalTime(struct tm& p_outTm) {
+    memset(&p_outTm, 0, sizeof(p_outTm));
+
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        return false;
+    }
+
+    // 운영 정책:
+    // - timeValid가 true라도, 실제 time이 깨졌을 수 있으므로 _isTimeSane() 재확인
+    // - 완화 정책: Wi-Fi down이어도 time이 sane면 허용
+    if (!_isTimeSane()) {
+        s_timeValid = false;
+        s_timeSyncedRecently = false;
+        return false;
+    }
+
+    time_t v_now = time(nullptr);
+    if (v_now <= 0) {
+        s_timeValid = false;
+        s_timeSyncedRecently = false;
+        return false;
+    }
+
+    // ✅ localtime_r NULL 방어
+    if (localtime_r(&v_now, &p_outTm) == nullptr) {
+        s_timeValid = false;
+        s_timeSyncedRecently = false;
+        return false;
+    }
+
+    // 여기는 “로컬 타임을 얻을 수 있었다”는 의미
+    // timeValid는 sane check 통과 시 true 유지
+    s_timeValid = true;
+
+    // 최근동기화 플래그는 tick/_updateSyncedRecently에서 갱신되지만,
+    // 호출 시점에서도 한번 보정해둔다.
+    _updateSyncedRecently(millis());
+
+    return true;
+}
+
+inline void CL_TM10_TimeManager::_updateSyncedRecently(uint32_t p_nowMs) {
+    // 최근 동기화 창 기준으로 flag 갱신
+    if (s_lastSyncMs == 0) {
+        s_timeSyncedRecently = false;
+        return;
+    }
+
+    uint32_t v_win = (uint32_t)G_TM10_SYNC_RECENT_WINDOW_MS;
+
+    if (p_nowMs >= s_lastSyncMs && (p_nowMs - s_lastSyncMs) <= v_win) {
+        s_timeSyncedRecently = true;
+    } else {
+        s_timeSyncedRecently = false;
+    }
+}
+
 
 // ------------------------------------------------------
 // TM10 호환 전역 함수
@@ -503,7 +681,14 @@ static inline void TM10_applyTimeConfigFromSystem(const ST_A20_SystemConfig_t& p
     CL_TM10_TimeManager::applyTimeConfig(p_sys);
 }
 
+/*
 static inline void TM10_requestTimeSync() {
     // "즉시 동기화 요청" (콜백 only, 블로킹X)
     CL_TM10_TimeManager::requestTimeSync();
+}
+*/
+
+
+static inline void TM10_requestTimeSync(bool p_force = false) {
+    CL_TM10_TimeManager::requestTimeSync(p_force);
 }

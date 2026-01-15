@@ -38,6 +38,7 @@
 #include "CT10_Control_042.h"
 #include <DHT.h>
 
+/*
 // --------------------------------------------------
 // 내부 유틸: localtime 유효성 체크 + thread-safe 변환
 // --------------------------------------------------
@@ -57,6 +58,8 @@ static bool CT10_localtimeSafe(time_t p_t, struct tm& p_outTm) {
 
 	return true;
 }
+*/
+
 
 // --------------------------------------------------
 // override remain sec
@@ -113,6 +116,93 @@ void CL_CT10_ControlManager::initAutoOffFromSchedule(const ST_A20_ScheduleItem_t
 // autoOff check
 // --------------------------------------------------
 bool CL_CT10_ControlManager::checkAutoOff() {
+    // --------------------------------------------------
+    // 기능:
+    //  - AutoOff 조건을 검사하여 “정지해야 하면 true”
+    //  - timer: millis 기반 경과 시간
+    //  - offTime: 로컬 시간(분) 기반
+    //  - offTemp: 온도 센서 기반
+    //
+    // TM10 정책:
+    //  - offTime은 TM10::getLocalTime() 성공 시에만 평가
+    //  - Wi-Fi down이어도 time이 sane이면 평가 가능(완화 정책)
+    //
+    // 운영 방어:
+    //  - offTime은 ">= 지정분" 정책을 쓰면, 이후 매 분마다 계속 참이 되어
+    //    제어 루프가 반복 정지될 수 있음
+    //  - 따라서 "하루 1회 트리거"로 방어 (yday 기반)
+    // --------------------------------------------------
+    if (!autoOffRt.timerArmed && !autoOffRt.offTimeEnabled && !autoOffRt.offTempEnabled) return false;
+
+    unsigned long v_nowMs = millis();
+
+    // --------------------------------------------------
+    // 1) timer (millis 기반)
+    // --------------------------------------------------
+    if (autoOffRt.timerArmed && autoOffRt.timerMinutes > 0) {
+        uint32_t v_elapsedMin = (v_nowMs - autoOffRt.timerStartMs) / 60000UL;
+        if (v_elapsedMin >= autoOffRt.timerMinutes) {
+            CL_D10_Logger::log(EN_L10_LOG_INFO,
+                               "[CT10] AutoOff(timer %lu min) triggered",
+                               (unsigned long)autoOffRt.timerMinutes);
+            return true;
+        }
+    }
+
+    // --------------------------------------------------
+    // 2) offTime (로컬 시간 기반)
+    // --------------------------------------------------
+    if (autoOffRt.offTimeEnabled) {
+        // 하루 1회 트리거 방어: 마지막 트리거의 yday 저장
+        // tm_yday: 0..365 (연도 내 일수)
+        static int16_t s_lastTriggeredYday = -1;
+
+        struct tm v_tm;
+        if (!CL_TM10_TimeManager::getLocalTime(v_tm)) {
+            // 시간 유효하지 않으면 offTime은 스킵(운영 안전)
+            CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] AutoOff(offTime) skipped: time invalid (TM10)");
+        } else {
+            uint16_t v_curMin = (uint16_t)v_tm.tm_hour * 60 + (uint16_t)v_tm.tm_min;
+            int16_t  v_yday   = (int16_t)v_tm.tm_yday;
+
+            // 이미 오늘(offTime) 트리거가 발생했다면 재트리거 방지
+            if (s_lastTriggeredYday == v_yday) {
+                // no-op
+            } else {
+                // 정책: 지정 시각 “도달 시부터” 트리거 (>=)
+                if (v_curMin >= autoOffRt.offTimeMinutes) {
+                    s_lastTriggeredYday = v_yday;
+
+                    CL_D10_Logger::log(EN_L10_LOG_INFO,
+                                       "[CT10] AutoOff(time %u) triggered (cur=%u yday=%d)",
+                                       (unsigned)autoOffRt.offTimeMinutes,
+                                       (unsigned)v_curMin,
+                                       (int)v_yday);
+                    return true;
+                }
+            }
+        }
+    }
+
+    // --------------------------------------------------
+    // 3) offTemp (센서 기반)
+    // --------------------------------------------------
+    if (autoOffRt.offTempEnabled) {
+        float v_curTemp = getCurrentTemperatureMock();
+        if (v_curTemp >= autoOffRt.offTemp) {
+            CL_D10_Logger::log(EN_L10_LOG_INFO,
+                               "[CT10] AutoOff(temp %.1fC >= %.1fC) triggered",
+                               v_curTemp,
+                               autoOffRt.offTemp);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/*
+bool CL_CT10_ControlManager::checkAutoOff() {
 	if (!autoOffRt.timerArmed && !autoOffRt.offTimeEnabled && !autoOffRt.offTempEnabled) return false;
 
 	unsigned long v_nowMs = millis();
@@ -168,6 +258,7 @@ bool CL_CT10_ControlManager::checkAutoOff() {
 
 	return false;
 }
+*/
 
 // --------------------------------------------------
 // helpers
@@ -353,6 +444,72 @@ float CL_CT10_ControlManager::getCurrentTemperatureMock() {
 //   endMin==1440 케이스는 same-day window로 자연스럽게 동작한다.
 // - 이 함수는 "겹침을 허용"하되, 우선순위로 1개만 선택한다.
 //   (저장 시 겹침 예외 처리/차단은 별도 save 검증에서 수행 권장)
+
+int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg) {
+    // --------------------------------------------------
+    // 기능:
+    //  - 현재 로컬 시간 기준으로 "활성 스케줄 1개"를 찾는다.
+    //  - 자정 넘어감(cross-midnight) 구간 지원
+    //  - 시간 미동기/유효하지 않으면 스케줄 동작을 멈춘다(운영 안전)
+    //
+    // TM10 정책:
+    //  - TM10::getLocalTime()이 성공해야만 시간 기반 제어 수행
+    //  - Wi-Fi down이어도 time이 sane이면 진행 가능(완화 정책)
+    // --------------------------------------------------
+    if (p_cfg.count == 0) return -1;
+
+    struct tm v_tm;
+    if (!CL_TM10_TimeManager::getLocalTime(v_tm)) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] findActiveScheduleIndex: time invalid (TM10)");
+        return -1;
+    }
+
+    // Arduino tm_wday: 0=Sun..6=Sat
+    // Config days: [0]=Mon..[6]=Sun (기존 정책 유지)
+    uint8_t v_wday = (v_tm.tm_wday == 0) ? 6 : (uint8_t)(v_tm.tm_wday - 1);
+
+    uint16_t v_curMin = (uint16_t)v_tm.tm_hour * 60 + (uint16_t)v_tm.tm_min;
+
+    // --------------------------------------------------
+    // 운영 정책(우선순위):
+    //  - “겹침 없음”이 C10에서 보장된다는 전제면, 첫 매치 반환 OK
+    //  - 향후 “schNo 큰 것 우선” 정책이 도입되면:
+    //      1) 매치 후보 중 schNo 최댓값 선택
+    //      2) 또는 저장 시 겹침을 막아 단일 매치만 허용
+    //
+    // 지금 구현은 "첫 매치 반환" (겹침 금지 전제)
+    // --------------------------------------------------
+    for (int v_i = 0; v_i < (int)p_cfg.count; v_i++) {
+        const ST_A20_ScheduleItem_t& v_s = p_cfg.items[v_i];
+
+        if (!v_s.enabled) continue;
+
+        // days 체크
+        if (v_wday >= 7 || !v_s.period.days[v_wday]) continue;
+
+        uint16_t v_startMin = parseHHMMtoMin(v_s.period.startTime);
+        uint16_t v_endMin   = parseHHMMtoMin(v_s.period.endTime);
+
+        if (v_startMin == v_endMin) {
+            // 정책: start==end 이면 비활성(항상 OFF 취급)
+            continue;
+        }
+
+        if (v_startMin < v_endMin) {
+            // same-day window
+            if (v_curMin >= v_startMin && v_curMin < v_endMin) return v_i;
+        } else {
+            // cross-midnight window
+            // 예: 23:00~07:00
+            if (v_curMin >= v_startMin || v_curMin < v_endMin) return v_i;
+        }
+    }
+
+    return -1;
+}
+
+
+/*
 int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg) {
 	if (p_cfg.count == 0) return -1;
 
@@ -443,7 +600,7 @@ int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t
 
 	return v_bestIdx;
 }
-
+*/
 
 // --------------------------------------------------
 // motion check

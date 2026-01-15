@@ -171,7 +171,9 @@ class CL_TM10_TimeManager {
 // TM10 호환/유틸 전역 함수 (라우트/타 모듈에서 직접 호출)
 // ------------------------------------------------------
 static inline void TM10_applyTimeConfigFromSystem(const ST_A20_SystemConfig_t& p_sys);
-static inline void TM10_requestTimeSync();
+
+static inline void TM10_requestTimeSync(bool p_force = false);
+//static inline void TM10_requestTimeSync();
 
 // // ======================================================
 // // Implementation (header-only)

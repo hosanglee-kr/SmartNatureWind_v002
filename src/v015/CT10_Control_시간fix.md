@@ -364,3 +364,130 @@ AutoOff offTime을
 
 
 
+
+===
+
+'''
+
+// --------------------------------------------------
+// find active schedule (FULL, with cross-midnight + day rule comments)
+//  - 목적: "현재 시각"에 활성화되어야 하는 schedule의 index를 반환
+//  - 핵심: 자정 넘어감(start > end) 구간을 "요일(days[])"과 함께 올바르게 판정
+//
+// [요일 매핑 규칙(현 코드 기준)]
+//  - Arduino tm_wday: 0=Sun..6=Sat
+//  - Config(period.days[]): 0=Mon..6=Sun  (가정/기존 코드 유지)
+//    => 변환: today = (tm_wday==0)?6:(tm_wday-1)
+//
+// [자정 넘어감 처리 규칙(중요)]
+//  - start < end  : 같은 날 구간  (예: 08:00~12:00)
+//    -> "오늘 요일"만 days[] 체크
+//  - start > end  : 자정 넘어감 구간(overnight) (예: 23:00~07:00)
+//    -> 두 구간으로 분리하여 요일을 다르게 체크해야 함
+//       A) [start .. 24:00)  : '오늘' 시작분 이상이면 "오늘 요일" days[] 체크
+//       B) [00:00 .. end)    : '오늘' 종료분 미만이면 "어제 요일" days[] 체크
+//    이유: 23:00~07:00 같은 스케줄은 "전날 밤에 시작"하여 "다음날 새벽"까지 이어지므로
+//         새벽 구간(00:00~end)은 schedule의 시작 요일(=어제) 기준으로 활성화되어야 함.
+//
+// [start==end 정책]
+//  - start==end 이면 "항상 OFF"로 취급(현 정책 유지)
+//    (필요 시 24시간 ON 정책으로 변경 가능)
+//
+// 반환:
+//  - 활성 schedule index (0..count-1)
+//  - 없으면 -1
+// --------------------------------------------------
+int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg) {
+    // count 0이면 활성 스케줄 없음
+    if (p_cfg.count == 0) return -1;
+
+    // 현재 시각 로드
+    time_t v_now = time(nullptr);
+    struct tm v_tm;
+    if (!CT10_localtimeSafe(v_now, v_tm)) {
+        // 시간 미동기(부팅 직후/NTP 실패 등)면 스케줄 판정 불가 -> OFF 처리
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] findActiveScheduleIndex: time not synced");
+        return -1;
+    }
+
+    // 요일 변환(Arduino -> Config)
+    //  - Arduino: 0=Sun..6=Sat
+    //  - Config : 0=Mon..6=Sun
+    uint8_t v_wdayToday = (v_tm.tm_wday == 0) ? 6 : (uint8_t)(v_tm.tm_wday - 1);
+
+    // 어제 요일(0=Mon..6=Sun 기준)
+    //  - Monday(0)의 어제는 Sunday(6)
+    uint8_t v_wdayYday = (v_wdayToday == 0) ? 6 : (uint8_t)(v_wdayToday - 1);
+
+    // 현재 분(0..1439)
+    uint16_t v_curMin = (uint16_t)v_tm.tm_hour * 60 + (uint16_t)v_tm.tm_min;
+
+    // 스케줄 목록을 순회하며 "현재 활성"을 찾음
+    //  - 현재 구현은 "첫 번째로 매칭되는 스케줄"을 반환
+    //  - 우선순위가 필요하면 schNo 정렬/우선순위 정책을 여기서 적용하면 됨
+    for (int v_i = 0; v_i < (int)p_cfg.count; v_i++) {
+        const ST_A20_ScheduleItem_t& v_s = p_cfg.items[v_i];
+
+        // 비활성 스케줄은 제외
+        if (!v_s.enabled) continue;
+
+        // 시작/종료 시간 파싱("HH:MM" -> 분)
+        //  - 파싱 실패 시 0 반환 가능(현 parse 정책), 운영에서 시간 포맷 검증 권장
+        uint16_t v_startMin = parseHHMMtoMin(v_s.period.startTime);
+        uint16_t v_endMin   = parseHHMMtoMin(v_s.period.endTime);
+
+        // start==end 정책: 항상 OFF
+        if (v_startMin == v_endMin) {
+            continue;
+        }
+
+        // ------------------------------------------
+        // 1) 같은 날 구간(start < end)
+        //    예) 08:00~12:00
+        //    - 오늘 요일만 days[] 체크
+        //    - start <= now < end 이면 활성
+        // ------------------------------------------
+        if (v_startMin < v_endMin) {
+            // days[] 범위/활성 체크
+            if (v_wdayToday >= 7 || !v_s.period.days[v_wdayToday]) continue;
+
+            if (v_curMin >= v_startMin && v_curMin < v_endMin) {
+                return v_i;
+            }
+            continue;
+        }
+
+        // ------------------------------------------
+        // 2) 자정 넘어감 구간(start > end)
+        //    예) 23:00~07:00
+        //    - 두 구간으로 분리
+        //
+        //    A) [start .. 24:00)
+        //       - now >= start 이면 "오늘 요일"로 체크
+        //
+        //    B) [00:00 .. end)
+        //       - now < end 이면 "어제 요일"로 체크
+        //
+        //    (주의) 새벽 구간에서는 today가 바뀌기 때문에
+        //           days[]를 "어제"로 봐야 전날 시작 스케줄이 이어짐
+        // ------------------------------------------
+        // A) 밤 구간: now >= start
+        if (v_curMin >= v_startMin) {
+            if (v_wdayToday < 7 && v_s.period.days[v_wdayToday]) {
+                return v_i;
+            }
+        }
+
+        // B) 새벽 구간: now < end
+        if (v_curMin < v_endMin) {
+            if (v_wdayYday < 7 && v_s.period.days[v_wdayYday]) {
+                return v_i;
+            }
+        }
+    }
+
+    // 어떤 스케줄도 활성 아님
+    return -1;
+}
+
+'''

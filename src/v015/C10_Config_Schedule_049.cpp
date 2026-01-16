@@ -930,7 +930,7 @@ bool CL_C10_ConfigManager::loadSchedules(ST_A20_SchedulesRoot_t& p_cfg) {
 //    - p_failOnOverlap=false -> warning만 남기고 저장은 진행
 //  - 저장 시 schNo desc 정렬 저장(결정성/가독성/향후 정책 변경 대비)
 // =====================================================
-bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg, bool p_failOnOverlap = false) {
+bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg, bool p_failOnOverlap) {
     CL_A40_MutexGuard_Semaphore v_guard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
@@ -994,7 +994,7 @@ bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg, bo
     for (uint8_t v_i = 0; v_i < v_maxSch; v_i++) {
         const ST_A20_ScheduleItem_t& s = v_sorted.items[v_i];
 
-        JsonObject js = v_jsSchedules.add().to<JsonObject>();
+        JsonObject js = v_jsSchedules.add<JsonObject>();
 
         js["schId"]          = s.schId;
         js["schNo"]          = s.schNo;
@@ -1019,7 +1019,7 @@ bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg, bo
         for (uint8_t v_k = 0; v_k < v_maxSeg; v_k++) {
             const ST_A20_ScheduleSegment_t& sg = s.segments[v_k];
 
-            JsonObject jseg = v_jsSegs.add().to<JsonObject>();
+            JsonObject jseg = v_jsSegs.add<JsonObject>();
 
             jseg["segId"]      = sg.segId;
             jseg["segNo"]      = sg.segNo;

@@ -19,21 +19,7 @@
 // ======================================================
 
 
-// --------------------------------------------------
-// [CT10] 내부 Decision 구조체 (cpp 내부 전용)
-// --------------------------------------------------
-typedef struct {
-	EN_CT10_state_t		 nextState;
-	EN_CT10_reason_t	 reason;
 
-	EN_CT10_run_source_t nextRunSource;
-	int8_t				 nextScheduleIndex;
-	int8_t				 nextProfileIndex;
-
-	bool				 wantSimStop;     // 상태 전환 시 sim.stop 필요 여부(정책)
-	bool				 wantResetSegRt;  // segment runtime reset 필요 여부(정책)
-	bool				 wantResetAutoOff;// autoOffRt reset/init 필요 여부(정책)
-} ST_CT10_Decision_t;
 
 // --------------------------------------------------
 // [CT10] decideRunSource()

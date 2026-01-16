@@ -31,17 +31,17 @@
  * ------------------------------------------------------
  */
 
-#include "CT10_Control_041.h"
+#include "CT10_Control_042.h"
 #include "M10_MotionLogic_040.h"
 #include "W10_Web_051.h"
-#include "WF10_WiFiManager_040.h"
+#include "WF10_WiFiManager_043.h"
 
 // ------------------------------------------------------
 // 정적 멤버 정의
 // ------------------------------------------------------
 AsyncWebServer*			CL_W10_WebAPI::s_server	 = nullptr;
 CL_CT10_ControlManager* CL_W10_WebAPI::s_control = nullptr;
-WiFiMulti*				CL_W10_WebAPI::s_multi	 = nullptr;
+// WiFiMulti*				CL_W10_WebAPI::s_multi	 = nullptr;
 File					CL_W10_WebAPI::s_upFile;
 
 AsyncWebSocket			s_wsLogs(W10_Const::WS_API_LOG);
@@ -66,10 +66,11 @@ AsyncWebSocket*			CL_W10_WebAPI::s_wsServerSummary = &s_wsSummary;
 // --------------------------------------------------
 // 초기화
 // --------------------------------------------------
-void CL_W10_WebAPI::begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_control, WiFiMulti& p_multi) {
+void CL_W10_WebAPI::begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_control) {
+// void CL_W10_WebAPI::begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_control, WiFiMulti& p_multi) {
 	s_server  = &p_server;
 	s_control = &p_control;
-	s_multi	  = &p_multi;
+	// s_multi	  = &p_multi;
 
 	// 1. 시스템 정보 및 상태
 	routeVersion();
@@ -265,11 +266,11 @@ void CL_W10_WebAPI::routeWindProfile() {
 		}
 
 		JsonDocument			 v_doc;
-		ST_A20_WindProfileDict_t v_dict;
+		ST_A20_WindDict_t v_dict;
 		memset(&v_dict, 0, sizeof(v_dict));
 
-		if (CL_C10_ConfigManager::loadWindProfileDict(v_dict)) {
-			CL_C10_ConfigManager::toJson_WindProfileDict(v_dict, v_doc);
+		if (CL_C10_ConfigManager::loadWindDict(v_dict)) {
+			CL_C10_ConfigManager::toJson_WindDict(v_dict, v_doc);
 			sendJson(p_request, v_doc);
 		} else {
 			p_request->send(500, "application/json", "{\"error\":\"load failed\"}");
@@ -1163,9 +1164,17 @@ void CL_W10_WebAPI::routeTimeSet() {
             if (v_changed && g_A20_config_root.system) {
                 CL_C10_ConfigManager::saveDirtyConfigs();
 
-                WF10_applyTimeConfigFromSystem(*g_A20_config_root.system);
+				TM10_applyTimeConfigFromSystem(*g_A20_config_root.system);   // TZ/NTP 서버/주기 런타임 반영 (비블로킹)
+                TM10_requestTimeSync();                                     // "즉시 동기화 요청"만 큐/플래그로 요청 (콜백/상태머신에서 처리)
+
+                v_res["status"] = "applied";
+                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Time config updated and applied (TM10).");
+
+                /*
+				WF10_applyTimeConfigFromSystem(*g_A20_config_root.system);
                 v_res["status"] = "applied";
                 CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Time config updated and applied via TimeManager.");
+				*/
             } else {
                 v_res["status"] = "no_change";
             }

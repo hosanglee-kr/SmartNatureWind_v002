@@ -5,7 +5,7 @@
     "profiles": [
       {
         "profileId": 1,
-        "profileNo": 1,
+        "profileNo": 10,
         "name": "수면모드",
         "enabled": true,
         "repeatSegments": true,
@@ -52,7 +52,7 @@
       },
       {
         "profileId": 2,
-        "profileNo": 2,
+        "profileNo": 20,
         "name": "집중모드",
         "enabled": true,
         "repeatSegments": true,
@@ -81,7 +81,7 @@
       },
       {
         "profileId": 3,
-        "profileNo": 3,
+        "profileNo": 30,
         "name": "휴식모드",
         "enabled": true,
         "repeatSegments": true,
@@ -110,7 +110,7 @@
       },
       {
         "profileId": 4,
-        "profileNo": 4,
+        "profileNo": 40,
         "name": "환기모드",
         "enabled": true,
         "repeatSegments": false,
@@ -139,7 +139,7 @@
       },
       {
         "profileId": 5,
-        "profileNo": 5,
+        "profileNo": 50,
         "name": "활동모드",
         "enabled": true,
         "repeatSegments": true,
@@ -168,7 +168,7 @@
       },
       {
         "profileId": 6,
-        "profileNo": 6,
+        "profileNo": 60,
         "name": "사용자 정의",
         "enabled": false,
         "repeatSegments": false,

@@ -41,7 +41,7 @@
 #include <Arduino.h>
 #include <string.h>
 
-#include "A20_Const_041.h"
+#include "A20_Const_044.h"
 #include "D10_Logger_040.h"
 
 // ------------------------------------------------------
@@ -65,7 +65,7 @@ class CL_P10_PWM {
   public:
 	CL_P10_PWM() {
 		memset(&_state, 0, sizeof(_state));
-		_state.pin			  = -1;
+		_state.pin			  = 0;
 		_state.channel		  = 0;
 		_state.freq			  = 0;
 		_state.resolutionBits = 0;
@@ -90,7 +90,7 @@ class CL_P10_PWM {
 		_state.initialized	  = false;
 
 		if (_state.pin < 0) {
-			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[P10] invalid fan pin=%d", (int)_state.pin);
+			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[P10] invalid fan pin=%d", (int16_t)_state.pin);
 			return;
 		}
 
@@ -111,7 +111,7 @@ class CL_P10_PWM {
 		_setRawDuty(0);
 		_state.initialized = true;
 
-		CL_D10_Logger::log(EN_L10_LOG_INFO, "[P10] begin pin=%d ch=%u freq=%lu res=%u", (int)_state.pin, (unsigned)_state.channel, (unsigned long)_state.freq, (unsigned)_state.resolutionBits);
+		CL_D10_Logger::log(EN_L10_LOG_INFO, "[P10] begin pin=%d ch=%u freq=%lu res=%u", (int16_t)_state.pin, (unsigned)_state.channel, (unsigned long)_state.freq, (unsigned)_state.resolutionBits);
 	}
 
 	// ==================================================
@@ -138,7 +138,7 @@ class CL_P10_PWM {
 
 	float applyFanConfigCurve(const ST_A20_FanConfig_t* p_cfg, float p_req01, float p_minFan01, float p_maxFan01) {
 		// 0~1 범위 방어
-		float v_req = A20_clampf(p_req01, 0.0f, 1.0f);
+		float v_req = A40_ComFunc::clampVal<float>(p_req01, 0.0f, 1.0f);
 
 		// 완전 정지 요청인 경우는 그냥 0으로 내보냄
 		if (v_req <= 0.0f) {
@@ -146,8 +146,8 @@ class CL_P10_PWM {
 		}
 
 		// ResolvedWind min/max 먼저 정리
-		float v_min = A20_clampf(p_minFan01, 0.0f, 1.0f);
-		float v_max = A20_clampf(p_maxFan01, 0.0f, 1.0f);
+		float v_min = A40_ComFunc::clampVal<float>(p_minFan01, 0.0f, 1.0f);
+		float v_max = A40_ComFunc::clampVal<float>(p_maxFan01, 0.0f, 1.0f);
 		if (v_max < v_min) {
 			v_max = v_min;
 		}
@@ -163,10 +163,10 @@ class CL_P10_PWM {
 		}
 
 		// fanConfig 값을 0~1로 정규화
-		float s	 = A20_clampf(p_cfg->startPercentMin / 100.0f, 0.0f, 1.0f);
-		float c1 = A20_clampf(p_cfg->comfortPercentMin / 100.0f, 0.0f, 1.0f);
-		float c2 = A20_clampf(p_cfg->comfortPercentMax / 100.0f, 0.0f, 1.0f);
-		float h	 = A20_clampf(p_cfg->hardPercentMax / 100.0f, 0.0f, 1.0f);
+		float s	 = A40_ComFunc::clampVal<float>(p_cfg->startPercentMin / 100.0f, 0.0f, 1.0f);
+		float c1 = A40_ComFunc::clampVal<float>(p_cfg->comfortPercentMin / 100.0f, 0.0f, 1.0f);
+		float c2 = A40_ComFunc::clampVal<float>(p_cfg->comfortPercentMax / 100.0f, 0.0f, 1.0f);
+		float h	 = A40_ComFunc::clampVal<float>(p_cfg->hardPercentMax / 100.0f, 0.0f, 1.0f);
 
 		// 순서 보정: s ≤ c1 ≤ c2 ≤ h 보장
 		if (c1 < s)

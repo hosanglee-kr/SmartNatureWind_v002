@@ -92,7 +92,7 @@
 
   // preset code → 한글 표시용 (fallback)
   const presetNameMap = {
-    OFF: "고정풍",
+    //OFF: "고정풍",
     COUNTRY: "들판",
     MEDITERRANEAN: "지중해",
     OCEAN: "바다",
@@ -180,7 +180,7 @@
 
   // ======================= 4. 데이터 로드 =======================
 
-  async function loadWindProfileDict() {
+  async function loadWindDict() {
     const data = await fetchApi("/api/v001/windProfile", "GET", null, "Wind Profile 사전 로드");
 
     let root = data || {};
@@ -325,7 +325,7 @@
     nextSegmentId = 1;
 
     // preset/style select는 모달 열릴 때도 한 번 채움
-    // (windProfileDict 로드가 끝난 이후에 열릴 수도 있기 때문)
+    // (WindDict 로드가 끝난 이후에 열릴 수도 있기 때문)
     // → 세그먼트 행 생성시마다 options 세팅
 
     if (profile) {
@@ -815,7 +815,7 @@
 
   document.addEventListener("DOMContentLoaded", async () => {
     bindEvents();
-    await loadWindProfileDict();
+    await loadWindDict();
     await loadUserProfiles();
     checkConfigDirtyState();
   });

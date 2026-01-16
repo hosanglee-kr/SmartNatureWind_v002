@@ -83,7 +83,7 @@
 
 	// 프리셋 한글 매핑 (백엔드 code/name과 무관하게 표시용)
 	const presetNameMap = {
-		OFF           : "고정풍속",
+	//	OFF           : "고정풍속",
 		COUNTRY       : "들판",
 		MEDITERRANEAN : "지중해",
 		OCEAN         : "바다",
@@ -405,6 +405,8 @@
 
 	const chartOptionsBase = {
 		animation: false,
+		parsing: false,    // 실시간 데이터 성능 최적화
+		normalized: true,
 		plugins: {
 			legend: { position: "bottom" },
 			zoom: {
@@ -416,9 +418,82 @@
 			}
 		},
 		scales: {
-			x: { type: "time", time: { unit: "second" } }
+			x: {
+				type: "time",
+				time: {
+					unit: "second",
+					displayFormats: {
+						second: 'HH:mm:ss'
+					}
+				},
+				// ✅ Luxon 어댑터 사용 시 명시적 설정
+				adapters: {
+					date: {
+						locale: 'ko-KR'
+					}
+				},
+				ticks: {
+					autoSkip: true,
+					maxRotation: 0
+				}
+			}
 		}
 	};
+
+	// ... 데이터 변환 부분 (processChartData 내부)
+	const toXY = (arr, key) =>
+		arr.map((e) => ({
+			// 숫자로 된 타임스탬프를 전달하는 것이 가장 안전합니다.
+			x: typeof e.t === 'number' ? e.t : new Date(e.t).getTime(),
+			y: e[key]
+		}));
+
+	// const chartOptionsBase = {
+	// 	animation: false,
+	// 	// [성능 최적화] 실시간 차트이므로 파싱 억제
+	// 	parsing: false,
+	// 	normalized: true,
+	// 	plugins: {
+	// 		legend: { position: "bottom" },
+	// 		zoom: {
+	// 			zoom: {
+	// 				wheel: { enabled: true },
+	// 				mode: "x"
+	// 			},
+	// 			pan: { enabled: true, mode: "x" }
+	// 		}
+	// 	},
+	// 	scales: {
+	// 		x: {
+	// 			type: "time",
+	// 			time: {
+	// 				unit: "second",
+	// 				displayFormats: { second: 'HH:mm:ss' }
+	// 			},
+	// 			// ✅ [중요] 어댑터 명시적 선언 (이 부분이 없으면 해당 에러 발생 가능성 높음)
+	// 			adapters: {
+	// 				date: {}
+	// 			}
+	// 		}
+	// 	}
+	// };
+
+	// const chartOptionsBase = {
+	// 	animation: false,
+	// 	plugins: {
+	// 		legend: { position: "bottom" },
+	// 		zoom: {
+	// 			zoom: {
+	// 				wheel: { enabled: true },
+	// 				mode: "x"
+	// 			},
+	// 			pan: { enabled: true, mode: "x" }
+	// 		}
+	// 	},
+	// 	scales: {
+	// 		x: { type: "time", time: { unit: "second" } }
+	// 	}
+	// };
 
 	// 캔버스 참조
 	const ctxWind          = $("#chartWind");
@@ -560,8 +635,17 @@
 			return;
 		}
 
+		// ✅ [수정] new Date(e.t)가 유효한지 확인하고 숫자(ms)로 변환하여 전달
+    	// Chart.js 4.x + date-fns 어댑터는 Timestamp(number)를 가장 안정적으로 처리합니다.
 		const toXY = (arr, key) =>
-			arr.map((e) => ({ x: new Date(e.t), y: e[key] }));
+			arr.map((e) => ({
+				x: typeof e.t === 'number' ? e.t : new Date(e.t).getTime(),
+				y: e[key]
+			}));
+
+
+		// const toXY = (arr, key) =>
+		// 	arr.map((e) => ({ x: new Date(e.t), y: e[key] }));
 
 		// Wind / PWM
 		if (chartWind) {

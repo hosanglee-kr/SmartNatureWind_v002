@@ -72,6 +72,57 @@ typedef enum : uint8_t {
 	EN_CT10_RUN_USER_PROFILE = 2
 } EN_CT10_run_source_t;
 
+
+// ------------------------------------------------------
+// [CT10] 상태/이유 Enum (최소)
+// ------------------------------------------------------
+typedef enum : uint8_t {
+	EN_CT10_STATE_IDLE			 = 0,
+	EN_CT10_STATE_OVERRIDE		 = 1,
+	EN_CT10_STATE_PROFILE_RUN	 = 2,
+	EN_CT10_STATE_SCHEDULE_RUN	 = 3,
+	EN_CT10_STATE_MOTION_BLOCKED = 4,
+	EN_CT10_STATE_AUTOOFF_STOPPED= 5,
+	EN_CT10_STATE_TIME_INVALID	 = 6
+} EN_CT10_state_t;
+
+typedef enum : uint8_t {
+	EN_CT10_REASON_NONE				= 0,
+	EN_CT10_REASON_OVERRIDE_ACTIVE	= 1,
+	EN_CT10_REASON_PROFILE_MODE		= 2,
+	EN_CT10_REASON_USER_PROFILE_ACTIVE= 3,
+	EN_CT10_REASON_SCHEDULE_ACTIVE	= 4,
+	EN_CT10_REASON_NO_ACTIVE_SCHEDULE= 5,
+	EN_CT10_REASON_NO_SCHEDULES		= 6,
+	EN_CT10_REASON_TIME_NOT_VALID	= 7,
+	EN_CT10_REASON_MOTION_NO_PRESENCE= 8,
+	EN_CT10_REASON_AUTOOFF_TIMER	= 9,
+	EN_CT10_REASON_AUTOOFF_TIME		= 10,
+	EN_CT10_REASON_AUTOOFF_TEMP		= 11
+} EN_CT10_reason_t;
+
+// ------------------------------------------------------
+// [CT10] 런 컨텍스트(웹/디버그/SSOT)
+// ------------------------------------------------------
+typedef struct {
+	EN_CT10_state_t		state;
+	EN_CT10_reason_t	reason;
+
+	uint32_t			lastDecisionMs;
+	uint32_t			lastStateChangeMs;
+
+	// 선택된 대상 snapshot
+	uint8_t				activeSchId;
+	uint16_t			activeSchNo;
+
+	uint8_t				activeSegId;
+	uint16_t			activeSegNo;
+
+	uint8_t				activeProfileNo;
+} ST_CT10_RunContext_t;
+
+
+
 // Override 제어 상태 (ResolvedWind 기반)
 typedef struct {
 	bool				  active;			// Override 활성 여부
@@ -227,6 +278,9 @@ class CL_CT10_ControlManager {
 	bool _dirtyMetrics = false;
 	bool _dirtyChart   = false;
 	bool _dirtySummary = false;
+	
+	
+	ST_CT10_RunContext_t runCtx;
 
   private:
 	// --------------------------------------------------
@@ -248,7 +302,10 @@ class CL_CT10_ControlManager {
 
 	void initAutoOffFromUserProfile(const ST_A20_UserProfileItem_t& p_up);
 	void initAutoOffFromSchedule(const ST_A20_ScheduleItem_t& p_s);
-	bool checkAutoOff();
+	
+	void onAutoOffTriggered(EN_CT10_reason_t p_reason); 
+	bool checkAutoOff(EN_CT10_reason_t* p_reasonOrNull = nullptr);
+	// bool checkAutoOff();
 
 	// static uint16_t parseHHMMtoMin(const char* p_time);
 	static float getCurrentTemperatureMock();
@@ -262,8 +319,16 @@ class CL_CT10_ControlManager {
 	// 로그 개선용: preset/style 이름 조회
 	const char* findPresetNameByCode(const char* p_code) const;
 	const char* findStyleNameByCode(const char* p_code) const;
+	
+private:
+	// decide/apply
+	ST_CT10_Decision_t decideRunSource();          // (cpp에 ST_CT10_Decision_t가 있다면 선언 위치 조정 필요)
+	void applyDecision(const ST_CT10_Decision_t& p_d);
+	
+	
 
   private:
 	// 생성자 숨김
 	CL_CT10_ControlManager() = default;
+	
 };

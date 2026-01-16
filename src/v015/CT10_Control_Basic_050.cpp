@@ -113,6 +113,118 @@ void CL_CT10_ControlManager::initAutoOffFromSchedule(const ST_A20_ScheduleItem_t
 }
 
 // --------------------------------------------------
+// [CT10] AutoOff 발생 처리(이벤트성 상태 전환)
+// - checkAutoOff()에서 원인(reason)을 받아 AUTOOFF_STOPPED로 상태 전환
+// - 최소 정책: AutoOff 발생 시 현재 실행 소스(runSource)를 종료(=NONE)로 만든다.
+// --------------------------------------------------
+void CL_CT10_ControlManager::onAutoOffTriggered(EN_CT10_reason_t p_reason) {
+	// 1) 즉시 정지
+	if (sim.active) sim.stop();
+
+	// 2) 실행 소스 종료 (운영 정책)
+	runSource		 = EN_CT10_RUN_NONE;
+	curScheduleIndex	= -1;
+	curProfileIndex		= -1;
+
+	// 3) 런타임 리셋(다음 시작 때 깨끗하게)
+	scheduleSegRt.index = -1;
+	profileSegRt.index  = -1;
+	memset(&autoOffRt, 0, sizeof(autoOffRt));
+
+	// 4) runCtx 이벤트성 상태 전환
+	runCtx.state			  = EN_CT10_STATE_AUTOOFF_STOPPED;
+	runCtx.reason			  = p_reason;
+	runCtx.lastDecisionMs	  = millis();
+	runCtx.lastStateChangeMs  = runCtx.lastDecisionMs;
+
+	// snapshot도 비움(현재는 멈춘 상태)
+	runCtx.activeSchId = 0;
+	runCtx.activeSchNo = 0;
+	runCtx.activeSegId = 0;
+	runCtx.activeSegNo = 0;
+	runCtx.activeProfileNo = 0;
+
+	// 5) Dirty
+	markDirty("state");
+	markDirty("metrics");
+	markDirty("summary");
+	// chart는 stop 자체가 UI에 필요하면 올려도 되는데, 기존 정책(적용 시점만) 유지하려면 생략 가능
+	// markDirty("chart");
+
+	CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff STOPPED (reason=%u)", (unsigned)p_reason);
+}
+
+
+// --------------------------------------------------
+// autoOff check (Reason 반환 버전)
+// - true 반환 시 p_reasonOrNull에 AUTOOFF_* reason 세팅
+// - 최소 패치: timer/offTime/offTemp 중 "최초로 만족한 조건"을 원인으로 반환
+// --------------------------------------------------
+bool CL_CT10_ControlManager::checkAutoOff(EN_CT10_reason_t* p_reasonOrNull /*=nullptr*/) {
+	if (p_reasonOrNull) {
+		*p_reasonOrNull = EN_CT10_REASON_NONE;
+	}
+
+	if (!autoOffRt.timerArmed && !autoOffRt.offTimeEnabled && !autoOffRt.offTempEnabled) return false;
+
+	unsigned long v_nowMs = millis();
+
+	// 1) timer
+	if (autoOffRt.timerArmed && autoOffRt.timerMinutes > 0) {
+		uint32_t v_elapsedMin = (v_nowMs - autoOffRt.timerStartMs) / 60000UL;
+		if (v_elapsedMin >= autoOffRt.timerMinutes) {
+			if (p_reasonOrNull) *p_reasonOrNull = EN_CT10_REASON_AUTOOFF_TIMER;
+			CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff(timer %lu min) triggered",
+			                   (unsigned long)autoOffRt.timerMinutes);
+			return true;
+		}
+	}
+
+	// 2) offTime (TM10 기반으로 이미 리팩토링했다는 전제)
+	// - “현재 분 >= offTimeMinutes”면 트리거
+	// - 동일 분 재트리거 방지 (기존 정책 유지)
+	if (autoOffRt.offTimeEnabled) {
+		static int32_t s_lastTriggeredMinute = -1;
+
+		struct tm v_tm;
+		memset(&v_tm, 0, sizeof(v_tm));
+
+		// ✅ CT10_localtimeSafe 제거 방향: TM10 기준으로만 분기
+		if (!CL_TM10_TimeManager::getLocalTime(v_tm)) {
+			CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] AutoOff(offTime) skipped: local time not available");
+		} else {
+			uint16_t v_curMin = (uint16_t)v_tm.tm_hour * 60 + (uint16_t)v_tm.tm_min;
+
+			if ((int32_t)v_curMin != s_lastTriggeredMinute) {
+				if (v_curMin >= autoOffRt.offTimeMinutes) {
+					s_lastTriggeredMinute = (int32_t)v_curMin;
+					if (p_reasonOrNull) *p_reasonOrNull = EN_CT10_REASON_AUTOOFF_TIME;
+
+					CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff(time %u) triggered",
+					                   (unsigned)autoOffRt.offTimeMinutes);
+					return true;
+				}
+			}
+		}
+	}
+
+	// 3) offTemp
+	if (autoOffRt.offTempEnabled) {
+		float v_curTemp = getCurrentTemperatureMock();
+		if (v_curTemp >= autoOffRt.offTemp) {
+			if (p_reasonOrNull) *p_reasonOrNull = EN_CT10_REASON_AUTOOFF_TEMP;
+			CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff(temp %.1fC >= %.1fC) triggered",
+			                   v_curTemp, autoOffRt.offTemp);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
+/*
+// --------------------------------------------------
 // autoOff check
 // --------------------------------------------------
 bool CL_CT10_ControlManager::checkAutoOff() {
@@ -200,6 +312,8 @@ bool CL_CT10_ControlManager::checkAutoOff() {
 
     return false;
 }
+
+*/
 
 /*
 bool CL_CT10_ControlManager::checkAutoOff() {

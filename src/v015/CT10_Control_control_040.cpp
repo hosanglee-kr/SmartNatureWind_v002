@@ -253,6 +253,10 @@ void CL_CT10_ControlManager::tickLoop() {
 	if (v_nowMs - lastTickMs < S_TICK_MIN_INTERVAL_MS)
 		return;
 	lastTickMs = v_nowMs;
+	
+	
+	ST_CT10_Decision_t v_d = decideRunSource();
+    applyDecision(v_d);
 
 	// 1) Override
 	if (tickOverride()) {
@@ -342,6 +346,41 @@ bool CL_CT10_ControlManager::tickOverride() {
 	return true;
 }
 
+
+bool CL_CT10_ControlManager::tickUserProfile() {
+	if (!g_A20_config_root.userProfiles) return false;
+	if (curProfileIndex < 0) return false;
+
+	ST_A20_UserProfilesRoot_t& v_cfg = *g_A20_config_root.userProfiles;
+	if ((uint8_t)curProfileIndex >= v_cfg.count) return false;
+
+	ST_A20_UserProfileItem_t& v_profile = v_cfg.items[(uint8_t)curProfileIndex];
+	if (!v_profile.enabled || v_profile.segCount == 0) return false;
+
+	// ✅ AutoOff 이벤트성 상태 전환(최소 패치)
+	EN_CT10_reason_t v_reason = EN_CT10_REASON_NONE;
+	if (checkAutoOff(&v_reason)) {
+		onAutoOffTriggered(v_reason);
+		return true; // tickLoop에서 sim.tick은 호출하지 않도록(이미 stop)
+	}
+
+	if (isMotionBlocked(v_profile.motion)) {
+		sim.stop();
+		// (선택) 여기서도 MOTION_BLOCKED 상태/이유를 이벤트성으로 넣고 싶으면 추후 확장
+		return true;
+	}
+
+	return tickSegmentSequence(
+		v_profile.repeatSegments,
+		v_profile.repeatCount,
+		v_profile.segments,
+		v_profile.segCount,
+		profileSegRt
+	);
+}
+
+
+/*
 // --------------------------------------------------
 // userProfiles tick
 // --------------------------------------------------
@@ -378,6 +417,63 @@ bool CL_CT10_ControlManager::tickUserProfile() {
 	return tickSegmentSequence(v_profile.repeatSegments, v_profile.repeatCount, v_profile.segments, v_profile.segCount, profileSegRt);
 }
 
+*/
+
+
+bool CL_CT10_ControlManager::tickSchedule() {
+	if (!g_A20_config_root.schedules) return false;
+
+	ST_A20_SchedulesRoot_t& v_cfg = *g_A20_config_root.schedules;
+
+	// ✅ 이미 변경 반영: overlapAllowed 기본 true
+	int v_activeIdx = findActiveScheduleIndex(v_cfg, true);
+	if (v_activeIdx < 0) {
+		curScheduleIndex = -1;
+		return false;
+	}
+
+	if (curScheduleIndex != (int8_t)v_activeIdx) {
+		curScheduleIndex		   = (int8_t)v_activeIdx;
+		runSource				   = EN_CT10_RUN_SCHEDULE;
+		scheduleSegRt.index		   = -1;
+		scheduleSegRt.onPhase	   = true;
+		scheduleSegRt.phaseStartMs = millis();
+		scheduleSegRt.loopCount	   = 0;
+
+		initAutoOffFromSchedule(v_cfg.items[(uint8_t)curScheduleIndex]);
+
+		CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Active Schedule idx=%d", v_activeIdx);
+
+		markDirty("state");
+		markDirty("metrics");
+	}
+
+	ST_A20_ScheduleItem_t& v_schedule = v_cfg.items[(uint8_t)curScheduleIndex];
+	if (!v_schedule.enabled || v_schedule.segCount == 0) return false;
+
+	// ✅ AutoOff 이벤트성 상태 전환(최소 패치)
+	EN_CT10_reason_t v_reason = EN_CT10_REASON_NONE;
+	if (checkAutoOff(&v_reason)) {
+		onAutoOffTriggered(v_reason);
+		return true;
+	}
+
+	if (isMotionBlocked(v_schedule.motion)) {
+		sim.stop();
+		return true;
+	}
+
+	return tickSegmentSequence(
+		v_schedule.repeatSegments,
+		v_schedule.repeatCount,
+		v_schedule.segments,
+		v_schedule.segCount,
+		scheduleSegRt
+	);
+}
+
+
+/*
 // --------------------------------------------------
 // schedule tick
 // --------------------------------------------------
@@ -431,6 +527,8 @@ bool CL_CT10_ControlManager::tickSchedule() {
 
 	return tickSegmentSequence(v_schedule.repeatSegments, v_schedule.repeatCount, v_schedule.segments, v_schedule.segCount, scheduleSegRt);
 }
+*/
+
 
 // --------------------------------------------------
 // segment sequence (schedule)

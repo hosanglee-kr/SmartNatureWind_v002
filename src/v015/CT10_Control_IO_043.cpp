@@ -43,7 +43,7 @@ void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
 // - 웹/WS 상태에서 "왜 멈췄는지/무엇이 도는지"가 보이도록 확장
 // - JsonDocument 단일 사용, containsKey/createNested* 금지 준수
 // --------------------------------------------------
-void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
+void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {
 	JsonObject v_root = p_doc.to<JsonObject>();
 
 	JsonObject v_ctl = v_root["control"].to<JsonObject>();

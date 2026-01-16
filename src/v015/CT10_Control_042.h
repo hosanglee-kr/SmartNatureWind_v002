@@ -172,8 +172,8 @@ typedef struct {
 } ST_CT10_AutoOffRuntime_t;
 
 
-static const char* CT10_stateToString(EN_CT10_state_t p_s);
-static const char* CT10_reasonToString(EN_CT10_reason_t p_r);
+const char* CT10_stateToString(EN_CT10_state_t p_s);
+const char* CT10_reasonToString(EN_CT10_reason_t p_r);
 
 
 

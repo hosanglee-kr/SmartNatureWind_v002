@@ -253,7 +253,8 @@ class CL_CT10_ControlManager {
 	// static uint16_t parseHHMMtoMin(const char* p_time);
 	static float getCurrentTemperatureMock();
 
-	int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg);
+	int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg, bool p_allowOverlap = true);
+	// int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg);
 	bool isMotionBlocked(const ST_A20_Motion_t& p_motionCfg);
 
 	void maybePushMetricsDirty();

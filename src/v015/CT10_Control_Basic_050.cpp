@@ -425,6 +425,101 @@ float CL_CT10_ControlManager::getCurrentTemperatureMock() {
 }
 
 // --------------------------------------------------
+// CT10: findActiveScheduleIndex (overlap policy selectable)
+// --------------------------------------------------
+// * 정책:
+//   - p_allowOverlap=true  (기본): 겹침 허용 → 매치 후보 중 schNo 최댓값 선택
+//   - p_allowOverlap=false       : 겹침 금지 신뢰 → 첫 매치 즉시 반환(최적화)
+// * 전제:
+//   - C10 저장 시 schNo desc 정렬 저장을 수행하면,
+//     p_allowOverlap=false 경로에서 "첫 매치"가 곧 우선순위 최고(schNo 최대)임.
+// * 시간 의존:
+//   - TM10::getLocalTime(outTm) 기반으로만 동작
+// * cross-midnight 처리:
+//   - start < end  : [start, end)
+//   - start > end  : [start, 1440) U [0, end)
+//   - start == end : 항상 OFF 취급
+// --------------------------------------------------
+int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg, bool p_allowOverlap /*= true*/) {
+	if (p_cfg.count == 0) return -1;
+
+	// 1) TM10 기준: 로컬 시간 확보(유효성 포함)
+	struct tm v_tm;
+	memset(&v_tm, 0, sizeof(v_tm));
+	if (!CL_TM10_TimeManager::getLocalTime(v_tm)) {
+		CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] findActiveScheduleIndex: local time not available");
+		return -1;
+	}
+
+	// 2) 요일/분 계산
+	// - tm_wday: 0=Sun..6=Sat
+	// - Config days[]: 0=Mon..6=Sun
+	uint8_t  v_wday   = (v_tm.tm_wday == 0) ? 6 : (uint8_t)(v_tm.tm_wday - 1);
+	uint16_t v_curMin = (uint16_t)v_tm.tm_hour * 60U + (uint16_t)v_tm.tm_min;
+
+	// --------------------------------------------------
+	// (A) 겹침 금지 신뢰(최적화): 첫 매치 즉시 반환
+	// --------------------------------------------------
+	if (!p_allowOverlap) {
+		for (int v_i = 0; v_i < (int)p_cfg.count; v_i++) {
+			const ST_A20_ScheduleItem_t& v_s = p_cfg.items[v_i];
+			if (!v_s.enabled) continue;
+
+			if (v_wday >= 7 || !v_s.period.days[v_wday]) continue;
+
+			uint16_t v_startMin = A40_parseHHMMtoMin_24h(v_s.period.startTime);
+			uint16_t v_endMin   = A40_parseHHMMtoMin_24h(v_s.period.endTime);
+
+			if (v_startMin == v_endMin) continue;
+
+			if (v_startMin < v_endMin) {
+				if (v_curMin >= v_startMin && v_curMin < v_endMin) return v_i;
+			} else {
+				// cross-midnight
+				if (v_curMin >= v_startMin || v_curMin < v_endMin) return v_i;
+			}
+		}
+		return -1;
+	}
+
+	// --------------------------------------------------
+	// (B) 겹침 허용: 매치 후보 중 schNo 최댓값 선택
+	// --------------------------------------------------
+	int      v_bestIdx = -1;
+	uint16_t v_bestNo  = 0;
+
+	for (int v_i = 0; v_i < (int)p_cfg.count; v_i++) {
+		const ST_A20_ScheduleItem_t& v_s = p_cfg.items[v_i];
+		if (!v_s.enabled) continue;
+
+		if (v_wday >= 7 || !v_s.period.days[v_wday]) continue;
+
+		uint16_t v_startMin = A40_parseHHMMtoMin_24h(v_s.period.startTime);
+		uint16_t v_endMin   = A40_parseHHMMtoMin_24h(v_s.period.endTime);
+
+		if (v_startMin == v_endMin) continue;
+
+		bool v_match = false;
+		if (v_startMin < v_endMin) {
+			v_match = (v_curMin >= v_startMin && v_curMin < v_endMin);
+		} else {
+			// cross-midnight
+			v_match = (v_curMin >= v_startMin || v_curMin < v_endMin);
+		}
+
+		if (!v_match) continue;
+
+		if (v_bestIdx < 0 || v_s.schNo > v_bestNo) {
+			v_bestIdx = v_i;
+			v_bestNo  = v_s.schNo;
+		}
+	}
+
+	return v_bestIdx;
+}
+
+/*
+// --------------------------------------------------
 // find active schedule
 // --------------------------------------------------
 // --------------------------------------------------
@@ -537,6 +632,7 @@ int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t
 
     return v_bestIdx;
 }
+*/
 
 /*
 int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg) {

@@ -23,7 +23,7 @@
 // --------------------------------------------------
 // [CT10] 상태 전환 시 내부 컨텍스트 업데이트(공통)
 // --------------------------------------------------
-static const char* CT10_stateToString(EN_CT10_state_t p_s) {
+const char* CT10_stateToString(EN_CT10_state_t p_s) {
 	switch (p_s) {
 		case EN_CT10_STATE_IDLE:		  return "IDLE";
 		case EN_CT10_STATE_OVERRIDE:	  return "OVERRIDE";
@@ -38,7 +38,7 @@ static const char* CT10_stateToString(EN_CT10_state_t p_s) {
 
 
 
-static const char* CT10_reasonToString(EN_CT10_reason_t p_r) {
+const char* CT10_reasonToString(EN_CT10_reason_t p_r) {
 	switch (p_r) {
 		case EN_CT10_REASON_NONE:				return "NONE";
 		case EN_CT10_REASON_OVERRIDE_ACTIVE:	return "OVERRIDE_ACTIVE";

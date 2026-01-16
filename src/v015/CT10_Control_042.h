@@ -231,7 +231,9 @@ class CL_CT10_ControlManager {
 	void setMotion(CL_M10_MotionLogic* p_motion);
 
 	// JSON 관련(구현은 json cpp)
-	void exportStateJson(JsonDocument& p_doc);
+	void exportStateJson_v02(JsonDocument& p_doc);
+	void exportStateJson_v01(JsonDocument& p_doc);
+	
 	void exportChartJson(JsonDocument& p_doc, bool p_diffOnly);
 	void exportSummaryJson(JsonDocument& p_doc);
 	void exportMetricsJson(JsonDocument& p_doc);

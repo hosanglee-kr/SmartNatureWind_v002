@@ -31,14 +31,160 @@ CL_CT10_ControlManager& CL_CT10_ControlManager::instance() {
 }
 
 void CL_CT10_ControlManager::toJson(JsonDocument& p_doc) {
-    instance().exportStateJson(p_doc);
+    instance().exportStateJson_v02(p_doc);
 }
 
 void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
      instance().exportChartJson(p_doc, p_diffOnly);
 }
 
-void CL_CT10_ControlManager::exportStateJson(JsonDocument& p_doc) {
+// --------------------------------------------------
+// [CT10] exportStateJson_v02()
+// - 웹/WS 상태에서 "왜 멈췄는지/무엇이 도는지"가 보이도록 확장
+// - JsonDocument 단일 사용, containsKey/createNested* 금지 준수
+// --------------------------------------------------
+void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
+	JsonObject v_root = p_doc.to<JsonObject>();
+
+	JsonObject v_ctl = v_root["control"].to<JsonObject>();
+
+	// 1) Core flags
+	v_ctl["active"]			= active;
+	v_ctl["profileMode"]	= useProfileMode;
+
+	// 2) State/Reason (string + enum 둘 다)
+	v_ctl["state"]			= CT10_stateToString(runCtx.state);
+	v_ctl["reason"]			= CT10_reasonToString(runCtx.reason);
+	v_ctl["stateCode"]		= (uint8_t)runCtx.state;
+	v_ctl["reasonCode"]		= (uint8_t)runCtx.reason;
+
+	v_ctl["runSource"]		= (uint8_t)runSource;
+
+	v_ctl["lastDecisionMs"]		= (uint32_t)runCtx.lastDecisionMs;
+	v_ctl["lastStateChangeMs"]	= (uint32_t)runCtx.lastStateChangeMs;
+
+	// 3) Time status (TM10)
+	{
+		JsonObject v_time = v_ctl["time"].to<JsonObject>();
+		v_time["valid"] = CL_TM10_TimeManager::isTimeValid();
+
+		struct tm v_tm;
+		memset(&v_tm, 0, sizeof(v_tm));
+		if (CL_TM10_TimeManager::getLocalTime(v_tm)) {
+			v_time["hour"] = (int)v_tm.tm_hour;
+			v_time["min"]  = (int)v_tm.tm_min;
+			v_time["wday"] = (int)v_tm.tm_wday; // 0=Sun
+		} else {
+			v_time["hour"] = -1;
+			v_time["min"]  = -1;
+			v_time["wday"] = -1;
+		}
+	}
+
+	// 4) Selected Schedule/Profile snapshot
+	{
+		JsonObject v_sch = v_ctl["schedule"].to<JsonObject>();
+		v_sch["index"] = (int)curScheduleIndex;
+		v_sch["schId"] = (uint8_t)runCtx.activeSchId;
+		v_sch["schNo"] = (uint16_t)runCtx.activeSchNo;
+
+		// name은 가능하면 넣되, 포인터/인덱스 방어
+		const char* v_name = "";
+		if (runSource == EN_CT10_RUN_SCHEDULE &&
+			g_A20_config_root.schedules &&
+			curScheduleIndex >= 0) {
+			ST_A20_SchedulesRoot_t& v_cfg = *g_A20_config_root.schedules;
+			if ((uint8_t)curScheduleIndex < v_cfg.count) {
+				v_name = v_cfg.items[(uint8_t)curScheduleIndex].name;
+			}
+		}
+		v_sch["name"] = v_name;
+	}
+
+	{
+		JsonObject v_prof = v_ctl["profile"].to<JsonObject>();
+		v_prof["index"]		= (int)curProfileIndex;
+		v_prof["profileNo"] = (uint8_t)runCtx.activeProfileNo;
+
+		const char* v_name = "";
+		if (runSource == EN_CT10_RUN_USER_PROFILE &&
+			g_A20_config_root.userProfiles &&
+			curProfileIndex >= 0) {
+			ST_A20_UserProfilesRoot_t& v_cfg = *g_A20_config_root.userProfiles;
+			if ((uint8_t)curProfileIndex < v_cfg.count) {
+				v_name = v_cfg.items[(uint8_t)curProfileIndex].name;
+			}
+		}
+		v_prof["name"] = v_name;
+	}
+
+	// 5) Segment runtime snapshot
+	{
+		JsonObject v_seg = v_ctl["segment"].to<JsonObject>();
+
+		// 공통 캐시
+		v_seg["segId"] = (uint8_t)runCtx.activeSegId;
+		v_seg["segNo"] = (uint16_t)runCtx.activeSegNo;
+
+		// scheduleSegRt / profileSegRt 둘 다 노출(디버그에 유리)
+		JsonObject v_srt = v_seg["scheduleRt"].to<JsonObject>();
+		v_srt["index"]		= (int)scheduleSegRt.index;
+		v_srt["onPhase"]	= scheduleSegRt.onPhase;
+		v_srt["phaseStartMs"]= (uint32_t)scheduleSegRt.phaseStartMs;
+		v_srt["loopCount"]	= (uint8_t)scheduleSegRt.loopCount;
+
+		JsonObject v_prt = v_seg["profileRt"].to<JsonObject>();
+		v_prt["index"]		= (int)profileSegRt.index;
+		v_prt["onPhase"]	= profileSegRt.onPhase;
+		v_prt["phaseStartMs"]= (uint32_t)profileSegRt.phaseStartMs;
+		v_prt["loopCount"]	= (uint8_t)profileSegRt.loopCount;
+	}
+
+	// 6) Override snapshot
+	{
+		JsonObject v_ov = v_ctl["override"].to<JsonObject>();
+		v_ov["active"] = overrideState.active;
+		v_ov["useFixed"] = overrideState.useFixed;
+		v_ov["remainSec"] = (uint32_t)calcOverrideRemainSec();
+		v_ov["fixedPercent"] = overrideState.fixedPercent;
+
+		// resolved 요약(민감/과다 출력 방지: code만)
+		if (!overrideState.useFixed && overrideState.resolved.valid) {
+			v_ov["presetCode"] = overrideState.resolved.presetCode;
+			v_ov["styleCode"]  = overrideState.resolved.styleCode;
+		} else {
+			v_ov["presetCode"] = "";
+			v_ov["styleCode"]  = "";
+		}
+	}
+
+	// 7) AutoOff runtime snapshot
+	{
+		JsonObject v_ao = v_ctl["autoOffRt"].to<JsonObject>();
+		v_ao["timerArmed"]		 = autoOffRt.timerArmed;
+		v_ao["timerStartMs"]	 = (uint32_t)autoOffRt.timerStartMs;
+		v_ao["timerMinutes"]	 = (uint32_t)autoOffRt.timerMinutes;
+
+		v_ao["offTimeEnabled"]	 = autoOffRt.offTimeEnabled;
+		v_ao["offTimeMinutes"]	 = (uint16_t)autoOffRt.offTimeMinutes;
+
+		v_ao["offTempEnabled"]	 = autoOffRt.offTempEnabled;
+		v_ao["offTemp"]			 = autoOffRt.offTemp;
+	}
+
+	// 8) Dirty flags (상태 확인용)
+	{
+		JsonObject v_dirty = v_ctl["dirty"].to<JsonObject>();
+		v_dirty["state"]	= _dirtyState;
+		v_dirty["metrics"]	= _dirtyMetrics;
+		v_dirty["chart"]	= _dirtyChart;
+		v_dirty["summary"]	= _dirtySummary;
+	}
+}
+
+
+
+void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {
     // control root
     JsonObject v_control        = CT10_ensureObject(p_doc["control"]);
     v_control["active"]         = active;

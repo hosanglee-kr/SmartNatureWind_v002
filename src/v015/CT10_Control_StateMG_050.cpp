@@ -338,6 +338,7 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
 }
 
 
+/*
 // --------------------------------------------------
 // [CT10] exportStateJson_v02()
 // - 웹/WS 상태에서 "왜 멈췄는지/무엇이 도는지"가 보이도록 확장
@@ -482,3 +483,4 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
 	}
 }
 
+*/

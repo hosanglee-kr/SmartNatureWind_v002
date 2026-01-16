@@ -171,6 +171,12 @@ typedef struct {
 	float		  offTemp;		   // AutoOff가 발동되는 온도 (섭씨)
 } ST_CT10_AutoOffRuntime_t;
 
+
+static const char* CT10_stateToString(EN_CT10_state_t p_s);
+static const char* CT10_reasonToString(EN_CT10_reason_t p_r);
+
+
+
 // ------------------------------------------------------
 // WS Scheduler (CT10_Control_WS_xxx.cpp)
 // ------------------------------------------------------
@@ -233,7 +239,6 @@ class CL_CT10_ControlManager {
 	// JSON 관련(구현은 json cpp)
 	void exportStateJson_v02(JsonDocument& p_doc);
 	void exportStateJson_v01(JsonDocument& p_doc);
-	
 	void exportChartJson(JsonDocument& p_doc, bool p_diffOnly);
 	void exportSummaryJson(JsonDocument& p_doc);
 	void exportMetricsJson(JsonDocument& p_doc);

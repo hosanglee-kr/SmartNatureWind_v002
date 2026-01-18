@@ -348,6 +348,44 @@ bool CL_CT10_ControlManager::tickOverride() {
 
 
 bool CL_CT10_ControlManager::tickUserProfile() {
+    if (!g_A20_config_root.userProfiles) return false;
+    if (curProfileIndex < 0) return false;
+
+    ST_A20_UserProfilesRoot_t& v_cfg = *g_A20_config_root.userProfiles;
+    if ((uint8_t)curProfileIndex >= v_cfg.count) return false;
+
+    ST_A20_UserProfileItem_t& v_profile = v_cfg.items[(uint8_t)curProfileIndex];
+    if (!v_profile.enabled || v_profile.segCount == 0) return false;
+
+    // AutoOff (이미 반영된 버전)
+    EN_CT10_reason_t v_reason = EN_CT10_REASON_NONE;
+    if (checkAutoOff(&v_reason)) {
+        onAutoOffTriggered(v_reason);
+        return true;
+    }
+
+    // ✅ Motion blocked 이벤트성 상태 전환
+    if (isMotionBlocked(v_profile.motion)) {
+        onMotionBlocked(EN_CT10_REASON_MOTION_NO_PRESENCE);
+        return true;
+    }
+
+    // Running 상태(선택: segment 적용 직후에 찍히지만, 여기서도 갱신 가능)
+    runCtx.state  = EN_CT10_STATE_RUNNING;
+    runCtx.reason = EN_CT10_REASON_NONE;
+
+    return tickSegmentSequence(
+        v_profile.repeatSegments,
+        v_profile.repeatCount,
+        v_profile.segments,
+        v_profile.segCount,
+        profileSegRt
+    );
+}
+
+
+/*
+bool CL_CT10_ControlManager::tickUserProfile() {
 	if (!g_A20_config_root.userProfiles) return false;
 	if (curProfileIndex < 0) return false;
 
@@ -378,6 +416,7 @@ bool CL_CT10_ControlManager::tickUserProfile() {
 		profileSegRt
 	);
 }
+*/
 
 
 /*
@@ -420,6 +459,59 @@ bool CL_CT10_ControlManager::tickUserProfile() {
 */
 
 
+bool CL_CT10_ControlManager::tickSchedule() {
+    if (!g_A20_config_root.schedules) return false;
+
+    ST_A20_SchedulesRoot_t& v_cfg = *g_A20_config_root.schedules;
+
+    int v_activeIdx = findActiveScheduleIndex(v_cfg, true); // 겹침 허용 기본
+    if (v_activeIdx < 0) {
+        curScheduleIndex = -1;
+        return false;
+    }
+
+    if (curScheduleIndex != (int8_t)v_activeIdx) {
+        curScheduleIndex           = (int8_t)v_activeIdx;
+        runSource                  = EN_CT10_RUN_SCHEDULE;
+        scheduleSegRt.index        = -1;
+        scheduleSegRt.onPhase      = true;
+        scheduleSegRt.phaseStartMs = millis();
+        scheduleSegRt.loopCount    = 0;
+
+        initAutoOffFromSchedule(v_cfg.items[(uint8_t)curScheduleIndex]);
+
+        markDirty("state");
+        markDirty("metrics");
+    }
+
+    ST_A20_ScheduleItem_t& v_schedule = v_cfg.items[(uint8_t)curScheduleIndex];
+    if (!v_schedule.enabled || v_schedule.segCount == 0) return false;
+
+    EN_CT10_reason_t v_reason = EN_CT10_REASON_NONE;
+    if (checkAutoOff(&v_reason)) {
+        onAutoOffTriggered(v_reason);
+        return true;
+    }
+
+    // ✅ Motion blocked 이벤트성 상태 전환
+    if (isMotionBlocked(v_schedule.motion)) {
+        onMotionBlocked(EN_CT10_REASON_MOTION_NO_PRESENCE);
+        return true;
+    }
+
+    runCtx.state  = EN_CT10_STATE_RUNNING;
+    runCtx.reason = EN_CT10_REASON_NONE;
+
+    return tickSegmentSequence(
+        v_schedule.repeatSegments,
+        v_schedule.repeatCount,
+        v_schedule.segments,
+        v_schedule.segCount,
+        scheduleSegRt
+    );
+}
+
+/*
 bool CL_CT10_ControlManager::tickSchedule() {
 	if (!g_A20_config_root.schedules) return false;
 
@@ -471,7 +563,7 @@ bool CL_CT10_ControlManager::tickSchedule() {
 		scheduleSegRt
 	);
 }
-
+*/
 
 /*
 // --------------------------------------------------

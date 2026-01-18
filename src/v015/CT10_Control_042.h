@@ -337,6 +337,7 @@ class CL_CT10_ControlManager {
 	int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg, bool p_allowOverlap = true);
 	// int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg);
 	bool isMotionBlocked(const ST_A20_Motion_t& p_motionCfg);
+	void onMotionBlocked(EN_CT10_reason_t p_reason);
 
 	void maybePushMetricsDirty();
 

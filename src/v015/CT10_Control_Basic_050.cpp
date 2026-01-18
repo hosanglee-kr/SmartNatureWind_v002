@@ -222,6 +222,75 @@ bool CL_CT10_ControlManager::checkAutoOff(EN_CT10_reason_t* p_reasonOrNull /*=nu
 	return false;
 }
 
+/*
+// --------------------------------------------------
+// autoOff check (Reason 반환 버전)
+// - true 반환 시 p_reasonOrNull에 AUTOOFF_* reason 세팅
+// - 최소 패치: timer/offTime/offTemp 중 "최초로 만족한 조건"을 원인으로 반환
+// --------------------------------------------------
+bool CL_CT10_ControlManager::checkAutoOff(EN_CT10_reason_t* p_reasonOrNull) {
+	if (p_reasonOrNull) {
+		*p_reasonOrNull = EN_CT10_REASON_NONE;
+	}
+
+	if (!autoOffRt.timerArmed && !autoOffRt.offTimeEnabled && !autoOffRt.offTempEnabled) return false;
+
+	unsigned long v_nowMs = millis();
+
+	// 1) timer
+	if (autoOffRt.timerArmed && autoOffRt.timerMinutes > 0) {
+		uint32_t v_elapsedMin = (v_nowMs - autoOffRt.timerStartMs) / 60000UL;
+		if (v_elapsedMin >= autoOffRt.timerMinutes) {
+			if (p_reasonOrNull) *p_reasonOrNull = EN_CT10_REASON_AUTOOFF_TIMER;
+			CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff(timer %lu min) triggered",
+			                   (unsigned long)autoOffRt.timerMinutes);
+			return true;
+		}
+	}
+
+	// 2) offTime (TM10 기반으로 이미 리팩토링했다는 전제)
+	// - “현재 분 >= offTimeMinutes”면 트리거
+	// - 동일 분 재트리거 방지 (기존 정책 유지)
+	if (autoOffRt.offTimeEnabled) {
+		static int32_t s_lastTriggeredMinute = -1;
+
+		struct tm v_tm;
+		memset(&v_tm, 0, sizeof(v_tm));
+
+		// ✅ CT10_localtimeSafe 제거 방향: TM10 기준으로만 분기
+		if (!CL_TM10_TimeManager::getLocalTime(v_tm)) {
+			CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] AutoOff(offTime) skipped: local time not available");
+		} else {
+			uint16_t v_curMin = (uint16_t)v_tm.tm_hour * 60 + (uint16_t)v_tm.tm_min;
+
+			if ((int32_t)v_curMin != s_lastTriggeredMinute) {
+				if (v_curMin >= autoOffRt.offTimeMinutes) {
+					s_lastTriggeredMinute = (int32_t)v_curMin;
+					if (p_reasonOrNull) *p_reasonOrNull = EN_CT10_REASON_AUTOOFF_TIME;
+
+					CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff(time %u) triggered",
+					                   (unsigned)autoOffRt.offTimeMinutes);
+					return true;
+				}
+			}
+		}
+	}
+
+	// 3) offTemp
+	if (autoOffRt.offTempEnabled) {
+		float v_curTemp = getCurrentTemperatureMock();
+		if (v_curTemp >= autoOffRt.offTemp) {
+			if (p_reasonOrNull) *p_reasonOrNull = EN_CT10_REASON_AUTOOFF_TEMP;
+			CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff(temp %.1fC >= %.1fC) triggered",
+			                   v_curTemp, autoOffRt.offTemp);
+			return true;
+		}
+	}
+
+	return false;
+}
+*/
+
 
 /*
 // --------------------------------------------------
@@ -906,6 +975,30 @@ int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t
 	return v_bestIdx;
 }
 */
+
+
+// --------------------------------------------------
+// [CT10] Motion Block 발생 처리(이벤트성 상태 전환)
+// - 최소 정책: motion blocked일 땐 sim.stop()만 하고, runSource는 유지(=재개 가능)
+// - 즉, 스케줄/프로파일은 "살아있고", 실제 바람만 멈춘 상태
+// --------------------------------------------------
+void CL_CT10_ControlManager::onMotionBlocked(EN_CT10_reason_t p_reason) {
+    if (sim.active) sim.stop();
+
+    runCtx.state             = EN_CT10_STATE_MOTION_BLOCKED;
+    runCtx.reason            = p_reason;
+    runCtx.lastDecisionMs    = millis();
+    runCtx.lastStateChangeMs = runCtx.lastDecisionMs;
+
+    // 실행 소스/active sch/profile 정보는 유지(재개 시 UI가 이해하기 쉬움)
+    // (필요하면 segId/segNo도 유지 가능)
+
+    markDirty("state");
+    markDirty("metrics");
+    markDirty("summary");
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] MOTION_BLOCKED (reason=%u)", (unsigned)p_reason);
+}
 
 // --------------------------------------------------
 // motion check

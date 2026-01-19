@@ -246,6 +246,68 @@ void CL_CT10_ControlManager::stopOverride() {
 // tick loop
 // --------------------------------------------------
 void CL_CT10_ControlManager::tickLoop() {
+    if (!active || !pwm) return;
+
+    unsigned long v_nowMs = millis();
+    if (v_nowMs - lastTickMs < S_TICK_MIN_INTERVAL_MS) return;
+    lastTickMs = v_nowMs;
+
+    // ✅ 이벤트성 상태(AUTOOFF_STOPPED 등) hold/ack 유지 중이면
+    // - 바람은 이미 stop 되어있고(runSource NONE)
+    // - 불필요한 start/stop 반복을 방지
+    // - metrics push는 정상 동작
+    if (shouldHoldEventState()) {
+        maybePushMetricsDirty();
+        return;
+    }
+
+    // 1) Override
+    if (tickOverride()) {
+        sim.tick();
+        maybePushMetricsDirty();
+        return;
+    }
+
+    // 2) Profile 전용 모드
+    if (useProfileMode) {
+        if (runSource == EN_CT10_RUN_USER_PROFILE && tickUserProfile()) {
+            sim.tick();
+            maybePushMetricsDirty();
+        } else if (sim.active) {
+            sim.stop();
+            maybePushMetricsDirty();
+        }
+        return;
+    }
+
+    // 3) UserProfile
+    if (runSource == EN_CT10_RUN_USER_PROFILE && tickUserProfile()) {
+        sim.tick();
+        maybePushMetricsDirty();
+        return;
+    }
+
+    // 4) Schedule
+    if (tickSchedule()) {
+        sim.tick();
+        maybePushMetricsDirty();
+        return;
+    }
+
+    // 5) Idle
+    if (sim.active) {
+        sim.stop();
+        maybePushMetricsDirty();
+        markDirty("state");
+    }
+
+    // (선택) idle 상태 기록
+    runCtx.state  = EN_CT10_STATE_IDLE;
+    runCtx.reason = EN_CT10_REASON_NONE;
+}
+
+/*
+void CL_CT10_ControlManager::tickLoop() {
 	if (!active || !pwm)
 		return;
 
@@ -300,6 +362,7 @@ void CL_CT10_ControlManager::tickLoop() {
 		markDirty("state");
 	}
 }
+*/
 
 // --------------------------------------------------
 // override tick

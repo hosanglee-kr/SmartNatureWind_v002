@@ -127,6 +127,11 @@ typedef struct {
 
 	uint32_t			lastDecisionMs;
 	uint32_t			lastStateChangeMs;
+	
+	// ✅ AutoOff 상태 유지용
+    uint32_t            stateHoldUntilMs;   // millis() 기준. 0이면 hold 없음
+    bool                stateAckRequired;   // true면 ack 전까지 유지(옵션)
+
 
 	// 선택된 대상 snapshot
 	uint8_t				activeSchId;
@@ -175,6 +180,8 @@ typedef struct {
 const char* CT10_stateToString(EN_CT10_state_t p_s);
 const char* CT10_reasonToString(EN_CT10_reason_t p_r);
 
+// header에 static 추가
+static void ackEvent() { instance().ackEventState(); }
 
 
 // ------------------------------------------------------
@@ -336,6 +343,8 @@ class CL_CT10_ControlManager {
 
 	int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg, bool p_allowOverlap = true);
 	// int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg);
+	
+	bool shouldHoldEventState() const;
 	bool isMotionBlocked(const ST_A20_Motion_t& p_motionCfg);
 	void onMotionBlocked(EN_CT10_reason_t p_reason);
 

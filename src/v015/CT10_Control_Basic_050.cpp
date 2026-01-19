@@ -112,11 +112,88 @@ void CL_CT10_ControlManager::initAutoOffFromSchedule(const ST_A20_ScheduleItem_t
 	}
 }
 
+
+
+// --------------------------------------------------
+// [CT10] 이벤트 상태 ACK (UI에서 호출)
+// - AUTOOFF_STOPPED 같은 이벤트 상태를 사용자 확인 후 해제
+// --------------------------------------------------
+void CL_CT10_ControlManager::ackEventState() {
+    runCtx.stateAckRequired = false;
+    runCtx.stateHoldUntilMs = 0;
+
+    // ACK 시점에 바로 IDLE로 돌리진 않고, 다음 tick에서 자연스럽게 결정되게 둠(최소 정책)
+    markDirty("state");
+    markDirty("summary");
+}
+
+
+// --------------------------------------------------
+// [CT10] 이벤트 상태(AUTOOFF/MOTION 등) hold/ack 유지 판단
+// - true 반환 시: "이번 tick은 상태 유지 우선" (즉, 실행 로직 최소화)
+// --------------------------------------------------
+bool CL_CT10_ControlManager::shouldHoldEventState() const {
+    uint32_t v_now = (uint32_t)millis();
+
+    // ACK 요구 상태면: ack 전까지 유지
+    if (runCtx.stateAckRequired) {
+        return true;
+    }
+
+    // hold 시간 안이면 유지
+    if (runCtx.stateHoldUntilMs != 0 && v_now < runCtx.stateHoldUntilMs) {
+        return true;
+    }
+
+    return false;
+}
+
 // --------------------------------------------------
 // [CT10] AutoOff 발생 처리(이벤트성 상태 전환)
 // - checkAutoOff()에서 원인(reason)을 받아 AUTOOFF_STOPPED로 상태 전환
 // - 최소 정책: AutoOff 발생 시 현재 실행 소스(runSource)를 종료(=NONE)로 만든다.
 // --------------------------------------------------
+// --------------------------------------------------
+// [CT10] AutoOff 발생 처리(이벤트성 상태 전환 + hold/ack)
+// --------------------------------------------------
+void CL_CT10_ControlManager::onAutoOffTriggered(EN_CT10_reason_t p_reason) {
+    if (sim.active) sim.stop();
+
+    // 실행 소스 종료(운영 정책)
+    runSource        = EN_CT10_RUN_NONE;
+    curScheduleIndex = -1;
+    curProfileIndex  = -1;
+
+    scheduleSegRt.index = -1;
+    profileSegRt.index  = -1;
+    memset(&autoOffRt, 0, sizeof(autoOffRt));
+
+    uint32_t v_now = (uint32_t)millis();
+
+    runCtx.state             = EN_CT10_STATE_AUTOOFF_STOPPED;
+    runCtx.reason            = p_reason;
+    runCtx.lastDecisionMs    = v_now;
+    runCtx.lastStateChangeMs = v_now;
+
+    // ✅ 최소 hold: 3초 (원하면 상수화)
+    runCtx.stateHoldUntilMs  = v_now + 3000UL;
+
+    // ✅ ACK 정책(옵션): 기본 false
+    runCtx.stateAckRequired  = false;
+
+    runCtx.activeSchId = 0;
+    runCtx.activeSchNo = 0;
+    runCtx.activeSegId = 0;
+    runCtx.activeSegNo = 0;
+    runCtx.activeProfileNo = 0;
+
+    markDirty("state");
+    markDirty("metrics");
+    markDirty("summary");
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff STOPPED (reason=%u, hold=3000ms)", (unsigned)p_reason);
+}
+/*
 void CL_CT10_ControlManager::onAutoOffTriggered(EN_CT10_reason_t p_reason) {
 	// 1) 즉시 정지
 	if (sim.active) sim.stop();
@@ -153,7 +230,7 @@ void CL_CT10_ControlManager::onAutoOffTriggered(EN_CT10_reason_t p_reason) {
 
 	CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff STOPPED (reason=%u)", (unsigned)p_reason);
 }
-
+*/
 
 // --------------------------------------------------
 // autoOff check (Reason 반환 버전)

@@ -46,7 +46,7 @@
 #include "C10_Config_050.h"	 // ST_A20_WifiConfig_t, ST_A20_SystemConfig_t, ST_A20_ConfigRoot_t
 #include "D10_Logger_050.h"
 
-#include "TM10_TimeManager_050.h"
+#include "TM10_TimeMg_050.h"
 
 
 // // Mutex 보호 매크로 정의

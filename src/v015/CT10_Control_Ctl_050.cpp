@@ -13,6 +13,17 @@
 
 #include "CT10_Control_050.h"
 
+// --------------------------------------------------
+// [CT10] runCtx snapshot helpers (최소)
+// - SegmentOn/Off에서만 호출
+// - schedule/profile 공통으로 "현재 구동 중 대상"을 UI에 보여주기 위한 목적
+// --------------------------------------------------
+static inline void CT10_resetActiveSegSnapshot(ST_CT10_RunContext_t& p_ctx) {
+	p_ctx.activeSegId = 0;
+	p_ctx.activeSegNo = 0;
+}
+
+
 // 외부 전역(프로젝트 기존 전역 PWM 가정)
 extern CL_P10_PWM g_P10_pwm;
 

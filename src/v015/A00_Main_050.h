@@ -34,7 +34,7 @@
 #include "S20_WindSolver_050.h"
 #include "W10_Web_060.h"
 #include "WF10_WiFiManager_050.h"
-#include "TM10_TimeManager_050.h"
+#include "TM10_TimeMg_050.h"
 
 #include "A30_LED_050.h"
 

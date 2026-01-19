@@ -59,7 +59,7 @@
 #include "S10_Simul_050.h"
 #include "S20_WindSolver_050.h"
 
-#include "TM10_TimeManager_050.h"
+#include "TM10_TimeMg_050.h"
 
 // ------------------------------------------------------
 // 런타임 상태 구조체

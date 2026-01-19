@@ -342,6 +342,10 @@ bool CL_CT10_ControlManager::tickOverride() {
 		overrideState.resolvedApplied = true;
 		markDirty("chart");
 	}
+	
+	// Running 상태(선택: segment 적용 직후에 찍히지만, 여기서도 갱신 가능)
+    runCtx.state  = EN_CT10_STATE_OVERRIDE;
+    runCtx.reason = EN_CT10_REASON_NONE;
 
 	return true;
 }
@@ -371,7 +375,7 @@ bool CL_CT10_ControlManager::tickUserProfile() {
     }
 
     // Running 상태(선택: segment 적용 직후에 찍히지만, 여기서도 갱신 가능)
-    runCtx.state  = EN_CT10_STATE_RUNNING;
+    runCtx.state  = EN_CT10_STATE_PROFILE_RUN;
     runCtx.reason = EN_CT10_REASON_NONE;
 
     return tickSegmentSequence(
@@ -499,7 +503,7 @@ bool CL_CT10_ControlManager::tickSchedule() {
         return true;
     }
 
-    runCtx.state  = EN_CT10_STATE_RUNNING;
+    runCtx.state  = EN_CT10_STATE_SCHEDULE_RUN;
     runCtx.reason = EN_CT10_REASON_NONE;
 
     return tickSegmentSequence(

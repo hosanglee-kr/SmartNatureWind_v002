@@ -180,8 +180,6 @@ typedef struct {
 const char* CT10_stateToString(EN_CT10_state_t p_s);
 const char* CT10_reasonToString(EN_CT10_reason_t p_r);
 
-// header에 static 추가
-static void ackEvent() { instance().ackEventState(); }
 
 
 // ------------------------------------------------------
@@ -235,6 +233,10 @@ class CL_CT10_ControlManager {
 	static void toMetricsJson(JsonDocument& p_doc) {
 		instance().exportMetricsJson(p_doc);
 	}
+	
+	// header에 static 추가
+    static void ackEvent() { instance().ackEventState(); }
+
 
   public:
 	// --------------------------------------------------

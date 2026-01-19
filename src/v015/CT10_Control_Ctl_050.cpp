@@ -602,31 +602,44 @@ bool CL_CT10_ControlManager::tickSegmentSequence(bool p_repeat, uint8_t p_repeat
 // --------------------------------------------------
 // runCtx snapshot helpers (SSOT: state/reason는 tick/applyDecision에서만)
 // --------------------------------------------------
-void CL_CT10_ControlManager::updateRunCtxOnSegmentOn_Schedule(const ST_A20_ScheduleItem_t& p_s,
-                                                              const ST_A20_ScheduleSegment_t& p_seg) {
-    // ✅ Snapshot only
+void CL_CT10_ControlManager::updateRunCtxOnSegmentOn_Schedule(
+    const ST_A20_ScheduleItem_t& p_s,
+    const ST_A20_ScheduleSegment_t& p_seg
+) {
+    // ✅ Snapshot only (state/reason은 tick/applyDecision에서만)
     runCtx.activeSchId = p_s.schId;
     runCtx.activeSchNo = p_s.schNo;
 
-    // profile에서 온 값은 의미 없으므로 0 (혼선 방지)
+    // profile 값은 의미 없으므로 0
     runCtx.activeProfileNo = 0;
 
     runCtx.activeSegId = p_seg.segId;
     runCtx.activeSegNo = p_seg.segNo;
+
+    // ✅ "최근 변화" 시각화용 (운영/WS)
+    runCtx.lastDecisionMs = millis();
 }
 
-void CL_CT10_ControlManager::updateRunCtxOnSegmentOn_Profile(const ST_A20_UserProfileItem_t& p_p,
-                                                             const ST_A20_UserProfileSegment_t& p_seg) {
+
+void CL_CT10_ControlManager::updateRunCtxOnSegmentOn_Profile(
+    const ST_A20_UserProfileItem_t& p_p,
+    const ST_A20_UserProfileSegment_t& p_seg
+) {
     // ✅ Snapshot only
     runCtx.activeProfileNo = p_p.profileNo;
 
-    // schedule은 의미 없으므로 0 (혼선 방지)
+    // schedule은 의미 없으므로 0
     runCtx.activeSchId = 0;
     runCtx.activeSchNo = 0;
 
     runCtx.activeSegId = p_seg.segId;
     runCtx.activeSegNo = p_seg.segNo;
+
+    // ✅ "최근 변화" 시각화용 (운영/WS)
+    runCtx.lastDecisionMs = millis();
 }
+
+
 
 void CL_CT10_ControlManager::updateRunCtxOnSegmentOff() {
     // ✅ Off phase 정책: seg는 0으로 리셋 (UI에서 “지금은 OFF phase” 표현 가능)
@@ -643,6 +656,65 @@ void CL_CT10_ControlManager::updateRunCtxOnSegmentOff() {
 // --------------------------------------------------
 // apply segment on/off + 로그 개선(이름 출력)
 // --------------------------------------------------
+void CL_CT10_ControlManager::applySegmentOn(const ST_A20_ScheduleSegment_t& p_seg) {
+    // ✅ snapshot only (schedule item + seg)
+    bool v_snapshotOk = false;
+    if (g_A20_config_root.schedules && curScheduleIndex >= 0) {
+        ST_A20_SchedulesRoot_t& v_root = *g_A20_config_root.schedules;
+        if ((uint8_t)curScheduleIndex < v_root.count) {
+            updateRunCtxOnSegmentOn_Schedule(v_root.items[(uint8_t)curScheduleIndex], p_seg);
+            v_snapshotOk = true;
+        }
+    }
+    if (!v_snapshotOk) {
+        // 스케줄 컨텍스트가 깨진 경우 UI 혼선 방지
+        runCtx.activeSchId = 0;
+        runCtx.activeSchNo = 0;
+        runCtx.activeSegId = 0;
+        runCtx.activeSegNo = 0;
+        runCtx.activeProfileNo = 0;
+        runCtx.lastDecisionMs = millis();
+    }
+
+    if (!g_A20_config_root.windDict) return;
+
+    if (p_seg.mode == EN_A20_SEG_MODE_FIXED) {
+        sim.stop();
+        if (pwm) pwm->P10_setDutyPercent(p_seg.fixedSpeed);
+
+        markDirty("state");
+        markDirty("chart");
+
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] SegmentOn(SCH) FIXED duty=%.1f%%", p_seg.fixedSpeed);
+        return;
+    }
+
+    ST_A20_ResolvedWind_t v_resolved;
+    memset(&v_resolved, 0, sizeof(v_resolved));
+
+    bool v_ok = S20_resolveWindParams(*g_A20_config_root.windDict, p_seg.presetCode, p_seg.styleCode, &p_seg.adjust, v_resolved);
+
+    if (v_ok && v_resolved.valid) {
+        sim.applyResolvedWind(v_resolved);
+
+        markDirty("state");
+        markDirty("chart");
+
+        const char* v_presetName = findPresetNameByCode(p_seg.presetCode);
+        const char* v_styleName  = findStyleNameByCode(p_seg.styleCode);
+
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
+            "[CT10] SegmentOn(SCH) PRESET=%s(%s) STYLE=%s(%s) on=%u off=%u",
+            p_seg.presetCode, v_presetName, p_seg.styleCode, v_styleName,
+            (unsigned)p_seg.onMinutes, (unsigned)p_seg.offMinutes
+        );
+    } else {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] SegmentOn(SCH) resolve failed preset=%s style=%s", p_seg.presetCode, p_seg.styleCode);
+    }
+}
+
+
+/*
 void CL_CT10_ControlManager::applySegmentOn(const ST_A20_ScheduleSegment_t& p_seg) {
 	
 	// snapshot only (schedule item + seg)
@@ -690,10 +762,67 @@ void CL_CT10_ControlManager::applySegmentOn(const ST_A20_ScheduleSegment_t& p_se
 		CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] SegmentOn(SCH) resolve failed preset=%s style=%s", p_seg.presetCode, p_seg.styleCode);
 	}
 }
+*/
 
 
+void CL_CT10_ControlManager::applySegmentOn(const ST_A20_UserProfileSegment_t& p_seg) {
+    // ✅ snapshot only (profile item + seg)
+    bool v_snapshotOk = false;
+    if (g_A20_config_root.userProfiles && curProfileIndex >= 0) {
+        ST_A20_UserProfilesRoot_t& v_root = *g_A20_config_root.userProfiles;
+        if ((uint8_t)curProfileIndex < v_root.count) {
+            updateRunCtxOnSegmentOn_Profile(v_root.items[(uint8_t)curProfileIndex], p_seg);
+            v_snapshotOk = true;
+        }
+    }
+    if (!v_snapshotOk) {
+        runCtx.activeProfileNo = 0;
+        runCtx.activeSchId = 0;
+        runCtx.activeSchNo = 0;
+        runCtx.activeSegId = 0;
+        runCtx.activeSegNo = 0;
+        runCtx.lastDecisionMs = millis();
+    }
+
+    if (!g_A20_config_root.windDict) return;
+
+    if (p_seg.mode == EN_A20_SEG_MODE_FIXED) {
+        sim.stop();
+        if (pwm) pwm->P10_setDutyPercent(p_seg.fixedSpeed);
+
+        markDirty("state");
+        markDirty("chart");
+
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] SegmentOn(PROFILE) FIXED duty=%.1f%%", p_seg.fixedSpeed);
+        return;
+    }
+
+    ST_A20_ResolvedWind_t v_resolved;
+    memset(&v_resolved, 0, sizeof(v_resolved));
+
+    bool v_ok = S20_resolveWindParams(*g_A20_config_root.windDict, p_seg.presetCode, p_seg.styleCode, &p_seg.adjust, v_resolved);
+
+    if (v_ok && v_resolved.valid) {
+        sim.applyResolvedWind(v_resolved);
+
+        markDirty("state");
+        markDirty("chart");
+
+        const char* v_presetName = findPresetNameByCode(p_seg.presetCode);
+        const char* v_styleName  = findStyleNameByCode(p_seg.styleCode);
+
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
+            "[CT10] SegmentOn(PROFILE) PRESET=%s(%s) STYLE=%s(%s) on=%u off=%u",
+            p_seg.presetCode, v_presetName, p_seg.styleCode, v_styleName,
+            (unsigned)p_seg.onMinutes, (unsigned)p_seg.offMinutes
+        );
+    } else {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] SegmentOn(PROFILE) resolve failed preset=%s style=%s", p_seg.presetCode, p_seg.styleCode);
+    }
+}
 
 
+/*
 void CL_CT10_ControlManager::applySegmentOn(const ST_A20_UserProfileSegment_t& p_seg) {
 	
 	// ✅ snapshot only (profile item + seg)
@@ -739,6 +868,7 @@ void CL_CT10_ControlManager::applySegmentOn(const ST_A20_UserProfileSegment_t& p
 		CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] SegmentOn(PROFILE) resolve failed preset=%s style=%s", p_seg.presetCode, p_seg.styleCode);
 	}
 }
+*/
 
 
 

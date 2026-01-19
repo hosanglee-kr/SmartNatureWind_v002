@@ -355,7 +355,6 @@ class CL_CT10_ControlManager {
 	const char* findPresetNameByCode(const char* p_code) const;
 	const char* findStyleNameByCode(const char* p_code) const;
 	
-	-------------
 	// [CT10] runCtx snapshot update (Segment on/off에서만 사용)
 	// --------------------------------------------------
 	void updateRunCtxOnSegmentOn_Schedule(const ST_A20_ScheduleItem_t& p_s,

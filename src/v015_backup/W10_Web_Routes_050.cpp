@@ -31,10 +31,10 @@
  * ------------------------------------------------------
  */
 
-#include "CT10_Control_042.h"
-#include "M10_MotionLogic_040.h"
+#include "CT10_Control_050.h"
+#include "M10_MotionLogic_050.h"
 #include "W10_Web_051.h"
-#include "WF10_WiFiManager_043.h"
+#include "WF10_WiFiManager_050.h"
 
 // ------------------------------------------------------
 // 정적 멤버 정의

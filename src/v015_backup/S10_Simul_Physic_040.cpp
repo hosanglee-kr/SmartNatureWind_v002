@@ -39,9 +39,9 @@
 #include "S10_Simul_041.h"
 
 // 외부 종속성 헤더 포함
-#include "A20_Const_044.h"
-#include "C10_Config_042.h"
-#include "D10_Logger_040.h"
+#include "A20_Const_050.h"
+#include "C10_Config_050.h"
+#include "D10_Logger_050.h"
 
 // ==================================================
 // [확률 헬퍼] (파일 내부 전용)

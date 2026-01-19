@@ -1,7 +1,7 @@
 #pragma once
 /*
  * ------------------------------------------------------
- * 소스명 : A00_Main_041.h
+ * 소스명 : A00_Main_050.h
  * 모듈 약어 : A00
  * 모듈명 : Smart Nature Wind Main Entrypoint (v002)
  * ------------------------------------------------------
@@ -23,20 +23,20 @@
 #include <WiFiMulti.h>
 #include <esp_task_wdt.h>
 
-#include "A20_Const_044.h"
-#include "C10_Config_042.h"
-#include "CT10_Control_042.h"
-#include "D10_Logger_040.h"
-#include "M10_MotionLogic_040.h"
-#include "N10_NvsManager_040.h"
-#include "P10_PWM_ctrl_040.h"
-#include "S10_Simul_041.h"
-#include "S20_WindSolver_040.h"
-#include "W10_Web_051.h"
-#include "WF10_WiFiManager_043.h"
-#include "TM10_TimeManager_003.h"
+#include "A20_Const_050.h"
+#include "C10_Config_050.h"
+#include "CT10_Control_050.h"
+#include "D10_Logger_050.h"
+#include "M10_MotionLogic_050.h"
+#include "N10_NvsManager_050.h"
+#include "P10_PWM_ctrl_050.h"
+#include "S10_Simul_050.h"
+#include "S20_WindSolver_050.h"
+#include "W10_Web_060.h"
+#include "WF10_WiFiManager_050.h"
+#include "TM10_TimeManager_050.h"
 
-#include "A30_LED_041.h"
+#include "A30_LED_050.h"
 
 // [main.cpp] 또는 [MotionLogic.cpp] 파일에 추가
 CL_M10_MotionLogic* 	g_M10_motionLogic = nullptr;
@@ -285,7 +285,7 @@ void A00_run() {
     CT10_WS_tick();
 
     // --------------------------------------------------
-    
+
 
 
     // TM10 시간 상태 감시/서버 fallback 처리(블로킹X)

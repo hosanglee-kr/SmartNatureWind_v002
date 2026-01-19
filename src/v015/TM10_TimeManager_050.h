@@ -1,7 +1,7 @@
 #pragma once
 /*
  * ------------------------------------------------------
- * 소스명 : TM10_TimeManager_003.h
+ * 소스명 : TM10_TimeManager_050.h
  * 모듈 약어 : TM10
  * 모듈명 : Smart Nature Wind Time Manager (SNTP Callback Only + Fallback) (v001)
  * ------------------------------------------------------
@@ -46,8 +46,8 @@
 #include <string.h>
 #include <time.h>
 
-#include "A20_Const_044.h"
-#include "D10_Logger_040.h"
+#include "A20_Const_050.h"
+#include "D10_Logger_050.h"
 
 // ESP32 SNTP (Arduino-ESP32)
 #include <esp_sntp.h>
@@ -109,7 +109,7 @@ class CL_TM10_TimeManager {
 
     // 상태 JSON(디버그/웹)
     static void toJson(JsonDocument& p_doc);
-    
+
     // ------------------------------------------------------
     // (추가) 외부 조회 API
     // ------------------------------------------------------
@@ -163,7 +163,7 @@ class CL_TM10_TimeManager {
 
     static void _requestSync();        // "지금 동기화 해줘" 요청(블로킹X)
     static void _switchToNextServer(); // fallback 전환(블로킹X)
-    
+
     static void _updateSyncedRecently(uint32_t p_nowMs); // 최근동기화 플래그 갱신
 };
 
@@ -255,9 +255,9 @@ inline void CL_TM10_TimeManager::_onSntpTimeSync(struct timeval* p_tv) {
         s_timeValid       = true;
         s_waitingCallback = false;
         s_lastSyncMs      = millis();
-        
+
         _updateSyncedRecently(millis());
-        
+
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[TM10] SNTP synced OK (server=%s)", s_serverList[s_activeServerIdx]);
     } else {
         // 콜백이 왔어도 시간이 이상하면 실패로 본다.
@@ -510,10 +510,10 @@ inline void CL_TM10_TimeManager::tick(const ST_A20_SystemConfig_t* p_sysOrNull) 
     }
 
     uint32_t v_now = millis();
-    
+
     _updateSyncedRecently(v_now);
-    
-    
+
+
 
     // Wi-Fi 없으면 아무 것도 하지 않음
     if (!s_wifiUp) {
@@ -581,9 +581,9 @@ inline void CL_TM10_TimeManager::toJson(JsonDocument& p_doc) {
     v_time["lastSyncMs"]      = (uint32_t)s_lastSyncMs;
     v_time["lastRequestMs"]   = (uint32_t)s_lastRequestMs;
     v_time["waitingCallback"] = s_waitingCallback;
-    
+
     v_time["syncedRecently"] = s_timeSyncedRecently;
-    
+
 }
 
 

@@ -1,7 +1,7 @@
 #pragma once
 /*
  * ------------------------------------------------------
- * 소스명 : S10_Simul_041.h
+ * 소스명 : S10_Simul_050.h
  * 모듈약어 : S10
  * 모듈명 : Smart Nature Wind 풍속 시뮬레이션 Manager
  * ------------------------------------------------------
@@ -53,13 +53,13 @@
 #include <cmath>
 #include <deque>
 
-#include "A20_Const_044.h"
-#include "C10_Config_042.h"
-#include "D10_Logger_040.h"
-#include "P10_PWM_ctrl_040.h"
+#include "A20_Const_050.h"
+#include "C10_Config_050.h"
+#include "D10_Logger_050.h"
+#include "P10_PWM_ctrl_050.h"
 
 
-#include "S10_Simul_Const_040.h"
+#include "S10_Simul_Const_050.h"
 
 // ------------------------------------------------------
 // S10 -> CT10 Dirty bridge (forward decl only)

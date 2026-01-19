@@ -43,13 +43,13 @@
 
 #include <vector>
 
-#include "A20_Const_044.h"
-#include "C10_Config_042.h"
-#include "CT10_Control_042.h"
-#include "D10_Logger_040.h"
-#include "N10_NvsManager_040.h"
+#include "A20_Const_050.h"
+#include "C10_Config_050.h"
+#include "CT10_Control_050.h"
+#include "D10_Logger_050.h"
+#include "N10_NvsManager_050.h"
 #include "W10_Web_Const_050.h"
-#include "WF10_WiFiManager_043.h"
+#include "WF10_WiFiManager_050.h"
 
 
 

@@ -1,7 +1,7 @@
 #pragma once
 /*
  * ------------------------------------------------------
- * 소스명 : A20_Const_044.h
+ * 소스명 : A20_Const_050.h
  * 모듈약어 : A20
  * 모듈명 : Smart Nature Wind 공용 상수/타입/구조체 선언
  * ------------------------------------------------------
@@ -46,13 +46,12 @@
 #include <string.h>
 #include <strings.h>
 
-#include "A20_Const_Const_044.h"
-#include "A20_Const_WS_045.h"
-#include "A20_Const_Wifi_044.h"
-#include "A20_Const_Motion_044.h"
-#include "A20_Const_Sch_046.h"
-// #include "A20_Const_Sch_044.h"
-#include "A20_Const_System_045.h"
+#include "A20_Const_Const_050.h"
+#include "A20_Const_WS_050.h"
+#include "A20_Const_Wifi_050.h"
+#include "A20_Const_Motion_050.h"
+#include "A20_Const_Sch_050.h"
+#include "A20_Const_System_050.h"
 
 
 
@@ -78,5 +77,5 @@ extern CL_M10_MotionLogic* g_M10_motionLogic;
 
 
 #include "A40_Com_Func_052.h"
-#include "A20_Com_Func_046.h"
-#include "A20_Com_FuncRst_046.h"
+#include "A20_Com_Func_050.h"
+#include "A20_Com_FuncRst_050.h"

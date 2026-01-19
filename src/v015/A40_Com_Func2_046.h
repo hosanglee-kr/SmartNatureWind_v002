@@ -10,8 +10,8 @@
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 
-#include "A20_Const_Const_044.h"
-#include "D10_Logger_040.h"
+#include "A20_Const_Const_050.h"
+#include "D10_Logger_050.h"
 
 // ======================================================
 // 1) 공용 헬퍼

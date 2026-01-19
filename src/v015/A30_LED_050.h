@@ -1,4 +1,4 @@
-// 소스명 : A30_LED_040.h
+// 소스명 : A30_LED_050.h
 #pragma once
 
 #include <Arduino.h>

@@ -19,9 +19,9 @@
 #include <new>    // std::nothrow
 
 // NOTE: 파일명 오타 가능성(실제 파일명 확인 필요)
-// - 기존 흐름에서 A20_Const_044.h 계열을 쓰는 경우가 많았음
-#include "A20_Const_Const_044.h"
-#include "D10_Logger_040.h"
+// - 기존 흐름에서 A20_Const_050.h 계열을 쓰는 경우가 많았음
+#include "A20_Const_Const_050.h"
+#include "D10_Logger_050.h"
 
 // ======================================================
 // [A40 공통 로그 정책]
@@ -704,7 +704,7 @@ static uint16_t A40_parseHHMMtoMin_24h(const char* p_time) {
 
 	// [특수 처리] 24:00 허용 (종료 시간 설정 등에 사용)
 	if (v_hh == 24) {
-		if (v_mm == 0) return 1440; 
+		if (v_mm == 0) return 1440;
 		return 0; // 24:01 등은 무효 처리
 	}
 

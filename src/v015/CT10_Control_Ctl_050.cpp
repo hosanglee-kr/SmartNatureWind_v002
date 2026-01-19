@@ -586,18 +586,61 @@ bool CL_CT10_ControlManager::tickSegmentSequence(bool p_repeat, uint8_t p_repeat
 	return true;
 }
 
+
+
+// --------------------------------------------------
+// runCtx snapshot helpers (SSOT: state/reason는 tick/applyDecision에서만)
+// --------------------------------------------------
+void CL_CT10_ControlManager::updateRunCtxOnSegmentOn_Schedule(const ST_A20_ScheduleItem_t& p_s,
+                                                              const ST_A20_ScheduleSegment_t& p_seg) {
+    // ✅ Snapshot only
+    runCtx.activeSchId = p_s.schId;
+    runCtx.activeSchNo = p_s.schNo;
+
+    // profile에서 온 값은 의미 없으므로 0 (혼선 방지)
+    runCtx.activeProfileNo = 0;
+
+    runCtx.activeSegId = p_seg.segId;
+    runCtx.activeSegNo = p_seg.segNo;
+}
+
+void CL_CT10_ControlManager::updateRunCtxOnSegmentOn_Profile(const ST_A20_UserProfileItem_t& p_p,
+                                                             const ST_A20_UserProfileSegment_t& p_seg) {
+    // ✅ Snapshot only
+    runCtx.activeProfileNo = p_p.profileNo;
+
+    // schedule은 의미 없으므로 0 (혼선 방지)
+    runCtx.activeSchId = 0;
+    runCtx.activeSchNo = 0;
+
+    runCtx.activeSegId = p_seg.segId;
+    runCtx.activeSegNo = p_seg.segNo;
+}
+
+void CL_CT10_ControlManager::updateRunCtxOnSegmentOff() {
+    // ✅ Off phase 정책: seg는 0으로 리셋 (UI에서 “지금은 OFF phase” 표현 가능)
+    // schedule/profile 자체가 활성인지는 tick의 state/runSource로 판단
+    CT10_resetActiveSegSnapshot(runCtx);
+
+    // ✅ 이벤트 타임스탬프만 갱신(최근 변화 표시)
+    runCtx.lastDecisionMs = millis();
+    // state/reason/lastStateChangeMs는 여기서 변경 금지
+}
+
+
+
 // --------------------------------------------------
 // apply segment on/off + 로그 개선(이름 출력)
 // --------------------------------------------------
 void CL_CT10_ControlManager::applySegmentOn(const ST_A20_ScheduleSegment_t& p_seg) {
-	// ✅ runCtx snapshot (Schedule)
-	// - 현재 활성 스케줄 인덱스 기반으로 schId/schNo/segId/segNo 갱신
-	if (g_A20_config_root.schedules && curScheduleIndex >= 0) {
-		ST_A20_SchedulesRoot_t& v_root = *g_A20_config_root.schedules;
-		if ((uint8_t)curScheduleIndex < v_root.count) {
-			updateRunCtxOnSegmentOn_Schedule(v_root.items[(uint8_t)curScheduleIndex], p_seg);
-		}
-	}
+	
+	// snapshot only (schedule item + seg)
+    if (g_A20_config_root.schedules && curScheduleIndex >= 0) {
+        ST_A20_SchedulesRoot_t& v_root = *g_A20_config_root.schedules;
+        if ((uint8_t)curScheduleIndex < v_root.count) {
+            updateRunCtxOnSegmentOn_Schedule(v_root.items[(uint8_t)curScheduleIndex], p_seg);
+        }
+    }
 	
 	if (!g_A20_config_root.windDict)
 		return;
@@ -637,14 +680,18 @@ void CL_CT10_ControlManager::applySegmentOn(const ST_A20_ScheduleSegment_t& p_se
 	}
 }
 
+
+
+
 void CL_CT10_ControlManager::applySegmentOn(const ST_A20_UserProfileSegment_t& p_seg) {
-	// ✅ runCtx snapshot (Profile)
-	if (g_A20_config_root.userProfiles && curProfileIndex >= 0) {
-		ST_A20_UserProfilesRoot_t& v_root = *g_A20_config_root.userProfiles;
-		if ((uint8_t)curProfileIndex < v_root.count) {
-			updateRunCtxOnSegmentOn_Profile(v_root.items[(uint8_t)curProfileIndex], p_seg);
-		}
-	}
+	
+	// ✅ snapshot only (profile item + seg)
+    if (g_A20_config_root.userProfiles && curProfileIndex >= 0) {
+        ST_A20_UserProfilesRoot_t& v_root = *g_A20_config_root.userProfiles;
+        if ((uint8_t)curProfileIndex < v_root.count) {
+            updateRunCtxOnSegmentOn_Profile(v_root.items[(uint8_t)curProfileIndex], p_seg);
+        }
+    }
 	
 	if (!g_A20_config_root.windDict)
 		return;
@@ -681,6 +728,9 @@ void CL_CT10_ControlManager::applySegmentOn(const ST_A20_UserProfileSegment_t& p
 		CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] SegmentOn(PROFILE) resolve failed preset=%s style=%s", p_seg.presetCode, p_seg.styleCode);
 	}
 }
+
+
+
 
 void CL_CT10_ControlManager::applySegmentOff() {
     // ✅ runCtx snapshot: seg off

@@ -50,32 +50,6 @@ static inline void CT10_resetActiveSegSnapshot(ST_CT10_RunContext_t& p_ctx) {
 	p_ctx.activeSegNo = 0;
 }
 
-void CL_CT10_ControlManager::updateRunCtxOnSegmentOn_Schedule(const ST_A20_ScheduleItem_t& p_s,
-                                                              const ST_A20_ScheduleSegment_t& p_seg) {
-	// 상태는 tick 쪽에서 이미 결정된다고 가정(최소 패치)
-	// 여기서는 "스냅샷"만 갱신
-	runCtx.activeSchId = p_s.schId;
-	runCtx.activeSchNo = p_s.schNo;
-	runCtx.activeSegId = p_seg.segId;
-	runCtx.activeSegNo = p_seg.segNo;
-}
-
-void CL_CT10_ControlManager::updateRunCtxOnSegmentOn_Profile(const ST_A20_UserProfileItem_t& p_p,
-                                                             const ST_A20_UserProfileSegment_t& p_seg) {
-	runCtx.activeProfileNo = p_p.profileNo;
-
-	// profile에서 schedule 필드는 의미 없으므로 0으로 정리(운영 UI 혼동 방지)
-	runCtx.activeSchId = 0;
-	runCtx.activeSchNo = 0;
-
-	runCtx.activeSegId = p_seg.segId;
-	runCtx.activeSegNo = p_seg.segNo;
-}
-
-void CL_CT10_ControlManager::updateRunCtxOnSegmentOff() {
-	// Off phase에서는 seg만 0으로(스케줄/프로필 자체는 “활성”일 수 있음)
-	CT10_resetActiveSegSnapshot(runCtx);
-}
 
 // --------------------------------------------------
 // override remain sec

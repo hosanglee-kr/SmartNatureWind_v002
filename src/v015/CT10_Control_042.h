@@ -336,6 +336,7 @@ class CL_CT10_ControlManager {
 	void initAutoOffFromUserProfile(const ST_A20_UserProfileItem_t& p_up);
 	void initAutoOffFromSchedule(const ST_A20_ScheduleItem_t& p_s);
 	
+	void ackEventState();
 	void onAutoOffTriggered(EN_CT10_reason_t p_reason); 
 	bool checkAutoOff(EN_CT10_reason_t* p_reasonOrNull = nullptr);
 	// bool checkAutoOff();

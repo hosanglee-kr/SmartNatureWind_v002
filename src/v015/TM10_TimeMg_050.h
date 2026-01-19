@@ -1,7 +1,7 @@
 #pragma once
 /*
  * ------------------------------------------------------
- * 소스명 : TM10_TimeManager_050.h
+ * 소스명 : TM10_TimeMg_050.h
  * 모듈 약어 : TM10
  * 모듈명 : Smart Nature Wind Time Manager (SNTP Callback Only + Fallback) (v001)
  * ------------------------------------------------------

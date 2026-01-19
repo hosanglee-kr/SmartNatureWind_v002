@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------
- * 소스명 : CT10_Control_control_050.cpp
+ * 소스명 : CT10_Control_Ctl_050.cpp
  * 모듈약어 : CT10
  * 모듈명 : Smart Nature Wind 제어 통합 Manager (v026, Control)
  * ------------------------------------------------------
@@ -79,6 +79,7 @@ void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
 	memset(&scheduleSegRt, 0, sizeof(scheduleSegRt));
 	memset(&profileSegRt, 0, sizeof(profileSegRt));
 	memset(&autoOffRt, 0, sizeof(autoOffRt));
+	memset(&runCtx, 0, sizeof(runCtx)); 
 
 	scheduleSegRt.index = -1;
 	profileSegRt.index	= -1;
@@ -87,6 +88,19 @@ void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
 	runSource			= EN_CT10_RUN_NONE;
 	lastTickMs			= 0;
 	lastMetricsPushMs	= 0;
+	
+	// ✅ runCtx 기본 상태(SSOT)
+	runCtx.state            = EN_CT10_STATE_IDLE;
+	runCtx.reason           = EN_CT10_REASON_NONE;
+	runCtx.lastDecisionMs   = millis();
+	runCtx.lastStateChangeMs= runCtx.lastDecisionMs;
+
+	runCtx.activeSchId      = 0;
+	runCtx.activeSchNo      = 0;
+	runCtx.activeSegId      = 0;
+	runCtx.activeSegNo      = 0;
+	runCtx.activeProfileNo  = 0;
+	
 
 	sim.begin(p_pwm);
 
@@ -576,8 +590,18 @@ bool CL_CT10_ControlManager::tickSegmentSequence(bool p_repeat, uint8_t p_repeat
 // apply segment on/off + 로그 개선(이름 출력)
 // --------------------------------------------------
 void CL_CT10_ControlManager::applySegmentOn(const ST_A20_ScheduleSegment_t& p_seg) {
+	// ✅ runCtx snapshot (Schedule)
+	// - 현재 활성 스케줄 인덱스 기반으로 schId/schNo/segId/segNo 갱신
+	if (g_A20_config_root.schedules && curScheduleIndex >= 0) {
+		ST_A20_SchedulesRoot_t& v_root = *g_A20_config_root.schedules;
+		if ((uint8_t)curScheduleIndex < v_root.count) {
+			updateRunCtxOnSegmentOn_Schedule(v_root.items[(uint8_t)curScheduleIndex], p_seg);
+		}
+	}
+	
 	if (!g_A20_config_root.windDict)
 		return;
+		
 
 	if (p_seg.mode == EN_A20_SEG_MODE_FIXED) {
 		sim.stop();
@@ -614,6 +638,14 @@ void CL_CT10_ControlManager::applySegmentOn(const ST_A20_ScheduleSegment_t& p_se
 }
 
 void CL_CT10_ControlManager::applySegmentOn(const ST_A20_UserProfileSegment_t& p_seg) {
+	// ✅ runCtx snapshot (Profile)
+	if (g_A20_config_root.userProfiles && curProfileIndex >= 0) {
+		ST_A20_UserProfilesRoot_t& v_root = *g_A20_config_root.userProfiles;
+		if ((uint8_t)curProfileIndex < v_root.count) {
+			updateRunCtxOnSegmentOn_Profile(v_root.items[(uint8_t)curProfileIndex], p_seg);
+		}
+	}
+	
 	if (!g_A20_config_root.windDict)
 		return;
 
@@ -651,6 +683,9 @@ void CL_CT10_ControlManager::applySegmentOn(const ST_A20_UserProfileSegment_t& p
 }
 
 void CL_CT10_ControlManager::applySegmentOff() {
+    // ✅ runCtx snapshot: seg off
+	updateRunCtxOnSegmentOff();
+	
 	sim.stop();
 	markDirty("state");
 	markDirty("chart");

@@ -1,4 +1,4 @@
-// CT10_Control_StateMG_051.cpp
+// CT10_Control_StMG_051.cpp
 
 
 

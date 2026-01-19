@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------
- * 소스명 : C10_Config_WindDic_050.cpp
+ * 소스명 : C10_Config_WindDc_050.cpp
  * 모듈 약어 : C10
  * 모듈명 : Smart Nature Wind Configuration Manager - WindDict
  * ------------------------------------------------------

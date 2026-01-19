@@ -354,6 +354,15 @@ class CL_CT10_ControlManager {
 	// 로그 개선용: preset/style 이름 조회
 	const char* findPresetNameByCode(const char* p_code) const;
 	const char* findStyleNameByCode(const char* p_code) const;
+	
+	-------------
+	// [CT10] runCtx snapshot update (Segment on/off에서만 사용)
+	// --------------------------------------------------
+	void updateRunCtxOnSegmentOn_Schedule(const ST_A20_ScheduleItem_t& p_s,
+	                                      const ST_A20_ScheduleSegment_t& p_seg);
+	void updateRunCtxOnSegmentOn_Profile(const ST_A20_UserProfileItem_t& p_p,
+	                                     const ST_A20_UserProfileSegment_t& p_seg);
+	void updateRunCtxOnSegmentOff();
 
 private:
 	// decide/apply

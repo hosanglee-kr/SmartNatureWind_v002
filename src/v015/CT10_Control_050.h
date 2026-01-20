@@ -173,8 +173,8 @@ typedef struct {
 	// offTime 재트리거 방지 런타임(전역 static 제거)
     // - 같은 day + 같은 minute이면 재트리거 방지
     // - tm_yday: 0~365
-    int16_t                 offTimeLastTrigYday;   // init: -1
-    int16_t                 offTimeLastTrigMinute; // init: -1 (0~1439)
+    int16_t                 offTimeLastYday;   // init: -1
+    int16_t                 offTimeLastMin; // init: -1 (0~1439)
     
 	bool		  			offTempEnabled;  // 온도 기반 AutoOff 활성 여부
 	float		  			offTemp;		   // AutoOff가 발동되는 온도 (섭씨)

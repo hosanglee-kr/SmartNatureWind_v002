@@ -8,23 +8,17 @@
  * - AutoOff 초기화/체크, Motion 체크, Schedule 활성 인덱스 계산
  * - Dirty 플래그 관리, override remain 계산, preset/style 이름 조회 유틸
  *
- * ------------------------------------------------------
- * [운영 정책/보완 사항 반영]
- * 1) cross-midnight(자정 넘어감) 스케줄의 0시 이후 구간은 days[어제]로 판단
- * 2) start==end 는 "항상 OFF" 정책으로 통일
- * 3) checkAutoOff(offTime) 재트리거 방지:
- *    - 전역 static 제거 -> autoOffRt 런타임 필드로 관리
- *    - "같은 day + 같은 minute"일 때만 재트리거 방지(하루 1회 보장)
- * 4) shouldHoldEventState():
- *    - 어떤 상태든 hold 금지 -> 이벤트 상태(AUTOOFF_STOPPED / TIME_INVALID)에서만 hold
- * 5) ackEventState():
- *    - ACK 대상은 AUTOOFF_STOPPED만
- *    - MOTION_BLOCKED는 센서 입력으로 자동 해제/재진입 정책
- * 6) onAutoOffTriggered():
- *    - runSource/curIndex는 종료(=NONE)하되
- *    - runCtx snapshot은 유지(단, segId/segNo만 0으로) -> UI에 "마지막 실행 대상 + 멈춘 이유" 표시
- * 7) 시간 불능:
- *    - tick에서 TM10::isTimeValid() 선체크 후 onTimeInvalid() 이벤트 상태로 전환 권장
+ * [정책 업데이트 요약]
+ * - cross-midnight(자정 넘어감) 요일 처리:
+ *    - [start, 24:00) 구간: days[오늘]
+ *    - [00:00, end) 구간 : days[어제]
+ * - start==end: 24시간 활성(하루 종일)
+ * - AutoOff offTime 재트리거 방지:
+ *    - 전역 static 제거
+ *    - autoOffRt에 (lastYday,lastMin)로 “같은 day+minute” 재트리거만 방지
+ * - hold/ack 정책:
+ *    - hold은 AUTOOFF_STOPPED / TIME_INVALID 에서만 적용
+ *    - ACK 대상은 AUTOOFF_STOPPED만 (MOTION_BLOCKED는 센서 입력으로 자동 해제/재진입)
  *
  * ------------------------------------------------------
  * [구현 규칙]
@@ -56,7 +50,6 @@
 
 #include "CT10_Control_050.h"
 #include <DHT.h>
-#include <new> // std::nothrow
 
 // --------------------------------------------------
 // override remain sec
@@ -77,8 +70,8 @@ void CL_CT10_ControlManager::initAutoOffFromUserProfile(const ST_A20_UserProfile
     memset(&autoOffRt, 0, sizeof(autoOffRt));
 
     // ✅ offTime 재트리거 방지 런타임 초기화
-    autoOffRt.offTimeLastTrigYday   = -1;
-    autoOffRt.offTimeLastTrigMinute = -1;
+    autoOffRt.offTimeLastYday = -1;
+    autoOffRt.offTimeLastMin  = -1;
 
     if (p_up.autoOff.timer.enabled) {
         autoOffRt.timerArmed   = true;
@@ -99,8 +92,8 @@ void CL_CT10_ControlManager::initAutoOffFromSchedule(const ST_A20_ScheduleItem_t
     memset(&autoOffRt, 0, sizeof(autoOffRt));
 
     // ✅ offTime 재트리거 방지 런타임 초기화
-    autoOffRt.offTimeLastTrigYday   = -1;
-    autoOffRt.offTimeLastTrigMinute = -1;
+    autoOffRt.offTimeLastYday = -1;
+    autoOffRt.offTimeLastMin  = -1;
 
     if (p_s.autoOff.timer.enabled) {
         autoOffRt.timerArmed   = true;
@@ -119,40 +112,35 @@ void CL_CT10_ControlManager::initAutoOffFromSchedule(const ST_A20_ScheduleItem_t
 
 // --------------------------------------------------
 // [CT10] 이벤트 상태 ACK (UI에서 호출)
-// - ACK 대상은 AUTOOFF_STOPPED만
-// - MOTION_BLOCKED는 센서 입력으로 자동 해제/재진입(ACK 비권장)
+// - ACK 대상: AUTOOFF_STOPPED만
 // --------------------------------------------------
 void CL_CT10_ControlManager::ackEventState() {
     if (runCtx.state != EN_CT10_STATE_AUTOOFF_STOPPED) {
-        // 정책: AutoOff 이벤트만 ACK 허용
-        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] ackEventState ignored (state=%u)", (unsigned)runCtx.state);
+        // 정책: MotionBlocked/TimeInvalid는 ACK로 해제하지 않음
         return;
     }
 
     runCtx.stateAckRequired = false;
     runCtx.stateHoldUntilMs = 0;
 
+    // ACK 시 즉시 IDLE로 강제하지 않고 다음 tick에서 자연 결정
     markDirty("state");
     markDirty("summary");
 }
 
 // --------------------------------------------------
-// [CT10] 이벤트 상태(AUTOOFF/TIME_INVALID 등) hold/ack 유지 판단
-// - true 반환 시: "이번 tick은 상태 유지 우선"
+// [CT10] 이벤트 상태 hold/ack 유지 판단
+// - hold 적용 상태: AUTOOFF_STOPPED / TIME_INVALID 만
 // --------------------------------------------------
 bool CL_CT10_ControlManager::shouldHoldEventState() const {
-    // ✅ 이벤트 상태에서만 hold 정책 적용
-    bool v_isEventState =
-        (runCtx.state == EN_CT10_STATE_AUTOOFF_STOPPED) ||
-        (runCtx.state == EN_CT10_STATE_TIME_INVALID);
-
-    if (!v_isEventState) {
+    if (runCtx.state != EN_CT10_STATE_AUTOOFF_STOPPED &&
+        runCtx.state != EN_CT10_STATE_TIME_INVALID) {
         return false;
     }
 
     uint32_t v_now = (uint32_t)millis();
 
-    // ACK 요구 상태면: ack 전까지 유지
+    // ACK 요구 상태면 ack 전까지 유지
     if (runCtx.stateAckRequired) {
         return true;
     }
@@ -166,43 +154,49 @@ bool CL_CT10_ControlManager::shouldHoldEventState() const {
 }
 
 // --------------------------------------------------
-// [CT10] Time Invalid 이벤트 상태 전환(SSOT: tick에서 호출)
-// - 시간 불능이면 스케줄 판정을 못하므로 UI에 명확히 표시
-// - runSource/인덱스는 유지(시간 복구 시 자동 재개 가능)
+// [CT10] TIME_INVALID 이벤트 상태 전환(SSOT)
+// - tickLoop()에서 schedule 진입 전에 선체크하여 호출하는 것을 권장
+// - 정책: 실행 소스는 종료(=NONE), UI엔 마지막 snapshot은 유지(단 seg는 0)
 // --------------------------------------------------
-void CL_CT10_ControlManager::onTimeInvalid(EN_CT10_reason_t p_reason /*= EN_CT10_REASON_TIME_NOT_VALID*/) {
+void CL_CT10_ControlManager::onTimeInvalid(EN_CT10_reason_t p_reason) {
     if (sim.active) sim.stop();
+
+    // 실행 소스 종료(운영 정책)
+    runSource        = EN_CT10_RUN_NONE;
+    curScheduleIndex = -1;
+    curProfileIndex  = -1;
+
+    scheduleSegRt.index = -1;
+    profileSegRt.index  = -1;
 
     uint32_t v_now = (uint32_t)millis();
 
-    if (runCtx.state != EN_CT10_STATE_TIME_INVALID) {
-        runCtx.state             = EN_CT10_STATE_TIME_INVALID;
-        runCtx.reason            = p_reason;
-        runCtx.lastStateChangeMs = v_now;
-    } else {
-        runCtx.reason = p_reason;
-    }
-    runCtx.lastDecisionMs = v_now;
+    runCtx.state             = EN_CT10_STATE_TIME_INVALID;
+    runCtx.reason            = p_reason;
+    runCtx.lastDecisionMs    = v_now;
+    runCtx.lastStateChangeMs = v_now;
 
-    // hold 최소 2초(시간 복구/불능이 순간적으로 튀는 경우 UI/로그 안정화)
-    runCtx.stateHoldUntilMs = v_now + 2000UL;
-    runCtx.stateAckRequired = false;
+    // ✅ 최소 hold: 3초
+    runCtx.stateHoldUntilMs  = v_now + 3000UL;
+    runCtx.stateAckRequired  = false;
 
-    // snapshot 유지(마지막 실행 대상 + 멈춘 이유)
-    // seg는 "현재 phase"를 강제로 바꾸지 않음(운영 정책)
-    // 필요시 updateRunCtxOnSegmentOff()를 tick에서 호출하도록 조정 가능
+    // ✅ snapshot 유지(단 seg는 0으로 리셋해서 “지금은 off/정지” 표현에 도움)
+    runCtx.activeSegId = 0;
+    runCtx.activeSegNo = 0;
 
     markDirty("state");
     markDirty("metrics");
     markDirty("summary");
 
-    CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] TIME_INVALID (reason=%u, hold=2000ms)", (unsigned)p_reason);
+    CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] TIME_INVALID (reason=%u, hold=3000ms)", (unsigned)p_reason);
 }
 
 // --------------------------------------------------
 // [CT10] AutoOff 발생 처리(이벤트성 상태 전환 + hold/ack)
-// - runSource/curIndex는 종료(운영 정책)
-// - runCtx snapshot은 유지(단, segId/segNo만 0으로) => UI가 "마지막 실행 대상 + 멈춘 이유" 표시 가능
+// - 정책:
+//   - 실행 소스(runSource/curIndex)는 종료
+//   - runCtx snapshot은 유지(“마지막 실행 대상 + 멈춘 이유” 표시)
+//   - 단 seg는 0으로(현재는 off/정지 상태를 UI가 표현 가능)
 // --------------------------------------------------
 void CL_CT10_ControlManager::onAutoOffTriggered(EN_CT10_reason_t p_reason) {
     if (sim.active) sim.stop();
@@ -215,10 +209,10 @@ void CL_CT10_ControlManager::onAutoOffTriggered(EN_CT10_reason_t p_reason) {
     scheduleSegRt.index = -1;
     profileSegRt.index  = -1;
 
-    // AutoOff 런타임은 클리어(다음 시작 시 initAutoOffFromXXX에서 재설정)
+    // autoOffRt는 소거(재진입 시 initAutoOff에서 다시 설정)
     memset(&autoOffRt, 0, sizeof(autoOffRt));
-    autoOffRt.offTimeLastTrigYday   = -1;
-    autoOffRt.offTimeLastTrigMinute = -1;
+    autoOffRt.offTimeLastYday = -1;
+    autoOffRt.offTimeLastMin  = -1;
 
     uint32_t v_now = (uint32_t)millis();
 
@@ -227,13 +221,13 @@ void CL_CT10_ControlManager::onAutoOffTriggered(EN_CT10_reason_t p_reason) {
     runCtx.lastDecisionMs    = v_now;
     runCtx.lastStateChangeMs = v_now;
 
-    // ✅ hold: 3초 (필요 시 상수화)
+    // ✅ 최소 hold: 3초
     runCtx.stateHoldUntilMs  = v_now + 3000UL;
 
-    // ✅ ACK 정책: AutoOff는 UI에서 확인 후 재개 UX가 자연스러움
-    runCtx.stateAckRequired  = true;
+    // ✅ ACK 정책: 기본 false (원하면 true로 바꿔서 UI 확인 후 해제 가능)
+    runCtx.stateAckRequired  = false;
 
-    // ✅ snapshot 유지(마지막 대상 유지), seg만 0으로 (현재 phase 종료 표시)
+    // ✅ snapshot 유지(단 seg는 0)
     runCtx.activeSegId = 0;
     runCtx.activeSegNo = 0;
 
@@ -241,16 +235,14 @@ void CL_CT10_ControlManager::onAutoOffTriggered(EN_CT10_reason_t p_reason) {
     markDirty("metrics");
     markDirty("summary");
 
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff STOPPED (reason=%u, hold=3000ms, ack=1)", (unsigned)p_reason);
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff STOPPED (reason=%u, hold=3000ms)", (unsigned)p_reason);
 }
 
 // --------------------------------------------------
 // autoOff check (Reason 반환 버전)
-// - true 반환 시 p_reasonOrNull에 AUTOOFF_* reason 세팅
-// - timer/offTime/offTemp 중 "최초로 만족한 조건"을 원인으로 반환
+// - timer/offTime/offTemp 중 “최초로 만족한 조건”을 reason으로 반환
 // - offTime 재트리거 방지:
-//    * 전역 static 금지 -> autoOffRt.offTimeLastTrigYday / Minute 사용
-//    * "같은 day + 같은 minute"일 때만 재트리거 방지(하루 1회 보장)
+//   - (tm_yday + minute) 동일할 때만 재트리거 방지
 // --------------------------------------------------
 bool CL_CT10_ControlManager::checkAutoOff(EN_CT10_reason_t* p_reasonOrNull /*=nullptr*/) {
     if (p_reasonOrNull) {
@@ -272,32 +264,29 @@ bool CL_CT10_ControlManager::checkAutoOff(EN_CT10_reason_t* p_reasonOrNull /*=nu
         }
     }
 
-    // 2) offTime (TM10 기반)
-    // - “현재 분 >= offTimeMinutes”면 트리거
-    // - 하루 1회 정책: same yday + same minute이면 재트리거 방지
+    // 2) offTime (TM10)
     if (autoOffRt.offTimeEnabled) {
         struct tm v_tm;
         memset(&v_tm, 0, sizeof(v_tm));
 
         if (!CL_TM10_TimeManager::getLocalTime(v_tm)) {
-            CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] AutoOff(offTime) skipped: local time not available");
+            // 시간 불능이면 여기서 트리거하지 않음(상위 tick에서 TIME_INVALID로 처리 권장)
         } else {
-            uint16_t v_curMin = (uint16_t)v_tm.tm_hour * 60U + (uint16_t)v_tm.tm_min;
             int16_t  v_yday   = (int16_t)v_tm.tm_yday;
+            int16_t  v_curMin = (int16_t)((uint16_t)v_tm.tm_hour * 60U + (uint16_t)v_tm.tm_min);
 
-            // 재트리거 방지: 같은 day+minute이면 skip
-            if (autoOffRt.offTimeLastTrigYday == v_yday &&
-                autoOffRt.offTimeLastTrigMinute == (int16_t)v_curMin) {
-                // same minute same day -> do nothing
-            } else {
-                if (v_curMin >= autoOffRt.offTimeMinutes) {
-                    autoOffRt.offTimeLastTrigYday   = v_yday;
-                    autoOffRt.offTimeLastTrigMinute = (int16_t)v_curMin;
+            // 정책: 같은 (yday + minute)일 때만 재트리거 방지
+            bool v_already = (autoOffRt.offTimeLastYday == v_yday && autoOffRt.offTimeLastMin == v_curMin);
+
+            if (!v_already) {
+                if ((uint16_t)v_curMin >= autoOffRt.offTimeMinutes) {
+                    autoOffRt.offTimeLastYday = v_yday;
+                    autoOffRt.offTimeLastMin  = v_curMin;
 
                     if (p_reasonOrNull) *p_reasonOrNull = EN_CT10_REASON_AUTOOFF_TIME;
 
-                    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff(time %u) triggered (yday=%d curMin=%u)",
-                                       (unsigned)autoOffRt.offTimeMinutes, (int)v_yday, (unsigned)v_curMin);
+                    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff(time %u) triggered",
+                                       (unsigned)autoOffRt.offTimeMinutes);
                     return true;
                 }
             }
@@ -319,51 +308,43 @@ bool CL_CT10_ControlManager::checkAutoOff(EN_CT10_reason_t* p_reasonOrNull /*=nu
 }
 
 // --------------------------------------------------
-// Temperature read (mock + DHT)
-// - pin 변경 필요: 핀 변경 시 delete/new 재초기화 허용
-// - 문제가 되면: "핀 변경 시 재부팅" 운영 정책도 대안
+// temperature mock (DHT)
+// - 운영 안정성: new/delete 반복 금지
+// - 정책:
+//   - 최초 1회만 new
+//   - 핀 변경 감지 시: 재부팅 권고 로그 + 기존 객체 유지(안전 우선)
 // --------------------------------------------------
 float CL_CT10_ControlManager::getCurrentTemperatureMock() {
-    static DHT*      s_dht          = nullptr;
-    static int16_t   s_dhtPin       = 0;
-    static uint32_t  s_lastRead     = 0;
-    static float     s_lastTemp     = 24.0f; // Default fallback
+    static DHT*     s_dht          = nullptr;
+    static int16_t  s_dhtPin       = -1;
+    static uint32_t s_lastRead     = 0;
+    static float    s_lastTemp     = 24.0f;
 
-    // 1) Config Check
     if (!g_A20_config_root.system) return s_lastTemp;
 
     const auto& conf = g_A20_config_root.system->hw.tempHum;
     if (!conf.enabled) return 24.0f;
 
-    // 2) Pin 결정(0이면 무효 -> 기본 4)
     int16_t v_pin = (conf.pin > 0) ? (int16_t)conf.pin : 4;
 
-    // 3) Init/Re-init if needed (핀 변경 시 재초기화)
-    if (!s_dht || s_dhtPin != v_pin) {
-        if (s_dht) {
-            delete s_dht;
-            s_dht = nullptr;
-        }
+    if (!s_dht) {
         s_dhtPin = v_pin;
-
-        // 현재 구현은 DHT22 고정(정책 유지)
-        s_dht = new (std::nothrow) DHT(s_dhtPin, DHT22);
-        if (!s_dht) {
-            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] DHT alloc failed");
-            return s_lastTemp;
-        }
-
+        s_dht = new DHT(s_dhtPin, DHT22);
         s_dht->begin();
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] DHT22 init on pin %d", s_dhtPin);
+    } else if (s_dhtPin != v_pin) {
+        // ✅ 운영 안정성 우선: delete/re-init 하지 않음
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[CT10] DHT pin changed (%d->%d). Recommend reboot to apply safely.",
+                           s_dhtPin, v_pin);
+        // 계속 기존 핀의 센서 값을 유지(또는 fallback)
     }
 
-    // 4) Read Interval (DHT는 2초 주기)
     uint32_t v_now = millis();
     if (v_now - s_lastRead < 2000UL) return s_lastTemp;
     s_lastRead = v_now;
 
-    // 5) Read Temperature
-    float v_t = s_dht->readTemperature();
+    float v_t = s_dht ? s_dht->readTemperature() : NAN;
     if (isnan(v_t)) {
         CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] DHT read failed");
     } else {
@@ -375,86 +356,95 @@ float CL_CT10_ControlManager::getCurrentTemperatureMock() {
 
 // --------------------------------------------------
 // CT10: findActiveScheduleIndex (overlap policy selectable)
-// --------------------------------------------------
-// [정책]
-// 1) 활성 스케줄이 여러 개(겹침)인 경우: schNo가 "큰" 스케줄 우선(운영 정책)
-// 2) 시간 구간 판정: [start, end)  (end 시각은 포함하지 않음)
-// 3) start==end: 항상 OFF(매치 안 함) 정책으로 통일
-// 4) 자정 넘어감(cross-midnight: start > end)일 때 days 처리:
-//    - v_curMin >= start  구간([start, 24:00))은 days[오늘]로 판단
-//    - v_curMin <  end    구간([00:00, end))은 days[어제]로 판단
-//
-// * p_allowOverlap=true  : 겹침 허용 → 매치 후보 중 schNo 최댓값 선택
-// * p_allowOverlap=false : 겹침 금지 신뢰 → "첫 매치" 즉시 반환(최적화)
-//   - 전제: C10 저장 시 schNo desc 정렬 저장이면 첫 매치가 곧 최우선
+// - start==end: 24시간 활성(하루 종일)
+// - cross-midnight days 정책:
+//   - [start, 24:00) : days[오늘]
+//   - [00:00, end)   : days[어제]
 // --------------------------------------------------
 int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg, bool p_allowOverlap /*= true*/) {
     if (p_cfg.count == 0) return -1;
 
-    // TM10 기준: 로컬 시간 확보
     struct tm v_tm;
     memset(&v_tm, 0, sizeof(v_tm));
     if (!CL_TM10_TimeManager::getLocalTime(v_tm)) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] findActiveScheduleIndex: local time not available");
+        // tickLoop에서 TIME_INVALID 처리 권장
         return -1;
     }
 
-    // 요일/분 계산
-    // - tm_wday: 0=Sun..6=Sat
-    // - Config days[]: 0=Mon..6=Sun
+    // tm_wday: 0=Sun..6=Sat
+    // Config days[]: 0=Mon..6=Sun
     uint8_t  v_today = (v_tm.tm_wday == 0) ? 6 : (uint8_t)(v_tm.tm_wday - 1);
-    uint8_t  v_yday  = (uint8_t)((v_today + 6) % 7);
+    uint8_t  v_yday  = (v_today == 0) ? 6 : (uint8_t)(v_today - 1);
     uint16_t v_curMin = (uint16_t)v_tm.tm_hour * 60U + (uint16_t)v_tm.tm_min;
 
-    auto CT10_matchSchedule = [&](const ST_A20_ScheduleItem_t& p_s) -> bool {
-        if (!p_s.enabled) return false;
-
-        uint16_t v_startMin = A40_parseHHMMtoMin_24h(p_s.period.startTime);
-        uint16_t v_endMin   = A40_parseHHMMtoMin_24h(p_s.period.endTime);
-
-        // start==end : 항상 OFF
-        if (v_startMin == v_endMin) return false;
-
-        if (v_startMin < v_endMin) {
-            // same-day window: [start, end)
-            if (v_curMin < v_startMin || v_curMin >= v_endMin) return false;
-
-            // 요일은 오늘 기준
-            if (v_today >= 7 || !p_s.period.days[v_today]) return false;
-            return true;
-        } else {
-            // cross-midnight: [start,1440) U [0,end)
-            if (v_curMin >= v_startMin) {
-                // 오늘 밤 구간 -> days[오늘]
-                if (v_today >= 7 || !p_s.period.days[v_today]) return false;
-                return true;
-            } else if (v_curMin < v_endMin) {
-                // 자정 이후 구간 -> days[어제]
-                if (v_yday >= 7 || !p_s.period.days[v_yday]) return false;
-                return true;
-            }
-            return false;
-        }
-    };
-
-    // (A) 겹침 금지 신뢰: 첫 매치 즉시 반환
+    // 겹침 금지 신뢰(최적화): 첫 매치 즉시 반환
     if (!p_allowOverlap) {
         for (int v_i = 0; v_i < (int)p_cfg.count; v_i++) {
             const ST_A20_ScheduleItem_t& v_s = p_cfg.items[v_i];
-            if (CT10_matchSchedule(v_s)) {
-                return v_i;
+            if (!v_s.enabled) continue;
+
+            uint16_t v_startMin = A40_parseHHMMtoMin_24h(v_s.period.startTime);
+            uint16_t v_endMin   = A40_parseHHMMtoMin_24h(v_s.period.endTime);
+
+            // ✅ start==end: 24시간 활성(하루 종일) - 오늘 요일만 체크
+            if (v_startMin == v_endMin) {
+                if (v_s.period.days[v_today]) return v_i;
+                continue;
+            }
+
+            if (v_startMin < v_endMin) {
+                // same-day window: 오늘 요일 체크
+                if (!v_s.period.days[v_today]) continue;
+                if (v_curMin >= v_startMin && v_curMin < v_endMin) return v_i;
+            } else {
+                // cross-midnight
+                if (v_curMin >= v_startMin) {
+                    // [start, 24:00): 오늘 요일
+                    if (!v_s.period.days[v_today]) continue;
+                    return v_i;
+                } else if (v_curMin < v_endMin) {
+                    // [00:00, end): 어제 요일
+                    if (!v_s.period.days[v_yday]) continue;
+                    return v_i;
+                }
             }
         }
         return -1;
     }
 
-    // (B) 겹침 허용: schNo 최댓값 선택
+    // 겹침 허용: schNo 최댓값 선택
     int      v_bestIdx = -1;
     uint16_t v_bestNo  = 0;
 
     for (int v_i = 0; v_i < (int)p_cfg.count; v_i++) {
         const ST_A20_ScheduleItem_t& v_s = p_cfg.items[v_i];
-        if (!CT10_matchSchedule(v_s)) continue;
+        if (!v_s.enabled) continue;
+
+        uint16_t v_startMin = A40_parseHHMMtoMin_24h(v_s.period.startTime);
+        uint16_t v_endMin   = A40_parseHHMMtoMin_24h(v_s.period.endTime);
+
+        bool v_match = false;
+
+        if (v_startMin == v_endMin) {
+            // ✅ 24시간 활성: 오늘 요일만 체크
+            v_match = v_s.period.days[v_today];
+        } else if (v_startMin < v_endMin) {
+            // same-day: 오늘 요일
+            if (v_s.period.days[v_today]) {
+                v_match = (v_curMin >= v_startMin && v_curMin < v_endMin);
+            }
+        } else {
+            // cross-midnight
+            if (v_curMin >= v_startMin) {
+                // [start, 24:00): 오늘 요일
+                v_match = v_s.period.days[v_today];
+            } else if (v_curMin < v_endMin) {
+                // [00:00, end): 어제 요일
+                v_match = v_s.period.days[v_yday];
+            }
+        }
+
+        if (!v_match) continue;
 
         if (v_bestIdx < 0 || v_s.schNo > v_bestNo) {
             v_bestIdx = v_i;
@@ -467,8 +457,7 @@ int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t
 
 // --------------------------------------------------
 // [CT10] Motion Block 발생 처리(이벤트성 상태 전환)
-// - 정책: motion blocked일 땐 sim.stop()만 하고, runSource는 유지(=presence 복귀 시 자동 재개)
-// - ACK 비권장: 센서 입력으로 자동 해제/재진입
+// - 정책: MotionBlocked는 ACK/hold 대상 아님(센서 입력으로 자동 해제/재진입)
 // --------------------------------------------------
 void CL_CT10_ControlManager::onMotionBlocked(EN_CT10_reason_t p_reason) {
     if (sim.active) sim.stop();
@@ -477,9 +466,6 @@ void CL_CT10_ControlManager::onMotionBlocked(EN_CT10_reason_t p_reason) {
     runCtx.reason            = p_reason;
     runCtx.lastDecisionMs    = millis();
     runCtx.lastStateChangeMs = runCtx.lastDecisionMs;
-
-    // 실행 소스/active sch/profile 정보는 유지(재개 UX)
-    // seg snapshot도 유지 가능(운영 디버깅에 유리)
 
     markDirty("state");
     markDirty("metrics");
@@ -493,7 +479,6 @@ void CL_CT10_ControlManager::onMotionBlocked(EN_CT10_reason_t p_reason) {
 // --------------------------------------------------
 bool CL_CT10_ControlManager::isMotionBlocked(const ST_A20_Motion_t& p_motionCfg) {
     if (!motion) return false;
-
     if (!p_motionCfg.pir.enabled && !p_motionCfg.ble.enabled) return false;
 
     bool v_presenceActive = motion->isActive();

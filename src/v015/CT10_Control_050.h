@@ -169,7 +169,13 @@ typedef struct {
 
 	bool		  			offTimeEnabled;  // 지정 시간 AutoOff 활성 여부
 	uint16_t	  			offTimeMinutes;  // AutoOff가 발동되는 하루 중 시간 (분 단위, 0~1439)
-
+	
+	// offTime 재트리거 방지 런타임(전역 static 제거)
+    // - 같은 day + 같은 minute이면 재트리거 방지
+    // - tm_yday: 0~365
+    int16_t                 offTimeLastTrigYday;   // init: -1
+    int16_t                 offTimeLastTrigMinute; // init: -1 (0~1439)
+    
 	bool		  			offTempEnabled;  // 온도 기반 AutoOff 활성 여부
 	float		  			offTemp;		   // AutoOff가 발동되는 온도 (섭씨)
 } ST_CT10_AutoOffRuntime_t;
@@ -362,6 +368,10 @@ class CL_CT10_ControlManager {
 	void updateRunCtxOnSegmentOn_Profile(const ST_A20_UserProfileItem_t& p_p,
 	                                     const ST_A20_UserProfileSegment_t& p_seg);
 	void updateRunCtxOnSegmentOff();
+	
+	 // time invalid 이벤트 상태 전환(SSOT: tick에서 호출)
+    void onTimeInvalid(EN_CT10_reason_t p_reason = EN_CT10_REASON_TIME_NOT_VALID);
+    
 
 private:
 	// decide/apply

@@ -277,6 +277,74 @@ void CL_CT10_ControlManager::tickLoop() {
     if (v_nowMs - lastTickMs < S_TICK_MIN_INTERVAL_MS) return;
     lastTickMs = v_nowMs;
 
+    // ✅ 이벤트 상태(AUTOOFF_STOPPED / TIME_INVALID) hold/ack 유지 중이면 실행 최소화
+    if (shouldHoldEventState()) {
+        maybePushMetricsDirty();
+        return;
+    }
+
+    // 1) Override (시간 불능이어도 override는 동작)
+    if (tickOverride()) {
+        sim.tick();
+        maybePushMetricsDirty();
+        return;
+    }
+
+    // 2) Profile 전용 모드
+    if (useProfileMode) {
+        if (runSource == EN_CT10_RUN_USER_PROFILE && tickUserProfile()) {
+            sim.tick();
+            maybePushMetricsDirty();
+        } else if (sim.active) {
+            sim.stop();
+            maybePushMetricsDirty();
+        }
+        return;
+    }
+
+    // 3) UserProfile
+    if (runSource == EN_CT10_RUN_USER_PROFILE && tickUserProfile()) {
+        sim.tick();
+        maybePushMetricsDirty();
+        return;
+    }
+
+    // ✅ 4) Schedule 진입 전: 시간 유효성 선체크(SSOT)
+    // - 시간 불능이면 스케줄 판정을 못하므로 TIME_INVALID 이벤트 상태로 전환
+    // - schedule이 아니더라도, "스케줄 기반 운용"에서 가장 치명적인 상태라 UI에 즉시 표시
+    if (!CL_TM10_TimeManager::isTimeValid()) {
+        onTimeInvalid(EN_CT10_REASON_TIME_NOT_VALID);
+        maybePushMetricsDirty();
+        return;
+    }
+
+    // 4) Schedule
+    if (tickSchedule()) {
+        sim.tick();
+        maybePushMetricsDirty();
+        return;
+    }
+
+    // 5) Idle
+    if (sim.active) {
+        sim.stop();
+        maybePushMetricsDirty();
+        markDirty("state");
+    }
+
+    // idle 상태 기록(SSOT: state/reason)
+    runCtx.state  = EN_CT10_STATE_IDLE;
+    runCtx.reason = EN_CT10_REASON_NONE;
+}
+
+/*
+void CL_CT10_ControlManager::tickLoop() {
+    if (!active || !pwm) return;
+
+    unsigned long v_nowMs = millis();
+    if (v_nowMs - lastTickMs < S_TICK_MIN_INTERVAL_MS) return;
+    lastTickMs = v_nowMs;
+
     // ✅ 이벤트성 상태(AUTOOFF_STOPPED 등) hold/ack 유지 중이면
     // - 바람은 이미 stop 되어있고(runSource NONE)
     // - 불필요한 start/stop 반복을 방지
@@ -330,7 +398,7 @@ void CL_CT10_ControlManager::tickLoop() {
     runCtx.state  = EN_CT10_STATE_IDLE;
     runCtx.reason = EN_CT10_REASON_NONE;
 }
-
+*/
 
 // --------------------------------------------------
 // override tick
@@ -376,7 +444,7 @@ bool CL_CT10_ControlManager::tickOverride() {
 
 	// Running 상태(선택: segment 적용 직후에 찍히지만, 여기서도 갱신 가능)
     runCtx.state  = EN_CT10_STATE_OVERRIDE;
-    runCtx.reason = EN_CT10_REASON_NONE;
+    runCtx.reason = EN_CT10_REASON_OVERRIDE_ACTIVE;
 
 	return true;
 }
@@ -407,7 +475,7 @@ bool CL_CT10_ControlManager::tickUserProfile() {
 
     // Running 상태(선택: segment 적용 직후에 찍히지만, 여기서도 갱신 가능)
     runCtx.state  = EN_CT10_STATE_PROFILE_RUN;
-    runCtx.reason = EN_CT10_REASON_NONE;
+    runCtx.reason = EN_CT10_REASON_USER_PROFILE_ACTIVE;
 
     return tickSegmentSequence(
         v_profile.repeatSegments,
@@ -419,7 +487,84 @@ bool CL_CT10_ControlManager::tickUserProfile() {
 }
 
 
+bool CL_CT10_ControlManager::tickSchedule() {
+    // schedules 자체가 없으면: 이유만 세팅하고 false
+    if (!g_A20_config_root.schedules) {
+        runCtx.state  = EN_CT10_STATE_IDLE;
+        runCtx.reason = EN_CT10_REASON_NO_SCHEDULES;
+        markDirty("state");
+        markDirty("summary");
+        return false;
+    }
 
+    ST_A20_SchedulesRoot_t& v_cfg = *g_A20_config_root.schedules;
+
+    int v_activeIdx = findActiveScheduleIndex(v_cfg, true); // 겹침 허용 기본
+    if (v_activeIdx < 0) {
+        // 활성 스케줄 없음
+        curScheduleIndex = -1;
+
+        // 스케줄이 "없어서" 안 도는 상태를 UI에 명확히
+        runCtx.state  = EN_CT10_STATE_IDLE;
+        runCtx.reason = EN_CT10_REASON_NO_ACTIVE_SCHEDULE;
+
+        markDirty("state");
+        markDirty("summary");
+        return false;
+    }
+
+    // 스케줄 전환(새 활성 스케줄 시작)
+    if (curScheduleIndex != (int8_t)v_activeIdx) {
+        curScheduleIndex           = (int8_t)v_activeIdx;
+        runSource                  = EN_CT10_RUN_SCHEDULE;
+        scheduleSegRt.index        = -1;
+        scheduleSegRt.onPhase      = true;
+        scheduleSegRt.phaseStartMs = millis();
+        scheduleSegRt.loopCount    = 0;
+
+        initAutoOffFromSchedule(v_cfg.items[(uint8_t)curScheduleIndex]);
+
+        markDirty("state");
+        markDirty("metrics");
+        markDirty("summary");
+    }
+
+    ST_A20_ScheduleItem_t& v_schedule = v_cfg.items[(uint8_t)curScheduleIndex];
+    if (!v_schedule.enabled || v_schedule.segCount == 0) {
+        // 구성은 있지만 비활성/세그 없음 -> 스케줄 구동 불가
+        runCtx.state  = EN_CT10_STATE_IDLE;
+        runCtx.reason = EN_CT10_REASON_NO_ACTIVE_SCHEDULE;
+        markDirty("state");
+        markDirty("summary");
+        return false;
+    }
+
+    EN_CT10_reason_t v_reason = EN_CT10_REASON_NONE;
+    if (checkAutoOff(&v_reason)) {
+        onAutoOffTriggered(v_reason);
+        return true;
+    }
+
+    // Motion blocked 이벤트성 상태 전환
+    if (isMotionBlocked(v_schedule.motion)) {
+        onMotionBlocked(EN_CT10_REASON_MOTION_NO_PRESENCE);
+        return true;
+    }
+
+    // schedule running(SSOT: state/reason은 tick에서만)
+    runCtx.state  = EN_CT10_STATE_SCHEDULE_RUN;
+    runCtx.reason = EN_CT10_REASON_SCHEDULE_ACTIVE;
+
+    return tickSegmentSequence(
+        v_schedule.repeatSegments,
+        v_schedule.repeatCount,
+        v_schedule.segments,
+        v_schedule.segCount,
+        scheduleSegRt
+    );
+}
+
+/*
 bool CL_CT10_ControlManager::tickSchedule() {
     if (!g_A20_config_root.schedules) return false;
 
@@ -471,6 +616,7 @@ bool CL_CT10_ControlManager::tickSchedule() {
         scheduleSegRt
     );
 }
+*/
 
 
 // --------------------------------------------------
@@ -714,56 +860,6 @@ void CL_CT10_ControlManager::applySegmentOn(const ST_A20_ScheduleSegment_t& p_se
 }
 
 
-/*
-void CL_CT10_ControlManager::applySegmentOn(const ST_A20_ScheduleSegment_t& p_seg) {
-	
-	// snapshot only (schedule item + seg)
-    if (g_A20_config_root.schedules && curScheduleIndex >= 0) {
-        ST_A20_SchedulesRoot_t& v_root = *g_A20_config_root.schedules;
-        if ((uint8_t)curScheduleIndex < v_root.count) {
-            updateRunCtxOnSegmentOn_Schedule(v_root.items[(uint8_t)curScheduleIndex], p_seg);
-        }
-    }
-	
-	if (!g_A20_config_root.windDict)
-		return;
-		
-
-	if (p_seg.mode == EN_A20_SEG_MODE_FIXED) {
-		sim.stop();
-		if (pwm) {
-			pwm->P10_setDutyPercent(p_seg.fixedSpeed);
-		}
-
-		markDirty("state");
-		markDirty("chart");
-
-		CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] SegmentOn(SCH) FIXED duty=%.1f%%", p_seg.fixedSpeed);
-		return;
-	}
-
-	ST_A20_ResolvedWind_t v_resolved;
-	memset(&v_resolved, 0, sizeof(v_resolved));
-
-	bool v_ok = S20_resolveWindParams(*g_A20_config_root.windDict, p_seg.presetCode, p_seg.styleCode, &p_seg.adjust, v_resolved);
-
-	if (v_ok && v_resolved.valid) {
-		sim.applyResolvedWind(v_resolved);
-
-		markDirty("state");
-		markDirty("chart");
-
-		const char* v_presetName = findPresetNameByCode(p_seg.presetCode);
-		const char* v_styleName	 = findStyleNameByCode(p_seg.styleCode);
-
-		// (요청사항) applySegmentOn 로그포맷: 이름 출력
-		CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] SegmentOn(SCH) PRESET=%s(%s) STYLE=%s(%s) on=%u off=%u", p_seg.presetCode, v_presetName, p_seg.styleCode, v_styleName, (unsigned)p_seg.onMinutes, (unsigned)p_seg.offMinutes);
-	} else {
-		CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] SegmentOn(SCH) resolve failed preset=%s style=%s", p_seg.presetCode, p_seg.styleCode);
-	}
-}
-*/
-
 
 void CL_CT10_ControlManager::applySegmentOn(const ST_A20_UserProfileSegment_t& p_seg) {
     // ✅ snapshot only (profile item + seg)
@@ -820,56 +916,6 @@ void CL_CT10_ControlManager::applySegmentOn(const ST_A20_UserProfileSegment_t& p
         CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] SegmentOn(PROFILE) resolve failed preset=%s style=%s", p_seg.presetCode, p_seg.styleCode);
     }
 }
-
-
-/*
-void CL_CT10_ControlManager::applySegmentOn(const ST_A20_UserProfileSegment_t& p_seg) {
-	
-	// ✅ snapshot only (profile item + seg)
-    if (g_A20_config_root.userProfiles && curProfileIndex >= 0) {
-        ST_A20_UserProfilesRoot_t& v_root = *g_A20_config_root.userProfiles;
-        if ((uint8_t)curProfileIndex < v_root.count) {
-            updateRunCtxOnSegmentOn_Profile(v_root.items[(uint8_t)curProfileIndex], p_seg);
-        }
-    }
-	
-	if (!g_A20_config_root.windDict)
-		return;
-
-	if (p_seg.mode == EN_A20_SEG_MODE_FIXED) {
-		sim.stop();
-		if (pwm) {
-			pwm->P10_setDutyPercent(p_seg.fixedSpeed);
-		}
-
-		markDirty("state");
-		markDirty("chart");
-
-		CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] SegmentOn(PROFILE) FIXED duty=%.1f%%", p_seg.fixedSpeed);
-		return;
-	}
-
-	ST_A20_ResolvedWind_t v_resolved;
-	memset(&v_resolved, 0, sizeof(v_resolved));
-
-	bool v_ok = S20_resolveWindParams(*g_A20_config_root.windDict, p_seg.presetCode, p_seg.styleCode, &p_seg.adjust, v_resolved);
-
-	if (v_ok && v_resolved.valid) {
-		sim.applyResolvedWind(v_resolved);
-
-		markDirty("state");
-		markDirty("chart");
-
-		const char* v_presetName = findPresetNameByCode(p_seg.presetCode);
-		const char* v_styleName	 = findStyleNameByCode(p_seg.styleCode);
-
-		CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] SegmentOn(PROFILE) PRESET=%s(%s) STYLE=%s(%s) on=%u off=%u", p_seg.presetCode, v_presetName, p_seg.styleCode, v_styleName, (unsigned)p_seg.onMinutes, (unsigned)p_seg.offMinutes);
-	} else {
-		CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] SegmentOn(PROFILE) resolve failed preset=%s style=%s", p_seg.presetCode, p_seg.styleCode);
-	}
-}
-*/
-
 
 
 

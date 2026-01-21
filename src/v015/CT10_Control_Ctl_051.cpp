@@ -34,10 +34,14 @@ extern CL_P10_PWM g_P10_pwm;
 // --------------------------------------------------
 // singleton / static wrappers
 // --------------------------------------------------
+
+/*
+// CT10_Control_IO_0xx.cpp에 구현됨
 CL_CT10_ControlManager& CL_CT10_ControlManager::instance() {
     static CL_CT10_ControlManager s_inst;
     return s_inst;
 }
+*/
 
 bool CL_CT10_ControlManager::begin() {
     instance().begin(g_P10_pwm);
@@ -48,14 +52,17 @@ void CL_CT10_ControlManager::tick() {
     instance().tickLoop();
 }
 
+/*
+// CT10_Control_IO_0xx.cpp에 구현됨
 void CL_CT10_ControlManager::toJson(JsonDocument& p_doc) {
     // 정책: 최신 확장(v02) 사용
     instance().exportStateJson_v02(p_doc);
 }
 
-void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly /*=false*/) {
+void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
     instance().exportChartJson(p_doc, p_diffOnly);
 }
+*/
 
 void CL_CT10_ControlManager::setMode(bool p_profileMode) {
     instance().setProfileMode(p_profileMode);

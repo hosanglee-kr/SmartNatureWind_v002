@@ -280,7 +280,59 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
 	if (v_stateChanged || v_sourceChanged) {
 		runCtx.lastStateChangeMs = runCtx.lastDecisionMs;
 	}
+	
+	// 5) runCtx에 "현재 선택된 개체 정보" 캐시(웹 상태 출력/디버그용)
+// - 정책:
+//   - 일반 상태: 현재 runSource 기준으로 snapshot 갱신
+//   - TIME_INVALID / AUTOOFF_STOPPED: 마지막 대상 snapshot 유지(단 seg는 0)
+// --------------------------------------------------
+if (runCtx.state == EN_CT10_STATE_TIME_INVALID ||
+    runCtx.state == EN_CT10_STATE_AUTOOFF_STOPPED) {
 
+    // ✅ 마지막 실행 대상(스케줄/프로필)은 유지
+    // ✅ 단, 현재는 정지 상태이므로 seg만 0 (UI 표현 도움)
+    runCtx.activeSegId = 0;
+    runCtx.activeSegNo = 0;
+
+} else {
+
+    // 기본: 일단 0으로 초기화 후 현 상태 채움
+    runCtx.activeSchId = 0;
+    runCtx.activeSchNo = 0;
+    runCtx.activeSegId = 0;
+    runCtx.activeSegNo = 0;
+    runCtx.activeProfileNo = 0;
+
+    if (runSource == EN_CT10_RUN_SCHEDULE && g_A20_config_root.schedules && curScheduleIndex >= 0) {
+        ST_A20_SchedulesRoot_t& v_cfg = *g_A20_config_root.schedules;
+        if ((uint8_t)curScheduleIndex < v_cfg.count) {
+            const ST_A20_ScheduleItem_t& v_s = v_cfg.items[(uint8_t)curScheduleIndex];
+            runCtx.activeSchId = v_s.schId;
+            runCtx.activeSchNo = v_s.schNo;
+
+            // seg rt index가 유효하면 segId/segNo도 캐시
+            if (scheduleSegRt.index >= 0 && scheduleSegRt.index < (int8_t)v_s.segCount) {
+                const ST_A20_ScheduleSegment_t& v_seg = v_s.segments[(uint8_t)scheduleSegRt.index];
+                runCtx.activeSegId = v_seg.segId;
+                runCtx.activeSegNo = v_seg.segNo;
+            }
+        }
+    } else if (runSource == EN_CT10_RUN_USER_PROFILE && g_A20_config_root.userProfiles && curProfileIndex >= 0) {
+        ST_A20_UserProfilesRoot_t& v_cfg = *g_A20_config_root.userProfiles;
+        if ((uint8_t)curProfileIndex < v_cfg.count) {
+            const ST_A20_UserProfileItem_t& v_p = v_cfg.items[(uint8_t)curProfileIndex];
+            runCtx.activeProfileNo = v_p.profileNo;
+
+            if (profileSegRt.index >= 0 && profileSegRt.index < (int8_t)v_p.segCount) {
+                const ST_A20_UserProfileSegment_t& v_seg = v_p.segments[(uint8_t)profileSegRt.index];
+                runCtx.activeSegId = v_seg.segId;
+                runCtx.activeSegNo = v_seg.segNo;
+            }
+        }
+    }
+}
+
+    /*
 	// 5) runCtx에 "현재 선택된 개체 정보" 캐시(웹 상태 출력/디버그용)
 	runCtx.activeSchId = 0;
 	runCtx.activeSchNo = 0;
@@ -315,6 +367,7 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
 			}
 		}
 	}
+	*/
 
 	// 6) Dirty 처리 정책
 	if (v_stateChanged || v_sourceChanged) {

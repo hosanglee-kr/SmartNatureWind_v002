@@ -291,7 +291,7 @@ void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {
     
     	// 8) AutoOff runtime snapshot
 	{
-		JsonObject v_ao = v_ctl["autoOffRt"].to<JsonObject>();
+		JsonObject v_ao = CT10_ensureObject(v_control["autoOffRt"]);
 		v_ao["timerArmed"]     = autoOffRt.timerArmed;
 		v_ao["timerStartMs"]   = (uint32_t)autoOffRt.timerStartMs;
 		v_ao["timerMinutes"]   = (uint32_t)autoOffRt.timerMinutes;

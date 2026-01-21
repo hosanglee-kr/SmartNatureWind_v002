@@ -175,6 +175,33 @@ static inline JsonObjectConst Json_pickRootObject(const JsonDocument& p_doc, con
     return v.isNull() ? p_doc.as<JsonObjectConst>() : v;
 }
 
+
+// ------------------------------------------------------
+// Json_ensureObject
+//  - p_v 위치가 JsonObject임을 보장 (방어적 생성)
+//  - 이미 객체면 그대로 반환, 아니면 해당 위치를 빈 객체{}로 초기화
+// ------------------------------------------------------
+/**
+ * @brief JsonVariant 내에 JsonObject가 존재함을 보장하는 헬퍼 함수
+ * @details 
+ * - 지정된 위치(p_v)가 이미 객체인지 확인합니다.
+ * - 만약 객체가 아니거나(Null) 다른 타입(배열, 숫자 등)인 경우 해당 위치를 
+ * 빈 JsonObject로 초기화(to<JsonObject>)하여 반환합니다.
+ * - 복잡한 계층 구조를 생성할 때 중간 경로를 안전하게 확보하는 용도로 사용합니다.
+ * * @param p_v 검사 및 변환할 대상 JsonVariant (예: p_doc["control"])
+ * @return JsonObject 유효한 객체 참조 (실패 시에도 빈 객체 보장)
+ */
+static inline JsonObject Json_ensureObject(JsonVariant p_v) {
+    // 1. 이미 JsonObject 타입인지 확인 (기존 데이터 유지)
+    if (p_v.is<JsonObject>()) {
+        return p_v.as<JsonObject>();
+    }
+    
+    // 2. 객체가 아니거나 다른 타입이면 강제 변환 (기존 값은 유실될 수 있음)
+    return p_v.to<JsonObject>();
+}
+
+
 // ------------------------------------------------------
 // Json_copyStr (Silent-safe)
 // ------------------------------------------------------

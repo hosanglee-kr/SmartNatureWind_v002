@@ -16,19 +16,8 @@
 
 // --------------------------------------------------
 // 내부 Helper: safe JsonObject 확보 (타입 꼬임 방지)
-/**
- * @brief JsonVariant 내에 JsonObject가 존재함을 보장하는 헬퍼 함수
- * * @details 
- * 이 함수는 지정된 위치(p_v)가 이미 객체인지 확인하고, 
- * 만약 객체가 아니거나(Null) 다른 타입(배열, 숫자 등)인 경우 
- * 해당 위치를 빈 JsonObject로 초기화하여 반환합니다.
- * * [사용 목적]
- * 1. 깊은 계층 구조(Deep Nesting)를 안전하게 생성: 
- * root["a"]["b"]["c"] 접근 시 중간 단계가 없어도 크래시 없이 객체 생성 가능.
- * 2. 덮어쓰기 방지: 이미 객체가 존재하면 기존 데이터를 유지한 채 참조만 반환.
- * * @param p_v 검사 및 변환할 대상 JsonVariant (p_doc["key"] 등)
- * @return JsonObject 유효한 객체 참조 (실패 시에도 빈 객체 보장)
- */
+// A40_ComFunc::Json_ensureObject 으로 변경
+/*
 static JsonObject CT10_ensureObject(JsonVariant p_v) {
     // 1. 이미 JsonObject 타입인지 검사 (중복 생성 방지)
     if (p_v.is<JsonObject>()) {
@@ -40,6 +29,7 @@ static JsonObject CT10_ensureObject(JsonVariant p_v) {
     // 주의: 기존에 다른 데이터(문자열, 숫자 등)가 있었다면 삭제되고 {}가 됨
     return p_v.to<JsonObject>();
 }
+*/
 
 // --------------------------------------------------
 // 싱글톤
@@ -66,7 +56,7 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
 	
 	
 	JsonObject v_root = p_doc.to<JsonObject>();
-    JsonObject v_ctl  = CT10_ensureObject(v_root["control"]);
+    JsonObject v_ctl  = A40_ComFunc::Json_ensureObject(v_root["control"]);
 
 	// JsonObject v_root = p_doc.to<JsonObject>();
 	// JsonObject v_ctl  = v_root["control"].to<JsonObject>();
@@ -240,7 +230,7 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
 
 void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {
 	// control root
-	JsonObject v_control = CT10_ensureObject(p_doc["control"]);
+	JsonObject v_control = A40_ComFunc::Json_ensureObject(p_doc["control"]);
 	v_control["active"]         = active;
 	v_control["useProfileMode"] = useProfileMode;
 	v_control["runSource"]      = (int)runSource;
@@ -253,7 +243,7 @@ void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {
 	v_control["stateCode"]  = (uint8_t)runCtx.state;
 	v_control["reasonCode"] = (uint8_t)runCtx.reason;
 
-	JsonObject v_snap = CT10_ensureObject(v_control["snapshot"]);
+	JsonObject v_snap = A40_ComFunc::Json_ensureObject(v_control["snapshot"]);
 	v_snap["schId"]     = (uint8_t)runCtx.activeSchId;
 	v_snap["schNo"]     = (uint16_t)runCtx.activeSchNo;
 	v_snap["segId"]     = (uint8_t)runCtx.activeSegId;
@@ -261,11 +251,11 @@ void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {
 	v_snap["profileNo"] = (uint8_t)runCtx.activeProfileNo;
 
 	// time (v01에도 최소)
-	JsonObject v_time = CT10_ensureObject(v_control["time"]);
+	JsonObject v_time = A40_ComFunc::Json_ensureObject(v_control["time"]);
 	v_time["valid"] = CL_TM10_TimeManager::isTimeValid();
 
 	// override
-	JsonObject v_override   = CT10_ensureObject(v_control["override"]);
+	JsonObject v_override   = A40_ComFunc::Json_ensureObject(v_control["override"]);
 	v_override["active"]    = overrideState.active;
 	v_override["useFixed"]  = overrideState.useFixed;
 	v_override["resolved"]  = (!overrideState.useFixed && overrideState.active);
@@ -281,7 +271,7 @@ void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {
 	}
 
 	// autoOff
-	JsonObject v_autoOff        = CT10_ensureObject(v_control["autoOff"]);
+	JsonObject v_autoOff        = A40_ComFunc::Json_ensureObject(v_control["autoOff"]);
 	v_autoOff["timerArmed"]     = autoOffRt.timerArmed;
 	v_autoOff["timerMinutes"]   = autoOffRt.timerMinutes;
 	v_autoOff["offTimeEnabled"] = autoOffRt.offTimeEnabled;
@@ -294,7 +284,7 @@ void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {
 	
 	
 	
-	JsonObject v_evt = CT10_ensureObject(v_control["event"]);
+	JsonObject v_evt = A40_ComFunc::Json_ensureObject(v_control["event"]);
     v_evt["ackRequired"] = runCtx.stateAckRequired;
     v_evt["holdUntilMs"] = (uint32_t)runCtx.stateHoldUntilMs;
 
@@ -308,7 +298,7 @@ void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {
     
     	// 8) AutoOff runtime snapshot
 	{
-		JsonObject v_ao = CT10_ensureObject(v_control["autoOffRt"]);
+		JsonObject v_ao = A40_ComFunc::Json_ensureObject(v_control["autoOffRt"]);
 		v_ao["timerArmed"]     = autoOffRt.timerArmed;
 		v_ao["timerStartMs"]   = (uint32_t)autoOffRt.timerStartMs;
 		v_ao["timerMinutes"]   = (uint32_t)autoOffRt.timerMinutes;
@@ -340,8 +330,8 @@ void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnl
     sim.toChartJson(p_doc, p_diffOnly);
 
     // 2) CT10 메타 병합: p_doc["sim"]["meta"] 안전 확보
-    JsonObject v_sim  = CT10_ensureObject(p_doc["sim"]);
-    JsonObject v_meta = CT10_ensureObject(v_sim["meta"]);
+    JsonObject v_sim  = A40_ComFunc::Json_ensureObject(p_doc["sim"]);
+    JsonObject v_meta = A40_ComFunc::Json_ensureObject(v_sim["meta"]);
 
     v_meta["pwmDuty"]   = pwm ? pwm->P10_getDutyPercent() : 0.0f;
     v_meta["active"]    = active;
@@ -350,7 +340,7 @@ void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnl
 }
 
 void CL_CT10_ControlManager::exportSummaryJson(JsonDocument& p_doc) {
-    JsonObject v_sum = CT10_ensureObject(p_doc["summary"]);
+    JsonObject v_sum = A40_ComFunc::Json_ensureObject(p_doc["summary"]);
     
     // state/reason 요약 (UI 카드에 바로 표시 가능)
     v_sum["state"]  = CT10_stateToString(runCtx.state);
@@ -387,7 +377,7 @@ void CL_CT10_ControlManager::exportSummaryJson(JsonDocument& p_doc) {
 }
 
 void CL_CT10_ControlManager::exportMetricsJson(JsonDocument& p_doc) {
-    JsonObject v_m = CT10_ensureObject(p_doc["metrics"]);
+    JsonObject v_m = A40_ComFunc::Json_ensureObject(p_doc["metrics"]);
 
     v_m["active"]         = active;
     v_m["runSource"]      = (int)runSource;

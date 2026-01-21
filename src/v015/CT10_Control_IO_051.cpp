@@ -46,8 +46,13 @@ void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
 // - JsonDocument 단일 사용, containsKey/createNested* 금지 준수
 // --------------------------------------------------
 void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
+	
+	
 	JsonObject v_root = p_doc.to<JsonObject>();
-	JsonObject v_ctl  = v_root["control"].to<JsonObject>();
+    JsonObject v_ctl  = CT10_ensureObject(v_root["control"]);
+
+	// JsonObject v_root = p_doc.to<JsonObject>();
+	// JsonObject v_ctl  = v_root["control"].to<JsonObject>();
 
 	// 1) Core flags
 	v_ctl["active"]      = active;
@@ -193,6 +198,17 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
         v_ao["offTimeLastMin"]  = (int)autoOffRt.offTimeLastMin;
         
 	}
+	
+	{
+		JsonObject v_aoAlias = v_ctl["autoOff"].to<JsonObject>();
+        v_aoAlias["timerArmed"]     = autoOffRt.timerArmed;
+        v_aoAlias["timerMinutes"]   = (uint32_t)autoOffRt.timerMinutes;
+        v_aoAlias["offTimeEnabled"] = autoOffRt.offTimeEnabled;
+        v_aoAlias["offTimeMinutes"] = (uint16_t)autoOffRt.offTimeMinutes;
+        v_aoAlias["offTempEnabled"] = autoOffRt.offTempEnabled;
+        v_aoAlias["offTemp"]        = autoOffRt.offTemp;
+
+	}
 
 	// 9) Dirty flags
 	{
@@ -258,6 +274,41 @@ void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {
 
 	// pwm
 	v_control["pwmDuty"] = pwm ? pwm->P10_getDutyPercent() : 0.0f;
+	
+	
+	
+	JsonObject v_evt = CT10_ensureObject(v_control["event"]);
+    v_evt["ackRequired"] = runCtx.stateAckRequired;
+    v_evt["holdUntilMs"] = (uint32_t)runCtx.stateHoldUntilMs;
+
+    uint32_t v_now = (uint32_t)millis();
+    uint32_t v_remain = 0;
+    if (runCtx.stateHoldUntilMs != 0 && v_now < runCtx.stateHoldUntilMs) {
+        v_remain = (uint32_t)(runCtx.stateHoldUntilMs - v_now);
+    }
+    v_evt["holdRemainMs"] = v_remain;
+    
+    
+    	// 8) AutoOff runtime snapshot
+	{
+		JsonObject v_ao = v_ctl["autoOffRt"].to<JsonObject>();
+		v_ao["timerArmed"]     = autoOffRt.timerArmed;
+		v_ao["timerStartMs"]   = (uint32_t)autoOffRt.timerStartMs;
+		v_ao["timerMinutes"]   = (uint32_t)autoOffRt.timerMinutes;
+		v_ao["offTimeEnabled"] = autoOffRt.offTimeEnabled;
+		v_ao["offTimeMinutes"] = (uint16_t)autoOffRt.offTimeMinutes;
+		v_ao["offTempEnabled"] = autoOffRt.offTempEnabled;
+		v_ao["offTemp"]        = autoOffRt.offTemp;
+		
+		// offTime retrigger guard (runtime)
+        v_ao["offTimeLastYday"] = (int)autoOffRt.offTimeLastYday;
+        v_ao["offTimeLastMin"]  = (int)autoOffRt.offTimeLastMin;
+        
+	}
+	
+    
+    
+
 
 	// sim
 	sim.toJson(p_doc);
@@ -382,6 +433,8 @@ void CL_CT10_ControlManager::exportMetricsJson(JsonDocument& p_doc) {
     v_m["activeProfileNo"]  = (uint8_t)runCtx.activeProfileNo;
     v_m["activeSegId"]      = (uint8_t)runCtx.activeSegId;
     v_m["activeSegNo"]      = (uint16_t)runCtx.activeSegNo;
+    
+    v_m["timeValid"] = CL_TM10_TimeManager::isTimeValid();
 }
 
 

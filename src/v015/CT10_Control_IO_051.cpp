@@ -16,11 +16,28 @@
 
 // --------------------------------------------------
 // 내부 Helper: safe JsonObject 확보 (타입 꼬임 방지)
-// --------------------------------------------------
+/**
+ * @brief JsonVariant 내에 JsonObject가 존재함을 보장하는 헬퍼 함수
+ * * @details 
+ * 이 함수는 지정된 위치(p_v)가 이미 객체인지 확인하고, 
+ * 만약 객체가 아니거나(Null) 다른 타입(배열, 숫자 등)인 경우 
+ * 해당 위치를 빈 JsonObject로 초기화하여 반환합니다.
+ * * [사용 목적]
+ * 1. 깊은 계층 구조(Deep Nesting)를 안전하게 생성: 
+ * root["a"]["b"]["c"] 접근 시 중간 단계가 없어도 크래시 없이 객체 생성 가능.
+ * 2. 덮어쓰기 방지: 이미 객체가 존재하면 기존 데이터를 유지한 채 참조만 반환.
+ * * @param p_v 검사 및 변환할 대상 JsonVariant (p_doc["key"] 등)
+ * @return JsonObject 유효한 객체 참조 (실패 시에도 빈 객체 보장)
+ */
 static JsonObject CT10_ensureObject(JsonVariant p_v) {
+    // 1. 이미 JsonObject 타입인지 검사 (중복 생성 방지)
     if (p_v.is<JsonObject>()) {
+        // 이미 객체라면 해당 객체를 그대로 반환 (내용 보존)
         return p_v.as<JsonObject>();
     }
+    
+    // 2. 객체가 아니거나 다른 타입인 경우 강제 변환
+    // 주의: 기존에 다른 데이터(문자열, 숫자 등)가 있었다면 삭제되고 {}가 됨
     return p_v.to<JsonObject>();
 }
 

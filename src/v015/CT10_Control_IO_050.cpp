@@ -60,6 +60,22 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
 	v_ctl["runSource"]          = (uint8_t)runSource;
 	v_ctl["lastDecisionMs"]     = (uint32_t)runCtx.lastDecisionMs;
 	v_ctl["lastStateChangeMs"]  = (uint32_t)runCtx.lastStateChangeMs;
+	
+	// 2-1) Event hold/ack (UI-friendly)
+    {
+        JsonObject v_evt = v_ctl["event"].to<JsonObject>();
+
+        v_evt["ackRequired"]  = runCtx.stateAckRequired;
+        v_evt["holdUntilMs"]  = (uint32_t)runCtx.stateHoldUntilMs;
+
+        uint32_t v_now = (uint32_t)millis();
+        uint32_t v_remain = 0;
+        if (runCtx.stateHoldUntilMs != 0 && v_now < runCtx.stateHoldUntilMs) {
+            v_remain = (uint32_t)(runCtx.stateHoldUntilMs - v_now);
+        }
+        v_evt["holdRemainMs"] = v_remain;
+    }
+    
 
 	// 3) Time status (TM10)
 	{
@@ -98,6 +114,8 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
 			}
 		}
 		v_sch["name"] = v_name;
+		v_sch["fromRunSource"] = (runSource == EN_CT10_RUN_SCHEDULE);
+		
 	}
 
 	// 5) Profile snapshot (SSOT)
@@ -117,6 +135,8 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
 			}
 		}
 		v_prof["name"] = v_name;
+		v_prof["fromRunSource"] = (runSource == EN_CT10_RUN_USER_PROFILE);
+		
 	}
 
 	// 6) Segment runtime snapshot
@@ -165,6 +185,11 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
 		v_ao["offTimeMinutes"] = (uint16_t)autoOffRt.offTimeMinutes;
 		v_ao["offTempEnabled"] = autoOffRt.offTempEnabled;
 		v_ao["offTemp"]        = autoOffRt.offTemp;
+		
+		// offTime retrigger guard (runtime)
+        v_ao["offTimeLastYday"] = (int)autoOffRt.offTimeLastYday;
+        v_ao["offTimeLastMin"]  = (int)autoOffRt.offTimeLastMin;
+        
 	}
 
 	// 9) Dirty flags
@@ -442,6 +467,16 @@ void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnl
 
 void CL_CT10_ControlManager::exportSummaryJson(JsonDocument& p_doc) {
     JsonObject v_sum = CT10_ensureObject(p_doc["summary"]);
+    
+    // state/reason 요약 (UI 카드에 바로 표시 가능)
+    v_sum["state"]  = CT10_stateToString(runCtx.state);
+    v_sum["reason"] = CT10_reasonToString(runCtx.reason);
+
+    // snapshot 최소
+    v_sum["schNo"]     = (uint16_t)runCtx.activeSchNo;
+    v_sum["profileNo"] = (uint8_t)runCtx.activeProfileNo;
+    v_sum["segNo"]     = (uint16_t)runCtx.activeSegNo;
+    
 
 	// 1. Phase 인덱스 범위 방어 및 매핑 (A20_Const_Sch_044.h 기반)
     uint8_t v_phaseIdx = static_cast<uint8_t>(sim.phase);
@@ -508,4 +543,27 @@ void CL_CT10_ControlManager::exportMetricsJson(JsonDocument& p_doc) {
     v_m["autoOffTimerMinutes"] = autoOffRt.timerMinutes;
     v_m["autoOffOffTime"]      = autoOffRt.offTimeEnabled ? autoOffRt.offTimeMinutes : 0;
     v_m["autoOffOffTemp"]      = autoOffRt.offTempEnabled ? autoOffRt.offTemp : 0.0f;
+    
+    // runCtx 최소 포함 (metrics만 봐도 원인/상태 확인 가능)
+    v_m["stateCode"]     = (uint8_t)runCtx.state;
+    v_m["reasonCode"]    = (uint8_t)runCtx.reason;
+    v_m["state"]         = CT10_stateToString(runCtx.state);
+    v_m["reason"]        = CT10_reasonToString(runCtx.reason);
+
+    v_m["ackRequired"]   = runCtx.stateAckRequired;
+    v_m["holdUntilMs"]   = (uint32_t)runCtx.stateHoldUntilMs;
+
+    uint32_t v_now = (uint32_t)millis();
+    uint32_t v_remain = 0;
+    if (runCtx.stateHoldUntilMs != 0 && v_now < runCtx.stateHoldUntilMs) {
+        v_remain = (uint32_t)(runCtx.stateHoldUntilMs - v_now);
+    }
+    v_m["holdRemainMs"]  = v_remain;
+
+    // snapshot (seg는 TIME_INVALID/AUTOOFF_STOPPED에서 0일 수 있음)
+    v_m["activeSchId"]      = (uint8_t)runCtx.activeSchId;
+    v_m["activeSchNo"]      = (uint16_t)runCtx.activeSchNo;
+    v_m["activeProfileNo"]  = (uint8_t)runCtx.activeProfileNo;
+    v_m["activeSegId"]      = (uint8_t)runCtx.activeSegId;
+    v_m["activeSegNo"]      = (uint16_t)runCtx.activeSegNo;
 }

@@ -118,6 +118,67 @@ bool CL_CT10_ControlManager::reloadAll() {
 // --------------------------------------------------
 // begin / motion
 // --------------------------------------------------
+
+void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
+    pwm = &p_pwm;
+
+    memset(&overrideState, 0, sizeof(overrideState));
+    memset(&scheduleSegRt, 0, sizeof(scheduleSegRt));
+    memset(&profileSegRt,  0, sizeof(profileSegRt));
+    memset(&autoOffRt,     0, sizeof(autoOffRt));
+    memset(&runCtx,        0, sizeof(runCtx));
+
+    scheduleSegRt.index = -1;
+    profileSegRt.index  = -1;
+
+    // ✅ segment rt 초기 진입 안정화(권장)
+    uint32_t v_now = (uint32_t)millis();
+    scheduleSegRt.onPhase      = true;
+    scheduleSegRt.phaseStartMs = v_now;
+    scheduleSegRt.loopCount    = 0;
+
+    profileSegRt.onPhase       = true;
+    profileSegRt.phaseStartMs  = v_now;
+    profileSegRt.loopCount     = 0;
+
+    // ✅ offTime 재트리거 방지 런타임 기본값
+    autoOffRt.offTimeLastYday = -1;
+    autoOffRt.offTimeLastMin  = -1;
+
+    useProfileMode     = false;
+    runSource          = EN_CT10_RUN_NONE;
+    curScheduleIndex   = -1;
+    curProfileIndex    = -1;
+    lastTickMs         = 0;
+    lastMetricsPushMs  = 0;
+
+    // ✅ runCtx 기본 상태(SSOT)
+    runCtx.state             = EN_CT10_STATE_IDLE;
+    runCtx.reason            = EN_CT10_REASON_NONE;
+    runCtx.lastDecisionMs    = v_now;
+    runCtx.lastStateChangeMs = v_now;
+
+    runCtx.stateHoldUntilMs  = 0;
+    runCtx.stateAckRequired  = false;
+
+    runCtx.activeSchId     = 0;
+    runCtx.activeSchNo     = 0;
+    runCtx.activeSegId     = 0;
+    runCtx.activeSegNo     = 0;
+    runCtx.activeProfileNo = 0;
+
+    sim.begin(p_pwm);
+
+    active = true;
+
+    markDirty("state");
+    markDirty("metrics");
+    markDirty("summary");
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] begin()");
+}
+
+/*
 void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
     pwm = &p_pwm;
 
@@ -137,17 +198,24 @@ void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
     lastTickMs         = 0;
     lastMetricsPushMs  = 0;
 
-    // ✅ runCtx 기본 상태(SSOT)
+    // runCtx 기본 상태(SSOT)
     runCtx.state             = EN_CT10_STATE_IDLE;
     runCtx.reason            = EN_CT10_REASON_NONE;
+    
     runCtx.lastDecisionMs    = millis();
     runCtx.lastStateChangeMs = runCtx.lastDecisionMs;
+    
+    autoOffRt.offTimeLastYday = -1;
+    autoOffRt.offTimeLastMin  = -1;
 
     runCtx.activeSchId     = 0;
     runCtx.activeSchNo     = 0;
     runCtx.activeSegId     = 0;
     runCtx.activeSegNo     = 0;
     runCtx.activeProfileNo = 0;
+    
+    runCtx.stateHoldUntilMs = 0;
+    runCtx.stateAckRequired = false;
 
     // hold/ack 기본은 0/false로 이미 memset됨
 
@@ -160,6 +228,7 @@ void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] begin()");
 }
+*/
 
 void CL_CT10_ControlManager::setMotion(CL_M10_MotionLogic* p_motion) {
     motion = p_motion;

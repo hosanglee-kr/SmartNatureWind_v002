@@ -25,7 +25,7 @@
 
 #include "A20_Const_050.h"
 #include "C10_Config_050.h"
-#include "CT10_Control_050.h"
+#include "CT10_Ctl_051.h"
 #include "D10_Logger_050.h"
 #include "M10_MotionLogic_050.h"
 #include "N10_NvsManager_050.h"

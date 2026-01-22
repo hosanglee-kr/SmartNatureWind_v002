@@ -69,7 +69,7 @@ uint32_t CL_CT10_ControlManager::calcOverrideRemainSec() const {
 void CL_CT10_ControlManager::initAutoOffFromUserProfile(const ST_A20_UserProfileItem_t& p_up) {
     memset(&autoOffRt, 0, sizeof(autoOffRt));
 
-    // ✅ offTime 재트리거 방지 런타임 초기화
+    // offTime 재트리거 방지 런타임 초기화
     autoOffRt.offTimeLastYday = -1;
     autoOffRt.offTimeLastMin  = -1;
 
@@ -91,7 +91,7 @@ void CL_CT10_ControlManager::initAutoOffFromUserProfile(const ST_A20_UserProfile
 void CL_CT10_ControlManager::initAutoOffFromSchedule(const ST_A20_ScheduleItem_t& p_s) {
     memset(&autoOffRt, 0, sizeof(autoOffRt));
 
-    // ✅ offTime 재트리거 방지 런타임 초기화
+    // offTime 재트리거 방지 런타임 초기화
     autoOffRt.offTimeLastYday = -1;
     autoOffRt.offTimeLastMin  = -1;
 
@@ -176,11 +176,11 @@ void CL_CT10_ControlManager::onTimeInvalid(EN_CT10_reason_t p_reason) {
     runCtx.lastDecisionMs    = v_now;
     runCtx.lastStateChangeMs = v_now;
 
-    // ✅ 최소 hold: 3초
+    // 최소 hold: 3초
     runCtx.stateHoldUntilMs  = v_now + 3000UL;
     runCtx.stateAckRequired  = false;
 
-    // ✅ snapshot 유지(단 seg는 0으로 리셋해서 “지금은 off/정지” 표현에 도움)
+    // snapshot 유지(단 seg는 0으로 리셋해서 “지금은 off/정지” 표현에 도움)
     runCtx.activeSegId = 0;
     runCtx.activeSegNo = 0;
 
@@ -221,13 +221,13 @@ void CL_CT10_ControlManager::onAutoOffTriggered(EN_CT10_reason_t p_reason) {
     runCtx.lastDecisionMs    = v_now;
     runCtx.lastStateChangeMs = v_now;
 
-    // ✅ 최소 hold: 3초
+    // 최소 hold: 3초
     runCtx.stateHoldUntilMs  = v_now + 3000UL;
 
-    // ✅ ACK 정책: 기본 false (원하면 true로 바꿔서 UI 확인 후 해제 가능)
+    // ACK 정책: 기본 false (원하면 true로 바꿔서 UI 확인 후 해제 가능)
     runCtx.stateAckRequired  = false;
 
-    // ✅ snapshot 유지(단 seg는 0)
+    // snapshot 유지(단 seg는 0)
     runCtx.activeSegId = 0;
     runCtx.activeSegNo = 0;
 
@@ -333,7 +333,7 @@ float CL_CT10_ControlManager::getCurrentTemperatureMock() {
         s_dht->begin();
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] DHT22 init on pin %d", s_dhtPin);
     } else if (s_dhtPin != v_pin) {
-        // ✅ 운영 안정성 우선: delete/re-init 하지 않음
+        // 운영 안정성 우선: delete/re-init 하지 않음
         CL_D10_Logger::log(EN_L10_LOG_WARN,
                            "[CT10] DHT pin changed (%d->%d). Recommend reboot to apply safely.",
                            s_dhtPin, v_pin);
@@ -426,7 +426,7 @@ int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t
         bool v_match = false;
 
         if (v_startMin == v_endMin) {
-            // ✅ 24시간 활성: 오늘 요일만 체크
+            // 24시간 활성: 오늘 요일만 체크
             v_match = v_s.period.days[v_today];
         } else if (v_startMin < v_endMin) {
             // same-day: 오늘 요일

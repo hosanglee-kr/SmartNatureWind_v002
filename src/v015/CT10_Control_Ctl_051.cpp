@@ -35,14 +35,6 @@ extern CL_P10_PWM g_P10_pwm;
 // singleton / static wrappers
 // --------------------------------------------------
 
-/*
-// CT10_Control_IO_0xx.cpp에 구현됨
-CL_CT10_ControlManager& CL_CT10_ControlManager::instance() {
-    static CL_CT10_ControlManager s_inst;
-    return s_inst;
-}
-*/
-
 bool CL_CT10_ControlManager::begin() {
     instance().begin(g_P10_pwm);
     return true;
@@ -52,17 +44,6 @@ void CL_CT10_ControlManager::tick() {
     instance().tickLoop();
 }
 
-/*
-// CT10_Control_IO_0xx.cpp에 구현됨
-void CL_CT10_ControlManager::toJson(JsonDocument& p_doc) {
-    // 정책: 최신 확장(v02) 사용
-    instance().exportStateJson_v02(p_doc);
-}
-
-void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
-    instance().exportChartJson(p_doc, p_diffOnly);
-}
-*/
 
 void CL_CT10_ControlManager::setMode(bool p_profileMode) {
     instance().setProfileMode(p_profileMode);
@@ -100,7 +81,7 @@ bool CL_CT10_ControlManager::reloadAll() {
     v_inst.scheduleSegRt.index = -1;
     v_inst.profileSegRt.index  = -1;
 
-    // ✅ runCtx 기본 상태(SSOT)
+    // runCtx 기본 상태(SSOT)
     v_inst.runCtx.state             = EN_CT10_STATE_IDLE;
     v_inst.runCtx.reason            = EN_CT10_REASON_NONE;
     v_inst.runCtx.lastDecisionMs    = millis();
@@ -131,7 +112,7 @@ void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
     scheduleSegRt.index = -1;
     profileSegRt.index  = -1;
 
-    // ✅ segment rt 초기 진입 안정화(권장)
+    // segment rt 초기 진입 안정화(권장)
     uint32_t v_now = (uint32_t)millis();
     scheduleSegRt.onPhase      = true;
     scheduleSegRt.phaseStartMs = v_now;
@@ -141,7 +122,7 @@ void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
     profileSegRt.phaseStartMs  = v_now;
     profileSegRt.loopCount     = 0;
 
-    // ✅ offTime 재트리거 방지 런타임 기본값
+    // offTime 재트리거 방지 런타임 기본값
     autoOffRt.offTimeLastYday = -1;
     autoOffRt.offTimeLastMin  = -1;
 
@@ -152,7 +133,7 @@ void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
     lastTickMs         = 0;
     lastMetricsPushMs  = 0;
 
-    // ✅ runCtx 기본 상태(SSOT)
+    // runCtx 기본 상태(SSOT)
     runCtx.state             = EN_CT10_STATE_IDLE;
     runCtx.reason            = EN_CT10_REASON_NONE;
     runCtx.lastDecisionMs    = v_now;
@@ -178,57 +159,6 @@ void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] begin()");
 }
 
-/*
-void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
-    pwm = &p_pwm;
-
-    memset(&overrideState, 0, sizeof(overrideState));
-    memset(&scheduleSegRt, 0, sizeof(scheduleSegRt));
-    memset(&profileSegRt,  0, sizeof(profileSegRt));
-    memset(&autoOffRt,     0, sizeof(autoOffRt));
-    memset(&runCtx,        0, sizeof(runCtx));
-
-    scheduleSegRt.index = -1;
-    profileSegRt.index  = -1;
-
-    useProfileMode     = false;
-    runSource          = EN_CT10_RUN_NONE;
-    curScheduleIndex   = -1;
-    curProfileIndex    = -1;
-    lastTickMs         = 0;
-    lastMetricsPushMs  = 0;
-
-    // runCtx 기본 상태(SSOT)
-    runCtx.state             = EN_CT10_STATE_IDLE;
-    runCtx.reason            = EN_CT10_REASON_NONE;
-    
-    runCtx.lastDecisionMs    = millis();
-    runCtx.lastStateChangeMs = runCtx.lastDecisionMs;
-    
-    autoOffRt.offTimeLastYday = -1;
-    autoOffRt.offTimeLastMin  = -1;
-
-    runCtx.activeSchId     = 0;
-    runCtx.activeSchNo     = 0;
-    runCtx.activeSegId     = 0;
-    runCtx.activeSegNo     = 0;
-    runCtx.activeProfileNo = 0;
-    
-    runCtx.stateHoldUntilMs = 0;
-    runCtx.stateAckRequired = false;
-
-    // hold/ack 기본은 0/false로 이미 memset됨
-
-    sim.begin(p_pwm);
-
-    active = true;
-
-    markDirty("state");
-    markDirty("metrics");
-
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] begin()");
-}
-*/
 
 void CL_CT10_ControlManager::setMotion(CL_M10_MotionLogic* p_motion) {
     motion = p_motion;
@@ -448,77 +378,6 @@ void CL_CT10_ControlManager::tickLoop() {
 }
 
 
-/*
-void CL_CT10_ControlManager::tickLoop() {
-    if (!active || !pwm) return;
-
-    unsigned long v_nowMs = millis();
-    if (v_nowMs - lastTickMs < S_TICK_MIN_INTERVAL_MS) return;
-    lastTickMs = v_nowMs;
-
-    // 이벤트성 상태(AUTOOFF_STOPPED / TIME_INVALID) hold/ack 유지 중이면
-    // - 불필요한 start/stop 반복을 방지
-    if (shouldHoldEventState()) {
-        maybePushMetricsDirty();
-        return;
-    }
-
-    // 1) Override
-    if (tickOverride()) {
-        sim.tick();
-        maybePushMetricsDirty();
-        return;
-    }
-
-    // 2) Profile 전용 모드
-    if (useProfileMode) {
-        if (runSource == EN_CT10_RUN_USER_PROFILE && tickUserProfile()) {
-            sim.tick();
-            maybePushMetricsDirty();
-        } else if (sim.active) {
-            sim.stop();
-            maybePushMetricsDirty();
-        }
-        return;
-    }
-
-    // 3) UserProfile
-    if (runSource == EN_CT10_RUN_USER_PROFILE && tickUserProfile()) {
-        sim.tick();
-        maybePushMetricsDirty();
-        return;
-    }
-
-    // TIME_INVALID 선체크(스케줄 진입 전)
-    {
-        struct tm v_tm;
-        memset(&v_tm, 0, sizeof(v_tm));
-        if (!CL_TM10_TimeManager::getLocalTime(v_tm)) {
-            onTimeInvalid(EN_CT10_REASON_TIME_NOT_VALID);
-            maybePushMetricsDirty();
-            return;
-        }
-    }
-
-    // 4) Schedule
-    if (tickSchedule()) {
-        sim.tick();
-        maybePushMetricsDirty();
-        return;
-    }
-
-    // 5) Idle
-    if (sim.active) {
-        sim.stop();
-        maybePushMetricsDirty();
-        markDirty("state");
-    }
-
-    // (선택) idle 상태 기록
-    runCtx.state  = EN_CT10_STATE_IDLE;
-    runCtx.reason = EN_CT10_REASON_NONE;
-}
-*/
 
 // --------------------------------------------------
 // override tick
@@ -565,58 +424,6 @@ bool CL_CT10_ControlManager::tickOverride() {
     return true;
 }
 
-/*
-bool CL_CT10_ControlManager::tickOverride() {
-    if (!overrideState.active) return false;
-
-    unsigned long v_nowMs = millis();
-
-    // timeout
-    if (overrideState.endMs != 0 && v_nowMs >= overrideState.endMs) {
-        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Override timeout");
-        memset(&overrideState, 0, sizeof(overrideState));
-        markDirty("state");
-        markDirty("metrics");
-        return false;
-    }
-
-    // fixed
-    if (overrideState.useFixed) {
-        sim.stop();
-        if (pwm) {
-            pwm->P10_setDutyPercent(overrideState.fixedPercent);
-        }
-
-        runCtx.state  = EN_CT10_STATE_OVERRIDE;
-        runCtx.reason = EN_CT10_REASON_OVERRIDE_ACTIVE;
-        runCtx.lastDecisionMs = (uint32_t)v_nowMs;
-
-        return true;
-    }
-
-    // resolved
-    if (!overrideState.resolved.valid) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] Override resolved invalid, clear");
-        memset(&overrideState, 0, sizeof(overrideState));
-        markDirty("state");
-        markDirty("metrics");
-        return false;
-    }
-
-    if (!overrideState.resolvedApplied) {
-        sim.applyResolvedWind(overrideState.resolved);
-        overrideState.resolvedApplied = true;
-        markDirty("chart");
-    }
-
-    runCtx.state  = EN_CT10_STATE_OVERRIDE;
-    runCtx.reason = EN_CT10_REASON_OVERRIDE_ACTIVE;
-    runCtx.lastDecisionMs = (uint32_t)v_nowMs;
-
-    return true;
-}
-*/
-
 // --------------------------------------------------
 // profile tick
 // --------------------------------------------------
@@ -655,44 +462,6 @@ bool CL_CT10_ControlManager::tickUserProfile() {
     );
 }
 
-/*
-bool CL_CT10_ControlManager::tickUserProfile() {
-    if (!g_A20_config_root.userProfiles) return false;
-    if (curProfileIndex < 0) return false;
-
-    ST_A20_UserProfilesRoot_t& v_cfg = *g_A20_config_root.userProfiles;
-    if ((uint8_t)curProfileIndex >= v_cfg.count) return false;
-
-    ST_A20_UserProfileItem_t& v_profile = v_cfg.items[(uint8_t)curProfileIndex];
-    if (!v_profile.enabled || v_profile.segCount == 0) return false;
-
-    // AutoOff
-    EN_CT10_reason_t v_reason = EN_CT10_REASON_NONE;
-    if (checkAutoOff(&v_reason)) {
-        onAutoOffTriggered(v_reason);
-        return true;
-    }
-
-    // Motion blocked 이벤트성 상태 전환
-    if (isMotionBlocked(v_profile.motion)) {
-        onMotionBlocked(EN_CT10_REASON_MOTION_NO_PRESENCE);
-        return true;
-    }
-
-    runCtx.state  = EN_CT10_STATE_PROFILE_RUN;
-    runCtx.reason = EN_CT10_REASON_USER_PROFILE_ACTIVE;
-    runCtx.lastDecisionMs = (uint32_t)millis();
-
-    return tickSegmentSequence(
-        v_profile.repeatSegments,
-        v_profile.repeatCount,
-        v_profile.segments,
-        v_profile.segCount,
-        profileSegRt
-    );
-}
-*/
-
 
 // --------------------------------------------------
 // schedule tick
@@ -721,7 +490,7 @@ bool CL_CT10_ControlManager::tickSchedule() {
         return true;
     }
 
-    // ✅ state/reason은 SSOT(applyDecision)에서만
+    // state/reason은 SSOT(applyDecision)에서만
     return tickSegmentSequence(
         v_schedule.repeatSegments,
         v_schedule.repeatCount,
@@ -731,66 +500,6 @@ bool CL_CT10_ControlManager::tickSchedule() {
     );
 }
 
-/*
-bool CL_CT10_ControlManager::tickSchedule() {
-    if (!g_A20_config_root.schedules) return false;
-
-    ST_A20_SchedulesRoot_t& v_cfg = *g_A20_config_root.schedules;
-
-    // 겹침 허용 기본(true) — 필요 시 호출부에서 false로 변경 가능
-    int v_activeIdx = findActiveScheduleIndex(v_cfg, true);
-    if (v_activeIdx < 0) {
-        curScheduleIndex = -1;
-        
-        // (선택) UI에 “지금은 활성 스케줄이 없음”을 명시
-        runCtx.reason = EN_CT10_REASON_NO_ACTIVE_SCHEDULE;
-
-        return false;
-    }
-
-    if (curScheduleIndex != (int8_t)v_activeIdx) {
-        curScheduleIndex           = (int8_t)v_activeIdx;
-        runSource                  = EN_CT10_RUN_SCHEDULE;
-
-        scheduleSegRt.index        = -1;
-        scheduleSegRt.onPhase      = true;
-        scheduleSegRt.phaseStartMs = millis();
-        scheduleSegRt.loopCount    = 0;
-
-        initAutoOffFromSchedule(v_cfg.items[(uint8_t)curScheduleIndex]);
-
-        markDirty("state");
-        markDirty("metrics");
-    }
-
-    ST_A20_ScheduleItem_t& v_schedule = v_cfg.items[(uint8_t)curScheduleIndex];
-    if (!v_schedule.enabled || v_schedule.segCount == 0) return false;
-
-    EN_CT10_reason_t v_reason = EN_CT10_REASON_NONE;
-    if (checkAutoOff(&v_reason)) {
-        onAutoOffTriggered(v_reason);
-        return true;
-    }
-
-    // Motion blocked 이벤트성 상태 전환
-    if (isMotionBlocked(v_schedule.motion)) {
-        onMotionBlocked(EN_CT10_REASON_MOTION_NO_PRESENCE);
-        return true;
-    }
-
-    runCtx.state  = EN_CT10_STATE_SCHEDULE_RUN;
-    runCtx.reason = EN_CT10_REASON_SCHEDULE_ACTIVE;
-    runCtx.lastDecisionMs = (uint32_t)millis();
-
-    return tickSegmentSequence(
-        v_schedule.repeatSegments,
-        v_schedule.repeatCount,
-        v_schedule.segments,
-        v_schedule.segCount,
-        scheduleSegRt
-    );
-}
-*/
 
 
 // --------------------------------------------------

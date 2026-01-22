@@ -172,7 +172,7 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
         }
     }
 
-    // 8) AutoOff runtime snapshot  (✅ autoOffRt만 유지)
+    // 8) AutoOff runtime snapshot  (autoOffRt만 유지)
     {
         JsonObject v_ao = A40_ComFunc::Json_ensureObject(v_ctl["autoOffRt"]);
         v_ao["timerArmed"]     = autoOffRt.timerArmed;
@@ -265,7 +265,7 @@ void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {
         v_evt["holdRemainMs"] = v_remain;
     }
 
-    // autoOffRt (✅ autoOff 제거)
+    // autoOffRt (autoOff 제거)
     {
         JsonObject v_ao = A40_ComFunc::Json_ensureObject(v_control["autoOffRt"]);
         v_ao["timerArmed"]     = autoOffRt.timerArmed;
@@ -298,7 +298,7 @@ void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnl
     v_meta["runSource"] = (int)runSource;
     v_meta["override"]  = overrideState.active ? (overrideState.useFixed ? "fixed" : "resolved") : "none";
 
-    // ✅ runCtx 최소 병합 (차트에서도 "왜/무엇" 표시)
+    // runCtx 최소 병합 (차트에서도 "왜/무엇" 표시)
     {
         JsonObject v_ctx = A40_ComFunc::Json_ensureObject(v_meta["ctx"]);
 

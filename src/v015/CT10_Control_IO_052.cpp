@@ -46,11 +46,11 @@ void CL_CT10_ControlManager::toStateJson(JsonDocument& p_doc) {
 void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
      instance().exportChartJson(p_doc, p_diffOnly);
 }
-void toSummaryJson(JsonDocument& p_doc) {
+void CL_CT10_ControlManager::toSummaryJson(JsonDocument& p_doc) {
 	instance().exportSummaryJson(p_doc);
 }
 
-void toMetricsJson(JsonDocument& p_doc) {
+void CL_CT10_ControlManager::toMetricsJson(JsonDocument& p_doc) {
 	instance().exportMetricsJson(p_doc);
 }
 

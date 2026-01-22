@@ -163,7 +163,7 @@ void CL_W10_WebAPI::routeState() {
 			return;
 		}
 		JsonDocument v_doc;
-		s_control->toJson(v_doc);
+		s_control->toStateJson(v_doc);
 		sendJson(p_request, v_doc);
 	});
 }

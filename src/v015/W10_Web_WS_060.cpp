@@ -99,7 +99,7 @@ void CL_W10_WebAPI::routeWebSocket() {
             CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WS /state connected (id=%u)", client->id());
             JsonDocument v_doc;
             if (s_control) {
-                s_control->toJson(v_doc);
+                s_control->toStateJson(v_doc);
             }
             String v_json;
             serializeJson(v_doc, v_json);

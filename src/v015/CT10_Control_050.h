@@ -234,15 +234,6 @@ class CL_CT10_ControlManager {
     static void toSummaryJson(JsonDocument& p_doc);
 	static void toMetricsJson(JsonDocument& p_doc);
 	
-    /*
-	static inline void toSummaryJson(JsonDocument& p_doc) {
-		instance().exportSummaryJson(p_doc);
-	}
-	static inline void toMetricsJson(JsonDocument& p_doc) {
-		instance().exportMetricsJson(p_doc);
-	}
-	*/
-
 	// header에 static 추가
     static inline void ackEvent() { 
     	instance().ackEventState(); 

@@ -14,22 +14,6 @@
 
 #include "CT10_Control_050.h"
 
-// --------------------------------------------------
-// 내부 Helper: safe JsonObject 확보 (타입 꼬임 방지)
-// A40_ComFunc::Json_ensureObject 으로 변경
-/*
-static JsonObject CT10_ensureObject(JsonVariant p_v) {
-    // 1. 이미 JsonObject 타입인지 검사 (중복 생성 방지)
-    if (p_v.is<JsonObject>()) {
-        // 이미 객체라면 해당 객체를 그대로 반환 (내용 보존)
-        return p_v.as<JsonObject>();
-    }
-    
-    // 2. 객체가 아니거나 다른 타입인 경우 강제 변환
-    // 주의: 기존에 다른 데이터(문자열, 숫자 등)가 있었다면 삭제되고 {}가 됨
-    return p_v.to<JsonObject>();
-}
-*/
 
 // --------------------------------------------------
 // 싱글톤

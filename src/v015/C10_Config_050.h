@@ -202,7 +202,7 @@ class CL_C10_ConfigManager {
 	static bool _dirty_nvsSpec;
 	static bool _dirty_webPage;
 
-    // ✅ Dirty 보호용 mux (클래스 소유)
+    // Dirty 보호용 mux (클래스 소유)
     static portMUX_TYPE 	s_dirtyflagSpinlock;			// 	s_dirtyMux --> s_dirtyflagSpinlock
 
 	// Mutex

@@ -39,14 +39,22 @@ CL_CT10_ControlManager& CL_CT10_ControlManager::instance() {
     return v_inst;
 }
 
-void CL_CT10_ControlManager::toJson(JsonDocument& p_doc) {
+void CL_CT10_ControlManager::toStateJson(JsonDocument& p_doc) {
     instance().exportStateJson_v02(p_doc);
 }
 
 void CL_CT10_ControlManager::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
      instance().exportChartJson(p_doc, p_diffOnly);
 }
+void toSummaryJson(JsonDocument& p_doc) {
+	instance().exportSummaryJson(p_doc);
+}
 
+void toMetricsJson(JsonDocument& p_doc) {
+	instance().exportMetricsJson(p_doc);
+}
+
+	
 // --------------------------------------------------
 // [CT10] exportStateJson_v02()
 // - 웹/WS 상태에서 "왜 멈췄는지/무엇이 도는지"가 보이도록 확장

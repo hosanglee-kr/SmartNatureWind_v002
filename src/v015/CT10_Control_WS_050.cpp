@@ -245,7 +245,7 @@ static bool CT10_WS_trySendOne(uint8_t p_ch, uint32_t p_nowMs) {
     // ✅ “인스턴스 오타 호출(v_ctrl.toJson)” 금지
     // ✅ static wrapper(toJsonxxx)만 사용
     if (p_ch == (uint8_t)EN_A20_WS_CH_STATE) {
-        CL_CT10_ControlManager::toJson(v_doc);
+        CL_CT10_ControlManager::toStateJson(v_doc);
         if (s_bcast_state) s_bcast_state(v_doc, true);
     } else if (p_ch == (uint8_t)EN_A20_WS_CH_METRICS) {
         CL_CT10_ControlManager::toMetricsJson(v_doc);

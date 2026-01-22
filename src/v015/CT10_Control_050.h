@@ -220,9 +220,7 @@ class CL_CT10_ControlManager {
 
 	static bool begin();  // 전역 PWM 인스턴스(g_P10_pwm) 기반 begin
 	static void tick();	  // 주기 호출
-	static void toJson(JsonDocument& p_doc);
-	static void toChartJson(JsonDocument& p_doc, bool p_diffOnly = false);
-
+	
 	static void setMode(bool p_profileMode);
 	static bool setActiveUserProfile(uint8_t p_profileNo);
 
@@ -231,12 +229,19 @@ class CL_CT10_ControlManager {
 
 	static bool reloadAll();
 
+    static void toStateJson(JsonDocument& p_doc);
+    static void toChartJson(JsonDocument& p_doc, bool p_diffOnly = false);
+    static void toSummaryJson(JsonDocument& p_doc);
+	static void toMetricsJson(JsonDocument& p_doc);
+	
+    /*
 	static inline void toSummaryJson(JsonDocument& p_doc) {
 		instance().exportSummaryJson(p_doc);
 	}
 	static inline void toMetricsJson(JsonDocument& p_doc) {
 		instance().exportMetricsJson(p_doc);
 	}
+	*/
 
 	// header에 static 추가
     static inline void ackEvent() { 

@@ -176,7 +176,7 @@ static bool C10_fromJson_UserProfileItem(const JsonObjectConst&    p_jp,
 
     // profileNo (필수)
     {
-        uint32_t v_no = (uint32_t)(p_jp["profileNo"] | 0u);
+        uint16_t v_no = (uint16_t)(p_jp["profileNo"] | 0u);
         if (v_no == 0u || v_no > 65535u) {
             CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: invalid profileNo=%u", v_caller, (unsigned)v_no);
             return false;
@@ -704,7 +704,7 @@ int CL_C10_ConfigManager::addUserProfilesFromJson(const JsonDocument& p_doc) {
                                                                 : p_doc.as<JsonObjectConst>();
 
     // profileNo 필수/0금지/중복검증
-    uint32_t v_no32 = (uint32_t)(jp["profileNo"] | 0u);
+    uint16_t v_no32 = (uint16_t)(jp["profileNo"] | 0u);
     if (v_no32 == 0u || v_no32 > 65535u) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] addUserProfile: invalid profileNo=%u", (unsigned)v_no32);
         return -2;

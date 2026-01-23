@@ -120,7 +120,7 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     {
         JsonObject v_prof = A40_ComFunc::Json_ensureObject(v_ctl["profile"]);
         v_prof["index"]     = (int)curProfileIndex;
-        v_prof["profileNo"] = (uint8_t)runCtx.activeProfileNo;
+        v_prof["profileNo"] = (uint16_t)runCtx.activeProfileNo;
 
         const char* v_name = "";
         if (g_A20_config_root.userProfiles) {
@@ -221,7 +221,7 @@ void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {
         v_snap["schNo"]     = (uint16_t)runCtx.activeSchNo;
         v_snap["segId"]     = (uint8_t)runCtx.activeSegId;
         v_snap["segNo"]     = (uint16_t)runCtx.activeSegNo;
-        v_snap["profileNo"] = (uint8_t)runCtx.activeProfileNo;
+        v_snap["profileNo"] = (uint16_t)runCtx.activeProfileNo;
     }
 
     // time (v01에도 최소)
@@ -309,7 +309,7 @@ void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnl
 
         // snapshot 최소
         v_ctx["schNo"]     = (uint16_t)runCtx.activeSchNo;
-        v_ctx["profileNo"] = (uint8_t)runCtx.activeProfileNo;
+        v_ctx["profileNo"] = (uint16_t)runCtx.activeProfileNo;
         v_ctx["segNo"]     = (uint16_t)runCtx.activeSegNo;
     }
 }
@@ -322,7 +322,7 @@ void CL_CT10_ControlManager::exportSummaryJson(JsonDocument& p_doc) {
     v_sum["reason"] = CT10_reasonToString(runCtx.reason);
 
     v_sum["schNo"]     = (uint16_t)runCtx.activeSchNo;
-    v_sum["profileNo"] = (uint8_t)runCtx.activeProfileNo;
+    v_sum["profileNo"] = (uint16_t)runCtx.activeProfileNo;
     v_sum["segNo"]     = (uint16_t)runCtx.activeSegNo;
 
     uint8_t v_phaseIdx = static_cast<uint8_t>(sim.phase);

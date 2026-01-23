@@ -138,7 +138,7 @@ typedef struct {
 	uint8_t				activeSegId;
 	uint16_t			activeSegNo;
 
-	uint8_t				activeProfileNo;
+	uint16_t		    activeProfileNo;
 } ST_CT10_RunContext_t;
 
 
@@ -222,7 +222,7 @@ class CL_CT10_ControlManager {
 	static void tick();	  // 주기 호출
 	
 	static void setMode(bool p_profileMode);
-	static bool setActiveUserProfile(uint8_t p_profileNo);
+	static bool setActiveUserProfile(uint16_t p_profileNo);
 
 	static void applyManual(const ST_A20_ResolvedWind_t& p_wind);
 	static void clearManual();
@@ -256,7 +256,7 @@ class CL_CT10_ControlManager {
 
 	// 모드/프로파일/오버라이드
 	void setProfileMode(bool p_profileMode);
-	bool startUserProfileByNo(uint8_t p_profileNo);
+	bool startUserProfileByNo(uint16_t p_profileNo);
 	void stopUserProfile();
 
 	void startOverrideFixed(float p_percent, uint32_t p_seconds);

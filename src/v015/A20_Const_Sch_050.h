@@ -295,7 +295,7 @@ typedef struct {
 
 typedef struct {
     uint8_t profileId                     = 0;
-    uint8_t profileNo                     = 0;
+    uint16_t profileNo                     = 0;
     char    name[A20_Const::MAX_NAME_LEN] = {0};
     bool    enabled                       = true;
 

@@ -49,7 +49,7 @@ void CL_CT10_ControlManager::setMode(bool p_profileMode) {
     instance().setProfileMode(p_profileMode);
 }
 
-bool CL_CT10_ControlManager::setActiveUserProfile(uint8_t p_profileNo) {
+bool CL_CT10_ControlManager::setActiveUserProfile(uint16_t p_profileNo) {
     return instance().startUserProfileByNo(p_profileNo);
 }
 
@@ -185,7 +185,7 @@ void CL_CT10_ControlManager::setProfileMode(bool p_profileMode) {
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] setMode(profileMode=%d)", p_profileMode ? 1 : 0);
 }
 
-bool CL_CT10_ControlManager::startUserProfileByNo(uint8_t p_profileNo) {
+bool CL_CT10_ControlManager::startUserProfileByNo(uint16_t p_profileNo) {
     if (!g_A20_config_root.userProfiles) return false;
 
     ST_A20_UserProfilesRoot_t& v_cfg = *g_A20_config_root.userProfiles;

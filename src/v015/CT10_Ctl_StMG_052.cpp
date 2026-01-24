@@ -294,7 +294,9 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
 	    runCtx.activeSegId = 0;
 	    runCtx.activeSegNo = 0;
 	
-	} else {
+	} 
+	/* 
+    else {
 	
 	    // 기본: 일단 0으로 초기화 후 현 상태 채움
 	    runCtx.activeSchId = 0;
@@ -331,7 +333,8 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
 	        }
 	    }
 	}
-
+	*/
+	
 
 	// 6) Dirty 처리 정책
 	if (v_stateChanged || v_sourceChanged) {

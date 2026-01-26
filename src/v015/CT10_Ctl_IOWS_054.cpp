@@ -253,7 +253,7 @@ static bool CT10_WS_trySendOne_v03(uint8_t p_ch, uint32_t p_nowMs) {
 
     bool v_sent = false;
 
-    switch ((EN_A20_WS_CH_t)p_ch) {
+    switch ((EN_A20_WS_CH_INDEX_t)p_ch) {
         case EN_A20_WS_CH_STATE: {
             s_doc_state.clear();
             CL_CT10_ControlManager::toStateJson(s_doc_state);

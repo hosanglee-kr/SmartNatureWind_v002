@@ -9,7 +9,7 @@
 // 1. Enum 및 타입 정의
 // ------------------------------------------------------
 
-typedef enum {
+typedef enum : uint8_t {
     EN_A20_WS_CH_STATE = 0,
     EN_A20_WS_CH_METRICS,
     EN_A20_WS_CH_CHART,

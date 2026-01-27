@@ -212,7 +212,7 @@
 
   // ======================= 4. WindProfile 로딩 =======================
 
-  async function loadWindProfileDict() {
+  async function loadWindDict() {
     const data = await fetchApi(
       API_WIND_PROFILE,
       "GET",
@@ -790,7 +790,7 @@
     }
 
     bindEvents();
-    await loadWindProfileDict();
+    await loadWindDict();
     await loadSchedules();
     pollConfigDirty();
   });

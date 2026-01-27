@@ -294,7 +294,7 @@ static bool CT10_WS_trySendOne_v03(uint8_t p_ch, uint32_t p_nowMs) {
     return true;
 }
 
-
+/*
 
 static bool CT10_WS_trySendOne_v02(uint8_t p_ch, uint32_t p_nowMs) {
     if (p_ch >= (uint8_t)EN_A20_WS_CH_COUNT) return false;
@@ -354,7 +354,7 @@ static bool CT10_WS_trySendOne_v02(uint8_t p_ch, uint32_t p_nowMs) {
     s_pending[p_ch]    = false;
     return true;
 }
-
+*/
 
 /*
 static bool CT10_WS_trySendOne(uint8_t p_ch, uint32_t p_nowMs) {

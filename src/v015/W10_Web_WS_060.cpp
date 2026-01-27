@@ -97,6 +97,20 @@ void CL_W10_WebAPI::routeWebSocket() {
         if (!client) return;
         if (type == WS_EVT_CONNECT) {
             CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WS /state connected (id=%u)", client->id());
+            
+            String v_json;
+
+            if (s_control) {
+                // [PATCH] CT10: toStateJson() -> JsonDocument& 반환 (채널별 static doc)
+                JsonDocument& v_doc = s_control->toStateJson();
+                serializeJson(v_doc, v_json);
+            } else {
+                v_json = "{}";
+            }
+
+            client->text(v_json);
+        
+            /*
             JsonDocument v_doc;
             if (s_control) {
                 s_control->toStateJson(v_doc);
@@ -104,6 +118,7 @@ void CL_W10_WebAPI::routeWebSocket() {
             String v_json;
             serializeJson(v_doc, v_json);
             client->text(v_json);
+            */
         }
     });
     s_server->addHandler(s_wsServerState);
@@ -122,6 +137,20 @@ void CL_W10_WebAPI::routeWebSocket() {
         if (!client) return;
         if (type == WS_EVT_CONNECT) {
             CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WS /summary connected (id=%u)", client->id());
+            
+            String v_json;
+
+            if (s_control) {
+                // [PATCH]
+                JsonDocument& v_doc = s_control->toSummaryJson();
+                serializeJson(v_doc, v_json);
+            } else {
+                v_json = "{}";
+            }
+
+            client->text(v_json);
+        
+            /*
             if (s_control) {
                 JsonDocument v_doc;
                 s_control->toSummaryJson(v_doc);
@@ -129,6 +158,7 @@ void CL_W10_WebAPI::routeWebSocket() {
                 serializeJson(v_doc, v_json);
                 client->text(v_json);
             }
+            */
         }
     });
     s_server->addHandler(s_wsServerSummary);
@@ -138,6 +168,20 @@ void CL_W10_WebAPI::routeWebSocket() {
         if (!client) return;
         if (type == WS_EVT_CONNECT) {
             CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WS /metrics connected (id=%u)", client->id());
+            
+            String v_json;
+
+            if (s_control) {
+                // [PATCH]
+                JsonDocument& v_doc = s_control->toMetricsJson();
+                serializeJson(v_doc, v_json);
+            } else {
+                v_json = "{}";
+            }
+    
+            client->text(v_json);
+        
+            /*
             if (s_control) {
                 JsonDocument v_doc;
                 s_control->toMetricsJson(v_doc);
@@ -145,6 +189,7 @@ void CL_W10_WebAPI::routeWebSocket() {
                 serializeJson(v_doc, v_json);
                 client->text(v_json);
             }
+            */
         }
     });
     s_server->addHandler(s_wsServerMetrics);

@@ -229,10 +229,17 @@ class CL_CT10_ControlManager {
 
 	static bool reloadAll();
 
+    // 변경: 파라미터 제거 + JsonDocument& 반환(채널별 캐시)
+	static JsonDocument& toStateJson();
+	static JsonDocument& toMetricsJson();
+	static JsonDocument& toSummaryJson();
+	static JsonDocument& toChartJson(bool p_diffOnly = false);
+    /*
     static void toStateJson(JsonDocument& p_doc);
     static void toChartJson(JsonDocument& p_doc, bool p_diffOnly = false);
     static void toSummaryJson(JsonDocument& p_doc);
 	static void toMetricsJson(JsonDocument& p_doc);
+	*/
 	
 	// header에 static 추가
     static inline void ackEvent() { 

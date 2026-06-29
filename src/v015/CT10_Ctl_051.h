@@ -49,6 +49,8 @@
 #include <ArduinoJson.h>
 #include <string.h>
 #include <time.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
 // 종속성 모듈 헤더
 #include "A20_Const_050.h"

@@ -51,7 +51,7 @@
 #include "A20_Const_Wifi_060.h"
 #include "A20_Const_Motion_060.h"
 #include "A20_Const_Sch_060.h"
-#include "A20_Const_System_060.h"
+#include "A20_Const_Sys_060.h"
 
 
 

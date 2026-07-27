@@ -1,4 +1,4 @@
- // 소스명 : A20_Const_System_060.h
+ // 소스명 : A20_Const_Sys_060.h
 
 
 #pragma once
@@ -124,6 +124,14 @@ typedef struct {
     uint16_t syncIntervalMin;
 } ST_A20_SysTimeConfig_t;
 
+
+typedef struct {
+        int16_t  pin;                 // GPIO 핀 번호
+        uint16_t numPixels;           // LED 개수 (1개면 1)
+        uint8_t  defaultBrightness;   // 0~255
+} ST_A20_SysLedHWCfg_t;
+
+
 typedef struct {
     struct {
         char version[A20_Const::LEN_NAME];
@@ -147,6 +155,9 @@ typedef struct {
         ST_A20_SysPirHWCfg_t pir;
         ST_A20_SysDhtHWCfg_t tempHum;
         ST_A20_SysBLEHWCfg_t ble;
+        
+        ST_A20_SysLedHWCfg_t led;
+        
 
     } hw;
 

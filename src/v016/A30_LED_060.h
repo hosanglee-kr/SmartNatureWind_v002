@@ -5,9 +5,9 @@
 #include <Adafruit_NeoPixel.h>
 
 // 클래스 내부에서 사용할 기본 상수
-inline constexpr const uint8_t  G_A30_RGBLED_PIN                = 48;
-inline constexpr const uint16_t G_A30_RGBLED_NUMS               = 1;
-inline constexpr const uint8_t  G_A30_RGBLED_DEFAULT_BRIGHTNESS = 20;
+// inline constexpr const uint8_t  G_A30_RGBLED_PIN                = 48;
+// inline constexpr const uint16_t G_A30_RGBLED_NUMS               = 1;
+// inline constexpr const uint8_t  G_A30_RGBLED_DEFAULT_BRIGHTNESS = 20;
 
 /**
  * @brief 독립형 RGB LED 제어 클래스
@@ -26,13 +26,13 @@ public:
     /**
      * @brief 생성자
      */
-    CL_A30_LED(uint8_t p_pin = G_A30_RGBLED_PIN, uint16_t p_num = G_A30_RGBLED_NUMS)
+    CL_A30_LED(uint8_t p_pin, uint16_t p_num)
         : _pin(p_pin), _numPixels(p_num), _pixel(p_num, p_pin, NEO_GRB + NEO_KHZ800) {}
 
     /**
      * @brief 초기화
      */
-    void begin(uint8_t p_brightness = G_A30_RGBLED_DEFAULT_BRIGHTNESS) {
+    void begin(uint8_t p_brightness) {
         _pixel.begin();
         _pixel.setBrightness(p_brightness);
         _pixel.clear();

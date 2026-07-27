@@ -243,6 +243,15 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
         if (!j_ble["enabled"].isNull()) p_cfg.hw.ble.enabled = j_ble["enabled"].as<bool>();
         if (!j_ble["scanInterval"].isNull()) p_cfg.hw.ble.scanInterval = j_ble["scanInterval"].as<uint16_t>();
     }
+    
+    // hw.led
+    JsonObjectConst j_led = j_hw["led"].as<JsonObjectConst>();
+    if (!j_led.isNull()) {
+        if (!j_led["pin"].isNull()) p_cfg.hw.led.pin = j_led["pin"].as<int16_t>();
+        if (!j_led["numPixels"].isNull()) p_cfg.hw.led.numPixels = j_led["numPixels"].as<uint16_t>();
+        if (!j_led["defaultBrightness"].isNull()) p_cfg.hw.led.defaultBrightness = j_led["defaultBrightness"].as<uint8_t>();
+    }
+
 
     // security
     JsonObjectConst j_sec = j_root["security"].as<JsonObjectConst>();
@@ -481,6 +490,11 @@ bool CL_C10_ConfigManager::saveSystemConfig(const ST_A20_SystemConfig_t& p_cfg) 
 
     v["hw"]["ble"]["enabled"]      = p_cfg.hw.ble.enabled;
     v["hw"]["ble"]["scanInterval"] = p_cfg.hw.ble.scanInterval;
+    
+    v["hw"]["led"]["pin"]              = p_cfg.hw.led.pin;
+    v["hw"]["led"]["numPixels"]        = p_cfg.hw.led.numPixels;
+    v["hw"]["led"]["defaultBrightness"] = p_cfg.hw.led.defaultBrightness;
+
 
     v["security"]["apiKey"] = p_cfg.security.apiKey;
 
@@ -818,6 +832,35 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
                 v_changed                    = true;
             }
         }
+        
+        JsonObjectConst j_led = j_hw["led"].as<JsonObjectConst>();
+        if (!j_led.isNull()) {
+            // pin
+            if (!j_led["pin"].isNull()) {
+                int16_t v_pin = j_led["pin"].as<int16_t>();
+                if (v_pin != p_config.hw.led.pin) {
+                    p_config.hw.led.pin = v_pin;
+                    v_changed = true;
+                }
+            }
+            // numPixels
+            if (!j_led["numPixels"].isNull()) {
+                uint16_t v_num = j_led["numPixels"].as<uint16_t>();
+                if (v_num != p_config.hw.led.numPixels) {
+                    p_config.hw.led.numPixels = v_num;
+                    v_changed = true;
+                }
+            }
+            // defaultBrightness
+            if (!j_led["defaultBrightness"].isNull()) {
+                uint8_t v_bright = j_led["defaultBrightness"].as<uint8_t>();
+                if (v_bright != p_config.hw.led.defaultBrightness) {
+                    p_config.hw.led.defaultBrightness = v_bright;
+                    v_changed = true;
+                }
+            }
+        }
+
     }
 
     // time
@@ -1094,6 +1137,11 @@ void CL_C10_ConfigManager::toJson_System(const ST_A20_SystemConfig_t& p, JsonDoc
 
     d["hw"]["ble"]["enabled"]      = p.hw.ble.enabled;
     d["hw"]["ble"]["scanInterval"] = p.hw.ble.scanInterval;
+    
+    d["hw"]["led"]["pin"]              = p.hw.led.pin;
+    d["hw"]["led"]["numPixels"]        = p.hw.led.numPixels;
+    d["hw"]["led"]["defaultBrightness"] = p.hw.led.defaultBrightness;
+
 
     d["security"]["apiKey"] = p.security.apiKey;
 

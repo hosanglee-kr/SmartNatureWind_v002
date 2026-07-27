@@ -377,6 +377,12 @@ inline void A20_resetSystemDefault(ST_A20_SystemConfig_t& p_cfg) {
     // hw.ble
     p_cfg.hw.ble.enabled      = true;
     p_cfg.hw.ble.scanInterval = 5;
+    
+    
+    // hw.LED
+    p_cfg.hw.led.pin              = 48;
+    p_cfg.hw.led.numPixels        = 1;
+    p_cfg.hw.led.defaultBrightness = 20;
 
     // security
     A40_ComFunc::copyStr2Buffer_safe(p_cfg.security.apiKey, "", sizeof(p_cfg.security.apiKey));

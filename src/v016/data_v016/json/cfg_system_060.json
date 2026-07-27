@@ -71,6 +71,11 @@
 		"ble": {
 			"enabled": true,
 			"scanInterval": 5
+		},
+		"led": {
+			"pin": 48,
+			"numPixels": 1,
+			"defaultBrightness": 20
 		}
 	},
 	"security": {

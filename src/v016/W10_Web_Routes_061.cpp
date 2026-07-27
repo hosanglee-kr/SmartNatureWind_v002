@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------
- * 소스명 : W10_Web_Routes_060.cpp
+ * 소스명 : W10_Web_Routes_061.cpp
  * 모듈 약어 : W10
  * 모듈명 : Smart Nature Wind Web API (v029) - Routes Implementation
  * ------------------------------------------------------
@@ -162,9 +162,10 @@ void CL_W10_WebAPI::routeState() {
 			p_request->send(500, "application/json", "{\"error\":\"control not ready\"}");
 			return;
 		}
-		JsonDocument v_doc;
-		s_control->toStateJson(v_doc);
-		sendJson(p_request, v_doc);
+		
+        JsonDocument& v_doc = s_control->toStateJson();  // 또는 CL_CT10_ControlManager::toStateJson()
+        sendJson(p_request, v_doc);
+
 	});
 }
 
@@ -780,12 +781,24 @@ void CL_W10_WebAPI::routeControlSummary() {
 			p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
 			return;
 		}
+		
+		
 		JsonDocument v_doc;
 		if (s_control) {
-			s_control->toSummaryJson(v_doc);
-			s_control->toMetricsJson(v_doc);
+		    // 각각의 정적 문서를 가져옴
+		    JsonDocument& v_summary = s_control->toSummaryJson();
+		    JsonDocument& v_metrics = s_control->toMetricsJson();
+		
+		    // v_summary의 내용을 v_doc에 복사 (기본값)
+		    v_doc = v_summary;
+		
+		    // v_metrics의 키를 v_doc에 추가 (원래 동작: 두 함수가 같은 문서에 추가했음)
+		    for (auto kv : v_metrics.as<JsonObject>()) {
+		        v_doc[kv.key()] = kv.value();
+		    }
 		}
 		sendJson(p_request, v_doc);
+
 	});
 }
 
@@ -798,13 +811,27 @@ void CL_W10_WebAPI::routeSimState() {
 			p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
 			return;
 		}
+		
 		JsonDocument v_doc;
 		if (s_control) {
-			s_control->sim.toJson(v_doc);
-			s_control->toSummaryJson(v_doc);
-			s_control->toMetricsJson(v_doc);
+		    // 1. sim.toJson은 인자로 받는 비정적 멤버이므로 그대로 사용
+		    s_control->sim.toJson(v_doc);
+		
+		    // 2. summary와 metrics는 정적 반환값 사용
+		    JsonDocument& v_summary = s_control->toSummaryJson();
+		    JsonDocument& v_metrics = s_control->toMetricsJson();
+		
+		    // v_summary 병합
+		    for (auto kv : v_summary.as<JsonObject>()) {
+		        v_doc[kv.key()] = kv.value();
+		    }
+		    // v_metrics 병합
+		    for (auto kv : v_metrics.as<JsonObject>()) {
+		        v_doc[kv.key()] = kv.value();
+		    }
 		}
 		sendJson(p_request, v_doc);
+		
 	});
 }
 
@@ -817,13 +844,19 @@ void CL_W10_WebAPI::routeMetrics() {
 			p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
 			return;
 		}
-		JsonDocument v_doc;
+		
+		
 		if (s_control) {
-			s_control->toMetricsJson(v_doc);
+		    JsonDocument& v_doc = s_control->toMetricsJson();  // 반환값 사용
+		    CL_W10_WebAPI::broadcastMetrics(v_doc, true);
+		    CL_W10_WebAPI::broadcastChart(v_doc, true);
+		    sendJson(p_request, v_doc);
+		} else {
+		    // s_control이 없을 경우 빈 응답
+		    JsonDocument v_empty;
+		    sendJson(p_request, v_empty);
 		}
-		CL_W10_WebAPI::broadcastMetrics(v_doc, true);
-		CL_W10_WebAPI::broadcastChart(v_doc, true);
-		sendJson(p_request, v_doc);
+
 	});
 }
 

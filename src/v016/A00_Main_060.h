@@ -96,14 +96,15 @@ void A00_init() {
         return;
     }
     
+
+    const ST_A20_WifiConfig_t&   v_wifi = *g_A20_config_root.wifi;
+    const ST_A20_SystemConfig_t& v_sys  = *g_A20_config_root.system;
+
      // LED 객체 생성 (pin, numPixels 전달)
     static CL_A30_LED s_led(v_sys.hw.led.pin, v_sys.hw.led.numPixels);
     g_A00_ledController = &s_led;
     g_A00_ledController->begin(v_sys.hw.led.defaultBrightness);
     
-
-    const ST_A20_WifiConfig_t&   v_wifi = *g_A20_config_root.wifi;
-    const ST_A20_SystemConfig_t& v_sys  = *g_A20_config_root.system;
 
     // ------------------------------------------------------
     // 4. Wi-Fi 초기화

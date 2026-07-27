@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------
- * 소스명 : C10_Config_System_060.cpp
+ * 소스명 : C10_Config_Sys_060.cpp
  * 모듈 약어 : C10
  * 모듈명 : Smart Nature Wind Configuration Manager - System/Wifi/Motion
  * ------------------------------------------------------

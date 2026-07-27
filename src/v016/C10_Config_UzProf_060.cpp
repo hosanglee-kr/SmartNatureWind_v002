@@ -44,7 +44,7 @@
 #include <new>
 #include <Arduino.h>
 #include "C10_Config_060.h"
-#include "A40_Com_Func_060.h"
+#include "A25_Com_Utils_060.h"
 
 // ------------------------------------------------------
 // UserProfile ID/NO 정책 (Schedules와 동일)

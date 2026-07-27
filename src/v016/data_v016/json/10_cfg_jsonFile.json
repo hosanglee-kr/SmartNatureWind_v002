@@ -1,14 +1,14 @@
 {
 	"configJsonFile": {
-		"system"         : "/json/cfg_system_033.json",
-		"wifi"           : "/json/cfg_wifi_030.json",
-		"motion"         : "/json/cfg_motion_030.json",
-		"nvsSpec"        : "/json/cfg_nvsSpec_030.json",
-		"schedules"      : "/json/cfg_schedules_030.json",
-		"userProfiles"   : "/json/cfg_userProfile_030.json",
-		"windDict"       : "/json/cfg_windDict_032.json",
+		"system"         : "/json/cfg_system_060.json",
+		"wifi"           : "/json/cfg_wifi_060.json",
+		"motion"         : "/json/cfg_motion_060.json",
+		"nvsSpec"        : "/json/cfg_nvsSpec_060.json",
+		"schedules"      : "/json/cfg_schedules_060.json",
+		"userProfiles"   : "/json/cfg_userProfile_060.json",
+		"windDict"       : "/json/cfg_windDict_060.json",
 
-        "webPage"        : "/json/cfg_pages_040.json"
+        "webPage"        : "/json/cfg_pages_060.json"
   }
 }
 

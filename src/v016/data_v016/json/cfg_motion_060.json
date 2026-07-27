@@ -1,6 +1,6 @@
 {
   "motion": {
-    "jsonFile": "cfg_motion_030.json",
+    "jsonFile": "cfg_motion_060.json",
     "pir": {
       "enabled": true,
       "holdSec": 120

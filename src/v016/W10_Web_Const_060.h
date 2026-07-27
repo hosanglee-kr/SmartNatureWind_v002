@@ -34,7 +34,7 @@ namespace W10_Const {
 	constexpr const char* HTTP_API_STATE			   = HTTP_API_BASE "/state";
 	constexpr const char* HTTP_API_SYSTEM			   = HTTP_API_BASE "/system";
 
-	// constexpr const char* HTTP_API_WIFI           = HTTP_API_BASE "/wifi";
+	// constexpr const char* HTTP_API_WIFI             = HTTP_API_BASE "/wifi";
 	constexpr const char* HTTP_API_WIFI_SCAN		   = HTTP_API_BASE "/wifi/scan";
 	constexpr const char* HTTP_API_WIFI_CONFIG		   = HTTP_API_BASE "/wifi/config";
 
@@ -55,7 +55,7 @@ namespace W10_Const {
 	// --------------------------------------------------
 	// 3. 설정 관리 (Configuration Life Cycle)
 	// --------------------------------------------------
-	constexpr const char* HTTP_API_CONFIG		   = HTTP_API_BASE "/config";
+	constexpr const char* HTTP_API_CONFIG		       = HTTP_API_BASE "/config";
 	constexpr const char* HTTP_API_CONFIG_SAVE		   = HTTP_API_BASE "/config/save";
 	constexpr const char* HTTP_API_CONFIG_DIRTY		   = HTTP_API_BASE "/config/dirty";
 	constexpr const char* HTTP_API_CONFIG_INIT		   = HTTP_API_BASE "/config/init";
@@ -114,6 +114,6 @@ namespace W10_Const {
 	constexpr const char* PATH_STATIC_HTML			   = "/html_v2";
 	constexpr const char* PATH_STATIC_JSON			   = "/json";
 
-	// constexpr const char* FILE_PAGES_JSON         = "/json/cfg_pages_032.json";
+	// constexpr const char* FILE_PAGES_JSON           = "/json/cfg_pages_032.json";
 
 }  // namespace W10_Const

@@ -1117,56 +1117,7 @@ void CL_W10_WebAPI::routeWifiConfig() {
             sendJson(p_request, v_res); });
 }
 
-/*
-// --------------------------------------------------
-// 22. /api/network/wifi/config (WiFi 설정 저장 + WiFiManager 적용)
-// --------------------------------------------------
-void CL_W10_WebAPI::routeWifiConfig() {
-	s_server->on("/api/network/wifi/config", HTTP_POST,
-				 [](AsyncWebServerRequest* p_request) {},
-				 nullptr,
-				 [](AsyncWebServerRequest* p_request, uint8_t* p_data,
-					size_t p_len, size_t p_index, size_t p_total) {
-					 if (!checkApiKey(p_request)) {
-						 p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-						 return;
-					 }
-					 if (p_index + p_len != p_total)
-						 return;
 
-					 JsonDocument v_doc;
-					 if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-						 p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
-						 return;
-					 }
-
-					 bool v_changed = false;
-					 if (g_A20_config_root.wifi) {
-						 v_changed = CL_C10_ConfigManager::patchWifiFromJson(
-							 *g_A20_config_root.wifi,
-							 v_doc);
-					 }
-
-					 JsonDocument v_res;
-					 v_res["updated"] = v_changed;
-
-					 if (v_changed) {
-						 CL_C10_ConfigManager::saveDirtyConfigs();
-						 // WiFiManager에 실제 설정 적용
-						 CL_WF10_WiFiManager::applyConfig(*g_A20_config_root.wifi);
-						 v_res["status"]	  = "applied";
-						 v_res["need_reboot"] = true;
-						 CL_D10_Logger::log(EN_L10_LOG_INFO,
-											"[W10] WiFi config updated and applied via /api/network/wifi/config.");
-					 } else {
-						 v_res["status"]	  = "no_change";
-						 v_res["need_reboot"] = false;
-					 }
-
-					 sendJson(p_request, v_res);
-				 });
-}
-*/
 // --------------------------------------------------
 // 23. /api/system/time/set (시간 설정 저장 + TimeManager 적용)
 // --------------------------------------------------

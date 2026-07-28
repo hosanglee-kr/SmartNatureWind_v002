@@ -1,6 +1,6 @@
 
 
-// P030_schedules_t1_006.js (JavaScript Implementation with Firebase and Gemini API)
+// P030_schedules_t1_060.js
 
 // --- Configuration (ESP32 환경에서는 C++ 코드에서 주입되어야 합니다) ---
 const GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";

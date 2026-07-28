@@ -1,7 +1,7 @@
 /**
- * P001_API_001.js
- * Smart Nature Wind - REST API Constants (v030)
- * 백엔드 W10_Web_Const_030.h와 동기화됨
+ * P001_API_060.js
+ * Smart Nature Wind - REST API Constants
+ * 백엔드 W10_Web_Const_060.h와 동기화됨
  */
 
 // 1. REST API 기본 Prefix 및 버전 제어
@@ -31,6 +31,7 @@ export const API_HTTP_SIM_STATE       = `${API_HTTP_BASE}/sim/state`;
 export const API_HTTP_CONTROL_SUMMARY = `${API_HTTP_BASE}/control/summary`;
 
 // 4. 설정 관리 (Configuration Life Cycle)
+export const API_HTTP_CONFIG          = `${API_HTTP_BASE}/config`; // GET /api/v001/config (전체 설정 조회)
 export const API_HTTP_CONFIG_SAVE     = `${API_HTTP_BASE}/config/save`;
 export const API_HTTP_CONFIG_DIRTY    = `${API_HTTP_BASE}/config/dirty`;
 export const API_HTTP_CONFIG_INIT     = `${API_HTTP_BASE}/config/init`;
@@ -69,4 +70,5 @@ export const WS_API_LOG               = `${API_WS_BASE}/log`;
 export const WS_API_STATE             = `${API_WS_BASE}/state`;
 export const WS_API_CHART             = `${API_WS_BASE}/chart`;
 export const WS_API_METRICS           = `${API_WS_BASE}/metrics`;
+export const WS_API_SUMMARY           = `${API_WS_BASE}/summary`;
 

@@ -1,6 +1,6 @@
-/* P010_main_021.js
+/* P010_main_060.js
  * ------------------------------------------------------
- * 모듈명 : Smart Nature Wind Main UI Logic (v021, Backend 029 기준)
+ * 모듈명 : Smart Nature Wind Main UI Logic 
  * ------------------------------------------------------
  * 기능 요약:
  *  - /api/config, /api/state 연동하여 초기 상태/설정 로딩
@@ -18,36 +18,16 @@
  * 0. 상수 정의
  * ============================== */
 
-// REST API 기본 prefix
-const API_BASE = "/api/v001";
 
-
-// 주요 엔드포인트 정의 (필요 시 여기만 고쳐 쓰면 됨)
-const API_STATE          = `${API_BASE}/state`;
-const API_CONFIG         = `${API_BASE}/config`;
-const API_CONFIG_SAVE    = `${API_BASE}/config/save`;
-const API_CONFIG_INIT    = `${API_BASE}/config/init`;     // factoryResetFromDefault와 매핑
-const API_CONFIG_MOTION  = `${API_BASE}/motion`;      // 풍속/모션 메모리 패치
-const API_CONFIG_TIMING  = `${API_BASE}/motion`;      // 타이밍 메모리 패치 (Backend 042 merge)
-const API_SIMULATION     = `${API_BASE}/simulation`;  // 실시간 물리 시뮬레이션 패치
-const API_CONFIG_WIFI_AP = `${API_BASE}/config/wifi_ap`;  // Wi-Fi AP 설정 패치
-const API_CONFIG_WIFI_STA= `${API_BASE}/config/wifi_sta`; // Wi-Fi STA 리스트 패치
-const API_CONFIG_PWM     = `${API_BASE}/config/hw_pwm`;   // PWM 하드웨어 설정 패치
-const API_WIFI_SCAN      = `${API_BASE}/wifi/scan`;       // Wi-Fi 스캔
-const API_VERSION        = `${API_BASE}/version`;         // FW 버전 조회 (문자열 or JSON)
-
-// 파일 업로드 / OTA
-const API_UPLOAD_STATIC  = `${API_BASE}/fileUpload`;		// "/upload";
-const API_UPLOAD_OTA     = `${API_BASE}/fwUpdate`;		// "/update";
-
-// WebSocket 엔드포인트 (필요시 "/ws/logs", "/ws/state" 로 수정)
-const WS_LOG_URL   = () => {
+// WebSocket 엔드포인트
+const WS_LOG_URL = () => {
 	const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-	return `${protocol}://${window.location.host}/ws/logs`;
+	return `${protocol}://${window.location.host}${SNW_API.WS_API_LOG}`;
 };
+
 const WS_STATE_URL = () => {
 	const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-	return `${protocol}://${window.location.host}/ws/state`;
+	return `${protocol}://${window.location.host}${SNW_API.WS_API_STATE}`;
 };
 
 // API Key 저장 키 이름
@@ -227,7 +207,7 @@ function markDirty() {
 /** FW 버전 로딩 */
 async function loadFwVersion() {
 	try {
-		const data = await apiFetch(API_VERSION, { method: "GET" });
+		const data = await apiFetch(SNW_API.API_HTTP_VERSION, { method: "GET" });
 		let versionText = "…";
 		if (typeof data === "string") {
 			versionText = data;
@@ -244,7 +224,7 @@ async function loadFwVersion() {
 /** 상태(JSON) 로딩 → 상단 Status UI 갱신  */
 async function loadStateOnce() {
 	try {
-		const data = await apiFetch(API_STATE, { method: "GET" });
+		const data = await apiFetch(SNW_API.API_HTTP_STATE, { method: "GET" });
 		if (!data) return;
 
 		// sim 정보 추정
@@ -297,7 +277,7 @@ async function loadStateOnce() {
 async function loadConfig() {
 	try {
 		showLoading();
-		const cfg = await apiFetch(API_CONFIG, { method: "GET" });
+		const cfg = await apiFetch(SNW_API.API_HTTP_CONFIG, { method: "GET" });
 		if (!cfg) return;
 
 		// ---- Wi-Fi ----
@@ -514,7 +494,6 @@ async function saveMotionPatch() {
 	try {
 		showLoading();
 		const body = {
-			sim: {
 				intensity:           Number(elIntensity().value || 0),
 				gustFreq:            Number(elGustFreq().value || 0),
 				variability:         Number(elVariability().value || 0),
@@ -525,10 +504,9 @@ async function saveMotionPatch() {
 				thermalBubbleStrength: Number(elThermStr().value || 0),
 				thermalBubbleRadius:   Number(elThermRad().value || 0),
 				presetCode:          elPreset().value || null
-			}
 		};
 
-		await apiFetch(API_SIMULATION, {
+		await apiFetch(SNW_API.API_HTTP_SIMULATION, {
 			method: "POST",
 			body: JSON.stringify(body)
 		});
@@ -548,16 +526,14 @@ async function saveTimingPatch() {
 	try {
 		showLoading();
 		const body = {
-			motion: {
-				timing: {
-					simIntervalMs:     Number(elSimInt().value || 0),
-					gustIntervalMs:    Number(elGustInt().value || 0),
-					thermalIntervalMs: Number(elThermalInt().value || 0)
-				}
+			timing: {
+				simIntervalMs:     Number(elSimInt().value || 0),
+				gustIntervalMs:    Number(elGustInt().value || 0),
+				thermalIntervalMs: Number(elThermalInt().value || 0)
 			}
 		};
 
-		await apiFetch(API_CONFIG_TIMING, {
+		await apiFetch(SNW_API.API_HTTP_MOTION, {
 			method: "POST",
 			body: JSON.stringify(body)
 		});
@@ -577,16 +553,14 @@ async function saveWifiApPatch() {
 	try {
 		showLoading();
 		const body = {
-			wifi: {
 				wifiMode: Number(elWifiModeSel().value || 0),
 				ap: {
 					ssid:     elApSsid().value || "",
 					pass:     elApPass().value || ""
 				}
-			}
 		};
 
-		await apiFetch(API_CONFIG_WIFI_AP, {
+		await apiFetch(SNW_API.API_HTTP_WIFI_CONFIG, {
 			method: "PATCH",
 			body: JSON.stringify(body)
 		});
@@ -606,15 +580,13 @@ async function saveWifiStaPatch() {
 	try {
 		showLoading();
 		const body = {
-			wifi: {
 				sta: g_staList.map((item) => ({
 					ssid: item.ssid,
 					pass: item.pass || ""
 				}))
-			}
 		};
 
-		await apiFetch(API_CONFIG_WIFI_STA, {
+		await apiFetch(SNW_API.API_HTTP_WIFI_CONFIG, {
 			method: "PATCH",
 			body: JSON.stringify(body)
 		});
@@ -644,7 +616,7 @@ async function savePwmPatch() {
 			}
 		};
 
-		await apiFetch(API_CONFIG_PWM, {
+		await apiFetch(SNW_API.API_HTTP_SYSTEM, {
 			method: "PATCH",
 			body: JSON.stringify(body)
 		});
@@ -676,7 +648,7 @@ async function saveAllConfig() {
 
 	try {
 		showLoading();
-		await apiFetch(API_CONFIG_SAVE, {
+		await apiFetch(SNW_API.API_HTTP_CONFIG_SAVE, {
 			method: "POST",
 			body: JSON.stringify({ save_all: true })
 		});
@@ -700,7 +672,7 @@ async function factoryReset() {
 
 	try {
 		showLoading();
-		await apiFetch(API_CONFIG_INIT, {
+		await apiFetch(SNW_API.API_HTTP_CONFIG_INIT, {
 			method: "POST",
 			body: JSON.stringify({ factory: true })
 		});
@@ -725,10 +697,8 @@ async function factoryReset() {
 async function scanWifi() {
 	try {
 		showLoading();
-		const data = await apiFetch(API_WIFI_SCAN, {
-			method: "POST",
-			body: JSON.stringify({ scan: true })
-		});
+
+        const data = await apiFetch(SNW_API.API_HTTP_WIFI_SCAN, { method: "GET" });
 
 		const list =
 			(data && data.wifi && data.wifi.scan) ? data.wifi.scan : data || [];
@@ -822,13 +792,13 @@ async function uploadFile(endpoint, file, msgEl, successMsg, errorMsg) {
 /** 정적 파일 업로드 */
 function handleStaticUpload() {
 	const f = elUpload() ? elUpload().files[0] : null;
-	uploadFile(API_UPLOAD_STATIC, f, elUploadMsg(), "정적 파일 업로드 완료", "정적 파일 업로드 실패");
+	uploadFile(SNW_API.API_HTTP_FILE_UPLOAD, f, elUploadMsg(), "정적 파일 업로드 완료", "정적 파일 업로드 실패");
 }
 
 /** 펌웨어 OTA 업로드 */
 function handleOtaUpload() {
 	const f = elOTA() ? elOTA().files[0] : null;
-	uploadFile(API_UPLOAD_OTA, f, elOtaMsg(), "OTA 업데이트 전송 완료 (장치 재시작 대기)", "OTA 업데이트 실패");
+	uploadFile(SNW_API.API_HTTP_FW_UPDATE, f, elOtaMsg(), "OTA 업데이트 전송 완료 (장치 재시작 대기)", "OTA 업데이트 실패");
 }
 
 /* ==============================

@@ -1,12 +1,12 @@
 
 /**
  * ------------------------------------------------------
- * 소스명 : P000_common_006.js
- * 모듈명 : Smart Nature Wind UI 공통 스크립트 (v003+patched)
+ * 소스명 : P000_common_060.js
+ * 모듈명 : Smart Nature Wind UI 공통 스크립트
  * ------------------------------------------------------
  * 기능 요약:
  * 1. ONLINE / OFFLINE 모드 판별 및 페이지/메뉴 데이터 로드
- * 2. cfg_pages_030.json 구조 기반 동적 내비게이션 구성
+ * 2. cfg_pages_060.json 구조 기반 동적 내비게이션 구성
  * 3. pages[].enable=false 페이지 자동 제외
  * 4. isMain = true 페이지는 메뉴에서 숨김
  * 5. 로고 링크는 isMain 페이지의 path 또는 uri로 자동 설정
@@ -49,6 +49,13 @@ function showToast(message, type = "info") {
     }
     console.log(`[Toast ${type.toUpperCase()}] (${g_currentMode}): ${message}`);
 }
+
+
+function notify(message, type = "info") {
+    if (typeof showToast === "function") showToast(message, type);
+    else console.log(`[Toast ${type}] ${message}`);
+}
+
 
 /**
  * ------------------------------------------------------
@@ -241,6 +248,100 @@ async function loadMenuAndSetMode() {
     // 메뉴 렌더링
     renderMenu(pagesData);
 }
+
+
+
+// 상수
+const G_P000_SNW_KEY_STORAGE = "snw_api_key";
+
+// 읽기
+function getApiKey() {
+    try { return localStorage.getItem(G_P000_SNW_KEY_STORAGE) || ""; } catch { return ""; }
+}
+
+// 쓰기
+function setApiKey(key) {
+    try {
+        if (key) localStorage.setItem(G_P000_SNW_KEY_STORAGE, key);
+        else localStorage.removeItem(G_P000_SNW_KEY_STORAGE);
+    } catch {}
+}
+
+
+/**
+ * 공통 fetch 래퍼
+ * @param {string} url - API URL
+ * @param {object} [options] - fetch 옵션 (method, body 등)
+ * @param {boolean} [silent=false] - true면 성공/실패 토스트 표시 안 함
+ * @param {string} [desc=""] - 동작 설명 (토스트에 표시)
+ */
+async function apiFetch(url, options = {}, silent = false, desc = "") {
+    showLoading();
+    try {
+        const headers = new Headers(options.headers || {});
+        headers.set("Accept", "application/json");
+        if (options.body && !headers.has("Content-Type")) {
+            headers.set("Content-Type", "application/json");
+        }
+        const apiKey = getApiKey();
+        if (apiKey) headers.set("X-API-Key", apiKey);
+        
+        const resp = await fetch(url, { ...options, headers });
+        const text = await resp.text();
+        
+        if (resp.status === 401) {
+            if (!silent) notify(`[401] ${desc || "요청"} 실패: 인증 필요`, "err");
+            throw new Error("Unauthorized");
+        }
+        if (!resp.ok) {
+            if (!silent) notify(`${desc || "요청"} 실패: ${text || resp.status}`, "err");
+            throw new Error(text || String(resp.status));
+        }
+        
+        if (desc && !silent) notify(`${desc} 성공`, "ok");
+        try { return text ? JSON.parse(text) : null; } catch { return text; }
+    } catch (e) {
+        if (e.message !== "Unauthorized" && !silent) {
+            notify(`${desc || "요청"} 실패: ${e.message}`, "err");
+        }
+        return null;
+    } finally {
+        hideLoading();
+    }
+}
+
+/**
+ * WebSocket URL 생성
+ * @param {string} path - 예: SNW_API.WS_API_STATE
+ * @returns {string} ws://...
+ */
+function buildWsUrl(path) {
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const base = `${protocol}://${window.location.host}${path}`;
+    const apiKey = getApiKey();
+    if (!apiKey) return base;
+    const sep = path.includes("?") ? "&" : "?";
+    return `${base}${sep}apiKey=${encodeURIComponent(apiKey)}`;
+}
+
+
+function showLoading() {
+  const el = document.getElementById("loadingOverlay");
+  if (el) el.style.display = "flex";
+}
+function hideLoading() {
+  const el = document.getElementById("loadingOverlay");
+  if (el) el.style.display = "none";
+}
+
+// DOM 헬퍼
+function $(selector, root = document) {
+  return root.querySelector(selector);
+}
+function text(el, value) {
+  if (el) el.textContent = value ?? '';
+}
+
 
 // DOM 로드 후 실행
 document.addEventListener("DOMContentLoaded", loadMenuAndSetMode);

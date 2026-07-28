@@ -1,7 +1,7 @@
 /*
  * ------------------------------------------------------
- * 소스명 : P100_settings_002.js
- * 모듈명 : Smart Nature Wind System Settings Controller (v001)
+ * 소스명 : P100_settings_060.js
+ * 모듈명 : Smart Nature Wind System Settings Controller
  * ------------------------------------------------------
  * 기능 요약:
  * - 🎯 /api/system, /api/network, /api/auth, /api/control API 호출 및 데이터 표시
@@ -27,13 +27,7 @@
         const el = $("#loadingOverlay");
         if (el) el.style.display = flag ? "flex" : "none";
     };
-    // Toast 메시지 구현 (console.log를 실제 Toast UI로 대체해야 함)
-    const showToast = (msg, type = "ok") => {
-        console.log(`[TOAST] ${type}: ${msg}`);
-        // 실제 구현: UI 요소에 메시지 표시
-        // const toastEl = $("#toastMessage");
-        // if (toastEl) { toastEl.textContent = msg; toastEl.className = `toast ${type}`; }
-    };
+    
 
     // API Fetch 래퍼 함수 (인증 키 포함)
     async function fetchApi(url, method = "GET", body = null, desc = "작업") {

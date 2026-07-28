@@ -9,7 +9,7 @@
       "order": 10,
       "pageAssets": [
         { "uri": "/P010_main_060.css", "path": "/html_v3/P010_main_060.css" },
-        { "uri": "/P010_main_060.js", "path": "/html_v3/P010_main_060.js" }
+        { "uri": "/P010_main_061.js", "path": "/html_v3/P010_main_061.js" }
       ]
     },
     {
@@ -42,7 +42,7 @@
       "order": 40,
       "pageAssets": [
         { "uri": "/P040_dashboard_060.css", "path": "/html_v3/P040_dashboard_060.css" },
-        { "uri": "/P040_dashboard_060.js", "path": "/html_v3/P040_dashboard_060.js" }
+        { "uri": "/P040_dashboard_061.js", "path": "/html_v3/P040_dashboard_061.js" }
       ]
 
     },
@@ -167,6 +167,7 @@
   ],
   "assets": [
     { "uri": "/P000_common_060.css", "path": "/html_v3/P000_common_060.css", "isCommon": true },
-    { "uri": "/P000_common_060.js", "path": "/html_v3/P000_common_060.js", "isCommon": true }
+    { "uri": "/P000_common_060.js" , "path": "/html_v3/P000_common_060.js" , "isCommon": true },
+    { "uri": "/P001_API_061.js"    , "path": "/html_v3/P001_API_061.js"    , "isCommon": true }
   ]
 }

@@ -31,7 +31,11 @@
       "enable": true,
       "isMain": false,
       "order": 30,
-      "pageAssets": []
+      "pageAssets": [
+        { "uri": "/P030_sch_t1_060.css", "path": "/html_v3/P030_sch_t1_060.css" },
+        { "uri": "/P030_sch_t1_060.js", "path": "/html_v3/P030_sch_t1_060.js" }
+      ]
+
     },
     {
       "uri": "/P040_dashboard_060.html",

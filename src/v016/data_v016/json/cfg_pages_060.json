@@ -21,19 +21,19 @@
       "order": 20,
       "pageAssets": [
         { "uri": "/P020_chart_t1_060.css", "path": "/html_v3/P020_chart_t1_060.css" },
-        { "uri": "/P020_chart_t1_060.js", "path": "/html_v3/P020_chart_t1_060.js" }
+        { "uri": "/P020_chart_t1_061.js", "path": "/html_v3/P020_chart_t1_061.js" }
       ]
     },
     {
-      "uri": "/P030_sch_t1_060.html",
-      "path": "/html_v3/P030_sch_t1_060.html",
+      "uri": "/P030_sch_t1_062.html",
+      "path": "/html_v3/P030_sch_t1_062.html",
       "label": "Schedule T1",
       "enable": true,
       "isMain": false,
       "order": 30,
       "pageAssets": [
-        { "uri": "/P030_sch_t1_060.css", "path": "/html_v3/P030_sch_t1_060.css" },
-        { "uri": "/P030_sch_t1_060.js", "path": "/html_v3/P030_sch_t1_060.js" }
+        { "uri": "/P030_sch_t1_062.css", "path": "/html_v3/P030_sch_t1_062.css" },
+        { "uri": "/P030_sch_t1_062.js", "path": "/html_v3/P030_sch_t1_062.js" }
       ]
 
     },

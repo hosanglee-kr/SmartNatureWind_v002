@@ -106,7 +106,14 @@ void CL_W10_WebAPI::routeUpload() {
             JsonDocument v_resp;
             if (s_uploadError || !s_upFile) {
                 v_resp["done"]  = false;
-                v_resp["error"] = "upload failed: " + (s_uploadError ? "write error" : "file not open");
+
+                if (s_uploadError) {
+                    v_resp["error"] = "upload failed: write error";
+                } else {
+                    v_resp["error"] = "upload failed: file not open";
+                }
+
+                // v_resp["error"] = "upload failed: " + (s_uploadError ? "write error" : "file not open");
                 sendJson(p_request, v_resp, 500);
             } else {
                 s_upFile.close();

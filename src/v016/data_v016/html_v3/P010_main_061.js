@@ -187,11 +187,11 @@ async function loadConfig() {
 	}
 
 	// ---- PWM HW ----
-	if (cfg.hw && cfg.hw.fan_pwm) {
-		if (elPwmPin())     elPwmPin().value     = cfg.hw.fan_pwm.pin      ?? "";
-		if (elPwmChannel()) elPwmChannel().value = cfg.hw.fan_pwm.channel  ?? "";
-		if (elPwmFreq())    elPwmFreq().value    = cfg.hw.fan_pwm.freq     ?? "";
-		if (elPwmRes())     elPwmRes().value     = cfg.hw.fan_pwm.res      ?? "";
+	if (cfg.hw && cfg.hw.fanPwm) {
+		if (elPwmPin())     elPwmPin().value     = cfg.hw.fanPwm.pin      ?? "";
+		if (elPwmChannel()) elPwmChannel().value = cfg.hw.fanPwm.channel  ?? "";
+		if (elPwmFreq())    elPwmFreq().value    = cfg.hw.fanPwm.freq     ?? "";
+		if (elPwmRes())     elPwmRes().value     = cfg.hw.fanPwm.res      ?? "";
 	}
 
 	// ---- Motion / Wind ----
@@ -227,9 +227,9 @@ async function loadConfig() {
 	loadPresetsFromConfig(cfg);
 
 	// ---- Security(API Key) ----
-	if (cfg.security && cfg.security.api_key && !getApiKey()) {
-		setApiKey(cfg.security.api_key);
-		if (elApiKeyInput()) elApiKeyInput().value = cfg.security.api_key;
+	if (cfg.security && cfg.security.apiKey && !getApiKey()) {
+		setApiKey(cfg.security.apiKey);
+		if (elApiKeyInput()) elApiKeyInput().value = cfg.security.apiKey;
 	}
 
 	g_configDirty = false;
@@ -350,18 +350,20 @@ function renderScanList(networks) {
  * 6. 섹션별 메모리 패치 (PATCH)
  * ============================== */
 
+// P010_main_060.js saveMotionPatch
+
 async function saveMotionPatch() {
 	const body = {
-		intensity:            Number(elIntensity().value || 0),
-		gustFreq:             Number(elGustFreq().value || 0),
-		variability:          Number(elVariability().value || 0),
-		fanLimit:             Number(elFanLimit().value || 0),
-		minFan:               Number(elMinFan().value || 0),
-		turbLenScale:         Number(elTurbLen().value || 0),
-		turbSigma:            Number(elTurbSig().value || 0),
+		windIntensity: Number(elIntensity().value || 0),
+		gustFrequency: Number(elGustFreq().value || 0),
+		windVariability: Number(elVariability().value || 0),
+		fanLimit: Number(elFanLimit().value || 0),
+		minFan: Number(elMinFan().value || 0),
+		turbulenceLengthScale: Number(elTurbLen().value || 0),
+		turbulenceIntensitySigma: Number(elTurbSig().value || 0),
 		thermalBubbleStrength: Number(elThermStr().value || 0),
-		thermalBubbleRadius:  Number(elThermRad().value || 0),
-		presetCode:           elPreset().value || null
+		thermalBubbleRadius: Number(elThermRad().value || 0),
+		presetCode: elPreset().value || null
 	};
 
 	await apiFetch(SNW_API.API_HTTP_SIMULATION, {
@@ -374,10 +376,12 @@ async function saveMotionPatch() {
 
 async function saveTimingPatch() {
 	const body = {
-		timing: {
-			simIntervalMs:     Number(elSimInt().value || 0),
-			gustIntervalMs:    Number(elGustInt().value || 0),
-			thermalIntervalMs: Number(elThermalInt().value || 0)
+		motion:{
+			timing: {
+				simIntervalMs:     Number(elSimInt().value || 0),
+				gustIntervalMs:    Number(elGustInt().value || 0),
+				thermalIntervalMs: Number(elThermalInt().value || 0)
+			}
 		}
 	};
 
@@ -391,10 +395,12 @@ async function saveTimingPatch() {
 
 async function saveWifiApPatch() {
 	const body = {
-		wifiMode: Number(elWifiModeSel().value || 0),
-		ap: {
-			ssid: elApSsid().value || "",
-			pass: elApPass().value || ""
+		wifi: {
+			wifiMode: Number(elWifiModeSel().value || 0),
+			ap: {
+				ssid: elApSsid().value || "",
+				pass: elApPass().value || ""
+			}
 		}
 	};
 
@@ -408,10 +414,12 @@ async function saveWifiApPatch() {
 
 async function saveWifiStaPatch() {
 	const body = {
-		sta: g_staList.map((item) => ({
-			ssid: item.ssid,
-			pass: item.pass || ""
-		}))
+		wifi:{
+			sta: g_staList.map((item) => ({
+				ssid: item.ssid,
+				pass: item.pass || ""
+			}))
+		}
 	};
 
 	await apiFetch(SNW_API.API_HTTP_WIFI_CONFIG, {
@@ -425,7 +433,7 @@ async function saveWifiStaPatch() {
 async function savePwmPatch() {
 	const body = {
 		hw: {
-			fan_pwm: {
+			fanPwm: {
 				pin:     Number(elPwmPin().value || 0),
 				channel: Number(elPwmChannel().value || 0),
 				freq:    Number(elPwmFreq().value || 0),

@@ -232,6 +232,7 @@ typedef struct {
  * Schedule JSON 구조 : camelCase 정합
  * ====================================================== */
 typedef struct {
+    bool    enabled = true;
     uint8_t days[7]      = {1, 1, 1, 1, 1, 1, 1};
     char    startTime[6] = {0};
     char    endTime[6]   = {0};

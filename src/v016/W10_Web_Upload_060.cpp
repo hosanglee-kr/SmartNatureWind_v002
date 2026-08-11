@@ -113,7 +113,6 @@ void CL_W10_WebAPI::routeUpload() {
                     v_resp["error"] = "upload failed: file not open";
                 }
 
-                // v_resp["error"] = "upload failed: " + (s_uploadError ? "write error" : "file not open");
                 sendJson(p_request, v_resp, 500);
             } else {
                 s_upFile.close();

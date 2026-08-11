@@ -178,6 +178,130 @@ void CL_S10_Simulation::toJson(JsonDocument& p_doc) {
  * }
  */
 
+  
+void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
+    // 시간 기준: _tickNowMs 우선, 0이면 millis() 1회 fallback
+    unsigned long v_nowMs = _tickNowMs;
+    if (v_nowMs == 0UL) {
+        v_nowMs = millis();
+    }
+ 
+    // ---- (A) 메타/샘플 스냅샷 (락 안에서 값만 캡처) ----
+    EN_A20_WindPhase_t v_phase         = EN_A20_WIND_PHASE_NORMAL;
+    float              v_avg            = 0.0f;
+    bool               v_gust           = false;
+    bool               v_therm          = false;
+    uint8_t            v_samp           = 0;
+    uint8_t            v_presetIdx      = 0;
+    float              v_intensity      = 0.0f;
+    float              v_variability    = 0.0f;
+    float              v_gustFreq       = 0.0f;
+    float              v_fanLimit       = 0.0f;
+    float              v_minFan         = 0.0f;
+    float              v_turbSigma      = 0.0f;
+    float              v_turbLenScale   = 0.0f;
+    float              v_thermalStr     = 0.0f;
+    float              v_thermalRad     = 0.0f;
+    uint16_t           v_simInterval    = 100;
+    uint16_t           v_gustInterval   = 500;
+    uint16_t           v_thermalInterval = 2000;
+ 
+    // chart entries 스냅샷
+    std::vector<ST_ChartEntry> v_entries;
+ 
+    {
+        // 가드 생성 (RecursiveMutex이므로 내부 함수 호출 시에도 안전)
+        CL_A40_MutexGuard_Semaphore v_MutxGuard(_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+        if (!v_MutxGuard.isAcquired()) {
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[S10] %s: Mutex timeout", __func__);
+            return;
+        }
+ 
+        v_phase         = phase;
+        v_avg           = _getAvgWindFast();
+        v_gust          = gustActive;
+        v_therm         = thermalActive;
+        v_samp          = historyCount;
+        v_intensity     = userIntensity;
+        v_variability   = userVariability;
+        v_gustFreq      = userGustFreq;
+        v_fanLimit      = fanLimitPct;
+        v_minFan        = minFanPct;
+        v_turbSigma     = turbSigma;
+        v_turbLenScale  = turbLenScale;
+        v_thermalStr    = thermalStrength;
+        v_thermalRad    = thermalRadius;
+ 
+        // preset 인덱스 찾기
+        for (uint8_t i = 0; i < (uint8_t)EN_A20_WINDPRESET_COUNT; i++) {
+            if (strcasecmp(presetCode, G_A20_WindPreset_Arr[i].code) == 0) {
+                v_presetIdx = i;
+                break;
+            }
+        }
+ 
+        // Timing 간격 (MotionConfig에서 가져오기)
+        if (g_A20_config_root.motion) {
+            v_simInterval     = g_A20_config_root.motion->timing.simIntervalMs;
+            v_gustInterval    = g_A20_config_root.motion->timing.gustIntervalMs;
+            v_thermalInterval = g_A20_config_root.motion->timing.thermalIntervalMs;
+        }
+ 
+        // Full Dump 전송 간격 제한: diffOnly는 제한하지 않음
+        if (!p_diffOnly) {
+            const unsigned long v_elapsedMs = (v_nowMs >= s_lastChartSampleMs)
+                                                  ? (v_nowMs - s_lastChartSampleMs)
+                                                  : 0UL;
+            if (v_elapsedMs < G_S10_CHART_FULL_MIN_MS) {
+                return;
+            }
+            s_lastChartSampleMs = v_nowMs;
+        }
+ 
+        if (s_chartBuffer.empty()) {
+            return;
+        }
+ 
+        if (p_diffOnly) {
+            v_entries.reserve(1);
+            v_entries.push_back(s_chartBuffer.back());
+        } else {
+            v_entries.reserve((size_t)s_chartBuffer.size());
+            for (const auto& v_e : s_chartBuffer) {
+                v_entries.push_back(v_e);
+            }
+        }
+    } // 락 해제
+ 
+    // ---- (B) 락 밖에서 JSON 생성 ----
+    JsonArray v_arr = p_doc["chart"].to<JsonArray>();
+ 
+    for (size_t v_i = 0; v_i < v_entries.size(); v_i++) {
+        const ST_ChartEntry& v_e  = v_entries[v_i];
+        JsonObject           v_jo = v_arr.add<JsonObject>();
+ 
+        v_jo["t"]           = (uint64_t)v_e.timestamp;      // 밀리초 timestamp
+        v_jo["wind"]        = v_e.wind_speed;
+        v_jo["pwm"]         = v_e.pwm_duty;
+        v_jo["intensity"]   = v_intensity;
+        v_jo["variability"] = v_variability;
+        v_jo["gustFreq"]    = v_gustFreq;
+        v_jo["fanLimit"]    = v_fanLimit;
+        v_jo["minFan"]      = v_minFan;
+        v_jo["turb_sig"]    = v_turbSigma;
+        v_jo["turb_len"]    = v_turbLenScale;
+        v_jo["therm_str"]   = v_thermalStr;
+        v_jo["therm_rad"]   = v_thermalRad;
+        v_jo["gust"]        = v_e.gust_active ? 1 : 0;
+        v_jo["thermal"]     = v_e.thermal_active ? 1 : 0;
+        v_jo["preset"]      = v_presetIdx;
+        v_jo["sim_int"]     = v_simInterval;
+        v_jo["gust_int"]    = v_gustInterval;
+        v_jo["thermal_int"] = v_thermalInterval;
+    }
+}
+
+/*
 void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
 	// 시간 기준: _tickNowMs 우선, 0이면 millis() 1회 fallback
 	unsigned long v_nowMs = _tickNowMs;
@@ -283,6 +407,7 @@ void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
 
 	v_objSim["chartCount"] = (int)v_entries.size();
 }
+*/
 
 // ==================================================
 // Patch From JSON (부분 업데이트)

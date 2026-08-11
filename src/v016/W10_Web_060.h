@@ -86,9 +86,9 @@ class CL_W10_WebAPI {
     // static WiFiMulti*              	s_multi;
 
     static fs::File 				s_upFile;
-    static bool          s_uploadError;     // 업로드 중 오류 발생 여부
-    static size_t        s_uploadTotal;     // 누적 바이트 수
-    static const size_t  G_W10_MAX_UPLOAD_SIZE = 2 * 1024 * 1024; // 2MB 제한
+    inline static bool              s_uploadError = false;     // 업로드 중 오류 발생 여부
+    inline static size_t            s_uploadTotal = 0;     // 누적 바이트 수
+    static const size_t             G_W10_MAX_UPLOAD_SIZE = 2 * 1024 * 1024; // 2MB 제한
 
     // WebSocket Servers
     static AsyncWebSocket* s_wsServerState;

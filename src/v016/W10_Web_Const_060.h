@@ -80,6 +80,9 @@ namespace W10_Const {
 	constexpr const char* HTTP_API_CTL_OVR_PRESET	   = HTTP_API_BASE "/control/override/preset";
 	constexpr const char* HTTP_API_CTL_OVR_CLEAR	   = HTTP_API_BASE "/control/override/clear";
 
+	// 6-1. AI 프록시
+	constexpr const char* HTTP_API_GEMINI_PROXY 		= HTTP_API_BASE "/ai/gemini";
+
 	// --------------------------------------------------
 	// 6. 데이터 피드 및 메트릭스 (Feed & Metrics)
 	// --------------------------------------------------

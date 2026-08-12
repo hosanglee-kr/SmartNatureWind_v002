@@ -165,6 +165,9 @@ class CL_W10_WebAPI {
     static void routeUpload();        // POST /upload
     static void routeUpdate();        // POST /update
 
+    // 4-1. AI 프록시
+    static void routeGeminiProxy();   // POST /api/v001/ai/gemini
+
     // 5. 제어 및 상태 요약 (POST/GET)
     static void routeControl();        // 여러 제어용 /api/control/*
     static void routeControlSummary(); // GET /api/control/summary
@@ -200,7 +203,9 @@ class CL_W10_WebAPI {
         }
         p_response->addHeader("Access-Control-Allow-Origin", "*");
         p_response->addHeader("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
-        p_response->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        p_response->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+        //p_response->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        
     }
 
     static inline void sendJson(AsyncWebServerRequest* p_request, JsonDocument& p_doc, int p_code = 200) {

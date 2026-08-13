@@ -258,7 +258,11 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
     if (!j_sec.isNull()) {
         const char* v_key = A40_ComFunc::Json_getStr(j_sec, "apiKey", nullptr);
         if (v_key && v_key[0]) strlcpy(p_cfg.security.apiKey, v_key, sizeof(p_cfg.security.apiKey));
+        
+        const char* v_gemini = A40_ComFunc::Json_getStr(j_sec, "geminiApiKey", nullptr);
+        if (v_gemini && v_gemini[0]) strlcpy(p_cfg.security.geminiApiKey, v_gemini, sizeof(p_cfg.security.geminiApiKey));
     }
+    
 
     // time
     JsonObjectConst j_time = j_root["timeCfg"].as<JsonObjectConst>();
@@ -497,6 +501,8 @@ bool CL_C10_ConfigManager::saveSystemConfig(const ST_A20_SystemConfig_t& p_cfg) 
 
 
     v["security"]["apiKey"] = p_cfg.security.apiKey;
+    v["security"]["geminiApiKey"] = p_cfg.security.geminiApiKey;
+
 
     v["timeCfg"]["ntpServer"]       = p_cfg.timeCfg.ntpServer;
     v["timeCfg"]["timezone"]        = p_cfg.timeCfg.timezone;
@@ -685,7 +691,16 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
             strlcpy(p_config.security.apiKey, v_key, sizeof(p_config.security.apiKey));
             v_changed = true;
         }
+        
+        const char* v_gemini = A40_ComFunc::Json_getStr(j_sec, "geminiApiKey", "");
+        if (v_gemini && v_gemini[0] && strcmp(v_gemini, p_config.security.geminiApiKey) != 0) {
+            strlcpy(p_config.security.geminiApiKey, v_gemini, sizeof(p_config.security.geminiApiKey));
+            v_changed = true;
+        }
     }
+    
+     
+  
 
     // hw
     if (!j_hw.isNull()) {
@@ -1144,6 +1159,7 @@ void CL_C10_ConfigManager::toJson_System(const ST_A20_SystemConfig_t& p, JsonDoc
 
 
     d["security"]["apiKey"] = p.security.apiKey;
+    d["security"]["geminiApiKey"] = p.security.geminiApiKey;
 
     d["timeCfg"]["ntpServer"]       = p.timeCfg.ntpServer;
     d["timeCfg"]["timezone"]        = p.timeCfg.timezone;

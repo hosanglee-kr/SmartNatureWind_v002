@@ -79,7 +79,8 @@
 		}
 	},
 	"security": {
-		"apiKey": ""
+		"apiKey": "",
+		"geminiApiKey": ""
 	},
 	"timeCfg": {
 		"ntpServer": "pool.ntp.org",

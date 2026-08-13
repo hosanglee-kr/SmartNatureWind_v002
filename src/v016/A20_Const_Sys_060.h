@@ -163,8 +163,9 @@ typedef struct {
 
     struct {
         char apiKey[64];
+        char geminiApiKey[64];  // ✅ Gemini 전용 API 키 (별도 관리)
     } security;
-
+    
     ST_A20_SysTimeConfig_t timeCfg;
 } ST_A20_SystemConfig_t;
 

@@ -222,6 +222,8 @@ static bool C10_fromJson_ScheduleItem(
     p_s.repeatCount    = p_js["repeatCount"] | 0;
 
     // period
+    p_s.period.enabled = p_js["period"]["enanled"] | true;
+    
     for (uint8_t v_d = 0; v_d < 7; v_d++) {
         p_s.period.days[v_d] = p_js["period"]["days"][v_d] | 1;
     }

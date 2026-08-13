@@ -386,7 +386,9 @@ inline void A20_resetSystemDefault(ST_A20_SystemConfig_t& p_cfg) {
 
     // security
     A40_ComFunc::copyStr2Buffer_safe(p_cfg.security.apiKey, "", sizeof(p_cfg.security.apiKey));
-
+    A40_ComFunc::copyStr2Buffer_safe(p_cfg.security.geminiApiKey, "", sizeof(p_cfg.security.geminiApiKey));
+    
+    
     // timeCfg (※ ST_A20_SysTimeConfig_t만 사용)
     A40_ComFunc::copyStr2Buffer_safe(p_cfg.timeCfg.ntpServer, "pool.ntp.org", sizeof(p_cfg.timeCfg.ntpServer));
     A40_ComFunc::copyStr2Buffer_safe(p_cfg.timeCfg.timezone,  "Asia/Seoul",   sizeof(p_cfg.timeCfg.timezone));

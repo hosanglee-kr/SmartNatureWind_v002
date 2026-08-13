@@ -27,7 +27,7 @@
       {
         "idx": 1,
         "name": "Country Breeze",
-        "code": "COUNTRY",
+        "code": "COUNTRY_BREEZE",
         "factors": {
           "windIntensity": 55,
           "gustFrequency": 30,

@@ -38,22 +38,24 @@ static unsigned long s_lastGeminiCallMs = 0;
 // ------------------------------------------------------
 // Gemini API Key 조회
 // ------------------------------------------------------
+// ------------------------------------------------------
+// Gemini API Key 조회 (전용 필드 사용)
+// ------------------------------------------------------
 static const char* getGeminiApiKey() {
-    // NVS에 "gemini_apikey" 키가 있으면 사용 (우선순위 1)
-    // 없으면 Config security.geminiApiKey 사용
-    static char v_buf[64] = {0};
- 
-    // TODO: NVS 조회 구현 (현재는 Config 기반)
-    if (g_A20_config_root.system && g_A20_config_root.system->security.apiKey[0] != '\0') {
-        // API Key를 Gemini Key로 겸용 (실제 운영 시 별도 필드 권장)
-        strlcpy(v_buf, g_A20_config_root.system->security.apiKey, sizeof(v_buf));
+    if (g_A20_config_root.system) {
+        // 1순위: Gemini 전용 키
+        if (g_A20_config_root.system->security.geminiApiKey[0] != '\0') {
+            return g_A20_config_root.system->security.geminiApiKey;
+        }
+        // 2순위: 일반 API Key로 폴백 (geminiApiKey가 비어있을 경우)
+        if (g_A20_config_root.system->security.apiKey[0] != '\0') {
+            return g_A20_config_root.system->security.apiKey;
+        }
     }
- 
-    if (v_buf[0] != '\0') return v_buf;
- 
     return nullptr;
 }
- 
+
+
 // ------------------------------------------------------
 // Gemini API 호출 (POST)
 // ------------------------------------------------------

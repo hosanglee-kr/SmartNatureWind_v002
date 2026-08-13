@@ -222,8 +222,8 @@ static bool C10_fromJson_ScheduleItem(
     p_s.repeatCount    = p_js["repeatCount"] | 0;
 
     // period
-    p_s.period.enabled = p_js["period"]["enanled"] | true;
-    
+    p_s.period.enabled = A40_ComFunc::Json_getBool(p_js["period"], "enabled", true); // ✅ "enabled" 정정
+
     for (uint8_t v_d = 0; v_d < 7; v_d++) {
         p_s.period.days[v_d] = p_js["period"]["days"][v_d] | 1;
     }
@@ -294,7 +294,9 @@ static bool C10_fromJson_ScheduleItem(
                 sg.adjust.thermalBubbleRadius      = (float)(adj["thermalBubbleRadius"]      | 0.0);
             }
 
-            sg.fixedSpeed = (float)(jseg["fixedSpeed"] | 0.0);
+            sg.fixedSpeed = A40_ComFunc::Json_getNum<float>(jseg, "fixedSpeed", 0.0f);
+
+
 
             p_s.segCount++;
         }

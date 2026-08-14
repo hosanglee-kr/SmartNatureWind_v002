@@ -26,8 +26,8 @@ typedef struct {
 } ST_A20_MotPirCfg_t;
 
 typedef struct {
-    int16_t  on;
-    int16_t  off;
+    int8_t  on;  // rssi on 임계값(-100 ~ 0)
+    int8_t  off; // rssi off 임계값
     uint8_t  avgCount;
     uint8_t  persistCount;
     uint16_t exitDelaySec;

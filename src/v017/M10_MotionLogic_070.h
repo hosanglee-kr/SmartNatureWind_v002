@@ -148,7 +148,7 @@ class CL_M10_MotionLogic {
 
 			_state.lastChange_ms = v_now;
 
-			CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[M10] motionActive=%d (PIR=%d)", (int)_state.active, (int)_state.pirActive;
+			CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[M10] motionActive=%d (PIR=%d)", (int)_state.active, (int)_state.pirActive);
 
 			// 외부 연동용 콜백 (CT10 등에서 diffOnly 푸시 활용)
 			if (_onChange) {

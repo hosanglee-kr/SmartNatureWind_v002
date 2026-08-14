@@ -1,6 +1,6 @@
 // ======================================================
 // 파일명 : main.cpp
-// 프로젝트 : Smart Nature Wind (v011)
+// 프로젝트 : Smart Nature Wind 
 // ------------------------------------------------------
 // 기능 요약:
 //  - Serial 콘솔 초기화 및 Logger 레벨 설정
@@ -11,7 +11,7 @@
 #include <Arduino.h>
 #include <LittleFS.h>
 
-#include "v016/A00_Main_060.h"
+#include "v017/A00_Main_070.h"
 
 void setup() {
 

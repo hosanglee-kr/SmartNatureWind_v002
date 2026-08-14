@@ -589,10 +589,11 @@ inline void A20_resetNvsSpecDefault(ST_A20_NvsSpecConfig_t& p_cfg) {
 
         p_cfg.entryCount++;
     };
-
+    
+    // 주의 : ESP32 NVS 라이브러리는 **키 길이가 최대 15바이트(Null 문합 16바이트)**로 제한됨
     v_addEntry("runMode",         "uint8",  "0");
-    v_addEntry("activeProfileNo", "uint8",  "0");
-    v_addEntry("activeSegmentNo", "uint8",  "0");
+    v_addEntry("actProfileNo", "uint8",  "0");
+    v_addEntry("actSegmentNo", "uint8",  "0");
     v_addEntry("presetCode",      "string", "");
     v_addEntry("styleCode",       "string", "");
     v_addEntry("wifiConnected",   "bool",   "false");

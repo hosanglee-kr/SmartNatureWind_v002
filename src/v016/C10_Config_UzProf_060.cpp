@@ -261,7 +261,7 @@ static bool C10_fromJson_UserProfileItem(const JsonObjectConst&    p_jp,
         JsonObjectConst aoOffTemp       = ao["offTemp"].as<JsonObjectConst>();
 
         p_up.autoOff.timer.enabled      = A40_ComFunc::Json_getBool(aoTimer, "enabled", false);
-        p_up.autoOff.timer.minutes      = (uint16_t)(aoTimer["minutes"] | 0u);
+        p_up.autoOff.timer.minutes = A40_ComFunc::Json_getNum<uint32_t>(aoTimer, "minutes", 0u); // ✅ uint32_t 통일
 
         p_up.autoOff.offTime.enabled    = A40_ComFunc::Json_getBool(aoOffTime, "enabled", false);
         A40_ComFunc::Json_copyStr(aoOffTime, "time", p_up.autoOff.offTime.time, sizeof(p_up.autoOff.offTime.time), "", v_caller);

@@ -203,6 +203,8 @@ class CL_M10_MotionLogic {
 		v_o["active"]	 = isActive();
 		v_o["pirActive"] = _state.pirActive;
 		v_o["bleActive"] = _state.bleActive;
+		
+		// Todo: pirHold, bleHold json key명 변수명과 일치 필요
 		v_o["pirHold"]	 = v_cfg.pir.holdSec;
 		v_o["bleHold"]	 = v_cfg.ble.rssi.exitDelaySec;
 		v_o["bleRssi"]	 = _ble.last_rssi;

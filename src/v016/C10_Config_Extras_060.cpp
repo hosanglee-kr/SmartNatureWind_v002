@@ -42,7 +42,6 @@
  */
 
 #include "C10_Config_060.h"
-// #include "A40_Com_Func_052.h"
 
 // =====================================================
 // 2-x. 목적물별 Load 구현 (NvsSpec / WebPage)

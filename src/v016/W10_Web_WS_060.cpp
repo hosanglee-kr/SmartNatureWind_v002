@@ -68,11 +68,11 @@ void CL_W10_WebAPI::_broadcast(AsyncWebSocket* p_ws, JsonDocument& p_doc, bool p
 // WS cleanup tick (권장)
 // --------------------------------------------------
 void CL_W10_WebAPI::wsCleanupTick() {
-    if (s_wsServerState)   s_wsServerState->cleanupClients();
+    if (s_wsServerState) s_wsServerState->cleanupClients();
     if (s_wsServerMetrics) s_wsServerMetrics->cleanupClients();
-    if (s_wsServerChart)   s_wsServerChart->cleanupClients();
+    if (s_wsServerChart) s_wsServerChart->cleanupClients();
     if (s_wsServerSummary) s_wsServerSummary->cleanupClients();
-    if (s_wsServerLogs)    s_wsServerLogs->cleanupClients();
+    if (s_wsServerLogs) s_wsServerLogs->cleanupClients();
 }
 
 // --------------------------------------------------
@@ -97,7 +97,7 @@ void CL_W10_WebAPI::routeWebSocket() {
         if (!client) return;
         if (type == WS_EVT_CONNECT) {
             CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WS /state connected (id=%u)", client->id());
-            
+
             String v_json;
 
             if (s_control) {
@@ -109,16 +109,6 @@ void CL_W10_WebAPI::routeWebSocket() {
             }
 
             client->text(v_json);
-        
-            /*
-            JsonDocument v_doc;
-            if (s_control) {
-                s_control->toStateJson(v_doc);
-            }
-            String v_json;
-            serializeJson(v_doc, v_json);
-            client->text(v_json);
-            */
         }
     });
     s_server->addHandler(s_wsServerState);
@@ -137,7 +127,7 @@ void CL_W10_WebAPI::routeWebSocket() {
         if (!client) return;
         if (type == WS_EVT_CONNECT) {
             CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WS /summary connected (id=%u)", client->id());
-            
+
             String v_json;
 
             if (s_control) {
@@ -149,16 +139,6 @@ void CL_W10_WebAPI::routeWebSocket() {
             }
 
             client->text(v_json);
-        
-            /*
-            if (s_control) {
-                JsonDocument v_doc;
-                s_control->toSummaryJson(v_doc);
-                String v_json;
-                serializeJson(v_doc, v_json);
-                client->text(v_json);
-            }
-            */
         }
     });
     s_server->addHandler(s_wsServerSummary);
@@ -168,7 +148,7 @@ void CL_W10_WebAPI::routeWebSocket() {
         if (!client) return;
         if (type == WS_EVT_CONNECT) {
             CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WS /metrics connected (id=%u)", client->id());
-            
+
             String v_json;
 
             if (s_control) {
@@ -178,18 +158,8 @@ void CL_W10_WebAPI::routeWebSocket() {
             } else {
                 v_json = "{}";
             }
-    
+
             client->text(v_json);
-        
-            /*
-            if (s_control) {
-                JsonDocument v_doc;
-                s_control->toMetricsJson(v_doc);
-                String v_json;
-                serializeJson(v_doc, v_json);
-                client->text(v_json);
-            }
-            */
         }
     });
     s_server->addHandler(s_wsServerMetrics);
@@ -226,4 +196,3 @@ void CL_W10_WebAPI::broadcastChart(JsonDocument& p_doc, bool p_diffOnly) {
 void CL_W10_WebAPI::broadcastSummary(JsonDocument& p_doc, bool p_diffOnly) {
     _broadcast(s_wsServerSummary, p_doc, p_diffOnly);
 }
-

@@ -43,11 +43,10 @@
 #include <time.h>
 
 #include "A20_Const_060.h"
-#include "C10_Config_060.h"	 // ST_A20_WifiConfig_t, ST_A20_SystemConfig_t, ST_A20_ConfigRoot_t
+#include "C10_Config_060.h" // ST_A20_WifiConfig_t, ST_A20_SystemConfig_t, ST_A20_ConfigRoot_t
 #include "D10_Logger_060.h"
 
 #include "TM10_TimeMg_060.h"
-
 
 // // Mutex 보호 매크로 정의
 // #define WF10_MUTEX_ACQUIRE() \
@@ -58,71 +57,72 @@
 //     if (CL_WF10_WiFiManager::s_wifiMutex != nullptr) \
 //         xSemaphoreGive(CL_WF10_WiFiManager::s_wifiMutex)
 
-
-
 class CL_WF10_WiFiManager {
   public:
-	static bool				 s_staConnected;
-	static wl_status_t		 s_lastStaStatus;
+    static bool        s_staConnected;
+    static wl_status_t s_lastStaStatus;
 
-	static uint8_t			 s_reconnectAttempts;
-	static SemaphoreHandle_t s_wifiMutex;  // Mutex 포인터 (init()에서 생성)
+    static uint8_t           s_reconnectAttempts;
+    static SemaphoreHandle_t s_wifiMutex; // Mutex 포인터 (init()에서 생성)
 
     // WF10이 WiFiMulti를 소유 (A00 전역 제거)
-    inline static WiFiMulti   s_wifiMulti;
+    inline static WiFiMulti s_wifiMulti;
 
   public:
-	// --------------------------------------------------
-	// Wi-Fi 설정 적용 함수 (Web API에서 호출)
-	// --------------------------------------------------
-	/**
-	 * @brief 새로운 Wi-Fi 설정을 모듈에 적용하고 재초기화를 수행합니다.
-	 * @param p_cfg 적용할 Wi-Fi 설정 구조체 참조
-	 * @return 성공 여부
-	 */
-	static bool applyConfig(const ST_A20_WifiConfig_t& p_cfg);
+    // --------------------------------------------------
+    // Wi-Fi 설정 적용 함수 (Web API에서 호출)
+    // --------------------------------------------------
+    /**
+     * @brief 새로운 Wi-Fi 설정을 모듈에 적용하고 재초기화를 수행합니다.
+     * @param p_cfg 적용할 Wi-Fi 설정 구조체 참조
+     * @return 성공 여부
+     */
+    static bool applyConfig(const ST_A20_WifiConfig_t& p_cfg);
 
-	// --------------------------------------------------
-	// 이벤트 등록
-	// --------------------------------------------------
-	static void attachWiFiEvents();
+    // --------------------------------------------------
+    // 이벤트 등록
+    // --------------------------------------------------
+    static void attachWiFiEvents();
 
-	// --------------------------------------------------
-	// 초기화
-	// --------------------------------------------------
-	static bool init(const ST_A20_WifiConfig_t& p_cfg_wifi, const ST_A20_SystemConfig_t& p_cfg_system, uint8_t p_apChannel = 1, uint8_t p_staMaxTries = 5, bool p_enableApDhcp = true);
-    // static bool init(const ST_A20_WifiConfig_t& p_cfg_wifi, const ST_A20_SystemConfig_t& p_cfg_system, WiFiMulti& p_multi, uint8_t p_apChannel = 1, uint8_t p_staMaxTries = 5, bool p_enableApDhcp = true);
+    // --------------------------------------------------
+    // 초기화
+    // --------------------------------------------------
+    static bool init(const ST_A20_WifiConfig_t&   p_cfg_wifi,
+                     const ST_A20_SystemConfig_t& p_cfg_system,
+                     uint8_t                      p_apChannel    = 1,
+                     uint8_t                      p_staMaxTries  = 5,
+                     bool                         p_enableApDhcp = true);
 
-	// --------------------------------------------------
-	// AP 시작 (고정 IP + DHCP On/Off)
-	// --------------------------------------------------
-	static bool startAP(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t p_channel, bool p_enableDhcp);
+    // --------------------------------------------------
+    // AP 시작 (고정 IP + DHCP On/Off)
+    // --------------------------------------------------
+    static bool startAP(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t p_channel, bool p_enableDhcp);
 
-	// --------------------------------------------------
-	// STA 시작
-	// --------------------------------------------------
-	static bool startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t p_maxTries);
-    // static bool startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, WiFiMulti& p_multi, uint8_t p_maxTries);
+    // --------------------------------------------------
+    // STA 시작
+    // --------------------------------------------------
+    static bool startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t p_maxTries);
 
-	// --------------------------------------------------
-	// NTP 동기화 (구성값 기반 주기)
-	// --------------------------------------------------
-	static void syncTimeIfNeeded(const ST_A20_WifiConfig_t& p_cfg_wifi, const ST_A20_SystemConfig_t& p_cfg_system, uint32_t p_interval_ms = 21600000);
+    // --------------------------------------------------
+    // NTP 동기화 (구성값 기반 주기)
+    // --------------------------------------------------
+    static void syncTimeIfNeeded(const ST_A20_WifiConfig_t&   p_cfg_wifi,
+                                 const ST_A20_SystemConfig_t& p_cfg_system,
+                                 uint32_t                     p_interval_ms = 21600000);
 
-	// --------------------------------------------------
-	// 상태 JSON
-	// --------------------------------------------------
-	static void getWifiStateJson(JsonDocument& p_doc);
+    // --------------------------------------------------
+    // 상태 JSON
+    // --------------------------------------------------
+    static void getWifiStateJson(JsonDocument& p_doc);
 
-	// --------------------------------------------------
-	// 스캔 JSON
-	// --------------------------------------------------
-	static void scanNetworksToJson(JsonDocument& p_doc);
+    // --------------------------------------------------
+    // 스캔 JSON
+    // --------------------------------------------------
+    static void scanNetworksToJson(JsonDocument& p_doc);
 
-	static bool isStaConnected();
-	static const char* getStaStatusString();
+    static bool        isStaConnected();
+    static const char* getStaStatusString();
 
   private:
-	static const char* _encTypeToString(wifi_auth_mode_t p_mode);
+    static const char* _encTypeToString(wifi_auth_mode_t p_mode);
 };
-

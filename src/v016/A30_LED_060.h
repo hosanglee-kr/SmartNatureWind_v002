@@ -4,25 +4,20 @@
 #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
 
-// 클래스 내부에서 사용할 기본 상수
-// inline constexpr const uint8_t  G_A30_RGBLED_PIN                = 48;
-// inline constexpr const uint16_t G_A30_RGBLED_NUMS               = 1;
-// inline constexpr const uint8_t  G_A30_RGBLED_DEFAULT_BRIGHTNESS = 20;
-
 /**
  * @brief 독립형 RGB LED 제어 클래스
  * 외부 모듈에 의존하지 않고 점멸 로직을 스스로 관리합니다.
  */
 class CL_A30_LED {
-private:
-    Adafruit_NeoPixel 	_pixel;
-    const uint8_t     	_pin;
-    const uint16_t    	_numPixels;
+  private:
+    Adafruit_NeoPixel _pixel;
+    const uint8_t     _pin;
+    const uint16_t    _numPixels;
 
-    uint32_t 			_lastLedMs = 0;    // 내부 타이머
-    bool     			_ledState  = false; // 현재 점멸 상태 (On/Off)
+    uint32_t _lastLedMs = 0;     // 내부 타이머
+    bool     _ledState  = false; // 현재 점멸 상태 (On/Off)
 
-public:
+  public:
     /**
      * @brief 생성자
      */

@@ -51,8 +51,6 @@
 #include "W10_Web_Const_060.h"
 #include "WF10_WiFiMgr_060.h"
 
-
-
 // ------------------------------------------------------
 // WebAPI Manager
 // ------------------------------------------------------
@@ -63,8 +61,6 @@ class CL_W10_WebAPI {
     // --------------------------------------------------
     // v029: WiFiMulti 인자 포함
     static void begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_control);
-
-    // static void begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_control, WiFiMulti& p_multi);
 
     // cleanupClients 주기 tick (권장)
     static void wsCleanupTick();
@@ -81,14 +77,13 @@ class CL_W10_WebAPI {
     // --------------------------------------------------
     // 정적 멤버 (Routes.cpp, WebSockets.cpp, Static.cpp, Upload.cpp 공유)
     // --------------------------------------------------
-    static AsyncWebServer*         	s_server;
-    static CL_CT10_ControlManager* 	s_control;
-    // static WiFiMulti*              	s_multi;
+    static AsyncWebServer*         s_server;
+    static CL_CT10_ControlManager* s_control;
 
-    static fs::File 				s_upFile;
-    inline static bool              s_uploadError = false;     // 업로드 중 오류 발생 여부
-    inline static size_t            s_uploadTotal = 0;     // 누적 바이트 수
-    static const size_t             G_W10_MAX_UPLOAD_SIZE = 2 * 1024 * 1024; // 2MB 제한
+    static fs::File      s_upFile;
+    inline static bool   s_uploadError         = false;           // 업로드 중 오류 발생 여부
+    inline static size_t s_uploadTotal         = 0;               // 누적 바이트 수
+    static const size_t  G_W10_MAX_UPLOAD_SIZE = 2 * 1024 * 1024; // 2MB 제한
 
     // WebSocket Servers
     static AsyncWebSocket* s_wsServerState;
@@ -106,12 +101,12 @@ class CL_W10_WebAPI {
 
     // 페이지 엔트리 구조체 (메뉴 및 메타 정보용)
     struct ST_W10_PageEntry_t {
-        int    	order;
-        String 	uri;
-        String 	path;
-        String 	label;
-        bool   	isMain;
-        bool   	enable;
+        int    order;
+        String uri;
+        String path;
+        String label;
+        bool   isMain;
+        bool   enable;
     };
 
     // 메뉴 API에 필요한 전역 상태 (정적 멤버로 관리)
@@ -152,7 +147,6 @@ class CL_W10_WebAPI {
     static void routeUserProfilesPatch(); // POST /api/user_profiles/patch (배치 패치)
 
     // 3. 설정 관리 및 저장/적용 (POST/GET)
-    // static void routeConfigSave();    // POST /api/config/save
     static void routeConfigDirtySave(); // GET /api/config/dirty
     static void routeReload();          // POST /api/reload
     static void routeConfigInit();      // POST /api/config/init
@@ -166,7 +160,7 @@ class CL_W10_WebAPI {
     static void routeUpdate();        // POST /update
 
     // 4-1. AI 프록시
-    static void routeGeminiProxy();   // POST /api/v001/ai/gemini
+    static void routeGeminiProxy(); // POST /api/v001/ai/gemini
 
     // 5. 제어 및 상태 요약 (POST/GET)
     static void routeControl();        // 여러 제어용 /api/control/*
@@ -204,8 +198,6 @@ class CL_W10_WebAPI {
         p_response->addHeader("Access-Control-Allow-Origin", "*");
         p_response->addHeader("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
         p_response->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-        //p_response->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-        
     }
 
     static inline void sendJson(AsyncWebServerRequest* p_request, JsonDocument& p_doc, int p_code = 200) {

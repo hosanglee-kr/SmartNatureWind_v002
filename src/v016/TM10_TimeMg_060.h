@@ -118,16 +118,14 @@ class CL_TM10_TimeManager {
     static bool getLocalTime(struct tm& p_outTm);
     static void requestTimeSync(bool p_force);
 
-
   private:
-    #ifndef G_TM10_SYNC_RECENT_WINDOW_MS
-        // “최근 동기화”로 인정할 시간 창(기본 10분)
-        # define G_TM10_SYNC_RECENT_WINDOW_MS (10UL * 60UL * 1000UL)
-    #endif
+#ifndef G_TM10_SYNC_RECENT_WINDOW_MS
+// “최근 동기화”로 인정할 시간 창(기본 10분)
+# define G_TM10_SYNC_RECENT_WINDOW_MS (10UL * 60UL * 1000UL)
+#endif
 
     // (추가) “최근 동기화” 플래그 (timeValid와 분리)
-    inline static bool     s_timeSyncedRecently = false;
-
+    inline static bool s_timeSyncedRecently = false;
 
     // Mutex (이제 초기화 로직은 가드 클래스가 담당)
     inline static SemaphoreHandle_t s_mutex = nullptr;
@@ -172,7 +170,7 @@ class CL_TM10_TimeManager {
 // ------------------------------------------------------
 static inline void TM10_applyTimeConfigFromSystem(const ST_A20_SystemConfig_t& p_sys);
 
-//static inline void TM10_requestTimeSync();
+// static inline void TM10_requestTimeSync();
 
 // // ======================================================
 // // Implementation (header-only)
@@ -407,7 +405,6 @@ inline void CL_TM10_TimeManager::requestTimeSync(bool p_force) {
     _requestSync();
 }
 
-
 inline void CL_TM10_TimeManager::applyTimeConfig(const ST_A20_SystemConfig_t& p_sys) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
@@ -429,8 +426,6 @@ inline void CL_TM10_TimeManager::applyTimeConfig(const ST_A20_SystemConfig_t& p_
         _startSntpWithServer(s_activeServerIdx);
     }
 }
-
-
 
 inline void CL_TM10_TimeManager::onWiFiConnected(const ST_A20_SystemConfig_t& p_sys) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
@@ -477,30 +472,6 @@ inline void CL_TM10_TimeManager::onWiFiDisconnected() {
                        (int)s_timeSyncedRecently);
 }
 
-/*
-
-inline void CL_TM10_TimeManager::onWiFiDisconnected() {
-    // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
-    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
-        return;
-    }
-
-    s_wifiUp          = false;
-    s_timeValid       = false;
-    s_waitingCallback = false;
-    s_lastRequestMs   = 0;
-    s_waitStartMs     = 0;
-    s_nextActionMs    = 0;
-
-    _stopSntp();
-
-    CL_D10_Logger::log(EN_L10_LOG_WARN, "[TM10] WiFi down -> SNTP stopped, time invalidated");
-}
-*/
-
-
 inline void CL_TM10_TimeManager::tick(const ST_A20_SystemConfig_t* p_sysOrNull) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
@@ -512,8 +483,6 @@ inline void CL_TM10_TimeManager::tick(const ST_A20_SystemConfig_t* p_sysOrNull) 
     uint32_t v_now = millis();
 
     _updateSyncedRecently(v_now);
-
-
 
     // Wi-Fi 없으면 아무 것도 하지 않음
     if (!s_wifiUp) {
@@ -583,9 +552,7 @@ inline void CL_TM10_TimeManager::toJson(JsonDocument& p_doc) {
     v_time["waitingCallback"] = s_waitingCallback;
 
     v_time["syncedRecently"] = s_timeSyncedRecently;
-
 }
-
 
 inline bool CL_TM10_TimeManager::isTimeValid() {
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
@@ -627,21 +594,21 @@ inline bool CL_TM10_TimeManager::getLocalTime(struct tm& p_outTm) {
     // - timeValid가 true라도, 실제 time이 깨졌을 수 있으므로 _isTimeSane() 재확인
     // - 완화 정책: Wi-Fi down이어도 time이 sane면 허용
     if (!_isTimeSane()) {
-        s_timeValid = false;
+        s_timeValid          = false;
         s_timeSyncedRecently = false;
         return false;
     }
 
     time_t v_now = time(nullptr);
     if (v_now <= 0) {
-        s_timeValid = false;
+        s_timeValid          = false;
         s_timeSyncedRecently = false;
         return false;
     }
 
     // ✅ localtime_r NULL 방어
     if (localtime_r(&v_now, &p_outTm) == nullptr) {
-        s_timeValid = false;
+        s_timeValid          = false;
         s_timeSyncedRecently = false;
         return false;
     }
@@ -673,7 +640,6 @@ inline void CL_TM10_TimeManager::_updateSyncedRecently(uint32_t p_nowMs) {
     }
 }
 
-
 // ------------------------------------------------------
 // TM10 호환 전역 함수
 // ------------------------------------------------------
@@ -681,14 +647,6 @@ static inline void TM10_applyTimeConfigFromSystem(const ST_A20_SystemConfig_t& p
     // system.time 설정을 런타임에 반영 (콜백 only, 블로킹X)
     CL_TM10_TimeManager::applyTimeConfig(p_sys);
 }
-
-/*
-static inline void TM10_requestTimeSync() {
-    // "즉시 동기화 요청" (콜백 only, 블로킹X)
-    CL_TM10_TimeManager::requestTimeSync();
-}
-*/
-
 
 static inline void TM10_requestTimeSync(bool p_force = false) {
     CL_TM10_TimeManager::requestTimeSync(p_force);

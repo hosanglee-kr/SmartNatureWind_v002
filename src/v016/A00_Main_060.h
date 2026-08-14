@@ -30,8 +30,10 @@
 #include "M10_MotionLogic_060.h"
 #include "N10_NvsManager_060.h"
 #include "P10_PWM_ctrl_060.h"
-#include "S10_Simul_060.h"
-#include "S20_WindSolver_060.h"
+
+// #include "S10_Simul_060.h"
+// #include "S20_WindSolver_060.h"
+
 #include "W10_Web_060.h"
 #include "WF10_WiFiMgr_060.h"
 #include "TM10_TimeMg_060.h"
@@ -39,22 +41,20 @@
 #include "A30_LED_060.h"
 
 // [main.cpp] 또는 [MotionLogic.cpp] 파일에 추가
-CL_M10_MotionLogic* 	g_M10_motionLogic = nullptr;
+CL_M10_MotionLogic* g_M10_motionLogic = nullptr;
 
-AsyncWebServer   		g_A00_server(80);
-//static WiFiMulti 		g_A00_wifiMulti;
+AsyncWebServer g_A00_server(80);
+// static WiFiMulti 		g_A00_wifiMulti;
 
 CL_CT10_ControlManager& g_A00_control = CL_CT10_ControlManager::instance();
 CL_P10_PWM              g_P10_pwm;
 
-CL_A30_LED*             g_A00_ledController = nullptr;
+CL_A30_LED* g_A00_ledController = nullptr;
 
 // ------------------------------------------------------
 // 메인 초기화
 // ------------------------------------------------------
 void A00_init() {
-
-
     CL_D10_Logger::log(EN_L10_LOG_INFO, "=== Smart Nature Wind Boot (v002) ===");
 
     // ------------------------------------------------------
@@ -95,21 +95,19 @@ void A00_init() {
         // }
         return;
     }
-    
 
     const ST_A20_WifiConfig_t&   v_wifi = *g_A20_config_root.wifi;
     const ST_A20_SystemConfig_t& v_sys  = *g_A20_config_root.system;
 
-     // LED 객체 생성 (pin, numPixels 전달)
+    // LED 객체 생성 (pin, numPixels 전달)
     static CL_A30_LED s_led(v_sys.hw.led.pin, v_sys.hw.led.numPixels);
     g_A00_ledController = &s_led;
     g_A00_ledController->begin(v_sys.hw.led.defaultBrightness);
-    
 
     // ------------------------------------------------------
     // 4. Wi-Fi 초기화
     // ------------------------------------------------------
-	bool v_wifiOk = CL_WF10_WiFiManager::init(v_wifi, v_sys);
+    bool v_wifiOk = CL_WF10_WiFiManager::init(v_wifi, v_sys);
     // bool v_wifiOk = CL_WF10_WiFiManager::init(v_wifi, v_sys, g_A00_wifiMulti);
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] WiFi init result=%d", v_wifiOk ? 1 : 0);
 
@@ -138,7 +136,7 @@ void A00_init() {
     // ------------------------------------------------------
     // 8. Web API + Web UI
     // ------------------------------------------------------
-	CL_W10_WebAPI::begin(g_A00_server, g_A00_control);
+    CL_W10_WebAPI::begin(g_A00_server, g_A00_control);
     // CL_W10_WebAPI::begin(g_A00_server, g_A00_control, g_A00_wi);
     g_A00_server.begin();
 
@@ -161,7 +159,6 @@ void A00_init() {
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] Init complete. Ready.");
 }
-
 
 // ------------------------------------------------------
 // 메인 루프
@@ -193,22 +190,20 @@ void A00_run() {
         CL_TM10_TimeManager::tick(nullptr);
     }
 
-	 //// // NVS Dirty Flush (10초마다)
-   //// if (v_now - v_lastFlush >= 10000) {
-   ////     v_lastFlush = v_now;
-   ////     CL_N10_NvsManager::flushIfNeeded();
-   //// }
+    //// // NVS Dirty Flush (10초마다)
+    //// if (v_now - v_lastFlush >= 10000) {
+    ////     v_lastFlush = v_now;
+    ////     CL_N10_NvsManager::flushIfNeeded();
+    //// }
 
     // ------------------------------------------------------
     // 4) LED 업데이트
     // ------------------------------------------------------
     bool v_wifiStatus = CL_WF10_WiFiManager::isStaConnected();
-    
+
     if (g_A00_ledController) {
         g_A00_ledController->run(v_wifiStatus);
     }
 
     delay(10);
 }
-
-

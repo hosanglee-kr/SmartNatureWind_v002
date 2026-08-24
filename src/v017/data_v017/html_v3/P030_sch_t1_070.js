@@ -1,4 +1,4 @@
-/* P030_sch_t1_062.js – 백엔드 API + Gemini AI 통합 완성본 */
+/* P030_sch_t1_070.js – 백엔드 API + Gemini AI 통합 완성본 */
 (() => {
   "use strict";
 

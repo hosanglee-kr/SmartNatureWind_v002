@@ -1,7 +1,7 @@
 /*
  * ------------------------------------------------------
- * 소스명 : P050_chart_t2_008.js
- * 모듈명 : Smart Nature Wind Chart Monitor Controller (v008)
+ * 소스명 : P050_chart_t2_070.js
+ * 모듈명 : Smart Nature Wind Chart Monitor Controller
  * ------------------------------------------------------
  * 기능 요약:
  * - 🎯 /ws/chart WebSocket을 통한 실시간 차트 데이터 모니터링 (T1과 동일 스키마)

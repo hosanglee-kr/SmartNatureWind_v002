@@ -1,39 +1,39 @@
 {
   "pages": [
     {
-      "uri": "/P010_main_060.html",
-      "path": "/html_v3/P010_main_060.html",
+      "uri": "/P010_main_070.html",
+      "path": "/html_v3/P010_main_070.html",
       "label": "Main",
       "enable": true,
       "isMain": true,
       "order": 10,
       "pageAssets": [
-        { "uri": "/P010_main_060.css", "path": "/html_v3/P010_main_060.css" },
-        { "uri": "/P010_main_061.js", "path": "/html_v3/P010_main_061.js" }
+        { "uri": "/P010_main_070.css", "path": "/html_v3/P010_main_070.css" },
+        { "uri": "/P010_main_070.js", "path": "/html_v3/P010_main_070.js" }
       ]
     },
     {
-      "uri": "/P020_chart_t1_060.html",
-      "path": "/html_v3/P020_chart_t1_060.html",
+      "uri": "/P020_chart_t1_070.html",
+      "path": "/html_v3/P020_chart_t1_070.html",
       "label": "ChartT1",
       "enable": true,
       "isMain": false,
       "order": 20,
       "pageAssets": [
-        { "uri": "/P020_chart_t1_060.css", "path": "/html_v3/P020_chart_t1_060.css" },
-        { "uri": "/P020_chart_t1_061.js", "path": "/html_v3/P020_chart_t1_061.js" }
+        { "uri": "/P020_chart_t1_070.css", "path": "/html_v3/P020_chart_t1_070.css" },
+        { "uri": "/P020_chart_t1_070.js", "path": "/html_v3/P020_chart_t1_070.js" }
       ]
     },
     {
-      "uri": "/P030_sch_t1_062.html",
-      "path": "/html_v3/P030_sch_t1_062.html",
+      "uri": "/P030_sch_t1_070.html",
+      "path": "/html_v3/P030_sch_t1_070.html",
       "label": "Schedule T1",
       "enable": true,
       "isMain": false,
       "order": 30,
       "pageAssets": [
-        { "uri": "/P030_sch_t1_062.css", "path": "/html_v3/P030_sch_t1_062.css" },
-        { "uri": "/P030_sch_t1_063.js", "path": "/html_v3/P030_sch_t1_063.js" }
+        { "uri": "/P030_sch_t1_070.css", "path": "/html_v3/P030_sch_t1_070.css" },
+        { "uri": "/P030_sch_t1_070.js", "path": "/html_v3/P030_sch_t1_070.js" }
       ]
 
     },
@@ -154,15 +154,15 @@
     }
   ],
   "reDirect": [
-    { "uriFrom": "/", "uriTo": "/P010_main_060.html" },
-    { "uriFrom": "/index.html", "uriTo": "/P010_main_060.html" },
-    { "uriFrom": "/P010_main", "uriTo": "/P010_main_060.html" },
-    { "uriFrom": "/dashboard", "uriTo": "/P040_dashboard_060.html" },
+    { "uriFrom": "/", "uriTo": "/P010_main_070.html" },
+    { "uriFrom": "/index.html", "uriTo": "/P010_main_070.html" },
+    { "uriFrom": "/P010_main", "uriTo": "/P010_main_070.html" },
+    { "uriFrom": "/dashboard", "uriTo": "/P040_dashboard_070.html" },
     { "uriFrom": "/P040_dashboard", "uriTo": "/P040_dashboard_060.html" },
-    { "uriFrom": "/chart_t1", "uriTo": "/P020_chart_t1_060.html" },
+    { "uriFrom": "/chart_t1", "uriTo": "/P020_chart_t1_070.html" },
     { "uriFrom": "/chart_t2", "uriTo": "/P050_chart_t2_060.html" },
     { "uriFrom": "/profiles", "uriTo": "/P070_profile_060.html" },
-    { "uriFrom": "/schedules_t1", "uriTo": "/P030_sch_t1_060.html" },
+    { "uriFrom": "/schedules_t1", "uriTo": "/P030_sch_t1_070.html" },
     { "uriFrom": "/schedules_t2", "uriTo": "/P080_sch_t2_060.html" },
     { "uriFrom": "/userProfile_t2", "uriTo": "/P085_userProfiles_t2_060.html" },
     { "uriFrom": "/settings", "uriTo": "/P100_settings_060.html" },
@@ -170,8 +170,8 @@
     { "uriFrom": "/info", "uriTo": "/P090_user_060.html" }
   ],
   "assets": [
-    { "uri": "/P000_common_060.css", "path": "/html_v3/P000_common_060.css", "isCommon": true },
-    { "uri": "/P000_common_060.js" , "path": "/html_v3/P000_common_060.js" , "isCommon": true },
-    { "uri": "/P001_API_061.js"    , "path": "/html_v3/P001_API_061.js"    , "isCommon": true }
+    { "uri": "/P000_common_070.css", "path": "/html_v3/P000_common_070.css", "isCommon": true },
+    { "uri": "/P000_common_070.js" , "path": "/html_v3/P000_common_070.js" , "isCommon": true },
+    { "uri": "/P001_API_070.js"    , "path": "/html_v3/P001_API_070.js"    , "isCommon": true }
   ]
 }

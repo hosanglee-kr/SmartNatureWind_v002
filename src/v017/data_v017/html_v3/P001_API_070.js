@@ -1,8 +1,8 @@
 
 /**
- * P001_API_061.js
+ * P001_API_070.js
  * Smart Nature Wind - REST API Constants (전역 객체 버전)
- * 백엔드 W10_Web_Const_060.h와 동기화됨
+ * 백엔드 W10_Web_Const_070.h와 동기화됨
  * 사용: SNW_API.API_HTTP_STATE 등으로 접근
  */
 window.SNW_API = (() => {
@@ -55,7 +55,6 @@ window.SNW_API = (() => {
 
         // 데이터 피드 및 메트릭
         get API_HTTP_FEED_PIR() { return `${BASE}/motion/pir/feed`; },
-        get API_HTTP_FEED_BLE() { return `${BASE}/motion/ble/feed`; },
         get API_HTTP_METRICS() { return `${BASE}/metrics`; },
         get API_HTTP_LOGS() { return `${BASE}/logs`; },
 

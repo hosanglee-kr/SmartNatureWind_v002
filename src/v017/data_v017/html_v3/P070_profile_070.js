@@ -1,7 +1,7 @@
 /*
  * ------------------------------------------------------
- * 소스명 : P070_profile_001.js
- * 모듈명 : Smart Nature Wind WindProfile Manager Controller (v001)
+ * 소스명 : P070_profile_070.js
+ * 모듈명 : Smart Nature Wind WindProfile Manager Controller
  * ------------------------------------------------------
  * 기능 요약:
  * - 🎯 /api/windProfile (GET, POST, PUT, DELETE) CRUD 기능 구현

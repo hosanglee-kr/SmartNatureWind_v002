@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------
- * 소스명 : P020_chart_t1_061.js
+ * 소스명 : P020_chart_t1_070.js
  * 모듈명 : Smart Nature Wind Chart/Simulation UI Controller (v029, Backend 029 정합)
  * ------------------------------------------------------
  * 기능 요약:
@@ -18,7 +18,7 @@
 
 	/* ==============================
 	 * 1. 공통 유틸리티 및 전역 상수
-	 *    (P000_common_060.js + P001_API_061.js 의존)
+	 *    (P000_common_070.js + P001_API_070.js 의존)
 	 * ============================== */
 	// $, text, apiFetch, buildWsUrl, getApiKey, notify, showLoading, hideLoading
 	// SNW_API.API_HTTP_*

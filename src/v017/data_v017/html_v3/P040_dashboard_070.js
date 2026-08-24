@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------
- * 소스명 : P040_dashboard_061.js
+ * 소스명 : P040_dashboard_070.js
  * 모듈명 : Smart Nature Wind Dashboard UI Controller
  * ------------------------------------------------------
  * 기능 요약:
@@ -8,12 +8,11 @@
  * - /ws/log WebSocket을 통한 실시간 로그 메시지 출력
  * - /api/control/profile/select 및 /api/control/profile/stop 으로 시뮬레이션 제어
  * - /api/state를 이용한 초기 상태 로드
- * - P000_common_060.js 의 showToast / 메뉴 로직과 공존
+ * - P000_common_xxx.js 의 showToast / 메뉴 로직과 공존
  * ------------------------------------------------------
  */
 
 
-/* P040_dashboard_060.js – 공통 유틸리티 적용 최종본 */
 (() => {
   "use strict";
 

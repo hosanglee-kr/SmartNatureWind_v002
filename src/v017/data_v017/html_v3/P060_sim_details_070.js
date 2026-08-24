@@ -1,7 +1,7 @@
 /*
  * ------------------------------------------------------
- * 소스명 : P060_sim_details_001.js
- * 모듈명 : Smart Nature Wind Simulation Details Controller (v001)
+ * 소스명 : P060_sim_details_070.js
+ * 모듈명 : Smart Nature Wind Simulation Details Controller
  * ------------------------------------------------------
  * 기능 요약:
  * - 🎯 /api/simulation (GET/POST) 및 /api/motion (GET/POST)을 통해 설정 로드 및 패치

@@ -1,12 +1,12 @@
 
 /**
  * ------------------------------------------------------
- * 소스명 : P000_common_060.js
+ * 소스명 : P000_common_070.js
  * 모듈명 : Smart Nature Wind UI 공통 스크립트
  * ------------------------------------------------------
  * 기능 요약:
  * 1. ONLINE / OFFLINE 모드 판별 및 페이지/메뉴 데이터 로드
- * 2. cfg_pages_060.json 구조 기반 동적 내비게이션 구성
+ * 2. cfg_pages_070.json 구조 기반 동적 내비게이션 구성
  * 3. pages[].enable=false 페이지 자동 제외
  * 4. isMain = true 페이지는 메뉴에서 숨김
  * 5. 로고 링크는 isMain 페이지의 path 또는 uri로 자동 설정
@@ -26,7 +26,7 @@ const G_MODE_OFFLINE = "OFFLINE";
 //  데이터 경로
 // -------------------------------
 const G_API_MENU_PATH = "/api/v001/menu";          // ONLINE
-const G_LOCAL_JSON_PATH = "../json/cfg_pages_060.json"; // OFFLINE
+const G_LOCAL_JSON_PATH = "../json/cfg_pages_070.json"; // OFFLINE
 
 let g_currentMode = G_MODE_OFFLINE;
 window.currentMode = g_currentMode;

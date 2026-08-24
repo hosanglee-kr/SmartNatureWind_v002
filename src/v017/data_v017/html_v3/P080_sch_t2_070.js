@@ -1,7 +1,7 @@
 /*
  * ------------------------------------------------------
- * 소스명 : P080_schedules_t2_003.js
- * 모듈명 : Smart Nature Wind Schedule Manager Controller (t2, v003)
+ * 소스명 : P080_schedules_t2_070.js
+ * 모듈명 : Smart Nature Wind Schedule Manager Controller
  * ------------------------------------------------------
  * 기능 요약:
  * - /api/schedules (GET, POST, PUT, DELETE) : C10 풀 구조 기반 CRUD

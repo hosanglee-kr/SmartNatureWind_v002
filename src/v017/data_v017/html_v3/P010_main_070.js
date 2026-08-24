@@ -1,4 +1,4 @@
-/* P010_main_061.js
+/* P010_main_070.js
  * ------------------------------------------------------
  * 모듈명 : Smart Nature Wind Main UI Logic (공통 유틸리티 적용)
  * ------------------------------------------------------
@@ -12,9 +12,9 @@
  *  - 파일 업로드 (/upload) 및 OTA 업데이트 (/update)
  *  - WebSocket 로그 (/ws/log) + 상태 (/ws/state) 연동
  *
- * ※ 공통 함수 (P000_common_060.js)
+ * ※ 공통 함수 (P000_common_070.js)
  *    apiFetch, getApiKey, setApiKey, buildWsUrl, showLoading, hideLoading, notify, $, text
- * ※ 전역 상수 (P001_API_061.js)
+ * ※ 전역 상수 (P001_API_0610js)
  *    SNW_API.*
  * ------------------------------------------------------
  */
@@ -350,7 +350,7 @@ function renderScanList(networks) {
  * 6. 섹션별 메모리 패치 (PATCH)
  * ============================== */
 
-// P010_main_060.js saveMotionPatch
+// P010_main_070.js saveMotionPatch
 
 async function saveMotionPatch() {
 	const body = {

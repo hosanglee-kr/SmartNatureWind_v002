@@ -404,39 +404,36 @@ void CL_S10_Simulation::applyResolvedWind(const ST_A20_ResolvedWind_t& p_resolve
  * 사용자 Intensity, Min/Limit 값을 반영합니다.
  */
 void CL_S10_Simulation::applyFan(float p_pct) {
-    if (!_pwm) {
-        return;
-    }
+    if (!_pwm) return;
 
-    // 1) 요청 duty(%)를 0~1로 정규화
-    float v_req01 = A40_ComFunc::clampVal<float>(p_pct, 0.0f, 100.0f) / 100.0f;
+    // ✅ 백분율(0~100) 그대로 사용
+    float v_reqPct = A40_ComFunc::clampVal<float>(p_pct, 0.0f, 100.0f);
+    const float v_intPct = A40_ComFunc::clampVal<float>(userIntensity, 0.0f, 100.0f);
 
-    // 2) 사용자 intensity(0~1)
-    const float v_int01 = A40_ComFunc::clampVal<float>(userIntensity, 0.0f, 100.0f) / 100.0f;
-
-    // 3) 팬 전원 OFF 또는 intensity가 거의 0이면 정지
-    if (!fanPowerEnabled || v_int01 <= 0.01f) {
+    if (!fanPowerEnabled || v_intPct <= 0.01f) {
         _pwm->P10_setDutyPercent(0.0f);
         return;
     }
 
-    // 4) 시뮬레이션 active일 때만 intensity 스케일 적용
     if (active) {
-        v_req01 *= v_int01;
+        v_reqPct = (v_reqPct * v_intPct) / 100.0f;
     }
 
-    // 5) min/limit(%) -> 0~1 변환 + 관계 보정(min <= limit)
-    float v_min01 = A40_ComFunc::clampVal<float>(minFanPct, 0.0f, 100.0f) / 100.0f;
-    float v_max01 = A40_ComFunc::clampVal<float>(fanLimitPct, 0.0f, 100.0f) / 100.0f;
+    float v_minPct = A40_ComFunc::clampVal<float>(minFanPct, 0.0f, 100.0f);
+    float v_maxPct = A40_ComFunc::clampVal<float>(fanLimitPct, 0.0f, 100.0f);
+    if (v_minPct > v_maxPct) v_minPct = v_maxPct;
 
-    if (v_min01 > v_max01) {
-        v_min01 = v_max01;
-    }
+    const ST_A20_FanConfig_t* v_fc = _fanCfgSnap;
 
-    // 6) 커브 적용: 논리 duty(0~1) -> 실제 PWM duty(0~1)
-    const ST_A20_FanConfig_t* v_fc    = _fanCfgSnap;
-    const float               v_phy01 = _pwm->applyFanConfigCurve(v_fc, v_req01, v_min01, v_max01);
+    // PWM 커브 함수는 0~1 정규화를 받으므로 여기서만 변환
+    const float v_phy01 = _pwm->applyFanConfigCurve(
+        v_fc,
+        v_reqPct / 100.0f,
+        v_minPct / 100.0f,
+        v_maxPct / 100.0f
+    );
 
-    // 7) 최종 %로 전달
+    // 0~1 → 백분율로 복원하여 PWM 모듈에 전달
     _pwm->P10_setDutyPercent(v_phy01 * 100.0f);
 }
+

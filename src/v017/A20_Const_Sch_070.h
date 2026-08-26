@@ -107,11 +107,11 @@ inline constexpr ST_A20_WindStyles_t G_A20_WindStyle_Arr[EN_A20_WINDSTYLE_COUNT]
  * Wind Dict (cfg_windDict_xxx.json) : camelCase 정합
  * ====================================================== */
 typedef struct {
-    float windIntensity;
-    float gustFrequency;
-    float windVariability;
-    float fanLimit;
-    float minFan;
+    float windIntensity;        // 0~100 백분율
+    float gustFrequency;        // 0~100 백분율
+    float windVariability;      // 0~100 백분율
+    float fanLimit;             // 0~100 백분율
+    float minFan;               // 0~100 백분율
     float turbulenceLengthScale;
     float turbulenceIntensitySigma;
     float thermalBubbleStrength;
@@ -211,7 +211,7 @@ typedef struct {
  *  - 베이스 대비 델타 (상대 변화)
  * ====================================================== */
 typedef struct {
-    float windIntensity            = 0.0f;
+    float windIntensity            = 0.0f;  // -1.0 ~ +1.0 델타
     float gustFrequency            = 0.0f;
     float windVariability          = 0.0f;
     float fanLimit                 = 0.0f;

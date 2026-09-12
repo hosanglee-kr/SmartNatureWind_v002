@@ -8,7 +8,6 @@
 //  - Web API 및 시뮬레이션 Tick 루프 수행
 // ------------------------------------------------------
 
-qq
 
 #include <Arduino.h>
 #include <LittleFS.h>

@@ -1,0 +1,307 @@
+# =====================================================================
+# .github/workflows/ci_1_build_007.yml
+# ---------------------------------------------------------------------
+# PR이 생성되거나 갱신될 때 PlatformIO 빌드를 수행하는 워크플로우임.
+#
+# [설계 및 보안 원칙]
+#   1. pull_request 이벤트 기반 동작:
+#      - Fork 저장소발 PR의 경우 악의적인 스크립트 실행 공격을 방지하기
+#        위해 GITHUB_TOKEN 권한이 자동으로 read-only로 강등됨.
+#      - 따라서 본 워크플로우에는 이슈 생성/갱신 등의 쓰기(write) 작업을
+#        배제하고 빌드 및 아티팩트 업로드만 수행함.
+#   2. 메타데이터 조기 확보:
+#      - 환경 파싱(list_envs)이나 빌드 잡의 실패 여부와 무관하게 PR의
+#        컨텍스트(PR 번호, 제목, 작성자 등)를 후속 워크플로우로 넘기기 위해
+#        체크아웃 직후 최우선 순위로 pr-meta 아티팩트를 생성 및 업로드함.
+#   3. 아티팩트 네이밍 정규화:
+#      - actions/upload-artifact@v4의 중복 에러 및 파일시스템 특수문자
+#        제한을 회피하기 위해 slug 치환 및 md5 해시 접미사를 결합함.
+# =====================================================================
+
+name: PR Build
+
+on:
+  pull_request:
+    branches: [main, main-standalone]
+    # 소스 코드 및 워크플로우 정의 변경 시에만 빌드 트리거
+    paths:
+      - 'platformio.ini'
+      - 'lib/**'
+      - 'include/**'
+      - 'src/**/*.c'
+      - 'src/**/*.cpp'
+      - 'src/**/*.h'
+      - 'src/**/*.ino'
+      - '.github/workflows/*.yml'
+    # 단순 문서 및 데이터 수정은 빌드 제외
+    paths-ignore:
+      - '**/*.md'
+      - 'src/**/data_*/**'
+      - 'src/*_backup/**'
+
+# 최소 권한 원칙 (Fork PR 권한 탈취 방지)
+permissions:
+  contents: read
+
+jobs:
+  # =====================================================================
+  # 1단계: PR 메타데이터 조기 확보 및 빌드 대상 환경 동적 추출
+  # =====================================================================
+  get_environments:
+    runs-on: ubuntu-latest
+    outputs:
+      environments: ${{ steps.read_output.outputs.envs }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ---------------------------------------------------------------
+      # [최우선] PR 컨텍스트 저장 및 아티팩트 업로드
+      # ---------------------------------------------------------------
+      # - setup-python 액션 이전에 실행되므로 러너 기본 내장 python3를 사용함.
+      # - 환경 파싱 단계에서 비정상 종료(exit 1)가 발생하더라도 PR 정보는
+      #   이미 업로드되어 후속 리포트 워크플로우(ci_report.yml)에서 정상 수신함.
+      # - is_fork: head 저장소와 base 저장소 일치 여부로 Fork PR 여부 판별.
+      # ---------------------------------------------------------------
+      - name: Save PR metadata
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE:  ${{ github.event.pull_request.title }}
+          PR_URL:    ${{ github.event.pull_request.html_url }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          HEAD_SHA:  ${{ github.event.pull_request.head.sha }}
+          BASE_REF:  ${{ github.base_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPO: ${{ github.repository }}
+        run: |
+          mkdir -p pr-meta
+          python3 - <<'PY' > pr-meta/pr_meta.json
+          import json, os
+          head = os.environ.get("HEAD_REPO", "") or ""
+          base = os.environ.get("BASE_REPO", "") or ""
+          print(json.dumps({
+              "pr_number": os.environ.get("PR_NUMBER"),
+              "pr_title":  os.environ.get("PR_TITLE"),
+              "pr_url":    os.environ.get("PR_URL"),
+              "pr_author": os.environ.get("PR_AUTHOR"),
+              "head_sha":  os.environ.get("HEAD_SHA"),
+              "base_ref":  os.environ.get("BASE_REF"),
+              "head_repo": head,
+              "base_repo": base,
+              "is_fork":   head != base,
+          }))
+          PY
+
+      - name: Upload PR metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-meta
+          path: pr-meta/pr_meta.json
+          retention-days: 7
+          if-no-files-found: error
+
+      # ---------------------------------------------------------------
+      # PlatformIO 빌드 타깃 환경 동적 파싱
+      # ---------------------------------------------------------------
+      # 우선순위:
+      #   1) PREFERRED 대상(esp32-s3-n16r8) 정의 시 해당 타깃 우선
+      #   2) platformio.ini 내 default_envs 설정값
+      #   3) 상기 조건 부재 시 [env:*] 전체 타깃 적용
+      # ---------------------------------------------------------------
+      - name: Set up Python for parsing
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: List PlatformIO environments
+        id: list_envs
+        shell: bash
+        run: |
+          python - <<'PY' > envs.json
+          import configparser
+          import json
+
+          config = configparser.ConfigParser()
+          config.read('platformio.ini')
+
+          all_envs = [
+              s.split(':', 1)[1]
+              for s in config.sections()
+              if s.startswith('env:')
+          ]
+
+          PREFERRED = ['esp32-s3-n16r8']
+          envs = [e for e in all_envs if e in PREFERRED]
+
+          if not envs and 'platformio' in config:
+              default = config['platformio'].get('default_envs', '')
+              if default:
+                  envs = [e.strip() for e in default.split(',') if e.strip()]
+
+          if not envs:
+              envs = all_envs
+
+          print(json.dumps(envs))
+          PY
+
+      - name: Read environments to output
+        id: read_output
+        shell: bash
+        run: |
+          ENVS=$(<envs.json)
+          if [ "$ENVS" == "[]" ] || [ -z "$ENVS" ]; then
+            echo "Error: No environments found to build!"
+            exit 1
+          fi
+          echo "envs=${ENVS}" >> $GITHUB_OUTPUT
+
+  # =====================================================================
+  # 2단계: 환경별 매트릭스 병렬 컴파일
+  # =====================================================================
+  build:
+    runs-on: ubuntu-latest
+    needs: get_environments
+    strategy:
+      # 특정 보드 실패 시에도 타 보드 로그 수집을 위해 fail-fast 해제
+      fail-fast: false
+      matrix:
+        environments: ${{ fromJson(needs.get_environments.outputs.environments) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ---------------------------------------------------------------
+      # 통합 의존성 캐시 구성
+      # ---------------------------------------------------------------
+      # - pip 다운로드 바이너리 및 코어 툴체인(~/.platformio) 캐시
+      # - 빌드 산출물 불일치 방지를 위해 .pio 전체가 아닌 의존성(.pio/libdeps)만 선택 캐시
+      # ---------------------------------------------------------------
+      - name: Cache PlatformIO Core and Dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio
+            .pio/libdeps
+          key: ${{ runner.os }}-pio-${{ matrix.environments }}-${{ hashFiles('**/platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-${{ matrix.environments }}-
+            ${{ runner.os }}-pio-
+
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade platformio
+
+      # ---------------------------------------------------------------
+      # 펌웨어 컴파일
+      # ---------------------------------------------------------------
+      # - tee 명령어를 통해 터미널 스트리밍과 pio-build.log 저장을 병행
+      # - 파이프라인 반환 코드 대신 PIPESTATUS[0]으로 pio의 실제 종료 코드 추적
+      # ---------------------------------------------------------------
+      - name: Run PlatformIO build for ${{ matrix.environments }}
+        id: pio_build
+        shell: bash
+        run: |
+          set +e
+          pio run -e ${{ matrix.environments }} 2>&1 | tee pio-build.log
+          status=${PIPESTATUS[0]}
+          echo "exit_status=${status}" >> "$GITHUB_OUTPUT"
+          exit $status
+
+      # ---------------------------------------------------------------
+      # 실패 마커 및 디버그 정보 수집 (실패 시에만 진입)
+      # ---------------------------------------------------------------
+      # - pio 실행 이전(pip, 캐시 등) 조기 실패 시 로그 파일 부재 대응 진단 정보 기록
+      # - 이슈 본문 폭주 방지를 위해 마지막 200줄 수집
+      # ---------------------------------------------------------------
+      - name: Prepare failure marker
+        if: failure()
+        shell: bash
+        run: |
+          mkdir -p .ci-failure
+
+          # 원본 환경 식별자 보존
+          printf '%s' "${{ matrix.environments }}" > .ci-failure/env_name.txt
+
+          if [ -s pio-build.log ]; then
+            tail -n 200 pio-build.log > .ci-failure/failure.log
+          else
+            {
+              echo "=== pio-build.log not produced (early step failure) ==="
+              echo "--- runner environment ---"
+              uname -a
+              python --version || true
+              pip --version || true
+              which pio || echo "pio not installed"
+              echo "--- disk usage ---"
+              df -h . || true
+              echo "--- cache state ---"
+              ls -la ~/.platformio 2>/dev/null | head -20 || echo "no ~/.platformio"
+              ls -la .pio 2>/dev/null | head -20 || echo "no .pio"
+            } > .ci-failure/failure.log
+          fi
+
+      # ---------------------------------------------------------------
+      # 실패 마커 아티팩트 명칭 정규화 (slug + md5 해시)
+      # ---------------------------------------------------------------
+      - name: Compute safe failure artifact name
+        id: safe_name
+        if: failure()
+        shell: bash
+        run: |
+          SLUG=$(printf '%s' "${{ matrix.environments }}" | tr -c 'A-Za-z0-9._-' '-')
+          HASH=$(printf '%s' "${{ matrix.environments }}" | md5sum | cut -c1-8)
+          echo "slug=${SLUG}-${HASH}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload failure marker
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-${{ steps.safe_name.outputs.slug }}
+          path: .ci-failure/
+          retention-days: 7
+          if-no-files-found: warn
+
+      # ---------------------------------------------------------------
+      # 파일시스템 이미지 빌드 (선택적)
+      # ---------------------------------------------------------------
+      - name: Build filesystem image
+        if: success()
+        run: |
+          if [ -d "data" ] || [ -d "src/data" ]; then
+            pio run -e ${{ matrix.environments }} --target buildfs
+          else
+            echo "No data folder — skipping buildfs"
+          fi
+
+      # ---------------------------------------------------------------
+      # 빌드 산출물 아티팩트 명칭 정규화 및 업로드 (성공 시에만 진입)
+      # ---------------------------------------------------------------
+      - name: Compute safe bundle artifact name
+        id: safe_bundle
+        if: success()
+        shell: bash
+        run: |
+          SLUG=$(printf '%s' "${{ matrix.environments }}" | tr -c 'A-Za-z0-9._-' '-')
+          HASH=$(printf '%s' "${{ matrix.environments }}" | md5sum | cut -c1-8)
+          echo "slug=${SLUG}-${HASH}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Unified Artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.safe_bundle.outputs.slug }}-build-bundle
+          path: |
+            .pio/build/${{ matrix.environments }}/firmware.bin
+            .pio/build/${{ matrix.environments }}/partitions.bin
+            .pio/build/${{ matrix.environments }}/bootloader.bin
+            .pio/build/${{ matrix.environments }}/littlefs.bin
+          if-no-files-found: warn

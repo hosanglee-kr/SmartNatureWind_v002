@@ -1,0 +1,89 @@
+# =====================================================================
+# .github/workflows/ci_3_close_issues_007.yml
+# ---------------------------------------------------------------------
+# PR이 닫힐 때(Merged 또는 Closed) 미해결 상태로 잔존하는 실패 이슈를
+# 자동 정리하는 워크플로우임.
+#
+# [설계 및 동작 원칙]
+#   1. 잔여 이슈 라이프사이클 정리:
+#      - 컴파일 실패 후 개발자가 수정하여 통과하거나 PR을 취소했을 때,
+#        오픈된 상태로 방치되는 [CI-FAIL] 이슈를 자동 감지 및 close 처리함.
+#   2. 종료 사유 명시화:
+#      - pull_request.merged 플래그에 따라 해결(completed)과
+#        취소(not_planned) 사유를 분기 적용하여 레포지토리 히스토리를 정돈함.
+#   3. 마커 스캔 일관성:
+#      - ci_report.yml과 동일한 HTML 주석 마커를 사용하여 정확한 대상을 매칭함.
+# =====================================================================
+
+name: Close CI failure issues on PR close
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main, main-standalone]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  close_ci_issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close related failure issues
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          MERGED:    ${{ github.event.pull_request.merged }}
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const prNumber = String(process.env.PR_NUMBER);
+            const merged   = process.env.MERGED === 'true';
+            const marker   = `<!-- ci-fail-pr:${prNumber} -->`;
+
+            // 1. 열린 이슈 대상 마커 스캔
+            const targets = [];
+            for (let page = 1; page <= 5; page++) {
+              const res = await github.rest.issues.listForRepo({
+                owner, repo,
+                state: 'open',
+                per_page: 100,
+                page,
+                sort: 'created',
+                direction: 'desc',
+              });
+              for (const it of res.data) {
+                if (it.pull_request) continue;
+                if (it.body && it.body.includes(marker)) {
+                  targets.push(it);
+                }
+              }
+              if (res.data.length < 100) break;
+            }
+
+            if (targets.length === 0) {
+              core.info(`PR #${prNumber} 관련 오픈 이슈 없음.`);
+              return;
+            }
+
+            // 2. 머지 여부에 따른 종료 상태 및 코멘트 분기
+            const reason = merged
+              ? `PR #${prNumber} 병합 완료로 인한 자동 이슈 종료.`
+              : `PR #${prNumber} 닫힘(취소)으로 인한 자동 이슈 종료.`;
+
+            for (const issue of targets) {
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: issue.number,
+                body: reason,
+              });
+              await github.rest.issues.update({
+                owner, repo,
+                issue_number: issue.number,
+                state: 'closed',
+                state_reason: merged ? 'completed' : 'not_planned',
+              });
+              core.info(`이슈 정상 종료 완료: #${issue.number}`);
+            }
+

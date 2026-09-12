@@ -1,0 +1,208 @@
+# =====================================================================
+# .github/workflows/ci_2_report_007.yml
+# ---------------------------------------------------------------------
+# ci_build.yml 워크플로우가 실패 종료되었을 때 트리거되어 이슈를 처리함.
+#
+# [설계 및 보안 원칙]
+#   1. workflow_run 기반 권한 분리:
+#      - 포크 PR에서 발생한 빌드라 하더라도 기본 브랜치(main)에 정의된
+#        워크플로우 파일이 실행되므로 임의의 코드 조작이 원천 차단됨.
+#      - 러너에 안전하게 issues:write 권한을 부여하여 포크 PR 이슈 등록 지원.
+#   2. 비신뢰 아티팩트 보안 취급:
+#      - 다운로드된 failure.log 및 env_name.txt는 신뢰할 수 없는 데이터로
+#        간주하며 절대 eval, source 등으로 실행하지 않고 순수 문자열로만 파싱함.
+#   3. Search API 인덱싱 지연 회피:
+#      - GitHub Search API 대신 listForRepo와 본문 HTML 주석 식별자
+#        (<!-- ci-fail-pr:<pr_number> -->)를 결합하여 실시간으로 이슈 중복 방지.
+# =====================================================================
+
+name: PR Report Failure
+
+on:
+  workflow_run:
+    # ci_build.yml의 name 필드와 완벽히 일치해야 함
+    workflows: ["PR Build"]
+    types: [completed]
+
+permissions:
+  issues: write
+  contents: read
+  actions: read    # 타 실행 run의 아티팩트 다운로드 권한
+
+jobs:
+  report:
+    # 선행 워크플로우 결론이 'failure'인 경우에만 작업 수행
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      # ---------------------------------------------------------------
+      # 타 실행 run의 아티팩트 다운로드
+      # ---------------------------------------------------------------
+      - name: Download PR metadata
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-meta
+          path: pr-meta/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Download failure markers
+        uses: actions/download-artifact@v4
+        with:
+          pattern: 'failure-*'
+          path: failure-markers/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Debug collected files
+        shell: bash
+        run: |
+          echo "== pr-meta =="
+          find pr-meta -type f 2>/dev/null | sort || true
+          echo "== failure-markers =="
+          find failure-markers -type f 2>/dev/null | sort || true
+
+      # ---------------------------------------------------------------
+      # 이슈 생성 또는 코멘트 갱신 처리
+      # ---------------------------------------------------------------
+      - name: Create or update failure issue
+        uses: actions/github-script@v7
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}
+        with:
+          script: |
+            const fs   = require('fs');
+            const path = require('path');
+            const { owner, repo } = context.repo;
+
+            // 1. PR 메타데이터 복원 (아티팩트 1순위, 페이로드 fallback)
+            let meta = null;
+            const metaPath = 'pr-meta/pr_meta.json';
+            if (fs.existsSync(metaPath)) {
+              try {
+                meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+              } catch (e) {
+                core.warning(`Failed to parse pr_meta.json: ${e.message}`);
+              }
+            }
+
+            if (!meta || !meta.pr_number) {
+              const prs = context.payload.workflow_run.pull_requests || [];
+              if (prs.length > 0) {
+                meta = {
+                  pr_number: prs[0].number,
+                  pr_title:  prs[0].title || '(unknown)',
+                  pr_url:    prs[0].html_url || '',
+                  pr_author: (prs[0].user && prs[0].user.login) || 'unknown',
+                  head_sha:  context.payload.workflow_run.head_sha,
+                  base_ref:  context.payload.workflow_run.head_branch,
+                  is_fork:   false,
+                };
+              }
+            }
+
+            if (!meta || !meta.pr_number) {
+              core.setFailed('PR 컨텍스트 메타데이터를 복원할 수 없음.');
+              return;
+            }
+
+            const prNumber = String(meta.pr_number);
+            const title    = `[CI-FAIL] PR #${prNumber} ${meta.pr_title}`;
+            const marker   = `<!-- ci-fail-pr:${prNumber} -->`;
+
+            // 2. 실패 마커 수집 및 파싱
+            const root = 'failure-markers';
+            const failures = [];
+            if (fs.existsSync(root)) {
+              for (const dir of fs.readdirSync(root)) {
+                const dirPath = path.join(root, dir);
+                if (!fs.statSync(dirPath).isDirectory()) continue;
+
+                const envPath = path.join(dirPath, 'env_name.txt');
+                const logPath = path.join(dirPath, 'failure.log');
+
+                const env = fs.existsSync(envPath)
+                  ? fs.readFileSync(envPath, 'utf8').trim()
+                  : dir.replace(/^failure-/, '');
+
+                const raw = fs.existsSync(logPath)
+                  ? fs.readFileSync(logPath, 'utf8')
+                  : '(no log)';
+
+                // 이슈 본문 폭주 방지: 환경당 최대 6000자 제한
+                const log = raw.length > 6000
+                  ? '...(truncated)\n' + raw.slice(-6000)
+                  : raw;
+
+                failures.push({ env, log });
+              }
+            }
+
+            const envList = failures.length
+              ? failures.map(f => `- \`${f.env}\``).join('\n')
+              : '- (실패 마커 없음 — 초기 세팅 단계 실패 가능성)';
+
+            const failureBlocks = failures
+              .map(f => `### \`${f.env}\`\n\n\`\`\`\n${f.log}\n\`\`\``)
+              .join('\n\n');
+
+            const shortSha = (meta.head_sha || '').slice(0, 7);
+
+            // 3. 이슈 리포트 본문 구성
+            const body = [
+              `## 🔴 컴파일 실패`,
+              ``,
+              `| 항목 | 값 |`,
+              `|---|---|`,
+              `| PR | [#${prNumber}](${meta.pr_url}) |`,
+              `| 작성자 | @${meta.pr_author} |`,
+              `| 브랜치 | \`${meta.base_ref}\` ← \`${shortSha}\` |`,
+              `| Fork PR | ${meta.is_fork ? 'yes' : 'no'} |`,
+              `| 워크플로우 실행 | [로그 확인](${process.env.RUN_URL}) |`,
+              ``,
+              `### 실패 대상 환경`,
+              envList,
+              ``,
+              `### 로그 (최근 출력부)`,
+              failureBlocks || '_(로그 없음)_',
+              ``,
+              `---`,
+              `_본 이슈는 CI 자동화 파이프라인에 의해 관리됨._`,
+            ].join('\n');
+
+            // 4. 고유 마커 기반 기존 이슈 조회 (Search 인덱싱 지연 회피)
+            let existing = null;
+            for (let page = 1; page <= 5 && !existing; page++) {
+              const res = await github.rest.issues.listForRepo({
+                owner, repo,
+                state: 'open',
+                per_page: 100,
+                page,
+                sort: 'created',
+                direction: 'desc',
+              });
+              existing = res.data.find(it =>
+                !it.pull_request &&
+                it.body && it.body.includes(marker)
+              );
+              if (res.data.length < 100) break;
+            }
+
+            // 5. 신규 생성 또는 기존 이슈 내 코멘트 갱신 분기
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: existing.number,
+                body: `🔄 재실패 감지 (${new Date().toISOString()})\n\n${body}`,
+              });
+              core.info(`기존 이슈 갱신 완료: #${existing.number}`);
+            } else {
+              const created = await github.rest.issues.create({
+                owner, repo,
+                title,
+                body: `${marker}\n${body}`,
+              });
+              core.info(`신규 이슈 등록 완료: #${created.data.number}`);
+            }

@@ -32,7 +32,7 @@ on:
       - 'src/**/*.cpp'
       - 'src/**/*.h'
       - 'src/**/*.ino'
-      - '.github/workflows/*.yml'
+      # - '.github/workflows/*.yml'
     # 단순 문서 및 데이터 수정은 빌드 제외
     paths-ignore:
       - '**/*.md'

@@ -34,11 +34,10 @@ on:
       - 'src/**/*.h'
       - 'src/**/*.ino'
       # - '.github/workflows/*.yml'
-    # 단순 문서 및 데이터 수정은 빌드 제외
-    paths-ignore:
-      - '**/*.md'
-      - 'src/**/data_*/**'
-      - 'src/*_backup/**'
+      # 단순 문서 및 데이터 수정은 빌드 제외
+      - '!**/*.md'
+      - '!src/**/data_*/**'
+      - '!src/*_backup/**'
 
 # 최소 권한 원칙 (Fork PR 권한 탈취 방지)
 permissions:

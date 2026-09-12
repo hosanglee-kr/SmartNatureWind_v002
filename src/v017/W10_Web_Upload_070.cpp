@@ -78,7 +78,7 @@ String CL_W10_WebAPI::getUploadPath(const String& p_filename) {
         if (v_ext == "json") {
             v_folderPath = W10_Const::PATH_STATIC_JSON;     // "/json"
         } else if (v_ext == "html" || v_ext == "js" || v_ext == "css") {
-            v_folderPath = W10_Const::PATH_STATIC_HTML;     // "/html_v2" (또는 "/html_v3")
+            v_folderPath = W10_Const::PATH_STATIC_HTML;     // html_v3"
         } else {
             v_folderPath = "";  // 기타 확장자는 루트
         }

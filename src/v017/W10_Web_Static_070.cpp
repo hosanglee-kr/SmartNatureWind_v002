@@ -115,7 +115,7 @@ bool CL_W10_WebAPI::W10_loadPagesJson(JsonDocument& p_doc, uint16_t& p_page_coun
 }
 
 // 정적 파일 라우트 등록 (등록 시점에 URI/FILE/MIME 문자열을 복사해서 평생 유지)
-// - "/html_v2/..." 실제 경로는 serveStatic("/html_v2", ...)에 위임
+// - "/html_v3/..." 실제 경로는 serveStatic("/html_v3", ...)에 위임
 // - 여기서는 short URI("/P0xx_...") 등 별칭만 등록하는 것을 기본으로 함
 void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_file, const char* p_mime) {
     if (!p_uri || !p_file || !p_mime) return;
@@ -159,7 +159,7 @@ void CL_W10_WebAPI::W10_getMenuJson(AsyncWebServerRequest* r) {
 	for (const auto& v_entry : s_menu_state.pages_sorted) {
 		JsonObject v_item = v_array_out.add<JsonObject>();
 		v_item["label"]	  = v_entry.label;
-		v_item["path"]	  = v_entry.path;  // "/html_v2/..." 그대로
+		v_item["path"]	  = v_entry.path;  // "/html_v3/..." 그대로
 		v_item["uri"]	  = v_entry.uri;   // "/P040_dashboard_003.html" 같은 short html path
 		v_item["order"]	  = v_entry.order;
 		v_item["isMain"]  = v_entry.isMain;
@@ -234,7 +234,7 @@ void CL_W10_WebAPI::routeStaticAssets() {
 
 			// 라우팅 등록
 			const char* v_uri_key  = v_entry.uri.c_str();	// "/P010_main_021.html"
-			const char* v_path_key = v_entry.path.c_str();	// "/html_v2/P010_main_021.html"
+			const char* v_path_key = v_entry.path.c_str();	// "/html_v3/P010_main_021.html"
 
 			if (!v_uri_key || !v_path_key || strlen(v_path_key) == 0)
 				continue;
@@ -242,7 +242,7 @@ void CL_W10_WebAPI::routeStaticAssets() {
 			// ✅ charset 포함 (기존 동작 영향 최소)
 			const char* v_mime_html = "text/html; charset=utf-8";
 
-			// HTML 페이지는 short URI만 등록, 실제 경로("/html_v2/...")는 serveStatic에 위임
+			// HTML 페이지는 short URI만 등록, 실제 경로("/html_v3/...")는 serveStatic에 위임
 			if (strlen(v_uri_key) > 0) {
 				W10_registerStaticRoute(v_uri_key, v_path_key, v_mime_html);
 			}
@@ -259,7 +259,7 @@ void CL_W10_WebAPI::routeStaticAssets() {
 
 					const char* v_mime = W10_guessMime(v_a_path);
 
-					// short URI만 route에 등록, 실제 경로("/html_v2/...")는 serveStatic 처리
+					// short URI만 route에 등록, 실제 경로("/html_v3/...")는 serveStatic 처리
 					if (strcmp(v_a_uri, v_a_path) != 0) {
 						W10_registerStaticRoute(v_a_uri, v_a_path, v_mime);
 					}
@@ -320,7 +320,8 @@ void CL_W10_WebAPI::routeStaticAssets() {
 
 		s_server->on("/", HTTP_GET, [v_root_path](AsyncWebServerRequest* r) {
 			// 기본값
-			const char* v_default_html = "/html_v2/P010_main_021.html";
+			String v_default_html = String(W10_Const::PATH_STATIC_HTML) + "/P010_main_070.html";
+			// const char* v_default_html = "/html_v3/P010_main_021.html";
 
 			if (!v_root_path.isEmpty()) {
 				v_default_html = v_root_path.c_str();
@@ -335,7 +336,7 @@ void CL_W10_WebAPI::routeStaticAssets() {
 	}
 
 	// 4) 정적 폴더 매핑
-	// - "/html_v2/..." 경로는 모두 LittleFS의 "/html_v2" 폴더에서 정적 서빙
+	// - "/html_v3/..." 경로는 모두 LittleFS의 "/html_v3" 폴더에서 정적 서빙
 	s_server->serveStatic(W10_Const::PATH_STATIC_HTML, LittleFS, W10_Const::PATH_STATIC_HTML);
 
 	// 5) 메뉴 API

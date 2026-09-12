@@ -1,0 +1,196 @@
+# .github/workflows/ci_005.yml
+
+name: PR
+
+on:
+  pull_request:
+    branches: [main, main-standalone]
+    # ---------------------------------------------------------------
+    # paths vs paths-ignore
+    # ---------------------------------------------------------------
+    # paths의 광범위 패턴(lib/**, include/**)과 부정 패턴(!**.md)이 함께 있으면
+    # 부정 패턴이 사실상 무력화됩니다. 따라서 "빌드가 필요한 소스만" 화이트리스트로
+    # 지정하고, 빌드와 무관한 경로는 paths-ignore로 명시적으로 제외합니다.
+    paths:
+      - 'platformio.ini'
+      - 'lib/**'
+      - 'include/**'
+      - 'src/**/*.c'
+      - 'src/**/*.cpp'
+      - 'src/**/*.h'
+      - 'src/**/*.ino'
+      - '.github/workflows/*.yml'
+    paths-ignore:
+      - '**/*.md'            # 모든 마크다운 문서는 빌드 불필요
+      - 'src/**/data_*/**'   # 웹 리소스 폴더 (데이터만 바뀌면 빌드 불필요)
+      - 'src/*_backup/**'    # 백업 폴더 (문법 오류 수정 완료)
+
+jobs:
+  # =====================================================================
+  # 1단계: 빌드할 환경 목록(Environments) 동적 추출
+  # =====================================================================
+  # platformio.ini를 파싱해서 다음 우선순위로 빌드 대상을 결정합니다.
+  #   1) 특정 환경(esp32-s3-n16r8)이 정의되어 있으면 그것만 사용
+  #   2) 없으면 platformio.ini의 default_envs 사용
+  #   3) 그것도 없으면 정의된 모든 env 사용
+  # =====================================================================
+  get_environments:
+    runs-on: ubuntu-latest
+    outputs:
+      environments: ${{ steps.read_output.outputs.envs }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: List PlatformIO environments
+        id: list_envs
+        # ---------------------------------------------------------------
+        # heredoc을 사용하는 이유:
+        #   python -c "..." 방식은 셸에서 따옴표 이스케이프가 취약합니다.
+        #   heredoc(<<'PY')은 따옴표 이스케이프를 하지 않으므로 안전합니다.
+        # ---------------------------------------------------------------
+        run: |
+          python - <<'PY' > envs.json
+          import configparser
+          import json
+
+          # platformio.ini를 파싱 (보간 없이 raw 값 유지)
+          config = configparser.ConfigParser()
+          config.read('platformio.ini')
+
+          # [env:xxx] 형태의 모든 섹션 이름에서 'env:' 접두사 제거
+          all_envs = [
+              s.split(':', 1)[1]
+              for s in config.sections()
+              if s.startswith('env:')
+          ]
+
+          # --- 우선순위 1: 특정 환경이 정의되어 있으면 그것만 사용 ---
+          PREFERRED = ['esp32-s3-n16r8']
+          envs = [e for e in all_envs if e in PREFERRED]
+
+          # --- 우선순위 2: 특정 환경이 없으면 default_envs 사용 ---
+          if not envs and 'platformio' in config:
+              default = config['platformio'].get('default_envs', '')
+              if default:
+                  envs = [e.strip() for e in default.split(',') if e.strip()]
+
+          # --- 우선순위 3: 여전히 비어 있다면 전체 env 사용 ---
+          if not envs:
+              envs = all_envs
+
+          print(json.dumps(envs))
+          PY
+        shell: bash
+
+      - name: Read environments to output
+        id: read_output
+        # 추출 결과가 비어 있으면 워크플로우를 즉시 실패시켜
+        # 이후 build 잡이 "환경 0개"로 조용히 성공하는 것을 방지합니다.
+        run: |
+          ENVS=$(<envs.json)
+          if [ "$ENVS" == "[]" ] || [ -z "$ENVS" ]; then
+            echo "Error: No environments found to build!"
+            exit 1
+          fi
+          echo "envs=${ENVS}" >> $GITHUB_OUTPUT
+        shell: bash
+
+  # =====================================================================
+  # 2단계: 추출된 환경별 병렬 빌드
+  # =====================================================================
+  build:
+    runs-on: ubuntu-latest
+    needs: get_environments
+    strategy:
+      # fail-fast: 한 매트릭스가 실패해도 나머지는 계속 진행
+      fail-fast: false
+      matrix:
+        environments: ${{ fromJson(needs.get_environments.outputs.environments) }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          # cache: 'pip' 옵션은 사용하지 않고, 아래 통합 캐시 스텝에서 관리
+
+      # ---------------------------------------------------------------
+      # 통합 캐시
+      # ---------------------------------------------------------------
+      # - ~/.cache/pip         : pip 다운로드 캐시 (PlatformIO 설치 속도↑)
+      # - ~/.platformio        : PlatformIO 코어/툴체인 (가장 용량 큼)
+      # - .pio/libdeps         : 프로젝트 라이브러리 의존성만 선택 캐시
+      #
+      #   ⚠ .pio 전체를 캐시하면 firmware.bin 등 빌드 산출물까지 캐시되어
+      #     증분 빌드 불일치를 유발할 수 있으므로 libdeps만 캐시합니다.
+      #
+      # - hashFiles('**/platformio.ini') : 루트에 1개 + 하위 폴더에
+      #   여러 개가 존재할 수 있으므로 재귀 패턴을 유지합니다.
+      # ---------------------------------------------------------------
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio
+            .pio/libdeps
+          key: ${{ runner.os }}-pio-${{ matrix.environments }}-${{ hashFiles('**/platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-${{ matrix.environments }}-
+            ${{ runner.os }}-pio-
+
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade platformio
+
+      # ---------------------------------------------------------------
+      # 펌웨어 빌드
+      # ---------------------------------------------------------------
+      - name: Run PlatformIO build for ${{ matrix.environments }}
+        run: pio run -e ${{ matrix.environments }}
+
+      # ---------------------------------------------------------------
+      # 파일시스템 이미지 빌드 (선택적)
+      # ---------------------------------------------------------------
+      # data/ 폴더가 존재할 때만 buildfs를 실행합니다.
+      # 이전 버전에서는 continue-on-error: true 로 실패를 무시했지만,
+      # 그 경우 "littlefs.bin 누락" 상태로 조용히 배포될 위험이 있어
+      # 폴더 존재 여부로 조건을 명시하고 실패는 실패로 처리합니다.
+      # ---------------------------------------------------------------
+      - name: Build filesystem image
+        run: |
+          if [ -d "data" ] || [ -d "src/data" ]; then
+            pio run -e ${{ matrix.environments }} --target buildfs
+          else
+            echo "No data folder — skipping buildfs"
+          fi
+
+      # ---------------------------------------------------------------
+      # 아티팩트 업로드
+      # ---------------------------------------------------------------
+      # 아티팩트 이름에 슬래시 등 특수문자가 있으면 실패하므로
+      # replace()로 안전한 문자로 치환합니다.
+      # ---------------------------------------------------------------
+      - name: Upload Unified Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ replace(matrix.environments, '/', '-') }}-build-bundle
+          path: |
+            .pio/build/${{ matrix.environments }}/firmware.bin
+            .pio/build/${{ matrix.environments }}/partitions.bin
+            .pio/build/${{ matrix.environments }}/bootloader.bin
+            .pio/build/${{ matrix.environments }}/littlefs.bin
+          if-no-files-found: warn
+  
+  
+  

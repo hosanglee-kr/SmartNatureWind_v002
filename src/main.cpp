@@ -1,6 +1,6 @@
 // ======================================================
 // 파일명 : main.cpp
-// 프로젝트 : Smart Nature Wind (v011)
+// 프로젝트 : Smart Nature Wind 
 // ------------------------------------------------------
 // 기능 요약:
 //  - Serial 콘솔 초기화 및 Logger 레벨 설정
@@ -8,26 +8,43 @@
 //  - Web API 및 시뮬레이션 Tick 루프 수행
 // ------------------------------------------------------
 
+
 #include <Arduino.h>
 #include <LittleFS.h>
 
-#include "v015/A00_Main_041.h"
+#include "v017/A00_Main_070.h"
 
 void setup() {
+
 	Serial.begin(115200);
 	delay(1500);
 
+	// 2. ESP32-S3 Native USB가 PC와 동기화될 때까지 대기 (필수)
+    // 이 코드가 없으면 초기 출력 1~2초 분량은 화면에 나오지 않습니다.
+    while (!Serial) {
+        delay(100);
+    }
 
 	Serial.println();
 	Serial.println("=====================================");
 	Serial.println(" Smart Nature Wind - Boot Sequence ");
 	Serial.println("=====================================");
 
+	delay(1000);
 	// ------------------------------------------------------
 	// 1️⃣ 로그 레벨 설정 (DEBUG / INFO / WARN / ERROR)
 	// ------------------------------------------------------
-	CL_D10_Logger::setLevel(EN_L10_LOG_INFO);
+	// 1. Logger 초기화
+    CL_D10_Logger::begin(Serial);
+
+	CL_D10_Logger::setLevel(EN_L10_LOG_DEBUG);
+	//CL_D10_Logger::setLevel(EN_L10_LOG_INFO);
+
+	delay(1000);
+
 	CL_D10_Logger::log(EN_L10_LOG_INFO, "[BOOT] Logger ready");
+
+	Serial.println("[BOOT] A00_init Start");
 
 	// ------------------------------------------------------
 	// 2️⃣ 시스템 초기화 (FS / Wi-Fi / PWM / WebAPI / Sim)

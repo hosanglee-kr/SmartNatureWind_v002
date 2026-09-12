@@ -1,0 +1,55 @@
+/* P030_sch_t1_070.css – 공통 CSS에 의존 */
+
+/* 스케줄 전용 컨테이너 */
+.sch-container { max-width: 64rem; margin: 0 auto; }
+.sch-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 1rem; border-bottom: 1px solid #e5e7eb; }
+.sch-title { font-size: 1.5rem; font-weight: 800; color: #1f2937; }
+
+/* 세그먼트 카드 */
+.segment-card {
+  border-left: 4px solid #06b6d4;
+  padding: 1rem;
+  background: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+/* 스케줄 목록 아이템 */
+.schedule-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem; background: #fff; border-bottom: 1px solid #e5e7eb;
+  cursor: pointer; transition: background 0.15s;
+}
+.schedule-item:last-child { border-bottom: none; }
+.schedule-item:hover { background: #f9fafb; }
+.schedule-item-title { font-weight: 700; color: #1f2937; }
+.schedule-item-detail { font-size: 0.875rem; color: #4b5563; margin-top: 0.25rem; }
+
+/* 요일 토글 */
+.day-toggle { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.day-toggle label { cursor: pointer; }
+.day-toggle input[type="checkbox"] { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.day-toggle span {
+  display: block; border: 1px solid #d1d5db; background: #f9fafb;
+  padding: 6px 12px; border-radius: 8px; text-align: center; transition: all 0.2s;
+}
+.day-toggle input:checked + span {
+  background: #3b82f6; border-color: #3b82f6; color: #fff; font-weight: 600;
+}
+
+/* 기타 유틸리티 (공통에 없는 경우) */
+.flex { display: flex; }
+.justify-between { justify-content: space-between; }
+.items-center { align-items: center; }
+.space-x-2 > * + * { margin-left: 0.5rem; }
+.mt-4 { margin-top: 1rem; }
+.mb-4 { margin-bottom: 1rem; }
+.p-4 { padding: 1rem; }
+.text-sm { font-size: 0.875rem; }
+.text-gray-600 { color: #4b5563; }
+.text-green-500 { color: #10b981; }
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.hidden { display: none; }

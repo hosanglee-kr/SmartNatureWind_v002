@@ -1,0 +1,81 @@
+#pragma once
+/*
+ * ------------------------------------------------------
+ * 소스명 : A20_Const_050.h
+ * 모듈약어 : A20
+ * 모듈명 : Smart Nature Wind 공용 상수/타입/구조체 선언
+ * ------------------------------------------------------
+ * 기능 요약
+ *  - 파일 경로/버퍼/개수 제한 상수
+ *  - 프리셋/스타일 코드 상수 및 인덱싱 유틸
+ *  - Schedule / UserProfile / WindProfile JSON 구조체
+ *  - 공용 헬퍼 (clamp, safe strlcpy 등)
+ *  - 전역 구성 루트 객체 선언(g_A20_config_root)
+ * ------------------------------------------------------
+ * [구현 규칙]
+ *  - 항상 소스 시작 주석 부분 체계 유지 및 내용 업데이트
+ *  - 소스 시작 주석 부분 구현규칙, 코드네이밍규칙 내용 그대로 유지, 수정금지
+ *  - ArduinoJson v7.x.x 사용 (v6 이하 사용 금지)
+ *  - JsonDocument 단일 타입만 사용
+ *  - createNestedArray/Object/containsKey 사용 금지
+ *  - memset + strlcpy 기반 안전 초기화
+ *  - 주석/필드명은 JSON 구조와 동일하게 유지
+ *  - 변수명은 가능한 해석 가능하게
+ * ------------------------------------------------------
+ * [코드 네이밍 규칙]
+ *   - namespace 명        : 모듈약어_ 접두사
+ *   - namespace 내 상수    : 모둘약어 접두시 미사용
+ *   - 전역 상수,매크로      : G_모듈약어_ 접두사
+ *   - 전역 변수             : g_모듈약어_ 접두사
+ *   - 전역 함수             : 모듈약어_ 접두사
+ *   - type                  : T_모듈약어_ 접두사
+ *   - typedef               : _t  접미사
+ *   - enum 상수             : EN_모듈약어_ 접두사
+ *   - 구조체                : ST_모듈약어_ 접두사
+ *   - 클래스명              : CL_모듈약어_ 접두사 , 버전 제거
+ *   - 클래스 private 멤버   : _ 접두사
+ *   - 클래스 멤버(함수/변수) : 모듈약어 접두사 미사용
+ *   - 클래스 정적 멤버      : s_ 접두사
+ *   - 함수 로컬 변수        : v_ 접두사
+ *   - 함수 인자             : p_ 접두사
+ * ------------------------------------------------------
+ */
+
+#include <Arduino.h>
+#include <ArduinoJson.h>
+#include <string.h>
+#include <strings.h>
+
+#include "A20_Const_Const_050.h"
+#include "A20_Const_WS_050.h"
+#include "A20_Const_Wifi_050.h"
+#include "A20_Const_Motion_050.h"
+#include "A20_Const_Sch_050.h"
+#include "A20_Const_System_050.h"
+
+
+
+
+/* ======================================================
+ * Config Root (전역 보관)
+ * ====================================================== */
+typedef struct {
+    ST_A20_SystemConfig_t*     system       = nullptr;
+    ST_A20_WifiConfig_t*       wifi         = nullptr;
+    ST_A20_MotionConfig_t*     motion       = nullptr;
+    ST_A20_NvsSpecConfig_t*    nvsSpec      = nullptr;
+    ST_A20_WindDict_t*         windDict     = nullptr;
+    ST_A20_SchedulesRoot_t*    schedules    = nullptr;
+    ST_A20_UserProfilesRoot_t* userProfiles = nullptr;
+    ST_A20_WebPageConfig_t*    webPage      = nullptr;
+} ST_A20_ConfigRoot_t;
+
+extern ST_A20_ConfigRoot_t g_A20_config_root;
+
+class CL_M10_MotionLogic; // 전방 선언
+extern CL_M10_MotionLogic* g_M10_motionLogic;
+
+
+#include "A40_Com_Func_052.h"
+#include "A20_Com_Func_050.h"
+#include "A20_Com_FuncRst_050.h"

@@ -1,0 +1,14 @@
+{
+  "motion": {
+    "jsonFile": "cfg_motion_070.json",
+    "pir": {
+      "enabled": true,
+      "holdSec": 120
+    },
+    "timing": {
+      "simIntervalMs": 500,
+      "gustIntervalMs": 2000,
+      "thermalIntervalMs": 3000
+    }
+  }
+}

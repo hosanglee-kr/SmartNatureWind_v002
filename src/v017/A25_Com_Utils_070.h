@@ -620,6 +620,12 @@ inline bool Load_File2JsonDoc_V21(const char* p_path, JsonDocument& p_doc, bool 
 }
 
 // [IO] JsonDocument -> 파일 저장(.tmp atomic + .bak 옵션)
+//
+// [A-4] .bak 손실 창 제거
+//  - 이전: remove(bak) → rename(p_path,bak) 사이 정전 시 bak 소실
+//  - 변경: bak을 bak.old로 밀어 이중화 유지 → 각 단계 사이 정전에도
+//          원본(p_path 또는 bak 또는 bak.old) 최소 1개 보존
+//  - 성공 시 bak.old 정리
 inline bool Save_JsonDoc2File_V21(const char*         p_path,
                                   const JsonDocument& p_doc,
                                   bool                p_useBackup,
@@ -632,6 +638,7 @@ inline bool Save_JsonDoc2File_V21(const char*         p_path,
     if (!_buildPathWithSuffix(bak, sizeof(bak), p_path, ".bak", v_caller)) return false;
     if (!_buildPathWithSuffix(tmp, sizeof(tmp), p_path, ".tmp", v_caller)) return false;
 
+    // 1) tmp 준비
     if (LittleFS.exists(tmp)) LittleFS.remove(tmp);
 
     File f = LittleFS.open(tmp, "w");
@@ -649,24 +656,80 @@ inline bool Save_JsonDoc2File_V21(const char*         p_path,
         return false;
     }
 
-    if (LittleFS.exists(p_path) && p_useBackup) {
-        LittleFS.remove(bak);
-        LittleFS.rename(p_path, bak);
-    } else if (LittleFS.exists(p_path)) {
-        LittleFS.remove(p_path);
+    // 2) bak.old 경로 준비 (백업 이중화)
+    char bakOld[A20_Const::LEN_PATH + 12];
+    bool v_haveBakOld = _buildPathWithSuffix(bakOld, sizeof(bakOld), p_path, ".bak.old", v_caller);
+
+    // 3) 정식 파일 → bak (필요 시)
+    if (LittleFS.exists(p_path)) {
+        if (p_useBackup) {
+            // 3-a) 기존 bak → bak.old (이중화 유지)
+            //      실패해도 bak은 유지되므로 진행
+            if (v_haveBakOld && LittleFS.exists(bak)) {
+                if (LittleFS.exists(bakOld)) {
+                    LittleFS.remove(bakOld);
+                }
+                if (!LittleFS.rename(bak, bakOld)) {
+                    CL_D10_Logger::log(EN_L10_LOG_WARN,
+                                       "[IO][%s] bak→bak.old rename failed: %s",
+                                       v_caller, bak);
+                    // bakOld 무효화 (cleanup 대상 제외)
+                    v_haveBakOld = false;
+                }
+            }
+
+            // 3-b) p_path → bak
+            //      이전 bak은 bak.old로 이동했거나(정상), 덮어씀(예외)
+            if (!LittleFS.rename(p_path, bak)) {
+                CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                                   "[IO][%s] rename p_path→bak failed: %s",
+                                   v_caller, p_path);
+                // 실패 시 tmp/bakOld 정리 후 반환
+                LittleFS.remove(tmp);
+                if (v_haveBakOld && LittleFS.exists(bakOld)) LittleFS.remove(bakOld);
+                return false;
+            }
+        } else {
+            // 백업 미사용: 기존 파일 삭제
+            if (!LittleFS.remove(p_path)) {
+                CL_D10_Logger::log(EN_L10_LOG_WARN,
+                                   "[IO][%s] remove p_path failed: %s (continue)",
+                                   v_caller, p_path);
+                // rename이 어차피 실패할 가능성 → 계속 진행
+            }
+        }
     }
 
+    // 4) tmp → 정식 파일
     if (!LittleFS.rename(tmp, p_path)) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] rename failed: %s", v_caller, p_path);
+        CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                           "[IO][%s] rename tmp→p_path failed: %s",
+                           v_caller, p_path);
+
+        // 4-a) 복구: bak이 있으면 원위치
         if (p_useBackup && LittleFS.exists(bak)) {
-            LittleFS.rename(bak, p_path);
+            if (LittleFS.rename(bak, p_path)) {
+                CL_D10_Logger::log(EN_L10_LOG_WARN,
+                                   "[IO][%s] restored from bak: %s",
+                                   v_caller, p_path);
+            } else {
+                CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                                   "[IO][%s] recovery rename failed: %s → %s",
+                                   v_caller, bak, p_path);
+            }
         }
+        LittleFS.remove(tmp);
+        if (v_haveBakOld && LittleFS.exists(bakOld)) LittleFS.remove(bakOld);
         return false;
+    }
+
+    // 5) 성공: bak.old 정리
+    if (v_haveBakOld && LittleFS.exists(bakOld)) {
+        LittleFS.remove(bakOld);
     }
 
     return true;
 }
-
 } // namespace A40_IO
 
 

@@ -1083,8 +1083,13 @@ void CL_W10_WebAPI::routeConfigDirtySave() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
-        CL_C10_ConfigManager::saveDirtyConfigs();
-        p_request->send(200, "application/json", "{\"result\":\"saved\",\"status\":\"clean\"}");
+    
+        bool v_ok = CL_C10_ConfigManager::saveDirtyConfigs();
+    
+        JsonDocument v_res;
+        v_res["result"] = v_ok ? "saved" : "partial_failure";
+        v_res["status"] = v_ok ? "clean" : "dirty";
+        sendJson(p_request, v_res, v_ok ? 200 : 500);
     });
 
     s_server->on(W10_Const::HTTP_API_CONFIG_DIRTY, HTTP_GET, [](AsyncWebServerRequest* p_request) {

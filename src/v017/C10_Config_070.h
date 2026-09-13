@@ -120,7 +120,7 @@ class CL_C10_ConfigManager {
     static bool saveNvsSpecConfig(const ST_A20_NvsSpecConfig_t& p_cfg);
     static bool saveWebPageConfig(const ST_A20_WebPageConfig_t& p_cfg);
 
-    static void saveDirtyConfigs();
+    static bool saveDirtyConfigs();
     static void getDirtyStatus(JsonDocument& p_doc);
     static bool saveAll(const ST_A20_ConfigRoot_t& p_root);
 

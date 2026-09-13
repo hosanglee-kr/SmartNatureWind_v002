@@ -15,7 +15,6 @@
 #include "v017/A00_Main_070.h"
 
 
-
 void setup() {
 
 	Serial.begin(115200);

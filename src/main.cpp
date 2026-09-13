@@ -14,7 +14,7 @@
 
 #include "v017/A00_Main_070.h"
 
-ㅁㅁ
+
 
 void setup() {
 

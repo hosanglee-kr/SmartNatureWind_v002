@@ -53,7 +53,7 @@
 #include <freertos/semphr.h>
 
 // 종속성 모듈 헤더
-#include "A20_Const_070.h"
+// #include "A20_Const_070.h"
 #include "C10_Config_070.h"
 #include "D10_Logger_070.h"
 #include "M10_MotionLogic_070.h"

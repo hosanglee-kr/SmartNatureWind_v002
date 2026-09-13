@@ -1,0 +1,193 @@
+# =====================================================================
+# .github/workflows/ci_3_close_issues_008.yml
+# ---------------------------------------------------------------------
+# PR 컴파일 성공 또는 PR 종료 시 기존 실패 이슈를 자동 정리하는 워크플로우.
+#
+# [트리거 동작]
+#   1. workflow_run (PR Build 완료) + conclusion == 'success':
+#      → 이전에 실패로 등록된 이슈를 "컴파일 오류 해결 완료"로 자동 종료(completed).
+#   2. pull_request (closed):
+#      → PR 병합/취소 시 잔여 이슈 정리 (merged 여부에 따라 completed / not_planned 분기).
+#
+# [설계 및 안전 원칙]
+#   - concurrency 설정으로 짧은 시간 내 성공 이벤트 연발 시 동시 실행(TOCTOU) 방지.
+#   - actions/github-script의 context 객체에 없는 serverUrl을 env(SERVER_URL)로 명시 주입.
+#   - 이슈별 try/catch 예외 격리를 통해 복수 이슈 중 하나가 실패해도 전체 루프를 완주함.
+# =====================================================================
+
+name: Close CI failure issues
+
+on:
+  workflow_run:
+    # ci_1_build_008.yml의 name과 일치 필수
+    workflows: ["PR Build"]
+    types: [completed]
+  pull_request:
+    types: [closed]
+    branches: [main, main-standalone]
+
+permissions:
+  issues: write
+  contents: read
+  actions: read
+
+jobs:
+  close_ci_issues:
+    # 진입 조건: folded block scalar(>-)를 사용하여 공백 치환 후 파싱 안전성 확보
+    if: >-
+      github.event_name == 'pull_request'
+      || (github.event_name == 'workflow_run'
+          && github.event.workflow_run.conclusion == 'success')
+    # 동일 그룹 실행을 직렬화하여 동시 실행으로 인한 중복 코멘트 경합 방지
+    concurrency:
+      group: ci-3-close-issues
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    steps:
+      # ---------------------------------------------------------------
+      # PR 메타데이터 다운로드 (workflow_run 트리거에서만 실행)
+      # ---------------------------------------------------------------
+      - name: Download PR metadata
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-meta
+          path: pr-meta/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      # ---------------------------------------------------------------
+      # 이슈 탐색 및 안전한 Close 처리
+      # ---------------------------------------------------------------
+      - name: Close related failure issues
+        uses: actions/github-script@v7
+        env:
+          # github-script 컨텍스트에는 serverUrl이 없으므로 env로 주입
+          SERVER_URL: ${{ github.server_url }}
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const eventName = context.eventName;
+            const serverUrl = process.env.SERVER_URL || 'https://github.com';
+            const repoSlug  = `${owner}/${repo}`;
+
+            let prNumber     = null;
+            let stateReason  = 'completed';
+            let closeComment = '';
+
+            // 1. 이벤트별 컨텍스트 분기 파싱
+            if (eventName === 'pull_request') {
+              const pr     = context.payload.pull_request;
+              const merged = pr.merged === true;
+
+              prNumber    = String(pr.number);
+              stateReason = merged ? 'completed' : 'not_planned';
+
+              closeComment = merged
+                ? [
+                    `✅ **PR #${prNumber} 병합 완료**`,
+                    ``,
+                    `PR이 성공적으로 병합되어 관련 실패 이슈를 자동 종료함.`,
+                    `- PR 링크: ${pr.html_url}`,
+                  ].join('\n')
+                : [
+                    `⚠️ **PR #${prNumber} 닫힘 (미병합)**`,
+                    ``,
+                    `PR이 병합되지 않고 닫혀 관련 실패 이슈를 자동 종료함.`,
+                    `- PR 링크: ${pr.html_url}`,
+                  ].join('\n');
+
+            } else if (eventName === 'workflow_run') {
+              // pr-meta.json 우선 파싱
+              const metaPath = 'pr-meta/pr_meta.json';
+              if (fs.existsSync(metaPath)) {
+                try {
+                  const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+                  if (meta.pr_number) prNumber = String(meta.pr_number);
+                } catch (e) {
+                  core.warning(`pr_meta.json 파싱 실패: ${e.message}`);
+                }
+              }
+
+              // Fallback: workflow_run 페이로드
+              if (!prNumber) {
+                const prs = context.payload.workflow_run.pull_requests || [];
+                if (prs.length > 0) prNumber = String(prs[0].number);
+              }
+
+              stateReason = 'completed';
+
+              const triggerRunId = context.payload.workflow_run.id;
+              const runUrl = triggerRunId
+                ? `${serverUrl}/${repoSlug}/actions/runs/${triggerRunId}`
+                : `${serverUrl}/${repoSlug}/actions`;
+
+              closeComment = [
+                `🎉 **컴파일 오류 해결 완료**`,
+                ``,
+                `PR #${prNumber}의 최신 커밋에서 모든 빌드 대상 환경 컴파일이 통과함.`,
+                `열려 있던 빌드 실패 이슈를 자동 종료함.`,
+                ``,
+                `- 실행 결과: [Actions Run 확인](${runUrl})`,
+              ].join('\n');
+            }
+
+            if (!prNumber) {
+              core.info('PR 번호를 식별할 수 없어 후속 작업을 건너뜀.');
+              return;
+            }
+
+            const marker = `<!-- ci-fail-pr:${prNumber} -->`;
+            core.info(`PR #${prNumber} 관련 열린 실패 이슈 탐색 시작...`);
+
+            // 2. 마커 기준 열린 이슈 탐색 (listForRepo 기반 즉시 조회)
+            const targets = [];
+            for (let page = 1; page <= 5; page++) {
+              const res = await github.rest.issues.listForRepo({
+                owner, repo,
+                state: 'open',
+                per_page: 100,
+                page,
+                sort: 'created',
+                direction: 'desc',
+              });
+
+              for (const it of res.data) {
+                if (it.pull_request) continue;
+                if (it.body && it.body.includes(marker)) {
+                  targets.push(it);
+                }
+              }
+
+              if (res.data.length < 100) break;
+            }
+
+            if (targets.length === 0) {
+              core.info(`PR #${prNumber} 관련 열린 실패 이슈 없음.`);
+              return;
+            }
+
+            // 3. 코멘트 등록 및 개별 close 수행 (독립적 예외 격리)
+            for (const issue of targets) {
+              try {
+                await github.rest.issues.createComment({
+                  owner, repo,
+                  issue_number: issue.number,
+                  body: closeComment,
+                });
+
+                await github.rest.issues.update({
+                  owner, repo,
+                  issue_number: issue.number,
+                  state: 'closed',
+                  state_reason: stateReason,
+                });
+
+                core.info(`이슈 #${issue.number} 자동 종료 완료 (state_reason: ${stateReason})`);
+              } catch (e) {
+                core.error(`이슈 #${issue.number} 자동 종료 처리 실패: ${e.message}`);
+              }
+            }
+

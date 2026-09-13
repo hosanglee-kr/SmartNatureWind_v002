@@ -22,7 +22,7 @@ name: PR Report Failure
 
 on:
   workflow_run:
-    # ci_1_build_007.yml의 최상단 name과 일치 필수
+    # ci_1_build_008.yml의 최상단 name과 일치 필수
     workflows: ["PR Build"]
     types: [completed]
 
@@ -166,7 +166,6 @@ jobs:
                 });
               }
             }
-            collectLogs = collectMarkers;
             collectMarkers('failure-markers');
 
             // ==========================================================

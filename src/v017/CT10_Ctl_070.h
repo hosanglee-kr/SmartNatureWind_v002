@@ -223,11 +223,11 @@ class CL_CT10_ControlManager {
 
     static bool reloadAll();
 
-    // 변경: 파라미터 제거 + JsonDocument& 반환(채널별 캐시)
-    static JsonDocument& toStateJson();
-    static JsonDocument& toMetricsJson();
-    static JsonDocument& toSummaryJson();
-    static JsonDocument& toChartJson(bool p_diffOnly = false);
+    // - 공유 static doc 제거: W10(async_tcp) ↔ CT10_WS_tick(loopTask) 데이터 레이스
+    // - 호출자는 caller-owned JsonDocument 사용:
+    //     JsonDocument v_doc;  ct.exportStateJson_v02(v_doc);  serializeJson(v_doc, ...);
+    // - WS tick 전용 static doc은 CT10_Ctl_IOWS_070.cpp 파일 내부로 격리
+    // (toXxxJson 4개 static 선언 삭제)
 
     // header에 static 추가
     static inline void ackEvent() { instance().ackEventState(); }

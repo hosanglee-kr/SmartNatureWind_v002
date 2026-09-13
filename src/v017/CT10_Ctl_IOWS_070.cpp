@@ -48,10 +48,12 @@
 #include "CT10_Ctl_070.h"    
 #include <string.h>    
 
+
 // ======================================================
-// [CT10][PATCH] 채널별 static JsonDocument SSOT 캐시
-// - toXXXJson()에서 clear() 후 재사용
-// - WS Scheduler는 toXXXJson()이 반환한 doc을 그대로 브로드캐스트
+// [CT10][B-1] WS tick 전용 파일-스태틱 doc
+//  - 이전에는 public static doc 4개를 W10(async_tcp)과 공유 → race
+//  - 이후에는 "loopTask에서만 호출되는 CT10_WS_trySendOne_v03" 내부에서만 사용
+//  - HTTP/WS-connect (async_tcp) 경로는 caller-owned doc 사용
 // ======================================================
 static JsonDocument s_doc_state;
 static JsonDocument s_doc_metrics;
@@ -66,6 +68,8 @@ CL_CT10_ControlManager& CL_CT10_ControlManager::instance() {
     return v_inst;    
 }    
 
+// (toXxxJson() 4개 static 정의 제거)
+/*
 // ======================================================
 // [CT10][PATCH] toXXXJson 파라미터 제거 + JsonDocument& 반환
 // ======================================================
@@ -92,6 +96,7 @@ JsonDocument& CL_CT10_ControlManager::toChartJson(bool p_diffOnly) {
     instance().exportChartJson(s_doc_chart, p_diffOnly);
     return s_doc_chart;
 }
+*/
 
 // --------------------------------------------------    
 // 외부 진입: 시뮬레이터 등에서 Dirty 마킹    
@@ -278,70 +283,67 @@ static uint32_t CT10_WS_measurePayloadBytes(JsonDocument& p_doc) {
 // - [PATCH] toXXXJson()가 내부 캐시 doc을 반환하므로, 여기서 doc 생성/clear 불필요
 // - if/else 대신 switch 유지(차트만 payload 측정 등 예외처리 명확)
 // --------------------------------------------------    
+// --------------------------------------------------
+// WS tick 전송 (loopTask 전용)
+// --------------------------------------------------
 static bool CT10_WS_trySendOne_v03(uint8_t p_ch, uint32_t p_nowMs) {
     if (p_ch >= (uint8_t)EN_A20_WS_CH_COUNT) return false;
     if (!s_pending[p_ch]) return false;
 
-    // [B-2] interval 승격: uint16 → uint32
-    //  - chart 스로틀 시 v_itv * v_mul 이 uint16을 초과 가능
-    //    (예: 40000ms × 2 = 80000 → uint16 wrap → 14464)
-    //  - 로컬 v_itv만 승격, s_itvMs[] 배열은 config 범위 내라 uint16 유지
+    // [B-2] interval 승격 (앞 배치 반영)
     uint32_t v_itv = (uint32_t)s_itvMs[p_ch];
-
-    // chart는 payload 크기에 따라 추가 스로틀
     if (p_ch == (uint8_t)EN_A20_WS_CH_CHART && s_chartLastPayload >= s_chartLargeBytes) {
         uint32_t v_mul    = (s_chartThrottleMul > 0) ? (uint32_t)s_chartThrottleMul : 2UL;
         uint32_t v_mulItv = v_itv * v_mul;
-
-        // 상한 캡: 600,000ms (10분)
-        //  - config 최대(60000 × 10 = 600000)와 동일
-        //  - 향후 config 범위 확장 시에도 안전 유지
         if (v_mulItv > 600000UL) v_mulItv = 600000UL;
-
         v_itv = v_mulItv;
     }
+    if ((uint32_t)(p_nowMs - s_lastSendMs[p_ch]) < v_itv) return false;
 
+    bool v_sent = false;
 
-    if ((uint32_t)(p_nowMs - s_lastSendMs[p_ch]) < (uint32_t)v_itv) return false;    
-    
-    bool v_sent = false;    
-    
-    switch ((EN_A20_WS_CH_INDEX_t)p_ch) {    
-        case EN_A20_WS_CH_STATE: {    
-            JsonDocument& v_doc = CL_CT10_ControlManager::toStateJson();    
-            if (s_bcast_state) s_bcast_state(v_doc, true);    
-            v_sent = true;    
-        } break;    
-    
-        case EN_A20_WS_CH_METRICS: {    
-            JsonDocument& v_doc = CL_CT10_ControlManager::toMetricsJson();    
-            if (s_bcast_metrics) s_bcast_metrics(v_doc, true);    
-            v_sent = true;    
-        } break;    
-    
-        case EN_A20_WS_CH_CHART: {    
-            JsonDocument& v_doc = CL_CT10_ControlManager::toChartJson(true);    
-            s_chartLastPayload = CT10_WS_measurePayloadBytes(v_doc);    
-            if (s_bcast_chart) s_bcast_chart(v_doc, true);    
-            v_sent = true;    
-        } break;    
-    
-        case EN_A20_WS_CH_SUMMARY: {    
-            JsonDocument& v_doc = CL_CT10_ControlManager::toSummaryJson();    
-            if (s_bcast_summary) s_bcast_summary(v_doc, true);    
-            v_sent = true;    
-        } break;    
-    
-        default:    
-            return false;    
-    }    
-    
-    if (!v_sent) return false;    
-    
-    s_lastSendMs[p_ch] = p_nowMs;    
-    s_pending[p_ch]    = false;    
-    return true;    
-}    
+    switch ((EN_A20_WS_CH_INDEX_t)p_ch) {
+        case EN_A20_WS_CH_STATE: {
+            // [B-1] 파일-스태틱 재사용: 이 함수는 loopTask에서만 호출됨
+            s_doc_state.clear();
+            CL_CT10_ControlManager::instance().exportStateJson_v02(s_doc_state);
+            if (s_bcast_state) s_bcast_state(s_doc_state, true);
+            v_sent = true;
+        } break;
+
+        case EN_A20_WS_CH_METRICS: {
+            s_doc_metrics.clear();
+            CL_CT10_ControlManager::instance().exportMetricsJson(s_doc_metrics);
+            if (s_bcast_metrics) s_bcast_metrics(s_doc_metrics, true);
+            v_sent = true;
+        } break;
+
+        case EN_A20_WS_CH_CHART: {
+            s_doc_chart.clear();
+            CL_CT10_ControlManager::instance().exportChartJson(s_doc_chart, true);
+            s_chartLastPayload = CT10_WS_measurePayloadBytes(s_doc_chart);
+            if (s_bcast_chart) s_bcast_chart(s_doc_chart, true);
+            v_sent = true;
+        } break;
+
+        case EN_A20_WS_CH_SUMMARY: {
+            s_doc_summary.clear();
+            CL_CT10_ControlManager::instance().exportSummaryJson(s_doc_summary);
+            if (s_bcast_summary) s_bcast_summary(s_doc_summary, true);
+            v_sent = true;
+        } break;
+
+        default:
+            return false;
+    }
+
+    if (!v_sent) return false;
+
+    s_lastSendMs[p_ch] = p_nowMs;
+    s_pending[p_ch]    = false;
+    return true;
+}
+
     
 // --------------------------------------------------    
 // tick    

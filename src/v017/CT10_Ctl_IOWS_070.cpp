@@ -278,18 +278,30 @@ static uint32_t CT10_WS_measurePayloadBytes(JsonDocument& p_doc) {
 // - [PATCH] toXXXJson()가 내부 캐시 doc을 반환하므로, 여기서 doc 생성/clear 불필요
 // - if/else 대신 switch 유지(차트만 payload 측정 등 예외처리 명확)
 // --------------------------------------------------    
-static bool CT10_WS_trySendOne_v03(uint8_t p_ch, uint32_t p_nowMs) {    
-    if (p_ch >= (uint8_t)EN_A20_WS_CH_COUNT) return false;    
-    if (!s_pending[p_ch]) return false;    
-    
-    uint16_t v_itv = s_itvMs[p_ch];    
-    
-    // chart는 payload 크기에 따라 추가 스로틀    
-    if (p_ch == (uint8_t)EN_A20_WS_CH_CHART && s_chartLastPayload >= s_chartLargeBytes) {    
-        uint32_t v_mul = (s_chartThrottleMul > 0) ? (uint32_t)s_chartThrottleMul : 2UL;    
-        v_itv = (uint16_t)((uint32_t)v_itv * v_mul);    
-    }    
-    
+static bool CT10_WS_trySendOne_v03(uint8_t p_ch, uint32_t p_nowMs) {
+    if (p_ch >= (uint8_t)EN_A20_WS_CH_COUNT) return false;
+    if (!s_pending[p_ch]) return false;
+
+    // [B-2] interval 승격: uint16 → uint32
+    //  - chart 스로틀 시 v_itv * v_mul 이 uint16을 초과 가능
+    //    (예: 40000ms × 2 = 80000 → uint16 wrap → 14464)
+    //  - 로컬 v_itv만 승격, s_itvMs[] 배열은 config 범위 내라 uint16 유지
+    uint32_t v_itv = (uint32_t)s_itvMs[p_ch];
+
+    // chart는 payload 크기에 따라 추가 스로틀
+    if (p_ch == (uint8_t)EN_A20_WS_CH_CHART && s_chartLastPayload >= s_chartLargeBytes) {
+        uint32_t v_mul    = (s_chartThrottleMul > 0) ? (uint32_t)s_chartThrottleMul : 2UL;
+        uint32_t v_mulItv = v_itv * v_mul;
+
+        // 상한 캡: 600,000ms (10분)
+        //  - config 최대(60000 × 10 = 600000)와 동일
+        //  - 향후 config 범위 확장 시에도 안전 유지
+        if (v_mulItv > 600000UL) v_mulItv = 600000UL;
+
+        v_itv = v_mulItv;
+    }
+
+
     if ((uint32_t)(p_nowMs - s_lastSendMs[p_ch]) < (uint32_t)v_itv) return false;    
     
     bool v_sent = false;    

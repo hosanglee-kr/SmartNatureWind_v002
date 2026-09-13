@@ -322,6 +322,7 @@ void CL_CT10_ControlManager::stopOverride() {
 // --------------------------------------------------
 // tick loop
 // --------------------------------------------------
+
 void CL_CT10_ControlManager::tickLoop() {
     if (!active || !pwm) return;
 
@@ -330,7 +331,11 @@ void CL_CT10_ControlManager::tickLoop() {
     lastTickMs = v_nowMs;
 
     // 0) 이벤트 상태 hold/ack 유지
-    if (shouldHoldEventState()) {
+    // override는 사용자 명시 입력이므로 이벤트 hold보다 우선한다.
+    //  - AutoOff/TimeInvalid 직후 override를 시작해도 즉시 반영되어야 함
+    //  - override 진입 시 decideRunSource()가 OVERRIDE 상태를 선택 → 이후 tick에서
+    //    shouldHoldEventState()는 runCtx.state 조건으로 자연 false가 됨
+    if (!overrideState.active && shouldHoldEventState()) {
         maybePushMetricsDirty();
         return;
     }

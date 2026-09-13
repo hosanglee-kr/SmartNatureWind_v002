@@ -454,23 +454,24 @@ void CL_C10_ConfigManager::getDirtyStatus(JsonDocument& p_doc) {
     p_doc["webPage"]      = A40_ComFunc::Dirty_readAtomic(_dirty_webPage, s_dirtyflagSpinlock);
 }
 
-void CL_C10_ConfigManager::saveAll(const ST_A20_ConfigRoot_t& p_root) {
-    // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
+bool CL_C10_ConfigManager::saveAll(const ST_A20_ConfigRoot_t& p_root) {
     CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_MutxGuard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
-        return;
-    }
+    if (!v_MutxGuard.isAcquired()) return false;
 
-    if (p_root.system) saveSystemConfig(*p_root.system);
-    if (p_root.wifi) saveWifiConfig(*p_root.wifi);
-    if (p_root.motion) saveMotionConfig(*p_root.motion);
-    if (p_root.nvsSpec) saveNvsSpecConfig(*p_root.nvsSpec);
-    if (p_root.schedules) saveSchedules(*p_root.schedules);
-    if (p_root.userProfiles) saveUserProfiles(*p_root.userProfiles);
-    if (p_root.windDict) saveWindDict(*p_root.windDict);
-    if (p_root.webPage) saveWebPageConfig(*p_root.webPage);
+    bool v_ok = true;
+    if (p_root.system)       v_ok &= saveSystemConfig(*p_root.system);
+    if (p_root.wifi)         v_ok &= saveWifiConfig(*p_root.wifi);
+    if (p_root.motion)       v_ok &= saveMotionConfig(*p_root.motion);
+    if (p_root.nvsSpec)      v_ok &= saveNvsSpecConfig(*p_root.nvsSpec);
+    if (p_root.schedules)    v_ok &= saveSchedules(*p_root.schedules);
+    if (p_root.userProfiles) v_ok &= saveUserProfiles(*p_root.userProfiles);
+    if (p_root.windDict)     v_ok &= saveWindDict(*p_root.windDict);
+    if (p_root.webPage)      v_ok &= saveWebPageConfig(*p_root.webPage);
+
+    if (!v_ok) CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] saveAll: one or more sections failed");
+    return v_ok;
 }
+
 
 // -----------------------------------------------------
 // 3. All Config → JSON Export

@@ -122,7 +122,7 @@ class CL_C10_ConfigManager {
 
     static void saveDirtyConfigs();
     static void getDirtyStatus(JsonDocument& p_doc);
-    static void saveAll(const ST_A20_ConfigRoot_t& p_root);
+    static bool saveAll(const ST_A20_ConfigRoot_t& p_root);
 
     // =====================================================
     // 3. JSON Export

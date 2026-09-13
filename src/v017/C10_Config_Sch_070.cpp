@@ -222,9 +222,23 @@ static bool C10_fromJson_ScheduleItem(const JsonObjectConst& p_js,
     // period
     p_s.period.enabled = A40_ComFunc::Json_getBool(p_js["period"], "enabled", true); // ✅ "enabled" 정정
 
-    for (uint8_t v_d = 0; v_d < 7; v_d++) {
-        p_s.period.days[v_d] = p_js["period"]["days"][v_d] | 1;
+    {
+        JsonArrayConst jDays = p_js["period"]["days"].as<JsonArrayConst>();
+        for (uint8_t v_d = 0; v_d < 7; v_d++) {
+            uint8_t v_val = 1;  // default
+            if (!jDays.isNull() && v_d < jDays.size()) {
+                JsonVariantConst vv = jDays[v_d];
+                if (vv.is<bool>())     v_val = vv.as<bool>() ? 1 : 0;
+                else if (vv.is<int>()) v_val = (vv.as<int>() != 0) ? 1 : 0;
+            }
+            p_s.period.days[v_d] = v_val;
+        }
     }
+
+    // for (uint8_t v_d = 0; v_d < 7; v_d++) {
+    //     p_s.period.days[v_d] = p_js["period"]["days"][v_d] | 1;
+    // } 
+    
     A40_ComFunc::copyStr2Buffer_safe(p_s.period.startTime,
                                      p_js["period"]["startTime"] | "00:00",
                                      sizeof(p_s.period.startTime),
@@ -519,10 +533,11 @@ static bool C10_validateNoOverlapByDay(const ST_A20_SchedulesRoot_t& p_root,
 
     // day별 수집 버퍼 (스케줄 개수 * 최대 2구간)
     // 동적할당 피하려면 상한 기반 정적 배열로 처리
-    ST_C10_Range_t v_ranges[7][A20_Const::MAX_SCHEDULES * 2];
-    uint16_t       v_counts[7];
+    // C10 recursive mutex로 재진입 차단됨 → static 안전
+    static ST_C10_Range_t v_ranges[7][A20_Const::MAX_SCHEDULES * 2];
+    static uint16_t       v_counts[7];
     memset(v_counts, 0, sizeof(v_counts));
-    memset(v_ranges, 0, sizeof(v_ranges));
+    // v_ranges는 유효 인덱스(counts) 기준으로만 접근 → 전체 memset 생략
 
     // 1) day별 구간 수집
     for (uint8_t v_i = 0; v_i < p_root.count; v_i++) {

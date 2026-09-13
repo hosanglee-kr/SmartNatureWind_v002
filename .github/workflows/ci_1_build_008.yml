@@ -222,6 +222,9 @@ jobs:
       - name: Run PlatformIO build for ${{ matrix.environments }}
         id: pio_build
         shell: bash
+        env:
+          # ~/.platformio 내부에 위치시켜 actions/cache의 복원 대상에 포함되도록 함
+          PLATFORMIO_BUILD_CACHE_DIR: /home/runner/.platformio/.cache
         run: |
           set +e
           pio run -e ${{ matrix.environments }} 2>&1 | tee pio-build.log

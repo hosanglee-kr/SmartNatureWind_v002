@@ -301,6 +301,17 @@ class CL_CT10_ControlManager {
     // --------------------------------------------------
     static constexpr uint32_t S_TICK_MIN_INTERVAL_MS     = 40UL;   // 25Hz
     static constexpr uint32_t S_METRICS_PUSH_INTERVAL_MS = 1500UL; // metrics dirty 주기
+    
+    
+    
+      // --------------------------------------------------
+      // [B-1b] 상태 일관성 보호용 재귀 뮤텍스
+      //  - async_tcp(HTTP/WS connect) ↔ loopTask(tickLoop/CT10_WS_tick) race 방지
+      //  - 대상: runCtx / overrideState / autoOffRt / runSource / curXxxIndex / segRt / dirty flags
+      //  - Lazy-init: CL_A40_MutexGuard_Semaphore가 최초 진입 시 생성
+      //  - recursive: startOverridePreset→applyManualResolved→startOverrideFixed 중첩 지원
+      // --------------------------------------------------
+      static SemaphoreHandle_t s_stateMutex;
 
   private:
     // Dirty 플래그 (private)

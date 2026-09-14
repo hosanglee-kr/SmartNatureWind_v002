@@ -60,6 +60,11 @@ static JsonDocument s_doc_metrics;
 static JsonDocument s_doc_chart;
 static JsonDocument s_doc_summary;
 
+
+// [B-1b] CT10 상태 mutex 정의 (lazy-init은 CL_A40_MutexGuard_Semaphore가 담당)
+SemaphoreHandle_t CL_CT10_ControlManager::s_stateMutex = nullptr;
+
+
 // --------------------------------------------------    
 // 싱글톤    
 // --------------------------------------------------    
@@ -384,6 +389,10 @@ void CT10_WS_tick() {
 void CL_CT10_ControlManager::markDirty(const char* p_key) {    
     if (!p_key || p_key[0] == '\0') return;    
     
+    // [B-1b] dirty flag 원자성 보호 (async_tcp ↔ loopTask)
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
     if (strcmp(p_key, "state") == 0) {    
         _dirtyState = true;    
     } else if (strcmp(p_key, "chart") == 0) {    
@@ -397,25 +406,41 @@ void CL_CT10_ControlManager::markDirty(const char* p_key) {
     }    
 }    
     
-bool CL_CT10_ControlManager::consumeDirtyState() {    
+bool CL_CT10_ControlManager::consumeDirtyState() {
+    // [B-1b] dirty flag 원자성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+
     bool v_ret = _dirtyState;    
     _dirtyState = false;    
     return v_ret;    
 }    
     
 bool CL_CT10_ControlManager::consumeDirtyMetrics() {    
+    // [B-1b] dirty flag 원자성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+
     bool v_ret = _dirtyMetrics;    
     _dirtyMetrics = false;    
     return v_ret;    
 }    
     
 bool CL_CT10_ControlManager::consumeDirtyChart() {    
+    // [B-1b] dirty flag 원자성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+
     bool v_ret = _dirtyChart;    
     _dirtyChart = false;    
     return v_ret;    
 }    
     
 bool CL_CT10_ControlManager::consumeDirtySummary() {    
+    // [B-1b] dirty flag 원자성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+
     bool v_ret = _dirtySummary;    
     _dirtySummary = false;    
     return v_ret;    
@@ -442,6 +467,13 @@ void CL_CT10_ControlManager::maybePushMetricsDirty() {
 // - JsonDocument 단일 사용, containsKey/createNested* 금지 준수    
 // --------------------------------------------------    
 void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {    
+    // [B-1b] 상태 일관성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        return;
+    }
+
     JsonObject v_root = p_doc.to<JsonObject>();    
     JsonObject v_ctl  = A40_ComFunc::Json_ensureObject(v_root["control"]);    
     
@@ -596,6 +628,13 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     
     
 void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {    
+    // [B-1b] 상태 일관성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        return;
+    }
+    
     JsonObject v_root = p_doc.to<JsonObject>();
     JsonObject v_control = A40_ComFunc::Json_ensureObject(v_root["control"]);    
     
@@ -683,6 +722,12 @@ void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {
     
     
 void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnly) {    
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        return;
+    }
+
     // 1) S10 차트 생성 (p_doc["sim"] 구조는 S10이 책임)    
     sim.toChartJson(p_doc, p_diffOnly);    
     
@@ -713,6 +758,13 @@ void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnl
     
     
 void CL_CT10_ControlManager::exportSummaryJson(JsonDocument& p_doc) {    
+    // [B-1b] 상태 일관성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        return;
+    }
+
     JsonObject v_root = p_doc.to<JsonObject>();
     JsonObject v_sum  = A40_ComFunc::Json_ensureObject(v_root["summary"]);    
     
@@ -740,6 +792,13 @@ void CL_CT10_ControlManager::exportSummaryJson(JsonDocument& p_doc) {
 }    
     
 void CL_CT10_ControlManager::exportMetricsJson(JsonDocument& p_doc) {    
+    // [B-1b] 상태 일관성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        return;
+    }
+
     JsonObject v_root = p_doc.to<JsonObject>();
     JsonObject v_m    = A40_ComFunc::Json_ensureObject(v_root["metrics"]);    
     

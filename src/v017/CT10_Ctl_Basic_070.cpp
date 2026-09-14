@@ -115,6 +115,10 @@ void CL_CT10_ControlManager::initAutoOffFromSchedule(const ST_A20_ScheduleItem_t
 // - ACK 대상: AUTOOFF_STOPPED만
 // --------------------------------------------------
 void CL_CT10_ControlManager::ackEventState() {
+    // [B-1b] 외부 호출 경로 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
     if (runCtx.state != EN_CT10_STATE_AUTOOFF_STOPPED) {
         // 정책: MotionBlocked/TimeInvalid는 ACK로 해제하지 않음
         return;

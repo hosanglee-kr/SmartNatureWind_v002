@@ -40,6 +40,7 @@
 
 #include <FS.h>
 #include <LittleFS.h>
+#include <new>
 
 #include "C10_Config_070.h"
 // #include "A40_Com_Func_047.h"   // A40_IO, CL_A40_MutexGuard_Semaphore
@@ -68,6 +69,9 @@ ST_A20_cfg_jsonFile_t CL_C10_ConfigManager::s_cfgJsonFileMap{};
 
 // Mutex
 SemaphoreHandle_t CL_C10_ConfigManager::s_recursiveMutex = nullptr;
+
+portMUX_TYPE CL_C10_ConfigManager::s_rootSwapMux = portMUX_INITIALIZER_UNLOCKED;
+
 
 // =====================================================
 // 내부 유틸: 섹션 new 할당 헬퍼(메모리 부족 방어)
@@ -99,6 +103,14 @@ bool CL_C10_ConfigManager::begin() {
     return true;
 }
 
+
+void CL_C10_ConfigManager::getRootSnapshot(ST_A20_ConfigRoot_t& p_out) {
+    portENTER_CRITICAL(&s_rootSwapMux);
+    memcpy(&p_out, &g_A20_config_root, sizeof(p_out));
+    portEXIT_CRITICAL(&s_rootSwapMux);
+}
+
+
 // =====================================================
 // cfg_jsonFile.json 로드
 //  - 파일명: A20_Const::CFG_JSON_FILE (10_cfg_jsonFile.json)
@@ -128,7 +140,7 @@ bool CL_C10_ConfigManager::_loadCfgJsonFile() {
     }
 
     // =====================================================
-    // ✅ A40 공통 Json_copyStrReq 적용 (필수키 정책)
+    //  A40 공통 Json_copyStrReq 적용 (필수키 정책)
     //  - key 없음/타입불일치/빈문자열 => false + 경고로그 + default로 채움
     //  - containsKey 금지 정책 준수
     // =====================================================
@@ -192,7 +204,7 @@ bool CL_C10_ConfigManager::loadAll(ST_A20_ConfigRoot_t& p_root) {
         return false;
     }
 
-    // 1) 섹션 객체 확보 (없으면 생성) - ✅ new 실패 방어
+    // 1) 섹션 객체 확보 (없으면 생성) -  new 실패 방어
     if (!C10_allocSection(p_root.system, "system")) v_ok = false;
     if (!C10_allocSection(p_root.wifi, "wifi")) v_ok = false;
     if (!C10_allocSection(p_root.motion, "motion")) v_ok = false;
@@ -347,32 +359,31 @@ void CL_C10_ConfigManager::freeAll(ST_A20_ConfigRoot_t& p_root) {
 // Dirty Config 저장
 //  - 실제로 저장된 섹션 수/실패 수 기반으로 로그 출력
 // -----------------------------------------------------
-void CL_C10_ConfigManager::saveDirtyConfigs() {
+
+bool CL_C10_ConfigManager::saveDirtyConfigs() {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
     CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
-        return;
+        return false;
     }
+
 
     uint8_t v_attempt = 0;
     uint8_t v_saved   = 0;
     uint8_t v_failed  = 0;
 
     // =====================================================
-    // ✅ trySave 템플릿(callable) + Dirty 원자 read/clear 적용
+    //  trySave 템플릿(callable) + Dirty 원자 read/clear 적용
     //  - read/clear는 A40_ComFunc::Dirty_*Atomic 사용
     // =====================================================
     auto trySave = [&](bool& p_dirty, const char* p_name, auto&& p_saveFn, const void* p_obj) {
-        // Dirty read는 원자적으로 (spinlock 기반)
         bool v_isDirty = A40_ComFunc::Dirty_readAtomic(p_dirty, s_dirtyflagSpinlock);
         if (!v_isDirty || !p_obj) return;
 
         v_attempt++;
-
         bool v_ok = p_saveFn(p_obj);
         if (v_ok) {
-            // Dirty clear 원자 처리
             A40_ComFunc::Dirty_clearAtomic(p_dirty, s_dirtyflagSpinlock);
             v_saved++;
             CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] dirty-save ok: %s", p_name);
@@ -413,25 +424,28 @@ void CL_C10_ConfigManager::saveDirtyConfigs() {
     // =====================================================
     // Dirty Flag 기반 저장 시도
     // =====================================================
-    trySave(_dirty_system, "system", saveSystem_wrap, g_A20_config_root.system);
-    trySave(_dirty_wifi, "wifi", saveWifi_wrap, g_A20_config_root.wifi);
-    trySave(_dirty_motion, "motion", saveMotion_wrap, g_A20_config_root.motion);
-    trySave(_dirty_nvsSpec, "nvsSpec", saveNvs_wrap, g_A20_config_root.nvsSpec);
-    trySave(_dirty_schedules, "schedules", saveSchedules_wrap, g_A20_config_root.schedules);
+    trySave(_dirty_system,       "system",       saveSystem_wrap,       g_A20_config_root.system);
+    trySave(_dirty_wifi,         "wifi",         saveWifi_wrap,         g_A20_config_root.wifi);
+    trySave(_dirty_motion,       "motion",       saveMotion_wrap,       g_A20_config_root.motion);
+    trySave(_dirty_nvsSpec,      "nvsSpec",      saveNvs_wrap,          g_A20_config_root.nvsSpec);
+    trySave(_dirty_schedules,    "schedules",    saveSchedules_wrap,    g_A20_config_root.schedules);
     trySave(_dirty_userProfiles, "userProfiles", saveUserProfiles_wrap, g_A20_config_root.userProfiles);
-    trySave(_dirty_windDict, "windDict", saveWind_wrap, g_A20_config_root.windDict);
-    trySave(_dirty_webPage, "webPage", saveWeb_wrap, g_A20_config_root.webPage);
+    trySave(_dirty_windDict,     "windDict",     saveWind_wrap,         g_A20_config_root.windDict);
+    trySave(_dirty_webPage,      "webPage",      saveWeb_wrap,          g_A20_config_root.webPage);
 
-    // =====================================================
-    // 결과 로그
-    // =====================================================
+    // [A-3] 결과 기반 반환
     if (v_attempt == 0) {
         CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[C10] saveDirtyConfigs: nothing to save (no dirty flags).");
-    } else if (v_failed == 0) {
-        CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] saveDirtyConfigs: saved=%u/%u (all ok)", v_saved, v_attempt);
-    } else {
-        CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] saveDirtyConfigs: saved=%u failed=%u attempted=%u", v_saved, v_failed, v_attempt);
+        return true;   // dirty 없음 = 성공 (no-op)
     }
+    if (v_failed == 0) {
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] saveDirtyConfigs: saved=%u/%u (all ok)", v_saved, v_attempt);
+        return true;
+    }
+    CL_D10_Logger::log(EN_L10_LOG_WARN,
+                       "[C10] saveDirtyConfigs: saved=%u failed=%u attempted=%u",
+                       v_saved, v_failed, v_attempt);
+    return false;
 }
 
 // 현재 Dirty 상태 조회
@@ -443,7 +457,7 @@ void CL_C10_ConfigManager::getDirtyStatus(JsonDocument& p_doc) {
         return;
     }
 
-    // ✅ Dirty read 원자화
+    //  Dirty read 원자화
     p_doc["system"]       = A40_ComFunc::Dirty_readAtomic(_dirty_system, s_dirtyflagSpinlock);
     p_doc["wifi"]         = A40_ComFunc::Dirty_readAtomic(_dirty_wifi, s_dirtyflagSpinlock);
     p_doc["motion"]       = A40_ComFunc::Dirty_readAtomic(_dirty_motion, s_dirtyflagSpinlock);
@@ -454,22 +468,41 @@ void CL_C10_ConfigManager::getDirtyStatus(JsonDocument& p_doc) {
     p_doc["webPage"]      = A40_ComFunc::Dirty_readAtomic(_dirty_webPage, s_dirtyflagSpinlock);
 }
 
-void CL_C10_ConfigManager::saveAll(const ST_A20_ConfigRoot_t& p_root) {
-    // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
+bool CL_C10_ConfigManager::saveAll(const ST_A20_ConfigRoot_t& p_root) {
     CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
-        return;
+        return false;
     }
 
-    if (p_root.system) saveSystemConfig(*p_root.system);
-    if (p_root.wifi) saveWifiConfig(*p_root.wifi);
-    if (p_root.motion) saveMotionConfig(*p_root.motion);
-    if (p_root.nvsSpec) saveNvsSpecConfig(*p_root.nvsSpec);
-    if (p_root.schedules) saveSchedules(*p_root.schedules);
-    if (p_root.userProfiles) saveUserProfiles(*p_root.userProfiles);
-    if (p_root.windDict) saveWindDict(*p_root.windDict);
-    if (p_root.webPage) saveWebPageConfig(*p_root.webPage);
+    // [A-3] 섹션별 성공/실패 집계
+    uint8_t v_okCnt = 0;
+    uint8_t v_ngCnt = 0;
+
+    auto track = [&](const char* p_name, bool p_ok) {
+        if (p_ok) {
+            v_okCnt++;
+        } else {
+            v_ngCnt++;
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] saveAll failed: %s", p_name);
+        }
+    };
+
+    if (p_root.system)       track("system",       saveSystemConfig(*p_root.system));
+    if (p_root.wifi)         track("wifi",         saveWifiConfig(*p_root.wifi));
+    if (p_root.motion)       track("motion",       saveMotionConfig(*p_root.motion));
+    if (p_root.nvsSpec)      track("nvsSpec",      saveNvsSpecConfig(*p_root.nvsSpec));
+    if (p_root.schedules)    track("schedules",    saveSchedules(*p_root.schedules));
+    if (p_root.userProfiles) track("userProfiles", saveUserProfiles(*p_root.userProfiles));
+    if (p_root.windDict)     track("windDict",     saveWindDict(*p_root.windDict));
+    if (p_root.webPage)      track("webPage",      saveWebPageConfig(*p_root.webPage));
+
+    if (v_ngCnt > 0) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] saveAll: ok=%u ng=%u", v_okCnt, v_ngCnt);
+        return false;
+    }
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] saveAll: ok=%u", v_okCnt);
+    return true;
 }
 
 // -----------------------------------------------------
@@ -521,7 +554,6 @@ void CL_C10_ConfigManager::toJson_All(const ST_A20_ConfigRoot_t& p,
 //  - thread-safe: mutex 보호
 // -----------------------------------------------------
 bool CL_C10_ConfigManager::factoryResetFromDefault() {
-    // Mutex 가드 생성 (함수 종료 시 자동 해제 보장)
     CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_MutxGuard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
@@ -533,11 +565,9 @@ bool CL_C10_ConfigManager::factoryResetFromDefault() {
 #ifdef CFG_DEFAULT_FILE_EXISTS
     JsonDocument v_def;
 
-    // 공통함수 직접 호출 (thin wrapper 사용 금지)
     if (A40_IO::Load_File2JsonDoc_V21(A20_Const::CFG_DEFAULT_FILE, v_def, true, __func__)) {
         v_fileFound = true;
 
-        // cfg_jsonFile 매핑이 비어있을 경우를 대비해 재로드 시도
         if (s_cfgJsonFileMap.system[0] == '\0') {
             if (!_loadCfgJsonFile()) {
                 CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] factoryReset: cfg_jsonFile load failed.");
@@ -545,60 +575,69 @@ bool CL_C10_ConfigManager::factoryResetFromDefault() {
             }
         }
 
+        // [A-3] 각 섹션 저장 결과 취합
+        bool    v_allSaveOk = true;
+        uint8_t v_savedCnt  = 0;
+
         // 1) system
         if (v_def["system"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["system"] = v_def["system"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.system, v_doc, true, true, __func__);
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.system, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
         }
 
         // 2) wifi
         if (v_def["wifi"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["wifi"] = v_def["wifi"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.wifi, v_doc, true, true, __func__);
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.wifi, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
         }
 
         // 3) motion
         if (v_def["motion"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["motion"] = v_def["motion"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.motion, v_doc, true, true, __func__);
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.motion, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
         }
 
         // 4) nvsSpec
         if (v_def["nvsSpec"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["nvsSpec"] = v_def["nvsSpec"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.nvsSpec, v_doc, true, true, __func__);
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.nvsSpec, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
         }
 
         // 5) windDict (legacy: windProfile)
         if (v_def["windDict"].is<JsonObjectConst>() || v_def["windProfile"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["windDict"] = v_def["windDict"].is<JsonObjectConst>() ? v_def["windDict"] : v_def["windProfile"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.windDict, v_doc, true, true, __func__);
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.windDict, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
         }
 
-        // 6) schedules (object/array 모두 허용)
+        // 6) schedules
         if (v_def["schedules"].is<JsonObjectConst>() || v_def["schedules"].is<JsonArrayConst>()) {
             JsonDocument v_doc;
             v_doc["schedules"] = v_def["schedules"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.schedules, v_doc, true, true, __func__);
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.schedules, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
         }
 
         // 7) userProfiles
         if (v_def["userProfiles"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             v_doc["userProfiles"] = v_def["userProfiles"];
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.userProfiles, v_doc, true, true, __func__);
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.userProfiles, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
         }
 
-        // 8) webPage (pages/reDirect/assets or webPage object)
+        // 8) webPage
         if (v_def["pages"].is<JsonArrayConst>() || v_def["webPage"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
-
-            // ✅ 운영급: 저장 포맷을 "webPage" 루트키로 통일
             if (v_def["webPage"].is<JsonObjectConst>()) {
                 v_doc["webPage"] = v_def["webPage"];
             } else {
@@ -607,19 +646,24 @@ bool CL_C10_ConfigManager::factoryResetFromDefault() {
                 v_web["reDirect"] = v_def["reDirect"];
                 v_web["assets"]   = v_def["assets"];
             }
-
-            A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.webPage, v_doc, true, true, __func__);
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.webPage, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
         }
 
-        CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] Factory Reset: Restored from default master file.");
+        if (!v_allSaveOk) {
+            CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                               "[C10] Factory Reset: master-file restore partial failure (saved=%u).",
+                               (unsigned)v_savedCnt);
+            return false;
+        }
+
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[C10] Factory Reset: Restored from default master file (sections=%u).",
+                           (unsigned)v_savedCnt);
     }
 #endif
 
     if (!v_fileFound) {
-        // ==========================================================
-        // ✅ nullptr 크래시 방지: 섹션 포인터를 먼저 확보
-        //  - A20_resetToDefault / saveAll 은 섹션 포인터가 유효하다는 전제일 수 있음
-        // ==========================================================
         bool v_allocOk = true;
 
         if (!C10_allocSection(g_A20_config_root.system, "system")) v_allocOk = false;
@@ -633,12 +677,10 @@ bool CL_C10_ConfigManager::factoryResetFromDefault() {
 
         if (!v_allocOk) {
             CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] Factory Reset: allocation failed. abort.");
-            // 누수 방지: 확보된 것만 정리
             freeAll(g_A20_config_root);
             return false;
         }
 
-        // cfg_jsonFile 매핑이 비어있으면 로드 (saveAll이 s_cfgJsonFileMap를 사용)
         if (s_cfgJsonFileMap.system[0] == '\0') {
             if (!_loadCfgJsonFile()) {
                 CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] Factory Reset: cfg_jsonFile load failed.");
@@ -648,7 +690,12 @@ bool CL_C10_ConfigManager::factoryResetFromDefault() {
 
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] Factory Reset: Using hardcoded defaults in C++.");
         A20_resetToDefault(g_A20_config_root);
-        saveAll(g_A20_config_root);
+
+        // [A-3] saveAll 반환값 취합
+        if (!saveAll(g_A20_config_root)) {
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] Factory Reset: saveAll failed (partial write).");
+            return false;
+        }
     }
 
     return true;

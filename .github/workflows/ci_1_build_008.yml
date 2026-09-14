@@ -187,16 +187,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+        
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       # ---------------------------------------------------------------
-      # 의존성 캐시 (바이너리 불일치 방지를 위해 libdeps만 선택 캐시)
+      # 통합 캐시 (툴체인 + libdeps + 네이티브 build_cache)
       # ---------------------------------------------------------------
-      - name: Cache PlatformIO Core and Dependencies
+      # - 키에 src/** 미포함: 소스 수정 시 캐시 Miss 방지
+      # - 키에 run_id 미포함: 매 실행 신규 저장으로 인한 10GB 쿼터 소진 방지
+      # ---------------------------------------------------------------
+      - name: Cache PlatformIO Core, Libdeps, and Build Cache
         uses: actions/cache@v4
         with:
           path: |
@@ -214,11 +217,14 @@ jobs:
           pip install --upgrade platformio
 
       # ---------------------------------------------------------------
-      # 펌웨어 빌드 (터미널 스트리밍 및 로그 단일 파일 캡처)
+      # 펌웨어 빌드 (네이티브 build_cache 기본값 ~/.platformio/.cache 활용)
       # ---------------------------------------------------------------
       - name: Run PlatformIO build for ${{ matrix.environments }}
         id: pio_build
         shell: bash
+        env:
+          # ~/.platformio 내부에 위치시켜 actions/cache의 복원 대상에 포함되도록 함
+          PLATFORMIO_BUILD_CACHE_DIR: /home/runner/.platformio/.cache
         run: |
           set +e
           pio run -e ${{ matrix.environments }} 2>&1 | tee pio-build.log

@@ -153,8 +153,10 @@ void CL_W10_WebAPI::routeState() {
             return;
         }
 
-        JsonDocument& v_doc = s_control->toStateJson(); // 또는 CL_CT10_ControlManager::toStateJson()
+        JsonDocument v_doc;
+        s_control->exportStateJson_v02(v_doc);
         sendJson(p_request, v_doc);
+
     });
 }
 
@@ -168,11 +170,15 @@ void CL_W10_WebAPI::routeSystem() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
+
         JsonDocument v_doc;
-        if (g_A20_config_root.system) {
-            CL_C10_ConfigManager::toJson_System(*g_A20_config_root.system, v_doc);
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        if (v_snap.system) {
+            CL_C10_ConfigManager::toJson_System(*v_snap.system, v_doc);
         }
         sendJson(p_request, v_doc);
+
     });
 
     // POST (패치)
@@ -204,7 +210,7 @@ void CL_W10_WebAPI::routeSystem() {
             sendJson(p_request, v_res);
         });
 
-    // ✅ PATCH: POST와 동일한 동작
+    //  PATCH: POST와 동일한 동작
     s_server->on(
         W10_Const::HTTP_API_SYSTEM,
         HTTP_PATCH,
@@ -244,11 +250,15 @@ void CL_W10_WebAPI::routeMotion() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
+
         JsonDocument v_doc;
-        if (g_A20_config_root.motion) {
-            CL_C10_ConfigManager::toJson_Motion(*g_A20_config_root.motion, v_doc);
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        if (v_snap.motion) {
+            CL_C10_ConfigManager::toJson_Motion(*v_snap.motion, v_doc);
         }
         sendJson(p_request, v_doc);
+
     });
 
     // POST
@@ -404,11 +414,15 @@ void CL_W10_WebAPI::routeSchedules() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
+
         JsonDocument v_doc;
-        if (g_A20_config_root.schedules) {
-            CL_C10_ConfigManager::toJson_Schedules(*g_A20_config_root.schedules, v_doc);
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        if (v_snap.schedules) {
+            CL_C10_ConfigManager::toJson_Schedules(*v_snap.schedules, v_doc);
         }
         sendJson(p_request, v_doc);
+
     });
 
     // POST: 신규 생성
@@ -509,11 +523,15 @@ void CL_W10_WebAPI::routeUserProfiles() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
+    
         JsonDocument v_doc;
-        if (g_A20_config_root.userProfiles) {
-            CL_C10_ConfigManager::toJson_UserProfiles(*g_A20_config_root.userProfiles, v_doc);
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        if (v_snap.userProfiles) {
+            CL_C10_ConfigManager::toJson_UserProfiles(*v_snap.userProfiles, v_doc);
         }
         sendJson(p_request, v_doc);
+
     });
 
     // POST: 신규 생성
@@ -840,28 +858,25 @@ void CL_W10_WebAPI::routeSimulation() {
 // --------------------------------------------------
 // 11. /api/control/summary
 // --------------------------------------------------
+
 void CL_W10_WebAPI::routeControlSummary() {
     s_server->on(W10_Const::HTTP_API_CONTROL_SUMMARY, HTTP_GET, [](AsyncWebServerRequest* p_request) {
         if (!checkApiKey(p_request)) {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
-
+        
         JsonDocument v_doc;
         if (s_control) {
-            // 각각의 정적 문서를 가져옴
-            JsonDocument& v_summary = s_control->toSummaryJson();
-            JsonDocument& v_metrics = s_control->toMetricsJson();
-
-            // v_summary의 내용을 v_doc에 복사 (기본값)
-            v_doc = v_summary;
-
-            // v_metrics의 키를 v_doc에 추가 (원래 동작: 두 함수가 같은 문서에 추가했음)
+            s_control->exportSummaryJson(v_doc);            // caller-owned
+            JsonDocument v_metrics;
+            s_control->exportMetricsJson(v_metrics);        // caller-owned
             for (auto kv : v_metrics.as<JsonObject>()) {
                 v_doc[kv.key()] = kv.value();
             }
         }
         sendJson(p_request, v_doc);
+
     });
 }
 
@@ -877,23 +892,18 @@ void CL_W10_WebAPI::routeSimState() {
 
         JsonDocument v_doc;
         if (s_control) {
-            // 1. sim.toJson은 인자로 받는 비정적 멤버이므로 그대로 사용
             s_control->sim.toJson(v_doc);
-
-            // 2. summary와 metrics는 정적 반환값 사용
-            JsonDocument& v_summary = s_control->toSummaryJson();
-            JsonDocument& v_metrics = s_control->toMetricsJson();
-
-            // v_summary 병합
-            for (auto kv : v_summary.as<JsonObject>()) {
-                v_doc[kv.key()] = kv.value();
-            }
-            // v_metrics 병합
-            for (auto kv : v_metrics.as<JsonObject>()) {
-                v_doc[kv.key()] = kv.value();
-            }
+        
+            JsonDocument v_summary;
+            JsonDocument v_metrics;
+            s_control->exportSummaryJson(v_summary);
+            s_control->exportMetricsJson(v_metrics);
+        
+            for (auto kv : v_summary.as<JsonObject>()) v_doc[kv.key()] = kv.value();
+            for (auto kv : v_metrics.as<JsonObject>()) v_doc[kv.key()] = kv.value();
         }
         sendJson(p_request, v_doc);
+
     });
 }
 
@@ -908,15 +918,11 @@ void CL_W10_WebAPI::routeMetrics() {
         }
 
         if (s_control) {
-            JsonDocument& v_doc = s_control->toMetricsJson(); // 반환값 사용
-            CL_W10_WebAPI::broadcastMetrics(v_doc, true);
-            CL_W10_WebAPI::broadcastChart(v_doc, true);
+            JsonDocument v_doc;
+            s_control->exportMetricsJson(v_doc);
             sendJson(p_request, v_doc);
-        } else {
-            // s_control이 없을 경우 빈 응답
-            JsonDocument v_empty;
-            sendJson(p_request, v_empty);
         }
+
     });
 }
 
@@ -944,13 +950,13 @@ void CL_W10_WebAPI::routeReload() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
-        ST_A20_ConfigRoot_t v_root;
-        bool                v_ok = CL_C10_ConfigManager::loadAll(v_root);
+
+        // [A-min] CT10::reloadAll로 통합 위임 (CT10 mutex + swap + free 일괄)
+        bool v_ok = CL_CT10_ControlManager::reloadAll();
         if (!v_ok) {
             p_request->send(500, "application/json", "{\"error\":\"reload failed\"}");
             return;
         }
-        g_A20_config_root = v_root;
         p_request->send(200, "application/json", "{\"result\":\"ok\"}");
     });
 }
@@ -1083,8 +1089,13 @@ void CL_W10_WebAPI::routeConfigDirtySave() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
-        CL_C10_ConfigManager::saveDirtyConfigs();
-        p_request->send(200, "application/json", "{\"result\":\"saved\",\"status\":\"clean\"}");
+    
+        bool v_ok = CL_C10_ConfigManager::saveDirtyConfigs();
+    
+        JsonDocument v_res;
+        v_res["result"] = v_ok ? "saved" : "partial_failure";
+        v_res["status"] = v_ok ? "clean" : "dirty";
+        sendJson(p_request, v_res, v_ok ? 200 : 500);
     });
 
     s_server->on(W10_Const::HTTP_API_CONFIG_DIRTY, HTTP_GET, [](AsyncWebServerRequest* p_request) {
@@ -1108,11 +1119,15 @@ void CL_W10_WebAPI::routeWifiConfig() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
+        
         JsonDocument v_doc;
-        if (g_A20_config_root.wifi) {
-            CL_C10_ConfigManager::toJson_Wifi(*g_A20_config_root.wifi, v_doc);
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        if (v_snap.wifi) {
+            CL_C10_ConfigManager::toJson_Wifi(*v_snap.wifi, v_doc);
         }
         sendJson(p_request, v_doc);
+
     });
 
     // POST: 설정 변경 및 시스템 즉시 적용
@@ -1156,7 +1171,7 @@ void CL_W10_WebAPI::routeWifiConfig() {
             sendJson(p_request, v_res);
         });
 
-    // ✅ PATCH: POST와 동일한 동작
+    //  PATCH: POST와 동일한 동작
     s_server->on(
         W10_Const::HTTP_API_WIFI_CONFIG,
         HTTP_PATCH,

@@ -62,11 +62,30 @@ void CL_CT10_ControlManager::clearManual() {
 }
 
 bool CL_CT10_ControlManager::reloadAll() {
-    bool v_ok = CL_C10_ConfigManager::loadAll(g_A20_config_root);
-    if (!v_ok) return false;
+    // [A-min] 새 root를 로컬에 로드 (기존 g_A20_config_root는 손대지 않음)
+    ST_A20_ConfigRoot_t v_new;
+    bool v_ok = CL_C10_ConfigManager::loadAll(v_new);
+    if (!v_ok) {
+        CL_C10_ConfigManager::freeAll(v_new);
+        return false;
+    }
 
+    // [A-min] CT10 mutex 하에서 swap (CT10 reader와 배타)
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_C10_ConfigManager::freeAll(v_new);
+        return false;
+    }
+    
+    // [A-min + A-mid] CT10 mutex + root swap mutex
+    portENTER_CRITICAL(&CL_C10_ConfigManager::s_rootSwapMux);
+    ST_A20_ConfigRoot_t v_old = g_A20_config_root;
+    g_A20_config_root = v_new;
+    portEXIT_CRITICAL(&CL_C10_ConfigManager::s_rootSwapMux);
+
+    // CT10 멤버 초기화 (기존 로직)
     CL_CT10_ControlManager& v_inst = instance();
-
+    
     v_inst.runSource         = EN_CT10_RUN_NONE;
     v_inst.curScheduleIndex  = -1;
     v_inst.curProfileIndex   = -1;
@@ -91,6 +110,12 @@ bool CL_CT10_ControlManager::reloadAll() {
 
     v_inst.markDirty("state");
     v_inst.markDirty("metrics");
+    
+    // [A-min] CT10 mutex 해제 후 구버전 root 해제
+    //  - freeAll은 C10 mutex를 별도 획득 (중첩 없음)
+    //  - CT10 mutex hold 시간 최소화 (다른 태스크 블록 방지)
+    v_guard.unlock();
+    CL_C10_ConfigManager::freeAll(v_old);
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] reloadAll done");
     return true;
@@ -168,6 +193,9 @@ void CL_CT10_ControlManager::setMotion(CL_M10_MotionLogic* p_motion) {
 // mode/profile
 // --------------------------------------------------
 void CL_CT10_ControlManager::setProfileMode(bool p_profileMode) {
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
     useProfileMode = p_profileMode;
 
     if (!p_profileMode) {
@@ -186,6 +214,9 @@ void CL_CT10_ControlManager::setProfileMode(bool p_profileMode) {
 }
 
 bool CL_CT10_ControlManager::startUserProfileByNo(uint16_t p_profileNo) {
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+
     if (!g_A20_config_root.userProfiles) return false;
 
     ST_A20_UserProfilesRoot_t& v_cfg = *g_A20_config_root.userProfiles;
@@ -221,6 +252,10 @@ bool CL_CT10_ControlManager::startUserProfileByNo(uint16_t p_profileNo) {
 }
 
 void CL_CT10_ControlManager::stopUserProfile() {
+
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
     if (runSource != EN_CT10_RUN_USER_PROFILE) return;
 
     runSource         = EN_CT10_RUN_NONE;
@@ -239,6 +274,10 @@ void CL_CT10_ControlManager::stopUserProfile() {
 // override
 // --------------------------------------------------
 void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seconds) {
+
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
     memset(&overrideState, 0, sizeof(overrideState));
     overrideState.active        = true;
     overrideState.useFixed      = true;
@@ -279,6 +318,10 @@ void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
 }
 
 void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds) {
+
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
     if (!p_wind.valid) {
         CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] applyManual: invalid ResolvedWind");
         return;
@@ -309,6 +352,9 @@ void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_
 }
 
 void CL_CT10_ControlManager::stopOverride() {
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
     if (!overrideState.active) return;
 
     memset(&overrideState, 0, sizeof(overrideState));
@@ -322,7 +368,15 @@ void CL_CT10_ControlManager::stopOverride() {
 // --------------------------------------------------
 // tick loop
 // --------------------------------------------------
+
 void CL_CT10_ControlManager::tickLoop() {
+    // [B-1b] tickLoop 최상단 락 (loopTask 진입점, 재귀 mutex)
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        return;
+    }
+
     if (!active || !pwm) return;
 
     unsigned long v_nowMs = millis();
@@ -330,7 +384,11 @@ void CL_CT10_ControlManager::tickLoop() {
     lastTickMs = v_nowMs;
 
     // 0) 이벤트 상태 hold/ack 유지
-    if (shouldHoldEventState()) {
+    // override는 사용자 명시 입력이므로 이벤트 hold보다 우선한다.
+    //  - AutoOff/TimeInvalid 직후 override를 시작해도 즉시 반영되어야 함
+    //  - override 진입 시 decideRunSource()가 OVERRIDE 상태를 선택 → 이후 tick에서
+    //    shouldHoldEventState()는 runCtx.state 조건으로 자연 false가 됨
+    if (!overrideState.active && shouldHoldEventState()) {
         maybePushMetricsDirty();
         return;
     }

@@ -72,7 +72,7 @@ const char* CL_W10_WebAPI::W10_guessMime(const char* p_path) {
 }
 
 // JSON 로딩 (로컬 JsonDocument 사용)
-// ✅ B 루트형 확정: 루트에 pages/reDirect/assets 가 존재 (wrapper webPage 미지원)
+//  B 루트형 확정: 루트에 pages/reDirect/assets 가 존재 (wrapper webPage 미지원)
 bool CL_W10_WebAPI::W10_loadPagesJson(JsonDocument& p_doc, uint16_t& p_page_count, uint16_t& p_asset_count) {
 	p_page_count  = 0;
 	p_asset_count = 0;
@@ -193,7 +193,7 @@ void CL_W10_WebAPI::routeStaticAssets() {
 		return;
 	}
 
-	// ✅ B 루트형 확정 (wrapper 미지원)
+	//  B 루트형 확정 (wrapper 미지원)
 	JsonObjectConst j_root = v_doc.as<JsonObjectConst>();
 	if (j_root.isNull()) {
 		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] Invalid root object after load.");
@@ -239,7 +239,7 @@ void CL_W10_WebAPI::routeStaticAssets() {
 			if (!v_uri_key || !v_path_key || strlen(v_path_key) == 0)
 				continue;
 
-			// ✅ charset 포함 (기존 동작 영향 최소)
+			//  charset 포함 (기존 동작 영향 최소)
 			const char* v_mime_html = "text/html; charset=utf-8";
 
 			// HTML 페이지는 short URI만 등록, 실제 경로("/html_v3/...")는 serveStatic에 위임

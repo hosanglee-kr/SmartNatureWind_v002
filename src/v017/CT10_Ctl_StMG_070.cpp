@@ -199,22 +199,31 @@ ST_CT10_Decision_t CL_CT10_ControlManager::decideRunSource() {
 void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
     // 0) override는 "상태 표기"만 하고 runSource를 강제로 바꾸지 않음
     //    (override 종료 후 원래 source로 자연 복귀 가능하게 유지)
+    // OVERRIDE 분기 (line: if (p_d.nextState == EN_CT10_STATE_OVERRIDE) { 내부)
+
     if (p_d.nextState == EN_CT10_STATE_OVERRIDE) {
         bool v_changed = false;
-
         if (runCtx.state != p_d.nextState) v_changed = true;
         if (runCtx.reason != p_d.reason) v_changed = true;
-
+    
         runCtx.state          = p_d.nextState;
         runCtx.reason         = p_d.reason;
         runCtx.lastDecisionMs = millis();
+    
+        // [B-3] override 진입 시 이전 이벤트 hold/ack 상태를 정리한다.
+        //  - UI에 이벤트가 남지 않도록 (override가 우선임을 반영)
         if (v_changed) {
+            // [B-3] override 진입 시 이전 이벤트 hold/ack 상태 정리
+            runCtx.stateHoldUntilMs = 0;
+            runCtx.stateAckRequired = false;
+        
             runCtx.lastStateChangeMs = runCtx.lastDecisionMs;
             markDirty("state");
             markDirty("metrics");
             markDirty("summary");
         }
         return;
+
     }
 
     // 1) 현재 runCtx vs next 비교

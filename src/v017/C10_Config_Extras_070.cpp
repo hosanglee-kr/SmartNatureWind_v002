@@ -67,7 +67,7 @@ bool CL_C10_ConfigManager::loadNvsSpecConfig(ST_A20_NvsSpecConfig_t& p_cfg) {
         return false;
     }
 
-    // ✅ 기본값 선반영(운영 안전)
+    //  기본값 선반영(운영 안전)
     A20_resetNvsSpecDefault(p_cfg);
 
     if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, v_doc, true, __func__)) {
@@ -148,7 +148,7 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
         return false;
     }
 
-    // ✅ 기본값 선반영(운영 안전)
+    //  기본값 선반영(운영 안전)
     A20_resetWebPageDefault(p_cfg);
 
     if (!A40_IO::Load_File2JsonDoc_V21(v_cfgJsonPath, v_doc, true, __func__)) {
@@ -156,7 +156,7 @@ bool CL_C10_ConfigManager::loadWebPageConfig(ST_A20_WebPageConfig_t& p_cfg) {
         return false;
     }
 
-    // ✅ WebPage는 루트형 확정
+    //  WebPage는 루트형 확정
     JsonObjectConst j_root = v_doc.as<JsonObjectConst>();
     if (j_root.isNull()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadWebPageConfig: root object invalid");
@@ -328,7 +328,7 @@ bool CL_C10_ConfigManager::saveWebPageConfig(const ST_A20_WebPageConfig_t& p_cfg
 
     JsonDocument v_doc;
 
-    // ✅ 루트형 저장: pages / reDirect / assets
+    //  루트형 저장: pages / reDirect / assets
 
     // pages[]
     JsonArray v_pages = v_doc["pages"].to<JsonArray>();
@@ -385,7 +385,7 @@ bool CL_C10_ConfigManager::saveWebPageConfig(const ST_A20_WebPageConfig_t& p_cfg
 // =====================================================
 // 4-x. JSON Patch (NvsSpec / WebPage) - camelCase only
 //  - NvsSpec: {"nvsSpec":{...}} 또는 루트형 patch 허용
-//  - WebPage: ✅ 루트형 patch 확정 (pages/reDirect/assets가 루트에 위치)
+//  - WebPage:  루트형 patch 확정 (pages/reDirect/assets가 루트에 위치)
 // =====================================================
 bool CL_C10_ConfigManager::patchNvsSpecFromJson(ST_A20_NvsSpecConfig_t& p_cfg, const JsonDocument& p_patch) {
     bool v_changed = false;
@@ -466,7 +466,7 @@ bool CL_C10_ConfigManager::patchWebPageFromJson(ST_A20_WebPageConfig_t& p_cfg, c
         return false;
     }
 
-    // ✅ WebPage는 루트형 patch 확정
+    //  WebPage는 루트형 patch 확정
     JsonObjectConst j_root = p_patch.as<JsonObjectConst>();
     if (j_root.isNull()) {
         return false;
@@ -624,7 +624,7 @@ void CL_C10_ConfigManager::toJson_WebPage(const ST_A20_WebPageConfig_t& p_cfg, J
     v_rootTop.remove("reDirect");
     v_rootTop.remove("assets");
 
-    // ✅ 루트형 Export: pages / reDirect / assets
+    //  루트형 Export: pages / reDirect / assets
     JsonArray v_pages = p_doc["pages"].to<JsonArray>();
     for (uint8_t v_i = 0; v_i < p_cfg.pageCount && v_i < A20_Const::MAX_PAGES; v_i++) {
         const ST_A20_PageItem_t& v_p = p_cfg.pages[v_i];

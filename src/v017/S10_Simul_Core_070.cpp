@@ -406,7 +406,7 @@ void CL_S10_Simulation::applyResolvedWind(const ST_A20_ResolvedWind_t& p_resolve
 void CL_S10_Simulation::applyFan(float p_pct) {
     if (!_pwm) return;
 
-    // ✅ 백분율(0~100) 그대로 사용
+    //  백분율(0~100) 그대로 사용
     float v_reqPct = A40_ComFunc::clampVal<float>(p_pct, 0.0f, 100.0f);
     const float v_intPct = A40_ComFunc::clampVal<float>(userIntensity, 0.0f, 100.0f);
 

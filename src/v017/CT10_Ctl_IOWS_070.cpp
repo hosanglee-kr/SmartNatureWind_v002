@@ -48,15 +48,22 @@
 #include "CT10_Ctl_070.h"    
 #include <string.h>    
 
+
 // ======================================================
-// [CT10][PATCH] 채널별 static JsonDocument SSOT 캐시
-// - toXXXJson()에서 clear() 후 재사용
-// - WS Scheduler는 toXXXJson()이 반환한 doc을 그대로 브로드캐스트
+// [CT10][B-1] WS tick 전용 파일-스태틱 doc
+//  - 이전에는 public static doc 4개를 W10(async_tcp)과 공유 → race
+//  - 이후에는 "loopTask에서만 호출되는 CT10_WS_trySendOne_v03" 내부에서만 사용
+//  - HTTP/WS-connect (async_tcp) 경로는 caller-owned doc 사용
 // ======================================================
 static JsonDocument s_doc_state;
 static JsonDocument s_doc_metrics;
 static JsonDocument s_doc_chart;
 static JsonDocument s_doc_summary;
+
+
+// [B-1b] CT10 상태 mutex 정의 (lazy-init은 CL_A40_MutexGuard_Semaphore가 담당)
+SemaphoreHandle_t CL_CT10_ControlManager::s_stateMutex = nullptr;
+
 
 // --------------------------------------------------    
 // 싱글톤    
@@ -66,6 +73,8 @@ CL_CT10_ControlManager& CL_CT10_ControlManager::instance() {
     return v_inst;    
 }    
 
+// (toXxxJson() 4개 static 정의 제거)
+/*
 // ======================================================
 // [CT10][PATCH] toXXXJson 파라미터 제거 + JsonDocument& 반환
 // ======================================================
@@ -92,6 +101,7 @@ JsonDocument& CL_CT10_ControlManager::toChartJson(bool p_diffOnly) {
     instance().exportChartJson(s_doc_chart, p_diffOnly);
     return s_doc_chart;
 }
+*/
 
 // --------------------------------------------------    
 // 외부 진입: 시뮬레이터 등에서 Dirty 마킹    
@@ -278,58 +288,67 @@ static uint32_t CT10_WS_measurePayloadBytes(JsonDocument& p_doc) {
 // - [PATCH] toXXXJson()가 내부 캐시 doc을 반환하므로, 여기서 doc 생성/clear 불필요
 // - if/else 대신 switch 유지(차트만 payload 측정 등 예외처리 명확)
 // --------------------------------------------------    
-static bool CT10_WS_trySendOne_v03(uint8_t p_ch, uint32_t p_nowMs) {    
-    if (p_ch >= (uint8_t)EN_A20_WS_CH_COUNT) return false;    
-    if (!s_pending[p_ch]) return false;    
-    
-    uint16_t v_itv = s_itvMs[p_ch];    
-    
-    // chart는 payload 크기에 따라 추가 스로틀    
-    if (p_ch == (uint8_t)EN_A20_WS_CH_CHART && s_chartLastPayload >= s_chartLargeBytes) {    
-        uint32_t v_mul = (s_chartThrottleMul > 0) ? (uint32_t)s_chartThrottleMul : 2UL;    
-        v_itv = (uint16_t)((uint32_t)v_itv * v_mul);    
-    }    
-    
-    if ((uint32_t)(p_nowMs - s_lastSendMs[p_ch]) < (uint32_t)v_itv) return false;    
-    
-    bool v_sent = false;    
-    
-    switch ((EN_A20_WS_CH_INDEX_t)p_ch) {    
-        case EN_A20_WS_CH_STATE: {    
-            JsonDocument& v_doc = CL_CT10_ControlManager::toStateJson();    
-            if (s_bcast_state) s_bcast_state(v_doc, true);    
-            v_sent = true;    
-        } break;    
-    
-        case EN_A20_WS_CH_METRICS: {    
-            JsonDocument& v_doc = CL_CT10_ControlManager::toMetricsJson();    
-            if (s_bcast_metrics) s_bcast_metrics(v_doc, true);    
-            v_sent = true;    
-        } break;    
-    
-        case EN_A20_WS_CH_CHART: {    
-            JsonDocument& v_doc = CL_CT10_ControlManager::toChartJson(true);    
-            s_chartLastPayload = CT10_WS_measurePayloadBytes(v_doc);    
-            if (s_bcast_chart) s_bcast_chart(v_doc, true);    
-            v_sent = true;    
-        } break;    
-    
-        case EN_A20_WS_CH_SUMMARY: {    
-            JsonDocument& v_doc = CL_CT10_ControlManager::toSummaryJson();    
-            if (s_bcast_summary) s_bcast_summary(v_doc, true);    
-            v_sent = true;    
-        } break;    
-    
-        default:    
-            return false;    
-    }    
-    
-    if (!v_sent) return false;    
-    
-    s_lastSendMs[p_ch] = p_nowMs;    
-    s_pending[p_ch]    = false;    
-    return true;    
-}    
+// --------------------------------------------------
+// WS tick 전송 (loopTask 전용)
+// --------------------------------------------------
+static bool CT10_WS_trySendOne_v03(uint8_t p_ch, uint32_t p_nowMs) {
+    if (p_ch >= (uint8_t)EN_A20_WS_CH_COUNT) return false;
+    if (!s_pending[p_ch]) return false;
+
+    // [B-2] interval 승격 (앞 배치 반영)
+    uint32_t v_itv = (uint32_t)s_itvMs[p_ch];
+    if (p_ch == (uint8_t)EN_A20_WS_CH_CHART && s_chartLastPayload >= s_chartLargeBytes) {
+        uint32_t v_mul    = (s_chartThrottleMul > 0) ? (uint32_t)s_chartThrottleMul : 2UL;
+        uint32_t v_mulItv = v_itv * v_mul;
+        if (v_mulItv > 600000UL) v_mulItv = 600000UL;
+        v_itv = v_mulItv;
+    }
+    if ((uint32_t)(p_nowMs - s_lastSendMs[p_ch]) < v_itv) return false;
+
+    bool v_sent = false;
+
+    switch ((EN_A20_WS_CH_INDEX_t)p_ch) {
+        case EN_A20_WS_CH_STATE: {
+            // [B-1] 파일-스태틱 재사용: 이 함수는 loopTask에서만 호출됨
+            s_doc_state.clear();
+            CL_CT10_ControlManager::instance().exportStateJson_v02(s_doc_state);
+            if (s_bcast_state) s_bcast_state(s_doc_state, true);
+            v_sent = true;
+        } break;
+
+        case EN_A20_WS_CH_METRICS: {
+            s_doc_metrics.clear();
+            CL_CT10_ControlManager::instance().exportMetricsJson(s_doc_metrics);
+            if (s_bcast_metrics) s_bcast_metrics(s_doc_metrics, true);
+            v_sent = true;
+        } break;
+
+        case EN_A20_WS_CH_CHART: {
+            s_doc_chart.clear();
+            CL_CT10_ControlManager::instance().exportChartJson(s_doc_chart, true);
+            s_chartLastPayload = CT10_WS_measurePayloadBytes(s_doc_chart);
+            if (s_bcast_chart) s_bcast_chart(s_doc_chart, true);
+            v_sent = true;
+        } break;
+
+        case EN_A20_WS_CH_SUMMARY: {
+            s_doc_summary.clear();
+            CL_CT10_ControlManager::instance().exportSummaryJson(s_doc_summary);
+            if (s_bcast_summary) s_bcast_summary(s_doc_summary, true);
+            v_sent = true;
+        } break;
+
+        default:
+            return false;
+    }
+
+    if (!v_sent) return false;
+
+    s_lastSendMs[p_ch] = p_nowMs;
+    s_pending[p_ch]    = false;
+    return true;
+}
+
     
 // --------------------------------------------------    
 // tick    
@@ -370,6 +389,10 @@ void CT10_WS_tick() {
 void CL_CT10_ControlManager::markDirty(const char* p_key) {    
     if (!p_key || p_key[0] == '\0') return;    
     
+    // [B-1b] dirty flag 원자성 보호 (async_tcp ↔ loopTask)
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
     if (strcmp(p_key, "state") == 0) {    
         _dirtyState = true;    
     } else if (strcmp(p_key, "chart") == 0) {    
@@ -383,25 +406,41 @@ void CL_CT10_ControlManager::markDirty(const char* p_key) {
     }    
 }    
     
-bool CL_CT10_ControlManager::consumeDirtyState() {    
+bool CL_CT10_ControlManager::consumeDirtyState() {
+    // [B-1b] dirty flag 원자성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+
     bool v_ret = _dirtyState;    
     _dirtyState = false;    
     return v_ret;    
 }    
     
 bool CL_CT10_ControlManager::consumeDirtyMetrics() {    
+    // [B-1b] dirty flag 원자성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+
     bool v_ret = _dirtyMetrics;    
     _dirtyMetrics = false;    
     return v_ret;    
 }    
     
 bool CL_CT10_ControlManager::consumeDirtyChart() {    
+    // [B-1b] dirty flag 원자성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+
     bool v_ret = _dirtyChart;    
     _dirtyChart = false;    
     return v_ret;    
 }    
     
 bool CL_CT10_ControlManager::consumeDirtySummary() {    
+    // [B-1b] dirty flag 원자성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+
     bool v_ret = _dirtySummary;    
     _dirtySummary = false;    
     return v_ret;    
@@ -428,6 +467,13 @@ void CL_CT10_ControlManager::maybePushMetricsDirty() {
 // - JsonDocument 단일 사용, containsKey/createNested* 금지 준수    
 // --------------------------------------------------    
 void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {    
+    // [B-1b] 상태 일관성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        return;
+    }
+
     JsonObject v_root = p_doc.to<JsonObject>();    
     JsonObject v_ctl  = A40_ComFunc::Json_ensureObject(v_root["control"]);    
     
@@ -582,6 +628,13 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     
     
 void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {    
+    // [B-1b] 상태 일관성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        return;
+    }
+    
     JsonObject v_root = p_doc.to<JsonObject>();
     JsonObject v_control = A40_ComFunc::Json_ensureObject(v_root["control"]);    
     
@@ -669,6 +722,12 @@ void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {
     
     
 void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnly) {    
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        return;
+    }
+
     // 1) S10 차트 생성 (p_doc["sim"] 구조는 S10이 책임)    
     sim.toChartJson(p_doc, p_diffOnly);    
     
@@ -699,6 +758,13 @@ void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnl
     
     
 void CL_CT10_ControlManager::exportSummaryJson(JsonDocument& p_doc) {    
+    // [B-1b] 상태 일관성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        return;
+    }
+
     JsonObject v_root = p_doc.to<JsonObject>();
     JsonObject v_sum  = A40_ComFunc::Json_ensureObject(v_root["summary"]);    
     
@@ -726,6 +792,13 @@ void CL_CT10_ControlManager::exportSummaryJson(JsonDocument& p_doc) {
 }    
     
 void CL_CT10_ControlManager::exportMetricsJson(JsonDocument& p_doc) {    
+    // [B-1b] 상태 일관성 보호
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        return;
+    }
+
     JsonObject v_root = p_doc.to<JsonObject>();
     JsonObject v_m    = A40_ComFunc::Json_ensureObject(v_root["metrics"]);    
     

@@ -231,7 +231,7 @@ inline bool CL_TM10_TimeManager::_isTimeSane() {
     struct tm v_tm;
     memset(&v_tm, 0, sizeof(v_tm));
 
-    // ✅ localtime_r NULL 방어 (요구사항 반영)
+    //  localtime_r NULL 방어 (요구사항 반영)
     if (localtime_r(&v_now, &v_tm) == nullptr) return false;
 
     // sanity check
@@ -401,7 +401,7 @@ inline void CL_TM10_TimeManager::requestTimeSync(bool p_force) {
     s_waitStartMs     = millis();
     s_nextActionMs    = 0;
 
-    // ✅ force 또는 wait가 아니면 즉시 재시작으로 “즉시 동기화” 강제
+    //  force 또는 wait가 아니면 즉시 재시작으로 “즉시 동기화” 강제
     _requestSync();
 }
 
@@ -458,7 +458,7 @@ inline void CL_TM10_TimeManager::onWiFiDisconnected() {
     s_waitStartMs     = 0;
     s_nextActionMs    = 0;
 
-    // ✅ 완화 정책:
+    //  완화 정책:
     // - Wi-Fi가 끊겨도 현재 시간이 sane이면 timeValid는 유지
     // - 다만 “최근 동기화”는 시간이 지나면 false가 되도록 별도 플래그로 관리
     s_timeValid = _isTimeSane();
@@ -606,7 +606,7 @@ inline bool CL_TM10_TimeManager::getLocalTime(struct tm& p_outTm) {
         return false;
     }
 
-    // ✅ localtime_r NULL 방어
+    //  localtime_r NULL 방어
     if (localtime_r(&v_now, &p_outTm) == nullptr) {
         s_timeValid          = false;
         s_timeSyncedRecently = false;

@@ -140,7 +140,7 @@ bool CL_C10_ConfigManager::_loadCfgJsonFile() {
     }
 
     // =====================================================
-    // ✅ A40 공통 Json_copyStrReq 적용 (필수키 정책)
+    //  A40 공통 Json_copyStrReq 적용 (필수키 정책)
     //  - key 없음/타입불일치/빈문자열 => false + 경고로그 + default로 채움
     //  - containsKey 금지 정책 준수
     // =====================================================
@@ -204,7 +204,7 @@ bool CL_C10_ConfigManager::loadAll(ST_A20_ConfigRoot_t& p_root) {
         return false;
     }
 
-    // 1) 섹션 객체 확보 (없으면 생성) - ✅ new 실패 방어
+    // 1) 섹션 객체 확보 (없으면 생성) -  new 실패 방어
     if (!C10_allocSection(p_root.system, "system")) v_ok = false;
     if (!C10_allocSection(p_root.wifi, "wifi")) v_ok = false;
     if (!C10_allocSection(p_root.motion, "motion")) v_ok = false;
@@ -374,7 +374,7 @@ bool CL_C10_ConfigManager::saveDirtyConfigs() {
     uint8_t v_failed  = 0;
 
     // =====================================================
-    // ✅ trySave 템플릿(callable) + Dirty 원자 read/clear 적용
+    //  trySave 템플릿(callable) + Dirty 원자 read/clear 적용
     //  - read/clear는 A40_ComFunc::Dirty_*Atomic 사용
     // =====================================================
     auto trySave = [&](bool& p_dirty, const char* p_name, auto&& p_saveFn, const void* p_obj) {
@@ -457,7 +457,7 @@ void CL_C10_ConfigManager::getDirtyStatus(JsonDocument& p_doc) {
         return;
     }
 
-    // ✅ Dirty read 원자화
+    //  Dirty read 원자화
     p_doc["system"]       = A40_ComFunc::Dirty_readAtomic(_dirty_system, s_dirtyflagSpinlock);
     p_doc["wifi"]         = A40_ComFunc::Dirty_readAtomic(_dirty_wifi, s_dirtyflagSpinlock);
     p_doc["motion"]       = A40_ComFunc::Dirty_readAtomic(_dirty_motion, s_dirtyflagSpinlock);

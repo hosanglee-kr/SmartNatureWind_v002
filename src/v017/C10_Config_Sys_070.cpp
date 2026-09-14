@@ -73,7 +73,7 @@ static int8_t C10_wsChannelFromName(const char* p_name) {
 // 2-1. 목적물별 Load 구현 (System/Wifi/Motion)
 // =====================================================
 bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
-    // ✅ 0) 기본값 1회 선행 (누락 키 대응)
+    //  0) 기본값 1회 선행 (누락 키 대응)
     A20_resetSystemDefault(p_cfg);
 
     JsonDocument v_doc;
@@ -274,7 +274,7 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
 }
 
 bool CL_C10_ConfigManager::loadWifiConfig(ST_A20_WifiConfig_t& p_cfg) {
-    // ✅ 기본값 선행
+    //  기본값 선행
     A20_resetWifiDefault(p_cfg);
 
     JsonDocument d;
@@ -321,7 +321,7 @@ bool CL_C10_ConfigManager::loadWifiConfig(ST_A20_WifiConfig_t& p_cfg) {
             if (p_cfg.staCount >= A20_Const::MAX_STA_NETWORKS) break;
 
             ST_A20_WifiCredentials_t& v_net = p_cfg.sta[p_cfg.staCount];
-            memset(&v_net, 0, sizeof(v_net)); // ✅ 찌꺼기 방지
+            memset(&v_net, 0, sizeof(v_net)); //  찌꺼기 방지
 
             const char* v_ssid = v_js["ssid"] | "";
             const char* v_pass = v_js["pass"] | "";
@@ -342,7 +342,7 @@ bool CL_C10_ConfigManager::loadWifiConfig(ST_A20_WifiConfig_t& p_cfg) {
 }
 
 bool CL_C10_ConfigManager::loadMotionConfig(ST_A20_MotionConfig_t& p_cfg) {
-    // ✅ 기본값 선행
+    //  기본값 선행
     A20_resetMotionDefault(p_cfg);
 
     JsonDocument d;
@@ -808,7 +808,7 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
     }
 
     if (v_changed) {
-        // ✅ (3) Dirty 원자 set
+        //  (3) Dirty 원자 set
         A40_ComFunc::Dirty_setAtomic(_dirty_system, s_dirtyflagSpinlock);
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] System config patched (Memory Only, camelCase). Dirty=true");
     }
@@ -866,7 +866,7 @@ bool CL_C10_ConfigManager::patchWifiFromJson(ST_A20_WifiConfig_t& p_config, cons
             if (p_config.staCount >= A20_Const::MAX_STA_NETWORKS) break;
 
             ST_A20_WifiCredentials_t& v_net = p_config.sta[p_config.staCount];
-            memset(&v_net, 0, sizeof(v_net)); // ✅ 찌꺼기 방지
+            memset(&v_net, 0, sizeof(v_net)); //  찌꺼기 방지
 
             strlcpy(v_net.ssid, v_js["ssid"] | "", sizeof(v_net.ssid));
             strlcpy(v_net.pass, v_js["pass"] | "", sizeof(v_net.pass));
@@ -878,7 +878,7 @@ bool CL_C10_ConfigManager::patchWifiFromJson(ST_A20_WifiConfig_t& p_config, cons
     }
 
     if (v_changed) {
-        // ✅ (3) Dirty 원자 set
+        //  (3) Dirty 원자 set
         A40_ComFunc::Dirty_setAtomic(_dirty_wifi, s_dirtyflagSpinlock);
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] WiFi config patched (Memory Only, camelCase). Dirty=true");
     }
@@ -939,7 +939,7 @@ bool CL_C10_ConfigManager::patchMotionFromJson(ST_A20_MotionConfig_t& p_config, 
     }
 
     if (v_changed) {
-        // ✅ (3) Dirty 원자 set
+        //  (3) Dirty 원자 set
         A40_ComFunc::Dirty_setAtomic(_dirty_motion, s_dirtyflagSpinlock);
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] Motion config patched (Memory Only, camelCase). Dirty=true");
     }

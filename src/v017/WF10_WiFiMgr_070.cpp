@@ -55,7 +55,7 @@ void CL_WF10_WiFiManager::attachWiFiEvents() {
             s_lastStaStatus     = WL_CONNECTED;
             s_reconnectAttempts = 0;
 
-            // ✅ 시간 동기화는 TM10이 전담 (콜백 기반, 블로킹 폴링 금지)
+            //  시간 동기화는 TM10이 전담 (콜백 기반, 블로킹 폴링 금지)
             if (g_A20_config_root.system) {
                 CL_TM10_TimeManager::onWiFiConnected(*g_A20_config_root.system);
             }
@@ -124,7 +124,7 @@ bool CL_WF10_WiFiManager::init(const ST_A20_WifiConfig_t&   p_cfg_wifi,
     bool v_ap_ok  = false;
     bool v_sta_ok = false;
 
-    // ✅ WiFiMulti 상태 리셋(후보 중복 방지)
+    //  WiFiMulti 상태 리셋(후보 중복 방지)
     s_wifiMulti = WiFiMulti();
 
     switch (p_cfg_wifi.wifiMode) {
@@ -364,7 +364,7 @@ bool CL_WF10_WiFiManager::applyConfig(const ST_A20_WifiConfig_t& p_cfg) {
     WiFi.softAPdisconnect(true);
 
     // 2) WiFiMulti 준비
-    // ✅ 후보 중복 방지: 내부 WiFiMulti 리셋
+    //  후보 중복 방지: 내부 WiFiMulti 리셋
     s_wifiMulti = WiFiMulti();
 
     // WiFiMulti v_multi;

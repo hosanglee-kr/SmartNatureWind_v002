@@ -50,7 +50,7 @@ void CL_W10_WebAPI::_broadcast(AsyncWebSocket* p_ws, JsonDocument& p_doc, bool p
 
     if (p_diffOnly && v_json.length() <= 5) return;
 
-    // ✅ textAll() 대신 client별 전송 (queue 폭주 방지)
+    //  textAll() 대신 client별 전송 (queue 폭주 방지)
     // 포인터를 직접 다루는 가장 안전한 방법
     for (uint32_t i = 0; i < v_cnt; i++) {
         AsyncWebSocketClient* c = p_ws->client(i);

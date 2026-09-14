@@ -210,7 +210,7 @@ void CL_W10_WebAPI::routeSystem() {
             sendJson(p_request, v_res);
         });
 
-    // ✅ PATCH: POST와 동일한 동작
+    //  PATCH: POST와 동일한 동작
     s_server->on(
         W10_Const::HTTP_API_SYSTEM,
         HTTP_PATCH,
@@ -1171,7 +1171,7 @@ void CL_W10_WebAPI::routeWifiConfig() {
             sendJson(p_request, v_res);
         });
 
-    // ✅ PATCH: POST와 동일한 동작
+    //  PATCH: POST와 동일한 동작
     s_server->on(
         W10_Const::HTTP_API_WIFI_CONFIG,
         HTTP_PATCH,

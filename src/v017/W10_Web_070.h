@@ -204,7 +204,7 @@ class CL_W10_WebAPI {
         String v_out;
         serializeJson(p_doc, v_out);
 
-        // ✅ UTF-8 강제
+        //  UTF-8 강제
         auto* v_resp = p_request->beginResponse(p_code, "application/json; charset=utf-8", v_out);
 
         _applyHeaders(v_resp, true);

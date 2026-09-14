@@ -47,7 +47,7 @@
 
 #include "C10_Config_070.h"
 
-// ✅ A40 공통 유틸/IO/Mutex/Dirty Helper 직접 포함 보장(간접 include 누락 대비)
+//  A40 공통 유틸/IO/Mutex/Dirty Helper 직접 포함 보장(간접 include 누락 대비)
 // #include "A40_Com_Func_052.h"
 
 // ------------------------------------------------------
@@ -213,7 +213,7 @@ static bool C10_fromJson_ScheduleItem(const JsonObjectConst& p_js,
     }
 
     // name / enabled / repeat
-    // ✅ A40 공통 안전 copy 정책 적용(로그 정책 포함)
+    //  A40 공통 안전 copy 정책 적용(로그 정책 포함)
     A40_ComFunc::Json_copyStr_LogPolicy(p_js, "name", p_s.name, sizeof(p_s.name), "", p_callerForLog);
     p_s.enabled = p_js["enabled"] | true;
 
@@ -221,7 +221,7 @@ static bool C10_fromJson_ScheduleItem(const JsonObjectConst& p_js,
     p_s.repeatCount    = p_js["repeatCount"] | 0;
 
     // period
-    p_s.period.enabled = A40_ComFunc::Json_getBool(p_js["period"], "enabled", true); // ✅ "enabled" 정정
+    p_s.period.enabled = A40_ComFunc::Json_getBool(p_js["period"], "enabled", true); //  "enabled" 정정
 
     {
         JsonArrayConst jDays = p_js["period"]["days"].as<JsonArrayConst>();
@@ -294,11 +294,11 @@ static bool C10_fromJson_ScheduleItem(const JsonObjectConst& p_js,
             const char* v_mode = jseg["mode"] | "PRESET";
             sg.mode            = A20_modeFromString(v_mode);
 
-            // ✅ A40 공통 copy 정책 적용(예시 요청 반영)
+            //  A40 공통 copy 정책 적용(예시 요청 반영)
             A40_ComFunc::copyStr2Buffer_safe(sg.presetCode, jseg["presetCode"] | "", sizeof(sg.presetCode), p_callerForLog);
             A40_ComFunc::copyStr2Buffer_safe(sg.styleCode, jseg["styleCode"] | "", sizeof(sg.styleCode), p_callerForLog);
 
-            // adjust (✅ float은 double 기본값 + float 캐스팅으로 안정화)
+            // adjust ( float은 double 기본값 + float 캐스팅으로 안정화)
             memset(&sg.adjust, 0, sizeof(sg.adjust));
             if (jseg["adjust"].is<JsonObjectConst>()) {
                 JsonObjectConst adj                = jseg["adjust"].as<JsonObjectConst>();
@@ -796,7 +796,7 @@ bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg, bo
     }
 
     // --------------------------------------------------
-    // ✅ 마지막 방어선 1) 필수/0금지/중복 검증
+    //  마지막 방어선 1) 필수/0금지/중복 검증
     //  - schId/schNo/segId/segNo: 필수 + 0 금지 + 중복 금지
     //  - segNo/schNo는 사용자 정렬 목적이므로 중복 금지가 특히 중요(정렬/우선순위 불명확 방지)
     // --------------------------------------------------
@@ -806,7 +806,7 @@ bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg, bo
     }
 
     // --------------------------------------------------
-    // ✅ 마지막 방어선 2) 요일/시간 구간 overlap 검증
+    //  마지막 방어선 2) 요일/시간 구간 overlap 검증
     //  - C10_validateNoOverlapByDay()는 cross-midnight를 [start,1440)+[0,end)로 분해하여 검사
     //  - 정책:
     //     * failOnOverlap=true  -> 저장 실패(운영 강제)
@@ -905,7 +905,7 @@ bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg, bo
             jseg["fixedSpeed"] = sg.fixedSpeed;
         }
 
-        // ✅ A40 공통 writer 사용(필드 누락/오타 방지)
+        //  A40 공통 writer 사용(필드 누락/오타 방지)
         A40_ComFunc::Json_writeAutoOff(js["autoOff"].to<JsonObject>(), s.autoOff);
         A40_ComFunc::Json_writeMotion(js, s.motion);
     }
@@ -981,7 +981,7 @@ void CL_C10_ConfigManager::toJson_Schedules(const ST_A20_SchedulesRoot_t& p_cfg,
             jseg["fixedSpeed"] = sg.fixedSpeed;
         }
 
-        // ✅ A40 공통 writer 사용
+        //  A40 공통 writer 사용
         A40_ComFunc::Json_writeAutoOff(js["autoOff"].to<JsonObject>(), s.autoOff);
         A40_ComFunc::Json_writeMotion(js, s.motion);
     }

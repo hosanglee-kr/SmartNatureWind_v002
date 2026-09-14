@@ -390,7 +390,7 @@ int CL_CT10_ControlManager::findActiveScheduleIndex(const ST_A20_SchedulesRoot_t
             uint16_t v_startMin = A40_parseHHMMtoMin_24h(v_s.period.startTime);
             uint16_t v_endMin   = A40_parseHHMMtoMin_24h(v_s.period.endTime);
 
-            // ✅ start==end: 24시간 활성(하루 종일) - 오늘 요일만 체크
+            //  start==end: 24시간 활성(하루 종일) - 오늘 요일만 체크
             if (v_startMin == v_endMin) {
                 if (v_s.period.days[v_today]) return v_i;
                 continue;

@@ -213,15 +213,17 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
         // [B-3] override 진입 시 이전 이벤트 hold/ack 상태를 정리한다.
         //  - UI에 이벤트가 남지 않도록 (override가 우선임을 반영)
         if (v_changed) {
+            // [B-3] override 진입 시 이전 이벤트 hold/ack 상태 정리
             runCtx.stateHoldUntilMs = 0;
             runCtx.stateAckRequired = false;
-    
+        
             runCtx.lastStateChangeMs = runCtx.lastDecisionMs;
             markDirty("state");
             markDirty("metrics");
             markDirty("summary");
         }
         return;
+
     }
 
     // 1) 현재 runCtx vs next 비교

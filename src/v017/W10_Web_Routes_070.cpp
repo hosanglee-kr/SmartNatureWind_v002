@@ -902,12 +902,10 @@ void CL_W10_WebAPI::routeMetrics() {
         }
 
         if (s_control) {
-            JsonDocument v_doc;
-            s_control->exportMetricsJson(v_doc);
-            CL_W10_WebAPI::broadcastMetrics(v_doc, true);
-            // (broadcastChart 호출은 배치 C-1에서 제거)
-            sendJson(p_request, v_doc);
-        }
+        JsonDocument v_doc;
+        s_control->exportMetricsJson(v_doc);
+        sendJson(p_request, v_doc);
+    }
 
     });
 }
@@ -936,13 +934,18 @@ void CL_W10_WebAPI::routeReload() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
+        
         ST_A20_ConfigRoot_t v_root;
-        bool                v_ok = CL_C10_ConfigManager::loadAll(v_root);
+        bool v_ok = CL_C10_ConfigManager::loadAll(v_root);
         if (!v_ok) {
             p_request->send(500, "application/json", "{\"error\":\"reload failed\"}");
             return;
         }
+        
+        ST_A20_ConfigRoot_t v_old = g_A20_config_root;
         g_A20_config_root = v_root;
+        CL_C10_ConfigManager::freeAll(v_old);
+
         p_request->send(200, "application/json", "{\"result\":\"ok\"}");
     });
 }

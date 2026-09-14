@@ -170,11 +170,15 @@ void CL_W10_WebAPI::routeSystem() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
+
         JsonDocument v_doc;
-        if (g_A20_config_root.system) {
-            CL_C10_ConfigManager::toJson_System(*g_A20_config_root.system, v_doc);
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        if (v_snap.system) {
+            CL_C10_ConfigManager::toJson_System(*v_snap.system, v_doc);
         }
         sendJson(p_request, v_doc);
+
     });
 
     // POST (패치)
@@ -246,11 +250,15 @@ void CL_W10_WebAPI::routeMotion() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
+
         JsonDocument v_doc;
-        if (g_A20_config_root.motion) {
-            CL_C10_ConfigManager::toJson_Motion(*g_A20_config_root.motion, v_doc);
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        if (v_snap.motion) {
+            CL_C10_ConfigManager::toJson_Motion(*v_snap.motion, v_doc);
         }
         sendJson(p_request, v_doc);
+
     });
 
     // POST
@@ -406,11 +414,15 @@ void CL_W10_WebAPI::routeSchedules() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
+
         JsonDocument v_doc;
-        if (g_A20_config_root.schedules) {
-            CL_C10_ConfigManager::toJson_Schedules(*g_A20_config_root.schedules, v_doc);
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        if (v_snap.schedules) {
+            CL_C10_ConfigManager::toJson_Schedules(*v_snap.schedules, v_doc);
         }
         sendJson(p_request, v_doc);
+
     });
 
     // POST: 신규 생성
@@ -511,11 +523,15 @@ void CL_W10_WebAPI::routeUserProfiles() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
+    
         JsonDocument v_doc;
-        if (g_A20_config_root.userProfiles) {
-            CL_C10_ConfigManager::toJson_UserProfiles(*g_A20_config_root.userProfiles, v_doc);
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        if (v_snap.userProfiles) {
+            CL_C10_ConfigManager::toJson_UserProfiles(*v_snap.userProfiles, v_doc);
         }
         sendJson(p_request, v_doc);
+
     });
 
     // POST: 신규 생성
@@ -902,10 +918,10 @@ void CL_W10_WebAPI::routeMetrics() {
         }
 
         if (s_control) {
-        JsonDocument v_doc;
-        s_control->exportMetricsJson(v_doc);
-        sendJson(p_request, v_doc);
-    }
+            JsonDocument v_doc;
+            s_control->exportMetricsJson(v_doc);
+            sendJson(p_request, v_doc);
+        }
 
     });
 }
@@ -934,18 +950,13 @@ void CL_W10_WebAPI::routeReload() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
-        
-        ST_A20_ConfigRoot_t v_root;
-        bool v_ok = CL_C10_ConfigManager::loadAll(v_root);
+
+        // [A-min] CT10::reloadAll로 통합 위임 (CT10 mutex + swap + free 일괄)
+        bool v_ok = CL_CT10_ControlManager::reloadAll();
         if (!v_ok) {
             p_request->send(500, "application/json", "{\"error\":\"reload failed\"}");
             return;
         }
-        
-        ST_A20_ConfigRoot_t v_old = g_A20_config_root;
-        g_A20_config_root = v_root;
-        CL_C10_ConfigManager::freeAll(v_old);
-
         p_request->send(200, "application/json", "{\"result\":\"ok\"}");
     });
 }
@@ -1108,11 +1119,15 @@ void CL_W10_WebAPI::routeWifiConfig() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
+        
         JsonDocument v_doc;
-        if (g_A20_config_root.wifi) {
-            CL_C10_ConfigManager::toJson_Wifi(*g_A20_config_root.wifi, v_doc);
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        if (v_snap.wifi) {
+            CL_C10_ConfigManager::toJson_Wifi(*v_snap.wifi, v_doc);
         }
         sendJson(p_request, v_doc);
+
     });
 
     // POST: 설정 변경 및 시스템 즉시 적용

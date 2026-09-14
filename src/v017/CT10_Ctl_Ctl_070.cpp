@@ -61,17 +61,31 @@ void CL_CT10_ControlManager::clearManual() {
     instance().stopOverride();
 }
 
-
 bool CL_CT10_ControlManager::reloadAll() {
-    bool v_ok = CL_C10_ConfigManager::loadAll(g_A20_config_root);
-    if (!v_ok) return false;
+    // [A-min] 새 root를 로컬에 로드 (기존 g_A20_config_root는 손대지 않음)
+    ST_A20_ConfigRoot_t v_new;
+    bool v_ok = CL_C10_ConfigManager::loadAll(v_new);
+    if (!v_ok) {
+        CL_C10_ConfigManager::freeAll(v_new);
+        return false;
+    }
 
+    // [A-min] CT10 mutex 하에서 swap (CT10 reader와 배타)
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_C10_ConfigManager::freeAll(v_new);
+        return false;
+    }
+    
+    // [A-min + A-mid] CT10 mutex + root swap mutex
+    portENTER_CRITICAL(&CL_C10_ConfigManager::s_rootSwapMux);
+    ST_A20_ConfigRoot_t v_old = g_A20_config_root;
+    g_A20_config_root = v_new;
+    portEXIT_CRITICAL(&CL_C10_ConfigManager::s_rootSwapMux);
+
+    // CT10 멤버 초기화 (기존 로직)
     CL_CT10_ControlManager& v_inst = instance();
     
-    // [B-1b] CT10 멤버 변경부 락 (loadAll의 C10 락과는 분리, 홀드 시간 최소화)
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return false;
-
     v_inst.runSource         = EN_CT10_RUN_NONE;
     v_inst.curScheduleIndex  = -1;
     v_inst.curProfileIndex   = -1;
@@ -96,6 +110,12 @@ bool CL_CT10_ControlManager::reloadAll() {
 
     v_inst.markDirty("state");
     v_inst.markDirty("metrics");
+    
+    // [A-min] CT10 mutex 해제 후 구버전 root 해제
+    //  - freeAll은 C10 mutex를 별도 획득 (중첩 없음)
+    //  - CT10 mutex hold 시간 최소화 (다른 태스크 블록 방지)
+    v_guard.unlock();
+    CL_C10_ConfigManager::freeAll(v_old);
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] reloadAll done");
     return true;

@@ -70,6 +70,9 @@ ST_A20_cfg_jsonFile_t CL_C10_ConfigManager::s_cfgJsonFileMap{};
 // Mutex
 SemaphoreHandle_t CL_C10_ConfigManager::s_recursiveMutex = nullptr;
 
+portMUX_TYPE CL_C10_ConfigManager::s_rootSwapMux = portMUX_INITIALIZER_UNLOCKED;
+
+
 // =====================================================
 // 내부 유틸: 섹션 new 할당 헬퍼(메모리 부족 방어)
 // =====================================================
@@ -99,6 +102,14 @@ bool CL_C10_ConfigManager::begin() {
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] Mutex initialized successfully.");
     return true;
 }
+
+
+void CL_C10_ConfigManager::getRootSnapshot(ST_A20_ConfigRoot_t& p_out) {
+    portENTER_CRITICAL(&s_rootSwapMux);
+    memcpy(&p_out, &g_A20_config_root, sizeof(p_out));
+    portEXIT_CRITICAL(&s_rootSwapMux);
+}
+
 
 // =====================================================
 // cfg_jsonFile.json 로드

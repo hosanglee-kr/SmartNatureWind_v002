@@ -178,6 +178,13 @@ class CL_C10_ConfigManager {
     static int  addWindProfileFromJson(const JsonDocument& p_doc);
     static bool updateWindProfileFromJson(uint16_t p_id, const JsonDocument& p_patch);
     static bool deleteWindProfile(uint16_t p_id);
+    
+    // [A-mid] g_A20_config_root 원자 스냅샷
+    //  - 8개 포인터를 portMUX critical section으로 원자 캡처
+    //  - reloadAll의 swap과 상호 배타
+    //  - W10 read 경로에서 사용 (dangling은 별도)
+    static void getRootSnapshot(ST_A20_ConfigRoot_t& p_out);
+    static portMUX_TYPE s_rootSwapMux;
 
   private:
     // Dirty Flag

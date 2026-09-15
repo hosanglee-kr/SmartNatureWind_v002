@@ -302,17 +302,22 @@ void CL_W10_WebAPI::routeWindProfile() {
             return;
         }
 
-        JsonDocument      v_doc;
-        ST_A20_WindDict_t v_dict;
-        memset(&v_dict, 0, sizeof(v_dict));
+        // [P0-1] async_tcp 스택 보호: WindDict(~1.5KB)를 static 승격
+        //  - loadWindDict/toJson_WindDict 모두 내부 mutex 보유 → 재진입 안전
+        //  - async_tcp 단일 태스크이므로 static 경쟁 없음
+        static ST_A20_WindDict_t s_dict;
+        memset(&s_dict, 0, sizeof(s_dict));
 
-        if (CL_C10_ConfigManager::loadWindDict(v_dict)) {
-            CL_C10_ConfigManager::toJson_WindDict(v_dict, v_doc);
+        JsonDocument v_doc;
+
+        if (CL_C10_ConfigManager::loadWindDict(s_dict)) {
+            CL_C10_ConfigManager::toJson_WindDict(s_dict, v_doc);
             sendJson(p_request, v_doc);
         } else {
             p_request->send(500, "application/json", "{\"error\":\"load failed\"}");
         }
     });
+
 
     // POST: 신규 생성
     s_server->on(

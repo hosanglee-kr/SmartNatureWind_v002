@@ -383,7 +383,7 @@ class CL_CT10_ControlManager {
 
   private:
     // decide/apply
-    ST_CT10_Decision_t decideRunSource(); // (cpp에 ST_CT10_Decision_t가 있다면 선언 위치 조정 필요)
+    ST_CT10_Decision_t decideRunSource();
     void               applyDecision(const ST_CT10_Decision_t& p_d);
 
   private:

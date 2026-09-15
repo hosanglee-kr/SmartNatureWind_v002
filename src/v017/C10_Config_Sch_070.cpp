@@ -839,8 +839,8 @@ bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg, bo
     JsonObject   v_root = d.to<JsonObject>();
 
     // 샘플 cfg 형식 반영(있어도 되고 없어도 되는 메타이지만, 파일 식별/호환성에 도움)
-    v_root["version"]  = "025";
-    v_root["jsonFile"] = "cfg_schedules_025.json";
+    v_root["version"]  = "070";
+    v_root["jsonFile"] = "cfg_schedules_070.json";
 
     // schedules 배열
     JsonArray v_jsSchedules = v_root["schedules"].to<JsonArray>();

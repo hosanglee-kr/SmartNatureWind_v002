@@ -48,6 +48,11 @@
 
 // 외부 종속성 헤더 포함 (외부에서 제공되어야 함: 시스템 상수, 설정, 로그, PWM 제어)
 #include "A20_Const_070.h"
+
+// [o-2] explicit include (A20_Const_070.h에서 제거됨)
+#include "A25_Com_Utils_070.h"     // A40_ComFunc / A40_IO / CL_A40_MutexGuard_Semaphore
+#include "A22_Com_Lookup_070.h"    // A20_modeFromString / A20_findPresetIndexByCode
+
 #include "C10_Config_070.h"
 #include "D10_Logger_070.h"
 #include "P10_PWM_ctrl_070.h"

@@ -60,6 +60,11 @@ static JsonDocument s_doc_metrics;
 static JsonDocument s_doc_chart;
 static JsonDocument s_doc_summary;
 
+// ======================================================
+// [j] WS 스케줄러 상수
+//  - chart interval 강스로틀 상한 (config 최대 60000 × mul 10과 동일)
+// ======================================================
+static constexpr uint32_t S_WS_MAX_INTERVAL_MS = 600000UL;   // 10분
 
 // [B-1b] CT10 상태 mutex 정의 (lazy-init은 CL_A40_MutexGuard_Semaphore가 담당)
 SemaphoreHandle_t CL_CT10_ControlManager::s_stateMutex = nullptr;
@@ -300,7 +305,7 @@ static bool CT10_WS_trySendOne_v03(uint8_t p_ch, uint32_t p_nowMs) {
     if (p_ch == (uint8_t)EN_A20_WS_CH_CHART && s_chartLastPayload >= s_chartLargeBytes) {
         uint32_t v_mul    = (s_chartThrottleMul > 0) ? (uint32_t)s_chartThrottleMul : 2UL;
         uint32_t v_mulItv = v_itv * v_mul;
-        if (v_mulItv > 600000UL) v_mulItv = 600000UL;
+        if (v_mulItv > S_WS_MAX_INTERVAL_MS) v_mulItv = S_WS_MAX_INTERVAL_MS;
         v_itv = v_mulItv;
     }
     if ((uint32_t)(p_nowMs - s_lastSendMs[p_ch]) < v_itv) return false;

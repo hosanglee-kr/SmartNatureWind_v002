@@ -392,33 +392,35 @@ bool CL_C10_ConfigManager::saveDirtyConfigs() {
             CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] dirty-save failed: %s", p_name);
         }
     };
+    
+    
 
     // =====================================================
     // 섹션별 저장 (람다 wrapper)
     // =====================================================
     auto saveSystem_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveSystemConfig(*reinterpret_cast<const ST_A20_SystemConfig_t*>(p));
+        return CL_C10_ConfigManager::saveSystemConfig(*static_cast<const ST_A20_SystemConfig_t*>(p));
     };
     auto saveWifi_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveWifiConfig(*reinterpret_cast<const ST_A20_WifiConfig_t*>(p));
+        return CL_C10_ConfigManager::saveWifiConfig(*static_cast<const ST_A20_WifiConfig_t*>(p));
     };
     auto saveMotion_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveMotionConfig(*reinterpret_cast<const ST_A20_MotionConfig_t*>(p));
+        return CL_C10_ConfigManager::saveMotionConfig(*static_cast<const ST_A20_MotionConfig_t*>(p));
     };
     auto saveNvs_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveNvsSpecConfig(*reinterpret_cast<const ST_A20_NvsSpecConfig_t*>(p));
+        return CL_C10_ConfigManager::saveNvsSpecConfig(*static_cast<const ST_A20_NvsSpecConfig_t*>(p));
     };
     auto saveSchedules_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveSchedules(*reinterpret_cast<const ST_A20_SchedulesRoot_t*>(p));
+        return CL_C10_ConfigManager::saveSchedules(*static_cast<const ST_A20_SchedulesRoot_t*>(p));
     };
     auto saveUserProfiles_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveUserProfiles(*reinterpret_cast<const ST_A20_UserProfilesRoot_t*>(p));
+        return CL_C10_ConfigManager::saveUserProfiles(*static_cast<const ST_A20_UserProfilesRoot_t*>(p));
     };
     auto saveWind_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveWindDict(*reinterpret_cast<const ST_A20_WindDict_t*>(p));
+        return CL_C10_ConfigManager::saveWindDict(*static_cast<const ST_A20_WindDict_t*>(p));
     };
     auto saveWeb_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveWebPageConfig(*reinterpret_cast<const ST_A20_WebPageConfig_t*>(p));
+        return CL_C10_ConfigManager::saveWebPageConfig(*static_cast<const ST_A20_WebPageConfig_t*>(p));
     };
 
     // =====================================================

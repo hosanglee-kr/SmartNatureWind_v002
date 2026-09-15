@@ -181,7 +181,7 @@ void CL_CT10_ControlManager::onTimeInvalid(EN_CT10_reason_t p_reason) {
     runCtx.lastStateChangeMs = v_now;
 
     // 최소 hold: 3초
-    runCtx.stateHoldUntilMs  = v_now + 3000UL;
+    runCtx.stateHoldUntilMs  = v_now + S_EVENT_HOLD_MS;
     runCtx.stateAckRequired  = false;
 
     // snapshot 유지(단 seg는 0으로 리셋해서 “지금은 off/정지” 표현에 도움)
@@ -226,7 +226,7 @@ void CL_CT10_ControlManager::onAutoOffTriggered(EN_CT10_reason_t p_reason) {
     runCtx.lastStateChangeMs = v_now;
 
     // 최소 hold: 3초
-    runCtx.stateHoldUntilMs  = v_now + 3000UL;
+    runCtx.stateHoldUntilMs  = v_now + S_EVENT_HOLD_MS;
 
     // ACK 정책: 기본 false (원하면 true로 바꿔서 UI 확인 후 해제 가능)
     runCtx.stateAckRequired  = false;

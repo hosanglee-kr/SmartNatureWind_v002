@@ -71,3 +71,30 @@ void CL_W10_WebAPI::sendText(AsyncWebServerRequest* p_request,
     _applyHeaders(v_resp, true);
     p_request->send(v_resp);
 }
+
+
+bool CL_W10_WebAPI::checkApiKey(AsyncWebServerRequest* p_request) {
+    const char* v_key = nullptr;
+    if (g_A20_config_root.system && g_A20_config_root.system->security.apiKey[0] != '\0') {
+        v_key = g_A20_config_root.system->security.apiKey;
+    }
+
+    if (!v_key || v_key[0] == '\0') {
+        return true; // API 키 비활성화 상태
+    }
+
+    if (!p_request->hasHeader("X-API-Key")) return false;
+    String v_val = p_request->getHeader("X-API-Key")->value();
+    return (v_val == v_key);
+}
+
+// JSON Body 파싱
+bool CL_W10_WebAPI::parseJsonBody(AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, JsonDocument& p_doc) {
+    auto v_err = deserializeJson(p_doc, (const char*)p_data, p_len);
+    if (v_err) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[W10] JSON parse error: %s", v_err.c_str());
+        return false;
+    }
+    return true;
+    
+}

@@ -36,6 +36,11 @@ void CL_S10_Simulation::begin(CL_P10_PWM& p_pwm) {
     if (_recursiveMutex == nullptr) {
         _recursiveMutex = xSemaphoreCreateRecursiveMutex();
     }
+    
+    // [b-2] ring buffer 초기화
+    s_chartHead  = 0;
+    s_chartCount = 0;
+    // s_chartBuffer[]는 POD이고 write-then-read 순서이므로 memset 불필요
 
     // fanConfig 스냅샷 초기화
     _fanCfgSnap = nullptr;
@@ -47,6 +52,7 @@ void CL_S10_Simulation::begin(CL_P10_PWM& p_pwm) {
     historyIndex  = 0;
     historyCount  = 0;
     avgWindCached = 0.0f;
+    sumWindHistory = 0.0f;   // [b-1] 추가
 
     // ESP32 HW RNG 호출(시드/지터 유도)
     (void)esp_random();
@@ -170,11 +176,8 @@ void CL_S10_Simulation::tick() {
         return; // 반환 타입 bool인 경우 false 반환
     }
 
-    // portENTER_CRITICAL(&_flagSpinlock);
-
     // 1) 비활성 상태면 종료
     if (!active) {
-        // // portEXIT_CRITICAL(&_flagSpinlock);
         return;
     }
 
@@ -199,7 +202,7 @@ void CL_S10_Simulation::tick() {
     const uint32_t v_minIntervalMs = v_baseMs + v_jitterMs;
 
     if (_tickNowMs - lastUpdateMs < (unsigned long)v_minIntervalMs) {
-        // portEXIT_CRITICAL(&_flagSpinlock);
+    
         return;
     }
 
@@ -266,11 +269,9 @@ void CL_S10_Simulation::tick() {
 
     // 15) 차트 샘플링(1Hz / 이벤트 중 2Hz)
     const uint32_t v_chartIntervalMs = (gustActive || thermalActive) ? G_S10_CHART_HZ2_MS : G_S10_CHART_HZ1_MS;
-    if (_tickNowMs - s_lastChartLogMs > (unsigned long)v_chartIntervalMs) {
-        if (s_chartBuffer.size() >= 120) {
-            s_chartBuffer.pop_front();
-        }
 
+    //  [b-2]
+    if (_tickNowMs - s_lastChartLogMs > (unsigned long)v_chartIntervalMs) {
         ST_ChartEntry v_e{};
         v_e.timestamp        = _tickNowMs;
         v_e.wind_speed       = currentWindSpeed;
@@ -278,19 +279,19 @@ void CL_S10_Simulation::tick() {
         v_e.intensity        = userIntensity;
         v_e.variability      = userVariability;
         v_e.turbulence_sigma = turbSigma;
-
-        // presetCode(문자열)를 기반으로 정적 인덱스를 안전하게 추출
-        v_e.preset_index = static_cast<uint8_t>(A20_getStaticPresetIndexByCode(presetCode));
-        // v_e.preset_index	 = (uint8_t)A20_getPresetIndexByCode(presetCode);
-
-        v_e.gust_active    = gustActive;
-        v_e.thermal_active = thermalActive;
-
-        s_chartBuffer.push_back(v_e);
+        v_e.preset_index     = static_cast<uint8_t>(A20_getStaticPresetIndexByCode(presetCode));
+        v_e.gust_active      = gustActive;
+        v_e.thermal_active   = thermalActive;
+    
+        // ring push
+        s_chartBuffer[s_chartHead] = v_e;
+        s_chartHead = (uint8_t)((s_chartHead + 1u) % CHART_CAPACITY);
+        if (s_chartCount < CHART_CAPACITY) s_chartCount++;
+    
         s_lastChartLogMs = _tickNowMs;
     }
 
-    // portEXIT_CRITICAL(&_flagSpinlock);
+
 
     // ---- (B) 락 밖에서 브로드캐스트 수행 ----
     if (v_needBroadcast) {
@@ -331,8 +332,6 @@ void CL_S10_Simulation::applyResolvedWind(const ST_A20_ResolvedWind_t& p_resolve
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[S10] %s: Mutex timeout", __func__);
         return; // 반환 타입 bool인 경우 false 반환
     }
-
-    // portENTER_CRITICAL(&_flagSpinlock);
 
     // 시간 캡처(Phase 초기화 시 사용하는 _tickNowSec 일관성 보장)
     _tickNowMs  = millis();
@@ -395,8 +394,6 @@ void CL_S10_Simulation::applyResolvedWind(const ST_A20_ResolvedWind_t& p_resolve
 
     // 새 목표 생성
     generateTarget();
-
-    // portEXIT_CRITICAL(&_flagSpinlock);
 }
 
 /**

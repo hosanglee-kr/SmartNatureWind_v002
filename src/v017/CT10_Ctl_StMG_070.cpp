@@ -114,6 +114,18 @@ ST_CT10_Decision_t CL_CT10_ControlManager::decideRunSource() {
         // override는 tickOverride()에서 실제 반영/timeout 처리
         return v_d;
     }
+    
+    // [B-2] AutoOff 래치 우선 처리
+    //  - 트리거 후 사용자 재개 없이는 자동 재진입 차단
+    //  - reason은 onAutoOffTriggered의 값 유지
+    // --------------------------------------------------
+    if (_autoOffLatched) {
+        v_d.nextState     = EN_CT10_STATE_AUTOOFF_STOPPED;
+        v_d.reason        = runCtx.reason;      // 기존 reason 유지
+        v_d.nextRunSource = EN_CT10_RUN_NONE;
+        v_d.wantSimStop   = true;
+        return v_d;
+    }
 
     // --------------------------------------------------
     // 2) ProfileMode 전용

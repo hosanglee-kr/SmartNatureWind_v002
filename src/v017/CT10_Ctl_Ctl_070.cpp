@@ -2,7 +2,7 @@
  * ------------------------------------------------------
  * 소스명 : CT10_Ctl_Ctl_070.cpp
  * 모듈약어 : CT10
- * 모듈명 : Smart Nature Wind 제어 통합 Manager (v050, Control)
+ * 모듈명 : Smart Nature Wind 제어 통합 Manager (Control)
  * ------------------------------------------------------
  * 기능 요약:
  * - begin/tick 및 Override/Profile/Schedule 제어 루프 구현
@@ -103,6 +103,9 @@ bool CL_CT10_ControlManager::reloadAll() {
     
     // [A-2] 영속 필드 리셋 (설정 재적용이므로 offTime 트리거 이력 초기화)
     v_inst._persistOffTimeLastYday = -1;
+    
+    // [B-2] AutoOff 래치 리셋 (설정 재적용)
+    v_inst._autoOffLatched = false;
 
     v_inst.scheduleSegRt.index = -1;
     v_inst.profileSegRt.index  = -1;
@@ -203,6 +206,9 @@ void CL_CT10_ControlManager::setProfileMode(bool p_profileMode) {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return;
     
+    // [B-2] 사용자 모드 변경 → AutoOff 래치 해제
+    _autoOffLatched = false;
+    
     useProfileMode = p_profileMode;
 
     if (!p_profileMode) {
@@ -233,6 +239,9 @@ bool CL_CT10_ControlManager::startUserProfileByNo(uint16_t p_profileNo) {
         if (!v_p.enabled) continue;
 
         if (v_p.profileNo == p_profileNo) {
+            // [B-2] 사용자 프로파일 시작 → AutoOff 래치 해제
+            _autoOffLatched = false;
+            
             runSource                  = EN_CT10_RUN_USER_PROFILE;
             curProfileIndex            = (int8_t)v_i;
 
@@ -284,6 +293,9 @@ void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seco
 
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return;
+    
+    // [B-2] 사용자 override 시작 → AutoOff 래치 해제
+    _autoOffLatched = false;
     
     memset(&overrideState, 0, sizeof(overrideState));
     overrideState.active        = true;
@@ -338,6 +350,9 @@ void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_
         startOverrideFixed(p_wind.fixedSpeed, p_seconds);
         return;
     }
+    
+    // [B-2] 사용자 override(resolved) 시작 → AutoOff 래치 해제
+    _autoOffLatched = false;
 
     memset(&overrideState, 0, sizeof(overrideState));
     overrideState.active          = true;

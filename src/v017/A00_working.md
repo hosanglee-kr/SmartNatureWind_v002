@@ -1,194 +1,263 @@
-B-1 MOTION_BLOCKED flip-flop — 최종 diff
+B-2 AutoOff 상태 지속성 — Latch 설계 및 diff
 
 문제 재확인
 
-· decideRunSource: motion 무시 → 항상 SCHEDULE_RUN/PROFILE_RUN 반환
-· tickSchedule/tickUserProfile: isMotionBlocked → onMotionBlocked → 상태 flip
-· 다음 tick decide가 다시 RUN 반환 → 40ms 주기 flip-flop
+Timer AutoOff 시나리오:
 
-수정: motion 판정을 decideRunSource로 이동 + tickSegmentSequence self-heal (motion 해제 후 seg 재적용).
+시각 이벤트 state timerStartMs
+t=0 스케줄 진입 SCHEDULE_RUN now
+t=480분 AutoOff timer 트리거 AUTOOFF_STOPPED -
+t+3초 hold 만료 → decide → SCHEDULE_RUN SCHEDULE_RUN now (리셋!)
+t+3초+ 팬 재작동 SCHEDULE_RUN —
+
+→ AutoOff가 "3초 일시 정지"로 동작. 사용자 재개 전까지 유지가 의도.
+
+설계 — AutoOff 래치
+
+원칙:
+
+· AutoOff 트리거 → latch = true
+· Latch 활성 시 decideRunSource가 강제 AUTOOFF_STOPPED 반환 → 자동 재진입 차단
+· 사용자 명시적 재개에서만 latch 해제
 
 ---
 
+1) CT10_Ctl_070.h — private 멤버 1개 추가
 
-수정 1 — CT10_Ctl_StMG_070.cpp::decideRunSource
-
-1-1. ProfileMode 분기 (motion 검사 추가)
+위치: _persistOffTimeLastYday 다음
 
 ```cpp
-    if (useProfileMode) {
-        if (runSource == EN_CT10_RUN_USER_PROFILE && curProfileIndex >= 0) {
-            // [B-1] profile motion 검사 (flip-flop 방지)
-            if (g_A20_config_root.userProfiles) {
-                ST_A20_UserProfilesRoot_t& v_up = *g_A20_config_root.userProfiles;
-                if ((uint8_t)curProfileIndex < v_up.count) {
-                    if (isMotionBlocked(v_up.items[(uint8_t)curProfileIndex].motion)) {
-                        v_d.nextState        = EN_CT10_STATE_MOTION_BLOCKED;
-                        v_d.reason           = EN_CT10_REASON_MOTION_NO_PRESENCE;
-                        v_d.nextRunSource    = EN_CT10_RUN_USER_PROFILE;
-                        v_d.nextProfileIndex = curProfileIndex;
-                        v_d.wantSimStop      = true;
-                        return v_d;
-                    }
-                }
-            }
-            v_d.nextState        = EN_CT10_STATE_PROFILE_RUN;
-            v_d.reason           = EN_CT10_REASON_PROFILE_MODE;
-            v_d.nextRunSource    = EN_CT10_RUN_USER_PROFILE;
-            v_d.nextProfileIndex = curProfileIndex;
-            return v_d;
-        }
-        ...
-    }
+    // [A-2] offTime 재트리거 방지 영속 필드
+    int16_t _persistOffTimeLastYday = -1;
+
+    // --------------------------------------------------
+    // [B-2] AutoOff 래치
+    //  - AutoOff(timer/offTime/offTemp) 트리거 시 true
+    //  - decideRunSource가 강제 AUTOOFF_STOPPED 반환 → 자동 재진입 차단
+    //  - 사용자 명시적 재개(setMode/startOverride/ackEvent)에서 해제
+    // --------------------------------------------------
+    bool _autoOffLatched = false;
 ```
 
-1-2. UserProfile 분기 (motion 검사 추가)
+---
+
+2) CT10_Ctl_Basic_070.cpp::onAutoOffTriggered — Latch set
+
+위치: 함수 끝, 마지막 로그 다음
 
 ```cpp
-    if (runSource == EN_CT10_RUN_USER_PROFILE && curProfileIndex >= 0) {
-        // [B-1] profile motion 검사
-        if (g_A20_config_root.userProfiles) {
-            ST_A20_UserProfilesRoot_t& v_up = *g_A20_config_root.userProfiles;
-            if ((uint8_t)curProfileIndex < v_up.count) {
-                if (isMotionBlocked(v_up.items[(uint8_t)curProfileIndex].motion)) {
-                    v_d.nextState        = EN_CT10_STATE_MOTION_BLOCKED;
-                    v_d.reason           = EN_CT10_REASON_MOTION_NO_PRESENCE;
-                    v_d.nextRunSource    = EN_CT10_RUN_USER_PROFILE;
-                    v_d.nextProfileIndex = curProfileIndex;
-                    v_d.wantSimStop      = true;
-                    return v_d;
-                }
-            }
-        }
-        v_d.nextState        = EN_CT10_STATE_PROFILE_RUN;
-        v_d.reason           = EN_CT10_REASON_USER_PROFILE_ACTIVE;
-        v_d.nextRunSource    = EN_CT10_RUN_USER_PROFILE;
-        v_d.nextProfileIndex = curProfileIndex;
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff STOPPED (reason=%u, hold=3000ms)", (unsigned)p_reason);
+
+    // [B-2] AutoOff 래치 (사용자 재개 전까지 자동 재진입 차단)
+    _autoOffLatched = true;
+}
+```
+
+---
+
+3) CT10_Ctl_Basic_070.cpp::ackEventState — Latch clear
+
+위치: hold/ack 초기화 다음
+
+```cpp
+    if (runCtx.state != EN_CT10_STATE_AUTOOFF_STOPPED) {
+        return;
+    }
+
+    runCtx.stateAckRequired = false;
+    runCtx.stateHoldUntilMs = 0;
+
+    // [B-2] 사용자 ACK → AutoOff 래치 해제 (재개 허용)
+    _autoOffLatched = false;
+
+    markDirty("state");
+    markDirty("summary");
+```
+
+---
+
+4) CT10_Ctl_StMG_070.cpp::decideRunSource — Latch 우선 처리
+
+위치: Override 분기 다음, ProfileMode 분기 이전
+
+```cpp
+    // --------------------------------------------------
+    // 1) Override
+    // --------------------------------------------------
+    if (overrideState.active) {
+        ...
         return v_d;
     }
-```
 
-1-3. Schedule 분기 (motion 검사 추가)
-
-```cpp
-    {
-        ST_A20_SchedulesRoot_t& v_cfg = *g_A20_config_root.schedules;
-        int v_activeIdx = findActiveScheduleIndex(v_cfg, true);
-
-        if (v_activeIdx >= 0) {
-            // [B-1] schedule motion 검사
-            if ((uint8_t)v_activeIdx < v_cfg.count) {
-                ST_A20_ScheduleItem_t& v_s = v_cfg.items[(uint8_t)v_activeIdx];
-                if (isMotionBlocked(v_s.motion)) {
-                    v_d.nextState         = EN_CT10_STATE_MOTION_BLOCKED;
-                    v_d.reason            = EN_CT10_REASON_MOTION_NO_PRESENCE;
-                    v_d.nextRunSource     = EN_CT10_RUN_SCHEDULE;
-                    v_d.nextScheduleIndex = (int8_t)v_activeIdx;
-                    v_d.wantSimStop       = true;
-                    return v_d;
-                }
-            }
-            v_d.nextState         = EN_CT10_STATE_SCHEDULE_RUN;
-            v_d.reason            = EN_CT10_REASON_SCHEDULE_ACTIVE;
-            v_d.nextRunSource     = EN_CT10_RUN_SCHEDULE;
-            v_d.nextScheduleIndex = (int8_t)v_activeIdx;
-            return v_d;
-        }
-    }
-```
-
----
-
-수정 2 — CT10_Ctl_Ctl_070.cpp::tickSegmentSequence (self-heal)
-
-Schedule 오버로드와 Profile 오버로드 모두에 동일 패턴 삽입.
-
-위치: ST_A20_ScheduleSegment_t& v_seg = p_segs[(uint8_t)p_rt.index]; 다음, v_onMs 계산 이전.
-
-```cpp
-    ST_A20_ScheduleSegment_t& v_seg = p_segs[(uint8_t)p_rt.index];
-
-    // [B-1] self-heal: MOTION_BLOCKED 등으로 sim이 죽어있으면 onPhase에 대해 재적용
-    //  - 이전: motion 해제 후 segRt.index >= 0 유지 → tickSegmentSequence 초기 분기 skip
-    //         → applySegmentOn 미호출 → sim 영구 정지
-    //  - 이후: onPhase && !sim.active 시 즉시 재적용
-    //  - phaseStartMs는 유지 (타이머 계속 진행)
-    if (p_rt.onPhase && !sim.active) {
-        applySegmentOn(v_seg);
-        return true;
+    // --------------------------------------------------
+    // [B-2] AutoOff 래치 우선 처리
+    //  - 트리거 후 사용자 재개 없이는 자동 재진입 차단
+    //  - reason은 onAutoOffTriggered의 값 유지
+    // --------------------------------------------------
+    if (_autoOffLatched) {
+        v_d.nextState     = EN_CT10_STATE_AUTOOFF_STOPPED;
+        v_d.reason        = runCtx.reason;      // 기존 reason 유지
+        v_d.nextRunSource = EN_CT10_RUN_NONE;
+        v_d.wantSimStop   = true;
+        return v_d;
     }
 
-    uint32_t v_onMs  = (uint32_t)v_seg.onMinutes  * 60000UL;
+    // --------------------------------------------------
+    // 2) ProfileMode 전용
+    // --------------------------------------------------
     ...
 ```
 
-Profile 오버로드도 동일하게 (ST_A20_UserProfileSegment_t& v_seg = ... 다음).
+효과: latch 활성 시 매 tick 동일 결과 반환 → v_stateChanged == false → flip 없음 ✅
 
 ---
 
-수정 3 (선택) — tickSchedule/tickUserProfile 내 isMotionBlocked 제거
+5) CT10_Ctl_Ctl_070.cpp — Latch clear 4곳
 
-이 시점부터 decideRunSource가 motion을 처리하므로 tick 내부 검사는 dead code. 남겨두면 race로 인한 중복 호출만 발생 (무해). 삭제 권장.
-
-tickSchedule:
+5-1. setProfileMode
 
 ```cpp
-    // (B-1) 삭제 — decideRunSource에서 motion 처리
-    // if (isMotionBlocked(v_schedule.motion)) {
-    //     onMotionBlocked(EN_CT10_REASON_MOTION_NO_PRESENCE);
-    //     return true;
-    // }
+void CL_CT10_ControlManager::setProfileMode(bool p_profileMode) {
+    CL_A40_MutexGuard_Semaphore v_guard(...);
+    if (!v_guard.isAcquired()) return;
+
+    // [B-2] 사용자 모드 변경 → AutoOff 래치 해제
+    _autoOffLatched = false;
+
+    useProfileMode = p_profileMode;
+    ...
+}
 ```
 
-tickUserProfile: 동일 삭제.
+5-2. startUserProfileByNo
 
-onMotionBlocked 자체는 유지 (다른 경로에서 사용 가능성 대비).
+위치: 매칭 성공 블록, runSource 갱신 직전
+
+```cpp
+        if (v_p.profileNo == p_profileNo) {
+            // [B-2] 사용자 프로파일 시작 → AutoOff 래치 해제
+            _autoOffLatched = false;
+
+            runSource                  = EN_CT10_RUN_USER_PROFILE;
+            ...
+```
+
+5-3. startOverrideFixed
+
+```cpp
+void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seconds) {
+    CL_A40_MutexGuard_Semaphore v_guard(...);
+    if (!v_guard.isAcquired()) return;
+
+    // [B-2] 사용자 override 시작 → AutoOff 래치 해제
+    _autoOffLatched = false;
+
+    memset(&overrideState, 0, sizeof(overrideState));
+    ...
+}
+```
+
+5-4. applyManualResolved
+
+```cpp
+void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds) {
+    CL_A40_MutexGuard_Semaphore v_guard(...);
+    if (!v_guard.isAcquired()) return;
+
+    if (!p_wind.valid) { ... return; }
+    if (p_wind.fixedMode) { startOverrideFixed(...); return; }
+
+    // [B-2] 사용자 override(resolved) 시작 → AutoOff 래치 해제
+    _autoOffLatched = false;
+
+    memset(&overrideState, 0, sizeof(overrideState));
+    ...
+}
+```
+
+5-5. reloadAll (static 함수)
+
+위치: v_inst._persistOffTimeLastYday = -1; 다음
+
+```cpp
+    // [A-2] 영속 필드 리셋
+    v_inst._persistOffTimeLastYday = -1;
+
+    // [B-2] AutoOff 래치 리셋 (설정 재적용)
+    v_inst._autoOffLatched = false;
+```
 
 ---
 
-흐름 검증
+변경 요약
 
-Case 1: Motion blocked 진입
+파일 변경
+CT10_Ctl_070.h _autoOffLatched 선언
+CT10_Ctl_Basic_070.cpp onAutoOffTriggered set, ackEventState clear
+CT10_Ctl_StMG_070.cpp decideRunSource latch 분기
+CT10_Ctl_Ctl_070.cpp setProfileMode/startUserProfileByNo/startOverrideFixed/applyManualResolved/reloadAll clear
 
-시각 상태 동작
-t0 SCHEDULE_RUN, sim.active —
-t1 decide: motion blocked → MOTION_BLOCKED + wantSimStop applyDecision → state 변경, sim.stop()
-t2 MOTION_BLOCKED fall-through → sim.stop()
-t3 decide: 여전히 MOTION_BLOCKED applyDecision: 변화 없음 → flip 없음 ✅
-
-Case 2: Motion 해제
-
-시각 상태 동작
-t0 MOTION_BLOCKED —
-t1 decide: motion resolved → SCHEDULE_RUN applyDecision → state 변경, source 변화 없음
-t2 SCHEDULE_RUN tickSchedule → tickSegmentSequence → self-heal → applySegmentOn → sim 활성 ✅
-
-Case 3: Override 중 motion 변화
-
-시각 상태 동작
-t0 OVERRIDE motion 무시 (우선순위)
-t1 override timeout decide → motion blocked → MOTION_BLOCKED
-t2 MOTION_BLOCKED segRt 이전 인덱스 유지
-t3 motion resolved self-heal로 재개 ✅
+총 4파일, ~15줄.
 
 ---
 
-검증 체크리스트
+시나리오 검증
+
+시나리오 1: Timer AutoOff (핵심)
+
+시각 이벤트 state latch
+t=0 스케줄 진입 SCHEDULE_RUN false
+t=480분 AutoOff 트리거 AUTOOFF_STOPPED true
+t+3초 hold 만료 → decide: latch → AUTOOFF_STOPPED AUTOOFF_STOPPED (변화 없음) true
+t+10분 decide: latch → AUTOOFF_STOPPED 유지 true
+t+1시간 decide: latch → AUTOOFF_STOPPED 유지 true
+팬 정지 유지 ✅  
+
+시나리오 2: 사용자 재개
+
+시각 이벤트 state latch
+t=0 AUTOOFF_STOPPED  true
+t=1 startUserProfileByNo(10) (변화 없음) false
+t+40ms decide: profile → PROFILE_RUN PROFILE_RUN false
+→ 팬 재작동 ✅
+
+시나리오 3: Override가 AutoOff 도중
+
+시각 이벤트 state latch
+t=0 AUTOOFF_STOPPED  true
+t=1 startOverrideFixed(50, 30) (변화 없음) false
+t+40ms decide: override → OVERRIDE OVERRIDE false
+t=31초 override timeout → AUTOOFF 아님, 이후 decide → SCHEDULE_RUN false
+
+시나리오 4: ACK
+
+시각 이벤트 latch
+t=0 AUTOOFF_STOPPED true
+t=1 ackEvent() false → 다음 tick decide가 자연 복귀
+
+---
+
+회귀 리스크
+
+리스크 대응
+AutoOff 후 사용자 재개 경로 없음? setProfileMode/startUserProfileByNo/startOverride/ackEvent 모두 지원
+offTime(A-2)와 상호작용 offTime 트리거도 onAutoOffTriggered 경유 → latch set. 정합 ✅
+_autoOffLatched vs _persistOffTimeLastYday 독립적 (latch = 사용자 재개 차단, persist = yday 재트리거 방지)
+reloadAll 정합성 latch 리셋 + persist 리셋 + state 초기화
+
+---
+
+검증 체크리스트 (실기)
 
 # 시나리오 기대
 1 컴파일 에러 0
-2 PIR 감지 중단 → 로그 State=MOTION_BLOCKED 1회만 (flip 없음)
-3 PIR 재감지 State=SCHEDULE_RUN 1회, sim 재개
-4 팬 동작 motion block 동안 정지, 해제 후 재개 (self-heal)
-5 lastStateChangeMs 상태 변화 시에만 갱신 (40ms마다 X)
-6 5분 지속 부하 flip-flop 로그 0건
+2 timer AutoOff 후 1분 관찰 state가 AUTOOFF_STOPPED 유지
+3 offTime AutoOff 후 관찰 동일
+4 startUserProfileByNo 호출 팬 재개
+5 startOverrideFixed 호출 팬 재개 (override)
+6 ackEvent 호출 다음 tick 자연 복귀
+7 로그 AutoOff STOPPED 1회 (3초 주기 재트리거 없음)
 
 ---
 
-적용 순서:
-
-1. decideRunSource 3개 분기 수정
-2. tickSegmentSequence self-heal (2 오버로드)
-3. (선택) tickSchedule/tickUserProfile dead code 제거
-
-컴파일 결과 알려주세요.
+적용 후 컴파일 결과 알려주세요.

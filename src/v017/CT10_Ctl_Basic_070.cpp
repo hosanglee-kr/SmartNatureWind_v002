@@ -2,7 +2,7 @@
  * ------------------------------------------------------
  * 소스명 : CT10_Ctl_Basic_070.cpp
  * 모듈약어 : CT10
- * 모듈명 : Smart Nature Wind 제어 통합 Manager (v026, Misc)
+ * 모듈명 : Smart Nature Wind 제어 통합 Manager (Misc)
  * ------------------------------------------------------
  * 기능 요약:
  * - AutoOff 초기화/체크, Motion 체크, Schedule 활성 인덱스 계산
@@ -130,6 +130,9 @@ void CL_CT10_ControlManager::ackEventState() {
 
     runCtx.stateAckRequired = false;
     runCtx.stateHoldUntilMs = 0;
+    
+    // [B-2] 사용자 ACK → AutoOff 래치 해제 (재개 허용)
+    _autoOffLatched = false;
 
     // ACK 시 즉시 IDLE로 강제하지 않고 다음 tick에서 자연 결정
     markDirty("state");
@@ -244,6 +247,9 @@ void CL_CT10_ControlManager::onAutoOffTriggered(EN_CT10_reason_t p_reason) {
     markDirty("summary");
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff STOPPED (reason=%u, hold=3000ms)", (unsigned)p_reason);
+    
+    // [B-2] AutoOff 래치 (사용자 재개 전까지 자동 재진입 차단)
+    _autoOffLatched = true;
 }
 
 // --------------------------------------------------

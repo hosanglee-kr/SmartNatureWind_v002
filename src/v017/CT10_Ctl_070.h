@@ -3,7 +3,7 @@
  * ------------------------------------------------------
  * 소스명 : CT10_Ctl_070.h
  * 모듈약어 : CT10
- * 모듈명 : Smart Nature Wind 제어 통합 Manager (v050)
+ * 모듈명 : Smart Nature Wind 제어 통합 Manager
  * ------------------------------------------------------
  * 기능 요약:
  * - Schedule / UserProfile / Manual Override 기반 풍속 제어
@@ -329,6 +329,13 @@ class CL_CT10_ControlManager {
     //  - reloadAll()에서만 리셋 (설정 재적용 대비)
     // --------------------------------------------------
     int16_t _persistOffTimeLastYday = -1;
+    
+    // [B-2] AutoOff 래치
+    //  - AutoOff(timer/offTime/offTemp) 트리거 시 true
+    //  - decideRunSource가 강제 AUTOOFF_STOPPED 반환 → 자동 재진입 차단
+    //  - 사용자 명시적 재개(setMode/startOverride/ackEvent)에서 해제
+    // --------------------------------------------------
+    bool _autoOffLatched = false;
 
   private:
     // --------------------------------------------------

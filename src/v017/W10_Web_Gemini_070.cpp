@@ -30,6 +30,12 @@
 // 최소 호출 간격 (ms) – 무료 티어 레이트 리밋 방지
 #define G_W10_GEMINI_RATE_LIMIT_MS 3000
 
+// [P1-2] 응답 최대 바이트 (heap 보호)
+//  - 요청 상한(8KB)의 1/2 수준
+//  - 응답 본문까지 전송, 초과분은 truncate + drain
+#define G_W10_GEMINI_MAX_RESP      4096
+
+
 // ------------------------------------------------------
 // 전역 레이트 리밋 타이머
 // ------------------------------------------------------
@@ -91,10 +97,21 @@ static String W10_callGeminiApi(const char* p_body, size_t p_len, int& r_httpCod
     v_client.print(v_request);
     v_client.print(p_body);
 
-    // 응답 읽기
+    // ------------------------------------------------------------------
+    // [P1-2 옵션 B] 응답 읽기 — 라인 캡 + 응답 캡 (heap 보호)
+    //  - readStringUntil 제거: 라인 길이 무제한 할당 방지
+    //  - readBytesUntil: 고정 버퍼(512B), 라인 단위 하드 캡
+    //  - 응답 본문: G_W10_GEMINI_MAX_RESP(4KB) 상한
+    //  - 상한 초과분: append 없이 drain만 (TCP 정상 종료 유도)
+    // ------------------------------------------------------------------
     String        v_resp;
     unsigned long v_startMs     = millis();
     bool          v_headersDone = false;
+    bool          v_truncated   = false;
+
+    // 헤더 라인 버퍼 (스택)
+    static constexpr size_t S_LINE_BUF_SZ = 512;
+    char                    v_lineBuf[S_LINE_BUF_SZ];
 
     while (v_client.connected() || v_client.available()) {
         if (millis() - v_startMs > (unsigned long)G_W10_GEMINI_TIMEOUT) {
@@ -104,28 +121,64 @@ static String W10_callGeminiApi(const char* p_body, size_t p_len, int& r_httpCod
             return "{\"error\":\"Gemini timeout\"}";
         }
 
-        if (v_client.available()) {
-            String v_line = v_client.readStringUntil('\n');
+        if (!v_client.available()) continue;
 
-            if (!v_headersDone) {
-                if (v_line.startsWith("HTTP/")) {
-                    // 예: "HTTP/1.1 200 OK"
-                    int v_space = v_line.indexOf(' ');
-                    if (v_space > 0) {
-                        r_httpCode = v_line.substring(v_space + 1, v_line.indexOf(' ', v_space + 1)).toInt();
-                    }
-                }
-                if (v_line == "\r" || v_line.length() <= 1) {
-                    v_headersDone = true;
-                }
-            } else {
-                v_resp += v_line + "\n";
+        // ==============================================================
+        // [3-1] 헤더 파싱 (라인 기반 유지)
+        // ==============================================================
+        if (!v_headersDone) {
+            memset(v_lineBuf, 0, S_LINE_BUF_SZ);
+            size_t v_n = v_client.readBytesUntil('\n', v_lineBuf, S_LINE_BUF_SZ - 1);
+            v_lineBuf[v_n] = '\0';
+
+            // HTTP 상태 라인
+            if (v_n >= 5 && strncmp(v_lineBuf, "HTTP/", 5) == 0) {
+                const char* v_sp = strchr(v_lineBuf, ' ');
+                if (v_sp) r_httpCode = atoi(v_sp + 1);
             }
+
+            // 헤더 종료: 빈 라인
+            if (v_n == 0 || (v_n == 1 && v_lineBuf[0] == '\r')) {
+                v_headersDone = true;
+            }
+            continue;
         }
+
+        // ==============================================================
+        // [3-2] 본문 누적 (chunk 기반, 라인 경계 무시)
+        // ==============================================================
+        uint8_t v_chunk[256];
+        size_t  v_n = v_client.readBytes(v_chunk, sizeof(v_chunk));
+        if (v_n == 0) continue;
+
+        size_t v_avail = (v_resp.length() < G_W10_GEMINI_MAX_RESP)
+                             ? (G_W10_GEMINI_MAX_RESP - v_resp.length())
+                             : 0;
+
+        if (v_avail == 0) {
+            v_truncated = true;
+            continue;   // drain
+        }
+
+        size_t v_append = (v_n < v_avail) ? v_n : v_avail;
+        v_resp.concat((const char*)v_chunk, v_append);
+
+        if (v_append < v_n) v_truncated = true;
     }
 
     v_client.stop();
-    CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[W10][Gemini] HTTP %d, response: %u bytes", r_httpCode, (unsigned)v_resp.length());
+
+    if (v_truncated) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[W10][Gemini] response truncated at %u bytes (cap=%u)",
+                           (unsigned)v_resp.length(),
+                           (unsigned)G_W10_GEMINI_MAX_RESP);
+    }
+
+    CL_D10_Logger::log(EN_L10_LOG_DEBUG,
+                       "[W10][Gemini] HTTP %d, response: %u bytes",
+                       r_httpCode,
+                       (unsigned)v_resp.length());
 
     return v_resp;
 }

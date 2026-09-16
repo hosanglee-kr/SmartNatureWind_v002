@@ -1,51 +1,74 @@
+즉시 개입 
+
+C-1. isStaConnected timeout=0 (WF10_WiFiMgr_070.cpp)
+
+수정 위치: CL_WF10_WiFiManager::isStaConnected()
+
+```cpp
+// BEFORE
+bool CL_WF10_WiFiManager::isStaConnected() {
+    CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, 0, __func__); // 즉시 확인
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout", __func__);
+        return false;
+    }
+    return s_staConnected && (WiFi.status() == WL_CONNECTED);
+}
+
+// AFTER
+bool CL_WF10_WiFiManager::isStaConnected() {
+    // [C-1] timeout 10ms: applyConfig 재연결 중에도 LED 폴링이 정상 반환
+    //  - 0ms는 mutex 보유 중 즉시 false 반환 → LED 오표시(빨강)
+    //  - s_staConnected 값은 원자적 읽기로도 안전하나, WiFi.status()까지
+    //    일관 조회를 위해 mutex 획득 유지
+    CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, 10, __func__);
+    if (!v_guard.isAcquired()) {
+        // mutex 미획득 시 stale 값이라도 반환 (LED 빨강 오표시 방지)
+        return s_staConnected;
+    }
+    return s_staConnected && (WiFi.status() == WL_CONNECTED);
+}
+```
+
+근거:
+
+· 기존 0ms → applyConfig 중 LED가 반드시 false (빨강)
+· 10ms 대기 + 실패 시 stale 값 사용 → 정상 연결 상태 유지 표시
+
+검증:
+
+· WiFi 재연결 중 LED가 빨강으로 즉시 바뀌지 않음 (초록 유지)
+· 재연결 실패 확정 시에만 빨강
 
 ---
 
-🟡 P2 — _wifiTask 파일-스코프 static s_wifiSnap
+적용 순서
 
-_wifiTask 내부 static ST_A20_WifiConfig_t s_wifiSnap; — 함수-로컬 static. task 1개라 경쟁 없음 ✅.
+1. A-1: A00_Main_070.h — 2줄 추가
+2. A-3: TM10_TimeMg_070.h — 멱등 가드 8줄
+3. C-1: WF10_WiFiMgr_070.cpp — timeout 0→10, fallback 1줄
 
-다만 향후 task 2개 이상 확장 시 문제. 지금은 무해.
-
----
-
-✅ 안전성 확인 (race 외)
-
-항목 상태
-WDT (WiFi task 미등록) ✅
-Priority 1 = loopTask ✅
-Stack 8192 ✅ (peak ~2KB)
-Semaphore 이중 give → coalesce ✅
-_ensureWifiTask 멱등 ✅
-s_wifiMutex 순서 (CT10과 무교차) ✅
-esp_task_wdt.h include 삭제 (미사용) ✅
+총 3파일, ~12줄.
 
 ---
 
-검증 체크리스트 (수정 후)
+통합 검증 체크리스트
 
 # 시나리오 기대
 1 컴파일 에러 0
-2 부팅 로그 [WF10] Reconnect task created 1회
-3 POST /api/network/wifi/config 즉시 200 (status=requested)
-4 재연결 중 WS /state push 정상
-5 재연결 중 CT10 tick 정상
-6 재연결 중 /api/v001/reload 크래시 없음 (race fix 검증)
-7 연속 재요청 (2회) 1회만 (status=coalesced)
-8 ESP32 리셋 없음
-9 heap drift 30분 안정
+2 부팅 로그 [A00] M10 wired to CT10 (ptr=0x...) (not 0x0)
+3 PIR 감지 중단 → holdSec 경과 [CT10] MOTION_BLOCKED 로그
+4 [TM10] begin 로그 부팅 시 1회만
+5 WiFi applyConfig 중 [TM10] begin ignored 로그 1회
+6 재연결 중 LED 빨강 안 됨 (초록 유지)
+7 재연결 실패 확정 빨강 전환
 
-#6이 새 race의 핵심 검증.
+#3이 A-1의 기능 검증, #6이 C-1 검증, #5가 A-3 검증.
 
 ---
 
-우선순위
+이후
 
-순위 항목 개입
-1 WiFi task g_A20_config_root race 5줄
-2 응답 문구 stale 3줄
-3 주석 [WF10-defer] → [WF10-task] 1줄
+즉시 개입 3건 완료 후 A-2 (AutoOff offTime 무한 재트리거) — 최대 위험 이슈. 설계 필요 (영속 필드 도입).
 
-1번 먼저 반영 → 컴파일 → 실기 테스트.
-
-수정 결과 알려주세요.
+적용 후 컴파일 및 검증 결과 알려주세요.

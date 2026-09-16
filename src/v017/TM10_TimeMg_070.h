@@ -337,7 +337,17 @@ inline void CL_TM10_TimeManager::begin() {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
         return;
     }
-
+    
+    // [A-3] 멱등 가드: SNTP 진행 중이거나 WiFi up 상태면 상태 리셋 금지
+    //  - WiFi applyConfig 경로에서 init() → begin()이 재호출됨
+    //  - 강제 리셋 시 SNTP 완전 정지 + WiFi 재연결 실패 시 영구 정지
+    if (s_running || s_wifiUp) {
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG,
+                           "[TM10] begin ignored (running=%d wifiUp=%d)",
+                           (int)s_running, (int)s_wifiUp);
+        return;
+    }
+    
     _setDefaults();
 
     s_timeValid       = _isTimeSane();

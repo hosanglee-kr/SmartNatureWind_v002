@@ -132,6 +132,13 @@ void A00_init() {
     // ------------------------------------------------------
     CL_M10_MotionLogic::M10_begin();
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[M10] Motion Logic started");
+    
+    // [A-1] CT10에 M10 주입 (누락 시 motion blocking 무력)
+    //  - g_M10_motionLogic은 M10_begin()에서 세팅됨
+    //  - CT10::begin() 이후에 호출 (begin에서 멤버 초기화 순서 고려)
+    g_A00_control.setMotion(g_M10_motionLogic);
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] M10 wired to CT10 (ptr=%p)", (void*)g_M10_motionLogic);
+
 
     // ------------------------------------------------------
     // 8. Web API + Web UI

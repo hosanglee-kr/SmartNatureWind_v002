@@ -321,10 +321,14 @@ void CL_WF10_WiFiManager::scanNetworksToJson(JsonDocument& p_doc) {
 // 헬퍼 메서드
 // --------------------------------------------------
 bool CL_WF10_WiFiManager::isStaConnected() {
-    CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, 0, __func__); // 즉시 확인
+    // [C-1] timeout 10ms: applyConfig 재연결 중에도 LED 폴링이 정상 반환
+    //  - 0ms는 mutex 보유 중 즉시 false 반환 → LED 오표시(빨강)
+    //  - s_staConnected 값은 원자적 읽기로도 안전하나, WiFi.status()까지
+    //    일관 조회를 위해 mutex 획득 유지
+    CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, 10, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout", __func__);
-        return false;
+        // mutex 미획득 시 stale 값이라도 반환 (LED 빨강 오표시 방지)
+        return s_staConnected;
     }
     return s_staConnected && (WiFi.status() == WL_CONNECTED);
 }

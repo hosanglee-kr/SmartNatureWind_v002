@@ -45,6 +45,8 @@
 #include <ArduinoJson.h>
 #include <Preferences.h>
 #include <string.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
 #include "A20_Const_070.h"
 #include "C10_Config_070.h"
@@ -125,6 +127,14 @@ class CL_N10_NvsManager {
 	static ST_N10_RuntimeState_t s_state;
 	static ST_N10_DirtyFlags_t	 s_dirty;
 	static uint32_t				 s_lastSaveMs;
+	
+	// --------------------------------------------------
+    // [P0-2] 상태 보호용 재귀 뮤텍스
+    //  - async_tcp(setter/getter via HTTP) ↔ loopTask(tick/CT10) race 방지
+    //  - Lazy-init: CL_A40_MutexGuard_Semaphore가 최초 진입 시 생성
+    //  - recursive: setXxx→begin 재귀, flushIfNeeded→flush 재귀
+    // --------------------------------------------------
+    static SemaphoreHandle_t s_mutex;
 
 	// --------------------------------------------------
 	// 내부: NVS 로드/저장

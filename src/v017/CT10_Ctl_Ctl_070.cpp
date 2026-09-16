@@ -99,6 +99,9 @@ bool CL_CT10_ControlManager::reloadAll() {
     memset(&v_inst.scheduleSegRt, 0, sizeof(v_inst.scheduleSegRt));
     memset(&v_inst.profileSegRt,  0, sizeof(v_inst.profileSegRt));
     memset(&v_inst.runCtx,        0, sizeof(v_inst.runCtx));
+    
+    // [A-2] 영속 필드 리셋 (설정 재적용이므로 offTime 트리거 이력 초기화)
+    v_inst._persistOffTimeLastYday = -1;
 
     v_inst.scheduleSegRt.index = -1;
     v_inst.profileSegRt.index  = -1;

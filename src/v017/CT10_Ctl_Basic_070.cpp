@@ -273,6 +273,12 @@ bool CL_CT10_ControlManager::checkAutoOff(EN_CT10_reason_t* p_reasonOrNull /*=nu
     }
 
     // 2) offTime (TM10)
+    
+    // 2) offTime (TM10)
+    //  [A-2] 영속 필드 기반 재트리거 방지
+    //   - 이전: autoOffRt.offTimeLastYday/LastMin 사용 → source 재진입 시 리셋되어 3초 주기 무한 루프
+    //   - 이후: _persistOffTimeLastYday (CT10 클래스 멤버) 사용
+    //   - 정책: 같은 yday에서 offTimeMinutes 도달 시 1회만 트리거, yday 바뀌면 자연 재활성화
     if (autoOffRt.offTimeEnabled) {
         struct tm v_tm;
         memset(&v_tm, 0, sizeof(v_tm));
@@ -280,26 +286,29 @@ bool CL_CT10_ControlManager::checkAutoOff(EN_CT10_reason_t* p_reasonOrNull /*=nu
         if (!CL_TM10_TimeManager::getLocalTime(v_tm)) {
             // 시간 불능이면 여기서 트리거하지 않음(상위 tick에서 TIME_INVALID로 처리 권장)
         } else {
-            int16_t  v_yday   = (int16_t)v_tm.tm_yday;
-            int16_t  v_curMin = (int16_t)((uint16_t)v_tm.tm_hour * 60U + (uint16_t)v_tm.tm_min);
+            int16_t v_yday   = (int16_t)v_tm.tm_yday;
+            int16_t v_curMin = (int16_t)((uint16_t)v_tm.tm_hour * 60U + (uint16_t)v_tm.tm_min);
 
-            // 정책: 같은 (yday + minute)일 때만 재트리거 방지
-            bool v_already = (autoOffRt.offTimeLastYday == v_yday && autoOffRt.offTimeLastMin == v_curMin);
+            if ((uint16_t)v_curMin >= autoOffRt.offTimeMinutes) {
+                if (_persistOffTimeLastYday != v_yday) {
+                    _persistOffTimeLastYday = v_yday;
 
-            if (!v_already) {
-                if ((uint16_t)v_curMin >= autoOffRt.offTimeMinutes) {
+                    // export/UI 표시용 (autoOffRt 필드는 참고용으로만 유지)
                     autoOffRt.offTimeLastYday = v_yday;
                     autoOffRt.offTimeLastMin  = v_curMin;
 
                     if (p_reasonOrNull) *p_reasonOrNull = EN_CT10_REASON_AUTOOFF_TIME;
 
-                    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff(time %u) triggered",
-                                       (unsigned)autoOffRt.offTimeMinutes);
+                    CL_D10_Logger::log(EN_L10_LOG_INFO,
+                                       "[CT10] AutoOff(time %u) triggered (yday=%d)",
+                                       (unsigned)autoOffRt.offTimeMinutes,
+                                       (int)v_yday);
                     return true;
                 }
             }
         }
     }
+    
 
     // 3) offTemp
     if (autoOffRt.offTempEnabled) {

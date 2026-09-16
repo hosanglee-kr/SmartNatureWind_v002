@@ -1,74 +1,159 @@
-즉시 개입 
+A-2 반영 — offTime 재트리거 방지 (영속 필드)
 
-C-1. isStaConnected timeout=0 (WF10_WiFiMgr_070.cpp)
+1) CT10_Ctl_070.h — private 멤버 1개 추가
 
-수정 위치: CL_WF10_WiFiManager::isStaConnected()
+위치: runCtx 선언 다음, private: 영역
 
 ```cpp
-// BEFORE
-bool CL_WF10_WiFiManager::isStaConnected() {
-    CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, 0, __func__); // 즉시 확인
-    if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout", __func__);
-        return false;
-    }
-    return s_staConnected && (WiFi.status() == WL_CONNECTED);
-}
+    ST_CT10_RunContext_t runCtx;
 
-// AFTER
-bool CL_WF10_WiFiManager::isStaConnected() {
-    // [C-1] timeout 10ms: applyConfig 재연결 중에도 LED 폴링이 정상 반환
-    //  - 0ms는 mutex 보유 중 즉시 false 반환 → LED 오표시(빨강)
-    //  - s_staConnected 값은 원자적 읽기로도 안전하나, WiFi.status()까지
-    //    일관 조회를 위해 mutex 획득 유지
-    CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, 10, __func__);
-    if (!v_guard.isAcquired()) {
-        // mutex 미획득 시 stale 값이라도 반환 (LED 빨강 오표시 방지)
-        return s_staConnected;
-    }
-    return s_staConnected && (WiFi.status() == WL_CONNECTED);
-}
+    // --------------------------------------------------
+    // [A-2] offTime 재트리거 방지 영속 필드
+    //  - source 재진입(initAutoOffFromSchedule/FromUserProfile)에도 유지
+    //  - yday 기반: 같은 날 1회만 트리거, yday가 바뀌면 자연 재활성화
+    //  - reloadAll()에서만 리셋 (설정 재적용 대비)
+    // --------------------------------------------------
+    int16_t _persistOffTimeLastYday = -1;
 ```
 
-근거:
+---
 
-· 기존 0ms → applyConfig 중 LED가 반드시 false (빨강)
-· 10ms 대기 + 실패 시 stale 값 사용 → 정상 연결 상태 유지 표시
+2) CT10_Ctl_Basic_070.cpp::checkAutoOff — offTime 블록 교체
 
-검증:
+BEFORE:
 
-· WiFi 재연결 중 LED가 빨강으로 즉시 바뀌지 않음 (초록 유지)
-· 재연결 실패 확정 시에만 빨강
+```cpp
+    // 2) offTime (TM10)
+    if (autoOffRt.offTimeEnabled) {
+        struct tm v_tm;
+        memset(&v_tm, 0, sizeof(v_tm));
+
+        if (!CL_TM10_TimeManager::getLocalTime(v_tm)) {
+            // 시간 불능이면 여기서 트리거하지 않음
+        } else {
+            int16_t  v_yday   = (int16_t)v_tm.tm_yday;
+            int16_t  v_curMin = (int16_t)((uint16_t)v_tm.tm_hour * 60U + (uint16_t)v_tm.tm_min);
+
+            // 정책: 같은 (yday + minute)일 때만 재트리거 방지
+            bool v_already = (autoOffRt.offTimeLastYday == v_yday && autoOffRt.offTimeLastMin == v_curMin);
+
+            if (!v_already) {
+                if ((uint16_t)v_curMin >= autoOffRt.offTimeMinutes) {
+                    autoOffRt.offTimeLastYday = v_yday;
+                    autoOffRt.offTimeLastMin  = v_curMin;
+
+                    if (p_reasonOrNull) *p_reasonOrNull = EN_CT10_REASON_AUTOOFF_TIME;
+
+                    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff(time %u) triggered",
+                                       (unsigned)autoOffRt.offTimeMinutes);
+                    return true;
+                }
+            }
+        }
+    }
+```
+
+AFTER:
+
+```cpp
+    // 2) offTime (TM10)
+    //  [A-2] 영속 필드 기반 재트리거 방지
+    //   - 이전: autoOffRt.offTimeLastYday/LastMin 사용 → source 재진입 시 리셋되어 3초 주기 무한 루프
+    //   - 이후: _persistOffTimeLastYday (CT10 클래스 멤버) 사용
+    //   - 정책: 같은 yday에서 offTimeMinutes 도달 시 1회만 트리거, yday 바뀌면 자연 재활성화
+    if (autoOffRt.offTimeEnabled) {
+        struct tm v_tm;
+        memset(&v_tm, 0, sizeof(v_tm));
+
+        if (!CL_TM10_TimeManager::getLocalTime(v_tm)) {
+            // 시간 불능이면 여기서 트리거하지 않음(상위 tick에서 TIME_INVALID로 처리 권장)
+        } else {
+            int16_t v_yday   = (int16_t)v_tm.tm_yday;
+            int16_t v_curMin = (int16_t)((uint16_t)v_tm.tm_hour * 60U + (uint16_t)v_tm.tm_min);
+
+            if ((uint16_t)v_curMin >= autoOffRt.offTimeMinutes) {
+                if (_persistOffTimeLastYday != v_yday) {
+                    _persistOffTimeLastYday = v_yday;
+
+                    // export/UI 표시용 (autoOffRt 필드는 참고용으로만 유지)
+                    autoOffRt.offTimeLastYday = v_yday;
+                    autoOffRt.offTimeLastMin  = v_curMin;
+
+                    if (p_reasonOrNull) *p_reasonOrNull = EN_CT10_REASON_AUTOOFF_TIME;
+
+                    CL_D10_Logger::log(EN_L10_LOG_INFO,
+                                       "[CT10] AutoOff(time %u) triggered (yday=%d)",
+                                       (unsigned)autoOffRt.offTimeMinutes,
+                                       (int)v_yday);
+                    return true;
+                }
+            }
+        }
+    }
+```
 
 ---
 
-적용 순서
+3) CT10_Ctl_Ctl_070.cpp::reloadAll — 영속 필드 리셋 1줄
 
-1. A-1: A00_Main_070.h — 2줄 추가
-2. A-3: TM10_TimeMg_070.h — 멱등 가드 8줄
-3. C-1: WF10_WiFiMgr_070.cpp — timeout 0→10, fallback 1줄
+위치: memset(&v_inst.runCtx, 0, sizeof(v_inst.runCtx)); 다음
 
-총 3파일, ~12줄.
+```cpp
+    memset(&v_inst.scheduleSegRt, 0, sizeof(v_inst.scheduleSegRt));
+    memset(&v_inst.profileSegRt,  0, sizeof(v_inst.profileSegRt));
+    memset(&v_inst.runCtx,        0, sizeof(v_inst.runCtx));
 
----
-
-통합 검증 체크리스트
-
-# 시나리오 기대
-1 컴파일 에러 0
-2 부팅 로그 [A00] M10 wired to CT10 (ptr=0x...) (not 0x0)
-3 PIR 감지 중단 → holdSec 경과 [CT10] MOTION_BLOCKED 로그
-4 [TM10] begin 로그 부팅 시 1회만
-5 WiFi applyConfig 중 [TM10] begin ignored 로그 1회
-6 재연결 중 LED 빨강 안 됨 (초록 유지)
-7 재연결 실패 확정 빨강 전환
-
-#3이 A-1의 기능 검증, #6이 C-1 검증, #5가 A-3 검증.
+    // [A-2] 영속 필드 리셋 (설정 재적용이므로 offTime 트리거 이력 초기화)
+    v_inst._persistOffTimeLastYday = -1;
+```
 
 ---
 
-이후
+변경 요약
 
-즉시 개입 3건 완료 후 A-2 (AutoOff offTime 무한 재트리거) — 최대 위험 이슈. 설계 필요 (영속 필드 도입).
+파일 변경
+CT10_Ctl_070.h private _persistOffTimeLastYday +4줄
+CT10_Ctl_Basic_070.cpp::checkAutoOff offTime 블록 교체 (~20줄)
+CT10_Ctl_Ctl_070.cpp::reloadAll 리셋 1줄
 
-적용 후 컴파일 및 검증 결과 알려주세요.
+변경 없음:
+
+· A20_Const_070.h (struct 그대로)
+· CT10_Ctl_IOWS_070.cpp (export 그대로, autoOffRt 필드 표시)
+· initAutoOffFromSchedule/FromUserProfile (autoOffRt 초기화 유지, 영속 필드는 안 건드림)
+· onAutoOffTriggered (autoOffRt memset 유지, 영속 필드는 유지)
+
+---
+
+검증 시나리오
+
+정책: offTime = "06:30" → 그날 06:30 이후 1회 트리거 → 다음 날 06:30까지 재진입 없음.
+
+시각 yday curMin persistYday 트리거?
+06:30 100 390 -1 ✅ (persistYday=100)
+06:30:03 (hold 만료, source 재진입) 100 390 100 ❌
+06:31 100 391 100 ❌
+23:59 100 1439 100 ❌
+00:00 101 0 100 ❌ (0 < 390)
+06:30 (다음 날) 101 390 100 ✅ (persistYday=101)
+
+이전 로직과의 차이:
+
+· 이전: 매 분(yday+minute 변화)마다 재트리거 + source 재진입마다 리셋 → 3초 주기 루프
+· 이후: yday당 1회만 트리거
+
+---
+
+회귀 리스크
+
+리스크 대응
+사용자가 그날 offTime 이전으로 스케줄 변경 reloadAll 경로에서 리셋
+WiFi 재연결 시 리셋? 안 됨 (의도적, offTime 정책 유지)
+NTP 시간 재동기화로 yday 오차 드묾, 실질 영향 없음
+initAutoOffFromSchedule에서 autoOffRt만 초기화 export 표시 일관성 유지, 실제 판정은 영속 필드
+
+---
+
+적용 후 컴파일 결과 알려주세요. 통과 시 실기 테스트:
+
+· 스케줄 offTime=06:30 설정 → 시각 도달 후 로그에 3초 주기 재트리거 없는지 확인

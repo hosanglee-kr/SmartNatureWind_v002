@@ -321,6 +321,14 @@ class CL_CT10_ControlManager {
     bool _dirtySummary = false;
 
     ST_CT10_RunContext_t runCtx;
+    
+    // --------------------------------------------------
+    // [A-2] offTime 재트리거 방지 영속 필드
+    //  - source 재진입(initAutoOffFromSchedule/FromUserProfile)에도 유지
+    //  - yday 기반: 같은 날 1회만 트리거, yday가 바뀌면 자연 재활성화
+    //  - reloadAll()에서만 리셋 (설정 재적용 대비)
+    // --------------------------------------------------
+    int16_t _persistOffTimeLastYday = -1;
 
   private:
     // --------------------------------------------------

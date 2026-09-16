@@ -122,7 +122,22 @@ class CL_WF10_WiFiManager {
 
     static bool        isStaConnected();
     static const char* getStaStatusString();
+    
+    // --------------------------------------------------
+    // [WF10-defer] 재연결 요청 큐 (async_tcp → loopTask)
+    //  - HTTP 라우트는 requestReconnect()로 플래그만 설정
+    //  - loopTask가 tickDeferredReconnect()에서 실제 처리
+    //  - 목적: startSTA의 최대 90초 블로킹을 async_tcp에서 회피
+    // --------------------------------------------------
+    static bool requestReconnect();       // 즉시 반환 (플래그만)
+    static void tickDeferredReconnect();  // loopTask 주기 호출
+    
 
   private:
     static const char* _encTypeToString(wifi_auth_mode_t p_mode);
+    
+    // [WF10-defer] 지연 재연결 상태 (portMUX 보호)
+    inline static volatile bool s_reconnectRequested = false;
+    inline static portMUX_TYPE  s_reconnectMux       = portMUX_INITIALIZER_UNLOCKED;
+    
 };

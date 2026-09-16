@@ -1,230 +1,147 @@
-P1-3 M10 MotionLogic mutex — 바로 진행
+WF10 defer 반영 검토 — 🔴 필수 누락 2건
 
-요청한 게 아니라 제가 헷갈리게 썼습니다. 파일은 이미 처음에 받았으니 바로 diff 드립니다. 아래 그대로 반영만 하시면 됩니다.
+반영 매트릭스
 
----
-
-문제 요약
-
-M10_MotionLogic_070.h의 상태(_pir, _state)에 mutex 없이 접근:
-
-· feedPIR / notifyPIRDetected — HTTP (async_tcp)
-· tick / isActive — CT10 tick (loopTask)
-· toJson — HTTP (async_tcp)
-
-→ async_tcp ↔ loopTask 데이터 레이스.
+# 항목 상태
+① Gemini 스택 static (이전 배치) ✅
+② W10_Web_Routes_070.cpp::routeWifiConfig → requestReconnect (POST/PATCH) ✅
+③ WF10_WiFiMgr_070.h — API 2개 + 상태 2개 ✅
+④ WF10_WiFiMgr_070.cpp — 구현 2개 ✅
+⑤ A00_Main_070.h::A00_run() — tickDeferredReconnect 호출 ❌ 누락
+⑥ tickDeferredReconnect 내 WDT feed ❌ 누락
 
 ---
 
-수정 diff — M10_MotionLogic_070.h 단일 파일
+🔴 누락-1: A00_run() 호출 없음
 
-1) 상단 include 1줄 추가
+증상: requestReconnect()가 플래그만 set → 아무도 처리 안 함 → WiFi 재연결 영구 미실행.
+
+파일: A00_Main_070.h::A00_run()
+
+수정 위치 — Time Manager tick 이후, LED 업데이트 이전:
 
 ```cpp
-// BEFORE
-#include <Arduino.h>
-#include <ArduinoJson.h>
-#include <string.h>
+// AFTER (기존)
+    // 3) Time Manager tick
+    if (g_A20_config_root.system) {
+        CL_TM10_TimeManager::tick(g_A20_config_root.system);
+    } else {
+        CL_TM10_TimeManager::tick(nullptr);
+    }
 
-#include "A20_Const_070.h"
-#include "D10_Logger_070.h"
+    //// // NVS Dirty Flush (10초마다)
+    //// if (v_now - v_lastFlush >= 10000) {
+    ////     v_lastFlush = v_now;
+    ////     CL_N10_NvsManager::flushIfNeeded();
+    //// }
 
+// [신규 추가]
+    // ------------------------------------------------------
+    // 3-1) [WF10-defer] 지연 WiFi 재연결 처리
+    //  - async_tcp에서 플래그만 set한 재연결 요청을 loopTask에서 실행
+    //  - startSTA가 블로킹될 수 있으나 loopTask는 제어/WS보다 우선순위 낮음
+    // ------------------------------------------------------
+    CL_WF10_WiFiManager::tickDeferredReconnect();
+
+    // ------------------------------------------------------
+    // 4) LED 업데이트
+    // ------------------------------------------------------
+    bool v_wifiStatus = CL_WF10_WiFiManager::isStaConnected();
+    ...
+```
+
+---
+
+🔴 누락-2: WDT timeout 위험
+
+문제:
+
+· A00_init에서 esp_task_wdt_init(10, true) — 10초 timeout
+· tickDeferredReconnect → applyConfig → init → startSTA 최대 ~90초 블로킹
+· loopTask 내에서 WDT feed 불가 → 10초 후 ESP32 리셋
+
+수정 — WF10_WiFiMgr_070.cpp::tickDeferredReconnect에 WDT feed 추가:
+
+```cpp
 // AFTER
-#include <Arduino.h>
-#include <ArduinoJson.h>
-#include <string.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/semphr.h>
+void CL_WF10_WiFiManager::tickDeferredReconnect() {
+    portENTER_CRITICAL(&s_reconnectMux);
+    bool v_do = s_reconnectRequested;
+    if (v_do) s_reconnectRequested = false;
+    portEXIT_CRITICAL(&s_reconnectMux);
 
-#include "A20_Const_070.h"
-#include "D10_Logger_070.h"
-#include "A25_Com_Utils_070.h"   // [P1-3] CL_A40_MutexGuard_Semaphore
+    if (!v_do) return;
 
+    if (!g_A20_config_root.wifi || !g_A20_config_root.system) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[WF10] Deferred reconnect skipped: config null");
+        return;
+    }
+
+   // [WF10-defer] WDT 보호
+    //  - startSTA 블로킹이 WDT timeout(10초)을 초과할 수 있음
+    //  - 블로킹 진입 전/후 feed (내부 지속 feed는 applyConfig 수정 없이 불가)
+    esp_task_wdt_reset();
+
+    bool v_ok = applyConfig(*g_A20_config_root.wifi);
+
+    esp_task_wdt_reset();   // 완료 후 즉시 feed
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] Deferred apply done (ok=%d)", (int)v_ok);
+}
 ```
 
-2) 클래스 private 멤버 1개 추가
+A00_Main_070.h에 #include <esp_task_wdt.h> 이미 있음 ✅.
+
+추가 헤더 필요 여부: WF10_WiFiMgr_070.cpp에 #include <esp_task_wdt.h> 필요.
 
 ```cpp
-  private:
-	ST_M10_PIR_rt_t			 _pir;
-
-	ST_M10_MotionState_t	 _state;
-	T_M10_OnChangeCallback_t _onChange;
-
-	// [P1-3] 상태 보호용 재귀 뮤텍스
-	//  - async_tcp(feedPIR/toJson) ↔ loopTask(tick/isActive) race 방지
-	//  - Lazy-init: CL_A40_MutexGuard_Semaphore가 최초 진입 시 생성
-	//  - recursive: feedPIR → notifyPIRDetected 중첩
-	inline static SemaphoreHandle_t s_stateMutex = nullptr;
+// WF10_WiFiMgr_070.cpp 상단 (기존 include 다음)
+#include <esp_task_wdt.h>   // [WF10-defer] WDT 보호
 ```
-
-3) 5개 함수 guard 삽입
-
-3-1. feedPIR
-
-```cpp
-	void feedPIR(bool p_detected) {
-		if (p_detected) {
-			notifyPIRDetected();   // notifyPIRDetected가 guard 보유 → 재귀 OK
-		}
-	}
-```
-
-변경 없음 (notifyPIRDetected가 guard 담당).
-
-3-2. notifyPIRDetected
-
-```cpp
-	void notifyPIRDetected() {
-		// [P1-3]
-		CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-		if (!v_guard.isAcquired()) return;
-
-		if (!g_A20_config_root.motion || !g_A20_config_root.motion->pir.enabled)
-			return;
-		_pir.lastDetected_ms = millis();
-		_pir.active			 = true;
-	}
-```
-
-3-3. tick
-
-```cpp
-	void tick() {
-		// [P1-3]
-		CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-		if (!v_guard.isAcquired()) return;
-
-		if (!g_A20_config_root.motion)
-			return;
-		const auto& v_cfg = *g_A20_config_root.motion;
-		uint32_t	v_now = millis();
-
-		// PIR timeout
-		if (v_cfg.pir.enabled && _pir.active) {
-			uint32_t v_pirElapsed = v_now - _pir.lastDetected_ms;
-			if (v_pirElapsed > v_cfg.pir.holdSec * 1000UL) {
-				_pir.active = false;
-			}
-		} else if (!v_cfg.pir.enabled) {
-			_pir.active = false;
-		}
-
-		// 상태 변화 감지
-		bool v_activeNew = (_pir.active);
-		bool v_pirActive = _pir.active;
-
-		if (v_activeNew != _state.active || v_pirActive != _state.pirActive) {
-			_state.active		 = v_activeNew;
-			_state.pirActive	 = v_pirActive;
-			_state.lastChange_ms = v_now;
-
-			CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[M10] motionActive=%d (PIR=%d)", (int)_state.active, (int)_state.pirActive);
-
-			if (_onChange) {
-				_onChange(_state);
-			}
-		}
-	}
-```
-
-3-4. toJson (const)
-
-```cpp
-	void toJson(JsonDocument& p_doc) const {
-		// [P1-3] const 메서드에서 static mutex 접근 → 문제 없음
-		CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-		if (!v_guard.isAcquired()) return;
-
-		if (!g_A20_config_root.motion)
-			return;
-		const auto& v_cfg = *g_A20_config_root.motion;
-
-		JsonObject v_o	 = p_doc["motion"].to<JsonObject>();
-		v_o["active"]	 = isActive();
-		v_o["pirActive"] = _state.pirActive;
-
-		v_o["pirHold"]	 = v_cfg.pir.holdSec;
-
-		unsigned long v_now		= millis();
-		uint32_t	  v_lastSec = (_state.lastChange_ms == 0) ? 0 : (uint32_t)((v_now - _state.lastChange_ms) / 1000UL);
-		v_o["lastActiveSec"]	= v_lastSec;
-
-		uint32_t v_pirRemain = 0;
-		if (v_cfg.pir.enabled && _pir.active) {
-			uint32_t v_pirElapsed = v_now - _pir.lastDetected_ms;
-			if (v_pirElapsed < v_cfg.pir.holdSec * 1000UL) {
-				v_pirRemain = (v_cfg.pir.holdSec * 1000UL - v_pirElapsed) / 1000UL;
-			}
-		}
-		v_o["pirHoldRemain"] = v_pirRemain;
-	}
-```
-
-주의: toJson이 isActive() 호출 → 재귀 mutex 필수. CL_A40_MutexGuard_Semaphore가 이미 재귀라 안전.
-
-3-5. isActive (const)
-
-```cpp
-	bool isActive() const {
-		// [P1-3] 재귀 mutex (toJson에서 호출되는 경로 대응)
-		CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-		if (!v_guard.isAcquired()) return false;
-
-		unsigned long v_now	 = millis();
-		uint16_t	  v_hold = 0;
-		if (g_A20_config_root.motion) {
-			v_hold = (uint16_t)g_A20_config_root.motion->pir.holdSec;
-		}
-		if (_state.pirActive)
-			return true;
-		if (v_hold > 0 && (v_now - _state.lastChange_ms) < (v_hold * 1000UL))
-			return true;
-		return false;
-	}
-```
-
-3-6. setOnChangeCallback — 변경 없음
-
-_onChange 포인터 대입은 원자적 (4B), 실질적 race 없음.
 
 ---
 
-안전성 확인
+⚠️ 잔존 위험 (별도 이슈, 이연)
 
-항목 확인
-재귀 필요 ✅ (toJson → isActive, feedPIR → notifyPIRDetected)
-const 메서드에서 static mutex ✅ 정적 멤버는 인스턴스 무관, 참조 전달 정상
-Lazy-init ✅ CL_A40_MutexGuard_Semaphore 내장 (portMUX double-check)
-_onChange 콜백 안 mutex 재진입 ✅ recursive
-CT10이 motion->isActive() 호출 ✅ CT10 mutex 보유 중 → M10 mutex 획득 (순서: CT10 → M10, 역순 없음)
+loopTask 90초 블로킹 — 이번 개입으로 async_tcp는 보호되나, loopTask가 90초 멈춤:
 
-데드락 없음: CT10 → M10 단방향.
+· CT10 tick 정지 → 제어/시뮬레이션 90초 정지
+· WS push 정지
+· A00_run의 다른 tick 정지
+
+WDT feed만으로 리셋은 회피되지만 기능 정지는 남음.
+
+권장 개선 (별도 배치):
+
+· startSTA를 별도 FreeRTOS task로 이관
+· 또는 applyConfig에서 timeout 단축 (maxTries 조정, wait 500→2000)
+
+이번 배치는 WDT 회피까지만 (실 사용 시 문제 발생하면 후속).
+
+---
+
+최종 적용 요약
+
+# 파일 변경
+⑤ A00_Main_070.h A00_run()에 tickDeferredReconnect() 호출 1줄
+⑥-a WF10_WiFiMgr_070.cpp 상단 #include <esp_task_wdt.h>
+⑥-b WF10_WiFiMgr_070.cpp tickDeferredReconnect에 esp_task_wdt_reset() 2회
 
 ---
 
 검증 체크리스트
 
-# 항목 기대
+# 시나리오 기대
 1 컴파일 에러 0
-2 grep "CL_A40_MutexGuard_Semaphore" M10_MotionLogic_070.h 4건 (notifyPIRDetected/tick/toJson/isActive)
-3 POST /api/v001/motion/pir/feed 중 GET /api/v001/state 정상 응답, 일관성
-4 PIR 감지 → hold 시간 경과 정상 해제
-5 부하 (PIR feed + 상태 폴링 5초) 크래시 없음
-6 mutex timeout 로그 0건 (정상 동작)
-7 _onChange 콜백 (등록 시) 재귀 호출 정상
+2 HTTP POST /api/network/wifi/config 즉시 200 (status=requested)
+3 다음 loop tick 실제 재연결 시도
+4 재연결 중 다른 HTTP 요청 정상 응답
+5 WDT 리셋 로그 0건 (WDT feed 확인)
+6 ESP32 재부팅 없음
+7 WiFi 재연결 성공 IP 획득, 상태 정상
+8 재연결 중 CT10/WS tick (loopTask 블로킹 동안 정지) — 이연
 
 ---
 
-적용 후
-
-컴파일 결과 알려주시면 P1-3 완결 → 신규 리뷰 라운드 마무리.
-
-남은 항목:
-
-· P2-1 업로드 파일명 검증 (선택)
-· P2-2 spectralPhaseAcc (선택)
-· 관찰-1 (Gemini 스택 static 승격, 선택)
-· WF10 async_tcp starvation (별도 설계)
-
-어느 것 이어서 진행할지 알려주세요.
+5, 6번이 이번 diff의 핵심 검증. 컴파일 후 결과 알려주세요.

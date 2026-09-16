@@ -1117,6 +1117,7 @@ void CL_W10_WebAPI::routeConfigDirtySave() {
 // --------------------------------------------------
 // 통합된 /api/network/wifi/config (GET/POST/PATCH)
 // --------------------------------------------------
+
 void CL_W10_WebAPI::routeWifiConfig() {
     // GET: 현재 설정 조회
     s_server->on(W10_Const::HTTP_API_WIFI_CONFIG, HTTP_GET, [](AsyncWebServerRequest* p_request) {
@@ -1134,7 +1135,7 @@ void CL_W10_WebAPI::routeWifiConfig() {
         sendJson(p_request, v_doc);
 
     });
-
+    
     // POST: 설정 변경 및 시스템 즉시 적용
     s_server->on(
         W10_Const::HTTP_API_WIFI_CONFIG,
@@ -1164,10 +1165,11 @@ void CL_W10_WebAPI::routeWifiConfig() {
 
             if (v_changed) {
                 CL_C10_ConfigManager::saveDirtyConfigs();
-                CL_WF10_WiFiManager::applyConfig(*g_A20_config_root.wifi);
-                v_res["status"]      = "applied";
-                v_res["need_reboot"] = true;
-                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config integrated & applied via config endpoint.");
+                CL_WF10_WiFiManager::requestReconnect();                     // ← 즉시 반환
+                v_res["status"]      = "requested";
+                v_res["need_reboot"] = false;
+                v_res["note"]        = "WiFi applied on next loop tick";
+                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config saved, reconnect deferred to loopTask.");
             } else {
                 v_res["status"]      = "no_change";
                 v_res["need_reboot"] = false;
@@ -1206,10 +1208,11 @@ void CL_W10_WebAPI::routeWifiConfig() {
 
             if (v_changed) {
                 CL_C10_ConfigManager::saveDirtyConfigs();
-                CL_WF10_WiFiManager::applyConfig(*g_A20_config_root.wifi);
-                v_res["status"]      = "applied";
-                v_res["need_reboot"] = true;
-                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config integrated & applied via PATCH.");
+                CL_WF10_WiFiManager::requestReconnect();                     // ← 즉시 반환
+                v_res["status"]      = "requested";
+                v_res["need_reboot"] = false;
+                v_res["note"]        = "WiFi applied on next loop tick";
+                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config saved, reconnect deferred via PATCH.");
             } else {
                 v_res["status"]      = "no_change";
                 v_res["need_reboot"] = false;

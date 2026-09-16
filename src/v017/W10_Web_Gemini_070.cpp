@@ -110,8 +110,12 @@ static String W10_callGeminiApi(const char* p_body, size_t p_len, int& r_httpCod
     bool          v_truncated   = false;
 
     // 헤더 라인 버퍼 (스택)
+    // [Gemini-static] async_tcp 스택 보호: 두 버퍼를 static 승격
+    //  - async_tcp 단일 태스크 → 경쟁 없음
+    //  - 함수 프레임 스택 -768B
     static constexpr size_t S_LINE_BUF_SZ = 512;
-    char                    v_lineBuf[S_LINE_BUF_SZ];
+    static char             s_lineBuf[S_LINE_BUF_SZ];
+    static uint8_t          s_chunk[256];
 
     while (v_client.connected() || v_client.available()) {
         if (millis() - v_startMs > (unsigned long)G_W10_GEMINI_TIMEOUT) {
@@ -127,18 +131,18 @@ static String W10_callGeminiApi(const char* p_body, size_t p_len, int& r_httpCod
         // [3-1] 헤더 파싱 (라인 기반 유지)
         // ==============================================================
         if (!v_headersDone) {
-            memset(v_lineBuf, 0, S_LINE_BUF_SZ);
-            size_t v_n = v_client.readBytesUntil('\n', v_lineBuf, S_LINE_BUF_SZ - 1);
-            v_lineBuf[v_n] = '\0';
+            memset(s_lineBuf, 0, S_LINE_BUF_SZ);
+            size_t v_n = v_client.readBytesUntil('\n', s_lineBuf, S_LINE_BUF_SZ - 1);
+            s_lineBuf[v_n] = '\0';
 
             // HTTP 상태 라인
-            if (v_n >= 5 && strncmp(v_lineBuf, "HTTP/", 5) == 0) {
-                const char* v_sp = strchr(v_lineBuf, ' ');
+            if (v_n >= 5 && strncmp(s_lineBuf, "HTTP/", 5) == 0) {
+                const char* v_sp = strchr(s_lineBuf, ' ');
                 if (v_sp) r_httpCode = atoi(v_sp + 1);
             }
 
             // 헤더 종료: 빈 라인
-            if (v_n == 0 || (v_n == 1 && v_lineBuf[0] == '\r')) {
+            if (v_n == 0 || (v_n == 1 && s_lineBuf[0] == '\r')) {
                 v_headersDone = true;
             }
             continue;
@@ -147,8 +151,7 @@ static String W10_callGeminiApi(const char* p_body, size_t p_len, int& r_httpCod
         // ==============================================================
         // [3-2] 본문 누적 (chunk 기반, 라인 경계 무시)
         // ==============================================================
-        uint8_t v_chunk[256];
-        size_t  v_n = v_client.readBytes(v_chunk, sizeof(v_chunk));
+        size_t v_n = v_client.readBytes(s_chunk, sizeof(s_chunk));
         if (v_n == 0) continue;
 
         size_t v_avail = (v_resp.length() < G_W10_GEMINI_MAX_RESP)
@@ -161,7 +164,7 @@ static String W10_callGeminiApi(const char* p_body, size_t p_len, int& r_httpCod
         }
 
         size_t v_append = (v_n < v_avail) ? v_n : v_avail;
-        v_resp.concat((const char*)v_chunk, v_append);
+        v_resp.concat((const char*)s_chunk, v_append);
 
         if (v_append < v_n) v_truncated = true;
     }

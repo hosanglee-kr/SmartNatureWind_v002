@@ -23,6 +23,8 @@
 #include <lwip/dns.h>
 #include <lwip/ip_addr.h>
 
+#include <esp_task_wdt.h>   // [WF10-defer] WDT 보호
+
 // Config 루트 (다른 모듈에서 정의)
 extern ST_A20_ConfigRoot_t g_A20_config_root;
 
@@ -395,4 +397,50 @@ bool CL_WF10_WiFiManager::applyConfig(const ST_A20_WifiConfig_t& p_cfg) {
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[WiFi] Configuration applied (ok=%d, mode=%d)", (int)v_ok, (int)p_cfg.wifiMode);
     return v_ok;
+}
+
+
+// ==================================================
+// [WF10-defer] 재연결 요청 (async_tcp → flag only, 즉시 반환)
+// ==================================================
+bool CL_WF10_WiFiManager::requestReconnect() {
+    portENTER_CRITICAL(&s_reconnectMux);
+    bool v_already = s_reconnectRequested;
+    s_reconnectRequested = true;
+    portEXIT_CRITICAL(&s_reconnectMux);
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO,
+                       "[WF10] Reconnect requested (deferred to loopTask, dup=%d)",
+                       (int)v_already);
+    return !v_already;
+}
+
+// ==================================================
+// [WF10-defer] loopTask에서 지연 재연결 처리
+//  - startSTA 블로킹을 loopTask로 이관 (async_tcp 보호)
+// ==================================================
+void CL_WF10_WiFiManager::tickDeferredReconnect() {
+    portENTER_CRITICAL(&s_reconnectMux);
+    bool v_do = s_reconnectRequested;
+    if (v_do) s_reconnectRequested = false;
+    portEXIT_CRITICAL(&s_reconnectMux);
+
+    if (!v_do) return;
+
+    if (!g_A20_config_root.wifi || !g_A20_config_root.system) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[WF10] Deferred reconnect skipped: config null");
+        return;
+    }
+
+   // [WF10-defer] WDT 보호
+    //  - startSTA 블로킹이 WDT timeout(10초)을 초과할 수 있음
+    //  - 블로킹 진입 전/후 feed (내부 지속 feed는 applyConfig 수정 없이 불가)
+    esp_task_wdt_reset();
+
+    bool v_ok = applyConfig(*g_A20_config_root.wifi);
+
+    esp_task_wdt_reset();   // 완료 후 즉시 feed
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] Deferred apply done (ok=%d)", (int)v_ok);
 }

@@ -5,11 +5,25 @@
  * 모듈약어 : N10
  * 모듈명 : Smart Nature Wind NVS Runtime Manager (v017)
  * ------------------------------------------------------
- * 기능 요약:
- * - 런타임 상태를 NVS(Flash)에 안전하게 저장/복원
- * - 현재 실행 모드, 마지막 스케줄/프로파일, AutoOff, Override 메타 관리
- * - Flash 수명 보호를 위한 Dirty Flag + 최소 주기(10초) Flush 정책
- * - C10_ConfigManager 연계로 schedules/userProfiles/system 등 병렬 Dirty Flush 지원
+
+* 기능 요약:
+* - 런타임 상태를 NVS(Flash)에 안전하게 저장/복원
+* - 현재 실행 모드, 마지막 스케줄/프로파일, AutoOff, Override 메타 관리
+* - Flash 수명 보호를 위한 Dirty Flag + 최소 주기(10초) Flush 정책
+* - C10_ConfigManager 연계로 schedules/userProfiles/system 등 병렬 Dirty Flush 지원
+*
+* [Policy] 부팅 시 런타임 상태 복원 정책 (최종 결정)
+*  - 본 모듈은 "저장"만 담당. 부팅 시 자동 복원은 수행하지 않는다.
+*  - 결정사항:
+*    * Override / UserProfile → 자동 복원 없음
+*    * Schedule → CT10::findActiveScheduleIndex가 시간 조건으로 재평가
+*    * AutoOff → source 진입 시 CT10::initAutoOffFrom*로 로드
+*  - 결과: 부팅 직후 CT10 상태는 항상 IDLE
+*  - 사유:
+*    * 시간제한 Override의 endMs(millis 기반)는 재부팅 후 무효화됨
+*    * 사용자 명시 선택과 자동 실행의 UX 분리 정책
+*  - 활용: N10 getState()는 UI/디버그 정보 제공 (복원 트리거 아님)
+
  * ------------------------------------------------------
  * NVS Key 설계 (namespace: "SNW_RUN"):
  * run_mode, run_src, sched_no, uprofile_no, autoOff_en, autoOff_min,

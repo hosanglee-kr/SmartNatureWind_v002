@@ -112,6 +112,8 @@ bool CL_CT10_ControlManager::reloadAll() {
     // [C-3] N10 런타임 상태 리셋 (설정 재적용)
     //  - reload는 설정 전면 교체이므로 이전 NVS 런타임 무효
     //  - 즉시 flush(true)로 NVS 반영
+    //  - [Policy] 부팅 복원은 하지 않으므로 N10 상태는 순수 "정보 기록" 목적
+    //    → reload 시에도 이전 상태 초기화가 정합적
     CL_N10_NvsManager::resetRuntime();
 
     v_inst.scheduleSegRt.index = -1;

@@ -34,8 +34,8 @@
  * - type                  : T_모듈약어_ 접두사
  * - typedef               : _t  접미사
  * - enum 상수             : EN_모듈약어_ 접두사
- * - 구조체                : ST_모듈약어_ 접미사
- * - 클래스명              : CL_모듈약어_ 접미사
+ * - 구조체                : ST_모듈약어_ 접두사
+ * - 클래스명              : CL_모듈약어_ 접두사
  * - 클래스 private 멤버   : _ 접두사
  * - 클래스 멤버(함수/변수) : 모듈약어 접두사 미사용
  * - 클래스 정적 멤버      : s_ 접두사
@@ -51,7 +51,6 @@
 #include <string.h>
 
 #include <cmath>
-#include <deque>
 
 #include "A20_Const_070.h"
 #include "C10_Config_070.h"
@@ -145,8 +144,33 @@ class CL_S10_Simulation {
 	float				 history[HISTORY_SIZE];
 	uint8_t				 historyIndex  = 0;
 	uint8_t				 historyCount  = 0;
-	float				 avgWindCached = 0.0f;
+	float                 avgWindCached = 0.0f;
+    // [b-1] O(1) 평균 유지용 running sum
+	float                 sumWindHistory = 0.0f;
 
+	struct ST_ChartEntry {
+	    unsigned long timestamp;
+	    float         wind_speed;
+	    float         pwm_duty;
+	    float         intensity;
+	    float         variability;
+	    float         turbulence_sigma;
+	    uint8_t       preset_index;
+	    bool          gust_active;
+	    bool          thermal_active;
+	};
+	
+	// [b-2] deque → ring buffer (힙 단편화 제거)
+	static const uint8_t CHART_CAPACITY = 120;
+	
+	// (static 멤버 정의로 이관)
+	static ST_ChartEntry s_chartBuffer[CHART_CAPACITY];
+	static uint8_t       s_chartHead;
+	static uint8_t       s_chartCount;
+	static unsigned long s_lastChartLogMs;
+	static unsigned long s_lastChartSampleMs;
+
+	/*
 	struct ST_ChartEntry {
 		unsigned long timestamp;
 		float		  wind_speed;
@@ -161,6 +185,7 @@ class CL_S10_Simulation {
 	static std::deque<ST_ChartEntry> s_chartBuffer;
 	static unsigned long			 s_lastChartLogMs;
 	static unsigned long			 s_lastChartSampleMs;
+	*/
 
   public:
 	void begin(CL_P10_PWM& p_pwm);
@@ -182,8 +207,7 @@ class CL_S10_Simulation {
 	const ST_A20_FanConfig_t* 	_fanCfgSnap 		= nullptr;
 
 	SemaphoreHandle_t 			_recursiveMutex 	= nullptr;
-	portMUX_TYPE			  	_flagSpinlock	  	= portMUX_INITIALIZER_UNLOCKED; // _flagMutex
-
+	
 	unsigned long			  	_tickNowMs  	= 0;
 	float					  	_tickNowSec 	= 0.0f;
 

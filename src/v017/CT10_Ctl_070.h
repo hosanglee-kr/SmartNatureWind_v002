@@ -301,9 +301,9 @@ class CL_CT10_ControlManager {
     // --------------------------------------------------
     static constexpr uint32_t S_TICK_MIN_INTERVAL_MS     = 40UL;   // 25Hz
     static constexpr uint32_t S_METRICS_PUSH_INTERVAL_MS = 1500UL; // metrics dirty 주기
-    
-    
-    
+    static constexpr uint32_t S_EVENT_HOLD_MS            = 3000UL; // [j] 이벤트 상태(AUTOOFF/TIME_INVALID) hold 시간
+
+
       // --------------------------------------------------
       // [B-1b] 상태 일관성 보호용 재귀 뮤텍스
       //  - async_tcp(HTTP/WS connect) ↔ loopTask(tickLoop/CT10_WS_tick) race 방지
@@ -383,7 +383,7 @@ class CL_CT10_ControlManager {
 
   private:
     // decide/apply
-    ST_CT10_Decision_t decideRunSource(); // (cpp에 ST_CT10_Decision_t가 있다면 선언 위치 조정 필요)
+    ST_CT10_Decision_t decideRunSource();
     void               applyDecision(const ST_CT10_Decision_t& p_d);
 
   private:

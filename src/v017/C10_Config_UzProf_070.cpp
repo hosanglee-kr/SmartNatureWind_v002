@@ -44,7 +44,12 @@
 #include <new>
 #include <Arduino.h>
 #include "C10_Config_070.h"
-#include "A25_Com_Utils_070.h"
+
+// [o-2] explicit include (A20_Const_070.h에서 제거됨)
+#include "A25_Com_Utils_070.h"     // A40_ComFunc / A40_IO / CL_A40_MutexGuard_Semaphore
+#include "A22_Com_Lookup_070.h"    // A20_modeFromString / A20_findPresetIndexByCode
+#include "A23_Com_ResetCfg_070.h"  // A20_resetXxxDefault (내부적으로 A25 재포함)
+
 
 // ------------------------------------------------------
 // UserProfile ID/NO 정책 (Schedules와 동일)

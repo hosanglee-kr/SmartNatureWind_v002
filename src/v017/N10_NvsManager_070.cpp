@@ -11,6 +11,7 @@
  */
 
 #include "N10_NvsManager_070.h"
+#include "A25_Com_Utils_070.h" 
 
 // ------------------------------------------------------
 // 정적 멤버 변수 정의
@@ -21,10 +22,19 @@ ST_N10_RuntimeState_t CL_N10_NvsManager::s_state;
 ST_N10_DirtyFlags_t	  CL_N10_NvsManager::s_dirty	  = { false };
 uint32_t			  CL_N10_NvsManager::s_lastSaveMs = 0;
 
+SemaphoreHandle_t     CL_N10_NvsManager::s_mutex = nullptr;  
+
 // ==================================================
 // 초기화 / 종료
 // ==================================================
 bool CL_N10_NvsManager::begin() {
+	// [P0-2] 상태 보호 (재귀 mutex, lazy-init)
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[N10] %s: Mutex timeout", __func__);
+        return false;
+    }
+
 	if (s_initialized)
 		return true;
 
@@ -49,12 +59,18 @@ bool CL_N10_NvsManager::begin() {
 }
 
 void CL_N10_NvsManager::end() {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
 	flush(true);
 	s_prefs.end();
 	s_initialized = false;
 }
 
 void CL_N10_NvsManager::clearAll() {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
 	s_prefs.begin("SNW_RUN", false);
 	s_prefs.clear();  // 모든 key 삭제
 	s_prefs.end();
@@ -68,12 +84,18 @@ void CL_N10_NvsManager::clearAll() {
 void CL_N10_NvsManager::markDirty(const char* p_key, bool p_flag) {
 	if (!p_key || !p_key[0])
 		return;
-
+	
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
 	if (strcasecmp(p_key, "runtime") == 0)
 		s_dirty.runtime = p_flag;
 }
 
 void CL_N10_NvsManager::flushIfNeeded() {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
 	if (!s_initialized)
 		return;
 
@@ -99,10 +121,21 @@ void CL_N10_NvsManager::flushIfNeeded() {
 // Getter / JSON Export
 // ==================================================
 ST_N10_RuntimeState_t CL_N10_NvsManager::getState() {
-	return s_state;
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        ST_N10_RuntimeState_t v_empty{};
+        v_empty.lastScheduleNo    = -1;
+        v_empty.lastUserProfileNo = -1;
+        return v_empty;
+    }
+    return s_state;
+    
 }
 
 void CL_N10_NvsManager::toJson(JsonDocument& p_doc) {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
 	JsonObject o		   = p_doc["runtime"].to<JsonObject>();
 	o["runMode"]		   = s_state.runMode;
 	o["runSource"]		   = s_state.runSource;
@@ -125,6 +158,9 @@ void CL_N10_NvsManager::toJson(JsonDocument& p_doc) {
 // 주기 Flush (loop용)
 // ==================================================
 void CL_N10_NvsManager::tick() {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
 	if (!s_initialized)
 		return;
 	if (!s_dirty.runtime)
@@ -141,6 +177,9 @@ void CL_N10_NvsManager::tick() {
 // Setter API (CT10 등에서 호출)
 // ==================================================
 void CL_N10_NvsManager::setRunMode(uint8_t p_mode, uint8_t p_source) {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
 	if (!s_initialized)
 		begin();
 	if (s_state.runMode == p_mode && s_state.runSource == p_source)
@@ -151,6 +190,9 @@ void CL_N10_NvsManager::setRunMode(uint8_t p_mode, uint8_t p_source) {
 }
 
 void CL_N10_NvsManager::setLastSchedule(int16_t p_schNo) {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
 	if (!s_initialized)
 		begin();
 	if (s_state.lastScheduleNo == p_schNo)
@@ -160,6 +202,9 @@ void CL_N10_NvsManager::setLastSchedule(int16_t p_schNo) {
 }
 
 void CL_N10_NvsManager::setLastUserProfile(int16_t p_profileNo) {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
 	if (!s_initialized)
 		begin();
 	if (s_state.lastUserProfileNo == p_profileNo)
@@ -169,6 +214,9 @@ void CL_N10_NvsManager::setLastUserProfile(int16_t p_profileNo) {
 }
 
 void CL_N10_NvsManager::setAutoOff(bool p_enabled, uint32_t p_minutes) {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
 	if (!s_initialized)
 		begin();
 	if (s_state.autoOffEnabled == p_enabled && s_state.autoOffMinutes == p_minutes)
@@ -179,6 +227,9 @@ void CL_N10_NvsManager::setAutoOff(bool p_enabled, uint32_t p_minutes) {
 }
 
 void CL_N10_NvsManager::setOverrideFixed(bool p_enabled, float p_percent) {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
 	if (!s_initialized)
 		begin();
 	s_state.overrideEnabled		  = p_enabled;
@@ -190,6 +241,9 @@ void CL_N10_NvsManager::setOverrideFixed(bool p_enabled, float p_percent) {
 }
 
 void CL_N10_NvsManager::setOverridePreset(bool p_enabled, const char* p_presetCode, const char* p_styleCode) {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
 	if (!s_initialized)
 		begin();
 	s_state.overrideEnabled		 = p_enabled;
@@ -207,6 +261,9 @@ void CL_N10_NvsManager::setOverridePreset(bool p_enabled, const char* p_presetCo
 }
 
 void CL_N10_NvsManager::clearOverride() {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
 	if (!s_initialized)
 		begin();
 	if (!s_state.overrideEnabled && s_state.overrideMode == 0)
@@ -221,6 +278,9 @@ void CL_N10_NvsManager::clearOverride() {
 }
 
 void CL_N10_NvsManager::resetRuntime() {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
 	if (!s_initialized)
 		begin();
 	memset(&s_state, 0, sizeof(s_state));
@@ -261,6 +321,10 @@ void CL_N10_NvsManager::loadRuntimeFromNvs() {
 }
 
 void CL_N10_NvsManager::flush(bool p_force) {
+	// [P0-2] 재귀 mutex: setXxx/flushIfNeeded/tick/resetRuntime 어디서든 호출 가능
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+    
 	if (!s_initialized)
 		return;
 	if (!p_force && !s_dirty.runtime)

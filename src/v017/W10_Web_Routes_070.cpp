@@ -1165,11 +1165,15 @@ void CL_W10_WebAPI::routeWifiConfig() {
 
             if (v_changed) {
                 CL_C10_ConfigManager::saveDirtyConfigs();
-                CL_WF10_WiFiManager::requestReconnect();                     // ← 즉시 반환
-                v_res["status"]      = "requested";
+                
+                bool v_reqOk = CL_WF10_WiFiManager::requestReconnect();
+                v_res["status"] = v_reqOk ? "requested" : "coalesced";
+                // CL_WF10_WiFiManager::requestReconnect();                     // ← 즉시 반환
+                // v_res["status"]      = "requested";
+                
                 v_res["need_reboot"] = false;
-                v_res["note"]        = "WiFi applied on next loop tick";
-                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config saved, reconnect deferred to loopTask.");
+                v_res["note"] = "WiFi reconnect signaled to background task";
+                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config saved, reconnect signaled to WiFi task.");
             } else {
                 v_res["status"]      = "no_change";
                 v_res["need_reboot"] = false;
@@ -1208,11 +1212,14 @@ void CL_W10_WebAPI::routeWifiConfig() {
 
             if (v_changed) {
                 CL_C10_ConfigManager::saveDirtyConfigs();
-                CL_WF10_WiFiManager::requestReconnect();                     // ← 즉시 반환
-                v_res["status"]      = "requested";
+                bool v_reqOk = CL_WF10_WiFiManager::requestReconnect();
+                v_res["status"] = v_reqOk ? "requested" : "coalesced";
+                // CL_WF10_WiFiManager::requestReconnect();                     // ← 즉시 반환
+                // v_res["status"]      = "requested";
+                
                 v_res["need_reboot"] = false;
-                v_res["note"]        = "WiFi applied on next loop tick";
-                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config saved, reconnect deferred via PATCH.");
+                v_res["note"] = "WiFi reconnect signaled to background task";
+                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config saved, reconnect signaled to WiFi task.");
             } else {
                 v_res["status"]      = "no_change";
                 v_res["need_reboot"] = false;

@@ -196,12 +196,6 @@ void A00_run() {
     ////     CL_N10_NvsManager::flushIfNeeded();
     //// }
     
-    
-    // 3-1) [WF10-defer] 지연 WiFi 재연결 처리
-    //  - async_tcp에서 플래그만 set한 재연결 요청을 loopTask에서 실행
-    //  - startSTA가 블로킹될 수 있으나 loopTask는 제어/WS보다 우선순위 낮음
-    // ------------------------------------------------------
-    CL_WF10_WiFiManager::tickDeferredReconnect();
 
     // ------------------------------------------------------
     // 4) LED 업데이트

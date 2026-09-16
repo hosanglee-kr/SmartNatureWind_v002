@@ -23,8 +23,6 @@
 #include <lwip/dns.h>
 #include <lwip/ip_addr.h>
 
-#include <esp_task_wdt.h>   // [WF10-defer] WDT 보호
-
 // Config 루트 (다른 모듈에서 정의)
 extern ST_A20_ConfigRoot_t g_A20_config_root;
 
@@ -35,6 +33,11 @@ bool              CL_WF10_WiFiManager::s_staConnected      = false;
 wl_status_t       CL_WF10_WiFiManager::s_lastStaStatus     = WL_IDLE_STATUS;
 uint8_t           CL_WF10_WiFiManager::s_reconnectAttempts = 0;
 SemaphoreHandle_t CL_WF10_WiFiManager::s_wifiMutex         = nullptr;
+
+// [WF10-task] 추가
+TaskHandle_t      CL_WF10_WiFiManager::s_wifiTaskHandle   = nullptr;
+SemaphoreHandle_t CL_WF10_WiFiManager::s_wifiRequestSem    = nullptr;
+
 
 // --------------------------------------------------
 // 이벤트 등록
@@ -126,6 +129,11 @@ bool CL_WF10_WiFiManager::init(const ST_A20_WifiConfig_t&   p_cfg_wifi,
     char v_hostname[32];
     snprintf(v_hostname, sizeof(v_hostname), "NatureWind-%04X", (uint16_t)(esp_random() & 0xFFFF));
     WiFi.setHostname(v_hostname);
+    
+    // [WF10-task] 재연결 태스크 최초 1회 생성
+    //  - init()은 부팅 시 main에서 1회 + task 내부에서도 호출 가능
+    //  - 멱등성: _ensureWifiTask()가 중복 생성 방지
+    _ensureWifiTask();
 
     bool v_ap_ok  = false;
     bool v_sta_ok = false;
@@ -369,78 +377,116 @@ bool CL_WF10_WiFiManager::applyConfig(const ST_A20_WifiConfig_t& p_cfg) {
     WiFi.disconnect(true);
     WiFi.softAPdisconnect(true);
 
-    // 2) WiFiMulti 준비
-    //  후보 중복 방지: 내부 WiFiMulti 리셋
+    // 2) WiFiMulti 준비 (후보 중복 방지)
     s_wifiMulti = WiFiMulti();
 
-    // WiFiMulti v_multi;
+    // 3) [P0-race] system config 스냅샷 (원자 캡처)
+    //  - raw g_A20_config_root 접근 금지 (reloadAll의 freeAll과 race)
+    ST_A20_ConfigRoot_t v_snap;
+    CL_C10_ConfigManager::getRootSnapshot(v_snap);
 
-    // 3) system config 존재 여부 확인
-    if (!g_A20_config_root.system) {
+    // 4) system null 방어 (fallback)
+    if (!v_snap.system) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR,
                            "[WiFi] applyConfig: system config is null. "
                            "Proceeding without system-time integration (TM10 will be limited).");
 
         ST_A20_SystemConfig_t v_sys;
         memset(&v_sys, 0, sizeof(v_sys));
-        // 최소 안전 기본값(타임존/서버는 TM10에서 fallback을 갖는 전제)
         strlcpy(v_sys.timeCfg.ntpServer, "pool.ntp.org", sizeof(v_sys.timeCfg.ntpServer));
-        strlcpy(v_sys.timeCfg.timezone, "Asia/Seoul", sizeof(v_sys.timeCfg.timezone));
-        v_sys.timeCfg.syncIntervalMin = 360; // 6시간
+        strlcpy(v_sys.timeCfg.timezone,  "Asia/Seoul",   sizeof(v_sys.timeCfg.timezone));
+        v_sys.timeCfg.syncIntervalMin = 360;   // 6시간
 
         bool v_ok = init(p_cfg, v_sys, 1, 15, true);
         return v_ok;
     }
 
-    // 4) 기존 init() 로직 재사용 (AP/STA까지)
-    bool v_ok = init(p_cfg, *g_A20_config_root.system, 1, 15, true);
+    // 5) 기존 init() 로직 재사용 (AP/STA까지) — 스냅샷 포인터 사용
+    bool v_ok = init(p_cfg, *v_snap.system, 1, 15, true);
 
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[WiFi] Configuration applied (ok=%d, mode=%d)", (int)v_ok, (int)p_cfg.wifiMode);
+    CL_D10_Logger::log(EN_L10_LOG_INFO,
+                       "[WiFi] Configuration applied (ok=%d, mode=%d)",
+                       (int)v_ok, (int)p_cfg.wifiMode);
     return v_ok;
 }
 
-
 // ==================================================
-// [WF10-defer] 재연결 요청 (async_tcp → flag only, 즉시 반환)
+// [WF10-task] 재연결 요청 (async_tcp → WiFi task, 즉시 반환)
 // ==================================================
 bool CL_WF10_WiFiManager::requestReconnect() {
-    portENTER_CRITICAL(&s_reconnectMux);
-    bool v_already = s_reconnectRequested;
-    s_reconnectRequested = true;
-    portEXIT_CRITICAL(&s_reconnectMux);
+    if (!_ensureWifiTask()) return false;
 
-    CL_D10_Logger::log(EN_L10_LOG_INFO,
-                       "[WF10] Reconnect requested (deferred to loopTask, dup=%d)",
-                       (int)v_already);
-    return !v_already;
-}
-
-// ==================================================
-// [WF10-defer] loopTask에서 지연 재연결 처리
-//  - startSTA 블로킹을 loopTask로 이관 (async_tcp 보호)
-// ==================================================
-void CL_WF10_WiFiManager::tickDeferredReconnect() {
-    portENTER_CRITICAL(&s_reconnectMux);
-    bool v_do = s_reconnectRequested;
-    if (v_do) s_reconnectRequested = false;
-    portEXIT_CRITICAL(&s_reconnectMux);
-
-    if (!v_do) return;
-
-    if (!g_A20_config_root.wifi || !g_A20_config_root.system) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN,
-                           "[WF10] Deferred reconnect skipped: config null");
-        return;
+    // [WF10-task] binary semaphore → 이미 pending이면 무시
+    if (xSemaphoreGive(s_wifiRequestSem) != pdTRUE) {
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] Reconnect already pending (coalesced)");
+        return false;
     }
 
-   // [WF10-defer] WDT 보호
-    //  - startSTA 블로킹이 WDT timeout(10초)을 초과할 수 있음
-    //  - 블로킹 진입 전/후 feed (내부 지속 feed는 applyConfig 수정 없이 불가)
-    esp_task_wdt_reset();
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] Reconnect requested (WiFi task signaled)");
+    return true;
+}
 
-    bool v_ok = applyConfig(*g_A20_config_root.wifi);
 
-    esp_task_wdt_reset();   // 완료 후 즉시 feed
+// ==================================================
+// [WF10-task] WiFi 재연결 전용 태스크
+//  - startSTA의 최대 90초 블로킹을 loopTask에서 완전 분리
+//  - WDT 미등록 (esp_task_wdt_add 호출 없음)
+// ==================================================
+bool CL_WF10_WiFiManager::_ensureWifiTask() {
+    if (s_wifiTaskHandle != nullptr) return true;
 
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] Deferred apply done (ok=%d)", (int)v_ok);
+    if (s_wifiRequestSem == nullptr) {
+        s_wifiRequestSem = xSemaphoreCreateBinary();
+        if (s_wifiRequestSem == nullptr) {
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] semaphore create failed");
+            return false;
+        }
+    }
+
+    BaseType_t v_ret = xTaskCreate(
+        _wifiTask,
+        "WF10_Reconnect",
+        8192,          // [stack] startSTA+String+WiFiMulti 여유
+        nullptr,
+        1,             // [priority] loopTask와 동일 (1)
+        &s_wifiTaskHandle
+    );
+
+    if (v_ret != pdPASS) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] task create failed (ret=%d)", (int)v_ret);
+        vSemaphoreDelete(s_wifiRequestSem);
+        s_wifiRequestSem = nullptr;
+        s_wifiTaskHandle = nullptr;
+        return false;
+    }
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] Reconnect task created (prio=1, stack=8192)");
+    return true;
+}
+
+void CL_WF10_WiFiManager::_wifiTask(void* p_param) {
+    (void)p_param;
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10][Task] started, waiting for requests...");
+
+    // 파일-스코프 static (task 1개 → 경쟁 없음)
+    static ST_A20_WifiConfig_t s_wifiSnap;
+
+    while (true) {
+        // 무한 대기 (blocking, WDT 미등록)
+        if (xSemaphoreTake(s_wifiRequestSem, portMAX_DELAY) != pdTRUE) continue;
+
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        
+        if (!v_snap.wifi || !v_snap.system) {
+            CL_D10_Logger::log(EN_L10_LOG_WARN, "[WF10][Task] skip: config null");
+            continue;
+        }
+        memcpy(&s_wifiSnap, v_snap.wifi, sizeof(s_wifiSnap));
+        
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10][Task] applying WiFi config...");
+        bool v_ok = applyConfig(s_wifiSnap);
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10][Task] done (ok=%d)", (int)v_ok);
+    }
 }

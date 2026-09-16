@@ -39,6 +39,7 @@
 #include <WiFiMulti.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
+#include <freertos/task.h> 
 #include <lwip/dns.h>
 #include <time.h>
 
@@ -124,20 +125,24 @@ class CL_WF10_WiFiManager {
     static const char* getStaStatusString();
     
     // --------------------------------------------------
-    // [WF10-defer] 재연결 요청 큐 (async_tcp → loopTask)
-    //  - HTTP 라우트는 requestReconnect()로 플래그만 설정
-    //  - loopTask가 tickDeferredReconnect()에서 실제 처리
-    //  - 목적: startSTA의 최대 90초 블로킹을 async_tcp에서 회피
+    // [WF10-task] 재연결 요청 (async_tcp → WiFi 전용 태스크)
+    //  - HTTP 라우트는 requestReconnect()로 semaphore만 give
+    //  - WiFi 태스크가 실제 applyConfig 실행 (loopTask 보호)
     // --------------------------------------------------
-    static bool requestReconnect();       // 즉시 반환 (플래그만)
-    static void tickDeferredReconnect();  // loopTask 주기 호출
-    
+    static bool requestReconnect();       // 즉시 반환 (semaphore give)
+
 
   private:
     static const char* _encTypeToString(wifi_auth_mode_t p_mode);
     
-    // [WF10-defer] 지연 재연결 상태 (portMUX 보호)
-    inline static volatile bool s_reconnectRequested = false;
-    inline static portMUX_TYPE  s_reconnectMux       = portMUX_INITIALIZER_UNLOCKED;
+    // --------------------------------------------------
+    // [WF10-task] WiFi 재연결 전용 태스크
+    //  - startSTA 블로킹을 loopTask에서 완전 분리
+    //  - WDT 미등록 (자체 블로킹 자유)
+    // --------------------------------------------------
+    static TaskHandle_t      s_wifiTaskHandle;
+    static SemaphoreHandle_t s_wifiRequestSem;
+    static void              _wifiTask(void* p_param);
+    static bool              _ensureWifiTask();   // 최초 1회 생성
     
 };

@@ -271,8 +271,6 @@ bool CL_CT10_ControlManager::checkAutoOff(EN_CT10_reason_t* p_reasonOrNull /*=nu
             return true;
         }
     }
-
-    // 2) offTime (TM10)
     
     // 2) offTime (TM10)
     //  [A-2] 영속 필드 기반 재트리거 방지

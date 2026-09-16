@@ -64,6 +64,7 @@ void CL_CT10_ControlManager::clearManual() {
     instance().stopOverride();
 }
 
+
 bool CL_CT10_ControlManager::reloadAll() {
     // [A-min] 새 root를 로컬에 로드 (기존 g_A20_config_root는 손대지 않음)
     ST_A20_ConfigRoot_t v_new;

@@ -119,27 +119,49 @@ ST_CT10_Decision_t CL_CT10_ControlManager::decideRunSource() {
     // 2) ProfileMode 전용
     //   - ProfileMode 켜진 경우 schedule은 항상 배제
     // --------------------------------------------------
+    
     if (useProfileMode) {
         if (runSource == EN_CT10_RUN_USER_PROFILE && curProfileIndex >= 0) {
+            // [B-1] profile motion 검사 (flip-flop 방지)
+            if (g_A20_config_root.userProfiles) {
+                ST_A20_UserProfilesRoot_t& v_up = *g_A20_config_root.userProfiles;
+                if ((uint8_t)curProfileIndex < v_up.count) {
+                    if (isMotionBlocked(v_up.items[(uint8_t)curProfileIndex].motion)) {
+                        v_d.nextState        = EN_CT10_STATE_MOTION_BLOCKED;
+                        v_d.reason           = EN_CT10_REASON_MOTION_NO_PRESENCE;
+                        v_d.nextRunSource    = EN_CT10_RUN_USER_PROFILE;
+                        v_d.nextProfileIndex = curProfileIndex;
+                        v_d.wantSimStop      = true;
+                        return v_d;
+                    }
+                }
+            }
             v_d.nextState        = EN_CT10_STATE_PROFILE_RUN;
             v_d.reason           = EN_CT10_REASON_PROFILE_MODE;
             v_d.nextRunSource    = EN_CT10_RUN_USER_PROFILE;
             v_d.nextProfileIndex = curProfileIndex;
             return v_d;
         }
-
-        // ProfileMode인데 실행할 프로파일 없으면 Idle
-        v_d.nextState     = EN_CT10_STATE_IDLE;
-        v_d.reason        = EN_CT10_REASON_PROFILE_MODE;
-        v_d.nextRunSource = EN_CT10_RUN_NONE;
-        // profileMode에서는 schedule 금지
-        return v_d;
     }
 
     // --------------------------------------------------
     // 3) UserProfile (schedule과 별개로 실행)
     // --------------------------------------------------
     if (runSource == EN_CT10_RUN_USER_PROFILE && curProfileIndex >= 0) {
+        // [B-1] profile motion 검사
+        if (g_A20_config_root.userProfiles) {
+            ST_A20_UserProfilesRoot_t& v_up = *g_A20_config_root.userProfiles;
+            if ((uint8_t)curProfileIndex < v_up.count) {
+                if (isMotionBlocked(v_up.items[(uint8_t)curProfileIndex].motion)) {
+                    v_d.nextState        = EN_CT10_STATE_MOTION_BLOCKED;
+                    v_d.reason           = EN_CT10_REASON_MOTION_NO_PRESENCE;
+                    v_d.nextRunSource    = EN_CT10_RUN_USER_PROFILE;
+                    v_d.nextProfileIndex = curProfileIndex;
+                    v_d.wantSimStop      = true;
+                    return v_d;
+                }
+            }
+        }
         v_d.nextState        = EN_CT10_STATE_PROFILE_RUN;
         v_d.reason           = EN_CT10_REASON_USER_PROFILE_ACTIVE;
         v_d.nextRunSource    = EN_CT10_RUN_USER_PROFILE;
@@ -171,8 +193,20 @@ ST_CT10_Decision_t CL_CT10_ControlManager::decideRunSource() {
 
         // 겹침 허용 기본 (이미 findActiveScheduleIndex에 파라미터 추가 완료)
         int v_activeIdx = findActiveScheduleIndex(v_cfg, true /* overlapAllowed default */);
-
+        
         if (v_activeIdx >= 0) {
+            // [B-1] schedule motion 검사
+            if ((uint8_t)v_activeIdx < v_cfg.count) {
+                ST_A20_ScheduleItem_t& v_s = v_cfg.items[(uint8_t)v_activeIdx];
+                if (isMotionBlocked(v_s.motion)) {
+                    v_d.nextState         = EN_CT10_STATE_MOTION_BLOCKED;
+                    v_d.reason            = EN_CT10_REASON_MOTION_NO_PRESENCE;
+                    v_d.nextRunSource     = EN_CT10_RUN_SCHEDULE;
+                    v_d.nextScheduleIndex = (int8_t)v_activeIdx;
+                    v_d.wantSimStop       = true;
+                    return v_d;
+                }
+            }
             v_d.nextState         = EN_CT10_STATE_SCHEDULE_RUN;
             v_d.reason            = EN_CT10_REASON_SCHEDULE_ACTIVE;
             v_d.nextRunSource     = EN_CT10_RUN_SCHEDULE;

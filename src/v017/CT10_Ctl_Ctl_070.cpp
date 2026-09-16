@@ -510,12 +510,6 @@ bool CL_CT10_ControlManager::tickUserProfile() {
         return true;
     }
 
-    // Motion blocked (이벤트성 상태 전환)
-    if (isMotionBlocked(v_profile.motion)) {
-        onMotionBlocked(EN_CT10_REASON_MOTION_NO_PRESENCE);
-        return true;
-    }
-
     // state/reason은 SSOT(applyDecision)에서만
     
     return tickSegmentSequence(
@@ -546,12 +540,6 @@ bool CL_CT10_ControlManager::tickSchedule() {
     EN_CT10_reason_t v_reason = EN_CT10_REASON_NONE;
     if (checkAutoOff(&v_reason)) {
         onAutoOffTriggered(v_reason);
-        return true;
-    }
-
-    // Motion blocked (이벤트성 상태 전환)
-    if (isMotionBlocked(v_schedule.motion)) {
-        onMotionBlocked(EN_CT10_REASON_MOTION_NO_PRESENCE);
         return true;
     }
 
@@ -597,7 +585,17 @@ bool CL_CT10_ControlManager::tickSegmentSequence(bool p_repeat,
     }
 
     ST_A20_ScheduleSegment_t& v_seg = p_segs[(uint8_t)p_rt.index];
-
+    
+    // [B-1] self-heal: MOTION_BLOCKED 등으로 sim이 죽어있으면 onPhase에 대해 재적용
+    //  - 이전: motion 해제 후 segRt.index >= 0 유지 → tickSegmentSequence 초기 분기 skip
+    //         → applySegmentOn 미호출 → sim 영구 정지
+    //  - 이후: onPhase && !sim.active 시 즉시 재적용
+    //  - phaseStartMs는 유지 (타이머 계속 진행)
+    if (p_rt.onPhase && !sim.active) {
+        applySegmentOn(v_seg);
+        return true;
+    }
+    
     uint32_t v_onMs  = (uint32_t)v_seg.onMinutes  * 60000UL;
     uint32_t v_offMs = (uint32_t)v_seg.offMinutes * 60000UL;
 
@@ -663,6 +661,16 @@ bool CL_CT10_ControlManager::tickSegmentSequence(bool p_repeat,
     }
 
     ST_A20_UserProfileSegment_t& v_seg = p_segs[(uint8_t)p_rt.index];
+    
+    // [B-1] self-heal: MOTION_BLOCKED 등으로 sim이 죽어있으면 onPhase에 대해 재적용
+    //  - 이전: motion 해제 후 segRt.index >= 0 유지 → tickSegmentSequence 초기 분기 skip
+    //         → applySegmentOn 미호출 → sim 영구 정지
+    //  - 이후: onPhase && !sim.active 시 즉시 재적용
+    //  - phaseStartMs는 유지 (타이머 계속 진행)
+    if (p_rt.onPhase && !sim.active) {
+        applySegmentOn(v_seg);
+        return true;
+    }
 
     uint32_t v_onMs  = (uint32_t)v_seg.onMinutes  * 60000UL;
     uint32_t v_offMs = (uint32_t)v_seg.offMinutes * 60000UL;

@@ -1,7 +1,7 @@
 // CT10_Ctl_StMG_070.cpp
 
 #include "CT10_Ctl_070.h"
-
+#include "N10_NvsManager_070.h"
 // ======================================================
 // [CT10] Minimal State-Management Patch Set (Function Unit Full)
 // - 추가 목적: "지금 CT10이 왜/무엇을/어떤 소스로 제어 중인지"를 SSOT로 관리
@@ -306,6 +306,11 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
                 ST_A20_SchedulesRoot_t& v_cfg = *g_A20_config_root.schedules;
                 if ((uint8_t)curScheduleIndex < v_cfg.count) {
                     initAutoOffFromSchedule(v_cfg.items[(uint8_t)curScheduleIndex]);
+                    
+                    // [B-3] N10 런타임 저장 (schedule)
+                    CL_N10_NvsManager::setRunMode(1, 0);   // mode=SCHEDULE, source=UNKNOWN(자동)
+                    CL_N10_NvsManager::setLastSchedule((int16_t)v_cfg.items[(uint8_t)curScheduleIndex].schNo);
+
                 } else {
                     memset(&autoOffRt, 0, sizeof(autoOffRt));
                 }

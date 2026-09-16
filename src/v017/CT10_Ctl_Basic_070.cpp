@@ -52,6 +52,7 @@
 
 // [o-2] explicit include (A20_Const_070.h에서 제거됨)
 #include "A25_Com_Utils_070.h"     // A40_ComFunc / A40_IO / CL_A40_MutexGuard_Semaphore
+#include "N10_NvsManager_070.h"
 
 #include <DHT.h>
 

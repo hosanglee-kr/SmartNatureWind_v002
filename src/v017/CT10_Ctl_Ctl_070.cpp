@@ -21,6 +21,8 @@
 // [o-2] explicit include (A20_Const_070.h에서 제거됨)
 #include "A25_Com_Utils_070.h"     // A40_ComFunc / A40_IO / CL_A40_MutexGuard_Semaphore
 
+#include "N10_NvsManager_070.h"
+
 // --------------------------------------------------
 // [CT10] runCtx snapshot helpers (최소)
 // - SegmentOn/Off에서만 호출
@@ -106,6 +108,11 @@ bool CL_CT10_ControlManager::reloadAll() {
     
     // [B-2] AutoOff 래치 리셋 (설정 재적용)
     v_inst._autoOffLatched = false;
+    
+    // [C-3] N10 런타임 상태 리셋 (설정 재적용)
+    //  - reload는 설정 전면 교체이므로 이전 NVS 런타임 무효
+    //  - 즉시 flush(true)로 NVS 반영
+    CL_N10_NvsManager::resetRuntime();
 
     v_inst.scheduleSegRt.index = -1;
     v_inst.profileSegRt.index  = -1;
@@ -251,6 +258,10 @@ bool CL_CT10_ControlManager::startUserProfileByNo(uint16_t p_profileNo) {
             profileSegRt.loopCount     = 0;
 
             initAutoOffFromUserProfile(v_p);
+            
+            // [B-3] N10 런타임 상태 저장 (profile)
+            CL_N10_NvsManager::setRunMode(2, 2);   // mode=USER_PROFILE, source=WEB
+            CL_N10_NvsManager::setLastUserProfile((int16_t)p_profileNo);
 
             // UI 혼선 방지: 스케줄 인덱스는 프로필 구동 시 무의미
             curScheduleIndex = -1;
@@ -279,6 +290,9 @@ void CL_CT10_ControlManager::stopUserProfile() {
     profileSegRt.index = -1;
 
     sim.stop();
+    
+    // [B-3] N10 런타임 상태 저장 (OFF)
+    CL_N10_NvsManager::setRunMode(0, 2);
 
     markDirty("state");
     markDirty("metrics");
@@ -308,6 +322,10 @@ void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seco
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Override FIXED %.1f%% (sec=%lu)",
                        overrideState.fixedPercent, (unsigned long)p_seconds);
+    
+    // [B-3] N10 override 저장 (fixed)
+    CL_N10_NvsManager::setOverrideFixed(true, overrideState.fixedPercent);
+    
 }
 
 void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
@@ -371,6 +389,9 @@ void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_
                        p_wind.presetCode,
                        p_wind.styleCode,
                        (unsigned long)p_seconds);
+    
+    // [B-3] N10 override 저장 (resolved/preset)
+    CL_N10_NvsManager::setOverridePreset(true, p_wind.presetCode, p_wind.styleCode);
 }
 
 void CL_CT10_ControlManager::stopOverride() {
@@ -380,7 +401,10 @@ void CL_CT10_ControlManager::stopOverride() {
     if (!overrideState.active) return;
 
     memset(&overrideState, 0, sizeof(overrideState));
-
+    
+    // [B-3] N10 override 해제
+    CL_N10_NvsManager::clearOverride();
+    
     markDirty("state");
     markDirty("metrics");
 

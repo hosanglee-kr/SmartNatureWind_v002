@@ -240,9 +240,11 @@ void CL_W10_WebAPI::routeSystem() {
         });
 }
 
+
 // --------------------------------------------------
-// 5. /api/motion
+// 5. /api/v001/motion (GET/POST/PATCH)
 // --------------------------------------------------
+
 void CL_W10_WebAPI::routeMotion() {
     // GET
     s_server->on(W10_Const::HTTP_API_MOTION, HTTP_GET, [](AsyncWebServerRequest* p_request) {
@@ -289,6 +291,37 @@ void CL_W10_WebAPI::routeMotion() {
             v_res["updated"] = v_changed;
             sendJson(p_request, v_res);
         });
+    
+    
+    // PATCH: 
+    s_server->on(
+        W10_Const::HTTP_API_MOTION,
+        HTTP_PATCH,
+        [](AsyncWebServerRequest* p_request) {},
+        nullptr,
+        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+            if (!checkApiKey(p_request)) {
+                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+                return;
+            }
+            if (p_index + p_len != p_total) return;
+
+            JsonDocument v_doc;
+            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
+                p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
+                return;
+            }
+
+            bool v_changed = false;
+            if (g_A20_config_root.motion) {
+                v_changed = CL_C10_ConfigManager::patchMotionFromJson(*g_A20_config_root.motion, v_doc);
+            }
+
+            JsonDocument v_res;
+            v_res["updated"] = v_changed;
+            sendJson(p_request, v_res);
+        });
+
 }
 
 // --------------------------------------------------
@@ -361,7 +394,6 @@ void CL_W10_WebAPI::routeWindProfileID() {
     // PUT: 수정
     s_server->on((String(W10_Const::HTTP_API_WIND_PROFILE) + "/([0-9]+)").c_str(),
                  HTTP_PUT,
-                 // "/api/windProfile/([0-9]+)", HTTP_PUT,
                  [](AsyncWebServerRequest* p_request) {},
                  nullptr,
                  [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
@@ -1027,9 +1059,11 @@ void CL_W10_WebAPI::routeConfigInit() {
     });
 }
 
+
 // --------------------------------------------------
-// 19. /api/motion/feed (PIR / BLE)
+// 19. /api/v001/motion/pir/feed (PIR)
 // --------------------------------------------------
+
 void CL_W10_WebAPI::routeMotionFeed() {
     // PIR
     s_server->on(
@@ -1320,7 +1354,8 @@ void CL_W10_WebAPI::routeFirmwareCheck() {
         if (strcmp(v_current_version, v_latest_version) < 0) {
             v_doc["status"]         = "available";
             v_doc["latest_version"] = v_latest_version;
-            v_doc["url"]            = "/api/update/latest";
+            v_doc["url"]            = "/api/v001/fwUpdate";
+            
         } else {
             v_doc["status"]         = "latest";
             v_doc["latest_version"] = v_current_version;

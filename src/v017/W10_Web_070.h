@@ -131,54 +131,53 @@ class CL_W10_WebAPI {
     // 라우팅 선언 (Routes.cpp)
     // --------------------------------------------------
     // 1. 시스템 정보 조회 및 진단 (GET)
-    static void routeVersion();  // GET /api/version
-    static void routeState();    // GET /api/state
-    static void routeDiag();     // GET /api/diag
-    static void routeMetrics();  // GET /api/metrics
-    static void routeLogs();     // GET /api/logs
-    static void routeAuthTest(); // GET /api/auth/test
-
+    static void routeVersion();  // GET /api/v001/version
+    static void routeState();    // GET /api/v001/state
+    static void routeDiag();     // GET /api/v001/diag
+    static void routeMetrics();  // GET /api/v001/metrics
+    static void routeLogs();     // GET /api/v001/logs
+    static void routeAuthTest(); // GET /api/v001/auth/test
+    
     // 2. 설정 조회 및 패치/CRUD (GET/POST/PUT/DELETE)
-    static void routeSystem(); // GET/POST /api/system
-    // static void routeWifi();          // GET/POST /api/wifi
-    static void routeMotion();            // GET/POST /api/motion
-    static void routeUserProfiles();      // GET/POST /api/user_profiles (목록조회/신규생성)
-    static void routeUserProfilesID();    // PUT/DELETE /api/user_profiles/{id}
-    static void routeUserProfilesPatch(); // POST /api/user_profiles/patch (배치 패치)
-
+    static void routeSystem();            // GET/POST/PATCH /api/v001/system
+    static void routeMotion();            // GET/POST/PATCH /api/v001/motion
+    static void routeUserProfiles();      // GET/POST /api/v001/user_profiles
+    static void routeUserProfilesID();    // PUT/DELETE /api/v001/user_profiles/{id}
+    static void routeUserProfilesPatch(); // POST /api/v001/user_profiles/patch
+    
     // 3. 설정 관리 및 저장/적용 (POST/GET)
-    static void routeConfigDirtySave(); // GET /api/config/dirty
-    static void routeReload();          // POST /api/reload
-    static void routeConfigInit();      // POST /api/config/init
-
+    static void routeConfigDirtySave(); // GET/POST /api/v001/config , /config/save , /config/dirty
+    static void routeReload();          // POST /api/v001/reload
+    static void routeConfigInit();      // POST /api/v001/config/init
+    
     // 4. 네트워크 및 펌웨어 관리 (GET/POST)
-    static void routeScan();          // GET /api/scan
-    static void routeWifiConfig();    // POST /api/network/wifi/config
-    static void routeTimeSet();       // POST /api/system/time/set
-    static void routeFirmwareCheck(); // GET /api/system/firmware/check
-    static void routeUpload();        // POST /upload
-    static void routeUpdate();        // POST /update
-
+    static void routeScan();          // GET  /api/v001/wifi/scan
+    static void routeWifiConfig();    // GET/POST/PATCH /api/v001/wifi/config
+    static void routeTimeSet();       // POST /api/v001/system/time/set
+    static void routeFirmwareCheck(); // GET  /api/v001/system/firmware/check
+    static void routeUpload();        // POST /api/v001/fileUpload
+    static void routeUpdate();        // POST /api/v001/fwUpdate
+    
     // 4-1. AI 프록시
     static void routeGeminiProxy(); // POST /api/v001/ai/gemini
-
+    
     // 5. 제어 및 상태 요약 (POST/GET)
-    static void routeControl();        // 여러 제어용 /api/control/*
-    static void routeControlSummary(); // GET /api/control/summary
-    static void routeMotionFeed();     // POST /api/motion/pir/feed
-
+    static void routeControl();        // 여러 제어용 /api/v001/control/*
+    static void routeControlSummary(); // GET  /api/v001/control/summary
+    static void routeMotionFeed();     // POST /api/v001/motion/pir/feed
+    
     // 6. 시뮬레이션 제어 (GET/POST)
-    static void routeSimulation(); // GET/POST /api/simulation
-    static void routeSimState();   // GET /api/sim/state
-
+    static void routeSimulation(); // GET/POST /api/v001/simulation
+    static void routeSimState();   // GET /api/v001/sim/state
+    
     // 7. CRUD: Wind Profiles
-    static void routeWindProfile();   // GET/POST /api/windProfile
-    static void routeWindProfileID(); // PUT/DELETE /api/windProfile/{id}
-
+    static void routeWindProfile();   // GET/POST /api/v001/windProfile
+    static void routeWindProfileID(); // PUT/DELETE /api/v001/windProfile/{id}
+    
     // 8. CRUD: Schedules
-    static void routeSchedules();   // GET/POST /api/schedules
-    static void routeSchedulesID(); // PUT/DELETE /api/schedules/{id}
-
+    static void routeSchedules();   // GET/POST /api/v001/schedules
+    static void routeSchedulesID(); // PUT/DELETE /api/v001/schedules/{id}
+    
     // 9. 정적 파일 및 웹소켓
     static void routeStaticAssets(); // JSON 기반 static routes
     static void routeWebSocket();    // WS 라우트 초기화

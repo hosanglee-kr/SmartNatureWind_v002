@@ -1,239 +1,291 @@
-E-1 (d) UAF 방지 — 지연 free 설계
+Web API 누락/차이 점검
 
-문제 재확인
+1. 선언 vs 등록 전수 대조
 
-경쟁 시나리오:
+36개 Const vs 등록 확인
 
-t W10 GET (async_tcp) reloadAll (HTTP POST)
-t1 getRootSnapshot(v_snap) → v_snap.system = A —
-t2 (스케줄러 양보) loadAll(v_new)
-t3 — swap → g_root = B, v_old = A
-t4 — freeAll(A) ← A 해제
-t5 toJson_System(*A) —
+# Const 값 등록 위치 상태
+1 HTTP_API_VERSION /api/v001/version routeVersion ✅
+2 HTTP_API_STATE /api/v001/state routeState ✅
+3 HTTP_API_SYSTEM /api/v001/system routeSystem (GET/POST/PATCH) ✅
+4 HTTP_API_WIFI_SCAN /api/v001/wifi/scan routeScan ✅
+5 HTTP_API_WIFI_CONFIG /api/v001/wifi/config routeWifiConfig (GET/POST/PATCH) ✅
+6 HTTP_API_DIAG /api/v001/diag routeDiag ✅
+7 HTTP_API_AUTH_TEST /api/v001/auth/test routeAuthTest ✅
+8 HTTP_API_TIME_SET /api/v001/system/time/set routeTimeSet ✅
+9 HTTP_API_FW_CHECK /api/v001/system/firmware/check routeFirmwareCheck ✅
+10 HTTP_API_MOTION /api/v001/motion routeMotion (GET/POST) ✅
+11 HTTP_API_SIMULATION /api/v001/simulation routeSimulation (GET/POST) ✅
+12 HTTP_API_SIM_STATE /api/v001/sim/state routeSimState ✅
+13 HTTP_API_CONTROL_SUMMARY /api/v001/control/summary routeControlSummary ✅
+14 HTTP_API_CONFIG /api/v001/config routeConfigDirtySave ✅
+15 HTTP_API_CONFIG_SAVE /api/v001/config/save routeConfigDirtySave ✅
+16 HTTP_API_CONFIG_DIRTY /api/v001/config/dirty routeConfigDirtySave ✅
+17 HTTP_API_CONFIG_INIT /api/v001/config/init routeConfigInit ✅
+18 HTTP_API_RELOAD /api/v001/reload routeReload ✅
+19 HTTP_API_WIND_PROFILE /api/v001/windProfile routeWindProfile ✅
+20 HTTP_API_SCHEDULES /api/v001/schedules routeSchedules ✅
+21 HTTP_API_USER_PROFILES /api/v001/user_profiles routeUserProfiles ✅
+22 HTTP_API_USER_PROFILES_PATCH /api/v001/user_profiles/patch routeUserProfilesPatch ✅
+23 HTTP_API_CTL_REBOOT /api/v001/control/reboot routeControl ✅
+24 HTTP_API_CTL_FACTORY /api/v001/control/factoryReset routeControl ✅
+25 HTTP_API_CTL_PROF_SEL /api/v001/control/profile/select routeControl ✅
+26 HTTP_API_CTL_PROF_STOP /api/v001/control/profile/stop routeControl ✅
+27 HTTP_API_CTL_OVR_FIXED /api/v001/control/override/fixed routeControl ✅
+28 HTTP_API_CTL_OVR_PRESET /api/v001/control/override/preset routeControl ✅
+29 HTTP_API_CTL_OVR_CLEAR /api/v001/control/override/clear routeControl ✅
+30 HTTP_API_GEMINI_PROXY /api/v001/ai/gemini routeGeminiProxy ✅
+31 HTTP_API_FEED_PIR /api/v001/motion/pir/feed routeMotionFeed ✅
+32 HTTP_API_METRICS /api/v001/metrics routeMetrics ✅
+33 HTTP_API_LOGS /api/v001/logs routeLogs ✅
+34 HTTP_API_FILE_UPLOAD /api/v001/fileUpload routeUpload ✅
+35 HTTP_API_FW_UPDATE /api/v001/fwUpdate routeUpdate ✅
+36 HTTP_API_MENU /api/v001/menu routeStaticAssets ✅
 
-대상: W10 GET 5곳 (system/motion/schedules/userProfiles/wifi) + routeConfigDirtySave CONFIG GET.
+결과: 36/36 전부 등록됨. API 누락 없음.
 
 ---
 
-설계 결정
+2. 🔴 주석 vs 실제 경로 불일치 (혼란 유발)
 
-옵션 개입 안전성
-(a) C10 mutex 노출 + W10 GET/POST 전부 감쌈 큼 (15+곳) 완전
-(b) pending free 큐 (grace 3초) 작음 (4파일) 실질 안전
-(c) 이연 (문서) 0 실위험 잔존
+2-1. W10_Web_070.h 라우팅 선언 주석
 
-권장: (b) — W10 수정 없음, UAF 완전 차단.
+```cpp
+// 1. 시스템 정보 조회 및 진단 (GET)
+static void routeVersion();  // GET /api/version          ← 실제 /api/v001/version
+static void routeState();    // GET /api/state            ← 실제 /api/v001/state
+static void routeDiag();     // GET /api/diag             ← 실제 /api/v001/diag
+static void routeMetrics();  // GET /api/metrics          ← 실제 /api/v001/metrics
+static void routeLogs();     // GET /api/logs             ← 실제 /api/v001/logs
+static void routeAuthTest(); // GET /api/auth/test        ← 실제 /api/v001/auth/test
+
+// 2. 설정 조회 및 패치/CRUD
+static void routeSystem(); // GET/POST /api/system         ← 실제 /api/v001/system
+static void routeMotion(); // GET/POST /api/motion         ← 실제 /api/v001/motion
+static void routeUserProfiles();      // GET/POST /api/user_profiles     ← 실제 /api/v001/user_profiles
+static void routeUserProfilesID();    // PUT/DELETE /api/user_profiles/{id}  ← 실제 /api/v001/...
+static void routeUserProfilesPatch(); // POST /api/user_profiles/patch   ← 실제 /api/v001/...
+
+// 4. 네트워크 및 펌웨어 관리
+static void routeScan();          // GET /api/scan                ← 실제 /api/v001/wifi/scan
+static void routeWifiConfig();    // POST /api/network/wifi/config ← 실제 /api/v001/wifi/config
+static void routeTimeSet();       // POST /api/system/time/set    ← 실제 /api/v001/system/time/set
+static void routeFirmwareCheck(); // GET /api/system/firmware/check ← 실제 /api/v001/system/firmware/check
+static void routeUpload();        // POST /upload                 ← 실제 /api/v001/fileUpload
+static void routeUpdate();        // POST /update                 ← 실제 /api/v001/fwUpdate
+
+// 5. 제어 및 상태 요약
+static void routeControl();        // 여러 제어용 /api/control/*  ← 실제 /api/v001/control/*
+static void routeControlSummary(); // GET /api/control/summary   ← 실제 /api/v001/control/summary
+static void routeMotionFeed();     // POST /api/motion/pir/feed  ← 실제 /api/v001/motion/pir/feed
+
+// 6. 시뮬레이션 제어
+static void routeSimulation(); // GET/POST /api/simulation     ← 실제 /api/v001/simulation
+static void routeSimState();   // GET /api/sim/state           ← 실제 /api/v001/sim/state
+
+// 7. CRUD: Wind Profiles
+static void routeWindProfile();   // GET/POST /api/windProfile       ← 실제 /api/v001/...
+static void routeWindProfileID(); // PUT/DELETE /api/windProfile/{id} ← 실제 /api/v001/...
+
+// 8. CRUD: Schedules
+static void routeSchedules();   // GET/POST /api/schedules       ← 실제 /api/v001/...
+static void routeSchedulesID(); // PUT/DELETE /api/schedules/{id} ← 실제 /api/v001/...
+
+// 9. 정적 파일 및 웹소켓
+static void routeStaticAssets(); // JSON 기반 static routes
+static void routeWebSocket();    // WS 라우트 초기화
+```
+
+모든 주석이 /v001 prefix 누락 → 신규 개발자/프론트 개발자 혼란.
+
+2-2. W10_Web_Routes_070.cpp 섹션 주석
+
+```cpp
+// --------------------------------------------------
+// 통합된 /api/network/wifi/config (GET/POST/PATCH)   ← 실제 /api/v001/wifi/config
+// --------------------------------------------------
+```
+
+```cpp
+// --------------------------------------------------
+// /update (OTA 펌웨어 업데이트)                       ← 실제 /api/v001/fwUpdate
+// --------------------------------------------------
+```
 
 ---
 
-최종 diff
+3.  실제 결(2건)
 
-1. C10_Config_070.h — public API + private 상태
 
-위치: freeAll 선언 다음
 
-```cpp
-    static void freeAll(ST_A20_ConfigRoot_t& p_root);
-
-    // --------------------------------------------------
-    // [E-1] 지연 free (W10 reader UAF 방지)
-    //  - reloadAll의 즉시 free 대신 큐에 등록
-    //  - processPendingFree()가 grace(3초) 경과 후 실제 free
-    //  - 대상: W10 GET이 v_snap 캡처 후 toJson 실행 중 reloadAll로 인한 dangling
-    //  - 부팅 복원 없으므로 재부팅 시 잔존 큐 소실 (leak 무해)
-    // --------------------------------------------------
-    static void queuePendingFree(const ST_A20_ConfigRoot_t& p_old);
-    static void processPendingFree();
-```
-
-위치: private, s_cfgJsonFileMap 근처
+3-2. routeMotion — PATCH 누락
 
 ```cpp
-    // [E-1] pending free 큐 (2슬롯, 연속 reload 대비)
-    static constexpr uint8_t  PENDING_FREE_SLOTS    = 2;
-    static constexpr uint32_t PENDING_FREE_GRACE_MS = 3000;   // 3초 유예
-    static ST_A20_ConfigRoot_t s_pendingFree[PENDING_FREE_SLOTS];
-    static uint32_t            s_pendingFreeMs[PENDING_FREE_SLOTS];
-    static uint8_t             s_pendingFreeCount;
-```
-
-2. C10_Config_Core_070.cpp — 구현
-
-위치: s_rootSwapMux 정의 다음
-
-```cpp
-// [E-1] pending free 큐 정의
-ST_A20_ConfigRoot_t CL_C10_ConfigManager::s_pendingFree[CL_C10_ConfigManager::PENDING_FREE_SLOTS] = {};
-uint32_t            CL_C10_ConfigManager::s_pendingFreeMs[CL_C10_ConfigManager::PENDING_FREE_SLOTS] = {0, 0};
-uint8_t             CL_C10_ConfigManager::s_pendingFreeCount = 0;
-```
-
-위치: freeAll 함수 다음
-
-```cpp
-// =====================================================
-// [E-1] pending free 큐 (지연 free)
-// =====================================================
-void CL_C10_ConfigManager::queuePendingFree(const ST_A20_ConfigRoot_t& p_old) {
-    CL_A40_MutexGuard_Semaphore v_guard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) {
-        // 획득 실패 시 안전을 위해 즉시 free (극히 드묾)
-        CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] queuePendingFree: mutex busy, immediate free");
-        // (recursive mutex 실패 시 다른 경로 위험 → 그대로 두는 것도 고려)
-        return;
-    }
-
-    // 슬롯 full → 가장 오래된 것을 즉시 free하고 자리 확보
-    if (s_pendingFreeCount >= PENDING_FREE_SLOTS) {
-        freeAll(s_pendingFree[0]);
-        memset(&s_pendingFree[0], 0, sizeof(s_pendingFree[0]));
-
-        for (uint8_t i = 1; i < PENDING_FREE_SLOTS; i++) {
-            s_pendingFree[i - 1]   = s_pendingFree[i];
-            s_pendingFreeMs[i - 1] = s_pendingFreeMs[i];
-        }
-        s_pendingFreeCount = PENDING_FREE_SLOTS - 1;
-    }
-
-    s_pendingFree[s_pendingFreeCount]   = p_old;
-    s_pendingFreeMs[s_pendingFreeCount] = millis();
-    s_pendingFreeCount++;
-
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] pending free queued (count=%u)", s_pendingFreeCount);
+void CL_W10_WebAPI::routeMotion() {
+    // GET  ✅
+    s_server->on(W10_Const::HTTP_API_MOTION, HTTP_GET, ...);
+    // POST ✅
+    s_server->on(W10_Const::HTTP_API_MOTION, HTTP_POST, ...);
+    // PATCH ❌ (routeSystem / routeWifiConfig에는 있음)
 }
-
-void CL_C10_ConfigManager::processPendingFree() {
-    CL_A40_MutexGuard_Semaphore v_guard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return;
-
-    if (s_pendingFreeCount == 0) return;
-
-    uint32_t v_now  = millis();
-    uint8_t  v_keep = 0;
-
-    for (uint8_t i = 0; i < s_pendingFreeCount; i++) {
-        if (v_now - s_pendingFreeMs[i] >= PENDING_FREE_GRACE_MS) {
-            freeAll(s_pendingFree[i]);
-            memset(&s_pendingFree[i], 0, sizeof(s_pendingFree[i]));
-            CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] pending free executed (slot=%u)", i);
-        } else {
-            // 유지 (압축)
-            if (v_keep != i) {
-                s_pendingFree[v_keep]   = s_pendingFree[i];
-                s_pendingFreeMs[v_keep] = s_pendingFreeMs[i];
-            }
-            v_keep++;
-        }
-    }
-    s_pendingFreeCount = v_keep;
-}
 ```
 
-3. CT10_Ctl_Ctl_070.cpp::reloadAll — 즉시 free → 큐 등록
+일관성: /api/v001/system, /api/v001/wifi/config는 GET/POST/PATCH 지원, /api/v001/motion은 GET/POST만.
 
-위치: 마지막 v_guard.unlock() 블록
+프론트엔드가 PATCH로 호출하면 405 (Method Not Allowed).
+
+수정 (옵션, 선택):
 
 ```cpp
-// BEFORE
-    // [A-min] CT10 mutex 해제 후 구버전 root 해제
-    //  - freeAll은 C10 mutex를 별도 획득 (중첩 없음)
-    //  - CT10 mutex hold 시간 최소화 (다른 태스크 블록 방지)
-    v_guard.unlock();
-    CL_C10_ConfigManager::freeAll(v_old);
-
-// AFTER
-    // [A-min] CT10 mutex 해제 후 구버전 root 해제
-    //  - [E-1] 즉시 free 하지 않고 pending 큐에 등록 (W10 reader UAF 방지)
-    //  - processPendingFree()가 grace(3초) 경과 후 실제 free
-    //  - 사유: W10 GET이 getRootSnapshot 후 toJson 실행 사이에 v_old 참조
-    //          → 즉시 free 시 dangling pointer 접근
-    v_guard.unlock();
-    CL_C10_ConfigManager::queuePendingFree(v_old);
+s_server->on(W10_Const::HTTP_API_MOTION, HTTP_PATCH, 
+    [](AsyncWebServerRequest* p_request){}, nullptr,
+    [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+        // POST와 동일 로직
+    });
 ```
 
-4. A00_Main_070.h::A00_run — 주기 호출
-
-위치: CL_TM10_TimeManager::tick(...) 다음, 기존 N10 flush TODO 블록 다음
-
-```cpp
-    // ------------------------------------------------------
-    // [E-1] pending free 처리 (reloadAll의 지연 free)
-    //  - 3초 grace 경과 후 실제 freeAll 실행
-    //  - 매 loopTask 주기(≤10ms) 호출 → 3초 후 자연 정리
-    // ------------------------------------------------------
-    CL_C10_ConfigManager::processPendingFree();
-```
+영향: 프론트가 POST만 사용하면 무해. 확인 필요.
 
 ---
 
-안전성 분석
+3-3. routeReload — 무효화된 파일 참조
 
-UAF 차단 매커니즘
+```cpp
+void CL_W10_WebAPI::routeReload() {
+    ...
+    ST_A20_ConfigRoot_t v_root;                      // ← 이전 버전 잔재
+    bool v_ok = CL_C10_ConfigManager::loadAll(v_root);   // ← v_root 갱신
+    if (!v_ok) { ... }
+    g_A20_config_root = v_root;                       // ← A-min 이전 방식
+    ...
+}
+```
 
-t W10 GET (async_tcp) reloadAll processPendingFree (loopTask)
-t1 v_snap.system = A 캡처 — —
-t2 — swap → v_old = A —
-t3 — queuePendingFree(A) —
-t4 toJson_System(*A) — (pending 유지)
-t5 완료 완료 —
-t6 — — 3초 경과 → freeAll(A) ✅
+그러나 실제 코드 (제공 소스):
 
-A는 W10 GET 완료 후 안전하게 free. ✅
+```cpp
+void CL_W10_WebAPI::routeReload() {
+    s_server->on(W10_Const::HTTP_API_RELOAD, HTTP_POST, [](AsyncWebServerRequest* p_request) {
+        if (!checkApiKey(p_request)) { ... }
+        // [A-min] CT10::reloadAll로 통합 위임
+        bool v_ok = CL_CT10_ControlManager::reloadAll();
+        ...
+    });
+}
+```
 
-연속 reload (빠른 2회)
+✅ 수정 완료 상태 (A-min 반영).
 
-· 슬롯 2개 → A, B 각각 유지
-· 3초 후 순차 free ✅
+이상 없음 — 초기 분석에서 잘못 봄.
 
-슬롯 full (3회 빠른 reload)
+---
 
-· 가장 오래된 슬롯 즉시 free
-· 이 시점의 W10 GET은 이미 3초 이상 경과 → 안전 ✅
+4. 🟡 누락 API (설계 의도 확인 필요)
 
-재부팅
+4-1. /api/v001/wifi (기본) 미등록
 
-· pending 큐 소실 (메모리 leak)
-· 재부팅 자체로 모든 힙 리셋 → 무해 ✅
+```cpp
+// W10_Web_070.h
+// static void routeWifi();          // GET/POST /api/wifi    ← 주석 처리됨
+```
+
+결과: WiFi 설정은 /api/v001/wifi/config만 사용.
+
+의도 여부: 확인 필요. WiFi 조회/저장 통합 경로로 wifi/config만 쓰는 것은 정상.
+
+---
+
+4-2. /api/v001/schedules/patch 부재
+
+· user_profiles/patch (POST) 존재 ✅
+· schedules/patch 없음
+
+비대칭: 스케줄도 batch patch 필요할 수 있음.
+
+조치: 사용 패턴 확인 후 결정.
+
+---
+
+4-3. BLE API 부재
+
+M10에 ST_M10_BLE_rt_t 구조체 존재하나 BLE 관련 API/라우트 0건.
+
+판정: 미구현 or 정책상 제외. 확인 필요.
+
+---
+
+4-4. routeConfigSave() 미등록 (주석 상태)
+
+```cpp
+// --------------------------------------------------
+// 21. /api/config/save & /api/config/dirty
+// --------------------------------------------------
+// void CL_W10_WebAPI::routeConfigSave() {
+//}
+```
+
+→ routeConfigDirtySave()가 HTTP_API_CONFIG_SAVE를 처리하므로 실질 문제 없음.
+
+---
+
+5. WS 채널 검증
+
+# Const 값 등록
+1 WS_API_LOG /ws/log routeWebSocket ✅
+2 WS_API_STATE /ws/state routeWebSocket ✅
+3 WS_API_CHART /ws/chart routeWebSocket ✅
+4 WS_API_METRICS /ws/metrics routeWebSocket ✅
+5 WS_API_SUMMARY /ws/summary routeWebSocket ✅
+
+5/5 등록 완료 ✅
+
+---
+
+📋 조치 요약
+
+
+🟠 검토 필요 (2건)
+
+# 항목 조치
+2 routeMotion PATCH 추가 프론트 사용 확인 후
+3 /api/v001/schedules/patch 추가 프론트 사용 확인 후
+
+🟡 문서 (필수, 다수)
+
+# 항목
+4 W10_Web_070.h 라우팅 선언 주석 — /api/v001/ prefix 추가
+5 W10_Web_Routes_070.cpp 섹션 헤더 주석 — 실제 경로로 정정
+6 routeUpload/routeUpdate 섹션 주석 — 실제 경로 정정
+
+ℹ️ 정책 확인 (2건)
+
+# 항목
+7 BLE API 구현 여부
+8 /api/v001/wifi 기본 경로 필요 여부
 
 ---
 
 검증 체크리스트
 
 # 시나리오 기대
-1 컴파일 에러 0
-2 reload 1회 + 로그 pending free queued (count=1)
-3 3초 후 pending free executed (slot=0)
-4 reload 중 W10 GET 폴링 크래시 없음 (핵심 검증)
-5 연속 reload 2회 (1초 간격) count=2 → 순차 free
-6 reload 3회 빠른 연속 슬롯 full → 가장 오래된 것 즉시 free
-7 heap 모니터 3초 후 원상 복귀
-8 재부팅 pending 소실, 정상 부팅
-
-#4가 E-1의 핵심 검증.
+1 curl /api/v001/version 200
+2 curl /api/v001/system (GET) 200
+3 curl -X PATCH /api/v001/system 200
+4 curl -X PATCH /api/v001/motion 405 (PATCH 미등록)
+5 프론트가 /api/update/latest 호출 404 (F/W 확인 응답)
+6 프론트가 /api/v001/fwUpdate 호출 200 (OTA)
+7 curl -X POST /api/v001/reload 200 (routeReload → reloadAll)
 
 ---
 
-회귀 리스크
+필수 조치 (#1 fwUpdate URL) 는 프론트 OTA 호출 실패를 유발하므로 즉시 수정 권장.
 
-리스크 대응
-queuePendingFree mutex 실패 시 즉시 free recursive mutex 실패 극히 드묾 (사실상 없음)
-grace 3초가 짧음? W10 GET toJson은 수 ms → 충분
-pending 큐 2슬롯 부족 연속 3회 reload 시 oldest 즉시 free (안전, 정합)
-s_pendingFree 메모리 (2 × 32B = 64B) 무시 가능
-processPendingFree 호출 누락 A00_run 필수 배선
+프론트엔드 (P001_API_070.js)의 실제 호출 경로 확인 가능하면 PATCH/schedules-patch 필요 여부 확정 가능.
 
----
+다음 단계:
 
-파일별 변경 요약
+· (1) 필수 1건 + 문서 3건 반영
+· (2) 프론트엔드 소스 확인 후 PATCH/patch 추가 결정
+· (3) BLE//wifi 정책 확인
 
-파일 라인
-C10_Config_070.h +13 (API 2 + private 5)
-C10_Config_Core_070.cpp +55 (정의 3 + 구현 2)
-CT10_Ctl_Ctl_070.cpp +3/-2 (freeAll → queue)
-A00_Main_070.h +6 (주기 호출)
-
-총 4파일, ~75줄.
-
----
-
-적용 후 컴파일 결과 알려주세요. E-1 완결 시 W10 UAF race 종결.
+어느 방향으로 갈까요?

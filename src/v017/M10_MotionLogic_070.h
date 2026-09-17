@@ -8,7 +8,6 @@
  * 기능 요약
  *  - PIR 센서 근접 감지 통합 제어
  *  - holdSec 기반 유지 로직 (최근 감지 후 일정시간 활성 유지)
- *  - BLE 신호는 외부 스캐너에서 RSSI 업데이트만 전달받음
  *  - CT10_ControlManager에서 tick() 호출 및 상태 조회
  *  - JSON 직렬화(toJson) 수행 (설정값은 g_A20_config_root.motion 참조)
  *  - 상태 변화 시 콜백(OnChange) 제공 (CT10 등에서 WebSocket diffOnly 활용 가능)
@@ -55,11 +54,6 @@ typedef struct {
 	bool	 active;
 } ST_M10_PIR_rt_t;
 
-typedef struct {
-	uint32_t lastDetected_ms;
-	bool	 active;
-	int16_t	 last_rssi;
-} ST_M10_BLE_rt_t;
 
 typedef struct {
 	bool	 active;

@@ -239,6 +239,11 @@ class CL_C10_ConfigManager {
     static ST_A20_ConfigRoot_t s_pendingFree[PENDING_FREE_SLOTS];
     static uint32_t            s_pendingFreeMs[PENDING_FREE_SLOTS];
     static uint8_t             s_pendingFreeCount;
+    
+    // [F-1] pending 큐 보호용 portMUX (recursive mutex 실패 시 leak 방지)
+    //  - freeAll은 critical section 밖에서 실행 (오래 걸림)
+    //  - 8-byte 포인터 배열 + 카운터 + timestamp만 critical 보호
+    static portMUX_TYPE s_pendingFreeMux;
 
     // cfg_jsonFile.json 로더
     static bool _loadCfgJsonFile();

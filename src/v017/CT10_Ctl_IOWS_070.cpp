@@ -214,16 +214,22 @@ static void CT10_WS_buildPriorityOrderFromConfig(
     }    
 }    
     
-// --------------------------------------------------    
-// policy 로드: system.webSocket → s_itvMs / priority order / chart 정책 / cleanupMs    
-//  - 구조: v_sys.system.webSocket.wsChConfig[] + wsEtcConfig    
-// --------------------------------------------------    
-static void CT10_WS_applyPolicyFromSystem() {    
-    if (!g_A20_config_root.system) return;    
-    
-    const ST_A20_SystemConfig_t&    v_sys = *g_A20_config_root.system;    
-    const ST_A20_WebSocketConfig_t& v_ws  = v_sys.system.webSocket;    
-    
+// --------------------------------------------------
+// policy 로드: system.webSocket → s_itvMs / priority order / chart 정책 / cleanupMs
+//  - 구조: v_sys.system.webSocket.wsChConfig[] + wsEtcConfig
+// --------------------------------------------------
+static void CT10_WS_applyPolicyFromSystem() {
+    // [F-2] 원자 스냅샷 (swap 중 torn read 방지)
+    //  - 이전: raw g_A20_config_root.system 접근 → swap 도중 8필드 혼합 가능
+    //  - 이후: portMUX critical section 내 8-포인터 copy → 일관된 스냅샷
+    ST_A20_ConfigRoot_t v_snap;
+    CL_C10_ConfigManager::getRootSnapshot(v_snap);
+
+    if (!v_snap.system) return;
+
+    const ST_A20_SystemConfig_t&    v_sys = *v_snap.system;
+    const ST_A20_WebSocketConfig_t& v_ws  = v_sys.system.webSocket;
+
     // 1) intervals(ms)    
     for (uint8_t v_i = 0; v_i < (uint8_t)EN_A20_WS_CH_COUNT; v_i++) {    
         const ST_A20_WS_CH_CONFIG_t& v_ch = v_ws.wsChConfig[v_i];    

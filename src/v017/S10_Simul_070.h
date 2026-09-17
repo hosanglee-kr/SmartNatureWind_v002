@@ -17,6 +17,25 @@
  * - diffOnly 모드 지원 (WebSocket/REST 효율 전송)
  * - Phase 변화 또는 급격한 풍속 변화 시 실시간 WebSocket 브로드캐스트
  * - C10_ControlManager 및 W10_WebAPI와 완전 호환 구조
+ // ------------------------------------------------------
+// [Policy] g_A20_config_root 접근 정책 (E-6)
+//  - S10 내부에서 g_A20_config_root.* 에 접근하는 경로:
+//    * tick()           : g_root.motion->timing.*
+//    * toChartJson()    : g_root.motion->timing.*
+//    * applyPresetCore(): (직접 접근 없음, 인자로 dict 전달)
+//  - 접근 보호 전제:
+//    * S10은 CT10 mutex 하에서만 호출되어야 한다.
+//      - tick()           : CT10::tickLoop 내부 (s_stateMutex 보유)
+//      - toChartJson()    : CT10::exportChartJson 내부 (s_stateMutex 보유)
+//    * 직접 호출 경로 (W10 routeSimulation POST 등)는
+//      config 스냅샷을 사용하거나 CT10 mutex를 획득해야 한다.
+//  - reloadAll과의 경합:
+//    * reloadAll은 C10 mutex + CT10 mutex + s_rootSwapMux로 보호
+//    * S10의 g_root.motion 접근은 CT10 mutex 하에서만 발생
+//      → freeAll(지연) 시에도 dangling 없음 (E-1 grace)
+//  - [주의] 향후 새 호출 경로 추가 시 반드시 위 전제 유지.
+// ======================================================
+
  * ------------------------------------------------------
  * [구현 규칙]
  * - 항상 소스 시작 주석 부분 체계 유지 및 내용 업데이트

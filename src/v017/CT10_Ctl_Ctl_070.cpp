@@ -496,17 +496,20 @@ void CL_CT10_ControlManager::tickLoop() {
     maybePushMetricsDirty();
 }
 
-
-
 // --------------------------------------------------
 // override tick
-// --------------------------------------------------
 // --------------------------------------------------
 // [Policy] Override 중 AutoOff
 //  - 본 함수는 checkAutoOff를 호출하지 않는다.
 //  - Override는 사용자 명시적 개입 → AutoOff 조건보다 우선.
 //  - Override 종료 후 원 소스 재진입 시 AutoOff 재평가.
 //  - AutoOff(특히 offTemp)가 override 중 무시되어도 팬 가동은 안전 방향.
+//
+// [E-7] Override 중 Motion
+//  - 본 함수는 isMotionBlocked를 호출하지 않는다.
+//  - decideRunSource가 Override를 1순위로 반환 → motion 검사 skip.
+//  - 정책: 사용자 override > motion presence gate.
+//  - Override 종료 후 decide가 motion 재평가 → MOTION_BLOCKED 가능.
 // --------------------------------------------------
 bool CL_CT10_ControlManager::tickOverride() {
     if (!overrideState.active)

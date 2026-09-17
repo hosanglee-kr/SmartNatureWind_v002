@@ -493,6 +493,17 @@ void CL_WF10_WiFiManager::_wifiTask(void* p_param) {
         
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10][Task] applying WiFi config...");
         bool v_ok = applyConfig(s_wifiSnap);
-        CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10][Task] done (ok=%d)", (int)v_ok);
+
+        // [E-5] WiFi task 스택 사용량 측정
+        //  - uxTaskGetStackHighWaterMark(NULL): 현재 태스크의 최소 여유 스택(워터마크) 반환
+        //  - 반환값 StackType_t 단위 (ESP32: uint32_t = 4 bytes)
+        //  - 8192B = 2048 words. 안전 마진 권장: hwm ≥ 512 words(2KB free)
+        UBaseType_t v_hwm = uxTaskGetStackHighWaterMark(NULL);
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
+                          "[WF10][Task] done (ok=%d, stack_free_min=%u bytes / %u words)",
+                          (int)v_ok,
+                          (unsigned)(v_hwm * sizeof(StackType_t)),
+                          (unsigned)v_hwm);
+                          
     }
 }

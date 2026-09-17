@@ -17,24 +17,32 @@
  * - 정적 싱글톤 인터페이스 제공 (W10_WebAPI에서 직접 사용)
  * - 구현은 cpp 3개로 분리:
  *    1) json 처리, 2) control 처리, 3) misc/유틸/보조
-
 * [Policy] 주요 운영 정책 요약
 *  - Override vs AutoOff:
 *    * tickOverride는 checkAutoOff를 호출하지 않는다.
 *    * Override는 사용자 명시적 개입 → AutoOff 조건보다 우선.
 *    * Override 종료 후 원 소스 재진입 시 AutoOff 재평가.
 *    * AutoOff(특히 offTemp)가 override 중 무시되어도 팬 가동은 안전 방향.
+*
+*  - [E-7] Override vs Motion:
+*    * decideRunSource의 1순위가 Override → motion 검사 이전 반환.
+*    * tickOverride는 isMotionBlocked를 호출하지 않는다.
+*    * Override는 사용자 명시적 개입 → motion 무시가 정책.
+*    * Override 종료 후 원 소스 재진입 시 motion 재평가
+*      (decideRunSource가 MOTION_BLOCKED 반환 가능).
+*
 *  - Override 지속시간:
 *    * durationSec=0이면 S_OVERRIDE_DEFAULT_SEC(20분) 기본 적용.
 *    * 무기한 override는 지원하지 않음 (재부팅/타임아웃 정책 단순화).
+*
 *  - AutoOff timer:
 *    * source(schedule/profile) 진입 시마다 timerStartMs 재설정.
 *    * 세션별 독립 타이머 (누적 아님). source 전환 시 이전 타이머 무효화.
 *    * 사유: 각 스케줄/프로파일의 "1회 실행 최대 시간" 제한 목적.
+*
 *  - 부팅 복원:
 *    * N10(NVS)은 저장만. 부팅 시 Override/UserProfile 자동 복원 안 함.
 *    * Schedule은 시간 조건 재평가, AutoOff는 source 진입 시 자동 로드.
-
  * ------------------------------------------------------
  * [구현 규칙]
  * - 주석 구조, 네이밍 규칙, ArduinoJson v7 단일 문서 정책 준수

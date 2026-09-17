@@ -172,6 +172,7 @@ void A00_init() {
 // ------------------------------------------------------
 void A00_run() {
     uint32_t v_now = millis();
+    (void)v_now;   // [W-2] N10 flush 이연으로 현재 미사용 (TODO 블록 활성화 시 사용)
 
     // Watchdog feed
     esp_task_wdt_reset();
@@ -196,7 +197,13 @@ void A00_run() {
     } else {
         CL_TM10_TimeManager::tick(nullptr);
     }
-
+    
+    // [E-1] pending free 처리 (reloadAll의 지연 free)
+    //  - 3초 grace 경과 후 실제 freeAll 실행
+    //  - 매 loopTask 주기(≤10ms) 호출 → 3초 후 자연 정리
+    // ------------------------------------------------------
+    CL_C10_ConfigManager::processPendingFree();
+    
     //// // NVS Dirty Flush (10초마다)
     //// if (v_now - v_lastFlush >= 10000) {
     ////     v_lastFlush = v_now;

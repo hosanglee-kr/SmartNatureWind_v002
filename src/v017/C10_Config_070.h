@@ -5,14 +5,31 @@
  * 모듈 약어 : C10
  * 모듈명 : Smart Nature Wind Configuration Manager
  * ------------------------------------------------------
- * 기능 요약:
- *  - Smart Nature Wind 전체 설정(JSON 기반) 관리 매니저
- *  - 설정 파일 단위 분리 관리 (system / wifi / motion / schedules / userProfiles / windDict / nvsSpec / webPage)
- *  - 구조체 ↔ JSON 직렬화 및 역직렬화 (ArduinoJson v7 전용)
- *  - 파일 백업(.bak) / 복구 / 공장초기화(factoryResetFromDefault) 지원
- *  - PATCH 기반 부분 업데이트(patchConfigFromJson) 지원
- *  - Lazy-Load 하이브리드 구성 (필요 섹션만 동적 로드)
- *  - Wi-Fi 등 재초기화 판단 로직 확장 가능
+* 기능 요약:
+*  - Smart Nature Wind 전체 설정(JSON 기반) 관리 매니저
+*  - 설정 파일 단위 분리 관리 (system / wifi / motion / schedules / userProfiles / windDict / nvsSpec / webPage)
+*  - 구조체 ↔ JSON 직렬화 및 역직렬화 (ArduinoJson v7 전용)
+*  - 파일 백업(.bak) / 복구 / 공장초기화(factoryResetFromDefault) 지원
+*  - PATCH 기반 부분 업데이트(patchConfigFromJson) 지원
+*  - Lazy-Load 하이브리드 구성 (필요 섹션만 동적 로드)
+*  - Wi-Fi 등 재초기화 판단 로직 확장 가능
+*
+* [Policy] 주요 운영 정책 요약
+*  - g_A20_config_root 원자 접근:
+*    * getRootSnapshot()으로 8개 포인터를 portMUX critical section에서 캡처
+*    * reloadAll의 swap과 상호 배타 (s_rootSwapMux)
+*  - 지연 free (E-1):
+*    * reloadAll은 즉시 freeAll 대신 queuePendingFree()로 큐 등록
+*    * processPendingFree()가 grace(3초) 경과 후 실제 free
+*    * W10 GET이 v_snap 캡처 후 toJson 실행 사이의 UAF 방지
+*    * 큐 슬롯: 2개 (연속 reload 대비), oldest 즉시 free fallback
+*  - Mutex:
+*    * s_recursiveMutex: 모든 load/save/free/patch 경로 보호
+*    * 재귀 mutex (setXxx→begin, freeAll 재진입 등)
+*  - Dirty Flag:
+*    * s_dirtyflagSpinlock (portMUX) 기반 원자 read/clear
+*    * saveDirtyConfigs()가 dirty 섹션만 저장
+
  * ------------------------------------------------------
  * [구현 규칙]
  *  - 항상 소스 시작 주석 부분 체계 유지 및 내용 업데이트
@@ -92,6 +109,16 @@ class CL_C10_ConfigManager {
     static bool loadAll(ST_A20_ConfigRoot_t& p_root);
     static bool freeLazySection(const char* p_section, ST_A20_ConfigRoot_t& p_root);
     static void freeAll(ST_A20_ConfigRoot_t& p_root);
+    
+    // [E-1] 지연 free (W10 reader UAF 방지)
+    //  - reloadAll의 즉시 free 대신 큐에 등록
+    //  - processPendingFree()가 grace(3초) 경과 후 실제 free
+    //  - 대상: W10 GET이 v_snap 캡처 후 toJson 실행 중 reloadAll로 인한 dangling
+    //  - 부팅 복원 없으므로 재부팅 시 잔존 큐 소실 (leak 무해)
+    // --------------------------------------------------
+    static void queuePendingFree(const ST_A20_ConfigRoot_t& p_old);
+    static void processPendingFree();
+    
 
     static bool factoryResetFromDefault();
 
@@ -205,6 +232,13 @@ class CL_C10_ConfigManager {
 
     // cfg_jsonFile.json 매핑
     static ST_A20_cfg_jsonFile_t s_cfgJsonFileMap;
+    
+    // [E-1] pending free 큐 (2슬롯, 연속 reload 대비)
+    static constexpr uint8_t  PENDING_FREE_SLOTS    = 2;
+    static constexpr uint32_t PENDING_FREE_GRACE_MS = 3000;   // 3초 유예
+    static ST_A20_ConfigRoot_t s_pendingFree[PENDING_FREE_SLOTS];
+    static uint32_t            s_pendingFreeMs[PENDING_FREE_SLOTS];
+    static uint8_t             s_pendingFreeCount;
 
     // cfg_jsonFile.json 로더
     static bool _loadCfgJsonFile();

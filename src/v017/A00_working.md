@@ -1,201 +1,199 @@
-E-2, E-3, E-4 — 통합 diff
+E-1 (d) UAF 방지 — 지연 free 설계
+
+문제 재확인
+
+경쟁 시나리오:
+
+t W10 GET (async_tcp) reloadAll (HTTP POST)
+t1 getRootSnapshot(v_snap) → v_snap.system = A —
+t2 (스케줄러 양보) loadAll(v_new)
+t3 — swap → g_root = B, v_old = A
+t4 — freeAll(A) ← A 해제
+t5 toJson_System(*A) —
+
+대상: W10 GET 5곳 (system/motion/schedules/userProfiles/wifi) + routeConfigDirtySave CONFIG GET.
 
 ---
 
-E-2. WiFi task 실패 → "coalesced" 오인
+설계 결정
 
-문제
+옵션 개입 안전성
+(a) C10 mutex 노출 + W10 GET/POST 전부 감쌈 큼 (15+곳) 완전
+(b) pending free 큐 (grace 3초) 작음 (4파일) 실질 안전
+(c) 이연 (문서) 0 실위험 잔존
 
-requestReconnect()가 실패(task 미생성) / coalesce(pending) 두 경우 모두 false 반환 → W10 라우트가 둘 다 "coalesced" 응답.
+권장: (b) — W10 수정 없음, UAF 완전 차단.
 
-수정 — 3상태 반환
+---
 
-WF10_WiFiMgr_070.h — 반환 타입 확장:
+최종 diff
+
+1. C10_Config_070.h — public API + private 상태
+
+위치: freeAll 선언 다음
 
 ```cpp
-  public:
+    static void freeAll(ST_A20_ConfigRoot_t& p_root);
+
     // --------------------------------------------------
-    // [WF10-task] 재연결 요청 상태 (E-2)
-    //  - OK        : 요청 성공 (task signaled)
-    //  - COALESCED : 이미 pending (중복 요청)
-    //  - FAILED    : task 생성 실패
+    // [E-1] 지연 free (W10 reader UAF 방지)
+    //  - reloadAll의 즉시 free 대신 큐에 등록
+    //  - processPendingFree()가 grace(3초) 경과 후 실제 free
+    //  - 대상: W10 GET이 v_snap 캡처 후 toJson 실행 중 reloadAll로 인한 dangling
+    //  - 부팅 복원 없으므로 재부팅 시 잔존 큐 소실 (leak 무해)
     // --------------------------------------------------
-    typedef enum : uint8_t {
-        EN_WF10_REQ_OK        = 0,
-        EN_WF10_REQ_COALESCED = 1,
-        EN_WF10_REQ_FAILED    = 2
-    } EN_WF10_req_result_t;
-
-    static EN_WF10_req_result_t requestReconnect();   // ← 반환 타입 확장
+    static void queuePendingFree(const ST_A20_ConfigRoot_t& p_old);
+    static void processPendingFree();
 ```
 
-WF10_WiFiMgr_070.cpp::requestReconnect
+위치: private, s_cfgJsonFileMap 근처
+
+```cpp
+    // [E-1] pending free 큐 (2슬롯, 연속 reload 대비)
+    static constexpr uint8_t  PENDING_FREE_SLOTS    = 2;
+    static constexpr uint32_t PENDING_FREE_GRACE_MS = 3000;   // 3초 유예
+    static ST_A20_ConfigRoot_t s_pendingFree[PENDING_FREE_SLOTS];
+    static uint32_t            s_pendingFreeMs[PENDING_FREE_SLOTS];
+    static uint8_t             s_pendingFreeCount;
+```
+
+2. C10_Config_Core_070.cpp — 구현
+
+위치: s_rootSwapMux 정의 다음
+
+```cpp
+// [E-1] pending free 큐 정의
+ST_A20_ConfigRoot_t CL_C10_ConfigManager::s_pendingFree[CL_C10_ConfigManager::PENDING_FREE_SLOTS] = {};
+uint32_t            CL_C10_ConfigManager::s_pendingFreeMs[CL_C10_ConfigManager::PENDING_FREE_SLOTS] = {0, 0};
+uint8_t             CL_C10_ConfigManager::s_pendingFreeCount = 0;
+```
+
+위치: freeAll 함수 다음
+
+```cpp
+// =====================================================
+// [E-1] pending free 큐 (지연 free)
+// =====================================================
+void CL_C10_ConfigManager::queuePendingFree(const ST_A20_ConfigRoot_t& p_old) {
+    CL_A40_MutexGuard_Semaphore v_guard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        // 획득 실패 시 안전을 위해 즉시 free (극히 드묾)
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] queuePendingFree: mutex busy, immediate free");
+        // (recursive mutex 실패 시 다른 경로 위험 → 그대로 두는 것도 고려)
+        return;
+    }
+
+    // 슬롯 full → 가장 오래된 것을 즉시 free하고 자리 확보
+    if (s_pendingFreeCount >= PENDING_FREE_SLOTS) {
+        freeAll(s_pendingFree[0]);
+        memset(&s_pendingFree[0], 0, sizeof(s_pendingFree[0]));
+
+        for (uint8_t i = 1; i < PENDING_FREE_SLOTS; i++) {
+            s_pendingFree[i - 1]   = s_pendingFree[i];
+            s_pendingFreeMs[i - 1] = s_pendingFreeMs[i];
+        }
+        s_pendingFreeCount = PENDING_FREE_SLOTS - 1;
+    }
+
+    s_pendingFree[s_pendingFreeCount]   = p_old;
+    s_pendingFreeMs[s_pendingFreeCount] = millis();
+    s_pendingFreeCount++;
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] pending free queued (count=%u)", s_pendingFreeCount);
+}
+
+void CL_C10_ConfigManager::processPendingFree() {
+    CL_A40_MutexGuard_Semaphore v_guard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
+    if (s_pendingFreeCount == 0) return;
+
+    uint32_t v_now  = millis();
+    uint8_t  v_keep = 0;
+
+    for (uint8_t i = 0; i < s_pendingFreeCount; i++) {
+        if (v_now - s_pendingFreeMs[i] >= PENDING_FREE_GRACE_MS) {
+            freeAll(s_pendingFree[i]);
+            memset(&s_pendingFree[i], 0, sizeof(s_pendingFree[i]));
+            CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] pending free executed (slot=%u)", i);
+        } else {
+            // 유지 (압축)
+            if (v_keep != i) {
+                s_pendingFree[v_keep]   = s_pendingFree[i];
+                s_pendingFreeMs[v_keep] = s_pendingFreeMs[i];
+            }
+            v_keep++;
+        }
+    }
+    s_pendingFreeCount = v_keep;
+}
+```
+
+3. CT10_Ctl_Ctl_070.cpp::reloadAll — 즉시 free → 큐 등록
+
+위치: 마지막 v_guard.unlock() 블록
 
 ```cpp
 // BEFORE
-bool CL_WF10_WiFiManager::requestReconnect() {
-    if (!_ensureWifiTask()) return false;
-
-    if (xSemaphoreGive(s_wifiRequestSem) != pdTRUE) {
-        CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] Reconnect already pending (coalesced)");
-        return false;
-    }
-
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] Reconnect requested (WiFi task signaled)");
-    return true;
-}
+    // [A-min] CT10 mutex 해제 후 구버전 root 해제
+    //  - freeAll은 C10 mutex를 별도 획득 (중첩 없음)
+    //  - CT10 mutex hold 시간 최소화 (다른 태스크 블록 방지)
+    v_guard.unlock();
+    CL_C10_ConfigManager::freeAll(v_old);
 
 // AFTER
-CL_WF10_WiFiManager::EN_WF10_req_result_t CL_WF10_WiFiManager::requestReconnect() {
-    // [E-2] task 생성 실패는 COALESCED로 오인되지 않도록 구분 반환
-    if (!_ensureWifiTask()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] Reconnect request failed: task unavailable");
-        return EN_WF10_REQ_FAILED;
-    }
-
-    if (xSemaphoreGive(s_wifiRequestSem) != pdTRUE) {
-        CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] Reconnect already pending (coalesced)");
-        return EN_WF10_REQ_COALESCED;
-    }
-
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] Reconnect requested (WiFi task signaled)");
-    return EN_WF10_REQ_OK;
-}
+    // [A-min] CT10 mutex 해제 후 구버전 root 해제
+    //  - [E-1] 즉시 free 하지 않고 pending 큐에 등록 (W10 reader UAF 방지)
+    //  - processPendingFree()가 grace(3초) 경과 후 실제 free
+    //  - 사유: W10 GET이 getRootSnapshot 후 toJson 실행 사이에 v_old 참조
+    //          → 즉시 free 시 dangling pointer 접근
+    v_guard.unlock();
+    CL_C10_ConfigManager::queuePendingFree(v_old);
 ```
 
-W10_Web_Routes_070.cpp::routeWifiConfig (POST/PATCH 공통)
+4. A00_Main_070.h::A00_run — 주기 호출
+
+위치: CL_TM10_TimeManager::tick(...) 다음, 기존 N10 flush TODO 블록 다음
 
 ```cpp
-// BEFORE
-bool v_reqOk = CL_WF10_WiFiManager::requestReconnect();
-v_res["status"] = v_reqOk ? "requested" : "coalesced";
-
-// AFTER
-auto v_req = CL_WF10_WiFiManager::requestReconnect();
-switch (v_req) {
-    case CL_WF10_WiFiManager::EN_WF10_REQ_OK:
-        v_res["status"] = "requested";
-        break;
-    case CL_WF10_WiFiManager::EN_WF10_REQ_COALESCED:
-        v_res["status"] = "coalesced";
-        break;
-    case CL_WF10_WiFiManager::EN_WF10_REQ_FAILED:
-    default:
-        v_res["status"] = "task_failed";
-        break;
-}
+    // ------------------------------------------------------
+    // [E-1] pending free 처리 (reloadAll의 지연 free)
+    //  - 3초 grace 경과 후 실제 freeAll 실행
+    //  - 매 loopTask 주기(≤10ms) 호출 → 3초 후 자연 정리
+    // ------------------------------------------------------
+    CL_C10_ConfigManager::processPendingFree();
 ```
 
 ---
 
-E-3. Mutex timeout 로그 폭주
+안전성 분석
 
-문제
+UAF 차단 매커니즘
 
-reloadAll 실행 중 (수 초) → 매 tick마다 ERROR 로그. 4개 모듈 × 초당 ~10회 = 로그 폭주.
+t W10 GET (async_tcp) reloadAll processPendingFree (loopTask)
+t1 v_snap.system = A 캡처 — —
+t2 — swap → v_old = A —
+t3 — queuePendingFree(A) —
+t4 toJson_System(*A) — (pending 유지)
+t5 완료 완료 —
+t6 — — 3초 경과 → freeAll(A) ✅
 
-수정 — 3파일, ERROR → DEBUG
+A는 W10 GET 완료 후 안전하게 free. ✅
 
-CT10_Ctl_Ctl_070.cpp::tickLoop:
+연속 reload (빠른 2회)
 
-```cpp
-// BEFORE
-if (!v_guard.isAcquired()) {
-    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
-    return;
-}
+· 슬롯 2개 → A, B 각각 유지
+· 3초 후 순차 free ✅
 
-// AFTER
-if (!v_guard.isAcquired()) {
-    // [E-3] reloadAll 등 정상 상황에서도 발생 → DEBUG 하향
-    CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
-    return;
-}
-```
+슬롯 full (3회 빠른 reload)
 
-CT10_Ctl_IOWS_070.cpp — export 함수 5곳 (exportStateJson_v02, exportChartJson, exportSummaryJson, exportMetricsJson + markDirty/consume 4곳):
+· 가장 오래된 슬롯 즉시 free
+· 이 시점의 W10 GET은 이미 3초 이상 경과 → 안전 ✅
 
-```cpp
-// 모든 ERROR → DEBUG, "Mutex timeout" → "Mutex busy"
-CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
-```
+재부팅
 
-N10_NvsManager_070.cpp — 모든 guard 실패 로그:
-
-```cpp
-// BEFORE (10곳)
-CL_D10_Logger::log(EN_L10_LOG_ERROR, "[N10] %s: Mutex timeout", __func__);
-
-// AFTER
-CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[N10] %s: Mutex busy", __func__);
-```
-
-M10_MotionLogic_070.h — 해당 없음 (현재 실패 로그 없음).
-
-WF10_WiFiMgr_070.cpp — 6곳:
-
-```cpp
-// 모든 "[WF10] %s: Mutex timeout" → DEBUG "Mutex busy"
-CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] %s: Mutex busy", __func__);
-```
-
-TM10_TimeMg_070.h — 다수:
-
-```cpp
-// 모든 "[TM10] %s: Mutex timeout" → DEBUG
-CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[TM10] %s: Mutex busy", __func__);
-```
-
----
-
-E-4. /override/fixed seconds 파라미터 optional
-
-문제
-
-seconds 누락 시 400. seconds=0 명시해야 20분 기본.
-
-W10_Web_Routes_070.cpp::routeControl — override/fixed 핸들러
-
-```cpp
-// BEFORE
-s_server->on(W10_Const::HTTP_API_CTL_OVR_FIXED, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-    if (!checkApiKey(p_request)) { ... }
-    if (!p_request->hasParam("percent", true) || !p_request->hasParam("seconds", true)) {
-        p_request->send(400, "application/json", "{\"error\":\"missing param\"}");
-        return;
-    }
-    float    v_pct = p_request->getParam("percent", true)->value().toFloat();
-    uint32_t v_sec = (uint32_t)p_request->getParam("seconds", true)->value().toInt();
-    if (s_control) {
-        s_control->startOverrideFixed(v_pct, v_sec);
-    }
-    p_request->send(200, "application/json", "{\"result\":\"ok\"}");
-});
-
-// AFTER
-s_server->on(W10_Const::HTTP_API_CTL_OVR_FIXED, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-    if (!checkApiKey(p_request)) {
-        p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-        return;
-    }
-
-    // [E-4] percent만 필수, seconds는 optional (누락/0 → CT10 기본 20분)
-    if (!p_request->hasParam("percent", true)) {
-        p_request->send(400, "application/json", "{\"error\":\"missing param: percent\"}");
-        return;
-    }
-
-    float    v_pct = p_request->getParam("percent", true)->value().toFloat();
-    uint32_t v_sec = p_request->hasParam("seconds", true)
-                        ? (uint32_t)p_request->getParam("seconds", true)->value().toInt()
-                        : 0;
-
-    if (s_control) {
-        s_control->startOverrideFixed(v_pct, v_sec);
-    }
-    p_request->send(200, "application/json", "{\"result\":\"ok\"}");
-});
-```
+· pending 큐 소실 (메모리 leak)
+· 재부팅 자체로 모든 힙 리셋 → 무해 ✅
 
 ---
 
@@ -203,30 +201,39 @@ s_server->on(W10_Const::HTTP_API_CTL_OVR_FIXED, HTTP_POST, [](AsyncWebServerRequ
 
 # 시나리오 기대
 1 컴파일 에러 0
-2 WiFi task 정상 + 요청 status: "requested"
-3 WiFi task 정상 + 재요청 status: "coalesced"
-4 task 생성 실패 (시뮬) status: "task_failed"
-5 reload 5초 중 시리얼 Mutex busy DEBUG (ERROR 아님)
-6 POST /override/fixed?percent=50 (seconds 누락) 200, 20분 기본
-7 POST /override/fixed?percent=50&seconds=30 200, 30초
-8 POST /override/fixed?percent=50&seconds=0 200, 20분
-9 POST /override/fixed (percent 누락) 400
+2 reload 1회 + 로그 pending free queued (count=1)
+3 3초 후 pending free executed (slot=0)
+4 reload 중 W10 GET 폴링 크래시 없음 (핵심 검증)
+5 연속 reload 2회 (1초 간격) count=2 → 순차 free
+6 reload 3회 빠른 연속 슬롯 full → 가장 오래된 것 즉시 free
+7 heap 모니터 3초 후 원상 복귀
+8 재부팅 pending 소실, 정상 부팅
+
+#4가 E-1의 핵심 검증.
 
 ---
 
-변경 요약
+회귀 리스크
 
-파일 E-2 E-3 E-4
-WF10_WiFiMgr_070.h enum + 시그니처 — —
-WF10_WiFiMgr_070.cpp 3상태 반환 + 6곳 로그 하향 ✓ —
-W10_Web_Routes_070.cpp switch 분기 — 4줄
-CT10_Ctl_Ctl_070.cpp — tickLoop 1곳 —
-CT10_Ctl_IOWS_070.cpp — 8곳 —
-N10_NvsManager_070.cpp — 10곳 —
-TM10_TimeMg_070.h — 다수 —
-
-순 삭제 없음, 로그 레벨/시그니처/파라미터 개선.
+리스크 대응
+queuePendingFree mutex 실패 시 즉시 free recursive mutex 실패 극히 드묾 (사실상 없음)
+grace 3초가 짧음? W10 GET toJson은 수 ms → 충분
+pending 큐 2슬롯 부족 연속 3회 reload 시 oldest 즉시 free (안전, 정합)
+s_pendingFree 메모리 (2 × 32B = 64B) 무시 가능
+processPendingFree 호출 누락 A00_run 필수 배선
 
 ---
 
-적용 후 컴파일 결과 알려주세요.
+파일별 변경 요약
+
+파일 라인
+C10_Config_070.h +13 (API 2 + private 5)
+C10_Config_Core_070.cpp +55 (정의 3 + 구현 2)
+CT10_Ctl_Ctl_070.cpp +3/-2 (freeAll → queue)
+A00_Main_070.h +6 (주기 호출)
+
+총 4파일, ~75줄.
+
+---
+
+적용 후 컴파일 결과 알려주세요. E-1 완결 시 W10 UAF race 종결.

@@ -131,10 +131,13 @@ bool CL_CT10_ControlManager::reloadAll() {
     v_inst.markDirty("metrics");
     
     // [A-min] CT10 mutex 해제 후 구버전 root 해제
-    //  - freeAll은 C10 mutex를 별도 획득 (중첩 없음)
-    //  - CT10 mutex hold 시간 최소화 (다른 태스크 블록 방지)
+    //  - [E-1] 즉시 free 하지 않고 pending 큐에 등록 (W10 reader UAF 방지)
+    //  - processPendingFree()가 grace(3초) 경과 후 실제 free
+    //  - 사유: W10 GET이 getRootSnapshot 후 toJson 실행 사이에 v_old 참조
+    //          → 즉시 free 시 dangling pointer 접근
     v_guard.unlock();
-    CL_C10_ConfigManager::freeAll(v_old);
+    CL_C10_ConfigManager::queuePendingFree(v_old);
+    
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] reloadAll done");
     return true;

@@ -76,6 +76,12 @@ SemaphoreHandle_t CL_C10_ConfigManager::s_recursiveMutex = nullptr;
 
 portMUX_TYPE CL_C10_ConfigManager::s_rootSwapMux = portMUX_INITIALIZER_UNLOCKED;
 
+// [E-1] pending free 큐 정의
+ST_A20_ConfigRoot_t CL_C10_ConfigManager::s_pendingFree[CL_C10_ConfigManager::PENDING_FREE_SLOTS] = {};
+uint32_t            CL_C10_ConfigManager::s_pendingFreeMs[CL_C10_ConfigManager::PENDING_FREE_SLOTS] = {0, 0};
+uint8_t             CL_C10_ConfigManager::s_pendingFreeCount = 0;
+
+
 
 // =====================================================
 // 내부 유틸: 섹션 new 할당 헬퍼(메모리 부족 방어)
@@ -358,6 +364,67 @@ void CL_C10_ConfigManager::freeAll(ST_A20_ConfigRoot_t& p_root) {
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] All config objects freed");
 }
+
+// =====================================================
+// [E-1] pending free 큐 (지연 free)
+// =====================================================
+void CL_C10_ConfigManager::queuePendingFree(const ST_A20_ConfigRoot_t& p_old) {
+    CL_A40_MutexGuard_Semaphore v_guard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        // 획득 실패 시 pending 등록 skip (v_old 미해제 → minor leak, UAF보다 안전)
+        //  - reloadAll은 C10 mutex 미보유 상태로 진입 → 경쟁 확률 극히 낮음
+        //  - leak은 재부팅 또는 다음 reload 시 자연 정리
+        CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                           "[C10] queuePendingFree: mutex busy — pending skipped (potential leak)");
+        return;
+    }
+    
+    // 슬롯 full → 가장 오래된 것을 즉시 free하고 자리 확보
+    if (s_pendingFreeCount >= PENDING_FREE_SLOTS) {
+        freeAll(s_pendingFree[0]);
+        memset(&s_pendingFree[0], 0, sizeof(s_pendingFree[0]));
+
+        for (uint8_t i = 1; i < PENDING_FREE_SLOTS; i++) {
+            s_pendingFree[i - 1]   = s_pendingFree[i];
+            s_pendingFreeMs[i - 1] = s_pendingFreeMs[i];
+        }
+        s_pendingFreeCount = PENDING_FREE_SLOTS - 1;
+    }
+
+    s_pendingFree[s_pendingFreeCount]   = p_old;
+    s_pendingFreeMs[s_pendingFreeCount] = millis();
+    s_pendingFreeCount++;
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] pending free queued (count=%u)", s_pendingFreeCount);
+}
+
+void CL_C10_ConfigManager::processPendingFree() {
+    CL_A40_MutexGuard_Semaphore v_guard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
+    if (s_pendingFreeCount == 0) return;
+
+    uint32_t v_now  = millis();
+    uint8_t  v_keep = 0;
+
+    for (uint8_t i = 0; i < s_pendingFreeCount; i++) {
+        if (v_now - s_pendingFreeMs[i] >= PENDING_FREE_GRACE_MS) {
+            freeAll(s_pendingFree[i]);
+            memset(&s_pendingFree[i], 0, sizeof(s_pendingFree[i]));
+            CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] pending free executed (slot=%u)", i);
+        } else {
+            // 유지 (압축)
+            if (v_keep != i) {
+                s_pendingFree[v_keep]   = s_pendingFree[i];
+                s_pendingFreeMs[v_keep] = s_pendingFreeMs[i];
+            }
+            v_keep++;
+        }
+    }
+    s_pendingFreeCount = v_keep;
+}
+
+
 
 // -----------------------------------------------------
 // Dirty Config 저장

@@ -1,291 +1,237 @@
-Web API 누락/차이 점검
+최종 확정 — handleHandshake() 방식
 
-1. 선언 vs 등록 전수 대조
-
-36개 Const vs 등록 확인
-
-# Const 값 등록 위치 상태
-1 HTTP_API_VERSION /api/v001/version routeVersion ✅
-2 HTTP_API_STATE /api/v001/state routeState ✅
-3 HTTP_API_SYSTEM /api/v001/system routeSystem (GET/POST/PATCH) ✅
-4 HTTP_API_WIFI_SCAN /api/v001/wifi/scan routeScan ✅
-5 HTTP_API_WIFI_CONFIG /api/v001/wifi/config routeWifiConfig (GET/POST/PATCH) ✅
-6 HTTP_API_DIAG /api/v001/diag routeDiag ✅
-7 HTTP_API_AUTH_TEST /api/v001/auth/test routeAuthTest ✅
-8 HTTP_API_TIME_SET /api/v001/system/time/set routeTimeSet ✅
-9 HTTP_API_FW_CHECK /api/v001/system/firmware/check routeFirmwareCheck ✅
-10 HTTP_API_MOTION /api/v001/motion routeMotion (GET/POST) ✅
-11 HTTP_API_SIMULATION /api/v001/simulation routeSimulation (GET/POST) ✅
-12 HTTP_API_SIM_STATE /api/v001/sim/state routeSimState ✅
-13 HTTP_API_CONTROL_SUMMARY /api/v001/control/summary routeControlSummary ✅
-14 HTTP_API_CONFIG /api/v001/config routeConfigDirtySave ✅
-15 HTTP_API_CONFIG_SAVE /api/v001/config/save routeConfigDirtySave ✅
-16 HTTP_API_CONFIG_DIRTY /api/v001/config/dirty routeConfigDirtySave ✅
-17 HTTP_API_CONFIG_INIT /api/v001/config/init routeConfigInit ✅
-18 HTTP_API_RELOAD /api/v001/reload routeReload ✅
-19 HTTP_API_WIND_PROFILE /api/v001/windProfile routeWindProfile ✅
-20 HTTP_API_SCHEDULES /api/v001/schedules routeSchedules ✅
-21 HTTP_API_USER_PROFILES /api/v001/user_profiles routeUserProfiles ✅
-22 HTTP_API_USER_PROFILES_PATCH /api/v001/user_profiles/patch routeUserProfilesPatch ✅
-23 HTTP_API_CTL_REBOOT /api/v001/control/reboot routeControl ✅
-24 HTTP_API_CTL_FACTORY /api/v001/control/factoryReset routeControl ✅
-25 HTTP_API_CTL_PROF_SEL /api/v001/control/profile/select routeControl ✅
-26 HTTP_API_CTL_PROF_STOP /api/v001/control/profile/stop routeControl ✅
-27 HTTP_API_CTL_OVR_FIXED /api/v001/control/override/fixed routeControl ✅
-28 HTTP_API_CTL_OVR_PRESET /api/v001/control/override/preset routeControl ✅
-29 HTTP_API_CTL_OVR_CLEAR /api/v001/control/override/clear routeControl ✅
-30 HTTP_API_GEMINI_PROXY /api/v001/ai/gemini routeGeminiProxy ✅
-31 HTTP_API_FEED_PIR /api/v001/motion/pir/feed routeMotionFeed ✅
-32 HTTP_API_METRICS /api/v001/metrics routeMetrics ✅
-33 HTTP_API_LOGS /api/v001/logs routeLogs ✅
-34 HTTP_API_FILE_UPLOAD /api/v001/fileUpload routeUpload ✅
-35 HTTP_API_FW_UPDATE /api/v001/fwUpdate routeUpdate ✅
-36 HTTP_API_MENU /api/v001/menu routeStaticAssets ✅
-
-결과: 36/36 전부 등록됨. API 누락 없음.
+확인 감사합니다. 결론에 맞춰 ws.handleHandshake() 방식을 채택합니다. onEvent 쪽엔 손 안 대도 되고, 핸드셰이크 단계에서 바로 거부되어 로그·구조 모두 깔끔합니다.
 
 ---
 
-2. 🔴 주석 vs 실제 경로 불일치 (혼란 유발)
+📦 작업 A — WiFi state 신설
 
-2-1. W10_Web_070.h 라우팅 선언 주석
+A-1. W10_Web_Const_070.h
 
 ```cpp
-// 1. 시스템 정보 조회 및 진단 (GET)
-static void routeVersion();  // GET /api/version          ← 실제 /api/v001/version
-static void routeState();    // GET /api/state            ← 실제 /api/v001/state
-static void routeDiag();     // GET /api/diag             ← 실제 /api/v001/diag
-static void routeMetrics();  // GET /api/metrics          ← 실제 /api/v001/metrics
-static void routeLogs();     // GET /api/logs             ← 실제 /api/v001/logs
-static void routeAuthTest(); // GET /api/auth/test        ← 실제 /api/v001/auth/test
-
-// 2. 설정 조회 및 패치/CRUD
-static void routeSystem(); // GET/POST /api/system         ← 실제 /api/v001/system
-static void routeMotion(); // GET/POST /api/motion         ← 실제 /api/v001/motion
-static void routeUserProfiles();      // GET/POST /api/user_profiles     ← 실제 /api/v001/user_profiles
-static void routeUserProfilesID();    // PUT/DELETE /api/user_profiles/{id}  ← 실제 /api/v001/...
-static void routeUserProfilesPatch(); // POST /api/user_profiles/patch   ← 실제 /api/v001/...
-
-// 4. 네트워크 및 펌웨어 관리
-static void routeScan();          // GET /api/scan                ← 실제 /api/v001/wifi/scan
-static void routeWifiConfig();    // POST /api/network/wifi/config ← 실제 /api/v001/wifi/config
-static void routeTimeSet();       // POST /api/system/time/set    ← 실제 /api/v001/system/time/set
-static void routeFirmwareCheck(); // GET /api/system/firmware/check ← 실제 /api/v001/system/firmware/check
-static void routeUpload();        // POST /upload                 ← 실제 /api/v001/fileUpload
-static void routeUpdate();        // POST /update                 ← 실제 /api/v001/fwUpdate
-
-// 5. 제어 및 상태 요약
-static void routeControl();        // 여러 제어용 /api/control/*  ← 실제 /api/v001/control/*
-static void routeControlSummary(); // GET /api/control/summary   ← 실제 /api/v001/control/summary
-static void routeMotionFeed();     // POST /api/motion/pir/feed  ← 실제 /api/v001/motion/pir/feed
-
-// 6. 시뮬레이션 제어
-static void routeSimulation(); // GET/POST /api/simulation     ← 실제 /api/v001/simulation
-static void routeSimState();   // GET /api/sim/state           ← 실제 /api/v001/sim/state
-
-// 7. CRUD: Wind Profiles
-static void routeWindProfile();   // GET/POST /api/windProfile       ← 실제 /api/v001/...
-static void routeWindProfileID(); // PUT/DELETE /api/windProfile/{id} ← 실제 /api/v001/...
-
-// 8. CRUD: Schedules
-static void routeSchedules();   // GET/POST /api/schedules       ← 실제 /api/v001/...
-static void routeSchedulesID(); // PUT/DELETE /api/schedules/{id} ← 실제 /api/v001/...
-
-// 9. 정적 파일 및 웹소켓
-static void routeStaticAssets(); // JSON 기반 static routes
-static void routeWebSocket();    // WS 라우트 초기화
+constexpr const char* HTTP_API_WIFI_SCAN   = HTTP_API_BASE "/wifi/scan";
+constexpr const char* HTTP_API_WIFI_STATE  = HTTP_API_BASE "/wifi/state";   // ← 신규
+constexpr const char* HTTP_API_WIFI_CONFIG = HTTP_API_BASE "/wifi/config";
 ```
 
-모든 주석이 /v001 prefix 누락 → 신규 개발자/프론트 개발자 혼란.
+A-2. W10_Web_070.h
 
-2-2. W10_Web_Routes_070.cpp 섹션 주석
+```cpp
+    // 4. 네트워크 및 펌웨어 관리 (GET/POST)
+    static void routeScan();          // GET  /api/v001/wifi/scan
+    static void routeWifiState();     // GET  /api/v001/wifi/state      ← 신규
+    static void routeWifiConfig();    // GET/POST/PATCH /api/v001/wifi/config
+```
+
+A-3. W10_Web_Routes_070.cpp
+
+등록부 (begin() 내):
+
+```cpp
+    routeScan();
+    routeWifiState();      // ← 신규
+    routeAuthTest();
+```
+
+구현부 (routeScan() 바로 뒤):
 
 ```cpp
 // --------------------------------------------------
-// 통합된 /api/network/wifi/config (GET/POST/PATCH)   ← 실제 /api/v001/wifi/config
+// 17-1. /api/v001/wifi/state  (Wi-Fi 런타임 상태)
+//  - WF10_WiFiManager::getWifiStateJson 재사용
+//  - 응답: {"wifi":{"state":{...}}}
 // --------------------------------------------------
-```
-
-```cpp
-// --------------------------------------------------
-// /update (OTA 펌웨어 업데이트)                       ← 실제 /api/v001/fwUpdate
-// --------------------------------------------------
-```
-
----
-
-3.  실제 결(2건)
-
-
-
-3-2. routeMotion — PATCH 누락
-
-```cpp
-void CL_W10_WebAPI::routeMotion() {
-    // GET  ✅
-    s_server->on(W10_Const::HTTP_API_MOTION, HTTP_GET, ...);
-    // POST ✅
-    s_server->on(W10_Const::HTTP_API_MOTION, HTTP_POST, ...);
-    // PATCH ❌ (routeSystem / routeWifiConfig에는 있음)
-}
-```
-
-일관성: /api/v001/system, /api/v001/wifi/config는 GET/POST/PATCH 지원, /api/v001/motion은 GET/POST만.
-
-프론트엔드가 PATCH로 호출하면 405 (Method Not Allowed).
-
-수정 (옵션, 선택):
-
-```cpp
-s_server->on(W10_Const::HTTP_API_MOTION, HTTP_PATCH, 
-    [](AsyncWebServerRequest* p_request){}, nullptr,
-    [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-        // POST와 동일 로직
-    });
-```
-
-영향: 프론트가 POST만 사용하면 무해. 확인 필요.
-
----
-
-3-3. routeReload — 무효화된 파일 참조
-
-```cpp
-void CL_W10_WebAPI::routeReload() {
-    ...
-    ST_A20_ConfigRoot_t v_root;                      // ← 이전 버전 잔재
-    bool v_ok = CL_C10_ConfigManager::loadAll(v_root);   // ← v_root 갱신
-    if (!v_ok) { ... }
-    g_A20_config_root = v_root;                       // ← A-min 이전 방식
-    ...
-}
-```
-
-그러나 실제 코드 (제공 소스):
-
-```cpp
-void CL_W10_WebAPI::routeReload() {
-    s_server->on(W10_Const::HTTP_API_RELOAD, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) { ... }
-        // [A-min] CT10::reloadAll로 통합 위임
-        bool v_ok = CL_CT10_ControlManager::reloadAll();
-        ...
+void CL_W10_WebAPI::routeWifiState() {
+    s_server->on(W10_Const::HTTP_API_WIFI_STATE, HTTP_GET, [](AsyncWebServerRequest* p_request) {
+        if (!checkApiKey(p_request)) {
+            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            return;
+        }
+        JsonDocument v_doc;
+        CL_WF10_WiFiManager::getWifiStateJson(v_doc);
+        sendJson(p_request, v_doc);
     });
 }
 ```
 
-✅ 수정 완료 상태 (A-min 반영).
-
-이상 없음 — 초기 분석에서 잘못 봄.
-
 ---
 
-4. 🟡 누락 API (설계 의도 확인 필요)
+📦 작업 B — WS 인증 (handleHandshake)
 
-4-1. /api/v001/wifi (기본) 미등록
+B-1. W10_Web_WS_070.cpp — 파일 상단 helper
 
-```cpp
-// W10_Web_070.h
-// static void routeWifi();          // GET/POST /api/wifi    ← 주석 처리됨
-```
-
-결과: WiFi 설정은 /api/v001/wifi/config만 사용.
-
-의도 여부: 확인 필요. WiFi 조회/저장 통합 경로로 wifi/config만 쓰는 것은 정상.
-
----
-
-4-2. /api/v001/schedules/patch 부재
-
-· user_profiles/patch (POST) 존재 ✅
-· schedules/patch 없음
-
-비대칭: 스케줄도 batch patch 필요할 수 있음.
-
-조치: 사용 패턴 확인 후 결정.
-
----
-
-4-3. BLE API 부재
-
-M10에 ST_M10_BLE_rt_t 구조체 존재하나 BLE 관련 API/라우트 0건.
-
-판정: 미구현 or 정책상 제외. 확인 필요.
-
----
-
-4-4. routeConfigSave() 미등록 (주석 상태)
+#include "W10_Web_070.h" 바로 아래에:
 
 ```cpp
 // --------------------------------------------------
-// 21. /api/config/save & /api/config/dirty
+// [WS 인증] 핸드셰이크 단계 쿼리 파라미터 apiKey 검사
+//  - ESPAsyncWebServer 3.12.1: AsyncWebSocketClient::request() 부재
+//  - handleHandshake()가 유일하게 AsyncWebServerRequest* 접근 가능
+//  - 반환 false → 연결 거부 (서버가 401 상당 응답 후 종료)
+//  - API Key 미설정 시 통과 (개발/개방 모드)
 // --------------------------------------------------
-// void CL_W10_WebAPI::routeConfigSave() {
-//}
+static bool _wsHandshakeAuth(AsyncWebServerRequest* p_request) {
+    if (!p_request) return false;
+
+    // 1) API Key 미설정 → 개방 모드
+    const char* v_key = nullptr;
+    if (g_A20_config_root.system && g_A20_config_root.system->security.apiKey[0] != '\0') {
+        v_key = g_A20_config_root.system->security.apiKey;
+    }
+    if (!v_key || v_key[0] == '\0') return true;
+
+    // 2) 쿼리 파라미터 apiKey
+    if (!p_request->hasParam("apiKey")) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[W10][WS] handshake reject: missing apiKey (uri=%s)",
+                           p_request->url().c_str());
+        return false;
+    }
+
+    const String& v_val = p_request->getParam("apiKey")->value();
+    if (v_val != v_key) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[W10][WS] handshake reject: invalid apiKey (uri=%s)",
+                           p_request->url().c_str());
+        return false;
+    }
+
+    return true;
+}
 ```
 
-→ routeConfigDirtySave()가 HTTP_API_CONFIG_SAVE를 처리하므로 실질 문제 없음.
+B-2. W10_Web_WS_070.cpp — routeWebSocket() 상단에 일괄 등록
+
+if (!s_wsServerLogs || ...) return; 방어 블록 바로 뒤에 5줄 삽입:
+
+```cpp
+void CL_W10_WebAPI::routeWebSocket() {
+    if (!s_server) return;
+    if (!s_wsServerLogs || !s_wsServerState || !s_wsServerChart || !s_wsServerSummary || !s_wsServerMetrics) return;
+
+    // ─────────────────────────────────────────────
+    // [WS 인증] 핸드셰이크 단계에서 쿼리 apiKey 검증
+    //  - ESPAsyncWebServer 3.12.1: request() 부재 → handleHandshake 유일
+    //  - 각 WS 인스턴스에 공통 정책 적용 (개별 onEvent 수정 불필요)
+    // ─────────────────────────────────────────────
+    s_wsServerLogs   ->handleHandshake(_wsHandshakeAuth);
+    s_wsServerState  ->handleHandshake(_wsHandshakeAuth);
+    s_wsServerChart  ->handleHandshake(_wsHandshakeAuth);
+    s_wsServerSummary->handleHandshake(_wsHandshakeAuth);
+    s_wsServerMetrics->handleHandshake(_wsHandshakeAuth);
+
+    // 이하 기존 onEvent / addHandler 블록 그대로 유지
+    s_wsServerLogs->onEvent(...);
+    s_server->addHandler(s_wsServerLogs);
+    ...
+}
+```
+
+기존 onEvent 람다들은 손대지 않습니다. 거부는 이미 핸드셰이크 단계에서 처리되므로 WS_EVT_CONNECT는 인증 통과한 클라이언트만 도달합니다.
 
 ---
 
-5. WS 채널 검증
+📦 프론트 수정 (백엔드 배포 후)
 
-# Const 값 등록
-1 WS_API_LOG /ws/log routeWebSocket ✅
-2 WS_API_STATE /ws/state routeWebSocket ✅
-3 WS_API_CHART /ws/chart routeWebSocket ✅
-4 WS_API_METRICS /ws/metrics routeWebSocket ✅
-5 WS_API_SUMMARY /ws/summary routeWebSocket ✅
+F-1. P001_API_070.js
 
-5/5 등록 완료 ✅
+```js
+get API_HTTP_WIFI_SCAN()   { return `${BASE}/wifi/scan`; },
+get API_HTTP_WIFI_STATE()  { return `${BASE}/wifi/state`; },   // ← 신규
+get API_HTTP_WIFI_CONFIG() { return `${BASE}/wifi/config`; },
+```
 
----
+F-2. P010_main_070.js — WiFi 상태 별도 로드
 
-📋 조치 요약
+```js
+async function loadWifiStateOnce() {
+    const data = await apiFetch(SNW_API.API_HTTP_WIFI_STATE, { method: "GET" }, true);
+    if (!data) return;
 
+    const wifi = (data.wifi && data.wifi.state) ? data.wifi.state : {};
 
-🟠 검토 필요 (2건)
+    const elWM = elWifiMode();
+    if (elWM) elWM.textContent = (wifi.mode_name || wifi.mode || "-").toString();
 
-# 항목 조치
-2 routeMotion PATCH 추가 프론트 사용 확인 후
-3 /api/v001/schedules/patch 추가 프론트 사용 확인 후
+    const elWS = elCurSsid();
+    if (elWS) elWS.textContent = wifi.ssid || "-";
 
-🟡 문서 (필수, 다수)
+    const elIP = elIp();
+    if (elIP) elIP.textContent = wifi.ip || "-";
+}
+```
 
-# 항목
-4 W10_Web_070.h 라우팅 선언 주석 — /api/v001/ prefix 추가
-5 W10_Web_Routes_070.cpp 섹션 헤더 주석 — 실제 경로로 정정
-6 routeUpload/routeUpdate 섹션 주석 — 실제 경로 정정
+loadStateOnce() 내 WiFi 부분 삭제 (sim 처리만 남김).
 
-ℹ️ 정책 확인 (2건)
+DOMContentLoaded 호출 순서:
 
-# 항목
-7 BLE API 구현 여부
-8 /api/v001/wifi 기본 경로 필요 여부
+```js
+await loadFwVersion();
+await loadConfig();
+await loadStateOnce();
+await loadWifiStateOnce();   // ← 추가
+```
 
----
+F-3. P000_common_070.js — 변경 없음
 
-검증 체크리스트
-
-# 시나리오 기대
-1 curl /api/v001/version 200
-2 curl /api/v001/system (GET) 200
-3 curl -X PATCH /api/v001/system 200
-4 curl -X PATCH /api/v001/motion 405 (PATCH 미등록)
-5 프론트가 /api/update/latest 호출 404 (F/W 확인 응답)
-6 프론트가 /api/v001/fwUpdate 호출 200 (OTA)
-7 curl -X POST /api/v001/reload 200 (routeReload → reloadAll)
+buildWsUrl()이 이미 ?apiKey=xxx 형식으로 전송 중이라 그대로 동작합니다.
 
 ---
 
-필수 조치 (#1 fwUpdate URL) 는 프론트 OTA 호출 실패를 유발하므로 즉시 수정 권장.
+✅ 검증
 
-프론트엔드 (P001_API_070.js)의 실제 호출 경로 확인 가능하면 PATCH/schedules-patch 필요 여부 확정 가능.
+```bash
+# A. WiFi state
+curl -H "X-API-Key: <key>" http://<ip>/api/v001/wifi/state
+# 기대: 200 {"wifi":{"state":{"mode_name":"AP+STA","ssid":"...",...}}}
 
-다음 단계:
+# B. WS 인증
+# 실패 케이스: 연결 즉시 종료
+wscat -c ws://<ip>/ws/state
+# 성공 케이스
+wscat -c "ws://<ip>/ws/state?apiKey=<key>"
+```
 
-· (1) 필수 1건 + 문서 3건 반영
-· (2) 프론트엔드 소스 확인 후 PATCH/patch 추가 결정
-· (3) BLE//wifi 정책 확인
+브라우저 콘솔(F12):
 
-어느 방향으로 갈까요?
+```js
+// 핸드셰이크 거부 시 즉시 onclose
+const ws = new WebSocket("ws://<ip>/ws/state");                 // → onclose
+const ws2 = new WebSocket("ws://<ip>/ws/state?apiKey=<key>");   // → onopen
+```
+
+백엔드 시리얼 로그:
+
+```
+[W10][WS] handshake reject: missing apiKey (uri=/ws/state)
+[W10][WS] handshake reject: invalid apiKey (uri=/ws/state)
+```
+
+---
+
+📋 최종 변경 요약
+
+# 파일 변경
+1 W10_Web_Const_070.h HTTP_API_WIFI_STATE 상수 1줄 추가
+2 W10_Web_070.h routeWifiState() 선언 1줄
+3 W10_Web_Routes_070.cpp 등록 1줄 + 함수 12줄
+4 W10_Web_WS_070.cpp helper 함수 25줄 + handleHandshake 5줄
+5 P001_API_070.js 상수 1줄
+6 P010_main_070.js 함수 추가 + WiFi 파트 이관
+
+핵심 포인트:
+
+· handleHandshake는 onEvent 이전에 실행됨 → 기존 WS 핸들러 코드 완전 보존
+· 프론트 buildWsUrl()이 이미 ?apiKey= 형식이라 프론트 WS 코드 변경 0줄
+· API Key 미설정 시 개방 모드 유지 → 개발 편의성 보존
+
+---
+
+다음
+
+이대로 반영하시면 됩니다. 원하시면:
+
+· (A) 위 4개 백엔드 파일의 완성본을 한 번에 드리기 (해당 함수만 발췌한 patch 형태)
+· (B) 그대로 진행하시고 컴파일 에러 발생 시 대응
+
+어떻게 할까요?

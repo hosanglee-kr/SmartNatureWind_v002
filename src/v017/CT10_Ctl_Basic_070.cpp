@@ -71,6 +71,13 @@ uint32_t CL_CT10_ControlManager::calcOverrideRemainSec() const {
 // --------------------------------------------------
 // autoOff init
 // --------------------------------------------------
+// [Policy] AutoOff timer 정책
+//  - source(schedule/profile) 진입 시마다 timerStartMs 재설정
+//  - 세션별 독립 타이머 (누적 아님)
+//  - source 전환 시 이전 타이머 무효화
+//  - 사유: 각 스케줄/프로파일의 "1회 실행 최대 시간" 제한 목적
+// --------------------------------------------------
+
 void CL_CT10_ControlManager::initAutoOffFromUserProfile(const ST_A20_UserProfileItem_t& p_up) {
     memset(&autoOffRt, 0, sizeof(autoOffRt));
 
@@ -165,43 +172,6 @@ bool CL_CT10_ControlManager::shouldHoldEventState() const {
     return false;
 }
 
-// --------------------------------------------------
-// [CT10] TIME_INVALID 이벤트 상태 전환(SSOT)
-// - tickLoop()에서 schedule 진입 전에 선체크하여 호출하는 것을 권장
-// - 정책: 실행 소스는 종료(=NONE), UI엔 마지막 snapshot은 유지(단 seg는 0)
-// --------------------------------------------------
-void CL_CT10_ControlManager::onTimeInvalid(EN_CT10_reason_t p_reason) {
-    if (sim.active) sim.stop();
-
-    // 실행 소스 종료(운영 정책)
-    runSource        = EN_CT10_RUN_NONE;
-    curScheduleIndex = -1;
-    curProfileIndex  = -1;
-
-    scheduleSegRt.index = -1;
-    profileSegRt.index  = -1;
-
-    uint32_t v_now = (uint32_t)millis();
-
-    runCtx.state             = EN_CT10_STATE_TIME_INVALID;
-    runCtx.reason            = p_reason;
-    runCtx.lastDecisionMs    = v_now;
-    runCtx.lastStateChangeMs = v_now;
-
-    // 최소 hold: 3초
-    runCtx.stateHoldUntilMs  = v_now + S_EVENT_HOLD_MS;
-    runCtx.stateAckRequired  = false;
-
-    // snapshot 유지(단 seg는 0으로 리셋해서 “지금은 off/정지” 표현에 도움)
-    runCtx.activeSegId = 0;
-    runCtx.activeSegNo = 0;
-
-    markDirty("state");
-    markDirty("metrics");
-    markDirty("summary");
-
-    CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] TIME_INVALID (reason=%u, hold=3000ms)", (unsigned)p_reason);
-}
 
 // --------------------------------------------------
 // [CT10] AutoOff 발생 처리(이벤트성 상태 전환 + hold/ack)

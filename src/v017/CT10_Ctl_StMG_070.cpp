@@ -281,7 +281,7 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
     if (p_d.wantSimStop) {
         if (sim.active) sim.stop();
     }
-
+    
     // 3) source 전환이면 세그먼트 런타임/autoOff 런타임 초기화/재설정
     if (v_sourceChanged) {
         // 공통: 이전 소스에서 빠져나올 때 sim 정지(운영 안전)
@@ -307,6 +307,11 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
                 if ((uint8_t)curScheduleIndex < v_cfg.count) {
                     initAutoOffFromSchedule(v_cfg.items[(uint8_t)curScheduleIndex]);
                     
+                    runCtx.activeSchId     = v_cfg.items[(uint8_t)curScheduleIndex].schId;
+                    runCtx.activeSchNo     = v_cfg.items[(uint8_t)curScheduleIndex].schNo;
+                    runCtx.activeProfileNo = 0;
+            
+                    
                     // [B-3] N10 런타임 저장 (schedule)
                     CL_N10_NvsManager::setRunMode(1, 0);   // mode=SCHEDULE, source=UNKNOWN(자동)
                     CL_N10_NvsManager::setLastSchedule((int16_t)v_cfg.items[(uint8_t)curScheduleIndex].schNo);
@@ -328,6 +333,11 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
                 ST_A20_UserProfilesRoot_t& v_cfg = *g_A20_config_root.userProfiles;
                 if ((uint8_t)curProfileIndex < v_cfg.count) {
                     initAutoOffFromUserProfile(v_cfg.items[(uint8_t)curProfileIndex]);
+                    
+                    runCtx.activeProfileNo = v_cfg.items[(uint8_t)curProfileIndex].profileNo;
+                    runCtx.activeSchId     = 0;
+                    runCtx.activeSchNo     = 0;
+            
                 } else {
                     memset(&autoOffRt, 0, sizeof(autoOffRt));
                 }
@@ -341,7 +351,7 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
             profileSegRt.index  = -1;
         }
     }
-
+    
     // 4) runCtx 업데이트
     runCtx.state          = p_d.nextState;
     runCtx.reason         = p_d.reason;
@@ -349,15 +359,14 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
     if (v_stateChanged || v_sourceChanged) {
         runCtx.lastStateChangeMs = runCtx.lastDecisionMs;
     }
-
-    // 5) runCtx에 "현재 선택된 개체 정보" 캐시(웹 상태 출력/디버그용)
-    // - 정책:
-    //   - 일반 상태: 현재 runSource 기준으로 snapshot 갱신
-    //   - TIME_INVALID / AUTOOFF_STOPPED: 마지막 대상 snapshot 유지(단 seg는 0)
-    // --------------------------------------------------
-    if (runCtx.state == EN_CT10_STATE_TIME_INVALID || runCtx.state == EN_CT10_STATE_AUTOOFF_STOPPED) {
-        // 마지막 실행 대상(스케줄/프로필)은 유지
-        // 단, 현재는 정지 상태이므로 seg만 0 (UI 표현 도움)
+    
+    // [Fix-4] TIME_INVALID 진입 시 hold + seg 리셋 (이전 onTimeInvalid 기능 통합)
+    //  - stateHoldUntilMs: 3초 hold (이벤트 상태 UI 표시)
+    //  - activeSegId/No: 0 리셋 (정지 표현)
+    //  - 이미 shouldHoldEventState가 hold 동안 tickLoop을 우회
+    if (v_stateChanged && runCtx.state == EN_CT10_STATE_TIME_INVALID) {
+        runCtx.stateHoldUntilMs = runCtx.lastDecisionMs + S_EVENT_HOLD_MS;
+        runCtx.stateAckRequired = false;
         runCtx.activeSegId = 0;
         runCtx.activeSegNo = 0;
     }

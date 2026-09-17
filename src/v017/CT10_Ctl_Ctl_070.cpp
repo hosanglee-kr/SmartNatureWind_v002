@@ -317,14 +317,19 @@ void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seco
     overrideState.active        = true;
     overrideState.useFixed      = true;
     overrideState.fixedPercent  = constrain(p_percent, 0.0f, 100.0f);
-    overrideState.endMs         = (p_seconds > 0) ? (millis() + (p_seconds * 1000UL)) : 0;
-
+    
+    // [Policy] durationSec=0 → 20분 기본
+    uint32_t v_sec = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
+    overrideState.endMs = millis() + (v_sec * 1000UL);
+    
     markDirty("state");
     markDirty("metrics");
 
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Override FIXED %.1f%% (sec=%lu)",
-                       overrideState.fixedPercent, (unsigned long)p_seconds);
-    
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Override FIXED %.1f%% (sec=%lu, applied=%lu)",
+                   overrideState.fixedPercent,
+                   (unsigned long)p_seconds,
+                   (unsigned long)v_sec);
+                   
     // [B-3] N10 override 저장 (fixed)
     CL_N10_NvsManager::setOverrideFixed(true, overrideState.fixedPercent);
     
@@ -380,8 +385,11 @@ void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_
     overrideState.resolvedApplied = false;
     overrideState.fixedPercent    = 0.0f;
     overrideState.resolved        = p_wind;
-    overrideState.endMs           = (p_seconds > 0) ? (millis() + (p_seconds * 1000UL)) : 0;
-
+    
+    // [Policy] durationSec=0 → 20분 기본
+    uint32_t v_sec = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
+    overrideState.endMs = millis() + (v_sec * 1000UL);
+    
     markDirty("state");
     markDirty("metrics");
     markDirty("chart");
@@ -487,6 +495,13 @@ void CL_CT10_ControlManager::tickLoop() {
 
 // --------------------------------------------------
 // override tick
+// --------------------------------------------------
+// --------------------------------------------------
+// [Policy] Override 중 AutoOff
+//  - 본 함수는 checkAutoOff를 호출하지 않는다.
+//  - Override는 사용자 명시적 개입 → AutoOff 조건보다 우선.
+//  - Override 종료 후 원 소스 재진입 시 AutoOff 재평가.
+//  - AutoOff(특히 offTemp)가 override 중 무시되어도 팬 가동은 안전 방향.
 // --------------------------------------------------
 bool CL_CT10_ControlManager::tickOverride() {
     if (!overrideState.active)

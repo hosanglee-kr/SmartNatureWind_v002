@@ -55,7 +55,7 @@ void CL_WF10_WiFiManager::attachWiFiEvents() {
             // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
             CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
             if (!v_guard.isAcquired()) {
-                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout (GOT_IP)", "WF10::EVT_STA_GOT_IP");
+                CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] %s: Mutex busy (GOT_IP)", "WF10::EVT_STA_GOT_IP");
                 return;
             }
 
@@ -77,7 +77,7 @@ void CL_WF10_WiFiManager::attachWiFiEvents() {
                 // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
                 CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, "WF10::EVT_STA_DISCONNECTED");
                 if (!v_guard.isAcquired()) {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout (DISCONN)", __func__);
+                    CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] %s: Mutex busy (DISCONN)", __func__);
                     return;
                 }
 
@@ -114,7 +114,7 @@ bool CL_WF10_WiFiManager::init(const ST_A20_WifiConfig_t&   p_cfg_wifi,
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
     CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] %s: Mutex busy", __func__);
         return false;
     }
 
@@ -211,7 +211,7 @@ bool CL_WF10_WiFiManager::startAP(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t
 bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t p_maxTries) {
     CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] %s: Mutex busy", __func__);
         return false;
     }
 
@@ -271,7 +271,7 @@ bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_
 void CL_WF10_WiFiManager::getWifiStateJson(JsonDocument& p_doc) {
     CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -417,19 +417,21 @@ bool CL_WF10_WiFiManager::applyConfig(const ST_A20_WifiConfig_t& p_cfg) {
 // ==================================================
 // [WF10-task] 재연결 요청 (async_tcp → WiFi task, 즉시 반환)
 // ==================================================
-bool CL_WF10_WiFiManager::requestReconnect() {
-    if (!_ensureWifiTask()) return false;
+CL_WF10_WiFiManager::EN_WF10_req_result_t CL_WF10_WiFiManager::requestReconnect() {
+    // [E-2] task 생성 실패는 COALESCED로 오인되지 않도록 구분 반환
+    if (!_ensureWifiTask()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] Reconnect request failed: task unavailable");
+        return EN_WF10_REQ_FAILED;
+    }
 
-    // [WF10-task] binary semaphore → 이미 pending이면 무시
     if (xSemaphoreGive(s_wifiRequestSem) != pdTRUE) {
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] Reconnect already pending (coalesced)");
-        return false;
+        return EN_WF10_REQ_COALESCED;
     }
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] Reconnect requested (WiFi task signaled)");
-    return true;
+    return EN_WF10_REQ_OK;
 }
-
 
 // ==================================================
 // [WF10-task] WiFi 재연결 전용 태스크

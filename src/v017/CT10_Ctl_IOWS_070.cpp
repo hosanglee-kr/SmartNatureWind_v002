@@ -479,7 +479,7 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     // [B-1b] 상태 일관성 보호
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -639,7 +639,7 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
 void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnly) {    
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -676,7 +676,7 @@ void CL_CT10_ControlManager::exportSummaryJson(JsonDocument& p_doc) {
     // [B-1b] 상태 일관성 보호
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -710,7 +710,7 @@ void CL_CT10_ControlManager::exportMetricsJson(JsonDocument& p_doc) {
     // [B-1b] 상태 일관성 보호
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
         return;
     }
 

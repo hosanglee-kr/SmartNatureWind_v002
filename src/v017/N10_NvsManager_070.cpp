@@ -31,7 +31,7 @@ bool CL_N10_NvsManager::begin() {
 	// [P0-2] 상태 보호 (재귀 mutex, lazy-init)
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[N10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[N10] %s: Mutex busy", __func__);
         return false;
     }
 

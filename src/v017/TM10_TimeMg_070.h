@@ -334,7 +334,7 @@ inline void CL_TM10_TimeManager::begin() {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[TM10] %s: Mutex busy", __func__);
         return;
     }
     
@@ -367,7 +367,7 @@ inline void CL_TM10_TimeManager::requestTimeSync() {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[TM10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -393,7 +393,7 @@ inline void CL_TM10_TimeManager::requestTimeSync() {
 inline void CL_TM10_TimeManager::requestTimeSync(bool p_force) {
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[TM10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -420,7 +420,7 @@ inline void CL_TM10_TimeManager::applyTimeConfig(const ST_A20_SystemConfig_t& p_
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[TM10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -442,7 +442,7 @@ inline void CL_TM10_TimeManager::onWiFiConnected(const ST_A20_SystemConfig_t& p_
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[TM10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -459,7 +459,7 @@ inline void CL_TM10_TimeManager::onWiFiConnected(const ST_A20_SystemConfig_t& p_
 inline void CL_TM10_TimeManager::onWiFiDisconnected() {
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[TM10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -487,7 +487,7 @@ inline void CL_TM10_TimeManager::tick(const ST_A20_SystemConfig_t* p_sysOrNull) 
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[TM10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -546,7 +546,7 @@ inline void CL_TM10_TimeManager::toJson(JsonDocument& p_doc) {
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[TM10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -568,7 +568,7 @@ inline void CL_TM10_TimeManager::toJson(JsonDocument& p_doc) {
 inline bool CL_TM10_TimeManager::isTimeValid() {
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[TM10] %s: Mutex busy", __func__);
         return false;
     }
     return s_timeValid;
@@ -577,7 +577,7 @@ inline bool CL_TM10_TimeManager::isTimeValid() {
 inline bool CL_TM10_TimeManager::isTimeSyncedRecently(uint32_t p_windowMs) {
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[TM10] %s: Mutex busy", __func__);
         return false;
     }
 
@@ -597,7 +597,7 @@ inline bool CL_TM10_TimeManager::getLocalTime(struct tm& p_outTm) {
 
     CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[TM10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[TM10] %s: Mutex busy", __func__);
         return false;
     }
 

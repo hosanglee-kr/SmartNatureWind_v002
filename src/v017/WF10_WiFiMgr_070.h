@@ -124,12 +124,26 @@ class CL_WF10_WiFiManager {
     static bool        isStaConnected();
     static const char* getStaStatusString();
     
+    
+    public:
+    // --------------------------------------------------
+    // [WF10-task] 재연결 요청 상태 (E-2)
+    //  - OK        : 요청 성공 (task signaled)
+    //  - COALESCED : 이미 pending (중복 요청)
+    //  - FAILED    : task 생성 실패
+    // --------------------------------------------------
+    typedef enum : uint8_t {
+        EN_WF10_REQ_OK        = 0,
+        EN_WF10_REQ_COALESCED = 1,
+        EN_WF10_REQ_FAILED    = 2
+    } EN_WF10_req_result_t;
+  
     // --------------------------------------------------
     // [WF10-task] 재연결 요청 (async_tcp → WiFi 전용 태스크)
     //  - HTTP 라우트는 requestReconnect()로 semaphore만 give
     //  - WiFi 태스크가 실제 applyConfig 실행 (loopTask 보호)
     // --------------------------------------------------
-    static bool requestReconnect();       // 즉시 반환 (semaphore give)
+    static EN_WF10_req_result_t requestReconnect();       // 즉시 반환 (semaphore give)
 
 
   private:

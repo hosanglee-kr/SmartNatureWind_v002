@@ -430,7 +430,8 @@ void CL_CT10_ControlManager::tickLoop() {
     // [B-1b] tickLoop 최상단 락 (loopTask 진입점, 재귀 mutex)
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        // [E-3] reloadAll 등 정상 상황에서도 발생 → DEBUG 하향
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
         return;
     }
 

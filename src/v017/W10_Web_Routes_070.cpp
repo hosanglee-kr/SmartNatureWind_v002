@@ -746,21 +746,27 @@ void CL_W10_WebAPI::routeControl() {
 
     // override/fixed
     s_server->on(W10_Const::HTTP_API_CTL_OVR_FIXED, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
-        if (!p_request->hasParam("percent", true) || !p_request->hasParam("seconds", true)) {
-            p_request->send(400, "application/json", "{\"error\":\"missing param\"}");
-            return;
-        }
-        float    v_pct = p_request->getParam("percent", true)->value().toFloat();
-        uint32_t v_sec = (uint32_t)p_request->getParam("seconds", true)->value().toInt();
-        if (s_control) {
-            s_control->startOverrideFixed(v_pct, v_sec);
-        }
-        p_request->send(200, "application/json", "{\"result\":\"ok\"}");
-    });
+	    if (!checkApiKey(p_request)) {
+	        p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+	        return;
+	    }
+	
+	    // [E-4] percent만 필수, seconds는 optional (누락/0 → CT10 기본 20분)
+	    if (!p_request->hasParam("percent", true)) {
+	        p_request->send(400, "application/json", "{\"error\":\"missing param: percent\"}");
+	        return;
+	    }
+	
+	    float    v_pct = p_request->getParam("percent", true)->value().toFloat();
+	    uint32_t v_sec = p_request->hasParam("seconds", true)
+	                        ? (uint32_t)p_request->getParam("seconds", true)->value().toInt()
+	                        : 0;
+	
+	    if (s_control) {
+	        s_control->startOverrideFixed(v_pct, v_sec);
+	    }
+	    p_request->send(200, "application/json", "{\"result\":\"ok\"}");
+	});
 
     // override/preset (JSON Body)
     s_server->on(
@@ -1166,11 +1172,20 @@ void CL_W10_WebAPI::routeWifiConfig() {
             if (v_changed) {
                 CL_C10_ConfigManager::saveDirtyConfigs();
                 
-                bool v_reqOk = CL_WF10_WiFiManager::requestReconnect();
-                v_res["status"] = v_reqOk ? "requested" : "coalesced";
-                // CL_WF10_WiFiManager::requestReconnect();                     // ← 즉시 반환
-                // v_res["status"]      = "requested";
-                
+                auto v_req = CL_WF10_WiFiManager::requestReconnect();
+                switch (v_req) {
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_OK:
+                        v_res["status"] = "requested";
+                        break;
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_COALESCED:
+                        v_res["status"] = "coalesced";
+                        break;
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_FAILED:
+                    default:
+                        v_res["status"] = "task_failed";
+                        break;
+                }
+
                 v_res["need_reboot"] = false;
                 v_res["note"] = "WiFi reconnect signaled to background task";
                 CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config saved, reconnect signaled to WiFi task.");
@@ -1212,10 +1227,20 @@ void CL_W10_WebAPI::routeWifiConfig() {
 
             if (v_changed) {
                 CL_C10_ConfigManager::saveDirtyConfigs();
-                bool v_reqOk = CL_WF10_WiFiManager::requestReconnect();
-                v_res["status"] = v_reqOk ? "requested" : "coalesced";
-                // CL_WF10_WiFiManager::requestReconnect();                     // ← 즉시 반환
-                // v_res["status"]      = "requested";
+                
+                auto v_req = CL_WF10_WiFiManager::requestReconnect();
+                switch (v_req) {
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_OK:
+                        v_res["status"] = "requested";
+                        break;
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_COALESCED:
+                        v_res["status"] = "coalesced";
+                        break;
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_FAILED:
+                    default:
+                        v_res["status"] = "task_failed";
+                        break;
+                }
                 
                 v_res["need_reboot"] = false;
                 v_res["note"] = "WiFi reconnect signaled to background task";

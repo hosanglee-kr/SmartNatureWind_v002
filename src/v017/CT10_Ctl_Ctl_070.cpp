@@ -395,10 +395,11 @@ void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_
     markDirty("chart");
 
     CL_D10_Logger::log(EN_L10_LOG_INFO,
-                       "[CT10] applyManual: preset=%s style=%s (sec=%lu)",
-                       p_wind.presetCode,
-                       p_wind.styleCode,
-                       (unsigned long)p_seconds);
+                   "[CT10] applyManual: preset=%s style=%s (sec=%lu, applied=%lu)",
+                   p_wind.presetCode,
+                   p_wind.styleCode,
+                   (unsigned long)p_seconds,
+                   (unsigned long)v_sec);
     
     // [B-3] N10 override 저장 (resolved/preset)
     CL_N10_NvsManager::setOverridePreset(true, p_wind.presetCode, p_wind.styleCode);

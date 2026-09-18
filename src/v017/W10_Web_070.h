@@ -152,7 +152,9 @@ class CL_W10_WebAPI {
     
     // 4. 네트워크 및 펌웨어 관리 (GET/POST)
     static void routeScan();          // GET  /api/v001/wifi/scan
+    static void routeWifiState();     // GET  /api/v001/wifi/state
     static void routeWifiConfig();    // GET/POST/PATCH /api/v001/wifi/config
+    
     static void routeTimeSet();       // POST /api/v001/system/time/set
     static void routeFirmwareCheck(); // GET  /api/v001/system/firmware/check
     static void routeUpload();        // POST /api/v001/fileUpload

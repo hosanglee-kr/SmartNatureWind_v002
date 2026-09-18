@@ -75,6 +75,8 @@ let g_configDirty = false;
 let g_staList = []; // [{ssid, pass}, ...]
 let g_wsLog = null;
 let g_wsState = null;
+let g_wifiStateTimer = null; // 30초 폴링 핸들
+
 
 /** Dirty 플래그 UI 반영 */
 function updateDirtyButton() {
@@ -121,7 +123,6 @@ async function loadStateOnce() {
 
 	// sim 정보 추정
 	const sim = data.sim || data.motion || data.state || {};
-	const wifi = (data.wifi && data.wifi.state) ? data.wifi.state : data.wifi || {};
 
 	const simActive = sim.active !== undefined ? sim.active : sim.simActive;
 	const phase     = sim.phase !== undefined ? sim.phase : sim.phaseName;
@@ -149,14 +150,6 @@ async function loadStateOnce() {
 	const elPw = elPwm();
 	if (elPw) elPw.textContent = pwm != null ? String(pwm) : "-";
 
-	const elWM = elWifiMode();
-	if (elWM) elWM.textContent = (wifi.mode_name || wifi.mode || "-").toString();
-
-	const elWS = elCurSsid();
-	if (elWS) elWS.textContent = wifi.ssid || "-";
-
-	const elIP = elIp();
-	if (elIP) elIP.textContent = wifi.ip || "-";
 }
 
 async function loadConfig() {
@@ -493,6 +486,22 @@ async function scanWifi() {
 	notify("Wi-Fi 스캔 완료", "ok");
 }
 
+async function loadWifiStateOnce() {
+	const data = await apiFetch(SNW_API.API_HTTP_WIFI_STATE, { method: "GET" }, true);
+	if (!data) return;
+	
+	const wifi = (data.wifi && data.wifi.state) ? data.wifi.state : {};
+	
+	const elWM = elWifiMode();
+	if (elWM) elWM.textContent = (wifi.mode_name || wifi.mode || "-").toString();
+	
+	const elWS = elCurSsid();
+	if (elWS) elWS.textContent = wifi.ssid || "-";
+	
+	const elIP = elIp();
+	if (elIP) elIP.textContent = wifi.ip || "-";
+}
+
 function addStaFromScan() {
 	const sel = elScanList();
 	const passInput = elScanPass();
@@ -635,7 +644,6 @@ function handleStateUpdateFromWs(data) {
 	if (!data) return;
 
 	const sim = data.sim || data.motion || data.state || {};
-	const wifi = (data.wifi && data.wifi.state) ? data.wifi.state : data.wifi || {};
 
 	const simActive = sim.active !== undefined ? sim.active : sim.simActive;
 	const phase     = sim.phase !== undefined ? sim.phase : sim.phaseName;
@@ -654,6 +662,7 @@ function handleStateUpdateFromWs(data) {
 			elA.classList.add("err");
 		}
 	}
+	
 	const elP = elPhase();
 	if (elP) elP.textContent = phase != null ? String(phase) : "-";
 
@@ -663,14 +672,6 @@ function handleStateUpdateFromWs(data) {
 	const elPw = elPwm();
 	if (elPw) elPw.textContent = pwm != null ? String(pwm) : "-";
 
-	const elWM = elWifiMode();
-	if (elWM) elWM.textContent = (wifi.mode_name || wifi.mode || "-").toString();
-
-	const elWS = elCurSsid();
-	if (elWS) elWS.textContent = wifi.ssid || "-";
-
-	const elIP = elIp();
-	if (elIP) elIP.textContent = wifi.ip || "-";
 }
 
 /* ==============================
@@ -752,4 +753,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 	await loadFwVersion();
 	await loadConfig();
 	await loadStateOnce();
+	await loadWifiStateOnce(); 
+
+	// ─────────────────────────────────────────────
+	// [WiFi 상태 30초 폴링]
+	//  - /ws/state는 control 정보만 담당 → WiFi는 별도 REST 주기 조회
+	//  - 페이지 이탈 시 clearInterval로 정리
+	// ─────────────────────────────────────────────
+	if (g_wifiStateTimer) clearInterval(g_wifiStateTimer);
+	g_wifiStateTimer = setInterval(loadWifiStateOnce, 30000);
+	
+	// 페이지 이탈 시 정리 (선택: 브라우저 종료에는 미실행되지만 페이지 이동 시 유효)
+	window.addEventListener("beforeunload", () => {
+		if (g_wifiStateTimer) {
+			clearInterval(g_wifiStateTimer);
+			g_wifiStateTimer = null;
+		}
+	});
 });

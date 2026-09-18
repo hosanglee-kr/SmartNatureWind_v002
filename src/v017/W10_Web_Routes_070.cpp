@@ -69,6 +69,7 @@ void CL_W10_WebAPI::begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_co
     // routeWifi();
     routeDiag();
     routeScan();
+    routeWifiState();
     routeAuthTest();
     routeWifiConfig();
     routeTimeSet();
@@ -1032,6 +1033,23 @@ void CL_W10_WebAPI::routeScan() {
         }
         JsonDocument v_doc;
         CL_WF10_WiFiManager::scanNetworksToJson(v_doc);
+        sendJson(p_request, v_doc);
+    });
+}
+
+// --------------------------------------------------
+// 17-1. /api/v001/wifi/state  (Wi-Fi 런타임 상태)
+//  - WF10_WiFiManager::getWifiStateJson 재사용
+//  - 응답: {"wifi":{"state":{...}}}
+// --------------------------------------------------
+void CL_W10_WebAPI::routeWifiState() {
+    s_server->on(W10_Const::HTTP_API_WIFI_STATE, HTTP_GET, [](AsyncWebServerRequest* p_request) {
+        if (!checkApiKey(p_request)) {
+            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            return;
+        }
+        JsonDocument v_doc;
+        CL_WF10_WiFiManager::getWifiStateJson(v_doc);
         sendJson(p_request, v_doc);
     });
 }

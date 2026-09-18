@@ -1,237 +1,208 @@
-최종 확정 — handleHandshake() 방식
+검토 결과 — WiFi 폴링 반영 완료
 
-확인 감사합니다. 결론에 맞춰 ws.handleHandshake() 방식을 채택합니다. onEvent 쪽엔 손 안 대도 되고, 핸드셰이크 단계에서 바로 거부되어 로그·구조 모두 깔끔합니다.
-
----
-
-📦 작업 A — WiFi state 신설
-
-A-1. W10_Web_Const_070.h
-
-```cpp
-constexpr const char* HTTP_API_WIFI_SCAN   = HTTP_API_BASE "/wifi/scan";
-constexpr const char* HTTP_API_WIFI_STATE  = HTTP_API_BASE "/wifi/state";   // ← 신규
-constexpr const char* HTTP_API_WIFI_CONFIG = HTTP_API_BASE "/wifi/config";
-```
-
-A-2. W10_Web_070.h
-
-```cpp
-    // 4. 네트워크 및 펌웨어 관리 (GET/POST)
-    static void routeScan();          // GET  /api/v001/wifi/scan
-    static void routeWifiState();     // GET  /api/v001/wifi/state      ← 신규
-    static void routeWifiConfig();    // GET/POST/PATCH /api/v001/wifi/config
-```
-
-A-3. W10_Web_Routes_070.cpp
-
-등록부 (begin() 내):
-
-```cpp
-    routeScan();
-    routeWifiState();      // ← 신규
-    routeAuthTest();
-```
-
-구현부 (routeScan() 바로 뒤):
-
-```cpp
-// --------------------------------------------------
-// 17-1. /api/v001/wifi/state  (Wi-Fi 런타임 상태)
-//  - WF10_WiFiManager::getWifiStateJson 재사용
-//  - 응답: {"wifi":{"state":{...}}}
-// --------------------------------------------------
-void CL_W10_WebAPI::routeWifiState() {
-    s_server->on(W10_Const::HTTP_API_WIFI_STATE, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
-        JsonDocument v_doc;
-        CL_WF10_WiFiManager::getWifiStateJson(v_doc);
-        sendJson(p_request, v_doc);
-    });
-}
-```
+WiFi 30초 폴링이 정확히 반영됐습니다.
 
 ---
 
-📦 작업 B — WS 인증 (handleHandshake)
+✅ 반영 확인
 
-B-1. W10_Web_WS_070.cpp — 파일 상단 helper
+항목 상태
+g_wifiStateTimer 전역 선언 ✅
+loadWifiStateOnce() 함수 ✅
+handleStateUpdateFromWs() — WiFi 코드 제거 ✅
+loadStateOnce() — WiFi 코드 제거 ✅
+DOMContentLoaded — setInterval(..., 30000) ✅
+beforeunload cleanup ✅
 
-#include "W10_Web_070.h" 바로 아래에:
+이 라운드는 완결.
 
-```cpp
-// --------------------------------------------------
-// [WS 인증] 핸드셰이크 단계 쿼리 파라미터 apiKey 검사
-//  - ESPAsyncWebServer 3.12.1: AsyncWebSocketClient::request() 부재
-//  - handleHandshake()가 유일하게 AsyncWebServerRequest* 접근 가능
-//  - 반환 false → 연결 거부 (서버가 401 상당 응답 후 종료)
-//  - API Key 미설정 시 통과 (개발/개방 모드)
-// --------------------------------------------------
-static bool _wsHandshakeAuth(AsyncWebServerRequest* p_request) {
-    if (!p_request) return false;
+---
 
-    // 1) API Key 미설정 → 개방 모드
-    const char* v_key = nullptr;
-    if (g_A20_config_root.system && g_A20_config_root.system->security.apiKey[0] != '\0') {
-        v_key = g_A20_config_root.system->security.apiKey;
-    }
-    if (!v_key || v_key[0] == '\0') return true;
+⚠️ 남은 이슈 — sim 표시 3건 (Round 2)
 
-    // 2) 쿼리 파라미터 apiKey
-    if (!p_request->hasParam("apiKey")) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN,
-                           "[W10][WS] handshake reject: missing apiKey (uri=%s)",
-                           p_request->url().c_str());
-        return false;
-    }
+WiFi와 별개로, sim 정보가 화면에 표시되지 않는 상태가 계속 남아 있습니다.
 
-    const String& v_val = p_request->getParam("apiKey")->value();
-    if (v_val != v_key) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN,
-                           "[W10][WS] handshake reject: invalid apiKey (uri=%s)",
-                           p_request->url().c_str());
-        return false;
-    }
+진단
 
-    return true;
-}
-```
+/api/v001/state 백엔드 응답 (exportStateJson_v02):
 
-B-2. W10_Web_WS_070.cpp — routeWebSocket() 상단에 일괄 등록
-
-if (!s_wsServerLogs || ...) return; 방어 블록 바로 뒤에 5줄 삽입:
-
-```cpp
-void CL_W10_WebAPI::routeWebSocket() {
-    if (!s_server) return;
-    if (!s_wsServerLogs || !s_wsServerState || !s_wsServerChart || !s_wsServerSummary || !s_wsServerMetrics) return;
-
-    // ─────────────────────────────────────────────
-    // [WS 인증] 핸드셰이크 단계에서 쿼리 apiKey 검증
-    //  - ESPAsyncWebServer 3.12.1: request() 부재 → handleHandshake 유일
-    //  - 각 WS 인스턴스에 공통 정책 적용 (개별 onEvent 수정 불필요)
-    // ─────────────────────────────────────────────
-    s_wsServerLogs   ->handleHandshake(_wsHandshakeAuth);
-    s_wsServerState  ->handleHandshake(_wsHandshakeAuth);
-    s_wsServerChart  ->handleHandshake(_wsHandshakeAuth);
-    s_wsServerSummary->handleHandshake(_wsHandshakeAuth);
-    s_wsServerMetrics->handleHandshake(_wsHandshakeAuth);
-
-    // 이하 기존 onEvent / addHandler 블록 그대로 유지
-    s_wsServerLogs->onEvent(...);
-    s_server->addHandler(s_wsServerLogs);
+```json
+{
+  "control": {
+    "active": true,
+    "state": "SCHEDULE_RUN",
+    "reason": "...",
+    "override": {...},
+    "schedule": {...},
     ...
+  }
 }
 ```
 
-기존 onEvent 람다들은 손대지 않습니다. 거부는 이미 핸드셰이크 단계에서 처리되므로 WS_EVT_CONNECT는 인증 통과한 클라이언트만 도달합니다.
+→ sim 키 자체가 없음.
+
+프론트 loadStateOnce():
+
+```js
+const sim = data.sim || data.motion || data.state || {};
+// → 항상 {}
+const simActive = sim.active !== undefined ? sim.active : sim.simActive;  // undefined
+const phase     = sim.phase  !== undefined ? sim.phase  : sim.phaseName;  // undefined
+const wind      = sim.wind   !== undefined ? sim.wind   : sim.wind_ms;    // undefined
+const pwm       = sim.pwm    !== undefined ? sim.pwm    : sim.pwm_val;    // undefined
+```
+
+결과: simActive → IDLE (빨강), phase/wind/pwm → "-" 고정.
+
+추가 문제: 만약 /api/v001/simulation을 호출해도, 백엔드 S10_Simul_IO_070.cpp의 toJson() 필드명은:
+
+```
+sim.active, sim.phase, sim.windSpeed, sim.pwmDuty
+```
+
+프론트가 기대하는 sim.simActive, sim.wind, sim.pwm과 불일치.
 
 ---
 
-📦 프론트 수정 (백엔드 배포 후)
+3건 묶음 수정안
 
-F-1. P001_API_070.js
+1. loadStateOnce() — sim 소스 변경 + 필드명 정정
 
 ```js
-get API_HTTP_WIFI_SCAN()   { return `${BASE}/wifi/scan`; },
-get API_HTTP_WIFI_STATE()  { return `${BASE}/wifi/state`; },   // ← 신규
-get API_HTTP_WIFI_CONFIG() { return `${BASE}/wifi/config`; },
+async function loadStateOnce() {
+    // state + simulation 병렬 호출
+    const [stateData, simData] = await Promise.all([
+        apiFetch(SNW_API.API_HTTP_STATE,      { method: "GET" }, true),
+        apiFetch(SNW_API.API_HTTP_SIMULATION, { method: "GET" }, true)
+    ]);
+    if (!stateData && !simData) return;
+
+    const sim = (simData && simData.sim) ? simData.sim : {};
+
+    const simActive = sim.active;        // sim.simActive → sim.active
+    const phase     = sim.phase;
+    const wind      = sim.windSpeed;     // sim.wind  → sim.windSpeed
+    const pwm       = sim.pwmDuty;       // sim.pwm   → sim.pwmDuty
+
+    // 이하 동일
+}
 ```
 
-F-2. P010_main_070.js — WiFi 상태 별도 로드
+2. handleStateUpdateFromWs() — 동일 필드명 정정
 
 ```js
-async function loadWifiStateOnce() {
-    const data = await apiFetch(SNW_API.API_HTTP_WIFI_STATE, { method: "GET" }, true);
+function handleStateUpdateFromWs(data) {
     if (!data) return;
-
-    const wifi = (data.wifi && data.wifi.state) ? data.wifi.state : {};
-
-    const elWM = elWifiMode();
-    if (elWM) elWM.textContent = (wifi.mode_name || wifi.mode || "-").toString();
-
-    const elWS = elCurSsid();
-    if (elWS) elWS.textContent = wifi.ssid || "-";
-
-    const elIP = elIp();
-    if (elIP) elIP.textContent = wifi.ip || "-";
+    const sim = data.sim || {};
+    const simActive = sim.active;
+    const phase     = sim.phase;
+    const wind      = sim.windSpeed;
+    const pwm       = sim.pwmDuty;
+    // 이하 동일
 }
 ```
 
-loadStateOnce() 내 WiFi 부분 삭제 (sim 처리만 남김).
+WS /state는 여전히 sim을 안 보내므로 data.sim이 없어 {}가 됩니다. 이 함수가 sim을 채우려면 백엔드가 WS /state에 sim 병합해야 함.
 
-DOMContentLoaded 호출 순서:
+3. 백엔드 — exportStateJson_v02에 sim 병합 (권장)
+
+CT10_Ctl_IOWS_070.cpp의 exportStateJson_v02() 끝에 추가:
+
+```cpp
+    // 10) Simulation snapshot (S10 toJson 병합)
+    sim.toJson(p_doc);
+```
+
+이렇게 하면:
+
+· REST /api/v001/state 응답에 sim 포함
+· WS /state push 메시지에도 sim 포함
+· 프론트는 별도 /simulation 호출 없이 state 하나로 처리 가능
+
+---
+
+4. saveMotionPatch() — 실제 저장 안 됨
 
 ```js
-await loadFwVersion();
-await loadConfig();
-await loadStateOnce();
-await loadWifiStateOnce();   // ← 추가
+// 현재 (flat body)
+const body = {
+    windIntensity: 70, gustFrequency: 45, ...
+};
 ```
 
-F-3. P000_common_070.js — 변경 없음
+백엔드 S10::patchFromJson():
 
-buildWsUrl()이 이미 ?apiKey=xxx 형식으로 전송 중이라 그대로 동작합니다.
-
----
-
-✅ 검증
-
-```bash
-# A. WiFi state
-curl -H "X-API-Key: <key>" http://<ip>/api/v001/wifi/state
-# 기대: 200 {"wifi":{"state":{"mode_name":"AP+STA","ssid":"...",...}}}
-
-# B. WS 인증
-# 실패 케이스: 연결 즉시 종료
-wscat -c ws://<ip>/ws/state
-# 성공 케이스
-wscat -c "ws://<ip>/ws/state?apiKey=<key>"
+```cpp
+JsonObjectConst v_sim = p_doc["sim"].as<JsonObjectConst>();
+if (v_sim.isNull()) return false;   // ← 항상 실패
 ```
 
-브라우저 콘솔(F12):
+수정:
 
 ```js
-// 핸드셰이크 거부 시 즉시 onclose
-const ws = new WebSocket("ws://<ip>/ws/state");                 // → onclose
-const ws2 = new WebSocket("ws://<ip>/ws/state?apiKey=<key>");   // → onopen
+async function saveMotionPatch() {
+    const body = {
+        sim: {
+            presetCode:      elPreset().value || null,
+            intensity:       Number(elIntensity().value   || 0),
+            variability:     Number(elVariability().value || 0),
+            gustFreq:        Number(elGustFreq().value    || 0),
+            fanLimit:        Number(elFanLimit().value    || 0),
+            minFan:          Number(elMinFan().value      || 0),
+            turbLenScale:    Number(elTurbLen().value     || 0),
+            turbSigma:       Number(elTurbSig().value     || 0),
+            thermalStrength: Number(elThermStr().value    || 0),
+            thermalRadius:   Number(elThermRad().value    || 0)
+        }
+    };
+    // 이하 동일
+}
 ```
 
-백엔드 시리얼 로그:
+키 매핑 표:
 
-```
-[W10][WS] handshake reject: missing apiKey (uri=/ws/state)
-[W10][WS] handshake reject: invalid apiKey (uri=/ws/state)
-```
+프론트 (기존) 백엔드 sim.*
+windIntensity intensity
+windVariability variability
+gustFrequency gustFreq
+turbulenceLengthScale turbLenScale
+turbulenceIntensitySigma turbSigma
+thermalBubbleStrength thermalStrength
+thermalBubbleRadius thermalRadius
 
 ---
 
-📋 최종 변경 요약
+📊 최종 상태
 
-# 파일 변경
-1 W10_Web_Const_070.h HTTP_API_WIFI_STATE 상수 1줄 추가
-2 W10_Web_070.h routeWifiState() 선언 1줄
-3 W10_Web_Routes_070.cpp 등록 1줄 + 함수 12줄
-4 W10_Web_WS_070.cpp helper 함수 25줄 + handleHandshake 5줄
-5 P001_API_070.js 상수 1줄
-6 P010_main_070.js 함수 추가 + WiFi 파트 이관
-
-핵심 포인트:
-
-· handleHandshake는 onEvent 이전에 실행됨 → 기존 WS 핸들러 코드 완전 보존
-· 프론트 buildWsUrl()이 이미 ?apiKey= 형식이라 프론트 WS 코드 변경 0줄
-· API Key 미설정 시 개방 모드 유지 → 개발 편의성 보존
+라운드 항목 상태
+R1 WiFi state 신설 ✅
+R1 WS 핸드셰이크 인증 ✅
+R1 WiFi 30초 폴링 ✅
+R1 WS WiFi 덮어쓰기 버그 ✅
+R2 sim 소스 & 필드명 ⏳
+R2 saveMotionPatch body ⏳
+R2 loadConfig motion 소스 ⏳
 
 ---
 
-다음
+🎯 권장 진행 순서
 
-이대로 반영하시면 됩니다. 원하시면:
+1단계 (프론트만, 즉시 가능) — P010_main_070.js 수정
 
-· (A) 위 4개 백엔드 파일의 완성본을 한 번에 드리기 (해당 함수만 발췌한 patch 형태)
-· (B) 그대로 진행하시고 컴파일 에러 발생 시 대응
+· loadStateOnce() 필드명 정정
+· handleStateUpdateFromWs() 필드명 정정
+· saveMotionPatch() body 수정
 
-어떻게 할까요?
+2단계 (백엔드 1줄) — CT10_Ctl_IOWS_070.cpp exportStateJson_v02()에 sim.toJson(p_doc) 추가
+
+3단계 (프론트 정리) — 2단계 후 loadStateOnce()에서 별도 /simulation 호출 불필요 → state 하나로 통합
+
+---
+
+어느 방향으로 갈까요?
+
+· (A) 1단계만 지금 완성본으로 → 즉시 동작 확인 가능
+· (B) 1+2단계 동시 → 상태 완전 통합 (권장)
+· (C) 현 상태 유지, 다음 라운드로
+
+(B)를 하면 /api/v001/state 응답 하나로 sim까지 다 오므로 프론트가 단순해집니다. 다만 백엔드 배포가 필요합니다.

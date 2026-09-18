@@ -639,6 +639,12 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
         v_dirty["chart"]   = _dirtyChart;    
         v_dirty["summary"] = _dirtySummary;    
     }    
+
+    // 10) Simulation snapshot 병합 (S10 toJson → p_doc["sim"])
+    //  - /state 응답 + WS /state push에 sim 포함
+    //  - 프론트는 별도 /simulation 호출 없이 처리 가능
+    //  - 락 순서: CT10 mutex → S10 mutex (기존 tickLoop와 동일, 데드락 없음)
+    sim.toJson(p_doc);
 }    
 
     

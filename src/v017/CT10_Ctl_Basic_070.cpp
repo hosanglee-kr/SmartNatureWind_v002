@@ -2,7 +2,7 @@
  * ------------------------------------------------------
  * 소스명 : CT10_Ctl_Basic_070.cpp
  * 모듈약어 : CT10
- * 모듈명 : Smart Nature Wind 제어 통합 Manager (v026, Misc)
+ * 모듈명 : Smart Nature Wind 제어 통합 Manager (Misc)
  * ------------------------------------------------------
  * 기능 요약:
  * - AutoOff 초기화/체크, Motion 체크, Schedule 활성 인덱스 계산
@@ -49,6 +49,11 @@
  */
 
 #include "CT10_Ctl_070.h"
+
+// [o-2] explicit include (A20_Const_070.h에서 제거됨)
+#include "A25_Com_Utils_070.h"     // A40_ComFunc / A40_IO / CL_A40_MutexGuard_Semaphore
+#include "N10_NvsManager_070.h"
+
 #include <DHT.h>
 
 // --------------------------------------------------
@@ -66,6 +71,13 @@ uint32_t CL_CT10_ControlManager::calcOverrideRemainSec() const {
 // --------------------------------------------------
 // autoOff init
 // --------------------------------------------------
+// [Policy] AutoOff timer 정책
+//  - source(schedule/profile) 진입 시마다 timerStartMs 재설정
+//  - 세션별 독립 타이머 (누적 아님)
+//  - source 전환 시 이전 타이머 무효화
+//  - 사유: 각 스케줄/프로파일의 "1회 실행 최대 시간" 제한 목적
+// --------------------------------------------------
+
 void CL_CT10_ControlManager::initAutoOffFromUserProfile(const ST_A20_UserProfileItem_t& p_up) {
     memset(&autoOffRt, 0, sizeof(autoOffRt));
 
@@ -126,6 +138,9 @@ void CL_CT10_ControlManager::ackEventState() {
 
     runCtx.stateAckRequired = false;
     runCtx.stateHoldUntilMs = 0;
+    
+    // [B-2] 사용자 ACK → AutoOff 래치 해제 (재개 허용)
+    _autoOffLatched = false;
 
     // ACK 시 즉시 IDLE로 강제하지 않고 다음 tick에서 자연 결정
     markDirty("state");
@@ -157,43 +172,6 @@ bool CL_CT10_ControlManager::shouldHoldEventState() const {
     return false;
 }
 
-// --------------------------------------------------
-// [CT10] TIME_INVALID 이벤트 상태 전환(SSOT)
-// - tickLoop()에서 schedule 진입 전에 선체크하여 호출하는 것을 권장
-// - 정책: 실행 소스는 종료(=NONE), UI엔 마지막 snapshot은 유지(단 seg는 0)
-// --------------------------------------------------
-void CL_CT10_ControlManager::onTimeInvalid(EN_CT10_reason_t p_reason) {
-    if (sim.active) sim.stop();
-
-    // 실행 소스 종료(운영 정책)
-    runSource        = EN_CT10_RUN_NONE;
-    curScheduleIndex = -1;
-    curProfileIndex  = -1;
-
-    scheduleSegRt.index = -1;
-    profileSegRt.index  = -1;
-
-    uint32_t v_now = (uint32_t)millis();
-
-    runCtx.state             = EN_CT10_STATE_TIME_INVALID;
-    runCtx.reason            = p_reason;
-    runCtx.lastDecisionMs    = v_now;
-    runCtx.lastStateChangeMs = v_now;
-
-    // 최소 hold: 3초
-    runCtx.stateHoldUntilMs  = v_now + 3000UL;
-    runCtx.stateAckRequired  = false;
-
-    // snapshot 유지(단 seg는 0으로 리셋해서 “지금은 off/정지” 표현에 도움)
-    runCtx.activeSegId = 0;
-    runCtx.activeSegNo = 0;
-
-    markDirty("state");
-    markDirty("metrics");
-    markDirty("summary");
-
-    CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] TIME_INVALID (reason=%u, hold=3000ms)", (unsigned)p_reason);
-}
 
 // --------------------------------------------------
 // [CT10] AutoOff 발생 처리(이벤트성 상태 전환 + hold/ack)
@@ -226,7 +204,7 @@ void CL_CT10_ControlManager::onAutoOffTriggered(EN_CT10_reason_t p_reason) {
     runCtx.lastStateChangeMs = v_now;
 
     // 최소 hold: 3초
-    runCtx.stateHoldUntilMs  = v_now + 3000UL;
+    runCtx.stateHoldUntilMs  = v_now + S_EVENT_HOLD_MS;
 
     // ACK 정책: 기본 false (원하면 true로 바꿔서 UI 확인 후 해제 가능)
     runCtx.stateAckRequired  = false;
@@ -240,6 +218,9 @@ void CL_CT10_ControlManager::onAutoOffTriggered(EN_CT10_reason_t p_reason) {
     markDirty("summary");
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff STOPPED (reason=%u, hold=3000ms)", (unsigned)p_reason);
+    
+    // [B-2] AutoOff 래치 (사용자 재개 전까지 자동 재진입 차단)
+    _autoOffLatched = true;
 }
 
 // --------------------------------------------------
@@ -267,8 +248,12 @@ bool CL_CT10_ControlManager::checkAutoOff(EN_CT10_reason_t* p_reasonOrNull /*=nu
             return true;
         }
     }
-
+    
     // 2) offTime (TM10)
+    //  [A-2] 영속 필드 기반 재트리거 방지
+    //   - 이전: autoOffRt.offTimeLastYday/LastMin 사용 → source 재진입 시 리셋되어 3초 주기 무한 루프
+    //   - 이후: _persistOffTimeLastYday (CT10 클래스 멤버) 사용
+    //   - 정책: 같은 yday에서 offTimeMinutes 도달 시 1회만 트리거, yday 바뀌면 자연 재활성화
     if (autoOffRt.offTimeEnabled) {
         struct tm v_tm;
         memset(&v_tm, 0, sizeof(v_tm));
@@ -276,26 +261,29 @@ bool CL_CT10_ControlManager::checkAutoOff(EN_CT10_reason_t* p_reasonOrNull /*=nu
         if (!CL_TM10_TimeManager::getLocalTime(v_tm)) {
             // 시간 불능이면 여기서 트리거하지 않음(상위 tick에서 TIME_INVALID로 처리 권장)
         } else {
-            int16_t  v_yday   = (int16_t)v_tm.tm_yday;
-            int16_t  v_curMin = (int16_t)((uint16_t)v_tm.tm_hour * 60U + (uint16_t)v_tm.tm_min);
+            int16_t v_yday   = (int16_t)v_tm.tm_yday;
+            int16_t v_curMin = (int16_t)((uint16_t)v_tm.tm_hour * 60U + (uint16_t)v_tm.tm_min);
 
-            // 정책: 같은 (yday + minute)일 때만 재트리거 방지
-            bool v_already = (autoOffRt.offTimeLastYday == v_yday && autoOffRt.offTimeLastMin == v_curMin);
+            if ((uint16_t)v_curMin >= autoOffRt.offTimeMinutes) {
+                if (_persistOffTimeLastYday != v_yday) {
+                    _persistOffTimeLastYday = v_yday;
 
-            if (!v_already) {
-                if ((uint16_t)v_curMin >= autoOffRt.offTimeMinutes) {
+                    // export/UI 표시용 (autoOffRt 필드는 참고용으로만 유지)
                     autoOffRt.offTimeLastYday = v_yday;
                     autoOffRt.offTimeLastMin  = v_curMin;
 
                     if (p_reasonOrNull) *p_reasonOrNull = EN_CT10_REASON_AUTOOFF_TIME;
 
-                    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoOff(time %u) triggered",
-                                       (unsigned)autoOffRt.offTimeMinutes);
+                    CL_D10_Logger::log(EN_L10_LOG_INFO,
+                                       "[CT10] AutoOff(time %u) triggered (yday=%d)",
+                                       (unsigned)autoOffRt.offTimeMinutes,
+                                       (int)v_yday);
                     return true;
                 }
             }
         }
     }
+    
 
     // 3) offTemp
     if (autoOffRt.offTempEnabled) {

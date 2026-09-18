@@ -69,6 +69,7 @@ void CL_W10_WebAPI::begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_co
     // routeWifi();
     routeDiag();
     routeScan();
+    routeWifiState();
     routeAuthTest();
     routeWifiConfig();
     routeTimeSet();
@@ -240,9 +241,11 @@ void CL_W10_WebAPI::routeSystem() {
         });
 }
 
+
 // --------------------------------------------------
-// 5. /api/motion
+// 5. /api/v001/motion (GET/POST/PATCH)
 // --------------------------------------------------
+
 void CL_W10_WebAPI::routeMotion() {
     // GET
     s_server->on(W10_Const::HTTP_API_MOTION, HTTP_GET, [](AsyncWebServerRequest* p_request) {
@@ -289,6 +292,37 @@ void CL_W10_WebAPI::routeMotion() {
             v_res["updated"] = v_changed;
             sendJson(p_request, v_res);
         });
+    
+    
+    // PATCH: 
+    s_server->on(
+        W10_Const::HTTP_API_MOTION,
+        HTTP_PATCH,
+        [](AsyncWebServerRequest* p_request) {},
+        nullptr,
+        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+            if (!checkApiKey(p_request)) {
+                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+                return;
+            }
+            if (p_index + p_len != p_total) return;
+
+            JsonDocument v_doc;
+            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
+                p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
+                return;
+            }
+
+            bool v_changed = false;
+            if (g_A20_config_root.motion) {
+                v_changed = CL_C10_ConfigManager::patchMotionFromJson(*g_A20_config_root.motion, v_doc);
+            }
+
+            JsonDocument v_res;
+            v_res["updated"] = v_changed;
+            sendJson(p_request, v_res);
+        });
+
 }
 
 // --------------------------------------------------
@@ -302,17 +336,22 @@ void CL_W10_WebAPI::routeWindProfile() {
             return;
         }
 
-        JsonDocument      v_doc;
-        ST_A20_WindDict_t v_dict;
-        memset(&v_dict, 0, sizeof(v_dict));
+        // [P0-1] async_tcp 스택 보호: WindDict(~1.5KB)를 static 승격
+        //  - loadWindDict/toJson_WindDict 모두 내부 mutex 보유 → 재진입 안전
+        //  - async_tcp 단일 태스크이므로 static 경쟁 없음
+        static ST_A20_WindDict_t s_dict;
+        memset(&s_dict, 0, sizeof(s_dict));
 
-        if (CL_C10_ConfigManager::loadWindDict(v_dict)) {
-            CL_C10_ConfigManager::toJson_WindDict(v_dict, v_doc);
+        JsonDocument v_doc;
+
+        if (CL_C10_ConfigManager::loadWindDict(s_dict)) {
+            CL_C10_ConfigManager::toJson_WindDict(s_dict, v_doc);
             sendJson(p_request, v_doc);
         } else {
             p_request->send(500, "application/json", "{\"error\":\"load failed\"}");
         }
     });
+
 
     // POST: 신규 생성
     s_server->on(
@@ -356,7 +395,6 @@ void CL_W10_WebAPI::routeWindProfileID() {
     // PUT: 수정
     s_server->on((String(W10_Const::HTTP_API_WIND_PROFILE) + "/([0-9]+)").c_str(),
                  HTTP_PUT,
-                 // "/api/windProfile/([0-9]+)", HTTP_PUT,
                  [](AsyncWebServerRequest* p_request) {},
                  nullptr,
                  [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
@@ -741,21 +779,27 @@ void CL_W10_WebAPI::routeControl() {
 
     // override/fixed
     s_server->on(W10_Const::HTTP_API_CTL_OVR_FIXED, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
-        if (!p_request->hasParam("percent", true) || !p_request->hasParam("seconds", true)) {
-            p_request->send(400, "application/json", "{\"error\":\"missing param\"}");
-            return;
-        }
-        float    v_pct = p_request->getParam("percent", true)->value().toFloat();
-        uint32_t v_sec = (uint32_t)p_request->getParam("seconds", true)->value().toInt();
-        if (s_control) {
-            s_control->startOverrideFixed(v_pct, v_sec);
-        }
-        p_request->send(200, "application/json", "{\"result\":\"ok\"}");
-    });
+	    if (!checkApiKey(p_request)) {
+	        p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+	        return;
+	    }
+	
+	    // [E-4] percent만 필수, seconds는 optional (누락/0 → CT10 기본 20분)
+	    if (!p_request->hasParam("percent", true)) {
+	        p_request->send(400, "application/json", "{\"error\":\"missing param: percent\"}");
+	        return;
+	    }
+	
+	    float    v_pct = p_request->getParam("percent", true)->value().toFloat();
+	    uint32_t v_sec = p_request->hasParam("seconds", true)
+	                        ? (uint32_t)p_request->getParam("seconds", true)->value().toInt()
+	                        : 0;
+	
+	    if (s_control) {
+	        s_control->startOverrideFixed(v_pct, v_sec);
+	    }
+	    p_request->send(200, "application/json", "{\"result\":\"ok\"}");
+	});
 
     // override/preset (JSON Body)
     s_server->on(
@@ -994,6 +1038,23 @@ void CL_W10_WebAPI::routeScan() {
 }
 
 // --------------------------------------------------
+// 17-1. /api/v001/wifi/state  (Wi-Fi 런타임 상태)
+//  - WF10_WiFiManager::getWifiStateJson 재사용
+//  - 응답: {"wifi":{"state":{...}}}
+// --------------------------------------------------
+void CL_W10_WebAPI::routeWifiState() {
+    s_server->on(W10_Const::HTTP_API_WIFI_STATE, HTTP_GET, [](AsyncWebServerRequest* p_request) {
+        if (!checkApiKey(p_request)) {
+            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            return;
+        }
+        JsonDocument v_doc;
+        CL_WF10_WiFiManager::getWifiStateJson(v_doc);
+        sendJson(p_request, v_doc);
+    });
+}
+
+// --------------------------------------------------
 // 18. /api/config/init  (factoryResetFromDefault 통일)
 // --------------------------------------------------
 void CL_W10_WebAPI::routeConfigInit() {
@@ -1016,9 +1077,11 @@ void CL_W10_WebAPI::routeConfigInit() {
     });
 }
 
+
 // --------------------------------------------------
-// 19. /api/motion/feed (PIR / BLE)
+// 19. /api/v001/motion/pir/feed (PIR)
 // --------------------------------------------------
+
 void CL_W10_WebAPI::routeMotionFeed() {
     // PIR
     s_server->on(
@@ -1112,6 +1175,7 @@ void CL_W10_WebAPI::routeConfigDirtySave() {
 // --------------------------------------------------
 // 통합된 /api/network/wifi/config (GET/POST/PATCH)
 // --------------------------------------------------
+
 void CL_W10_WebAPI::routeWifiConfig() {
     // GET: 현재 설정 조회
     s_server->on(W10_Const::HTTP_API_WIFI_CONFIG, HTTP_GET, [](AsyncWebServerRequest* p_request) {
@@ -1129,7 +1193,7 @@ void CL_W10_WebAPI::routeWifiConfig() {
         sendJson(p_request, v_doc);
 
     });
-
+    
     // POST: 설정 변경 및 시스템 즉시 적용
     s_server->on(
         W10_Const::HTTP_API_WIFI_CONFIG,
@@ -1159,10 +1223,24 @@ void CL_W10_WebAPI::routeWifiConfig() {
 
             if (v_changed) {
                 CL_C10_ConfigManager::saveDirtyConfigs();
-                CL_WF10_WiFiManager::applyConfig(*g_A20_config_root.wifi);
-                v_res["status"]      = "applied";
-                v_res["need_reboot"] = true;
-                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config integrated & applied via config endpoint.");
+                
+                auto v_req = CL_WF10_WiFiManager::requestReconnect();
+                switch (v_req) {
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_OK:
+                        v_res["status"] = "requested";
+                        break;
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_COALESCED:
+                        v_res["status"] = "coalesced";
+                        break;
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_FAILED:
+                    default:
+                        v_res["status"] = "task_failed";
+                        break;
+                }
+
+                v_res["need_reboot"] = false;
+                v_res["note"] = "WiFi reconnect signaled to background task";
+                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config saved, reconnect signaled to WiFi task.");
             } else {
                 v_res["status"]      = "no_change";
                 v_res["need_reboot"] = false;
@@ -1201,10 +1279,24 @@ void CL_W10_WebAPI::routeWifiConfig() {
 
             if (v_changed) {
                 CL_C10_ConfigManager::saveDirtyConfigs();
-                CL_WF10_WiFiManager::applyConfig(*g_A20_config_root.wifi);
-                v_res["status"]      = "applied";
-                v_res["need_reboot"] = true;
-                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config integrated & applied via PATCH.");
+                
+                auto v_req = CL_WF10_WiFiManager::requestReconnect();
+                switch (v_req) {
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_OK:
+                        v_res["status"] = "requested";
+                        break;
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_COALESCED:
+                        v_res["status"] = "coalesced";
+                        break;
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_FAILED:
+                    default:
+                        v_res["status"] = "task_failed";
+                        break;
+                }
+                
+                v_res["need_reboot"] = false;
+                v_res["note"] = "WiFi reconnect signaled to background task";
+                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config saved, reconnect signaled to WiFi task.");
             } else {
                 v_res["status"]      = "no_change";
                 v_res["need_reboot"] = false;
@@ -1280,7 +1372,8 @@ void CL_W10_WebAPI::routeFirmwareCheck() {
         if (strcmp(v_current_version, v_latest_version) < 0) {
             v_doc["status"]         = "available";
             v_doc["latest_version"] = v_latest_version;
-            v_doc["url"]            = "/api/update/latest";
+            v_doc["url"]            = "/api/v001/fwUpdate";
+            
         } else {
             v_doc["status"]         = "latest";
             v_doc["latest_version"] = v_current_version;

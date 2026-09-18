@@ -19,6 +19,7 @@ window.SNW_API = (() => {
         get API_HTTP_STATE() { return `${BASE}/state`; },
         get API_HTTP_SYSTEM() { return `${BASE}/system`; },
         get API_HTTP_WIFI_SCAN() { return `${BASE}/wifi/scan`; },
+        get API_HTTP_WIFI_STATE()  { return `${BASE}/wifi/state`; }, 
         get API_HTTP_WIFI_CONFIG() { return `${BASE}/wifi/config`; },
         get API_HTTP_DIAG() { return `${BASE}/diag`; },
         get API_HTTP_AUTH_TEST() { return `${BASE}/auth/test`; },

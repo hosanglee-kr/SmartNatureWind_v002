@@ -8,7 +8,6 @@
  * 기능 요약
  *  - PIR 센서 근접 감지 통합 제어
  *  - holdSec 기반 유지 로직 (최근 감지 후 일정시간 활성 유지)
- *  - BLE 신호는 외부 스캐너에서 RSSI 업데이트만 전달받음
  *  - CT10_ControlManager에서 tick() 호출 및 상태 조회
  *  - JSON 직렬화(toJson) 수행 (설정값은 g_A20_config_root.motion 참조)
  *  - 상태 변화 시 콜백(OnChange) 제공 (CT10 등에서 WebSocket diffOnly 활용 가능)
@@ -44,6 +43,7 @@
 #include <string.h>
 
 #include "A20_Const_070.h"
+#include "A25_Com_Utils_070.h"   // [P1-3] CL_A40_MutexGuard_Semaphore
 #include "D10_Logger_070.h"
 
 // ------------------------------------------------------
@@ -54,11 +54,6 @@ typedef struct {
 	bool	 active;
 } ST_M10_PIR_rt_t;
 
-typedef struct {
-	uint32_t lastDetected_ms;
-	bool	 active;
-	int16_t	 last_rssi;
-} ST_M10_BLE_rt_t;
 
 typedef struct {
 	bool	 active;
@@ -110,6 +105,9 @@ class CL_M10_MotionLogic {
 	// PIR 감지 이벤트
 	// --------------------------------------------------
 	void notifyPIRDetected() {
+	    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+		if (!v_guard.isAcquired()) return;
+
 		if (!g_A20_config_root.motion || !g_A20_config_root.motion->pir.enabled)
 			return;
 		_pir.lastDetected_ms = millis();
@@ -121,6 +119,9 @@ class CL_M10_MotionLogic {
 	// tick 루프 (CT10에서 주기 호출)
 	// --------------------------------------------------
 	void tick() {
+	    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+		if (!v_guard.isAcquired()) return;
+		
 		if (!g_A20_config_root.motion)
 			return;
 		const auto& v_cfg = *g_A20_config_root.motion;
@@ -151,9 +152,12 @@ class CL_M10_MotionLogic {
 			CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[M10] motionActive=%d (PIR=%d)", (int)_state.active, (int)_state.pirActive);
 
 			// 외부 연동용 콜백 (CT10 등에서 diffOnly 푸시 활용)
-			if (_onChange) {
-				_onChange(_state);
-			}
+			// [P1-3] 주의: _onChange 콜백은 M10 mutex 보유 상태에서 호출됨.
+            //   - 콜백 내부에서 CT10/Config mutex 획득 금지 (역순 데드락 위험).
+            //   - 콜백에서 무거운 작업 금지 (mutex hold 시간 증가).
+            if (_onChange) {
+                _onChange(_state);
+            }
 		}
 	}
 
@@ -161,6 +165,9 @@ class CL_M10_MotionLogic {
 	// 상태 직렬화
 	// --------------------------------------------------
 	void toJson(JsonDocument& p_doc) const {
+	    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+		if (!v_guard.isAcquired()) return;
+		
 		if (!g_A20_config_root.motion)
 			return;
 		const auto& v_cfg = *g_A20_config_root.motion;
@@ -198,6 +205,9 @@ class CL_M10_MotionLogic {
 	// 외부에서 활성여부 확인
 	// --------------------------------------------------
 	bool isActive() const {
+	    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+		if (!v_guard.isAcquired()) return false;
+
 		unsigned long v_now	 = millis();
 		// holdSec 로직은 외부 config 사용 (예: g_A20_config_root.motion)
 		uint16_t	  v_hold = 0;
@@ -225,4 +235,11 @@ class CL_M10_MotionLogic {
 
 	ST_M10_MotionState_t	 _state;
 	T_M10_OnChangeCallback_t _onChange;
+	
+	// [P1-3] 상태 보호용 재귀 뮤텍스
+	//  - async_tcp(feedPIR/toJson) ↔ loopTask(tick/isActive) race 방지
+	//  - Lazy-init: CL_A40_MutexGuard_Semaphore가 최초 진입 시 생성
+	//  - recursive: feedPIR → notifyPIRDetected 중첩
+	inline static SemaphoreHandle_t s_stateMutex = nullptr;
+	
 };

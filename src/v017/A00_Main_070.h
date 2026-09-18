@@ -132,6 +132,13 @@ void A00_init() {
     // ------------------------------------------------------
     CL_M10_MotionLogic::M10_begin();
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[M10] Motion Logic started");
+    
+    // [A-1] CT10에 M10 주입 (누락 시 motion blocking 무력)
+    //  - g_M10_motionLogic은 M10_begin()에서 세팅됨
+    //  - CT10::begin() 이후에 호출 (begin에서 멤버 초기화 순서 고려)
+    g_A00_control.setMotion(g_M10_motionLogic);
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] M10 wired to CT10 (ptr=%p)", (void*)g_M10_motionLogic);
+
 
     // ------------------------------------------------------
     // 8. Web API + Web UI
@@ -165,6 +172,7 @@ void A00_init() {
 // ------------------------------------------------------
 void A00_run() {
     uint32_t v_now = millis();
+    (void)v_now;   // [W-2] N10 flush 이연으로 현재 미사용 (TODO 블록 활성화 시 사용)
 
     // Watchdog feed
     esp_task_wdt_reset();
@@ -189,12 +197,19 @@ void A00_run() {
     } else {
         CL_TM10_TimeManager::tick(nullptr);
     }
-
+    
+    // [E-1] pending free 처리 (reloadAll의 지연 free)
+    //  - 3초 grace 경과 후 실제 freeAll 실행
+    //  - 매 loopTask 주기(≤10ms) 호출 → 3초 후 자연 정리
+    // ------------------------------------------------------
+    CL_C10_ConfigManager::processPendingFree();
+    
     //// // NVS Dirty Flush (10초마다)
     //// if (v_now - v_lastFlush >= 10000) {
     ////     v_lastFlush = v_now;
     ////     CL_N10_NvsManager::flushIfNeeded();
     //// }
+    
 
     // ------------------------------------------------------
     // 4) LED 업데이트

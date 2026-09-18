@@ -131,54 +131,55 @@ class CL_W10_WebAPI {
     // 라우팅 선언 (Routes.cpp)
     // --------------------------------------------------
     // 1. 시스템 정보 조회 및 진단 (GET)
-    static void routeVersion();  // GET /api/version
-    static void routeState();    // GET /api/state
-    static void routeDiag();     // GET /api/diag
-    static void routeMetrics();  // GET /api/metrics
-    static void routeLogs();     // GET /api/logs
-    static void routeAuthTest(); // GET /api/auth/test
-
+    static void routeVersion();  // GET /api/v001/version
+    static void routeState();    // GET /api/v001/state
+    static void routeDiag();     // GET /api/v001/diag
+    static void routeMetrics();  // GET /api/v001/metrics
+    static void routeLogs();     // GET /api/v001/logs
+    static void routeAuthTest(); // GET /api/v001/auth/test
+    
     // 2. 설정 조회 및 패치/CRUD (GET/POST/PUT/DELETE)
-    static void routeSystem(); // GET/POST /api/system
-    // static void routeWifi();          // GET/POST /api/wifi
-    static void routeMotion();            // GET/POST /api/motion
-    static void routeUserProfiles();      // GET/POST /api/user_profiles (목록조회/신규생성)
-    static void routeUserProfilesID();    // PUT/DELETE /api/user_profiles/{id}
-    static void routeUserProfilesPatch(); // POST /api/user_profiles/patch (배치 패치)
-
+    static void routeSystem();            // GET/POST/PATCH /api/v001/system
+    static void routeMotion();            // GET/POST/PATCH /api/v001/motion
+    static void routeUserProfiles();      // GET/POST /api/v001/user_profiles
+    static void routeUserProfilesID();    // PUT/DELETE /api/v001/user_profiles/{id}
+    static void routeUserProfilesPatch(); // POST /api/v001/user_profiles/patch
+    
     // 3. 설정 관리 및 저장/적용 (POST/GET)
-    static void routeConfigDirtySave(); // GET /api/config/dirty
-    static void routeReload();          // POST /api/reload
-    static void routeConfigInit();      // POST /api/config/init
-
+    static void routeConfigDirtySave(); // GET/POST /api/v001/config , /config/save , /config/dirty
+    static void routeReload();          // POST /api/v001/reload
+    static void routeConfigInit();      // POST /api/v001/config/init
+    
     // 4. 네트워크 및 펌웨어 관리 (GET/POST)
-    static void routeScan();          // GET /api/scan
-    static void routeWifiConfig();    // POST /api/network/wifi/config
-    static void routeTimeSet();       // POST /api/system/time/set
-    static void routeFirmwareCheck(); // GET /api/system/firmware/check
-    static void routeUpload();        // POST /upload
-    static void routeUpdate();        // POST /update
-
+    static void routeScan();          // GET  /api/v001/wifi/scan
+    static void routeWifiState();     // GET  /api/v001/wifi/state
+    static void routeWifiConfig();    // GET/POST/PATCH /api/v001/wifi/config
+    
+    static void routeTimeSet();       // POST /api/v001/system/time/set
+    static void routeFirmwareCheck(); // GET  /api/v001/system/firmware/check
+    static void routeUpload();        // POST /api/v001/fileUpload
+    static void routeUpdate();        // POST /api/v001/fwUpdate
+    
     // 4-1. AI 프록시
     static void routeGeminiProxy(); // POST /api/v001/ai/gemini
-
+    
     // 5. 제어 및 상태 요약 (POST/GET)
-    static void routeControl();        // 여러 제어용 /api/control/*
-    static void routeControlSummary(); // GET /api/control/summary
-    static void routeMotionFeed();     // POST /api/motion/pir/feed
-
+    static void routeControl();        // 여러 제어용 /api/v001/control/*
+    static void routeControlSummary(); // GET  /api/v001/control/summary
+    static void routeMotionFeed();     // POST /api/v001/motion/pir/feed
+    
     // 6. 시뮬레이션 제어 (GET/POST)
-    static void routeSimulation(); // GET/POST /api/simulation
-    static void routeSimState();   // GET /api/sim/state
-
+    static void routeSimulation(); // GET/POST /api/v001/simulation
+    static void routeSimState();   // GET /api/v001/sim/state
+    
     // 7. CRUD: Wind Profiles
-    static void routeWindProfile();   // GET/POST /api/windProfile
-    static void routeWindProfileID(); // PUT/DELETE /api/windProfile/{id}
-
+    static void routeWindProfile();   // GET/POST /api/v001/windProfile
+    static void routeWindProfileID(); // PUT/DELETE /api/v001/windProfile/{id}
+    
     // 8. CRUD: Schedules
-    static void routeSchedules();   // GET/POST /api/schedules
-    static void routeSchedulesID(); // PUT/DELETE /api/schedules/{id}
-
+    static void routeSchedules();   // GET/POST /api/v001/schedules
+    static void routeSchedulesID(); // PUT/DELETE /api/v001/schedules/{id}
+    
     // 9. 정적 파일 및 웹소켓
     static void routeStaticAssets(); // JSON 기반 static routes
     static void routeWebSocket();    // WS 라우트 초기화
@@ -190,60 +191,18 @@ class CL_W10_WebAPI {
     static void _broadcast(AsyncWebSocket* p_ws, JsonDocument& p_doc, bool p_diffOnly);
 
     // 공통 헤더 적용
-    static inline void _applyHeaders(AsyncWebServerResponse* p_response, bool p_nocache) {
-        if (p_nocache) {
-            p_response->addHeader("Cache-Control", "no-store");
-            p_response->addHeader("Pragma", "no-cache");
-        }
-        p_response->addHeader("Access-Control-Allow-Origin", "*");
-        p_response->addHeader("Access-Control-Allow-Headers", "Content-Type, X-API-Key");
-        p_response->addHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-    }
+    static void _applyHeaders(AsyncWebServerResponse* p_response, bool p_nocache);
 
-    static inline void sendJson(AsyncWebServerRequest* p_request, JsonDocument& p_doc, int p_code = 200) {
-        String v_out;
-        serializeJson(p_doc, v_out);
-
-        //  UTF-8 강제
-        auto* v_resp = p_request->beginResponse(p_code, "application/json; charset=utf-8", v_out);
-
-        _applyHeaders(v_resp, true);
-        p_request->send(v_resp);
-    }
+    static void sendJson(AsyncWebServerRequest* p_request, JsonDocument& p_doc, int p_code = 200);
 
     // W10_Web_070.h 안에서 기존 sendText 교체
-    static inline void sendText(AsyncWebServerRequest* p_request,
+    static void sendText(AsyncWebServerRequest* p_request,
                                 const String&          p_msg,
                                 int                    p_code = 200,
-                                const char*            p_mime = "text/plain; charset=utf-8") {
-        auto* v_resp = p_request->beginResponse(p_code, p_mime, p_msg);
-        _applyHeaders(v_resp, true);
-        p_request->send(v_resp);
-    }
-
+                                const char*            p_mime = "text/plain; charset=utf-8");
     // API Key 검사
-    static inline bool checkApiKey(AsyncWebServerRequest* p_request) {
-        const char* v_key = nullptr;
-        if (g_A20_config_root.system && g_A20_config_root.system->security.apiKey[0] != '\0') {
-            v_key = g_A20_config_root.system->security.apiKey;
-        }
-
-        if (!v_key || v_key[0] == '\0') {
-            return true; // API 키 비활성화 상태
-        }
-
-        if (!p_request->hasHeader("X-API-Key")) return false;
-        String v_val = p_request->getHeader("X-API-Key")->value();
-        return (v_val == v_key);
-    }
+    static bool checkApiKey(AsyncWebServerRequest* p_request);
 
     // JSON Body 파싱
-    static inline bool parseJsonBody(AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, JsonDocument& p_doc) {
-        auto v_err = deserializeJson(p_doc, (const char*)p_data, p_len);
-        if (v_err) {
-            CL_D10_Logger::log(EN_L10_LOG_WARN, "[W10] JSON parse error: %s", v_err.c_str());
-            return false;
-        }
-        return true;
-    }
+    static bool parseJsonBody(AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, JsonDocument& p_doc);
 };

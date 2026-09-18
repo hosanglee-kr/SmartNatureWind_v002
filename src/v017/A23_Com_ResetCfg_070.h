@@ -46,6 +46,17 @@
 
 #include "D10_Logger_070.h"
 
+// [o] self-sufficient: A20_Const_070.h 경유 없이도 단독 include 가능
+//  - A40_ComFunc::copyStr2Buffer_safe
+//  - A20_Const::* 상수 및 ST_A20_* 전체 타입
+#include "A20_Const_Const_070.h"
+#include "A20_Const_WS_070.h"
+#include "A20_Const_Wifi_070.h"
+#include "A20_Const_Motion_070.h"
+#include "A20_Const_Sch_070.h"
+#include "A20_Const_Sys_070.h"
+#include "A25_Com_Utils_070.h"
+
 // NOTE:
 // - 본 헤더는 A20_Const_070.h에서 include하여 사용합니다.
 // - A20_Const_070.h에 정의된 타입/상수/전역(예: A20_Const::*, ST_A20_*, EN_A20_*)에 의존합니다.

@@ -76,9 +76,8 @@ class CL_M10_MotionLogic; // 전방 선언
 extern CL_M10_MotionLogic* g_M10_motionLogic;
 
 
-#include "A25_Com_Utils_070.h"
-
-#include "A22_Com_Lookup_070.h"
-#include "A23_Com_ResetCfg_070.h"
+// #include "A25_Com_Utils_070.h"
+// #include "A22_Com_Lookup_070.h"
+// #include "A23_Com_ResetCfg_070.h"
 
 

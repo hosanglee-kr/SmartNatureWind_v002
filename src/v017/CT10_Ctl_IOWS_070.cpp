@@ -45,7 +45,11 @@
  * ------------------------------------------------------    
  */    
     
-#include "CT10_Ctl_070.h"    
+#include "CT10_Ctl_070.h"
+
+// [o-2] explicit include (A20_Const_070.h에서 제거됨)
+#include "A25_Com_Utils_070.h"     // A40_ComFunc / A40_IO / CL_A40_MutexGuard_Semaphore
+
 #include <string.h>    
 
 
@@ -60,6 +64,11 @@ static JsonDocument s_doc_metrics;
 static JsonDocument s_doc_chart;
 static JsonDocument s_doc_summary;
 
+// ======================================================
+// [j] WS 스케줄러 상수
+//  - chart interval 강스로틀 상한 (config 최대 60000 × mul 10과 동일)
+// ======================================================
+static constexpr uint32_t S_WS_MAX_INTERVAL_MS = 600000UL;   // 10분
 
 // [B-1b] CT10 상태 mutex 정의 (lazy-init은 CL_A40_MutexGuard_Semaphore가 담당)
 SemaphoreHandle_t CL_CT10_ControlManager::s_stateMutex = nullptr;
@@ -205,16 +214,22 @@ static void CT10_WS_buildPriorityOrderFromConfig(
     }    
 }    
     
-// --------------------------------------------------    
-// policy 로드: system.webSocket → s_itvMs / priority order / chart 정책 / cleanupMs    
-//  - 구조: v_sys.system.webSocket.wsChConfig[] + wsEtcConfig    
-// --------------------------------------------------    
-static void CT10_WS_applyPolicyFromSystem() {    
-    if (!g_A20_config_root.system) return;    
-    
-    const ST_A20_SystemConfig_t&    v_sys = *g_A20_config_root.system;    
-    const ST_A20_WebSocketConfig_t& v_ws  = v_sys.system.webSocket;    
-    
+// --------------------------------------------------
+// policy 로드: system.webSocket → s_itvMs / priority order / chart 정책 / cleanupMs
+//  - 구조: v_sys.system.webSocket.wsChConfig[] + wsEtcConfig
+// --------------------------------------------------
+static void CT10_WS_applyPolicyFromSystem() {
+    // [F-2] 원자 스냅샷 (swap 중 torn read 방지)
+    //  - 이전: raw g_A20_config_root.system 접근 → swap 도중 8필드 혼합 가능
+    //  - 이후: portMUX critical section 내 8-포인터 copy → 일관된 스냅샷
+    ST_A20_ConfigRoot_t v_snap;
+    CL_C10_ConfigManager::getRootSnapshot(v_snap);
+
+    if (!v_snap.system) return;
+
+    const ST_A20_SystemConfig_t&    v_sys = *v_snap.system;
+    const ST_A20_WebSocketConfig_t& v_ws  = v_sys.system.webSocket;
+
     // 1) intervals(ms)    
     for (uint8_t v_i = 0; v_i < (uint8_t)EN_A20_WS_CH_COUNT; v_i++) {    
         const ST_A20_WS_CH_CONFIG_t& v_ch = v_ws.wsChConfig[v_i];    
@@ -300,7 +315,7 @@ static bool CT10_WS_trySendOne_v03(uint8_t p_ch, uint32_t p_nowMs) {
     if (p_ch == (uint8_t)EN_A20_WS_CH_CHART && s_chartLastPayload >= s_chartLargeBytes) {
         uint32_t v_mul    = (s_chartThrottleMul > 0) ? (uint32_t)s_chartThrottleMul : 2UL;
         uint32_t v_mulItv = v_itv * v_mul;
-        if (v_mulItv > 600000UL) v_mulItv = 600000UL;
+        if (v_mulItv > S_WS_MAX_INTERVAL_MS) v_mulItv = S_WS_MAX_INTERVAL_MS;
         v_itv = v_mulItv;
     }
     if ((uint32_t)(p_nowMs - s_lastSendMs[p_ch]) < v_itv) return false;
@@ -470,7 +485,7 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     // [B-1b] 상태 일관성 보호
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -624,107 +639,19 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
         v_dirty["chart"]   = _dirtyChart;    
         v_dirty["summary"] = _dirtySummary;    
     }    
+
+    // 10) Simulation snapshot 병합 (S10 toJson → p_doc["sim"])
+    //  - /state 응답 + WS /state push에 sim 포함
+    //  - 프론트는 별도 /simulation 호출 없이 처리 가능
+    //  - 락 순서: CT10 mutex → S10 mutex (기존 tickLoop와 동일, 데드락 없음)
+    sim.toJson(p_doc);
 }    
-    
-    
-void CL_CT10_ControlManager::exportStateJson_v01(JsonDocument& p_doc) {    
-    // [B-1b] 상태 일관성 보호
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
-        return;
-    }
-    
-    JsonObject v_root = p_doc.to<JsonObject>();
-    JsonObject v_control = A40_ComFunc::Json_ensureObject(v_root["control"]);    
-    
-    v_control["active"]         = active;    
-    v_control["useProfileMode"] = useProfileMode;    
-    v_control["runSource"]      = (int)runSource;    
-    v_control["scheduleIdx"]    = curScheduleIndex;    
-    v_control["profileIdx"]     = curProfileIndex;    
-    
-    // runCtx 최소 포함(레거시 UI에서도 원인 표시 가능)    
-    v_control["state"]      = CT10_stateToString(runCtx.state);    
-    v_control["reason"]     = CT10_reasonToString(runCtx.reason);    
-    v_control["stateCode"]  = (uint8_t)runCtx.state;    
-    v_control["reasonCode"] = (uint8_t)runCtx.reason;    
-    
-    // snapshot    
-    {    
-        JsonObject v_snap = A40_ComFunc::Json_ensureObject(v_control["snapshot"]);    
-        v_snap["schId"]     = (uint8_t)runCtx.activeSchId;    
-        v_snap["schNo"]     = (uint16_t)runCtx.activeSchNo;    
-        v_snap["segId"]     = (uint8_t)runCtx.activeSegId;    
-        v_snap["segNo"]     = (uint16_t)runCtx.activeSegNo;    
-        v_snap["profileNo"] = (uint16_t)runCtx.activeProfileNo;    
-    }    
-    
-    // time (v01에도 최소)    
-    {    
-        JsonObject v_time = A40_ComFunc::Json_ensureObject(v_control["time"]);    
-        v_time["valid"] = CL_TM10_TimeManager::isTimeValid();    
-    }    
-    
-    // override    
-    {    
-        JsonObject v_override = A40_ComFunc::Json_ensureObject(v_control["override"]);    
-        v_override["active"]    = overrideState.active;    
-        v_override["useFixed"]  = overrideState.useFixed;    
-        v_override["resolved"]  = (!overrideState.useFixed && overrideState.active);    
-        v_override["remainSec"] = calcOverrideRemainSec();    
-    
-        if (overrideState.active) {    
-            if (overrideState.useFixed) {    
-                v_override["fixedPercent"] = overrideState.fixedPercent;    
-            } else if (overrideState.resolved.valid) {    
-                v_override["presetCode"] = overrideState.resolved.presetCode;    
-                v_override["styleCode"]  = overrideState.resolved.styleCode;    
-            }    
-        }    
-    }    
-    
-    // pwm    
-    v_control["pwmDuty"] = pwm ? pwm->P10_getDutyPercent() : 0.0f;    
-    
-    // event (v01 최소)    
-    {    
-        JsonObject v_evt = A40_ComFunc::Json_ensureObject(v_control["event"]);    
-        v_evt["ackRequired"] = runCtx.stateAckRequired;    
-        v_evt["holdUntilMs"] = (uint32_t)runCtx.stateHoldUntilMs;    
-    
-        uint32_t v_now = (uint32_t)millis();    
-        uint32_t v_remain = 0;    
-        if (runCtx.stateHoldUntilMs != 0 && v_now < runCtx.stateHoldUntilMs) {    
-            v_remain = (uint32_t)(runCtx.stateHoldUntilMs - v_now);    
-        }    
-        v_evt["holdRemainMs"] = v_remain;    
-    }    
-    
-    // autoOffRt (autoOff 제거)    
-    {    
-        JsonObject v_ao = A40_ComFunc::Json_ensureObject(v_control["autoOffRt"]);    
-        v_ao["timerArmed"]     = autoOffRt.timerArmed;    
-        v_ao["timerStartMs"]   = (uint32_t)autoOffRt.timerStartMs;    
-        v_ao["timerMinutes"]   = (uint32_t)autoOffRt.timerMinutes;    
-        v_ao["offTimeEnabled"] = autoOffRt.offTimeEnabled;    
-        v_ao["offTimeMinutes"] = (uint16_t)autoOffRt.offTimeMinutes;    
-        v_ao["offTempEnabled"] = autoOffRt.offTempEnabled;    
-        v_ao["offTemp"]        = autoOffRt.offTemp;    
-    
-        v_ao["offTimeLastYday"] = (int)autoOffRt.offTimeLastYday;    
-        v_ao["offTimeLastMin"]  = (int)autoOffRt.offTimeLastMin;    
-    }    
-    
-    // sim    
-    sim.toJson(p_doc);    
-}    
-    
+
     
 void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnly) {    
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -761,7 +688,7 @@ void CL_CT10_ControlManager::exportSummaryJson(JsonDocument& p_doc) {
     // [B-1b] 상태 일관성 보호
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -795,7 +722,7 @@ void CL_CT10_ControlManager::exportMetricsJson(JsonDocument& p_doc) {
     // [B-1b] 상태 일관성 보호
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
         return;
     }
 

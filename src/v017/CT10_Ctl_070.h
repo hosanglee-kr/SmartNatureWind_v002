@@ -276,12 +276,18 @@ class CL_CT10_ControlManager {
     bool startUserProfileByNo(uint16_t p_profileNo);
     void stopUserProfile();
 
-    void startOverrideFixed(float p_percent, uint32_t p_seconds);
+
+    void startOverrideFixed(float p_percent, uint32_t p_seconds, bool p_forever = false);
     void startOverridePreset(const char*                 p_presetCode,
                              const char*                 p_styleCode,
                              const ST_A20_AdjustDelta_t* p_adj,
-                             uint32_t                    p_seconds);
-    void applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds);
+                             uint32_t                    p_seconds,
+                             bool                        p_forever = false);
+    void applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds, bool p_forever = false);
+    
+        
+        
+
     void stopOverride();
 
     // tick(구현은 control cpp)

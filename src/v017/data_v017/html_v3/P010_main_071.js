@@ -1,495 +1,4 @@
-Round 3-Main-A+B — 통합 완성본
-
-확정 사항
-
-Q 결정
-Q1 "임시 적용" 명칭
-Q2 무제한 지원 (백엔드 forever 파라미터 확장)
-Q3 (a)+(b) 화면 안내 + 저장 버튼 강조
-Q4 프리셋 자동 채움 (preset × style 반영)
-
----
-
-📄 백엔드 1: CT10_Ctl_070.h — 시그니처 확장
-
-수정 3곳:
-
-```cpp
-// 기존
-void startOverrideFixed(float p_percent, uint32_t p_seconds);
-void startOverridePreset(const char*                 p_presetCode,
-                         const char*                 p_styleCode,
-                         const ST_A20_AdjustDelta_t* p_adj,
-                         uint32_t                    p_seconds);
-void applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds);
-
-// 변경
-void startOverrideFixed(float p_percent, uint32_t p_seconds, bool p_forever = false);
-void startOverridePreset(const char*                 p_presetCode,
-                         const char*                 p_styleCode,
-                         const ST_A20_AdjustDelta_t* p_adj,
-                         uint32_t                    p_seconds,
-                         bool                        p_forever = false);
-void applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds, bool p_forever = false);
-```
-
----
-
-📄 백엔드 2: CT10_Ctl_Ctl_070.cpp — 함수 3개
-
-startOverrideFixed()
-
-```cpp
-void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seconds, bool p_forever) {
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return;
-
-    _autoOffLatched = false;
-
-    memset(&overrideState, 0, sizeof(overrideState));
-    overrideState.active       = true;
-    overrideState.useFixed     = true;
-    overrideState.fixedPercent = constrain(p_percent, 0.0f, 100.0f);
-
-    if (p_forever) {
-        overrideState.endMs = 0;                    // 0 = 무제한
-    } else {
-        uint32_t v_sec = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
-        overrideState.endMs = millis() + (v_sec * 1000UL);
-    }
-
-    markDirty("state");
-    markDirty("metrics");
-
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Override FIXED %.1f%% (%s)",
-                       overrideState.fixedPercent,
-                       p_forever ? "forever" : "timed");
-
-    CL_N10_NvsManager::setOverrideFixed(true, overrideState.fixedPercent);
-}
-```
-
-startOverridePreset()
-
-```cpp
-void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
-                                                 const char* p_styleCode,
-                                                 const ST_A20_AdjustDelta_t* p_adj,
-                                                 uint32_t p_seconds,
-                                                 bool p_forever) {
-    if (!g_A20_config_root.windDict) return;
-
-    ST_A20_ResolvedWind_t v_resolved;
-    memset(&v_resolved, 0, sizeof(v_resolved));
-
-    bool v_ok = S20_resolveWindParams(*g_A20_config_root.windDict,
-                                     p_presetCode,
-                                     p_styleCode,
-                                     p_adj,
-                                     v_resolved);
-
-    if (!v_ok || !v_resolved.valid) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN,
-                           "[CT10] startOverridePreset resolve failed (%s,%s)",
-                           p_presetCode ? p_presetCode : "",
-                           p_styleCode ? p_styleCode : "");
-        return;
-    }
-
-    applyManualResolved(v_resolved, p_seconds, p_forever);
-}
-```
-
-applyManualResolved()
-
-```cpp
-void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_wind,
-                                                 uint32_t p_seconds,
-                                                 bool p_forever) {
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return;
-
-    if (!p_wind.valid) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] applyManual: invalid ResolvedWind");
-        return;
-    }
-
-    if (p_wind.fixedMode) {
-        startOverrideFixed(p_wind.fixedSpeed, p_seconds, p_forever);
-        return;
-    }
-
-    _autoOffLatched = false;
-
-    memset(&overrideState, 0, sizeof(overrideState));
-    overrideState.active          = true;
-    overrideState.useFixed        = false;
-    overrideState.resolvedApplied = false;
-    overrideState.fixedPercent    = 0.0f;
-    overrideState.resolved        = p_wind;
-
-    if (p_forever) {
-        overrideState.endMs = 0;
-    } else {
-        uint32_t v_sec = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
-        overrideState.endMs = millis() + (v_sec * 1000UL);
-    }
-
-    markDirty("state");
-    markDirty("metrics");
-    markDirty("chart");
-
-    CL_D10_Logger::log(EN_L10_LOG_INFO,
-                       "[CT10] applyManual: preset=%s style=%s (%s)",
-                       p_wind.presetCode,
-                       p_wind.styleCode,
-                       p_forever ? "forever" : "timed");
-
-    CL_N10_NvsManager::setOverridePreset(true, p_wind.presetCode, p_wind.styleCode);
-}
-```
-
----
-
-📄 백엔드 3: W10_Web_Routes_070.cpp — 2곳
-
-routeControl() — override/fixed
-
-```cpp
-    // override/fixed
-    s_server->on(W10_Const::HTTP_API_CTL_OVR_FIXED, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
-
-        if (!p_request->hasParam("percent", true)) {
-            p_request->send(400, "application/json", "{\"error\":\"missing param: percent\"}");
-            return;
-        }
-
-        float    v_pct = p_request->getParam("percent", true)->value().toFloat();
-        uint32_t v_sec = p_request->hasParam("seconds", true)
-                            ? (uint32_t)p_request->getParam("seconds", true)->value().toInt()
-                            : 0;
-
-        // [forever] 무제한 플래그
-        bool v_forever = false;
-        if (p_request->hasParam("forever", true)) {
-            String f = p_request->getParam("forever", true)->value();
-            f.toLowerCase();
-            v_forever = (f == "true" || f == "1");
-        }
-
-        if (s_control) {
-            s_control->startOverrideFixed(v_pct, v_sec, v_forever);
-        }
-        p_request->send(200, "application/json", "{\"result\":\"ok\"}");
-    });
-```
-
-routeControl() — override/preset
-
-```cpp
-            const char* v_preset = v_doc["presetCode"] | "";
-            const char* v_style  = v_doc["styleCode"] | "BALANCE";
-            uint32_t    v_sec    = v_doc["durationSec"] | 0;
-            bool        v_forever = v_doc["forever"] | false;    // ← 추가
-
-            ST_A20_AdjustDelta_t v_adj;
-            memset(&v_adj, 0, sizeof(v_adj));
-            if (v_doc["adjust"].is<JsonObject>()) {
-                JsonObject v_aj       = v_doc["adjust"];
-                v_adj.windIntensity   = v_aj["windIntensity"] | 0.0f;
-                v_adj.windVariability = v_aj["windVariability"] | 0.0f;
-                v_adj.gustFrequency   = v_aj["gustFrequency"] | 0.0f;
-                v_adj.fanLimit        = v_aj["fanLimit"] | 0.0f;
-                v_adj.minFan          = v_aj["minFan"] | 0.0f;
-                v_adj.turbulenceLengthScale    = v_aj["turbulenceLengthScale"] | 0.0f;
-                v_adj.turbulenceIntensitySigma = v_aj["turbulenceIntensitySigma"] | 0.0f;
-                v_adj.thermalBubbleStrength    = v_aj["thermalBubbleStrength"] | 0.0f;
-                v_adj.thermalBubbleRadius      = v_aj["thermalBubbleRadius"] | 0.0f;
-            }
-
-            if (s_control) {
-                s_control->startOverridePreset(v_preset, v_style, &v_adj, v_sec, v_forever);   // ← 파라미터 추가
-            }
-            p_request->send(200, "application/json", "{\"result\":\"ok\"}");
-```
-
----
-
-📄 프론트 1: P010_main_070.html — 전면 교체
-
-```html
-<!-- P010_main_070.html -->
-
-<!doctype html>
-<html lang="ko">
-<head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<title>🌿 Smart Nature Wind 관리자</title>
-
-	<link rel="stylesheet" href="./P000_common_070.css">
-	<link rel="stylesheet" href="./P010_main_070.css">
-</head>
-
-<body>
-	<nav class="nav-bar">
-		<div class="nav-container">
-			<a class="nav-logo" href="/html_v3/P010_main_070.html">Smart Nature Wind</a>
-			<ul class="nav-menu" id="navMenu"></ul>
-		</div>
-	</nav>
-
-	<div class="wrap">
-		<h1>
-			Smart Nature Wind 관리자
-			<span class="info-label info" id="fwVer">FW …</span>
-		</h1>
-
-		<div class="grid">
-
-			<!-- 1. 상태 -->
-			<section class="card col-12">
-				<div class="row middle">
-					<div class="section-title">상태</div>
-					<div class="right">
-						<span id="overrideBadge" class="info-label warn" style="display:none;">🟡 임시 적용 중 — 저장 안 됨</span>
-						<span id="timeBadge" class="info-label err" style="display:none;">시간 미동기</span>
-						<button class="btn" id="btnRefresh">상태 새로고침</button>
-					</div>
-				</div>
-
-				<div class="grid">
-					<div class="col-6">
-						<div class="row tight"><div><label>시뮬 상태</label><span id="simActive" class="info-label info">-</span></div></div>
-						<div class="row tight"><div><label>Phase</label><span id="phase" class="info-label info">-</span></div></div>
-						<div class="row tight"><div><label>풍속(m/s)</label><span id="wind" class="info-label info">-</span></div></div>
-						<div class="row tight"><div><label>PWM</label><span id="pwm" class="info-label info">-</span></div></div>
-					</div>
-					<div class="col-6">
-						<div class="row tight"><div><label>Wi-Fi 모드</label><span id="wifiMode" class="info-label info">-</span></div></div>
-						<div class="row tight"><div><label>SSID</label><span id="curSsid" class="info-label info">-</span></div></div>
-						<div class="row tight"><div><label>IP</label><span id="ip" class="info-label info">-</span></div></div>
-					</div>
-				</div>
-			</section>
-
-			<!-- 2. 풍속 설정 (임시 적용 통합) -->
-			<section class="card col-12">
-				<div class="row middle">
-					<strong class="section-title">풍속 설정</strong>
-					<div class="right">
-						<span id="overrideStatus" class="info-label info">비활성</span>
-					</div>
-				</div>
-
-				<div class="grid">
-					<div class="col-4">
-						<label>프리셋 <span class="muted">(선택 시 값 자동 채움)</span></label>
-						<select id="preset"></select>
-					</div>
-					<div class="col-4">
-						<label>스타일</label>
-						<select id="style"></select>
-					</div>
-					<div class="col-4">
-						<label>팬 전원</label>
-						<label class="row tight" style="align-items:center; gap:8px;">
-							<input type="checkbox" id="fanPowerEnabled" checked>
-							<span>On (해제 시 즉시 정지)</span>
-						</label>
-					</div>
-				</div>
-
-				<div class="grid" style="margin-top:16px;">
-					<div class="col-6"><label>강도 (intensity %)</label><input type="number" id="intensity" min="0" max="100" step="0.01"></div>
-					<div class="col-6"><label>돌풍 빈도 (gust_freq %)</label><input type="number" id="gust_freq" min="0" max="100" step="0.01"></div>
-					<div class="col-6"><label>가변성 (variability %)</label><input type="number" id="variability" min="0" max="100" step="0.01"></div>
-					<div class="col-6"><label>팬 최대 (fanLimit %)</label><input type="number" id="fanLimit" min="0" max="100" step="0.01"></div>
-					<div class="col-6"><label>팬 최소 (minFan %)</label><input type="number" id="minFan" min="0" max="100" step="0.01"></div>
-					<div class="col-6"><label>난류 길이 스케일 (turb_len)</label><input type="number" id="turb_len" min="1" max="200" step="0.01"></div>
-					<div class="col-6"><label>난류 시그마 (turb_sig)</label><input type="number" id="turb_sig" min="0" max="5" step="0.01"></div>
-					<div class="col-6"><label>열기포 세기 (therm_str)</label><input type="number" id="therm_str" min="1" max="5" step="0.01"></div>
-					<div class="col-6"><label>열기포 반경 (therm_rad)</label><input type="number" id="therm_rad" min="0" max="100" step="0.01"></div>
-				</div>
-
-				<!-- 임시 적용 -->
-				<div style="margin-top:20px; padding-top:16px; border-top:1px dashed #e0e6ed;">
-					<div class="row middle" style="margin-bottom:10px;">
-						<strong>🎬 임시 적용 (저장 안 됨)</strong>
-					</div>
-					<p class="muted" style="margin-bottom:12px;">
-						현재 폼 값을 선풍기에 즉시 반영합니다. 마음에 들면 "저장" 버튼을 누르세요.
-					</p>
-					<div class="grid">
-						<div class="col-4">
-							<label>실행 시간 (초, 300=5분)</label>
-							<input type="number" id="overrideSeconds" min="0" step="10" value="300">
-						</div>
-						<div class="col-4">
-							<label>&nbsp;</label>
-							<label class="row tight" style="align-items:center; gap:8px;">
-								<input type="checkbox" id="overrideForever">
-								<span>무제한 (중지까지)</span>
-							</label>
-						</div>
-						<div class="col-4" style="justify-content:flex-end; display:flex; align-items:flex-end; gap:8px;">
-							<button class="btn ok" id="btnApplyTemp">🎬 임시 적용</button>
-							<button class="btn err" id="btnStopTemp">⏹️ 중지</button>
-						</div>
-					</div>
-				</div>
-
-				<!-- 저장 -->
-				<div class="row middle" style="margin-top:20px; padding-top:16px; border-top:1px solid #e0e6ed;">
-					<div></div>
-					<div class="right" style="display:flex; gap:8px; flex-wrap:wrap;">
-						<button class="btn ok" id="btnSaveSim">💾 풍속 설정 저장</button>
-						<button class="btn warn" id="btnSaveAllConfig" style="background:#eab308;color:#fff;">저장되지 않음</button>
-						<button class="btn err" id="btnConfigInit">시스템 전체 초기화</button>
-					</div>
-				</div>
-			</section>
-
-			<!-- 3. 타이밍 -->
-			<section class="card col-12">
-				<div class="row middle">
-					<strong class="section-title">타이밍 (TIMING)</strong>
-					<div class="right"><button class="btn ok" id="btnSaveTiming">타이밍 (메모리 패치)</button></div>
-				</div>
-				<div class="grid">
-					<div class="col-4"><label>시뮬 간격(ms)</label><input type="number" id="sim_int" min="10" step="1"></div>
-					<div class="col-4"><label>돌풍 체크(ms)</label><input type="number" id="gust_int" min="10" step="1"></div>
-					<div class="col-4"><label>열기포 체크(ms)</label><input type="number" id="thermal_int" min="10" step="1"></div>
-				</div>
-			</section>
-
-			<!-- 4. Wi-Fi (AP) -->
-			<section class="card col-12">
-				<div class="row middle">
-					<strong class="section-title">Wi-Fi (AP 설정)</strong>
-					<div class="right"><button class="btn ok" id="btnSaveWifiAP">AP (메모리 패치)</button></div>
-				</div>
-				<div class="grid">
-					<div class="col-4">
-						<label>Wi-Fi 모드</label>
-						<select id="wifi_mode">
-							<option value="0">AP</option>
-							<option value="1">STA</option>
-							<option value="2">AP+STA</option>
-						</select>
-					</div>
-					<div class="col-4"><label>AP SSID</label><input id="ap_ssid"></div>
-					<div class="col-4"><label>AP Password</label><input id="ap_password" type="password"></div>
-				</div>
-			</section>
-
-			<!-- 5. Wi-Fi (STA) -->
-			<section class="card col-12">
-				<div class="row middle">
-					<strong class="section-title">Wi-Fi (STA 목록)</strong>
-					<div class="right">
-						<button class="btn" id="btnScan">스캔</button>
-						<button class="btn ok" id="btnSaveWifiSTA">STA 목록 (메모리 패치)</button>
-					</div>
-				</div>
-				<div class="grid">
-					<div class="col-12"><div class="list" id="staList"></div></div>
-					<div class="col-12">
-						<div class="row tight">
-							<select id="scanList" class="fill"></select>
-							<input id="scanPass" type="password" placeholder="선택 SSID 비밀번호">
-							<button class="btn" id="btnUseScan">추가</button>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			<!-- 6. PWM 하드웨어 -->
-			<section class="card col-12">
-				<div class="row middle">
-					<strong class="section-title">PWM 하드웨어</strong>
-					<div class="right"><button class="btn ok" id="btnSavePWM">PWM (메모리 패치)</button></div>
-				</div>
-				<div class="grid">
-					<div class="col-3"><label>PWM GPIO</label><input type="number" id="pwm_pin" min="0" max="48"></div>
-					<div class="col-3"><label>채널</label><input type="number" id="pwm_channel" min="0" max="7"></div>
-					<div class="col-3"><label>주파수(Hz)</label><input type="number" id="pwm_freq" min="25000" max="40000" step="500"></div>
-					<div class="col-3"><label>해상도(bits)</label><input type="number" id="pwm_res" min="8" max="16"></div>
-				</div>
-			</section>
-
-			<!-- 7. 보안(API Key) -->
-			<section class="card col-12">
-				<div class="row middle">
-					<strong class="section-title">보안(API Key)</strong>
-					<div class="right"><button class="btn ok" id="btnSaveApiKey">API Key 저장</button></div>
-				</div>
-				<div class="grid">
-					<div class="col-12">
-						<input id="apiKeyInput" type="password" placeholder="Key 입력 또는 새 Key 설정">
-						<p class="muted">브라우저 로컬에 저장됨, 요청 시 X-API-Key 헤더로 전송됩니다.</p>
-					</div>
-				</div>
-			</section>
-
-			<!-- 8. 파일 업로드 / OTA -->
-			<section class="card col-12">
-				<strong class="section-title">파일 업로드 / 펌웨어 OTA</strong>
-				<div class="grid">
-					<div class="col-6">
-						<label>정적 파일 업로드</label>
-						<div class="row tight">
-							<input type="file" id="fileUpload">
-							<button class="btn ok" id="btnUploadStatic">업로드</button>
-						</div>
-						<div id="uploadMsg" class="muted" style="margin-top:8px;"></div>
-					</div>
-					<div class="col-6">
-						<label>펌웨어 OTA 업데이트</label>
-						<div class="row tight">
-							<input type="file" id="fileOTA">
-							<button class="btn ok" id="btnUploadOTA">업데이트</button>
-						</div>
-						<div id="otaMsg" class="muted" style="margin-top:8px;"></div>
-					</div>
-				</div>
-			</section>
-
-			<!-- 9. 로그 콘솔 -->
-			<section class="card col-12">
-				<div class="row middle">
-					<strong class="section-title">실시간 로그 콘솔 (/ws/log)</strong>
-					<div class="right"><button class="btn" id="btnClearLog">로그 지우기</button></div>
-				</div>
-				<pre id="logConsole">로그 로딩 중...</pre>
-			</section>
-
-		</div>
-
-		<hr class="hr" />
-		<p class="muted">© 2540.kr SmartNatureWind (v023)</p>
-	</div>
-
-	<div id="loadingOverlay" style="display:none;"><div class="spinner"></div></div>
-	<div id="toastContainer"></div>
-
-	<script src="./P000_common_070.js" defer></script>
-	<script src="./P001_API_070.js" defer></script>
-	<script src="./P010_main_070.js" defer></script>
-</body>
-</html>
-```
-
----
-
-📄 프론트 2: P010_main_070.js — 전면 교체
-
-```js
-/* P010_main_070.js
+/* P010_main_071.js
  * ------------------------------------------------------
  * 모듈명 : Smart Nature Wind Main UI Logic (v023)
  * ------------------------------------------------------
@@ -513,6 +22,10 @@ const elPwm          = () => document.getElementById("pwm");
 const elWifiMode     = () => document.getElementById("wifiMode");
 const elCurSsid      = () => document.getElementById("curSsid");
 const elIp           = () => document.getElementById("ip");
+
+const elControlState = () => document.getElementById("controlState");
+const elRunTarget    = () => document.getElementById("runTarget");
+
 
 const elOverrideBadge  = () => document.getElementById("overrideBadge");
 const elTimeBadge      = () => document.getElementById("timeBadge");
@@ -667,6 +180,55 @@ function _applySimToUi(sim, control) {
 			ovStatus.className = "info-label info";
 		}
 	}
+	
+	// 제어 상태 (control.state / stateCode)
+	{
+		const stateCode = control.stateCode;
+		const stateStr  = control.state || "-";
+	
+		const elCS = elControlState();
+		if (elCS) {
+			elCS.textContent = stateStr;
+			// stateCode별 색상
+			switch (stateCode) {
+				case 0:  elCS.className = "info-label info";   break; // IDLE
+				case 1:  elCS.className = "info-label warn";   break; // OVERRIDE
+				case 2:
+				case 3:  elCS.className = "info-label ok";     break; // PROFILE_RUN / SCHEDULE_RUN
+				case 4:  elCS.className = "info-label info";   break; // MOTION_BLOCKED
+				case 5:
+				case 6:  elCS.className = "info-label err";    break; // AUTOOFF_STOPPED / TIME_INVALID
+				default: elCS.className = "info-label info";   break;
+			}
+		}
+	}
+	
+	// 실행 대상 (override > schedule > profile 우선)
+	{
+		const ovc   = control.override   || {};
+		const sch  = control.schedule   || {};
+		const prof = control.profile    || {};
+	
+		let target = "없음";
+	
+		if (ovc.active) {
+			if (ov.useFixed) {
+				target = `Override: 고정 ${ov.fixedPercent ?? 0}%`;
+			} else {
+				target = `Override: ${ov.presetCode || "-"}`;
+			}
+		} else if (sch.fromRunSource && sch.name) {
+			target = `스케줄: ${sch.name}`;
+			if (sch.schNo) target += ` (#${sch.schNo})`;
+		} else if (prof.fromRunSource && prof.name) {
+			target = `프로파일: ${prof.name}`;
+			if (prof.profileNo) target += ` (#${prof.profileNo})`;
+		}
+	
+		const elRT = elRunTarget();
+		if (elRT) elRT.textContent = target;
+	}
+
 
 	// time 배지
 	const tm = (control && control.time) ? control.time : null;
@@ -1380,119 +942,3 @@ document.addEventListener("DOMContentLoaded", async () => {
 		}
 	});
 });
-```
-
----
-
-📄 프론트 3: P010_main_070.css — 저장 버튼 강조 추가
-
-파일 끝에 추가:
-
-```css
-/* ======================= 11. 저장 버튼 강조 (Q3-b) ======================= */
-
-/* 임시 적용 중 + dirty 상태일 때 저장 버튼 시선 유도 */
-.btn-attention {
-  animation: btn-attention-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes btn-attention-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
-  70%  { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
-}
-```
-
----
-
-✅ 검증 시나리오
-
-1. 프리셋 자동 채움
-
-```
-1. 페이지 로드 → 프리셋, 스타일 select 채워짐
-2. 프리셋 "OCEAN" 선택
-   → 폼 값 자동 채움 (preset × style 반영)
-   → dirty 표시 (저장 버튼 노랑)
-3. 스타일 "ACTIVE" 변경
-   → 폼 값 재계산 (preset × ACTIVE)
-```
-
-2. 임시 적용
-
-```
-1. 프리셋 "OCEAN", 스타일 "ACTIVE" 선택
-2. 강도 폼 값 조정 (조정 델타)
-3. 무제한 체크 ON (or 시간 입력)
-4. "🎬 임시 적용" 클릭
-5. 시리얼:
-   [CT10] applyManual: preset=OCEAN style=ACTIVE (forever)
-6. 상태:
-   - 상단 배지 "🟡 임시 적용 중 — 저장 안 됨"
-   - 저장 버튼 노란 pulse 애니메이션
-   - overrideStatus: "🟡 preset OCEAN (무제한)"
-7. 선풍기가 새 세팅으로 즉시 작동
-```
-
-3. 저장
-
-```
-1. 임시 적용 중 상태에서 "💾 풍속 설정 저장" 클릭
-2. 시리얼:
-   [S10] patchFromJson applied. preset=OCEAN ...
-   [CT10] Override cleared
-3. 결과:
-   - 파일 저장됨
-   - 임시 적용 해제
-   - 배지 사라짐
-   - 저장 버튼 pulse 사라짐
-   - 저장된 값으로 자연 복귀
-```
-
-4. 중지
-
-```
-1. "⏹️ 중지" 클릭
-2. 시리얼: [CT10] Override cleared
-3. 배지/status 사라짐
-```
-
-5. 무제한 vs 시간제한
-
-```
-- 무제한 체크 OFF, 300초 → 시리얼 "timed"
-- 무제한 체크 ON          → 시리얼 "forever"
-- 무제한 상태 status 표시: "🟡 preset OCEAN (무제한)"
-- 시간제한 상태: "🟡 preset OCEAN (298s)" 30초마다 감소
-```
-
----
-
-📋 변경 요약
-
-구분 파일 변경
-백엔드 CT10_Ctl_070.h 시그니처 3개 bool p_forever=false
-백엔드 CT10_Ctl_Ctl_070.cpp 함수 3개 (endMs 분기)
-백엔드 W10_Web_Routes_070.cpp override/fixed, override/preset forever 파싱
-프론트 P010_main_070.html 임시 적용 컨트롤 통합, 배지
-프론트 P010_main_070.js 자동 채움, 임시 적용, 저장 로직
-프론트 P010_main_070.css 저장 버튼 pulse
-
----
-
-⚠️ 주의
-
-1. 프리셋 자동 채움은 preset × style 값으로 계산됩니다. 폼에 보이는 값 = 임시 적용 시 resolve 값 = 저장 값 (모두 동일). 일관성 확보.
-2. 저장 시 override 자동 해제. 사용자가 저장 후 "왜 안 바뀌지?"하는 혼란 방지.
-3. 임시 적용은 schedule/profile보다 우선순위 1위 (기존 정책 유지). Schedule 페이지에서 schedule 실행 중이어도 임시 적용 중엔 무시됨.
-4. 무제한 모드 시 재부팅하면 해제됨. NVS에 저장되지만 부팅 시 복원 안 함 (기존 정책).
-
----
-
-📌 다음 단계
-
-· (A) 배포 후 브라우저 검증 → 이슈 발생 시 대응
-· (B) Round 3-P100-C (security.geminiApiKey UI)
-· (C) 다른 이슈
-
-어느 방향으로 갈까요?

@@ -308,40 +308,40 @@ void CL_CT10_ControlManager::stopUserProfile() {
 // --------------------------------------------------
 // override
 // --------------------------------------------------
-void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seconds) {
-
+void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seconds, bool p_forever) {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return;
-    
-    // [B-2] 사용자 override 시작 → AutoOff 래치 해제
+
     _autoOffLatched = false;
-    
+
     memset(&overrideState, 0, sizeof(overrideState));
-    overrideState.active        = true;
-    overrideState.useFixed      = true;
-    overrideState.fixedPercent  = constrain(p_percent, 0.0f, 100.0f);
-    
-    // [Policy] durationSec=0 → 20분 기본
-    uint32_t v_sec = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
-    overrideState.endMs = millis() + (v_sec * 1000UL);
-    
+    overrideState.active       = true;
+    overrideState.useFixed     = true;
+    overrideState.fixedPercent = constrain(p_percent, 0.0f, 100.0f);
+
+    if (p_forever) {
+        overrideState.endMs = 0;                    // 0 = 무제한
+    } else {
+        uint32_t v_sec = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
+        overrideState.endMs = millis() + (v_sec * 1000UL);
+    }
+
     markDirty("state");
     markDirty("metrics");
 
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Override FIXED %.1f%% (sec=%lu, applied=%lu)",
-                   overrideState.fixedPercent,
-                   (unsigned long)p_seconds,
-                   (unsigned long)v_sec);
-                   
-    // [B-3] N10 override 저장 (fixed)
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Override FIXED %.1f%% (%s)",
+                       overrideState.fixedPercent,
+                       p_forever ? "forever" : "timed");
+
     CL_N10_NvsManager::setOverrideFixed(true, overrideState.fixedPercent);
-    
 }
+
 
 void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
                                                  const char* p_styleCode,
                                                  const ST_A20_AdjustDelta_t* p_adj,
-                                                 uint32_t p_seconds) {
+                                                 uint32_t p_seconds,
+                                                 bool p_forever) {
     if (!g_A20_config_root.windDict) return;
 
     ST_A20_ResolvedWind_t v_resolved;
@@ -361,25 +361,25 @@ void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
         return;
     }
 
-    applyManualResolved(v_resolved, p_seconds);
+    applyManualResolved(v_resolved, p_seconds, p_forever);
 }
 
-void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds) {
-
+void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_wind,
+                                                 uint32_t p_seconds,
+                                                 bool p_forever) {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return;
-    
+
     if (!p_wind.valid) {
         CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] applyManual: invalid ResolvedWind");
         return;
     }
 
     if (p_wind.fixedMode) {
-        startOverrideFixed(p_wind.fixedSpeed, p_seconds);
+        startOverrideFixed(p_wind.fixedSpeed, p_seconds, p_forever);
         return;
     }
-    
-    // [B-2] 사용자 override(resolved) 시작 → AutoOff 래치 해제
+
     _autoOffLatched = false;
 
     memset(&overrideState, 0, sizeof(overrideState));
@@ -388,23 +388,24 @@ void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_
     overrideState.resolvedApplied = false;
     overrideState.fixedPercent    = 0.0f;
     overrideState.resolved        = p_wind;
-    
-    // [Policy] durationSec=0 → 20분 기본
-    uint32_t v_sec = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
-    overrideState.endMs = millis() + (v_sec * 1000UL);
-    
+
+    if (p_forever) {
+        overrideState.endMs = 0;
+    } else {
+        uint32_t v_sec = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
+        overrideState.endMs = millis() + (v_sec * 1000UL);
+    }
+
     markDirty("state");
     markDirty("metrics");
     markDirty("chart");
 
     CL_D10_Logger::log(EN_L10_LOG_INFO,
-                   "[CT10] applyManual: preset=%s style=%s (sec=%lu, applied=%lu)",
-                   p_wind.presetCode,
-                   p_wind.styleCode,
-                   (unsigned long)p_seconds,
-                   (unsigned long)v_sec);
-    
-    // [B-3] N10 override 저장 (resolved/preset)
+                       "[CT10] applyManual: preset=%s style=%s (%s)",
+                       p_wind.presetCode,
+                       p_wind.styleCode,
+                       p_forever ? "forever" : "timed");
+
     CL_N10_NvsManager::setOverridePreset(true, p_wind.presetCode, p_wind.styleCode);
 }
 

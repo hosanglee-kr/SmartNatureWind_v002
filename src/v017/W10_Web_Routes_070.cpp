@@ -55,6 +55,43 @@ AsyncWebSocket* CL_W10_WebAPI::s_wsServerChart   = &s_wsChart;
 AsyncWebSocket* CL_W10_WebAPI::s_wsServerMetrics = &s_wsMetrics;
 AsyncWebSocket* CL_W10_WebAPI::s_wsServerSummary = &s_wsSummary;
 
+
+// --------------------------------------------------
+// [Runtime Apply] 시스템 설정 패치 후 런타임 반영
+//  - Logger level: CL_D10_Logger::setLevel (즉시)
+//  - Hostname   : WiFi.setHostname (WiFi 재연결 시 반영)
+//  - W10이 C10과 WF10 모두 접근 가능한 유일한 지점
+// --------------------------------------------------
+static void _applySystemRuntime(const ST_A20_SystemConfig_t& p_sys) {
+    // 1) Logger level
+    EN_L10_LogLevel_t v_lv = EN_L10_LOG_INFO;
+    const char* v_lvStr = p_sys.system.logging.level;
+
+    if (v_lvStr && v_lvStr[0]) {
+        if      (strcasecmp(v_lvStr, "NONE")  == 0) v_lv = EN_L10_LOG_NONE;
+        else if (strcasecmp(v_lvStr, "ERROR") == 0) v_lv = EN_L10_LOG_ERROR;
+        else if (strcasecmp(v_lvStr, "WARN")  == 0) v_lv = EN_L10_LOG_WARN;
+        else if (strcasecmp(v_lvStr, "INFO")  == 0) v_lv = EN_L10_LOG_INFO;
+        else if (strcasecmp(v_lvStr, "DEBUG") == 0) v_lv = EN_L10_LOG_DEBUG;
+    }
+
+    EN_L10_LogLevel_t v_oldLv = CL_D10_Logger::getLevel();
+    if (v_oldLv != v_lv) {
+        CL_D10_Logger::setLevel(v_lv);
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
+                           "[W10] Log level changed: %d -> %d",
+                           (int)v_oldLv, (int)v_lv);
+    }
+
+    // 2) Hostname (WiFi 재연결 시 반영)
+    if (p_sys.meta.deviceName[0] != '\0') {
+        WiFi.setHostname(p_sys.meta.deviceName);
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
+                           "[W10] Hostname set: %s (재연결 후 반영)",
+                           p_sys.meta.deviceName);
+    }
+}
+
 // --------------------------------------------------
 // 초기화
 // --------------------------------------------------
@@ -204,6 +241,9 @@ void CL_W10_WebAPI::routeSystem() {
             bool v_changed = false;
             if (g_A20_config_root.system) {
                 v_changed = CL_C10_ConfigManager::patchSystemFromJson(*g_A20_config_root.system, v_doc);
+                if (v_changed) {
+                    _applySystemRuntime(*g_A20_config_root.system);   // ← 추가
+                }
             }
 
             JsonDocument v_res;
@@ -233,6 +273,9 @@ void CL_W10_WebAPI::routeSystem() {
             bool v_changed = false;
             if (g_A20_config_root.system) {
                 v_changed = CL_C10_ConfigManager::patchSystemFromJson(*g_A20_config_root.system, v_doc);
+                if (v_changed) {
+                    _applySystemRuntime(*g_A20_config_root.system);   // ← 추가
+                }
             }
 
             JsonDocument v_res;
@@ -776,30 +819,39 @@ void CL_W10_WebAPI::routeControl() {
         s_control->stopUserProfile();
         p_request->send(200, "application/json", "{\"result\":\"ok\"}");
     });
-
+    
     // override/fixed
     s_server->on(W10_Const::HTTP_API_CTL_OVR_FIXED, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-	    if (!checkApiKey(p_request)) {
-	        p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-	        return;
-	    }
-	
-	    // [E-4] percent만 필수, seconds는 optional (누락/0 → CT10 기본 20분)
-	    if (!p_request->hasParam("percent", true)) {
-	        p_request->send(400, "application/json", "{\"error\":\"missing param: percent\"}");
-	        return;
-	    }
-	
-	    float    v_pct = p_request->getParam("percent", true)->value().toFloat();
-	    uint32_t v_sec = p_request->hasParam("seconds", true)
-	                        ? (uint32_t)p_request->getParam("seconds", true)->value().toInt()
-	                        : 0;
-	
-	    if (s_control) {
-	        s_control->startOverrideFixed(v_pct, v_sec);
-	    }
-	    p_request->send(200, "application/json", "{\"result\":\"ok\"}");
-	});
+        if (!checkApiKey(p_request)) {
+            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            return;
+        }
+    
+        if (!p_request->hasParam("percent", true)) {
+            p_request->send(400, "application/json", "{\"error\":\"missing param: percent\"}");
+            return;
+        }
+    
+        float    v_pct = p_request->getParam("percent", true)->value().toFloat();
+        uint32_t v_sec = p_request->hasParam("seconds", true)
+                            ? (uint32_t)p_request->getParam("seconds", true)->value().toInt()
+                            : 0;
+    
+        // [forever] 무제한 플래그
+        bool v_forever = false;
+        if (p_request->hasParam("forever", true)) {
+            String f = p_request->getParam("forever", true)->value();
+            f.toLowerCase();
+            v_forever = (f == "true" || f == "1");
+        }
+    
+        if (s_control) {
+            s_control->startOverrideFixed(v_pct, v_sec, v_forever);
+        }
+        p_request->send(200, "application/json", "{\"result\":\"ok\"}");
+    });
+
+    
 
     // override/preset (JSON Body)
     s_server->on(
@@ -823,7 +875,8 @@ void CL_W10_WebAPI::routeControl() {
             const char* v_preset = v_doc["presetCode"] | "";
             const char* v_style  = v_doc["styleCode"] | "BALANCE";
             uint32_t    v_sec    = v_doc["durationSec"] | 0;
-
+            bool        v_forever = v_doc["forever"] | false;    // ← 추가
+            
             ST_A20_AdjustDelta_t v_adj;
             memset(&v_adj, 0, sizeof(v_adj));
             if (v_doc["adjust"].is<JsonObject>()) {
@@ -833,12 +886,17 @@ void CL_W10_WebAPI::routeControl() {
                 v_adj.gustFrequency   = v_aj["gustFrequency"] | 0.0f;
                 v_adj.fanLimit        = v_aj["fanLimit"] | 0.0f;
                 v_adj.minFan          = v_aj["minFan"] | 0.0f;
+                v_adj.turbulenceLengthScale    = v_aj["turbulenceLengthScale"] | 0.0f;
+                v_adj.turbulenceIntensitySigma = v_aj["turbulenceIntensitySigma"] | 0.0f;
+                v_adj.thermalBubbleStrength    = v_aj["thermalBubbleStrength"] | 0.0f;
+                v_adj.thermalBubbleRadius      = v_aj["thermalBubbleRadius"] | 0.0f;
             }
-
+            
             if (s_control) {
-                s_control->startOverridePreset(v_preset, v_style, &v_adj, v_sec);
+                s_control->startOverridePreset(v_preset, v_style, &v_adj, v_sec, v_forever);   // ← 파라미터 추가
             }
             p_request->send(200, "application/json", "{\"result\":\"ok\"}");
+
         });
 
     // override/clear
@@ -985,6 +1043,7 @@ void CL_W10_WebAPI::routeLogs() {
     });
 }
 
+
 // --------------------------------------------------
 // 15. /api/reload
 // --------------------------------------------------
@@ -1001,6 +1060,12 @@ void CL_W10_WebAPI::routeReload() {
             p_request->send(500, "application/json", "{\"error\":\"reload failed\"}");
             return;
         }
+
+        // [Runtime Apply] 재로드된 system 설정을 런타임 반영
+        if (g_A20_config_root.system) {
+            _applySystemRuntime(*g_A20_config_root.system);
+        }
+
         p_request->send(200, "application/json", "{\"result\":\"ok\"}");
     });
 }
@@ -1331,6 +1396,9 @@ void CL_W10_WebAPI::routeTimeSet() {
             bool v_changed = false;
             if (g_A20_config_root.system) {
                 v_changed = CL_C10_ConfigManager::patchSystemFromJson(*g_A20_config_root.system, v_doc);
+                if (v_changed) {
+                    _applySystemRuntime(*g_A20_config_root.system);   // ← 추가
+                }
             }
 
             JsonDocument v_res;

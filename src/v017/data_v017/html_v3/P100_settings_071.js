@@ -105,6 +105,7 @@
         if (sys) {
             // 일반
             if (sys.meta && $("#deviceName")) $("#deviceName").value = sys.meta.deviceName || "";
+            if (sys.meta && $("#lastUpdate")) $("#lastUpdate").textContent = sys.meta.lastUpdate || "-";
             if (sys.system && sys.system.logging && $("#logLevel")) {
                 $("#logLevel").value = sys.system.logging.level || "INFO";
             }
@@ -171,6 +172,14 @@
                     if ($("#wsCleanupMs"))        $("#wsCleanupMs").value        = ws.wsEtcConfig.wsCleanupMs;
                 }
             }
+            
+            // Security
+            if (sys.security) {
+                if ($("#geminiApiKey") && sys.security.geminiApiKey) {
+                    $("#geminiApiKey").value = sys.security.geminiApiKey;
+                }
+            }
+
         }
 
         // 5) Motion (런타임 PIR + timing)
@@ -206,7 +215,7 @@
             st.textContent = getKey() ? "저장됨 (확인 필요)" : "설정 필요";
             st.className = getKey() ? "info-label warn" : "info-label err";
         }
-
+        
         await checkAuth();
         await loadLogs();
     }
@@ -388,6 +397,22 @@
             await loadSystemInfo();
         }
     }
+    
+    // Gemini API Key 저장
+    async function saveGeminiApiKey() {
+        const key = $("#geminiApiKey").value.trim();
+        
+        const body = {
+            security: { geminiApiKey: key }
+        };
+        
+        const result = await fetchApi("/api/v001/system", "POST", body, "Gemini Key 저장");
+        if (result) {
+            showToast("Gemini API Key가 저장되었습니다.", "ok");
+            await loadSystemInfo();
+        }
+    }
+
 
     // 팬 커브 저장
     async function saveFanConfig(event) {
@@ -606,6 +631,9 @@
         $("#apiKeyForm")?.addEventListener("submit", saveApiKey);
         $("#btnCloseApiKeyModal")?.addEventListener("click", closeApiKeyModal);
         $("#btnCancelApiKeyModal")?.addEventListener("click", closeApiKeyModal);
+        
+        // Gemini Key
+        $("#btnSaveGeminiKey")?.addEventListener("click", saveGeminiApiKey);
 
         // 장치 제어
         $("#btnConfigSave")?.addEventListener("click", handleDeviceControl);

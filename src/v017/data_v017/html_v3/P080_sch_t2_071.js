@@ -4,11 +4,12 @@
  * 모듈명 : Smart Nature Wind Schedule Manager Controller
  * ------------------------------------------------------
  * 기능 요약:
- * - /api/v001/schedules (GET/POST/PUT/DELETE) : C10 풀 구조 기반 CRUD
- * - /api/v001/windProfile (GET) : presets/styles 로드 → 세그먼트에서 선택
- * - /api/v001/config/dirty · /config/save 연동
- * - Gemini AI (P030 통합) : 이름 제안 + 조정 최적화
- * - API Key: localStorage["snw_api_key"]
+ * - /api/v001/schedules CRUD
+ * - /api/v001/windProfile (presets/styles)
+ * - config dirty/save
+ * - Gemini AI (이름 제안 + 조정 최적화)
+ * - [A] schNo/segNo 자동 제안 + 사전 검증
+ * - [B] mode별 필드 조건부 표시 + Overlap 사전 검증
  * ------------------------------------------------------
  */
 
@@ -24,8 +25,6 @@
   const API_GEMINI_PROXY    = `${API_BASE}/ai/gemini`;
 
   const API_KEY_STORAGE_KEY = "snw_api_key";
-
-  // [C-1] 요일 매핑: 0=월, 1=화, ..., 5=토, 6=일
   const DAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
 
   const $ = (s, r = document) => r.querySelector(s);
@@ -51,15 +50,12 @@
       const opt = { method, headers: { Accept: "application/json" } };
       const apiKey = getApiKey();
       if (apiKey) opt.headers["X-API-Key"] = apiKey;
-
       if (body) {
         opt.headers["Content-Type"] = "application/json";
         opt.body = JSON.stringify(body);
       }
-
       const resp = await fetch(url, opt);
       const text = await resp.text();
-
       if (resp.status === 401) {
         toast(`[401] ${desc || "작업"} 실패: 인증 필요`, "err");
         throw new Error("Unauthorized");
@@ -69,7 +65,6 @@
         throw new Error(text || String(resp.status));
       }
       if (desc && method !== "GET") toast(`${desc} 성공`, "ok");
-
       if (!text) return null;
       try { return JSON.parse(text); } catch { return text; }
     } catch (e) {
@@ -83,13 +78,11 @@
     }
   }
 
-  // [C-1] 요일 → 텍스트 (0=월 ~ 6=일)
+  // ======================= 2. 요일/시간 유틸 =======================
   const formatDaysFromBoolArray = (days) => {
     if (!Array.isArray(days) || days.length !== 7) return "-";
-
     const onIndices = [];
     for (let i = 0; i < 7; i++) if (days[i]) onIndices.push(i);
-
     if (onIndices.length === 0) return "미사용";
     if (onIndices.length === 7) return "매일";
 
@@ -122,13 +115,68 @@
     return `${preset}${style ? "/" + style : ""} 포함, 총 ${segments.length}개`;
   };
 
-  // ======================= 2. 상태 =======================
+  // [A] schNo 자동 제안 (기존 최대값 + 10)
+  function _suggestNextSchNo() {
+    if (!currentSchedules.length) return 10;
+    const maxNo = Math.max(...currentSchedules.map(s => Number(s.schNo) || 0), 0);
+    return Math.floor(maxNo / 10 + 1) * 10;
+  }
+
+  // [A] segNo 자동 제안 (현재 DOM 기준)
+  function _suggestNextSegNo() {
+    const rows = $$("#segmentListBody .segment-row");
+    let maxNo = 0;
+    rows.forEach(r => {
+      const n = Number(r.querySelector(".seg-no")?.value) || 0;
+      if (n > maxNo) maxNo = n;
+    });
+    return maxNo + 10;
+  }
+
+  // [B] Overlap 사전 검증 (요일 + 시간)
+  function checkOverlap(schedule) {
+    const parseMin = (hhmm) => {
+      if (!hhmm || !hhmm.includes(":")) return 0;
+      const [h, m] = hhmm.split(":").map(Number);
+      return (isNaN(h) ? 0 : h) * 60 + (isNaN(m) ? 0 : m);
+    };
+
+    const newStart = parseMin(schedule.period.startTime);
+    const newEnd   = parseMin(schedule.period.endTime);
+
+    // start==end → 백엔드 정책: 항상 OFF 로 간주 → 검사 스킵
+    if (newStart === newEnd) return [];
+
+    const conflicts = [];
+    for (const s of currentSchedules) {
+      if (String(s.schId) === String(schedule.schId)) continue;
+      if (!s.enabled || !schedule.enabled) continue;
+
+      const sDays = s.period?.days;
+      if (!Array.isArray(sDays) || sDays.length !== 7) continue;
+
+      const dayOverlap = schedule.period.days.some((d, i) => d && sDays[i]);
+      if (!dayOverlap) continue;
+
+      const sStart = parseMin(s.period.startTime);
+      const sEnd   = parseMin(s.period.endTime);
+      if (sStart === sEnd) continue;
+
+      // half-open [start, end) 비교 (cross-midnight 단순 처리)
+      if (newStart < sEnd && sStart < newEnd) {
+        conflicts.push(s);
+      }
+    }
+    return conflicts;
+  }
+
+  // ======================= 3. 상태 =======================
   let currentSchedules = [];
   let windPresets = [];
   let windStyles  = [];
   let configDirty = false;
 
-  // ======================= 3. Config Dirty =======================
+  // ======================= 4. Config Dirty =======================
   function setDirtyStatus(isDirty) {
     configDirty = !!isDirty;
     const btn = $("#btnSaveAllConfig");
@@ -173,8 +221,7 @@
     }
   }
 
-  // ======================= 4. WindDict 로드 =======================
-  // [C-7] 응답 경로: data.windDict (기존 windProfile → windDict)
+  // ======================= 5. WindDict =======================
   async function loadWindDict() {
     const data = await fetchApi(API_WIND_PROFILE, "GET", null, "");
     if (!data || !data.windDict) {
@@ -182,21 +229,16 @@
       windStyles  = [];
       return;
     }
-    const wp = data.windDict;
-    windPresets = Array.isArray(wp.presets) ? wp.presets : [];
-    windStyles  = Array.isArray(wp.styles)  ? wp.styles  : [];
+    windPresets = Array.isArray(data.windDict.presets) ? data.windDict.presets : [];
+    windStyles  = Array.isArray(data.windDict.styles)  ? data.windDict.styles  : [];
   }
 
-  // ======================= 5. 스케줄 목록 =======================
+  // ======================= 6. 스케줄 목록 =======================
   async function loadSchedules() {
     const data = await fetchApi(API_SCHEDULES, "GET", null, "");
     const noMsg = $("#noScheduleMessage");
 
-    if (data && Array.isArray(data.schedules)) {
-      currentSchedules = data.schedules;
-    } else {
-      currentSchedules = [];
-    }
+    currentSchedules = (data && Array.isArray(data.schedules)) ? data.schedules : [];
     renderScheduleList(currentSchedules);
     if (noMsg) noMsg.style.display = currentSchedules.length === 0 ? "block" : "none";
   }
@@ -240,7 +282,7 @@
     });
   }
 
-  // ======================= 6. 모달 =======================
+  // ======================= 7. 모달 =======================
   function resetPeriodDaysUI() {
     $$("#periodDays label").forEach((lab) => lab.classList.remove("checked"));
     $$("#periodDays input[type='checkbox']").forEach((el) => (el.checked = false));
@@ -259,15 +301,29 @@
     });
   }
 
+  // [B] mode별 필드 상태 적용
+  function applySegmentModeState(row) {
+    const mode = row.querySelector(".seg-mode")?.value || "PRESET";
+    const isPreset = mode === "PRESET";
+
+    row.querySelector(".seg-preset")?.toggleAttribute("disabled", !isPreset);
+    row.querySelector(".seg-style")?.toggleAttribute("disabled", !isPreset);
+    row.querySelectorAll("[class^='seg-adj-']").forEach(el => el.toggleAttribute("disabled", !isPreset));
+    row.querySelector(".seg-fixed-speed")?.toggleAttribute("disabled", isPreset);
+
+    row.classList.toggle("mode-preset", isPreset);
+    row.classList.toggle("mode-fixed", !isPreset);
+  }
+
   function renderSegmentsInModal(segments) {
     const tbody = $("#segmentListBody");
     if (!tbody) return;
     tbody.innerHTML = "";
     const segs = Array.isArray(segments) ? segments : [];
-    segs.forEach((seg, idx) => addSegmentRow(seg, true));
+    segs.forEach((seg) => addSegmentRow(seg, true));
   }
 
-  // [C-5][C-6] adjust camelCase 9필드, fixedSpeed camelCase
+  // [A] segNo 자동 제안 / [B] mode 조건부
   function addSegmentRow(seg = null, appendToEnd = true) {
     const tbody = $("#segmentListBody");
     if (!tbody) return;
@@ -276,7 +332,7 @@
     row.className = "segment-row";
 
     const segId  = seg?.segId  ?? 0;
-    const segNo  = seg?.segNo  ?? 10;
+    const segNo  = seg?.segNo  ?? _suggestNextSegNo();
     const onMin  = seg?.onMinutes  ?? 10;
     const offMin = seg?.offMinutes ?? 0;
     const mode   = seg?.mode || "PRESET";
@@ -350,8 +406,14 @@
       </td>
     `;
 
+    // [B] mode change 리스너
+    row.querySelector(".seg-mode").addEventListener("change", () => applySegmentModeState(row));
+
     if (appendToEnd) tbody.appendChild(row);
     else tbody.insertBefore(row, tbody.firstChild);
+
+    // 초기 상태 반영
+    applySegmentModeState(row);
   }
 
   function openModal(schedule = null) {
@@ -398,7 +460,8 @@
     } else {
       $("#modalTitle").textContent = "새 스케줄 생성";
       $("#scheduleId").value = "";
-      $("#schNo").value = "";
+      // [A] schNo 자동 제안
+      $("#schNo").value = _suggestNextSchNo();
       $("#scheduleName").value = "";
       $("#isEnabled").checked = true;
       $("#repeatSegments").checked = true;
@@ -437,7 +500,7 @@
     if (modal) modal.style.display = "none";
   }
 
-  // ======================= 7. 폼 → 객체 =======================
+  // ======================= 8. 폼 → 객체 =======================
   function buildDaysFromUI() {
     const days = [0,0,0,0,0,0,0];
     $$("#periodDays input[type='checkbox']").forEach((input) => {
@@ -447,7 +510,6 @@
     return days;
   }
 
-  // [C-5] adjust camelCase 9필드
   function buildSegmentsFromUI() {
     const segments = [];
     $$("#segmentListBody .segment-row").forEach((row, idx) => {
@@ -506,15 +568,52 @@
     };
   }
 
-  // ======================= 8. CRUD =======================
-  // [C-3] PUT 경로는 schId / [C-4] payload {schedule} 래핑
+  // ======================= 9. CRUD =======================
+  // [A] schNo 사전 검증 + [A] segNo 중복 + [B] Overlap
   async function saveSchedule(event) {
     event.preventDefault();
 
     const schedule = buildScheduleFromForm();
+
+    // 이름
     if (!schedule.name) { toast("스케줄 이름을 입력해주세요.", "err"); return; }
+
+    // [A] schNo 검증
+    if (!schedule.schNo || schedule.schNo <= 0) {
+      toast("스케줄 번호(schNo)를 입력하세요 (0 초과).", "err");
+      return;
+    }
+    const dupNo = currentSchedules.find(s =>
+      Number(s.schNo) === schedule.schNo && String(s.schId) !== String(schedule.schId)
+    );
+    if (dupNo) {
+      toast(`schNo ${schedule.schNo}은(는) "${dupNo.name}" 에서 사용 중입니다.`, "err");
+      return;
+    }
+
+    // 세그먼트 존재
     if (!Array.isArray(schedule.segments) || schedule.segments.length === 0) {
       toast("최소 1개 이상의 세그먼트를 추가해주세요.", "err"); return;
+    }
+
+    // [A] segNo 중복/0 검증
+    const segNos = schedule.segments.map(s => s.segNo);
+    if (segNos.some(n => !n || n <= 0)) {
+      toast("세그먼트 번호(segNo)는 0보다 커야 합니다.", "err");
+      return;
+    }
+    const segSet = new Set(segNos);
+    if (segSet.size !== segNos.length) {
+      toast("세그먼트 번호(segNo)가 중복됩니다.", "err");
+      return;
+    }
+
+    // [B] Overlap 검증 (경고만, 저장 진행)
+    const conflicts = checkOverlap(schedule);
+    if (conflicts.length > 0) {
+      const list = conflicts.map(c => `"${c.name}" (${c.period.startTime}~${c.period.endTime})`).join(", ");
+      toast(`⚠️ 시간 겹침: ${list}`, "warn");
+      // 저장은 계속 (백엔드 정책 warn-only)
     }
 
     const isUpdate = !!schedule.schId;
@@ -563,20 +662,17 @@
     }
   }
 
-  // ======================= 9. Gemini AI (P030 통합) =======================
+  // ======================= 10. Gemini AI =======================
   async function callGemini(prompt, systemInstruction = "", responseSchema = null) {
     const body = {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: { temperature: 0.7, maxOutputTokens: 512 },
     };
-    if (systemInstruction) {
-      body.systemInstruction = { parts: [{ text: systemInstruction }] };
-    }
+    if (systemInstruction) body.systemInstruction = { parts: [{ text: systemInstruction }] };
     if (responseSchema) {
       body.generationConfig.responseMimeType = "application/json";
       body.generationConfig.responseSchema = responseSchema;
     }
-
     const resp = await fetchApi(API_GEMINI_PROXY, { method: "POST", body: JSON.stringify(body) }, false, "");
     return resp?.candidates?.[0]?.content?.parts?.[0]?.text || null;
   }
@@ -586,7 +682,6 @@
     if (!nameInput) return;
 
     const item = buildScheduleFromForm();
-
     const dayString = item.period.days
       .map((d, i) => (d === 1 ? DAY_LABELS[i] : ""))
       .filter(Boolean)
@@ -659,10 +754,8 @@ windIntensity와 windVariability를 조정하여 JSON으로 출력하십시오.`
         },
         propertyOrdering: ["windIntensity", "windVariability"],
       };
-
       const jsonText = await callGemini(userQuery, systemPrompt, responseSchema);
       if (!jsonText) throw new Error("AI 응답 없음");
-
       const adj = JSON.parse(jsonText);
       const iV = Math.max(-1, Math.min(1, Math.round((adj.windIntensity   ?? 0) * 10) / 10));
       const vV = Math.max(-1, Math.min(1, Math.round((adj.windVariability ?? 0) * 10) / 10));
@@ -680,7 +773,7 @@ windIntensity와 windVariability를 조정하여 JSON으로 출력하십시오.`
     }
   }
 
-  // ======================= 10. 이벤트 =======================
+  // ======================= 11. 이벤트 =======================
   function bindEvents() {
     $("#btnCreateNew")?.addEventListener("click", () => openModal(null));
     $("#btnRefreshList")?.addEventListener("click", loadSchedules);
@@ -704,7 +797,6 @@ windIntensity와 windVariability를 조정하여 JSON으로 출력하십시오.`
 
     $("#btnAddSegment")?.addEventListener("click", () => addSegmentRow(null, true));
 
-    // 세그먼트 삭제/AI 조정 (이벤트 위임)
     $("#segmentListBody")?.addEventListener("click", (e) => {
       const del = e.target.closest(".btn-del-seg");
       if (del) {
@@ -713,14 +805,11 @@ windIntensity와 windVariability를 조정하여 JSON으로 출력하십시오.`
         return;
       }
       const aiBtn = e.target.closest(".btn-ai-adjust");
-      if (aiBtn) {
-        handleOptimizeAdjust(aiBtn);
-        return;
-      }
+      if (aiBtn) { handleOptimizeAdjust(aiBtn); return; }
     });
   }
 
-  // ======================= 11. 초기화 =======================
+  // ======================= 12. 초기화 =======================
   document.addEventListener("DOMContentLoaded", async () => {
     if (!getApiKey()) {
       toast("API Key가 비어 있습니다. 메인 설정 페이지에서 먼저 설정해 주세요.", "warn");

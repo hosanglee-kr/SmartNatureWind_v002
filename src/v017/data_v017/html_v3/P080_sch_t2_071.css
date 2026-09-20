@@ -235,5 +235,27 @@
   color: #6b7280;
 }
 
+/* ======================= 9. 세그먼트 mode별 조건부 표시 [B] ======================= */
+
+/* FIXED 모드: PRESET 관련 필드 흐림 */
+.segment-row.mode-fixed .seg-preset,
+.segment-row.mode-fixed .seg-style,
+.segment-row.mode-fixed [class^='seg-adj-'] {
+  opacity: 0.4;
+  background-color: #f3f4f6;
+}
+
+/* PRESET 모드: FIXED 관련 필드 흐림 */
+.segment-row.mode-preset .seg-fixed-speed {
+  opacity: 0.4;
+  background-color: #f3f4f6;
+}
+
+/* Disabled 필드는 커서 변경 */
+.segment-row input:disabled,
+.segment-row select:disabled {
+  cursor: not-allowed;
+}
+
 /* config dirty 버튼 하이라이트는 JS에서 인라인 스타일로 설정 */
 

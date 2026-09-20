@@ -75,29 +75,17 @@
         { "uri": "/P060_sim_details_070.js", "path": "/html_v3/P060_sim_details_070.js" }
       ]
     },
-    {
-      "uri": "/P070_profile_070.html",
-      "path": "/html_v3/P070_profile_070.html",
-      "label": "Profiles",
-      "enable": true,
-      "isMain": false,
-      "order": 70,
-      "pageAssets": [
-        { "uri": "/P070_profile_070.css", "path": "/html_v3/P070_profile_070.css" },
-        { "uri": "/P070_profile_070.js", "path": "/html_v3/P070_profile_070.js" }
-      ]
-    },
 
     {
-      "uri": "/P085_userProfiles_t2_060.html",
-      "path": "/html_v3/P085_userProfiles_t2_060.html",
+      "uri": "/P085_userProfiles_t2_071.html",
+      "path": "/html_v3/P085_userProfiles_t2_071.html",
       "label": "UserProfile T2",
       "enable": true,
       "isMain": false,
       "order": 85,
       "pageAssets": [
-        { "uri": "/P085_userProfiles_t2_060.css", "path": "/html_v3/P085_userProfiles_t2_060.css" },
-        { "uri": "/P085_userProfiles_t2_060.js", "path": "/html_v3/P085_userProfiles_t2_060.js" }
+        { "uri": "/P085_userProfiles_t2_071.css", "path": "/html_v3/P085_userProfiles_t2_071.css" },
+        { "uri": "/P085_userProfiles_t2_071.js", "path": "/html_v3/P085_userProfiles_t2_071.js" }
       ]
     },
     {
@@ -150,9 +138,8 @@
     { "uriFrom": "/dashboard", "uriTo": "/P040_dashboard_070.html" },
     { "uriFrom": "/chart_t1", "uriTo": "/P020_chart_t1_070.html" },
     { "uriFrom": "/chart_t2", "uriTo": "/P050_chart_t2_070.html" },
-    { "uriFrom": "/profiles", "uriTo": "/P070_profile_070.html" },
     { "uriFrom": "/schedules_t2", "uriTo": "/P080_sch_t2_071.html" },
-    { "uriFrom": "/userProfile_t2", "uriTo": "/P085_userProfiles_t2_060.html" },
+    { "uriFrom": "/userProfile_t2", "uriTo": "/P085_userProfiles_t2_071.html" },
     { "uriFrom": "/settings", "uriTo": "/P100_settings_071.html" },
     { "uriFrom": "/sim_details", "uriTo": "/P060_sim_details_070.html" },
     { "uriFrom": "/info", "uriTo": "/P090_user_060.html" }

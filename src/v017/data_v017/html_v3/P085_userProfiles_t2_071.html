@@ -1,0 +1,212 @@
+<!-- P085_userProfiles_t2_071.html -->
+
+<!doctype html>
+<html lang="ko">
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+	<title>👤 Smart Nature Wind 유저 프로파일 관리</title>
+	
+	<link rel="stylesheet" href="./P000_common_070.css">
+	<link rel="stylesheet" href="./P085_userProfiles_t2_071.css">
+</head>
+
+<body>
+	<header class="nav-bar">
+		<div class="nav-container">
+			<a href="./P010_main_071.html" class="nav-logo">Smart Wind</a>
+			<nav>
+				<ul class="nav-menu" id="navMenu"></ul>
+			</nav>
+		</div>
+	</header>
+	
+	<div class="wrap">
+		<h1>유저 프로파일 관리</h1>
+		
+		<section class="card control-panel">
+			<div class="row">
+				<strong class="section-title">등록된 유저 프로파일 목록</strong>
+				<span id="profileCount" class="info-label info" style="margin-left:8px;">0/6</span>
+				<span id="activeProfileBadge" class="info-label warn" style="display:none; margin-left:8px;">
+					🟢 실행 중
+				</span>
+				<div class="right tight">
+					<button class="btn ok" id="btnCreateNewProfile">➕ 새 프로파일 생성</button>
+					<button class="btn" id="btnRefreshList">🔄 목록 새로고침</button>
+					<button class="btn" id="btnSaveAllConfig">전체 설정 저장</button>
+				</div>
+			</div>
+			
+			<div class="profile-list-container">
+				<table class="profile-table">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>No</th>
+							<th>프로파일 이름</th>
+							<th>세그먼트</th>
+							<th>반복</th>
+							<th>AutoOff</th>
+							<th>Motion</th>
+							<th>상태</th>
+							<th>액션</th>
+						</tr>
+					</thead>
+					<tbody id="profileListBody"></tbody>
+				</table>
+				
+				<p id="noProfileMessage" class="muted" style="display:none;">등록된 유저 프로파일이 없습니다.</p>
+			</div>
+		</section>
+		
+		<div class="muted">© 2540.kr SmartNatureWind (v006 User Profile Manager)</div>
+	</div>
+	
+	<!-- 유저 프로파일 생성/수정 모달 -->
+	<div id="profileModal" class="modal-overlay" style="display:none;">
+		<div class="modal-content wide-modal">
+			<div class="modal-header">
+				<h2 id="modalTitle">유저 프로파일 생성</h2>
+				<button class="btn-close" id="btnCloseModal">❌</button>
+			</div>
+			
+			<form id="profileForm">
+				<input type="hidden" id="profileId" value="">
+				
+				<section class="card section-block">
+					<h3 class="section-subtitle">기본 정보</h3>
+					<div class="grid grid-3">
+						<div class="form-group">
+							<label for="profileNo">프로파일 번호 (profileNo)</label>
+							<input type="number" id="profileNo" min="1" max="65535">
+						</div>
+						<div class="form-group">
+							<label for="profileName">프로파일 이름</label>
+							<input type="text" id="profileName" required>
+						</div>
+						<div class="form-group toggle-inline">
+							<label for="profileEnabled">사용 여부</label>
+							<input type="checkbox" id="profileEnabled" checked>
+						</div>
+					</div>
+					
+					<div class="grid grid-3">
+						<div class="form-group toggle-inline">
+							<label for="repeatSegments">세그먼트 반복</label>
+							<input type="checkbox" id="repeatSegments" checked>
+						</div>
+						<div class="form-group">
+							<label for="repeatCount">반복 횟수 (0=무한)</label>
+							<input type="number" id="repeatCount" min="0" step="1" value="1">
+						</div>
+					</div>
+				</section>
+				
+				<section class="card section-block">
+					<div class="row">
+						<h3 class="section-subtitle">세그먼트 목록</h3>
+						<div class="right tight">
+							<button type="button" class="btn ok" id="btnAddSegment">➕ 세그먼트 추가</button>
+						</div>
+					</div>
+					
+					<div class="segment-list-container">
+						<table class="segment-table">
+							<thead>
+								<tr>
+									<th>ID</th>
+									<th>No</th>
+									<th>ON(분)</th>
+									<th>OFF(분)</th>
+									<th>모드</th>
+									<th>프리셋</th>
+									<th>스타일</th>
+									<th>고정풍속</th>
+									<th>조정(강도/변동/돌풍/제한/최소)</th>
+									<th>조정(난류 L/σ/열세기/열반경)</th>
+									<th>액션</th>
+								</tr>
+							</thead>
+							<tbody id="segmentsBody"></tbody>
+						</table>
+						<p class="muted">
+							※ ID/No는 서버가 자동 발급합니다. PRESET: presetCode/styleCode + adjust, FIXED: fixedSpeed.
+						</p>
+					</div>
+				</section>
+				
+				<section class="card section-block">
+					<h3 class="section-subtitle">자동 종료 (autoOff)</h3>
+					<div class="grid grid-3">
+						<div class="form-group toggle-inline">
+							<label for="autoOffTimerEnabled">타이머</label>
+							<input type="checkbox" id="autoOffTimerEnabled">
+						</div>
+						<div class="form-group">
+							<label for="autoOffTimerMinutes">타이머 (분)</label>
+							<input type="number" id="autoOffTimerMinutes" min="0" step="1" value="0">
+						</div>
+						<div></div>
+					</div>
+					
+					<div class="grid grid-3">
+						<div class="form-group toggle-inline">
+							<label for="autoOffOffTimeEnabled">종료 시각</label>
+							<input type="checkbox" id="autoOffOffTimeEnabled">
+						</div>
+						<div class="form-group">
+							<label for="autoOffOffTimeTime">종료 시각 (HH:MM)</label>
+							<input type="time" id="autoOffOffTimeTime" value="00:00">
+						</div>
+						<div></div>
+					</div>
+					
+					<div class="grid grid-3">
+						<div class="form-group toggle-inline">
+							<label for="autoOffOffTempEnabled">종료 온도</label>
+							<input type="checkbox" id="autoOffOffTempEnabled">
+						</div>
+						<div class="form-group">
+							<label for="autoOffOffTempTemp">종료 온도 (°C)</label>
+							<input type="number" id="autoOffOffTempTemp" step="0.1" value="0">
+						</div>
+						<div></div>
+					</div>
+				</section>
+				
+				<section class="card section-block">
+					<h3 class="section-subtitle">모션 감지 (motion.pir)</h3>
+					<div class="grid grid-3">
+						<div class="form-group toggle-inline">
+							<label for="motionPirEnabled">PIR 사용</label>
+							<input type="checkbox" id="motionPirEnabled">
+						</div>
+						<div class="form-group">
+							<label for="motionPirHold">PIR 유지 (초)</label>
+							<input type="number" id="motionPirHold" min="0" step="1" value="0">
+						</div>
+						<div></div>
+					</div>
+				</section>
+				
+				<div class="modal-actions">
+					<button type="submit" class="btn ok" id="btnSaveProfile">💾 저장</button>
+					<button type="button" class="btn" id="btnCancelModal">취소</button>
+				</div>
+			</form>
+		</div>
+	</div>
+	
+	<div id="loadingOverlay" style="display:none;">
+		<div class="spinner"></div>
+	</div>
+	<div id="toastContainer"></div>
+	
+	<script src="./P000_common_070.js" defer></script>
+	<script src="./P001_API_070.js" defer></script>
+	<script src="./P085_userProfiles_t2_071.js" defer></script>
+</body>
+
+</html>

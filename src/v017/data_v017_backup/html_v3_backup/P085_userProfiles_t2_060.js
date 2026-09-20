@@ -1,7 +1,7 @@
 /*
  * ------------------------------------------------------
- * 소스명 : P085_userProfiles_t2_003.js
- * 모듈명 : Smart Nature Wind User Profile Manager Controller (v003)
+ * 소스명 : P085_userProfiles_t2_060.js
+ * 모듈명 : Smart Nature Wind User Profile Manager Controller
  * ------------------------------------------------------
  * 기능 요약:
  *  - 🎯 /api/user_profiles (GET, POST, PUT, DELETE) CRUD (C10 UserProfiles 풀 구조)

@@ -26,7 +26,7 @@ const G_MODE_OFFLINE = "OFFLINE";
 //  데이터 경로
 // -------------------------------
 const G_API_MENU_PATH = "/api/v001/menu";          // ONLINE
-const G_LOCAL_JSON_PATH = "../json/cfg_pages_070.json"; // OFFLINE
+const G_LOCAL_JSON_PATH = "../json/cfg_pages_071.json"; // OFFLINE
 
 let g_currentMode = G_MODE_OFFLINE;
 window.currentMode = g_currentMode;
@@ -264,7 +264,7 @@ function setApiKey(key) {
     try {
         if (key) localStorage.setItem(G_P000_SNW_KEY_STORAGE, key);
         else localStorage.removeItem(G_P000_SNW_KEY_STORAGE);
-    } catch {}
+    } catch { }
 }
 
 
@@ -285,10 +285,10 @@ async function apiFetch(url, options = {}, silent = false, desc = "") {
         }
         const apiKey = getApiKey();
         if (apiKey) headers.set("X-API-Key", apiKey);
-        
+
         const resp = await fetch(url, { ...options, headers });
         const text = await resp.text();
-        
+
         if (resp.status === 401) {
             if (!silent) notify(`[401] ${desc || "요청"} 실패: 인증 필요`, "err");
             throw new Error("Unauthorized");
@@ -297,7 +297,7 @@ async function apiFetch(url, options = {}, silent = false, desc = "") {
             if (!silent) notify(`${desc || "요청"} 실패: ${text || resp.status}`, "err");
             throw new Error(text || String(resp.status));
         }
-        
+
         if (desc && !silent) notify(`${desc} 성공`, "ok");
         try { return text ? JSON.parse(text) : null; } catch { return text; }
     } catch (e) {
@@ -326,20 +326,20 @@ function buildWsUrl(path) {
 
 
 function showLoading() {
-  const el = document.getElementById("loadingOverlay");
-  if (el) el.style.display = "flex";
+    const el = document.getElementById("loadingOverlay");
+    if (el) el.style.display = "flex";
 }
 function hideLoading() {
-  const el = document.getElementById("loadingOverlay");
-  if (el) el.style.display = "none";
+    const el = document.getElementById("loadingOverlay");
+    if (el) el.style.display = "none";
 }
 
 // DOM 헬퍼
 function $(selector, root = document) {
-  return root.querySelector(selector);
+    return root.querySelector(selector);
 }
 function text(el, value) {
-  if (el) el.textContent = value ?? '';
+    if (el) el.textContent = value ?? '';
 }
 
 

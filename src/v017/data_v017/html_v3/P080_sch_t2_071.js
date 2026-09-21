@@ -240,6 +240,7 @@
 
     currentSchedules = (data && Array.isArray(data.schedules)) ? data.schedules : [];
     renderScheduleList(currentSchedules);
+    renderSchedulePreview();   // [Round 4-C #12]
     if (noMsg) noMsg.style.display = currentSchedules.length === 0 ? "block" : "none";
   }
 
@@ -772,11 +773,90 @@ windIntensity와 windVariability를 조정하여 JSON으로 출력하십시오.`
       hideLoading();
     }
   }
+  
+ // ======================= 10-1. 스케줄 미리보기 (#12) =======================
+
+function computeUpcomingActivations(limit = 5) {
+	const now = new Date();
+	const DAY_MS = 86400000;
+	const events = [];
+	
+	for (const s of currentSchedules) {
+		if (!s.enabled) continue;
+		const days = s.period?.days;
+		if (!Array.isArray(days) || days.length !== 7) continue;
+		
+		const startTime = s.period.startTime || "00:00";
+		const endTime = s.period.endTime || "23:59";
+		const [sh, sm] = startTime.split(":").map(Number);
+		const startMin = (sh || 0) * 60 + (sm || 0);
+		
+		// 향후 7일 내 첫 발생 시각 탐색
+		for (let d = 0; d < 7; d++) {
+			const probe = new Date(now.getTime() + d * DAY_MS);
+			// Config days[]: 0=Mon..6=Sun  /  JS getDay(): 0=Sun..6=Sat
+			const jsDay = probe.getDay();
+			const cfgDay = (jsDay === 0) ? 6 : (jsDay - 1);
+			if (!days[cfgDay]) continue;
+			
+			const startDate = new Date(probe);
+			startDate.setHours(sh || 0, sm || 0, 0, 0);
+			
+			if (startDate.getTime() > now.getTime()) {
+				events.push({
+					ts: startDate.getTime(),
+					schId: s.schId,
+					schNo: s.schNo,
+					name: s.name,
+					startTime,
+					endTime
+				});
+				break;
+			}
+		}
+	}
+	
+	events.sort((a, b) => a.ts - b.ts);
+	return events.slice(0, limit);
+}
+
+function renderSchedulePreview() {
+	const el = document.getElementById("schedulePreviewList");
+	if (!el) return;
+	
+	const list = computeUpcomingActivations(5);
+	if (!list.length) {
+		el.innerHTML = '<div class="muted">예정된 스케줄 없음</div>';
+		return;
+	}
+	
+	const now = Date.now();
+	el.innerHTML = list.map((e) => {
+		const diffMin = Math.round((e.ts - now) / 60000);
+		let when;
+		if (diffMin < 1) when = "곧 시작";
+		else if (diffMin < 60) when = `${diffMin}분 후`;
+		else if (diffMin < 1440) when = `${Math.round(diffMin / 60)}시간 후`;
+		else when = `${Math.round(diffMin / 1440)}일 후`;
+		
+		const d = new Date(e.ts);
+		const pad = (n) => String(n).padStart(2, "0");
+		const tsStr = `${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+		
+		return `<div class="preview-line">
+            <span class="pv-time">${tsStr}</span>
+            <span class="pv-name">${e.name || "#" + e.schNo} <span class="muted">(${e.startTime}~${e.endTime})</span></span>
+            <span class="pv-when">${when}</span>
+        </div>`;
+	}).join("");
+}
+
 
   // ======================= 11. 이벤트 =======================
   function bindEvents() {
     $("#btnCreateNew")?.addEventListener("click", () => openModal(null));
     $("#btnRefreshList")?.addEventListener("click", loadSchedules);
+    $("#btnRefreshPreview")?.addEventListener("click", renderSchedulePreview);
     $("#btnSaveAllConfig")?.addEventListener("click", saveAllConfig);
     $("#btnSuggestName")?.addEventListener("click", handleSuggestName);
 

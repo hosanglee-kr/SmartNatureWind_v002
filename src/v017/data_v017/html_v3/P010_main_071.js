@@ -97,6 +97,19 @@ let g_activeProfileNo = 0;
 // 로그 필터
 let g_logFilter = "all";   // "all" | "warn" | "err"
 
+// [Round 4-C] 이벤트 히스토리
+const EVENT_HISTORY_MAX = 20;
+let g_eventHistory = []; // [{ts, type, msg}]  type: info|warn|err|ok
+let g_lastStateCode = -1;
+let g_lastOverrideAct = false;
+
+// [Round 4-C] 즐겨찾기 프리셋
+const FAV_PRESET_KEY = "snw_fav_presets";
+
+// [Round 4-C] 마지막 config 스냅샷 (즐겨찾기 재렌더용)
+let g_lastCfgSnapshot = null;
+
+
 /* ==============================
  * 3. Dirty / 상태 배지
  * ============================== */
@@ -327,7 +340,16 @@ function _applySimToUi(sim, control) {
 	const timeValid = tm ? !!tm.valid : true;
 	const tb = elTimeBadge();
 	if (tb) tb.style.display = timeValid ? "none" : "inline-block";
-
+	
+	// [Round 4-C #14] 상태 전환 감지 → 이벤트 히스토리 기록
+	{
+		const stateCode = (control.stateCode != null) ? control.stateCode : 0;
+		const stateStr = control.state || "-";
+		const ovObj = (control && control.override) ? control.override : null;
+		const ovAct = !!(ovObj && ovObj.active);
+		detectStateTransitions(stateCode, stateStr, ovObj, ovAct);
+	}
+	
 	// 저장 상태 배지 갱신
 	_updateSaveStatusBadge();
 	_updateSaveAttention();
@@ -407,30 +429,46 @@ async function loadConfig() {
 		hideLoading();
 	}
 }
-
 function loadPresetsFromConfig(cfg) {
+	g_lastCfgSnapshot = cfg; // ← 추가: 재렌더용 스냅샷
+	
 	const sel = elPreset();
 	if (sel) {
 		sel.innerHTML = "";
 		let presets = [];
 		if (cfg.windDict && Array.isArray(cfg.windDict.presets)) presets = cfg.windDict.presets;
 		else if (cfg.motion && Array.isArray(cfg.motion.presets)) presets = cfg.motion.presets;
-
+		
 		g_windDictPresets = presets;
-
+		
 		if (!presets.length) {
 			const opt = document.createElement("option");
 			opt.value = "";
 			opt.textContent = "(프리셋 없음)";
 			sel.appendChild(opt);
 		} else {
-			presets.forEach((p, idx) => {
+			// ── [Round 4-C #8] 즐겨찾기 상단 정렬 ──
+			const favs = getFavPresets();
+			const favSet = new Set(favs);
+			const sorted = [...presets].sort((a, b) => {
+				const aF = favSet.has(a.code);
+				const bF = favSet.has(b.code);
+				if (aF && !bF) return -1;
+				if (!aF && bF) return 1;
+				// 즐겨찾기 내 순서는 favs 배열 순서 유지
+				if (aF && bF) return favs.indexOf(a.code) - favs.indexOf(b.code);
+				return 0; // 원본 순서
+			});
+			
+			sorted.forEach((p, idx) => {
 				const opt = document.createElement("option");
 				opt.value = p.code || p.id || String(idx);
-				opt.textContent = p.name || p.label || p.code || `Preset ${idx + 1}`;
+				const star = favSet.has(p.code) ? "⭐ " : "";
+				opt.textContent = star + (p.name || p.label || p.code || `Preset ${idx + 1}`);
 				sel.appendChild(opt);
 			});
 		}
+		updateFavButton();
 	}
 
 	const styleSel = elStyle();
@@ -981,6 +1019,239 @@ function initWebSocketState() {
 }
 
 /* ==============================
+ * 11-0. 이벤트 히스토리 (#14)
+ * ============================== */
+function pushEvent(type, msg) {
+    g_eventHistory.unshift({ ts: Date.now(), type, msg });
+    if (g_eventHistory.length > EVENT_HISTORY_MAX) {
+        g_eventHistory.length = EVENT_HISTORY_MAX;
+    }
+    renderEventHistory();
+}
+
+function renderEventHistory() {
+    const el = document.getElementById("eventHistory");
+    if (!el) return;
+
+    if (!g_eventHistory.length) {
+        el.innerHTML = '<div class="muted">이벤트 없음</div>';
+        return;
+    }
+    el.innerHTML = g_eventHistory.map((e) => {
+        const tsStr = new Date(e.ts).toLocaleTimeString("ko-KR", { hour12: false });
+        return `<div class="event-line">
+            <span class="evt-ts">${tsStr}</span>
+            <span class="evt-msg evt-${e.type}">${e.msg}</span>
+        </div>`;
+    }).join("");
+}
+
+// 상태 전환 감지 (→ _applySimToUi 내부에서 호출)
+function detectStateTransitions(stateCode, stateStr, override, ovActive) {
+    // 1) CT10 상태 전환
+    if (g_lastStateCode !== stateCode) {
+        if (g_lastStateCode >= 0) {
+            switch (stateCode) {
+                case 5: pushEvent("warn", "🛑 AutoOff로 정지됨"); break;
+                case 4: pushEvent("info", "👤 모션 감지 없음"); break;
+                case 6: pushEvent("err",  "⏰ 시간 미동기"); break;
+                case 1: pushEvent("info", "🎬 Override 시작"); break;
+                case 0: pushEvent("ok",   "✅ 정상 상태로 복귀"); break;
+                default: pushEvent("info", `제어 상태: ${stateStr}`); break;
+            }
+        }
+        g_lastStateCode = stateCode;
+    }
+
+    // 2) Override on/off
+    if (g_lastOverrideAct !== ovActive) {
+        if (ovActive && override) {
+            const mode = override.useFixed
+                ? `고정 ${override.fixedPercent ?? 0}%`
+                : `${override.presetCode || "-"}`;
+            pushEvent("info", `🎬 Override 시작 (${mode})`);
+        } else if (g_lastOverrideAct) {
+            pushEvent("ok", "🎬 Override 종료");
+        }
+        g_lastOverrideAct = ovActive;
+    }
+}
+
+/* ==============================
+ * 11-1. 즐겨찾기 프리셋 (#8)
+ * ============================== */
+function getFavPresets() {
+    try {
+        const raw = localStorage.getItem(FAV_PRESET_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+    } catch { return []; }
+}
+function setFavPresets(list) {
+    try { localStorage.setItem(FAV_PRESET_KEY, JSON.stringify(list)); } catch {}
+}
+function isFavPreset(code) {
+    return !!code && getFavPresets().includes(code);
+}
+function updateFavButton() {
+    const btn = document.getElementById("btnFavPreset");
+    if (!btn) return;
+    const code = elPreset() ? elPreset().value : "";
+    const fav  = isFavPreset(code);
+    btn.textContent = fav ? "★" : "☆";
+    btn.classList.toggle("is-fav", fav);
+    btn.title = fav ? "즐겨찾기 해제" : "즐겨찾기 추가";
+}
+function toggleFavPreset() {
+    const code = elPreset() ? elPreset().value : "";
+    if (!code) { notify("프리셋을 선택하세요.", "warn"); return; }
+
+    let fav = getFavPresets();
+    const wasFav = fav.includes(code);
+    if (wasFav) fav = fav.filter((c) => c !== code);
+    else        fav.unshift(code);
+    setFavPresets(fav);
+
+    // 재렌더 (즐겨찾기 상단 정렬 반영)
+    if (g_lastCfgSnapshot) {
+        const keep = code;
+        loadPresetsFromConfig(g_lastCfgSnapshot);
+        if (elPreset()) elPreset().value = keep;
+    }
+    updateFavButton();
+    notify(wasFav ? `⭐ ${code} 즐겨찾기 해제` : `⭐ ${code} 즐겨찾기 추가`, "ok");
+}
+
+/* ==============================
+ * 11-2. AI 프리셋 추천 (#10)
+ * ============================== */
+async function handleAiPresetRecommend() {
+	if (!g_windDictPresets.length) {
+		notify("프리셋 목록이 비어있습니다.", "warn");
+		return;
+	}
+	
+	const userPrompt = window.prompt(
+		"어떤 바람을 원하시나요?\n" +
+		"(예: 지금 좀 더 시원하게 / 잠잘 때 조용하고 약하게 / 집중이 잘 되는 바람)"
+	);
+	if (!userPrompt || !userPrompt.trim()) return;
+	
+	// 프리셋 카탈로그 (프롬프트 컨텍스트)
+	const presetCatalog = g_windDictPresets.map((p) => {
+		const f = p.factors || {};
+		return `- ${p.code} (${p.name}): 강도 ${_r2(f.windIntensity)} · 변동 ${_r2(f.windVariability)} · 돌풍 ${_r2(f.gustFrequency)} · 팬상한 ${_r2(f.fanLimit)}`;
+	}).join("\n");
+	
+	const systemPrompt =
+		"당신은 스마트 자연풍 시스템의 바람 엔지니어입니다. " +
+		"사용자의 자연어 요청을 분석해 가장 적합한 presetCode·styleCode·조정값을 선택합니다. " +
+		"styleCode는 BALANCE/ACTIVE/FOCUS/RELAX/SLEEP 중 하나여야 합니다. " +
+		"windIntensity·windVariability 조정값은 -30~+30 정수입니다. " +
+		"다른 설명 없이 JSON만 반환합니다.";
+	
+	const userQuery =
+		`사용 가능한 프리셋:\n${presetCatalog}\n\n` +
+		`사용자 요청: "${userPrompt.trim()}"\n\n` +
+		`위 프리셋 중 가장 적합한 것을 선택하고 JSON으로 반환하세요.`;
+	
+	const responseSchema = {
+		type: "OBJECT",
+		properties: {
+			presetCode: { type: "STRING" },
+			styleCode: { type: "STRING" },
+			windIntensity: { type: "NUMBER" },
+			windVariability: { type: "NUMBER" },
+			reason: { type: "STRING" }
+		},
+		propertyOrdering: ["presetCode", "styleCode", "windIntensity", "windVariability", "reason"]
+	};
+	
+	const reqBody = {
+		contents: [{ parts: [{ text: userQuery }] }],
+		systemInstruction: { parts: [{ text: systemPrompt }] },
+		generationConfig: {
+			temperature: 0.7,
+			maxOutputTokens: 512,
+			responseMimeType: "application/json",
+			responseSchema: responseSchema
+		}
+	};
+	
+	showLoading();
+	try {
+		const apiKey = getApiKey();
+		const resp = await fetch(SNW_API.API_HTTP_GEMINI_PROXY, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+				...(apiKey ? { "X-API-Key": apiKey } : {})
+			},
+			body: JSON.stringify(reqBody)
+		});
+		if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+		
+		const data = await resp.json();
+		const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+		if (!text) throw new Error("AI 응답 없음");
+		
+		const rec = JSON.parse(text);
+		
+		// 프리셋 적용
+		if (rec.presetCode && g_windDictPresets.some((p) => p.code === rec.presetCode)) {
+			if (elPreset()) elPreset().value = rec.presetCode;
+			if (rec.styleCode && elStyle() &&
+				g_windDictStyles.some((s) => s.code === rec.styleCode)) {
+				elStyle().value = rec.styleCode;
+			}
+			
+			// 프리셋/스타일 기준값 자동 채움 + description 갱신
+			onPresetOrStyleChanged();
+			
+			// adjust 추가 적용
+			if (elIntensity() && Number.isFinite(rec.windIntensity)) {
+				const cur = Number(elIntensity().value) || 0;
+				elIntensity().value = Math.max(0, Math.min(100, cur + rec.windIntensity));
+			}
+			if (elVariability() && Number.isFinite(rec.windVariability)) {
+				const cur = Number(elVariability().value) || 0;
+				elVariability().value = Math.max(0, Math.min(100, cur + rec.windVariability));
+			}
+			
+			markDirty();
+			updateFavButton();
+			notify(`🤖 AI 추천: ${rec.presetCode} — ${rec.reason || ""}`, "ok");
+		} else {
+			notify("AI가 유효한 프리셋을 반환하지 않았습니다.", "warn");
+		}
+	} catch (e) {
+		notify(`AI 추천 실패: ${e.message}`, "err");
+	} finally {
+		hideLoading();
+	}
+}
+
+/* ==============================
+ * 11-3. 프로파일 빠른 편집 (#11)
+ * ============================== */
+function quickEditProfile() {
+	const sel = elProfileSelect();
+	if (!sel) return;
+	const no = Number(sel.value);
+	if (!no || no <= 0) {
+		notify("편집할 프로파일을 선택하세요.", "warn");
+		return;
+	}
+	const prof = g_userProfiles.find((p) => Number(p.profileNo) === no);
+	if (!prof) {
+		notify("프로파일 정보를 찾을 수 없습니다.", "err");
+		return;
+	}
+	// P085 편집 페이지로 이동 (해당 프로파일 자동 오픈)
+	window.location.href = `/P085_userProfiles_t2_071.html?edit=${prof.profileId}`;
+}
+
+/* ==============================
  * 12. 이벤트 바인딩
  * ============================== */
 function bindEvents() {
@@ -995,9 +1266,25 @@ function bindEvents() {
 
 	const btnProfileStop = document.getElementById("btnProfileStop");
 	if (btnProfileStop) btnProfileStop.addEventListener("click", stopActiveProfile);
+	
+	const btnProfileEdit = document.getElementById("btnProfileEdit");
+	if (btnProfileEdit) btnProfileEdit.addEventListener("click", quickEditProfile);
 
-	if (elPreset()) elPreset().addEventListener("change", onPresetOrStyleChanged);
+	if (elPreset()) {
+		elPreset().addEventListener("change", () => {
+			onPresetOrStyleChanged();
+			updateFavButton();
+		});
+	}
+
 	if (elStyle())  elStyle().addEventListener("change", onPresetOrStyleChanged);
+	
+	const btnFavPreset = document.getElementById("btnFavPreset");
+	if (btnFavPreset) btnFavPreset.addEventListener("click", toggleFavPreset);
+	
+	const btnAiPreset = document.getElementById("btnAiPreset");
+	if (btnAiPreset) btnAiPreset.addEventListener("click", handleAiPresetRecommend);
+
 
 	const btnApplyTemp = document.getElementById("btnApplyTemp");
 	if (btnApplyTemp) btnApplyTemp.addEventListener("click", applyTempPreset);
@@ -1042,6 +1329,14 @@ function bindEvents() {
 
 	const btnClearLog = document.getElementById("btnClearLog");
 	if (btnClearLog) btnClearLog.addEventListener("click", clearLogConsole);
+	
+	const btnClearEvents = document.getElementById("btnClearEvents");
+	if (btnClearEvents) btnClearEvents.addEventListener("click", () => {
+		g_eventHistory = [];
+		renderEventHistory();
+		notify("이벤트 히스토리를 지웠습니다.", "info");
+	});
+
 
 	// [v025 #7] 로그 필터 버튼
 	document.querySelectorAll("[data-log-filter]").forEach((btn) => {
@@ -1092,6 +1387,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 	await loadUserProfiles();
 	await loadStateOnce();
 	await loadWifiStateOnce();
+	
+	renderEventHistory();   // [Round 4-C #14] 초기 렌더 (빈 상태)
 
 	checkFirmwareUpdate();   // [v025 #13] 비동기, 결과 대기 안 함
 

@@ -74,11 +74,26 @@
 						<select id="profileSelect"></select>
 					</div>
 					<div class="col-6" style="justify-content:flex-end; display:flex; align-items:flex-end; gap:8px;">
+						<button class="btn" id="btnProfileEdit" title="P085에서 편집">✏️ 편집</button>
 						<button class="btn ok" id="btnProfileRun">▶️ 실행</button>
 						<button class="btn err" id="btnProfileStop">⏹️ 중지</button>
 					</div>
 				</div>
 			</section>
+			
+			<!-- 2-1. 최근 이벤트 히스토리 (#14) -->
+			<section class="card col-12">
+				<div class="row middle">
+					<strong class="section-title">📋 최근 이벤트</strong>
+					<div class="right">
+						<button class="btn btn-small" id="btnClearEvents">지우기</button>
+					</div>
+				</div>
+				<div id="eventHistory" class="event-history">
+					<div class="muted">이벤트 없음</div>
+				</div>
+			</section>
+
 
 			<!-- 3. 풍속 설정 -->
 			<section class="card col-12">
@@ -91,10 +106,15 @@
 
 				<div class="grid">
 					<div class="col-4">
-						<label>프리셋 <span class="muted">(선택 시 값 자동 채움)</span></label>
+						<label>
+							프리셋 <span class="muted">(선택 시 값 자동 채움)</span>
+							<button type="button" class="btn-icon" id="btnFavPreset" title="즐겨찾기">☆</button>
+							<button type="button" class="btn-icon" id="btnAiPreset" title="AI 추천">🤖</button>
+						</label>
 						<select id="preset"></select>
 						<div id="presetDesc" class="preset-desc muted"></div>
 					</div>
+
 					<div class="col-4">
 						<label>스타일</label>
 						<select id="style"></select>

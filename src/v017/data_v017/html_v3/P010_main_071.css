@@ -486,3 +486,69 @@ pre#logConsole {
 #saveStatusBadge {
   margin-right: 6px;
 }
+
+
+/* ============================================================ */
+/* Round 4-C: 아이콘 버튼 / 이벤트 히스토리                       */
+/* ============================================================ */
+
+/* ── 아이콘 버튼 (⭐/🤖) ── */
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 2px 8px;
+    margin-left: 6px;
+    cursor: pointer;
+    font-size: 1em;
+    line-height: 1;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    vertical-align: middle;
+}
+.btn-icon:hover {
+    background-color: #eef2f6;
+    border-color: #3498db;
+}
+.btn-icon:active {
+    transform: scale(0.94);
+}
+.btn-icon.is-fav {
+    color: #f39c12;
+    border-color: #f39c12;
+    background-color: #fff8e8;
+}
+
+/* ── 이벤트 히스토리 ── */
+.event-history {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e0e6ed;
+    border-radius: 6px;
+    padding: 6px 10px;
+    background: #f9fafb;
+    font-size: 0.88em;
+}
+.event-line {
+    display: flex;
+    gap: 10px;
+    padding: 4px 0;
+    border-bottom: 1px dotted #e5eaef;
+    align-items: baseline;
+}
+.event-line:last-child { border-bottom: none; }
+
+.event-line .evt-ts {
+    flex-shrink: 0;
+    font-family: ui-monospace, monospace;
+    color: #7f8c8d;
+    font-size: 0.85em;
+}
+.event-line .evt-msg { flex-grow: 1; }
+
+.event-line .evt-info  { color: #2980b9; }
+.event-line .evt-warn  { color: #d68910; font-weight: 600; }
+.event-line .evt-err   { color: #c0392b; font-weight: 600; }
+.event-line .evt-ok    { color: #27ae60; }

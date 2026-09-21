@@ -704,5 +704,20 @@
     await loadUserProfiles();
     pollConfigDirty();
     pollActiveProfile();   // [필수 2] 30초 폴링 시작
+    
+    // [Round 4-C #11] P010에서 편집 요청(?edit=<profileId>) 수신
+		const params = new URLSearchParams(window.location.search);
+		const editId = params.get("edit");
+		if (editId) {
+			const target = currentProfiles.find((p) => String(p.profileId) === String(editId));
+			if (target) {
+				openModal(target);
+				// URL 정리 (F5 재오픈 방지)
+				window.history.replaceState({}, "", window.location.pathname);
+			} else {
+				toast(`편집 대상 프로파일(ID ${editId})을 찾을 수 없습니다.`, "warn");
+			}
+		}
+
   });
 })();

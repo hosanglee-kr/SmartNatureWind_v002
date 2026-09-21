@@ -167,3 +167,62 @@
     border-left: 4px solid #3498db;
     padding-left: 10px;
 }
+
+
+/* ======================= 필드 툴팁 (#15) ======================= */
+.tip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #eaf4fc;
+    color: #2980b9;
+    font-size: 0.75em;
+    cursor: help;
+    position: relative;
+    margin-left: 4px;
+    border: 1px solid #cfe4f5;
+    vertical-align: middle;
+    font-weight: 700;
+    user-select: none;
+}
+.tip:hover { background: #d4e8f5; }
+
+.tip::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2c3e50;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    white-space: normal;
+    width: 260px;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    z-index: 1000;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+    font-weight: 400;
+    text-align: left;
+}
+.tip::before {
+    content: "";
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #2c3e50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+}
+.tip:hover::after,
+.tip:hover::before { opacity: 1; }

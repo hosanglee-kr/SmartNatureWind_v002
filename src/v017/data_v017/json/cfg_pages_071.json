@@ -25,20 +25,6 @@
         { "uri": "/P080_sch_t2_071.js", "path": "/html_v3/P080_sch_t2_071.js" }
       ]
     },
-
-    {
-      "uri": "/P040_dashboard_070.html",
-      "path": "/html_v3/P040_dashboard_070.html",
-      "label": "Dashboard",
-      "enable": true,
-      "isMain": false,
-      "order": 40,
-      "pageAssets": [
-        { "uri": "/P040_dashboard_070.css", "path": "/html_v3/P040_dashboard_070.css" },
-        { "uri": "/P040_dashboard_070.js", "path": "/html_v3/P040_dashboard_070.js" }
-      ]
-
-    },
     {
       "uri": "/P050_chart_t2_071.html",
       "path": "/html_v3/P050_chart_t2_071.html",
@@ -111,7 +97,6 @@
     { "uriFrom": "/", "uriTo": "/P010_main_071.html" },
     { "uriFrom": "/index.html", "uriTo": "/P010_main_071.html" },
     { "uriFrom": "/main", "uriTo": "/P010_main_071.html" },
-    { "uriFrom": "/dashboard", "uriTo": "/P040_dashboard_070.html" },
     { "uriFrom": "/chart_t2", "uriTo": "/P050_chart_t2_071.html" },
     { "uriFrom": "/schedules_t2", "uriTo": "/P080_sch_t2_071.html" },
     { "uriFrom": "/userProfile_t2", "uriTo": "/P085_userProfiles_t2_071.html" },

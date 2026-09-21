@@ -28,6 +28,33 @@
 #include "P10_PWM_ctrl_070.h"
 
 // ==================================================
+// [Epoch] millis() → epoch ms 변환 헬퍼
+//  - SNTP sync 완료 시점에 base 캡처
+//  - SNTP 미동기화 동안은 p_okOut=false (차트 버퍼 push 스킵)
+//  - rolling buffer(120개)이므로 base 캡처 후 drift 무시 가능
+// ==================================================
+#include <time.h>
+
+static uint64_t S10_millis2EpochMs(uint32_t p_millis, bool* p_okOut) {
+    static time_t   s_baseSec = 0;
+    static uint32_t s_baseMs  = 0;
+
+    if (s_baseSec == 0) {
+        time_t v_now = time(nullptr);
+        if (v_now > 1700000000) {          // 2023-11-15 이후 = SNTP sync 완료
+            s_baseSec = v_now;
+            s_baseMs  = p_millis;
+        } else {
+            if (p_okOut) *p_okOut = false;
+            return 0;
+        }
+    }
+
+    if (p_okOut) *p_okOut = true;
+    return (uint64_t)s_baseSec * 1000ULL + (uint64_t)(p_millis - s_baseMs);
+}
+
+// ==================================================
 // 초기화 / 정지 / 리셋
 // ==================================================
 /**
@@ -271,31 +298,36 @@ void CL_S10_Simulation::tick() {
         v_bc_delta      = v_delta;
         v_bc_phase      = phase;
     }
-
-    // 15) 차트 샘플링(1Hz / 이벤트 중 2Hz)
+    
+    // 15) 차트 샘플링 (1Hz / 이벤트 중 2Hz)
     const uint32_t v_chartIntervalMs = (gustActive || thermalActive) ? G_S10_CHART_HZ2_MS : G_S10_CHART_HZ1_MS;
-
-    //  [b-2]
+    
+    //  [b-2] + [Epoch] epoch ms 전환
     if (_tickNowMs - s_lastChartLogMs > (unsigned long)v_chartIntervalMs) {
-        ST_ChartEntry v_e{};
-        v_e.timestamp        = _tickNowMs;
-        v_e.wind_speed       = currentWindSpeed;
-        v_e.pwm_duty         = _pwm ? _pwm->P10_getDutyPercent() : 0.0f;
-        v_e.intensity        = userIntensity;
-        v_e.variability      = userVariability;
-        v_e.turbulence_sigma = turbSigma;
-        v_e.preset_index     = static_cast<uint8_t>(A20_getStaticPresetIndexByCode(presetCode));
-        v_e.gust_active      = gustActive;
-        v_e.thermal_active   = thermalActive;
+        s_lastChartLogMs = _tickNowMs;   // interval 타이머는 millis로 유지
     
-        // ring push
-        s_chartBuffer[s_chartHead] = v_e;
-        s_chartHead = (uint8_t)((s_chartHead + 1u) % CHART_CAPACITY);
-        if (s_chartCount < CHART_CAPACITY) s_chartCount++;
+        // SNTP sync 여부 확인 (미동기화 시 버퍼 push 스킵)
+        bool     v_epochOk = false;
+        uint64_t v_epochMs = S10_millis2EpochMs(_tickNowMs, &v_epochOk);
     
-        s_lastChartLogMs = _tickNowMs;
+        if (v_epochOk) {
+            ST_ChartEntry v_e{};
+            v_e.timestamp        = v_epochMs;              // ← epoch ms
+            v_e.wind_speed       = currentWindSpeed;
+            v_e.pwm_duty         = _pwm ? _pwm->P10_getDutyPercent() : 0.0f;
+            v_e.intensity        = userIntensity;
+            v_e.variability      = userVariability;
+            v_e.turbulence_sigma = turbSigma;
+            v_e.preset_index     = static_cast<uint8_t>(A20_getStaticPresetIndexByCode(presetCode));
+            v_e.gust_active      = gustActive;
+            v_e.thermal_active   = thermalActive;
+    
+            // ring push
+            s_chartBuffer[s_chartHead] = v_e;
+            s_chartHead = (uint8_t)((s_chartHead + 1u) % CHART_CAPACITY);
+            if (s_chartCount < CHART_CAPACITY) s_chartCount++;
+        }
     }
-
 
 
     // ---- (B) 락 밖에서 브로드캐스트 수행 ----

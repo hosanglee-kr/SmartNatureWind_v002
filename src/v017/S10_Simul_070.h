@@ -167,8 +167,8 @@ class CL_S10_Simulation {
     // [b-1] O(1) 평균 유지용 running sum
 	float                 sumWindHistory = 0.0f;
 
-	struct ST_ChartEntry {
-	    unsigned long timestamp;
+	 struct ST_ChartEntry {
+		uint64_t      timestamp;   // [Epoch] epoch ms (SNTP sync 후)
 	    float         wind_speed;
 	    float         pwm_duty;
 	    float         intensity;

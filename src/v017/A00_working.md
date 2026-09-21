@@ -1,1498 +1,280 @@
-Round 3-Main-A+B — 통합 완성본
+최종 검토 — 백엔드 + 프론트 정합성
 
-확정 사항
+✅ 반영 확인
 
-Q 결정
-Q1 "임시 적용" 명칭
-Q2 무제한 지원 (백엔드 forever 파라미터 확장)
-Q3 (a)+(b) 화면 안내 + 저장 버튼 강조
-Q4 프리셋 자동 채움 (preset × style 반영)
+항목 상태
+S10_Simul_070.h — uint64_t timestamp ✅
+S10_Simul_Core_070.cpp — S10_millis2EpochMs() ✅
+S10_Simul_Core_070.cpp — 차트 샘플링 epoch 전환 ✅
+P050_chart_t2_071.js — buildWsUrl 사용 ✅
+P050_chart_t2_071.js — data.chart 경로 ✅
+P050_chart_t2_071.js — Number(r.t) 직접 사용 ✅
+P050_chart_t2_071.html — P001_API_070.js 로드 ✅
+cfg_pages_070.json — P020 폐기, P050 _071 ✅
 
 ---
 
-📄 백엔드 1: CT10_Ctl_070.h — 시그니처 확장
+🔴 Critical — 데이터 누적 vs 교체
 
-수정 3곳:
+문제
+
+백엔드 CT10_WS_trySendOne_v03 (chart 채널):
 
 ```cpp
-// 기존
-void startOverrideFixed(float p_percent, uint32_t p_seconds);
-void startOverridePreset(const char*                 p_presetCode,
-                         const char*                 p_styleCode,
-                         const ST_A20_AdjustDelta_t* p_adj,
-                         uint32_t                    p_seconds);
-void applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds);
-
-// 변경
-void startOverrideFixed(float p_percent, uint32_t p_seconds, bool p_forever = false);
-void startOverridePreset(const char*                 p_presetCode,
-                         const char*                 p_styleCode,
-                         const ST_A20_AdjustDelta_t* p_adj,
-                         uint32_t                    p_seconds,
-                         bool                        p_forever = false);
-void applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds, bool p_forever = false);
+CL_CT10_ControlManager::instance().exportChartJson(s_doc_chart, true);  // diffOnly=true
 ```
 
----
-
-📄 백엔드 2: CT10_Ctl_Ctl_070.cpp — 함수 3개
-
-startOverrideFixed()
+S10_Simul_IO_070.cpp toChartJson(p_diffOnly=true):
 
 ```cpp
-void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seconds, bool p_forever) {
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return;
-
-    _autoOffLatched = false;
-
-    memset(&overrideState, 0, sizeof(overrideState));
-    overrideState.active       = true;
-    overrideState.useFixed     = true;
-    overrideState.fixedPercent = constrain(p_percent, 0.0f, 100.0f);
-
-    if (p_forever) {
-        overrideState.endMs = 0;                    // 0 = 무제한
-    } else {
-        uint32_t v_sec = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
-        overrideState.endMs = millis() + (v_sec * 1000UL);
-    }
-
-    markDirty("state");
-    markDirty("metrics");
-
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Override FIXED %.1f%% (%s)",
-                       overrideState.fixedPercent,
-                       p_forever ? "forever" : "timed");
-
-    CL_N10_NvsManager::setOverrideFixed(true, overrideState.fixedPercent);
+if (p_diffOnly) {
+    // 최신 1개만 전송
+    uint8_t v_lastIdx = ...;
+    v_entries.reserve(1);
+    v_entries.push_back(s_chartBuffer[v_lastIdx]);
 }
 ```
 
-startOverridePreset()
+→ WS는 매번 "가장 최신 1개" 만 전송
 
-```cpp
-void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
-                                                 const char* p_styleCode,
-                                                 const ST_A20_AdjustDelta_t* p_adj,
-                                                 uint32_t p_seconds,
-                                                 bool p_forever) {
-    if (!g_A20_config_root.windDict) return;
-
-    ST_A20_ResolvedWind_t v_resolved;
-    memset(&v_resolved, 0, sizeof(v_resolved));
-
-    bool v_ok = S20_resolveWindParams(*g_A20_config_root.windDict,
-                                     p_presetCode,
-                                     p_styleCode,
-                                     p_adj,
-                                     v_resolved);
-
-    if (!v_ok || !v_resolved.valid) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN,
-                           "[CT10] startOverridePreset resolve failed (%s,%s)",
-                           p_presetCode ? p_presetCode : "",
-                           p_styleCode ? p_styleCode : "");
-        return;
-    }
-
-    applyManualResolved(v_resolved, p_seconds, p_forever);
-}
-```
-
-applyManualResolved()
-
-```cpp
-void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_wind,
-                                                 uint32_t p_seconds,
-                                                 bool p_forever) {
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return;
-
-    if (!p_wind.valid) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] applyManual: invalid ResolvedWind");
-        return;
-    }
-
-    if (p_wind.fixedMode) {
-        startOverrideFixed(p_wind.fixedSpeed, p_seconds, p_forever);
-        return;
-    }
-
-    _autoOffLatched = false;
-
-    memset(&overrideState, 0, sizeof(overrideState));
-    overrideState.active          = true;
-    overrideState.useFixed        = false;
-    overrideState.resolvedApplied = false;
-    overrideState.fixedPercent    = 0.0f;
-    overrideState.resolved        = p_wind;
-
-    if (p_forever) {
-        overrideState.endMs = 0;
-    } else {
-        uint32_t v_sec = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
-        overrideState.endMs = millis() + (v_sec * 1000UL);
-    }
-
-    markDirty("state");
-    markDirty("metrics");
-    markDirty("chart");
-
-    CL_D10_Logger::log(EN_L10_LOG_INFO,
-                       "[CT10] applyManual: preset=%s style=%s (%s)",
-                       p_wind.presetCode,
-                       p_wind.styleCode,
-                       p_forever ? "forever" : "timed");
-
-    CL_N10_NvsManager::setOverridePreset(true, p_wind.presetCode, p_wind.styleCode);
-}
-```
-
----
-
-📄 백엔드 3: W10_Web_Routes_070.cpp — 2곳
-
-routeControl() — override/fixed
-
-```cpp
-    // override/fixed
-    s_server->on(W10_Const::HTTP_API_CTL_OVR_FIXED, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
-
-        if (!p_request->hasParam("percent", true)) {
-            p_request->send(400, "application/json", "{\"error\":\"missing param: percent\"}");
-            return;
-        }
-
-        float    v_pct = p_request->getParam("percent", true)->value().toFloat();
-        uint32_t v_sec = p_request->hasParam("seconds", true)
-                            ? (uint32_t)p_request->getParam("seconds", true)->value().toInt()
-                            : 0;
-
-        // [forever] 무제한 플래그
-        bool v_forever = false;
-        if (p_request->hasParam("forever", true)) {
-            String f = p_request->getParam("forever", true)->value();
-            f.toLowerCase();
-            v_forever = (f == "true" || f == "1");
-        }
-
-        if (s_control) {
-            s_control->startOverrideFixed(v_pct, v_sec, v_forever);
-        }
-        p_request->send(200, "application/json", "{\"result\":\"ok\"}");
-    });
-```
-
-routeControl() — override/preset
-
-```cpp
-            const char* v_preset = v_doc["presetCode"] | "";
-            const char* v_style  = v_doc["styleCode"] | "BALANCE";
-            uint32_t    v_sec    = v_doc["durationSec"] | 0;
-            bool        v_forever = v_doc["forever"] | false;    // ← 추가
-
-            ST_A20_AdjustDelta_t v_adj;
-            memset(&v_adj, 0, sizeof(v_adj));
-            if (v_doc["adjust"].is<JsonObject>()) {
-                JsonObject v_aj       = v_doc["adjust"];
-                v_adj.windIntensity   = v_aj["windIntensity"] | 0.0f;
-                v_adj.windVariability = v_aj["windVariability"] | 0.0f;
-                v_adj.gustFrequency   = v_aj["gustFrequency"] | 0.0f;
-                v_adj.fanLimit        = v_aj["fanLimit"] | 0.0f;
-                v_adj.minFan          = v_aj["minFan"] | 0.0f;
-                v_adj.turbulenceLengthScale    = v_aj["turbulenceLengthScale"] | 0.0f;
-                v_adj.turbulenceIntensitySigma = v_aj["turbulenceIntensitySigma"] | 0.0f;
-                v_adj.thermalBubbleStrength    = v_aj["thermalBubbleStrength"] | 0.0f;
-                v_adj.thermalBubbleRadius      = v_aj["thermalBubbleRadius"] | 0.0f;
-            }
-
-            if (s_control) {
-                s_control->startOverridePreset(v_preset, v_style, &v_adj, v_sec, v_forever);   // ← 파라미터 추가
-            }
-            p_request->send(200, "application/json", "{\"result\":\"ok\"}");
-```
-
----
-
-📄 프론트 1: P010_main_070.html — 전면 교체
-
-```html
-<!-- P010_main_070.html -->
-
-<!doctype html>
-<html lang="ko">
-<head>
-	<meta charset="utf-8" />
-	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<title>🌿 Smart Nature Wind 관리자</title>
-
-	<link rel="stylesheet" href="./P000_common_070.css">
-	<link rel="stylesheet" href="./P010_main_070.css">
-</head>
-
-<body>
-	<nav class="nav-bar">
-		<div class="nav-container">
-			<a class="nav-logo" href="/html_v3/P010_main_070.html">Smart Nature Wind</a>
-			<ul class="nav-menu" id="navMenu"></ul>
-		</div>
-	</nav>
-
-	<div class="wrap">
-		<h1>
-			Smart Nature Wind 관리자
-			<span class="info-label info" id="fwVer">FW …</span>
-		</h1>
-
-		<div class="grid">
-
-			<!-- 1. 상태 -->
-			<section class="card col-12">
-				<div class="row middle">
-					<div class="section-title">상태</div>
-					<div class="right">
-						<span id="overrideBadge" class="info-label warn" style="display:none;">🟡 임시 적용 중 — 저장 안 됨</span>
-						<span id="timeBadge" class="info-label err" style="display:none;">시간 미동기</span>
-						<button class="btn" id="btnRefresh">상태 새로고침</button>
-					</div>
-				</div>
-
-				<div class="grid">
-					<div class="col-6">
-						<div class="row tight"><div><label>시뮬 상태</label><span id="simActive" class="info-label info">-</span></div></div>
-						<div class="row tight"><div><label>Phase</label><span id="phase" class="info-label info">-</span></div></div>
-						<div class="row tight"><div><label>풍속(m/s)</label><span id="wind" class="info-label info">-</span></div></div>
-						<div class="row tight"><div><label>PWM</label><span id="pwm" class="info-label info">-</span></div></div>
-					</div>
-					<div class="col-6">
-						<div class="row tight"><div><label>Wi-Fi 모드</label><span id="wifiMode" class="info-label info">-</span></div></div>
-						<div class="row tight"><div><label>SSID</label><span id="curSsid" class="info-label info">-</span></div></div>
-						<div class="row tight"><div><label>IP</label><span id="ip" class="info-label info">-</span></div></div>
-					</div>
-				</div>
-			</section>
-
-			<!-- 2. 풍속 설정 (임시 적용 통합) -->
-			<section class="card col-12">
-				<div class="row middle">
-					<strong class="section-title">풍속 설정</strong>
-					<div class="right">
-						<span id="overrideStatus" class="info-label info">비활성</span>
-					</div>
-				</div>
-
-				<div class="grid">
-					<div class="col-4">
-						<label>프리셋 <span class="muted">(선택 시 값 자동 채움)</span></label>
-						<select id="preset"></select>
-					</div>
-					<div class="col-4">
-						<label>스타일</label>
-						<select id="style"></select>
-					</div>
-					<div class="col-4">
-						<label>팬 전원</label>
-						<label class="row tight" style="align-items:center; gap:8px;">
-							<input type="checkbox" id="fanPowerEnabled" checked>
-							<span>On (해제 시 즉시 정지)</span>
-						</label>
-					</div>
-				</div>
-
-				<div class="grid" style="margin-top:16px;">
-					<div class="col-6"><label>강도 (intensity %)</label><input type="number" id="intensity" min="0" max="100" step="0.01"></div>
-					<div class="col-6"><label>돌풍 빈도 (gust_freq %)</label><input type="number" id="gust_freq" min="0" max="100" step="0.01"></div>
-					<div class="col-6"><label>가변성 (variability %)</label><input type="number" id="variability" min="0" max="100" step="0.01"></div>
-					<div class="col-6"><label>팬 최대 (fanLimit %)</label><input type="number" id="fanLimit" min="0" max="100" step="0.01"></div>
-					<div class="col-6"><label>팬 최소 (minFan %)</label><input type="number" id="minFan" min="0" max="100" step="0.01"></div>
-					<div class="col-6"><label>난류 길이 스케일 (turb_len)</label><input type="number" id="turb_len" min="1" max="200" step="0.01"></div>
-					<div class="col-6"><label>난류 시그마 (turb_sig)</label><input type="number" id="turb_sig" min="0" max="5" step="0.01"></div>
-					<div class="col-6"><label>열기포 세기 (therm_str)</label><input type="number" id="therm_str" min="1" max="5" step="0.01"></div>
-					<div class="col-6"><label>열기포 반경 (therm_rad)</label><input type="number" id="therm_rad" min="0" max="100" step="0.01"></div>
-				</div>
-
-				<!-- 임시 적용 -->
-				<div style="margin-top:20px; padding-top:16px; border-top:1px dashed #e0e6ed;">
-					<div class="row middle" style="margin-bottom:10px;">
-						<strong>🎬 임시 적용 (저장 안 됨)</strong>
-					</div>
-					<p class="muted" style="margin-bottom:12px;">
-						현재 폼 값을 선풍기에 즉시 반영합니다. 마음에 들면 "저장" 버튼을 누르세요.
-					</p>
-					<div class="grid">
-						<div class="col-4">
-							<label>실행 시간 (초, 300=5분)</label>
-							<input type="number" id="overrideSeconds" min="0" step="10" value="300">
-						</div>
-						<div class="col-4">
-							<label>&nbsp;</label>
-							<label class="row tight" style="align-items:center; gap:8px;">
-								<input type="checkbox" id="overrideForever">
-								<span>무제한 (중지까지)</span>
-							</label>
-						</div>
-						<div class="col-4" style="justify-content:flex-end; display:flex; align-items:flex-end; gap:8px;">
-							<button class="btn ok" id="btnApplyTemp">🎬 임시 적용</button>
-							<button class="btn err" id="btnStopTemp">⏹️ 중지</button>
-						</div>
-					</div>
-				</div>
-
-				<!-- 저장 -->
-				<div class="row middle" style="margin-top:20px; padding-top:16px; border-top:1px solid #e0e6ed;">
-					<div></div>
-					<div class="right" style="display:flex; gap:8px; flex-wrap:wrap;">
-						<button class="btn ok" id="btnSaveSim">💾 풍속 설정 저장</button>
-						<button class="btn warn" id="btnSaveAllConfig" style="background:#eab308;color:#fff;">저장되지 않음</button>
-						<button class="btn err" id="btnConfigInit">시스템 전체 초기화</button>
-					</div>
-				</div>
-			</section>
-
-			<!-- 3. 타이밍 -->
-			<section class="card col-12">
-				<div class="row middle">
-					<strong class="section-title">타이밍 (TIMING)</strong>
-					<div class="right"><button class="btn ok" id="btnSaveTiming">타이밍 (메모리 패치)</button></div>
-				</div>
-				<div class="grid">
-					<div class="col-4"><label>시뮬 간격(ms)</label><input type="number" id="sim_int" min="10" step="1"></div>
-					<div class="col-4"><label>돌풍 체크(ms)</label><input type="number" id="gust_int" min="10" step="1"></div>
-					<div class="col-4"><label>열기포 체크(ms)</label><input type="number" id="thermal_int" min="10" step="1"></div>
-				</div>
-			</section>
-
-			<!-- 4. Wi-Fi (AP) -->
-			<section class="card col-12">
-				<div class="row middle">
-					<strong class="section-title">Wi-Fi (AP 설정)</strong>
-					<div class="right"><button class="btn ok" id="btnSaveWifiAP">AP (메모리 패치)</button></div>
-				</div>
-				<div class="grid">
-					<div class="col-4">
-						<label>Wi-Fi 모드</label>
-						<select id="wifi_mode">
-							<option value="0">AP</option>
-							<option value="1">STA</option>
-							<option value="2">AP+STA</option>
-						</select>
-					</div>
-					<div class="col-4"><label>AP SSID</label><input id="ap_ssid"></div>
-					<div class="col-4"><label>AP Password</label><input id="ap_password" type="password"></div>
-				</div>
-			</section>
-
-			<!-- 5. Wi-Fi (STA) -->
-			<section class="card col-12">
-				<div class="row middle">
-					<strong class="section-title">Wi-Fi (STA 목록)</strong>
-					<div class="right">
-						<button class="btn" id="btnScan">스캔</button>
-						<button class="btn ok" id="btnSaveWifiSTA">STA 목록 (메모리 패치)</button>
-					</div>
-				</div>
-				<div class="grid">
-					<div class="col-12"><div class="list" id="staList"></div></div>
-					<div class="col-12">
-						<div class="row tight">
-							<select id="scanList" class="fill"></select>
-							<input id="scanPass" type="password" placeholder="선택 SSID 비밀번호">
-							<button class="btn" id="btnUseScan">추가</button>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			<!-- 6. PWM 하드웨어 -->
-			<section class="card col-12">
-				<div class="row middle">
-					<strong class="section-title">PWM 하드웨어</strong>
-					<div class="right"><button class="btn ok" id="btnSavePWM">PWM (메모리 패치)</button></div>
-				</div>
-				<div class="grid">
-					<div class="col-3"><label>PWM GPIO</label><input type="number" id="pwm_pin" min="0" max="48"></div>
-					<div class="col-3"><label>채널</label><input type="number" id="pwm_channel" min="0" max="7"></div>
-					<div class="col-3"><label>주파수(Hz)</label><input type="number" id="pwm_freq" min="25000" max="40000" step="500"></div>
-					<div class="col-3"><label>해상도(bits)</label><input type="number" id="pwm_res" min="8" max="16"></div>
-				</div>
-			</section>
-
-			<!-- 7. 보안(API Key) -->
-			<section class="card col-12">
-				<div class="row middle">
-					<strong class="section-title">보안(API Key)</strong>
-					<div class="right"><button class="btn ok" id="btnSaveApiKey">API Key 저장</button></div>
-				</div>
-				<div class="grid">
-					<div class="col-12">
-						<input id="apiKeyInput" type="password" placeholder="Key 입력 또는 새 Key 설정">
-						<p class="muted">브라우저 로컬에 저장됨, 요청 시 X-API-Key 헤더로 전송됩니다.</p>
-					</div>
-				</div>
-			</section>
-
-			<!-- 8. 파일 업로드 / OTA -->
-			<section class="card col-12">
-				<strong class="section-title">파일 업로드 / 펌웨어 OTA</strong>
-				<div class="grid">
-					<div class="col-6">
-						<label>정적 파일 업로드</label>
-						<div class="row tight">
-							<input type="file" id="fileUpload">
-							<button class="btn ok" id="btnUploadStatic">업로드</button>
-						</div>
-						<div id="uploadMsg" class="muted" style="margin-top:8px;"></div>
-					</div>
-					<div class="col-6">
-						<label>펌웨어 OTA 업데이트</label>
-						<div class="row tight">
-							<input type="file" id="fileOTA">
-							<button class="btn ok" id="btnUploadOTA">업데이트</button>
-						</div>
-						<div id="otaMsg" class="muted" style="margin-top:8px;"></div>
-					</div>
-				</div>
-			</section>
-
-			<!-- 9. 로그 콘솔 -->
-			<section class="card col-12">
-				<div class="row middle">
-					<strong class="section-title">실시간 로그 콘솔 (/ws/log)</strong>
-					<div class="right"><button class="btn" id="btnClearLog">로그 지우기</button></div>
-				</div>
-				<pre id="logConsole">로그 로딩 중...</pre>
-			</section>
-
-		</div>
-
-		<hr class="hr" />
-		<p class="muted">© 2540.kr SmartNatureWind (v023)</p>
-	</div>
-
-	<div id="loadingOverlay" style="display:none;"><div class="spinner"></div></div>
-	<div id="toastContainer"></div>
-
-	<script src="./P000_common_070.js" defer></script>
-	<script src="./P001_API_070.js" defer></script>
-	<script src="./P010_main_070.js" defer></script>
-</body>
-</html>
-```
-
----
-
-📄 프론트 2: P010_main_070.js — 전면 교체
+프론트 processChartRecords:
 
 ```js
-/* P010_main_070.js
- * ------------------------------------------------------
- * 모듈명 : Smart Nature Wind Main UI Logic (v023)
- * ------------------------------------------------------
- * 기능:
- *  - 상태/설정 로딩 (config, state, simulation, wifi/state)
- *  - 프리셋 선택 시 자동 값 채움 (preset × style)
- *  - 임시 적용 (override) — 저장 안 함
- *  - 저장 (sim patch + config save + override clear)
- *  - WebSocket 로그/상태, WiFi 30초 폴링
- * ------------------------------------------------------
- */
+chartWind.data.datasets[0].data = toXY("wind");  // ← REPLACE!
+```
 
-/* ==============================
- * 1. DOM 참조
- * ============================== */
-const elFwVer        = () => document.getElementById("fwVer");
-const elSimActive    = () => document.getElementById("simActive");
-const elPhase        = () => document.getElementById("phase");
-const elWind         = () => document.getElementById("wind");
-const elPwm          = () => document.getElementById("pwm");
-const elWifiMode     = () => document.getElementById("wifiMode");
-const elCurSsid      = () => document.getElementById("curSsid");
-const elIp           = () => document.getElementById("ip");
+결과: 매 메시지마다 차트 데이터가 1개 포인트로 덮어써짐. 누적 안 됨. 차트가 점 1개만 표시되고 히스토리 사라짐.
 
-const elOverrideBadge  = () => document.getElementById("overrideBadge");
-const elTimeBadge      = () => document.getElementById("timeBadge");
-const elOverrideStatus = () => document.getElementById("overrideStatus");
-const elOverrideSeconds = () => document.getElementById("overrideSeconds");
-const elOverrideForever = () => document.getElementById("overrideForever");
+원인
 
-const elPreset       = () => document.getElementById("preset");
-const elStyle        = () => document.getElementById("style");
-const elFanPower     = () => document.getElementById("fanPowerEnabled");
-const elIntensity    = () => document.getElementById("intensity");
-const elGustFreq     = () => document.getElementById("gust_freq");
-const elVariability  = () => document.getElementById("variability");
-const elFanLimit     = () => document.getElementById("fanLimit");
-const elMinFan       = () => document.getElementById("minFan");
-const elTurbLen      = () => document.getElementById("turb_len");
-const elTurbSig      = () => document.getElementById("turb_sig");
-const elThermStr     = () => document.getElementById("therm_str");
-const elThermRad     = () => document.getElementById("therm_rad");
+P020/P050 모두 "full dump replacement" 패턴으로 작성됨. 백엔드 정책(diffOnly=true)과 불일치.
 
-const elSimInt       = () => document.getElementById("sim_int");
-const elGustInt      = () => document.getElementById("gust_int");
-const elThermalInt   = () => document.getElementById("thermal_int");
+수정 — Append 방식으로 전환
 
-const elWifiModeSel  = () => document.getElementById("wifi_mode");
-const elApSsid       = () => document.getElementById("ap_ssid");
-const elApPass       = () => document.getElementById("ap_password");
-const elStaList      = () => document.getElementById("staList");
-const elScanList     = () => document.getElementById("scanList");
-const elScanPass     = () => document.getElementById("scanPass");
+P050_chart_t2_071.js의 processChartRecords 함수 전체 교체:
 
-const elPwmPin       = () => document.getElementById("pwm_pin");
-const elPwmChannel   = () => document.getElementById("pwm_channel");
-const elPwmFreq      = () => document.getElementById("pwm_freq");
-const elPwmRes       = () => document.getElementById("pwm_res");
+```js
+// ======================= WS 데이터 → 차트 반영 =======================
+// [diffOnly 대응] 백엔드는 매 tick마다 최신 1개만 전송
+//  → 프론트는 append + max 120개 유지
+const MAX_CHART_POINTS = 120;   // S10 CHART_CAPACITY와 동일
 
-const elApiKeyInput  = () => document.getElementById("apiKeyInput");
-const elUpload       = () => document.getElementById("fileUpload");
-const elUploadMsg    = () => document.getElementById("uploadMsg");
-const elOTA          = () => document.getElementById("fileOTA");
-const elOtaMsg       = () => document.getElementById("otaMsg");
-const elLogConsole   = () => document.getElementById("logConsole");
-const elBtnSaveAll   = () => document.getElementById("btnSaveAllConfig");
+function _appendDataset(dataset, recs, key, transform) {
+    if (!Array.isArray(dataset) || !Array.isArray(recs)) return;
 
-/* ==============================
- * 2. 전역 상태
- * ============================== */
-let g_configDirty     = false;
-let g_staList         = [];
-let g_wsLog           = null;
-let g_wsState         = null;
-let g_wifiStateTimer  = null;
-let g_windDictPresets = [];
-let g_windDictStyles  = [];
-let g_overrideActive  = false;
+    for (const r of recs) {
+        const x = Number(r.t) || 0;
+        if (!x) continue;
 
-/* ==============================
- * 3. Dirty / 상태 배지
- * ============================== */
-function updateDirtyButton() {
-	const btn = elBtnSaveAll();
-	if (!btn) return;
-	if (g_configDirty) {
-		btn.textContent = "변경 있음 - 전체 Config 저장";
-		btn.classList.add("warn");
-		btn.style.background = "#eab308";
-		btn.style.color = "#fff";
-	} else {
-		btn.textContent = "저장 완료";
-		btn.classList.remove("warn");
-		btn.style.background = "#2ecc71";
-		btn.style.color = "#fff";
-	}
+        let y = r[key];
+        if (transform) y = transform(y);
+
+        // 중복 timestamp 방지 (동일 t 는 마지막 값으로 교체)
+        const last = dataset[dataset.length - 1];
+        if (last && last.x === x) {
+            last.y = y;
+        } else {
+            dataset.push({ x, y });
+        }
+    }
+
+    // cap
+    if (dataset.length > MAX_CHART_POINTS) {
+        dataset.splice(0, dataset.length - MAX_CHART_POINTS);
+    }
 }
 
-function markDirty() {
-	g_configDirty = true;
-	updateDirtyButton();
-	_updateSaveAttention();
+function processChartRecords(recs) {
+    if (!Array.isArray(recs) || recs.length === 0) return;
+
+    // 1) 풍속 / PWM
+    _appendDataset(chartWind.data.datasets[0].data, recs, "wind");
+    _appendDataset(chartWind.data.datasets[1].data, recs, "pwm");
+
+    // 2) 핵심 파라미터
+    _appendDataset(chartParam.data.datasets[0].data, recs, "intensity");
+    _appendDataset(chartParam.data.datasets[1].data, recs, "variability");
+    _appendDataset(chartParam.data.datasets[2].data, recs, "fanLimit");
+    _appendDataset(chartParam.data.datasets[3].data, recs, "minFan");
+
+    // 3) 난류/열기포
+    _appendDataset(chartTurbThermSig.data.datasets[0].data, recs, "turb_sig");
+    _appendDataset(chartTurbThermSig.data.datasets[1].data, recs, "turb_len");
+    _appendDataset(chartTurbThermSig.data.datasets[2].data, recs, "therm_str");
+    _appendDataset(chartTurbThermSig.data.datasets[3].data, recs, "therm_rad");
+
+    // 4) 이벤트 (0/1)
+    _appendDataset(chartEvent.data.datasets[0].data, recs, "gust",    (v) => v ? 1 : 0);
+    _appendDataset(chartEvent.data.datasets[1].data, recs, "thermal", (v) => v ? 1 : 0);
+
+    // 5) 프리셋 인덱스
+    _appendDataset(chartPreset.data.datasets[0].data, recs, "preset");
+
+    // 6) 타이밍
+    _appendDataset(chartTiming.data.datasets[0].data, recs, "sim_int");
+    _appendDataset(chartTiming.data.datasets[1].data, recs, "gust_int");
+    _appendDataset(chartTiming.data.datasets[2].data, recs, "thermal_int");
+
+    charts.forEach((c) => c.update("none"));
+
+    const last = recs[recs.length - 1];
+    if (refreshLabel && last?.t) {
+        const ts = new Date(Number(last.t)).toLocaleTimeString();
+        refreshLabel.textContent = `🕒 WS 업데이트: ${ts} (샘플 ${recs.length}개)`;
+    }
 }
+```
 
-// [Q3-b] override + dirty 시 저장 버튼 강조
-function _updateSaveAttention() {
-	const btnSaveSim = document.getElementById("btnSaveSim");
-	if (!btnSaveSim) return;
-	const needAttention = g_overrideActive && g_configDirty;
-	btnSaveSim.classList.toggle("btn-attention", needAttention);
-}
+변경 요약:
 
-/* ==============================
- * 4. 초기 데이터 로딩
- * ============================== */
-async function loadFwVersion() {
-	const data = await apiFetch(SNW_API.API_HTTP_VERSION, { method: "GET" }, true);
-	let v = "…";
-	if (typeof data === "string") v = data;
-	else if (data && (data.version || data.fw || data.fw_version)) {
-		v = data.version || data.fw || data.fw_version;
-	}
-	const el = elFwVer();
-	if (el) el.textContent = v;
-}
+· data = toXY(...) → _appendDataset(...) 로 교체
+· 120개 상한 (MAX_CHART_POINTS)
+· 중복 t 방지 (동일 ms 재수신 시 마지막 값 유지)
 
-function _applySimToUi(sim, control) {
-	const simActive = sim.active;
-	const elA = elSimActive();
-	if (elA) {
-		if (simActive === true || simActive === 1 || simActive === "on") {
-			elA.textContent = "ACTIVE";
-			elA.classList.remove("err");
-			elA.classList.add("ok");
-		} else {
-			elA.textContent = "IDLE";
-			elA.classList.remove("ok");
-			elA.classList.add("err");
-		}
-	}
+---
 
-	const elP = elPhase();
-	if (elP) elP.textContent = sim.phase != null ? String(sim.phase) : "-";
+🟡 관찰 (선택)
 
-	const elW = elWind();
-	if (elW) elW.textContent = sim.windSpeed != null ? String(sim.windSpeed) : "-";
+관찰 1. 초기 페이지 진입 시 히스토리 없음
 
-	const elPw = elPwm();
-	if (elPw) elPw.textContent = sim.pwmDuty != null ? String(sim.pwmDuty) : "-";
+백엔드 (W10_Web_WS_070.cpp):
 
-	// 폼 자동 동기화 (dirty 아닐 때만)
-	if (!g_configDirty) {
-		if (elPreset() && sim.presetCode) elPreset().value = sim.presetCode;
-		if (elStyle() && sim.styleCode)   elStyle().value  = sim.styleCode;
-		if (elFanPower() && sim.fanPowerEnabled !== undefined) elFanPower().checked = !!sim.fanPowerEnabled;
-	}
-
-	// override 배지 / 상태
-	const ov = (control && control.override) ? control.override : null;
-	const ovActive = !!(ov && ov.active);
-	g_overrideActive = ovActive;
-
-	const ovBadge = elOverrideBadge();
-	if (ovBadge) ovBadge.style.display = ovActive ? "inline-block" : "none";
-
-	const ovStatus = elOverrideStatus();
-	if (ovStatus) {
-		if (ovActive) {
-			const mode = ov.useFixed ? `fixed ${ov.fixedPercent ?? "?"}%` : `preset ${ov.presetCode || ""}`;
-			const remain = ov.remainSec > 0 ? ` (${ov.remainSec}s)` : " (무제한)";
-			ovStatus.textContent = `🟡 ${mode}${remain}`;
-			ovStatus.className = "info-label warn";
-		} else {
-			ovStatus.textContent = "비활성";
-			ovStatus.className = "info-label info";
-		}
-	}
-
-	// time 배지
-	const tm = (control && control.time) ? control.time : null;
-	const timeValid = tm ? !!tm.valid : true;
-	const tb = elTimeBadge();
-	if (tb) tb.style.display = timeValid ? "none" : "inline-block";
-
-	// 저장 버튼 강조 갱신
-	_updateSaveAttention();
-}
-
-async function loadStateOnce() {
-	const data = await apiFetch(SNW_API.API_HTTP_STATE, { method: "GET" }, true);
-	if (!data) return;
-	_applySimToUi(data.sim || {}, data.control || {});
-}
-
-async function loadConfig() {
-	showLoading();
-	try {
-		const [cfg, simData] = await Promise.all([
-			apiFetch(SNW_API.API_HTTP_CONFIG, { method: "GET" }, true),
-			apiFetch(SNW_API.API_HTTP_SIMULATION, { method: "GET" }, true)
-		]);
-		if (!cfg) return;
-
-		// Wi-Fi
-		if (cfg.wifi) {
-			if (elWifiModeSel()) elWifiModeSel().value = cfg.wifi.wifiMode ?? 0;
-			if (elApSsid()) elApSsid().value = cfg.wifi.ap ? cfg.wifi.ap.ssid || "" : "";
-			if (elApPass()) elApPass().value = cfg.wifi.ap ? cfg.wifi.ap.pass || "" : "";
-
-			g_staList = [];
-			if (Array.isArray(cfg.wifi.sta)) {
-				cfg.wifi.sta.forEach((item) => {
-					if (item && item.ssid) g_staList.push({ ssid: item.ssid, pass: item.pass || "" });
-				});
-			}
-			renderStaList();
-		}
-
-		// PWM
-		if (cfg.hw && cfg.hw.fanPwm) {
-			if (elPwmPin())     elPwmPin().value     = cfg.hw.fanPwm.pin ?? "";
-			if (elPwmChannel()) elPwmChannel().value = cfg.hw.fanPwm.channel ?? "";
-			if (elPwmFreq())    elPwmFreq().value    = cfg.hw.fanPwm.freq ?? "";
-			if (elPwmRes())     elPwmRes().value     = cfg.hw.fanPwm.res ?? "";
-		}
-
-		// 프리셋/스타일 옵션
-		loadPresetsFromConfig(cfg);
-
-		// Motion/Wind 폼 초기값
-		const sim = (simData && simData.sim) ? simData.sim : {};
-		if (elIntensity())   elIntensity().value   = sim.intensity ?? "";
-		if (elVariability()) elVariability().value = sim.variability ?? "";
-		if (elGustFreq())    elGustFreq().value    = sim.gustFreq ?? "";
-		if (elFanLimit())    elFanLimit().value    = sim.fanLimit ?? "";
-		if (elMinFan())      elMinFan().value      = sim.minFan ?? "";
-		if (elTurbLen())     elTurbLen().value     = sim.turbLenScale ?? "";
-		if (elTurbSig())     elTurbSig().value     = sim.turbSigma ?? "";
-		if (elThermStr())    elThermStr().value    = sim.thermalStrength ?? "";
-		if (elThermRad())    elThermRad().value    = sim.thermalRadius ?? "";
-
-		if (elPreset() && sim.presetCode)  elPreset().value = sim.presetCode;
-		if (elStyle() && sim.styleCode)    elStyle().value  = sim.styleCode;
-		if (elFanPower() && sim.fanPowerEnabled !== undefined) elFanPower().checked = !!sim.fanPowerEnabled;
-
-		// Timing
-		const timing = (cfg.motion && cfg.motion.timing) ? cfg.motion.timing : cfg.timing;
-		if (timing) {
-			if (elSimInt())     elSimInt().value     = timing.simIntervalMs ?? "";
-			if (elGustInt())    elGustInt().value    = timing.gustIntervalMs ?? "";
-			if (elThermalInt()) elThermalInt().value = timing.thermalIntervalMs ?? "";
-		}
-
-		// API Key
-		if (cfg.security && cfg.security.apiKey && !getApiKey()) {
-			setApiKey(cfg.security.apiKey);
-			if (elApiKeyInput()) elApiKeyInput().value = cfg.security.apiKey;
-		}
-
-		g_configDirty = false;
-		updateDirtyButton();
-	} finally {
-		hideLoading();
-	}
-}
-
-function loadPresetsFromConfig(cfg) {
-	// Presets
-	const sel = elPreset();
-	if (sel) {
-		sel.innerHTML = "";
-		let presets = [];
-		if (cfg.windDict && Array.isArray(cfg.windDict.presets)) presets = cfg.windDict.presets;
-		else if (cfg.motion && Array.isArray(cfg.motion.presets)) presets = cfg.motion.presets;
-
-		g_windDictPresets = presets;
-
-		if (!presets.length) {
-			const opt = document.createElement("option");
-			opt.value = "";
-			opt.textContent = "(프리셋 없음)";
-			sel.appendChild(opt);
-		} else {
-			presets.forEach((p, idx) => {
-				const opt = document.createElement("option");
-				opt.value = p.code || p.id || String(idx);
-				opt.textContent = p.name || p.label || p.code || `Preset ${idx + 1}`;
-				sel.appendChild(opt);
-			});
-		}
-	}
-
-	// Styles
-	const styleSel = elStyle();
-	if (styleSel) {
-		styleSel.innerHTML = "";
-		let styles = [];
-		if (cfg.windDict && Array.isArray(cfg.windDict.styles)) styles = cfg.windDict.styles;
-
-		g_windDictStyles = styles;
-
-		if (!styles.length) {
-			const opt = document.createElement("option");
-			opt.value = "BALANCE";
-			opt.textContent = "BALANCE";
-			styleSel.appendChild(opt);
-		} else {
-			styles.forEach((s, idx) => {
-				const opt = document.createElement("option");
-				opt.value = s.code || String(idx);
-				opt.textContent = s.name || s.code || `Style ${idx + 1}`;
-				styleSel.appendChild(opt);
-			});
-		}
-	}
-}
-
-/* ==============================
- * 5. 프리셋/스타일 자동 채움 (Q4)
- * ============================== */
-function _r2(v) {
-	const n = Number(v);
-	return isFinite(n) ? Math.round(n * 100) / 100 : 0;
-}
-
-function onPresetOrStyleChanged() {
-	const presetCode = elPreset() ? elPreset().value : "";
-	const styleCode  = elStyle()  ? elStyle().value  : "";
-	if (!presetCode) return;
-
-	const preset = g_windDictPresets.find((p) => p.code === presetCode);
-	if (!preset || !preset.factors) return;
-
-	const style = g_windDictStyles.find((s) => s.code === styleCode) || {};
-	const sf = style.factors || {};
-
-	const pf = preset.factors;
-
-	const intV  = _r2((pf.windIntensity ?? 0)      * (sf.intensityFactor    ?? 1.0));
-	const varV  = _r2((pf.windVariability ?? 0)    * (sf.variabilityFactor  ?? 1.0));
-	const gustV = _r2((pf.gustFrequency ?? 0)      * (sf.gustFactor         ?? 1.0));
-	const flV   = _r2(pf.fanLimit ?? 0);
-	const minV  = _r2(pf.minFan ?? 0);
-	const tlV   = _r2(pf.turbulenceLengthScale ?? 0);
-	const tsV   = _r2(pf.turbulenceIntensitySigma ?? 0);
-	const thBV  = _r2((pf.thermalBubbleStrength ?? 0) * (sf.thermalFactor   ?? 1.0));
-	const thRV  = _r2(pf.thermalBubbleRadius ?? 0);
-
-	if (elIntensity())   elIntensity().value   = intV;
-	if (elVariability()) elVariability().value = varV;
-	if (elGustFreq())    elGustFreq().value    = gustV;
-	if (elFanLimit())    elFanLimit().value    = flV;
-	if (elMinFan())      elMinFan().value      = minV;
-	if (elTurbLen())     elTurbLen().value     = tlV;
-	if (elTurbSig())     elTurbSig().value     = tsV;
-	if (elThermStr())    elThermStr().value    = thBV;
-	if (elThermRad())    elThermRad().value    = thRV;
-
-	markDirty();
-}
-
-/* ==============================
- * 6. 임시 적용
- * ============================== */
-async function applyTempPreset() {
-	const presetCode = elPreset() ? elPreset().value : "";
-	const styleCode  = elStyle()  ? elStyle().value  : "BALANCE";
-	const forever    = elOverrideForever() ? elOverrideForever().checked : false;
-	const sec        = forever ? 0 : parseInt(elOverrideSeconds() ? elOverrideSeconds().value || "300" : "300", 10);
-
-	if (!presetCode) {
-		notify("프리셋을 선택하세요.", "warn");
-		return;
-	}
-
-	const preset = g_windDictPresets.find((p) => p.code === presetCode);
-	if (!preset || !preset.factors) {
-		notify("프리셋 정보를 불러올 수 없습니다.", "err");
-		return;
-	}
-
-	const style = g_windDictStyles.find((s) => s.code === styleCode) || {};
-	const sf = style.factors || {};
-	const pf = preset.factors;
-
-	// 폼 값 - (preset × style) = 델타
-	const baseInt  = (pf.windIntensity ?? 0)      * (sf.intensityFactor   ?? 1.0);
-	const baseVar  = (pf.windVariability ?? 0)    * (sf.variabilityFactor ?? 1.0);
-	const baseGust = (pf.gustFrequency ?? 0)      * (sf.gustFactor        ?? 1.0);
-	const baseFL   = pf.fanLimit ?? 0;
-	const baseMin  = pf.minFan ?? 0;
-	const baseTL   = pf.turbulenceLengthScale ?? 0;
-	const baseTS   = pf.turbulenceIntensitySigma ?? 0;
-	const baseThB  = (pf.thermalBubbleStrength ?? 0) * (sf.thermalFactor  ?? 1.0);
-	const baseThR  = pf.thermalBubbleRadius ?? 0;
-
-	const adj = {
-		windIntensity:            (Number(elIntensity()   && elIntensity().value)   || 0) - baseInt,
-		windVariability:          (Number(elVariability() && elVariability().value) || 0) - baseVar,
-		gustFrequency:            (Number(elGustFreq()    && elGustFreq().value)    || 0) - baseGust,
-		fanLimit:                 (Number(elFanLimit()    && elFanLimit().value)    || 0) - baseFL,
-		minFan:                   (Number(elMinFan()      && elMinFan().value)      || 0) - baseMin,
-		turbulenceLengthScale:    (Number(elTurbLen()     && elTurbLen().value)     || 0) - baseTL,
-		turbulenceIntensitySigma: (Number(elTurbSig()     && elTurbSig().value)     || 0) - baseTS,
-		thermalBubbleStrength:    (Number(elThermStr()    && elThermStr().value)    || 0) - baseThB,
-		thermalBubbleRadius:      (Number(elThermRad()    && elThermRad().value)    || 0) - baseThR
-	};
-
-	const body = {
-		presetCode,
-		styleCode,
-		durationSec: sec,
-		forever,
-		adjust: adj
-	};
-
-	await apiFetch(SNW_API.API_HTTP_CTL_OVR_PRESET, {
-		method: "POST",
-		body: JSON.stringify(body)
-	}, false, "임시 적용");
-
-	// 임시 적용 후 상태 갱신
-	setTimeout(loadStateOnce, 300);
-}
-
-async function stopTemp() {
-	await apiFetch(SNW_API.API_HTTP_CTL_OVR_CLEAR, { method: "POST" }, false, "임시 적용 중지");
-	setTimeout(loadStateOnce, 300);
-}
-
-/* ==============================
- * 7. 저장
- * ============================== */
-async function saveMotionPatch() {
-	const body = {
-		sim: {
-			presetCode:      elPreset() ? elPreset().value : null,
-			styleCode:       elStyle()  ? elStyle().value  : null,
-			fanPowerEnabled: elFanPower() ? elFanPower().checked : true,
-			intensity:       Number(elIntensity()   && elIntensity().value)   || 0,
-			variability:     Number(elVariability() && elVariability().value) || 0,
-			gustFreq:        Number(elGustFreq()    && elGustFreq().value)    || 0,
-			fanLimit:        Number(elFanLimit()    && elFanLimit().value)    || 0,
-			minFan:          Number(elMinFan()      && elMinFan().value)      || 0,
-			turbLenScale:    Number(elTurbLen()     && elTurbLen().value)     || 0,
-			turbSigma:       Number(elTurbSig()     && elTurbSig().value)     || 0,
-			thermalStrength: Number(elThermStr()    && elThermStr().value)    || 0,
-			thermalRadius:   Number(elThermRad()    && elThermRad().value)    || 0
-		}
-	};
-
-	// 1) sim patch
-	await apiFetch(SNW_API.API_HTTP_SIMULATION, {
-		method: "POST",
-		body: JSON.stringify(body)
-	}, false, "풍속 설정");
-
-	// 2) config save (파일 저장)
-	await apiFetch(SNW_API.API_HTTP_CONFIG_SAVE, {
-		method: "POST",
-		body: JSON.stringify({})
-	}, true, "");
-
-	// 3) 임시 적용 중이었으면 해제
-	if (g_overrideActive) {
-		await apiFetch(SNW_API.API_HTTP_CTL_OVR_CLEAR, { method: "POST" }, true, "");
-	}
-
-	g_configDirty = false;
-	updateDirtyButton();
-	notify("풍속 설정이 저장되었습니다.", "ok");
-
-	setTimeout(loadStateOnce, 300);
-}
-
-async function saveTimingPatch() {
-	const body = {
-		motion: {
-			timing: {
-				simIntervalMs:     Number(elSimInt().value || 0),
-				gustIntervalMs:    Number(elGustInt().value || 0),
-				thermalIntervalMs: Number(elThermalInt().value || 0)
-			}
-		}
-	};
-	await apiFetch(SNW_API.API_HTTP_MOTION, {
-		method: "POST",
-		body: JSON.stringify(body)
-	}, false, "타이밍 설정");
-	markDirty();
-}
-
-async function saveWifiApPatch() {
-	const body = {
-		wifi: {
-			wifiMode: Number(elWifiModeSel().value || 0),
-			ap: { ssid: elApSsid().value || "", pass: elApPass().value || "" }
-		}
-	};
-	await apiFetch(SNW_API.API_HTTP_WIFI_CONFIG, {
-		method: "POST",
-		body: JSON.stringify(body)
-	}, false, "Wi-Fi AP 설정");
-	markDirty();
-}
-
-async function saveWifiStaPatch() {
-	const body = {
-		wifi: {
-			sta: g_staList.map((item) => ({ ssid: item.ssid, pass: item.pass || "" }))
-		}
-	};
-	await apiFetch(SNW_API.API_HTTP_WIFI_CONFIG, {
-		method: "POST",
-		body: JSON.stringify(body)
-	}, false, "Wi-Fi STA 목록");
-	markDirty();
-}
-
-async function savePwmPatch() {
-	const body = {
-		hw: {
-			fanPwm: {
-				pin:     Number(elPwmPin().value || 0),
-				channel: Number(elPwmChannel().value || 0),
-				freq:    Number(elPwmFreq().value || 0),
-				res:     Number(elPwmRes().value || 0)
-			}
-		}
-	};
-	await apiFetch(SNW_API.API_HTTP_SYSTEM, {
-		method: "POST",
-		body: JSON.stringify(body)
-	}, false, "PWM 하드웨어");
-	markDirty();
-}
-
-/* ==============================
- * 8. 전체 저장 / 초기화
- * ============================== */
-async function saveAllConfig() {
-	if (!g_configDirty) {
-		notify("변경 사항이 없습니다.", "info");
-		return;
-	}
-	if (!confirm("현재까지의 메모리 변경 내용을 모두 저장하시겠습니까?")) return;
-
-	await apiFetch(SNW_API.API_HTTP_CONFIG_SAVE, {
-		method: "POST",
-		body: JSON.stringify({ save_all: true })
-	}, false, "전체 Config 저장");
-
-	g_configDirty = false;
-	updateDirtyButton();
-}
-
-async function factoryReset() {
-	if (!confirm("⚠️ 모든 설정을 기본값으로 초기화합니다.\n진행하시겠습니까?")) return;
-
-	await apiFetch(SNW_API.API_HTTP_CONFIG_INIT, {
-		method: "POST",
-		body: JSON.stringify({ factory: true })
-	}, false, "Factory Reset");
-
-	await loadConfig();
-	await loadStateOnce();
-}
-
-/* ==============================
- * 9. Wi-Fi / STA
- * ============================== */
-async function scanWifi() {
-	const data = await apiFetch(SNW_API.API_HTTP_WIFI_SCAN, { method: "GET" }, true);
-	const list = (data && data.wifi && data.wifi.scan) ? data.wifi.scan : data || [];
-	renderScanList(list);
-	notify("Wi-Fi 스캔 완료", "ok");
-}
-
-async function loadWifiStateOnce() {
-	const data = await apiFetch(SNW_API.API_HTTP_WIFI_STATE, { method: "GET" }, true);
-	if (!data) return;
-	const wifi = (data.wifi && data.wifi.state) ? data.wifi.state : {};
-	if (elWifiMode()) elWifiMode().textContent = (wifi.mode_name || wifi.mode || "-").toString();
-	if (elCurSsid())  elCurSsid().textContent  = wifi.ssid || "-";
-	if (elIp())       elIp().textContent       = wifi.ip || "-";
-}
-
-function renderStaList() {
-	const container = elStaList();
-	if (!container) return;
-	container.innerHTML = "";
-	if (!g_staList || g_staList.length === 0) {
-		const div = document.createElement("div");
-		div.className = "muted";
-		div.textContent = "등록된 STA 네트워크가 없습니다.";
-		container.appendChild(div);
-		return;
-	}
-	const table = document.createElement("table");
-	const thead = document.createElement("thead");
-	const trh = document.createElement("tr");
-	["SSID", "Password", "액션"].forEach((txt) => {
-		const th = document.createElement("th");
-		th.textContent = txt;
-		trh.appendChild(th);
-	});
-	thead.appendChild(trh);
-	table.appendChild(thead);
-
-	const tbody = document.createElement("tbody");
-	g_staList.forEach((item, idx) => {
-		const tr = document.createElement("tr");
-		const tdSsid = document.createElement("td");
-		tdSsid.textContent = item.ssid || "";
-		tr.appendChild(tdSsid);
-		const tdPass = document.createElement("td");
-		tdPass.textContent = item.pass ? "********" : "";
-		tr.appendChild(tdPass);
-		const tdAct = document.createElement("td");
-		tdAct.style.textAlign = "right";
-		const btnDel = document.createElement("button");
-		btnDel.className = "btn btn-small err";
-		btnDel.textContent = "삭제";
-		btnDel.addEventListener("click", () => {
-			g_staList.splice(idx, 1);
-			renderStaList();
-			markDirty();
-		});
-		tdAct.appendChild(btnDel);
-		tr.appendChild(tdAct);
-		tbody.appendChild(tr);
-	});
-	table.appendChild(tbody);
-	container.appendChild(table);
-}
-
-function renderScanList(networks) {
-	const sel = elScanList();
-	if (!sel) return;
-	sel.innerHTML = "";
-	if (!networks || networks.length === 0) {
-		const opt = document.createElement("option");
-		opt.value = "";
-		opt.textContent = "검색된 네트워크가 없습니다.";
-		sel.appendChild(opt);
-		return;
-	}
-	networks.forEach((ap) => {
-		const opt = document.createElement("option");
-		opt.value = ap.ssid || "";
-		const rssi = ap.rssi != null ? ` (RSSI ${ap.rssi})` : "";
-		opt.textContent = (ap.ssid || "") + rssi;
-		sel.appendChild(opt);
-	});
-}
-
-function addStaFromScan() {
-	const sel = elScanList();
-	const passInput = elScanPass();
-	if (!sel) return;
-	const ssid = sel.value || "";
-	if (!ssid) { notify("추가할 SSID를 선택하세요.", "warn"); return; }
-	const pass = passInput ? passInput.value : "";
-	if (g_staList.some((s) => s.ssid === ssid)) { notify("이미 등록된 SSID입니다.", "warn"); return; }
-	g_staList.push({ ssid, pass });
-	renderStaList();
-	markDirty();
-	if (passInput) passInput.value = "";
-}
-
-/* ==============================
- * 10. API Key / 업로드
- * ============================== */
-function applyApiKeyFromInput() {
-	const input = elApiKeyInput();
-	if (!input) return;
-	setApiKey(input.value.trim());
-	notify("API Key가 브라우저에 저장되었습니다.", "ok");
-}
-
-async function uploadFile(endpoint, file, msgEl, successMsg, errorMsg) {
-	if (!file) { notify("파일을 선택하세요.", "warn"); return; }
-	const apiKey = getApiKey();
-	const formData = new FormData();
-	formData.append("file", file, file.name);
-	showLoading();
-	try {
-		const res = await fetch(endpoint, {
-			method: "POST",
-			headers: apiKey ? { "X-API-Key": apiKey } : {},
-			body: formData
-		});
-		const text = await res.text();
-		if (!res.ok) throw new Error(`HTTP ${res.status} / ${text}`);
-		if (msgEl) msgEl.textContent = text || successMsg;
-		notify(successMsg, "ok");
-	} catch (e) {
-		console.error("[Main] uploadFile failed:", e.message);
-		if (msgEl) msgEl.textContent = e.message;
-		notify(errorMsg + ": " + e.message, "err");
-	} finally {
-		hideLoading();
-	}
-}
-
-function handleStaticUpload() {
-	const f = elUpload() ? elUpload().files[0] : null;
-	uploadFile(SNW_API.API_HTTP_FILE_UPLOAD, f, elUploadMsg(), "정적 파일 업로드 완료", "정적 파일 업로드 실패");
-}
-
-function handleOtaUpload() {
-	const f = elOTA() ? elOTA().files[0] : null;
-	uploadFile(SNW_API.API_HTTP_FW_UPDATE, f, elOtaMsg(), "OTA 업데이트 전송 완료", "OTA 업데이트 실패");
-}
-
-/* ==============================
- * 11. 초기 로그 / WebSocket
- * ============================== */
-async function loadLogsOnce() {
-	const el = elLogConsole();
-	if (!el) return;
-	const data = await apiFetch(SNW_API.API_HTTP_LOGS, { method: "GET" }, true);
-	if (data && Array.isArray(data.logs)) {
-		el.textContent = data.logs
-			.map(l => `[${l.ts ?? "?"}] L${l.lv ?? "?"} ${l.msg ?? ""}`)
-			.join("\n");
-		if (el.textContent) el.textContent += "\n";
-		el.scrollTop = el.scrollHeight;
-	} else {
-		el.textContent = "";
-	}
-}
-
-function initWebSocketLog() {
-	try {
-		const url = buildWsUrl(SNW_API.WS_API_LOG);
-		const ws = new WebSocket(url);
-		g_wsLog = ws;
-		ws.onopen = () => {
-			const el = elLogConsole();
-			if (el) { el.textContent += "[WS] 로그 스트림 연결됨.\n"; el.scrollTop = el.scrollHeight; }
-		};
-		ws.onmessage = (ev) => {
-			const el = elLogConsole();
-			if (!el) return;
-			el.textContent += ev.data + "\n";
-			el.scrollTop = el.scrollHeight;
-		};
-		ws.onclose = () => console.log("[WS-LOG] disconnected");
-		ws.onerror = (err) => console.error("[WS-LOG] error:", err);
-	} catch (e) {
-		console.error("[WS-LOG] init failed:", e.message);
-	}
-}
-
-function clearLogConsole() {
-	const el = elLogConsole();
-	if (el) el.textContent = "";
-}
-
-function initWebSocketState() {
-	try {
-		const url = buildWsUrl(SNW_API.WS_API_STATE);
-		const ws = new WebSocket(url);
-		g_wsState = ws;
-		ws.onopen = () => console.log("[WS-STATE] connected");
-		ws.onmessage = (ev) => {
-			try {
-				const data = JSON.parse(ev.data);
-				_applySimToUi(data.sim || {}, data.control || {});
-			} catch (e) {
-				console.warn("[WS-STATE] invalid JSON:", ev.data);
-			}
-		};
-		ws.onclose = () => console.log("[WS-STATE] disconnected");
-		ws.onerror = (err) => console.error("[WS-STATE] error:", err);
-	} catch (e) {
-		console.error("[WS-STATE] init failed:", e.message);
-	}
-}
-
-/* ==============================
- * 12. 이벤트 바인딩
- * ============================== */
-function bindEvents() {
-	// 상태
-	const btnRefresh = document.getElementById("btnRefresh");
-	if (btnRefresh) btnRefresh.addEventListener("click", () => {
-		loadStateOnce();
-		loadWifiStateOnce();
-	});
-
-	// 프리셋/스타일 자동 채움
-	if (elPreset()) elPreset().addEventListener("change", onPresetOrStyleChanged);
-	if (elStyle())  elStyle().addEventListener("change", onPresetOrStyleChanged);
-
-	// 임시 적용
-	const btnApplyTemp = document.getElementById("btnApplyTemp");
-	if (btnApplyTemp) btnApplyTemp.addEventListener("click", applyTempPreset);
-
-	const btnStopTemp = document.getElementById("btnStopTemp");
-	if (btnStopTemp) btnStopTemp.addEventListener("click", stopTemp);
-
-	// 저장
-	const btnSaveSim = document.getElementById("btnSaveSim");
-	if (btnSaveSim) btnSaveSim.addEventListener("click", saveMotionPatch);
-
-	if (elBtnSaveAll()) elBtnSaveAll().addEventListener("click", saveAllConfig);
-
-	const btnConfigInit = document.getElementById("btnConfigInit");
-	if (btnConfigInit) btnConfigInit.addEventListener("click", factoryReset);
-
-	const btnSaveTiming = document.getElementById("btnSaveTiming");
-	if (btnSaveTiming) btnSaveTiming.addEventListener("click", saveTimingPatch);
-
-	const btnSaveWifiAP = document.getElementById("btnSaveWifiAP");
-	if (btnSaveWifiAP) btnSaveWifiAP.addEventListener("click", saveWifiApPatch);
-
-	const btnSaveWifiSTA = document.getElementById("btnSaveWifiSTA");
-	if (btnSaveWifiSTA) btnSaveWifiSTA.addEventListener("click", saveWifiStaPatch);
-
-	const btnSavePWM = document.getElementById("btnSavePWM");
-	if (btnSavePWM) btnSavePWM.addEventListener("click", savePwmPatch);
-
-	const btnScan = document.getElementById("btnScan");
-	if (btnScan) btnScan.addEventListener("click", scanWifi);
-
-	const btnUseScan = document.getElementById("btnUseScan");
-	if (btnUseScan) btnUseScan.addEventListener("click", addStaFromScan);
-
-	const btnSaveApiKey = document.getElementById("btnSaveApiKey");
-	if (btnSaveApiKey) btnSaveApiKey.addEventListener("click", applyApiKeyFromInput);
-
-	const btnUploadStatic = document.getElementById("btnUploadStatic");
-	if (btnUploadStatic) btnUploadStatic.addEventListener("click", handleStaticUpload);
-
-	const btnUploadOTA = document.getElementById("btnUploadOTA");
-	if (btnUploadOTA) btnUploadOTA.addEventListener("click", handleOtaUpload);
-
-	const btnClearLog = document.getElementById("btnClearLog");
-	if (btnClearLog) btnClearLog.addEventListener("click", clearLogConsole);
-
-	// 팬 전원 / 폼 변경 → dirty
-	if (elFanPower()) elFanPower().addEventListener("change", markDirty);
-
-	const inputSelectors = [
-		"#intensity", "#gust_freq", "#variability", "#fanLimit", "#minFan",
-		"#turb_len", "#turb_sig", "#therm_str", "#therm_rad",
-		"#sim_int", "#gust_int", "#thermal_int",
-		"#wifi_mode", "#ap_ssid", "#ap_password",
-		"#pwm_pin", "#pwm_channel", "#pwm_freq", "#pwm_res"
-	];
-	inputSelectors.forEach((sel) => {
-		const el = document.querySelector(sel);
-		if (el) {
-			el.addEventListener("change", markDirty);
-			el.addEventListener("input", markDirty);
-		}
-	});
-}
-
-/* ==============================
- * 13. 초기화
- * ============================== */
-document.addEventListener("DOMContentLoaded", async () => {
-	const key = getApiKey();
-	if (elApiKeyInput()) elApiKeyInput().value = key;
-
-	updateDirtyButton();
-	bindEvents();
-
-	await loadLogsOnce();
-	initWebSocketLog();
-	initWebSocketState();
-
-	await loadFwVersion();
-	await loadConfig();
-	await loadStateOnce();
-	await loadWifiStateOnce();
-
-	if (g_wifiStateTimer) clearInterval(g_wifiStateTimer);
-	g_wifiStateTimer = setInterval(loadWifiStateOnce, 30000);
-
-	window.addEventListener("beforeunload", () => {
-		if (g_wifiStateTimer) {
-			clearInterval(g_wifiStateTimer);
-			g_wifiStateTimer = null;
-		}
-	});
+```cpp
+s_wsServerChart->onEvent([](...) {
+    if (type == WS_EVT_CONNECT) {
+        // 초기 state 전송 없음 (chart는 tick마다 diffOnly)
+    }
 });
 ```
 
----
+결과: 페이지 열면 빈 차트에서 시작. 매 초 1개씩 누적되어 120초 후 완전 채워짐.
 
-📄 프론트 3: P010_main_070.css — 저장 버튼 강조 추가
+선택 개선 (백엔드):
 
-파일 끝에 추가:
-
-```css
-/* ======================= 11. 저장 버튼 강조 (Q3-b) ======================= */
-
-/* 임시 적용 중 + dirty 상태일 때 저장 버튼 시선 유도 */
-.btn-attention {
-  animation: btn-attention-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes btn-attention-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
-  70%  { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+```cpp
+// WS_EVT_CONNECT 시 full dump 1회 전송
+if (type == WS_EVT_CONNECT) {
+    JsonDocument v_doc;
+    s_control->exportChartJson(v_doc, false);   // ← diffOnly=false
+    String v_json;
+    serializeJson(v_doc, v_json);
+    client->text(v_json);
 }
 ```
 
----
+주의: diffOnly=false는 G_S10_CHART_FULL_MIN_MS=10초 스로틀 있음. 연결 직후엔 스킵될 수 있음.
 
-✅ 검증 시나리오
-
-1. 프리셋 자동 채움
-
-```
-1. 페이지 로드 → 프리셋, 스타일 select 채워짐
-2. 프리셋 "OCEAN" 선택
-   → 폼 값 자동 채움 (preset × style 반영)
-   → dirty 표시 (저장 버튼 노랑)
-3. 스타일 "ACTIVE" 변경
-   → 폼 값 재계산 (preset × ACTIVE)
-```
-
-2. 임시 적용
-
-```
-1. 프리셋 "OCEAN", 스타일 "ACTIVE" 선택
-2. 강도 폼 값 조정 (조정 델타)
-3. 무제한 체크 ON (or 시간 입력)
-4. "🎬 임시 적용" 클릭
-5. 시리얼:
-   [CT10] applyManual: preset=OCEAN style=ACTIVE (forever)
-6. 상태:
-   - 상단 배지 "🟡 임시 적용 중 — 저장 안 됨"
-   - 저장 버튼 노란 pulse 애니메이션
-   - overrideStatus: "🟡 preset OCEAN (무제한)"
-7. 선풍기가 새 세팅으로 즉시 작동
-```
-
-3. 저장
-
-```
-1. 임시 적용 중 상태에서 "💾 풍속 설정 저장" 클릭
-2. 시리얼:
-   [S10] patchFromJson applied. preset=OCEAN ...
-   [CT10] Override cleared
-3. 결과:
-   - 파일 저장됨
-   - 임시 적용 해제
-   - 배지 사라짐
-   - 저장 버튼 pulse 사라짐
-   - 저장된 값으로 자연 복귀
-```
-
-4. 중지
-
-```
-1. "⏹️ 중지" 클릭
-2. 시리얼: [CT10] Override cleared
-3. 배지/status 사라짐
-```
-
-5. 무제한 vs 시간제한
-
-```
-- 무제한 체크 OFF, 300초 → 시리얼 "timed"
-- 무제한 체크 ON          → 시리얼 "forever"
-- 무제한 상태 status 표시: "🟡 preset OCEAN (무제한)"
-- 시간제한 상태: "🟡 preset OCEAN (298s)" 30초마다 감소
-```
+결론: 현재 상태 유지 권장 (관찰만, 스코프 외).
 
 ---
 
-📋 변경 요약
+관찰 2. _tickNowSec 사용
 
-구분 파일 변경
-백엔드 CT10_Ctl_070.h 시그니처 3개 bool p_forever=false
-백엔드 CT10_Ctl_Ctl_070.cpp 함수 3개 (endMs 분기)
-백엔드 W10_Web_Routes_070.cpp override/fixed, override/preset forever 파싱
-프론트 P010_main_070.html 임시 적용 컨트롤 통합, 배지
-프론트 P010_main_070.js 자동 채움, 임시 적용, 저장 로직
-프론트 P010_main_070.css 저장 버튼 pulse
+S10_Simul_Core_070.cpp:
+
+```cpp
+_tickNowSec = (float)_tickNowMs / 1000.0f;
+```
+
+차트 샘플링에는 _tickNowMs만 사용. _tickNowSec은 다른 곳(phase, gust 등)에서 사용 중 → 문제 없음.
 
 ---
 
-⚠️ 주의
+관찰 3. 시간 표시 포맷
 
-1. 프리셋 자동 채움은 preset × style 값으로 계산됩니다. 폼에 보이는 값 = 임시 적용 시 resolve 값 = 저장 값 (모두 동일). 일관성 확보.
-2. 저장 시 override 자동 해제. 사용자가 저장 후 "왜 안 바뀌지?"하는 혼란 방지.
-3. 임시 적용은 schedule/profile보다 우선순위 1위 (기존 정책 유지). Schedule 페이지에서 schedule 실행 중이어도 임시 적용 중엔 무시됨.
-4. 무제한 모드 시 재부팅하면 해제됨. NVS에 저장되지만 부팅 시 복원 안 함 (기존 정책).
+```js
+new Date(Number(last.t)).toLocaleTimeString()
+```
+
+· epoch ms → 로컬 시간 표시
+· 사용자 브라우저 타임존 기준
+· ESP32가 UTC epoch 반환하므로 사용자 로컬 시간으로 자동 변환 ✅
+
+---
+
+관찰 4. Chart.js time axis (Luxon)
+
+```js
+scales: {
+    x: {
+        type: "time",
+        time: { unit: "second" }
+    }
+}
+```
+
+· Luxon adapter가 epoch ms를 자동 파싱
+· x축 라벨: "HH:mm:ss" (로컬) ✅
+
+---
+
+📋 최종 조치 요약
+
+# 조치 위치 소요
+1 processChartRecords append 방식 전환 P050_chart_t2_071.js 10분
+2 MAX_CHART_POINTS=120 상수 동일 -
+3 중복 timestamp 방지 동일 -
+
+나머지는 정확히 반영됨.
+
+---
+
+🎯 배포 후 검증
+
+1. epoch ms
+
+```
+1. SNTP sync 확인 (시리얼: [TM10] SNTP synced OK)
+2. 차트 페이지 열기
+3. 개발자도구 → Network → WS → /ws/chart
+4. 메시지 확인:
+   {"chart":[{"t":1726900000123,"wind":3.2,...}]}
+   ← 13자리 숫자 (epoch ms)
+5. Chart x축: "14:23:20" 형식 (로컬 시간)
+```
+
+2. 데이터 누적
+
+```
+1. 페이지 열고 30초 대기
+2. 차트에 30개 포인트 누적 표시
+3. 120초 후 상한 도달 (계속 유지)
+4. 시리얼 로그 폭주 없음
+```
+
+3. WS 재연결
+
+```
+1. WiFi 일시 차단
+2. 시리얼: [W10] WS /chart 연결 끊김
+3. 프론트: "❌ WS 연결 끊김" + 5초 후 재연결
+4. WiFi 복구 후 자동 재개
+```
+
+4. 일시정지/재개
+
+```
+1. ⏸ 클릭 → 새 데이터 무시
+2. ▶ 클릭 → 다시 append
+3. 기존 데이터 유지 확인
+```
 
 ---
 
 📌 다음 단계
 
-· (A) 배포 후 브라우저 검증 → 이슈 발생 시 대응
-· (B) Round 3-P100-C (security.geminiApiKey UI)
-· (C) 다른 이슈
+조치 1 반영 후 (10분 소요) → 배포 검증.
 
-어느 방향으로 갈까요?
+남은 페이지:
+
+· P040 (Dashboard)
+· P060 (Sim Details)
+· P090 (Info/Help)
+· R3-P010-Prof (D-1c 나머지: P010에 프로파일 실행)
+
+어떻게 진행할까요?
+
+· (A) 조치 1 즉시 반영 → 배포 검증
+· (B) R3-P060 (Sim Details) 먼저 점검
+· (C) R3-P040 (Dashboard) 점검
+· (D) 다른 이슈

@@ -12,19 +12,7 @@
         { "uri": "/P010_main_071.js", "path": "/html_v3/P010_main_071.js" }
       ]
     },
-    {
-      "uri": "/P020_chart_t1_070.html",
-      "path": "/html_v3/P020_chart_t1_070.html",
-      "label": "ChartT1",
-      "enable": true,
-      "isMain": false,
-      "order": 20,
-      "pageAssets": [
-        { "uri": "/P020_chart_t1_070.css", "path": "/html_v3/P020_chart_t1_070.css" },
-        { "uri": "/P020_chart_t1_070.js", "path": "/html_v3/P020_chart_t1_070.js" }
-      ]
-    },
-    
+
     {
       "uri": "/P080_sch_t2_071.html",
       "path": "/html_v3/P080_sch_t2_071.html",
@@ -52,15 +40,15 @@
 
     },
     {
-      "uri": "/P050_chart_t2_070.html",
-      "path": "/html_v3/P050_chart_t2_070.html",
+      "uri": "/P050_chart_t2_071.html",
+      "path": "/html_v3/P050_chart_t2_071.html",
       "label": "Chart T2",
       "enable": true,
       "isMain": false,
       "order": 50,
       "pageAssets": [
-        { "uri": "/P050_chart_t2_070.css", "path": "/html_v3/P050_chart_t2_070.css" },
-        { "uri": "/P050_chart_t2_070.js", "path": "/html_v3/P050_chart_t2_070.js" }
+        { "uri": "/P050_chart_t2_071.css", "path": "/html_v3/P050_chart_t2_071.css" },
+        { "uri": "/P050_chart_t2_071.js", "path": "/html_v3/P050_chart_t2_071.js" }
       ]
     },
     {
@@ -136,8 +124,7 @@
     { "uriFrom": "/index.html", "uriTo": "/P010_main_071.html" },
     { "uriFrom": "/main", "uriTo": "/P010_main_071.html" },
     { "uriFrom": "/dashboard", "uriTo": "/P040_dashboard_070.html" },
-    { "uriFrom": "/chart_t1", "uriTo": "/P020_chart_t1_070.html" },
-    { "uriFrom": "/chart_t2", "uriTo": "/P050_chart_t2_070.html" },
+    { "uriFrom": "/chart_t2", "uriTo": "/P050_chart_t2_071.html" },
     { "uriFrom": "/schedules_t2", "uriTo": "/P080_sch_t2_071.html" },
     { "uriFrom": "/userProfile_t2", "uriTo": "/P085_userProfiles_t2_071.html" },
     { "uriFrom": "/settings", "uriTo": "/P100_settings_071.html" },

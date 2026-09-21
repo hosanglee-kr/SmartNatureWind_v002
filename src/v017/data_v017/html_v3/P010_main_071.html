@@ -21,7 +21,7 @@
 
 	<div class="wrap">
 		<h1>
-			Smart Nature Wind 관리자
+			Smart Nature Wind - Main
 			<span class="info-label info" id="fwVer">FW …</span>
 		</h1>
 
@@ -54,9 +54,31 @@
 			        </div>
 			    </div>
 			</section>
+			
+			<!-- 2. 프로파일 실행 (신규) -->
+			<section class="card col-12">
+				<div class="row middle">
+					<strong class="section-title">🎯 프로파일 실행</strong>
+					<div class="right">
+						<span id="profileRunStatus" class="info-label info">비활성</span>
+					</div>
+				</div>
+				<p class="muted">
+					저장된 유저 프로파일을 즉시 실행합니다. 실행 중에는 스케줄보다 우선 적용됩니다.
+				</p>
+				<div class="grid">
+					<div class="col-6">
+						<label>프로파일 선택</label>
+						<select id="profileSelect"></select>
+					</div>
+					<div class="col-6" style="justify-content:flex-end; display:flex; align-items:flex-end; gap:8px;">
+						<button class="btn ok" id="btnProfileRun">▶️ 실행</button>
+						<button class="btn err" id="btnProfileStop">⏹️ 중지</button>
+					</div>
+				</div>
+			</section>
 
-
-			<!-- 2. 풍속 설정 (임시 적용 통합) -->
+			<!-- 3. 풍속 설정 (임시 적용 통합) -->
 			<section class="card col-12">
 				<div class="row middle">
 					<strong class="section-title">풍속 설정</strong>
@@ -133,7 +155,7 @@
 				</div>
 			</section>
 
-			<!-- 3. 타이밍 -->
+			<!-- 4. 타이밍 -->
 			<section class="card col-12">
 				<div class="row middle">
 					<strong class="section-title">타이밍 (TIMING)</strong>
@@ -146,7 +168,7 @@
 				</div>
 			</section>
 
-			<!-- 4. Wi-Fi (AP) -->
+			<!-- 5. Wi-Fi (AP) -->
 			<section class="card col-12">
 				<div class="row middle">
 					<strong class="section-title">Wi-Fi (AP 설정)</strong>
@@ -166,7 +188,7 @@
 				</div>
 			</section>
 
-			<!-- 5. Wi-Fi (STA) -->
+			<!-- 6. Wi-Fi (STA) -->
 			<section class="card col-12">
 				<div class="row middle">
 					<strong class="section-title">Wi-Fi (STA 목록)</strong>
@@ -187,7 +209,7 @@
 				</div>
 			</section>
 
-			<!-- 6. PWM 하드웨어 -->
+			<!-- 7. PWM 하드웨어 -->
 			<section class="card col-12">
 				<div class="row middle">
 					<strong class="section-title">PWM 하드웨어</strong>
@@ -201,7 +223,7 @@
 				</div>
 			</section>
 
-			<!-- 7. 보안(API Key) -->
+			<!-- 8. 보안(API Key) -->
 			<section class="card col-12">
 				<div class="row middle">
 					<strong class="section-title">보안(API Key)</strong>
@@ -215,7 +237,7 @@
 				</div>
 			</section>
 
-			<!-- 8. 파일 업로드 / OTA -->
+			<!-- 9. 파일 업로드 / OTA -->
 			<section class="card col-12">
 				<strong class="section-title">파일 업로드 / 펌웨어 OTA</strong>
 				<div class="grid">
@@ -238,7 +260,7 @@
 				</div>
 			</section>
 
-			<!-- 9. 로그 콘솔 -->
+			<!-- 10. 로그 콘솔 -->
 			<section class="card col-12">
 				<div class="row middle">
 					<strong class="section-title">실시간 로그 콘솔 (/ws/log)</strong>
@@ -250,7 +272,7 @@
 		</div>
 
 		<hr class="hr" />
-		<p class="muted">© 2540.kr SmartNatureWind (v023)</p>
+		<p class="muted">© 2540.kr SmartNatureWind</p>
 	</div>
 
 	<div id="loadingOverlay" style="display:none;"><div class="spinner"></div></div>

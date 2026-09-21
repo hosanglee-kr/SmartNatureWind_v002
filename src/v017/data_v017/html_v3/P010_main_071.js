@@ -1,12 +1,13 @@
 /* P010_main_071.js
  * ------------------------------------------------------
- * 모듈명 : Smart Nature Wind Main UI Logic (v023)
+ * 모듈명 : Smart Nature Wind Main UI Logic
  * ------------------------------------------------------
  * 기능:
- *  - 상태/설정 로딩 (config, state, simulation, wifi/state)
+ *  - 상태/설정 로딩 (config, state, motion, user_profiles, wifi/state)
  *  - 프리셋 선택 시 자동 값 채움 (preset × style)
  *  - 임시 적용 (override) — 저장 안 함
- *  - 저장 (sim patch + config save + override clear)
+ *  - 프로파일 실행/중지 (R3-P010-Prof)
+ *  - 저장 (motion.sim patch + config save + override clear)
  *  - WebSocket 로그/상태, WiFi 30초 폴링
  * ------------------------------------------------------
  */
@@ -26,6 +27,9 @@ const elIp           = () => document.getElementById("ip");
 const elControlState = () => document.getElementById("controlState");
 const elRunTarget    = () => document.getElementById("runTarget");
 
+// 프로파일 실행
+const elProfileSelect    = () => document.getElementById("profileSelect");
+const elProfileRunStatus = () => document.getElementById("profileRunStatus");
 
 const elOverrideBadge  = () => document.getElementById("overrideBadge");
 const elTimeBadge      = () => document.getElementById("timeBadge");
@@ -81,6 +85,10 @@ let g_wifiStateTimer  = null;
 let g_windDictPresets = [];
 let g_windDictStyles  = [];
 let g_overrideActive  = false;
+
+// 프로파일 실행
+let g_userProfiles    = [];
+let g_activeProfileNo = 0;
 
 /* ==============================
  * 3. Dirty / 상태 배지
@@ -180,12 +188,12 @@ function _applySimToUi(sim, control) {
 			ovStatus.className = "info-label info";
 		}
 	}
-	
+
 	// 제어 상태 (control.state / stateCode)
 	{
 		const stateCode = control.stateCode;
 		const stateStr  = control.state || "-";
-	
+
 		const elCS = elControlState();
 		if (elCS) {
 			elCS.textContent = stateStr;
@@ -202,14 +210,14 @@ function _applySimToUi(sim, control) {
 			}
 		}
 	}
-	
+
 	// 실행 대상 (override > schedule > profile 우선)
 	{
 		const sch  = control.schedule   || {};
 		const prof = control.profile    || {};
-	
+
 		let target = "없음";
-	
+
 		if (ov && ov.active) {
 			if (ov.useFixed) {
 				target = `Override: 고정 ${ov.fixedPercent ?? 0}%`;
@@ -223,11 +231,33 @@ function _applySimToUi(sim, control) {
 			target = `프로파일: ${prof.name}`;
 			if (prof.profileNo) target += ` (#${prof.profileNo})`;
 		}
-	
+
 		const elRT = elRunTarget();
 		if (elRT) elRT.textContent = target;
 	}
 
+	// 프로파일 실행 상태
+	{
+		const prof   = (control && control.profile) ? control.profile : {};
+		const active = !!prof.fromRunSource;
+		g_activeProfileNo = active ? (Number(prof.profileNo) || 0) : 0;
+
+		const elPS = elProfileRunStatus();
+		if (elPS) {
+			if (active) {
+				elPS.textContent = `🟢 실행 중: ${prof.name || "#" + prof.profileNo}`;
+				elPS.className = "info-label warn";
+			} else {
+				elPS.textContent = "비활성";
+				elPS.className = "info-label info";
+			}
+		}
+
+		// 프로파일 select 자동 동기화 (dirty 아닐 때만)
+		if (!g_configDirty && elProfileSelect() && active && prof.profileNo) {
+			elProfileSelect().value = prof.profileNo;
+		}
+	}
 
 	// time 배지
 	const tm = (control && control.time) ? control.time : null;
@@ -248,12 +278,11 @@ async function loadStateOnce() {
 async function loadConfig() {
 	showLoading();
 	try {
-		
 		const [cfg, motionData] = await Promise.all([
 			apiFetch(SNW_API.API_HTTP_CONFIG, { method: "GET" }, true),
 			apiFetch(SNW_API.API_HTTP_MOTION, { method: "GET" }, true)
 		]);
-		
+
 		if (!cfg) return;
 
 		// Wi-Fi
@@ -281,21 +310,21 @@ async function loadConfig() {
 
 		// 프리셋/스타일 옵션
 		loadPresetsFromConfig(cfg);
-		
+
 		// Motion / Wind (config → motion.sim)
 		const sim = (motionData && motionData.motion && motionData.motion.sim) ? motionData.motion.sim : {};
-		if (elIntensity()) elIntensity().value = sim.intensity ?? "";
+		if (elIntensity())   elIntensity().value   = sim.intensity ?? "";
 		if (elVariability()) elVariability().value = sim.variability ?? "";
-		if (elGustFreq()) elGustFreq().value = sim.gustFreq ?? "";
-		if (elFanLimit()) elFanLimit().value = sim.fanLimit ?? "";
-		if (elMinFan()) elMinFan().value = sim.minFan ?? "";
-		if (elTurbLen()) elTurbLen().value = sim.turbLenScale ?? "";
-		if (elTurbSig()) elTurbSig().value = sim.turbSigma ?? "";
-		if (elThermStr()) elThermStr().value = sim.thermalStrength ?? "";
-		if (elThermRad()) elThermRad().value = sim.thermalRadius ?? "";
-		
+		if (elGustFreq())    elGustFreq().value    = sim.gustFreq ?? "";
+		if (elFanLimit())    elFanLimit().value    = sim.fanLimit ?? "";
+		if (elMinFan())      elMinFan().value      = sim.minFan ?? "";
+		if (elTurbLen())     elTurbLen().value     = sim.turbLenScale ?? "";
+		if (elTurbSig())     elTurbSig().value     = sim.turbSigma ?? "";
+		if (elThermStr())    elThermStr().value    = sim.thermalStrength ?? "";
+		if (elThermRad())    elThermRad().value    = sim.thermalRadius ?? "";
+
 		if (elPreset() && sim.presetCode) elPreset().value = sim.presetCode;
-		if (elStyle() && sim.styleCode) elStyle().value = sim.styleCode;
+		if (elStyle() && sim.styleCode)   elStyle().value  = sim.styleCode;
 		if (elFanPower() && sim.fanPowerEnabled !== undefined) elFanPower().checked = !!sim.fanPowerEnabled;
 
 		// Timing
@@ -474,7 +503,6 @@ async function applyTempPreset() {
 		body: JSON.stringify(body)
 	}, false, "임시 적용");
 
-	// 임시 적용 후 상태 갱신
 	setTimeout(loadStateOnce, 300);
 }
 
@@ -491,42 +519,42 @@ async function saveMotionPatch() {
 	const motionBody = {
 		motion: {
 			sim: {
-				presetCode: elPreset() ? elPreset().value : null,
-				styleCode: elStyle() ? elStyle().value : null,
+				presetCode:      elPreset() ? elPreset().value : null,
+				styleCode:       elStyle()  ? elStyle().value  : null,
 				fanPowerEnabled: elFanPower() ? elFanPower().checked : true,
-				intensity: Number(elIntensity() && elIntensity().value) || 0,
-				variability: Number(elVariability() && elVariability().value) || 0,
-				gustFreq: Number(elGustFreq() && elGustFreq().value) || 0,
-				fanLimit: Number(elFanLimit() && elFanLimit().value) || 0,
-				minFan: Number(elMinFan() && elMinFan().value) || 0,
-				turbLenScale: Number(elTurbLen() && elTurbLen().value) || 0,
-				turbSigma: Number(elTurbSig() && elTurbSig().value) || 0,
-				thermalStrength: Number(elThermStr() && elThermStr().value) || 0,
-				thermalRadius: Number(elThermRad() && elThermRad().value) || 0
+				intensity:       Number(elIntensity()   && elIntensity().value)   || 0,
+				variability:     Number(elVariability() && elVariability().value) || 0,
+				gustFreq:        Number(elGustFreq()    && elGustFreq().value)    || 0,
+				fanLimit:        Number(elFanLimit()    && elFanLimit().value)    || 0,
+				minFan:          Number(elMinFan()      && elMinFan().value)      || 0,
+				turbLenScale:    Number(elTurbLen()     && elTurbLen().value)     || 0,
+				turbSigma:       Number(elTurbSig()     && elTurbSig().value)     || 0,
+				thermalStrength: Number(elThermStr()    && elThermStr().value)    || 0,
+				thermalRadius:   Number(elThermRad()    && elThermRad().value)    || 0
 			}
 		}
 	};
-	
+
 	await apiFetch(SNW_API.API_HTTP_MOTION, {
 		method: "POST",
 		body: JSON.stringify(motionBody)
 	}, false, "풍속 설정");
-	
+
 	// 파일 저장
 	await apiFetch(SNW_API.API_HTTP_CONFIG_SAVE, {
 		method: "POST",
 		body: JSON.stringify({})
 	}, true, "");
-	
+
 	// override 해제 (기존)
 	if (g_overrideActive) {
 		await apiFetch(SNW_API.API_HTTP_CTL_OVR_CLEAR, { method: "POST" }, true, "");
 	}
-	
+
 	g_configDirty = false;
 	updateDirtyButton();
 	notify("풍속 설정이 저장되었습니다.", "ok");
-	
+
 	setTimeout(loadStateOnce, 300);
 }
 
@@ -640,6 +668,84 @@ async function loadWifiStateOnce() {
 	if (elWifiMode()) elWifiMode().textContent = (wifi.mode_name || wifi.mode || "-").toString();
 	if (elCurSsid())  elCurSsid().textContent  = wifi.ssid || "-";
 	if (elIp())       elIp().textContent       = wifi.ip || "-";
+}
+
+/* ==============================
+ * 9-1. 프로파일 목록 로드
+ * ============================== */
+async function loadUserProfiles() {
+	const data = await apiFetch(SNW_API.API_HTTP_USER_PROFILES, { method: "GET" }, true);
+	let profiles = [];
+	if (data && data.userProfiles && Array.isArray(data.userProfiles.profiles)) {
+		profiles = data.userProfiles.profiles;
+	}
+	g_userProfiles = profiles;
+
+	const sel = elProfileSelect();
+	if (!sel) return;
+	sel.innerHTML = "";
+
+	if (!profiles.length) {
+		const opt = document.createElement("option");
+		opt.value = "";
+		opt.textContent = "(프로파일 없음)";
+		sel.appendChild(opt);
+		return;
+	}
+
+	profiles.forEach((p) => {
+		const opt = document.createElement("option");
+		opt.value = p.profileNo;
+		const off = (p.enabled !== false) ? "" : " (OFF)";
+		opt.textContent = `${p.name || "이름없음"} (#${p.profileNo})${off}`;
+		sel.appendChild(opt);
+	});
+
+	// 실행 중인 프로파일이 있으면 그걸로 선택
+	if (g_activeProfileNo > 0 && sel.querySelector(`option[value="${g_activeProfileNo}"]`)) {
+		sel.value = g_activeProfileNo;
+	}
+}
+
+/* ==============================
+ * 9-2. 프로파일 실행
+ * ============================== */
+async function runSelectedProfile() {
+	const sel = elProfileSelect();
+	if (!sel) return;
+	const no = Number(sel.value);
+	if (!no || no <= 0) {
+		notify("실행할 프로파일을 선택하세요.", "warn");
+		return;
+	}
+
+	const target = g_userProfiles.find((p) => Number(p.profileNo) === no);
+	if (target && target.enabled === false) {
+		notify(`프로파일 "${target.name}"은(는) 비활성 상태입니다.`, "warn");
+		return;
+	}
+
+	const result = await apiFetch(SNW_API.API_HTTP_CTL_PROF_SEL, {
+		method: "POST",
+		body: JSON.stringify({ id: no })
+	}, false, `프로파일 #${no} 실행`);
+
+	if (result) {
+		setTimeout(loadStateOnce, 300);
+	}
+}
+
+/* ==============================
+ * 9-3. 프로파일 중지
+ * ============================== */
+async function stopActiveProfile() {
+	const result = await apiFetch(SNW_API.API_HTTP_CTL_PROF_STOP, {
+		method: "POST"
+	}, false, "프로파일 중지");
+
+	if (result) {
+		setTimeout(loadStateOnce, 300);
+	}
 }
 
 function renderStaList() {
@@ -847,6 +953,13 @@ function bindEvents() {
 		loadWifiStateOnce();
 	});
 
+	// 프로파일 실행/중지
+	const btnProfileRun = document.getElementById("btnProfileRun");
+	if (btnProfileRun) btnProfileRun.addEventListener("click", runSelectedProfile);
+
+	const btnProfileStop = document.getElementById("btnProfileStop");
+	if (btnProfileStop) btnProfileStop.addEventListener("click", stopActiveProfile);
+
 	// 프리셋/스타일 자동 채움
 	if (elPreset()) elPreset().addEventListener("change", onPresetOrStyleChanged);
 	if (elStyle())  elStyle().addEventListener("change", onPresetOrStyleChanged);
@@ -932,6 +1045,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 	await loadFwVersion();
 	await loadConfig();
+	await loadUserProfiles();      // 프로파일 목록 로드
 	await loadStateOnce();
 	await loadWifiStateOnce();
 

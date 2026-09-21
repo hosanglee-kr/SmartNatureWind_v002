@@ -109,6 +109,13 @@ const FAV_PRESET_KEY = "snw_fav_presets";
 // [Round 4-C] 마지막 config 스냅샷 (즐겨찾기 재렌더용)
 let g_lastCfgSnapshot = null;
 
+// [Track C #19] 최근 사용 프리셋
+const RECENT_PRESET_KEY = "snw_recent_presets";
+const RECENT_PRESET_MAX = 5;
+
+// [Track D #18] 모바일 아코디언 상태
+const ACCORDION_STATE_KEY = "snw_accordion_collapsed";
+
 
 /* ==============================
  * 3. Dirty / 상태 배지
@@ -442,33 +449,47 @@ function loadPresetsFromConfig(cfg) {
 		g_windDictPresets = presets;
 		
 		if (!presets.length) {
-			const opt = document.createElement("option");
-			opt.value = "";
-			opt.textContent = "(프리셋 없음)";
-			sel.appendChild(opt);
-		} else {
-			// ── [Round 4-C #8] 즐겨찾기 상단 정렬 ──
-			const favs = getFavPresets();
-			const favSet = new Set(favs);
-			const sorted = [...presets].sort((a, b) => {
-				const aF = favSet.has(a.code);
-				const bF = favSet.has(b.code);
-				if (aF && !bF) return -1;
-				if (!aF && bF) return 1;
-				// 즐겨찾기 내 순서는 favs 배열 순서 유지
-				if (aF && bF) return favs.indexOf(a.code) - favs.indexOf(b.code);
-				return 0; // 원본 순서
-			});
-			
-			sorted.forEach((p, idx) => {
-				const opt = document.createElement("option");
-				opt.value = p.code || p.id || String(idx);
-				const star = favSet.has(p.code) ? "⭐ " : "";
-				opt.textContent = star + (p.name || p.label || p.code || `Preset ${idx + 1}`);
-				sel.appendChild(opt);
-			});
-		}
-		updateFavButton();
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "(프리셋 없음)";
+            sel.appendChild(opt);
+        } else {
+            // ── [Track C #19] ⭐ 즐겨찾기 / 🕘 최근 사용 / 전체 3단 그룹화 ──
+            const favs = getFavPresets();
+            const favSet = new Set(favs);
+            const recents = getRecentPresets();
+            const recentSet = new Set(recents);
+            
+            const favList = favs
+                .map(code => presets.find(p => p.code === code))
+                .filter(Boolean);
+            
+            const recentList = recents
+                .filter(code => !favSet.has(code)) // 즐겨찾기 우선
+                .map(code => presets.find(p => p.code === code))
+                .filter(Boolean);
+            
+            const excludeSet = new Set([...favs, ...recents]);
+            const restList = presets.filter(p => !excludeSet.has(p.code));
+            
+            const addGroup = (label, list) => {
+                if (!list.length) return;
+                const grp = document.createElement("optgroup");
+                grp.label = label;
+                list.forEach(p => {
+                    const opt = document.createElement("option");
+                    opt.value = p.code || p.id || "";
+                    opt.textContent = p.name || p.label || p.code || "";
+                    grp.appendChild(opt);
+                });
+                sel.appendChild(grp);
+            };
+            
+            addGroup("⭐ 즐겨찾기", favList);
+            addGroup("🕘 최근 사용", recentList);
+            addGroup("전체", restList);
+        }
+        updateFavButton();
 	}
 
 	const styleSel = elStyle();
@@ -507,6 +528,9 @@ function onPresetOrStyleChanged() {
 	const presetCode = elPreset() ? elPreset().value : "";
 	const styleCode  = elStyle()  ? elStyle().value  : "";
 	if (!presetCode) { updatePresetDescription(); return; }
+	
+    // [Track C #19] 프리셋 선택 시 최근 사용 기록
+    pushRecentPreset(presetCode);
 
 	const preset = g_windDictPresets.find((p) => p.code === presetCode);
 	if (!preset || !preset.factors) { updatePresetDescription(); return; }
@@ -552,6 +576,9 @@ async function applyTempPreset() {
 		notify("프리셋을 선택하세요.", "warn");
 		return;
 	}
+	
+    // [Track C #19] 임시 적용 시에도 최근 사용 기록
+    pushRecentPreset(presetCode);
 
 	const preset = g_windDictPresets.find((p) => p.code === presetCode);
 	if (!preset || !preset.factors) {
@@ -1252,6 +1279,92 @@ function quickEditProfile() {
 }
 
 /* ==============================
+ * 11-4. 최근 사용 프리셋 (Track C #19)
+ * ============================== */
+function getRecentPresets() {
+    try {
+        const raw = localStorage.getItem(RECENT_PRESET_KEY);
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+    } catch { return []; }
+}
+
+function setRecentPresets(list) {
+    try { localStorage.setItem(RECENT_PRESET_KEY, JSON.stringify(list)); } catch {}
+}
+
+function pushRecentPreset(code) {
+    if (!code) return;
+    
+    let recent = getRecentPresets();
+    recent = recent.filter(c => c !== code); // 중복 제거
+    recent.unshift(code); // 맨 앞으로
+    if (recent.length > RECENT_PRESET_MAX) {
+        recent.length = RECENT_PRESET_MAX; // 최대 5개
+    }
+    setRecentPresets(recent);
+}
+
+/* ==============================
+ * 11-5. 모바일 아코디언 (Track D #18)
+ * ============================== */
+function getAccordionState() {
+    try {
+        const raw = localStorage.getItem(ACCORDION_STATE_KEY);
+        const obj = raw ? JSON.parse(raw) : {};
+        return (obj && typeof obj === "object") ? obj : {};
+    } catch { return {}; }
+}
+
+function setAccordionState(state) {
+    try { localStorage.setItem(ACCORDION_STATE_KEY, JSON.stringify(state)); } catch {}
+}
+
+function initMobileAccordion() {
+    const isMobile = window.matchMedia("(max-width: 768px)").matches;
+    
+    // 데스크톱: 접힘 상태 전부 해제
+    if (!isMobile) {
+        document.querySelectorAll(".wrap > .grid > section.card.collapsed")
+            .forEach(c => c.classList.remove("collapsed"));
+        return;
+    }
+    
+    const savedState = getAccordionState();
+    
+    document.querySelectorAll(".wrap > .grid > section.card").forEach((card, idx) => {
+        const header = card.querySelector(":scope > .row.middle");
+        if (!header) return;
+        
+        const sectionId = `sec_${idx}`;
+        card.dataset.sectionId = sectionId;
+        
+        // 저장된 상태 복원 (매번)
+        if (savedState[sectionId]) {
+            card.classList.add("collapsed");
+        } else {
+            card.classList.remove("collapsed");
+        }
+        
+        // 리스너는 최초 1회만
+        if (header.dataset.accordionInit === "1") return;
+        header.dataset.accordionInit = "1";
+        
+        header.addEventListener("click", (e) => {
+            // 버튼/링크/입력/라벨은 클릭 무시
+            if (e.target.closest("button, a, input, select, label")) return;
+            
+            card.classList.toggle("collapsed");
+            
+            const st = getAccordionState();
+            st[sectionId] = card.classList.contains("collapsed");
+            setAccordionState(st);
+        });
+    });
+}
+
+
+/* ==============================
  * 12. 이벤트 바인딩
  * ============================== */
 function bindEvents() {
@@ -1394,7 +1507,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 	if (g_wifiStateTimer) clearInterval(g_wifiStateTimer);
 	g_wifiStateTimer = setInterval(loadWifiStateOnce, 30000);
-
+	
+	// [Track D #18] 모바일 아코디언 초기화
+    initMobileAccordion();
+    
+    // 모바일/데스크톱 전환 시 재적용
+    let v_lastMobile = window.matchMedia("(max-width: 768px)").matches;
+    window.addEventListener("resize", () => {
+        const v_now = window.matchMedia("(max-width: 768px)").matches;
+        if (v_now !== v_lastMobile) {
+            v_lastMobile = v_now;
+            initMobileAccordion();
+        }
+    });
+    
 	window.addEventListener("beforeunload", () => {
 		if (g_wifiStateTimer) {
 			clearInterval(g_wifiStateTimer);

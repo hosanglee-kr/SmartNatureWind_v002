@@ -552,3 +552,67 @@ pre#logConsole {
 .event-line .evt-warn  { color: #d68910; font-weight: 600; }
 .event-line .evt-err   { color: #c0392b; font-weight: 600; }
 .event-line .evt-ok    { color: #27ae60; }
+
+
+/* ============================================================ */
+/* Track C+D: 최근 사용 프리셋 + 모바일 아코디언                */
+/* ============================================================ */
+
+/* ── C: optgroup 시각 구분 ── */
+#preset optgroup {
+    font-weight: 700;
+    color: #4a637a;
+}
+#preset optgroup[label^="⭐"] option {
+    color: #b45309;
+}
+#preset optgroup[label^="🕘"] option {
+    color: #6b7280;
+}
+
+/* ── D: 모바일 아코디언 (≤768px) ── */
+@media (max-width: 768px) {
+
+    /* 헤더를 클릭 가능하게 */
+    .wrap > .grid > section.card > .row.middle:first-child {
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+        padding-right: 30px;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* 토글 아이콘 */
+    .wrap > .grid > section.card > .row.middle:first-child::after {
+        content: "▼";
+        position: absolute;
+        right: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.85em;
+        color: #7f8c8d;
+        transition: transform 0.2s ease;
+        pointer-events: none;
+    }
+
+    /* 접힘 상태: 화살표 회전 */
+    .wrap > .grid > section.card.collapsed > .row.middle:first-child::after {
+        transform: translateY(-50%) rotate(-90deg);
+    }
+
+    /* 접힘 상태: 헤더 외 모든 직계 자식 숨김 */
+    .wrap > .grid > section.card.collapsed > *:not(.row.middle):not(:first-child) {
+        display: none !important;
+    }
+
+    /* 접힌 카드 그림자 축소 */
+    .wrap > .grid > section.card.collapsed {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        margin-bottom: 12px;
+    }
+
+    /* 접힌 카드의 헤더 하단 마진 제거 */
+    .wrap > .grid > section.card.collapsed > .row.middle:first-child {
+        margin-bottom: 0;
+    }
+}

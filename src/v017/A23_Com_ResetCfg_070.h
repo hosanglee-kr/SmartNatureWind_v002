@@ -437,6 +437,26 @@ inline void A20_resetMotionDefault(ST_A20_MotionConfig_t& p_cfg) {
     p_cfg.timing.simIntervalMs     = 500;
     p_cfg.timing.gustIntervalMs    = 2000;
     p_cfg.timing.thermalIntervalMs = 3000;
+    
+
+    // sim — S10 resetDefaults()와 동일한 기본값
+    A40_ComFunc::copyStr2Buffer_safe(p_cfg.sim.presetCode,
+        G_A20_WindPreset_Arr[EN_A20_WINDPRESET_OCEAN].code,
+        sizeof(p_cfg.sim.presetCode));
+    A40_ComFunc::copyStr2Buffer_safe(p_cfg.sim.styleCode,
+        G_A20_WindStyle_Arr[EN_A20_WINDSTYLE_BALANCE].code,
+        sizeof(p_cfg.sim.styleCode));
+    p_cfg.sim.fanPowerEnabled = true;
+    p_cfg.sim.intensity       = 70.0f;
+    p_cfg.sim.variability     = 50.0f;
+    p_cfg.sim.gustFreq        = 45.0f;
+    p_cfg.sim.fanLimit        = 90.0f;
+    p_cfg.sim.minFan          = 10.0f;
+    p_cfg.sim.turbSigma       = 0.5f;
+    p_cfg.sim.turbLenScale    = 40.0f;
+    p_cfg.sim.thermalStrength = 2.0f;
+    p_cfg.sim.thermalRadius   = 18.0f;
+
 }
 
 

@@ -205,13 +205,12 @@ function _applySimToUi(sim, control) {
 	
 	// 실행 대상 (override > schedule > profile 우선)
 	{
-		const ovc   = control.override   || {};
 		const sch  = control.schedule   || {};
 		const prof = control.profile    || {};
 	
 		let target = "없음";
 	
-		if (ovc.active) {
+		if (ov && ov.active) {
 			if (ov.useFixed) {
 				target = `Override: 고정 ${ov.fixedPercent ?? 0}%`;
 			} else {
@@ -249,10 +248,12 @@ async function loadStateOnce() {
 async function loadConfig() {
 	showLoading();
 	try {
-		const [cfg, simData] = await Promise.all([
+		
+		const [cfg, motionData] = await Promise.all([
 			apiFetch(SNW_API.API_HTTP_CONFIG, { method: "GET" }, true),
-			apiFetch(SNW_API.API_HTTP_SIMULATION, { method: "GET" }, true)
+			apiFetch(SNW_API.API_HTTP_MOTION, { method: "GET" }, true)
 		]);
+		
 		if (!cfg) return;
 
 		// Wi-Fi
@@ -280,21 +281,21 @@ async function loadConfig() {
 
 		// 프리셋/스타일 옵션
 		loadPresetsFromConfig(cfg);
-
-		// Motion/Wind 폼 초기값
-		const sim = (simData && simData.sim) ? simData.sim : {};
-		if (elIntensity())   elIntensity().value   = sim.intensity ?? "";
+		
+		// Motion / Wind (config → motion.sim)
+		const sim = (motionData && motionData.motion && motionData.motion.sim) ? motionData.motion.sim : {};
+		if (elIntensity()) elIntensity().value = sim.intensity ?? "";
 		if (elVariability()) elVariability().value = sim.variability ?? "";
-		if (elGustFreq())    elGustFreq().value    = sim.gustFreq ?? "";
-		if (elFanLimit())    elFanLimit().value    = sim.fanLimit ?? "";
-		if (elMinFan())      elMinFan().value      = sim.minFan ?? "";
-		if (elTurbLen())     elTurbLen().value     = sim.turbLenScale ?? "";
-		if (elTurbSig())     elTurbSig().value     = sim.turbSigma ?? "";
-		if (elThermStr())    elThermStr().value    = sim.thermalStrength ?? "";
-		if (elThermRad())    elThermRad().value    = sim.thermalRadius ?? "";
-
-		if (elPreset() && sim.presetCode)  elPreset().value = sim.presetCode;
-		if (elStyle() && sim.styleCode)    elStyle().value  = sim.styleCode;
+		if (elGustFreq()) elGustFreq().value = sim.gustFreq ?? "";
+		if (elFanLimit()) elFanLimit().value = sim.fanLimit ?? "";
+		if (elMinFan()) elMinFan().value = sim.minFan ?? "";
+		if (elTurbLen()) elTurbLen().value = sim.turbLenScale ?? "";
+		if (elTurbSig()) elTurbSig().value = sim.turbSigma ?? "";
+		if (elThermStr()) elThermStr().value = sim.thermalStrength ?? "";
+		if (elThermRad()) elThermRad().value = sim.thermalRadius ?? "";
+		
+		if (elPreset() && sim.presetCode) elPreset().value = sim.presetCode;
+		if (elStyle() && sim.styleCode) elStyle().value = sim.styleCode;
 		if (elFanPower() && sim.fanPowerEnabled !== undefined) elFanPower().checked = !!sim.fanPowerEnabled;
 
 		// Timing
@@ -486,44 +487,46 @@ async function stopTemp() {
  * 7. 저장
  * ============================== */
 async function saveMotionPatch() {
-	const body = {
-		sim: {
-			presetCode:      elPreset() ? elPreset().value : null,
-			styleCode:       elStyle()  ? elStyle().value  : null,
-			fanPowerEnabled: elFanPower() ? elFanPower().checked : true,
-			intensity:       Number(elIntensity()   && elIntensity().value)   || 0,
-			variability:     Number(elVariability() && elVariability().value) || 0,
-			gustFreq:        Number(elGustFreq()    && elGustFreq().value)    || 0,
-			fanLimit:        Number(elFanLimit()    && elFanLimit().value)    || 0,
-			minFan:          Number(elMinFan()      && elMinFan().value)      || 0,
-			turbLenScale:    Number(elTurbLen()     && elTurbLen().value)     || 0,
-			turbSigma:       Number(elTurbSig()     && elTurbSig().value)     || 0,
-			thermalStrength: Number(elThermStr()    && elThermStr().value)    || 0,
-			thermalRadius:   Number(elThermRad()    && elThermRad().value)    || 0
+	// config 저장 (영구)
+	const motionBody = {
+		motion: {
+			sim: {
+				presetCode: elPreset() ? elPreset().value : null,
+				styleCode: elStyle() ? elStyle().value : null,
+				fanPowerEnabled: elFanPower() ? elFanPower().checked : true,
+				intensity: Number(elIntensity() && elIntensity().value) || 0,
+				variability: Number(elVariability() && elVariability().value) || 0,
+				gustFreq: Number(elGustFreq() && elGustFreq().value) || 0,
+				fanLimit: Number(elFanLimit() && elFanLimit().value) || 0,
+				minFan: Number(elMinFan() && elMinFan().value) || 0,
+				turbLenScale: Number(elTurbLen() && elTurbLen().value) || 0,
+				turbSigma: Number(elTurbSig() && elTurbSig().value) || 0,
+				thermalStrength: Number(elThermStr() && elThermStr().value) || 0,
+				thermalRadius: Number(elThermRad() && elThermRad().value) || 0
+			}
 		}
 	};
-
-	// 1) sim patch
-	await apiFetch(SNW_API.API_HTTP_SIMULATION, {
+	
+	await apiFetch(SNW_API.API_HTTP_MOTION, {
 		method: "POST",
-		body: JSON.stringify(body)
+		body: JSON.stringify(motionBody)
 	}, false, "풍속 설정");
-
-	// 2) config save (파일 저장)
+	
+	// 파일 저장
 	await apiFetch(SNW_API.API_HTTP_CONFIG_SAVE, {
 		method: "POST",
 		body: JSON.stringify({})
 	}, true, "");
-
-	// 3) 임시 적용 중이었으면 해제
+	
+	// override 해제 (기존)
 	if (g_overrideActive) {
 		await apiFetch(SNW_API.API_HTTP_CTL_OVR_CLEAR, { method: "POST" }, true, "");
 	}
-
+	
 	g_configDirty = false;
 	updateDirtyButton();
 	notify("풍속 설정이 저장되었습니다.", "ok");
-
+	
 	setTimeout(loadStateOnce, 300);
 }
 

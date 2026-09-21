@@ -189,27 +189,15 @@ class CL_S10_Simulation {
 	static unsigned long s_lastChartLogMs;
 	static unsigned long s_lastChartSampleMs;
 
-	/*
-	struct ST_ChartEntry {
-		unsigned long timestamp;
-		float		  wind_speed;
-		float		  pwm_duty;
-		float		  intensity;
-		float		  variability;
-		float		  turbulence_sigma;
-		uint8_t		  preset_index;
-		bool		  gust_active;
-		bool		  thermal_active;
-	};
-	static std::deque<ST_ChartEntry> s_chartBuffer;
-	static unsigned long			 s_lastChartLogMs;
-	static unsigned long			 s_lastChartSampleMs;
-	*/
-
   public:
 	void begin(CL_P10_PWM& p_pwm);
 	void stop();
 	void resetDefaults();
+	
+	void reapplyPresetCore() {
+	    applyPresetCore(presetCode);
+	    initPhaseFromBase();
+	}
 
 	void tick();
 	void applyResolvedWind(const ST_A20_ResolvedWind_t& p_resolved);

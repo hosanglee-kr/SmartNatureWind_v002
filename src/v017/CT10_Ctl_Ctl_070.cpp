@@ -427,6 +427,50 @@ void CL_CT10_ControlManager::stopOverride() {
 }
 
 // --------------------------------------------------
+// config(g_root.motion->sim) → S10 runtime 반영
+//  - W10 routeMotion의 patch 후 호출
+// --------------------------------------------------
+void CL_CT10_ControlManager::applyMotionSimConfigToSim() {
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
+        return;
+    }
+
+    if (!g_A20_config_root.motion) return;
+
+    const ST_A20_MotSimCfg_t& v_src = g_A20_config_root.motion->sim;
+
+    sim.userIntensity   = A40_ComFunc::clampVal<float>(v_src.intensity,   0.0f, 100.0f);
+    sim.userVariability = A40_ComFunc::clampVal<float>(v_src.variability, 0.0f, 100.0f);
+    sim.userGustFreq    = A40_ComFunc::clampVal<float>(v_src.gustFreq,    0.0f, 100.0f);
+    sim.fanLimitPct     = A40_ComFunc::clampVal<float>(v_src.fanLimit,    0.0f, 100.0f);
+    sim.minFanPct       = A40_ComFunc::clampVal<float>(v_src.minFan,      0.0f, 100.0f);
+    sim.turbSigma       = v_src.turbSigma;
+    sim.turbLenScale    = v_src.turbLenScale;
+    sim.thermalStrength = v_src.thermalStrength;
+    sim.thermalRadius   = v_src.thermalRadius;
+    sim.fanPowerEnabled = v_src.fanPowerEnabled;
+
+    if (v_src.presetCode[0]) {
+        memset(sim.presetCode, 0, sizeof(sim.presetCode));
+        strlcpy(sim.presetCode, v_src.presetCode, sizeof(sim.presetCode));
+    }
+    
+    sim.reapplyPresetCore();
+    
+    if (v_src.styleCode[0]) {
+        memset(sim.styleCode, 0, sizeof(sim.styleCode));
+        strlcpy(sim.styleCode, v_src.styleCode, sizeof(sim.styleCode));
+    }
+
+    CL_D10_Logger::log(EN_L10_LOG_DEBUG,
+                       "[CT10] S10 runtime updated from motion.sim (intensity=%.1f)",
+                       sim.userIntensity);
+}
+
+
+// --------------------------------------------------
 // tick loop
 // --------------------------------------------------
 

@@ -78,6 +78,47 @@ void CL_S10_Simulation::begin(CL_P10_PWM& p_pwm) {
     _fanCfgSnap = nullptr;
 
     resetDefaults();
+    
+    // Config override
+    //  - g_root.motion->sim 이 로드되어 있으면 런타임 값 덮어쓰기
+    //  - C10::loadAll 후에 S10::begin이 호출되므로 안전
+    if (g_A20_config_root.motion) {
+        const ST_A20_MotSimCfg_t& v_src = g_A20_config_root.motion->sim;
+
+        userIntensity   = A40_ComFunc::clampVal<float>(v_src.intensity,   0.0f, 100.0f);
+        userVariability = A40_ComFunc::clampVal<float>(v_src.variability, 0.0f, 100.0f);
+        userGustFreq    = A40_ComFunc::clampVal<float>(v_src.gustFreq,    0.0f, 100.0f);
+        fanLimitPct     = A40_ComFunc::clampVal<float>(v_src.fanLimit,    0.0f, 100.0f);
+        minFanPct       = A40_ComFunc::clampVal<float>(v_src.minFan,      0.0f, 100.0f);
+        turbSigma       = v_src.turbSigma;
+        turbLenScale    = v_src.turbLenScale;
+        thermalStrength = v_src.thermalStrength;
+        thermalRadius   = v_src.thermalRadius;
+        fanPowerEnabled = v_src.fanPowerEnabled;
+
+        if (v_src.presetCode[0]) {
+            memset(presetCode, 0, sizeof(presetCode));
+            strlcpy(presetCode, v_src.presetCode, sizeof(presetCode));
+        }
+        if (v_src.styleCode[0]) {
+            memset(styleCode, 0, sizeof(styleCode));
+            strlcpy(styleCode, v_src.styleCode, sizeof(styleCode));
+        }
+        
+        // preset core + phase 재적용
+        //  - resetDefaults()에서 OCEAN 기준으로 초기화된 물리 파라미터를
+        //    config의 presetCode 기준으로 재계산
+        //  - baseMinWind / baseMaxWind / gustProbBase /
+        //    gustStrengthMax / thermalFreqBase 갱신
+        //  - initPhaseFromBase()로 phaseMinWind/phaseMaxWind 재설정
+        applyPresetCore(presetCode);
+        initPhaseFromBase();
+    
+
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
+                           "[S10] Config applied: preset=%s intensity=%.1f",
+                           presetCode, userIntensity);
+    }
 
     // 풍속 이력 버퍼(history) 초기화 및 인덱스 리셋 (평균 풍속 계산용)
     memset(history, 0, sizeof(history));

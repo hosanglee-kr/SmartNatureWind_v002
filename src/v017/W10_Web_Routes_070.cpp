@@ -329,6 +329,10 @@ void CL_W10_WebAPI::routeMotion() {
             bool v_changed = false;
             if (g_A20_config_root.motion) {
                 v_changed = CL_C10_ConfigManager::patchMotionFromJson(*g_A20_config_root.motion, v_doc);
+                if (v_changed && s_control) {
+                    // config → S10 runtime 즉시 반영
+                    s_control->applyMotionSimConfigToSim();
+                }
             }
 
             JsonDocument v_res;
@@ -359,6 +363,10 @@ void CL_W10_WebAPI::routeMotion() {
             bool v_changed = false;
             if (g_A20_config_root.motion) {
                 v_changed = CL_C10_ConfigManager::patchMotionFromJson(*g_A20_config_root.motion, v_doc);
+                if (v_changed && s_control) {
+                    // config → S10 runtime 즉시 반영
+                    s_control->applyMotionSimConfigToSim();
+                }
             }
 
             JsonDocument v_res;

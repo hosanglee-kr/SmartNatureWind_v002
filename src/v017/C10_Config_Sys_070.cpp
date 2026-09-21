@@ -389,8 +389,30 @@ bool CL_C10_ConfigManager::loadMotionConfig(ST_A20_MotionConfig_t& p_cfg) {
             p_cfg.timing.thermalIntervalMs = j_timing["thermalIntervalMs"].as<uint16_t>();
     }
 
+    // sim (있으면 덮어쓰기)
+    JsonObjectConst j_sim = j["sim"].as<JsonObjectConst>();
+    if (!j_sim.isNull()) {
+        const char* v_pc = A40_ComFunc::Json_getStr(j_sim, "presetCode", nullptr);
+        if (v_pc && v_pc[0]) strlcpy(p_cfg.sim.presetCode, v_pc, sizeof(p_cfg.sim.presetCode));
+
+        const char* v_sc = A40_ComFunc::Json_getStr(j_sim, "styleCode", nullptr);
+        if (v_sc && v_sc[0]) strlcpy(p_cfg.sim.styleCode, v_sc, sizeof(p_cfg.sim.styleCode));
+
+        if (!j_sim["fanPowerEnabled"].isNull()) p_cfg.sim.fanPowerEnabled = j_sim["fanPowerEnabled"].as<bool>();
+        if (!j_sim["intensity"].isNull())       p_cfg.sim.intensity       = j_sim["intensity"].as<float>();
+        if (!j_sim["variability"].isNull())     p_cfg.sim.variability     = j_sim["variability"].as<float>();
+        if (!j_sim["gustFreq"].isNull())        p_cfg.sim.gustFreq        = j_sim["gustFreq"].as<float>();
+        if (!j_sim["fanLimit"].isNull())        p_cfg.sim.fanLimit        = j_sim["fanLimit"].as<float>();
+        if (!j_sim["minFan"].isNull())          p_cfg.sim.minFan          = j_sim["minFan"].as<float>();
+        if (!j_sim["turbSigma"].isNull())       p_cfg.sim.turbSigma       = j_sim["turbSigma"].as<float>();
+        if (!j_sim["turbLenScale"].isNull())    p_cfg.sim.turbLenScale    = j_sim["turbLenScale"].as<float>();
+        if (!j_sim["thermalStrength"].isNull()) p_cfg.sim.thermalStrength = j_sim["thermalStrength"].as<float>();
+        if (!j_sim["thermalRadius"].isNull())   p_cfg.sim.thermalRadius   = j_sim["thermalRadius"].as<float>();
+    }
+
     return true;
 }
+
 
 // =====================================================
 // 2-2. 목적물별 Save 구현 (System/Wifi/Motion) - camelCase 저장
@@ -492,7 +514,21 @@ bool CL_C10_ConfigManager::saveMotionConfig(const ST_A20_MotionConfig_t& p_cfg) 
     d["motion"]["timing"]["simIntervalMs"]     = p_cfg.timing.simIntervalMs;
     d["motion"]["timing"]["gustIntervalMs"]    = p_cfg.timing.gustIntervalMs;
     d["motion"]["timing"]["thermalIntervalMs"] = p_cfg.timing.thermalIntervalMs;
-
+    
+    // [NEW] sim
+    d["motion"]["sim"]["presetCode"]      = p_cfg.sim.presetCode;
+    d["motion"]["sim"]["styleCode"]       = p_cfg.sim.styleCode;
+    d["motion"]["sim"]["fanPowerEnabled"] = p_cfg.sim.fanPowerEnabled;
+    d["motion"]["sim"]["intensity"]       = p_cfg.sim.intensity;
+    d["motion"]["sim"]["variability"]     = p_cfg.sim.variability;
+    d["motion"]["sim"]["gustFreq"]        = p_cfg.sim.gustFreq;
+    d["motion"]["sim"]["fanLimit"]        = p_cfg.sim.fanLimit;
+    d["motion"]["sim"]["minFan"]          = p_cfg.sim.minFan;
+    d["motion"]["sim"]["turbSigma"]       = p_cfg.sim.turbSigma;
+    d["motion"]["sim"]["turbLenScale"]    = p_cfg.sim.turbLenScale;
+    d["motion"]["sim"]["thermalStrength"] = p_cfg.sim.thermalStrength;
+    d["motion"]["sim"]["thermalRadius"]   = p_cfg.sim.thermalRadius;
+    
     return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.motion, d, true, true, __func__);
 }
 
@@ -942,6 +978,47 @@ bool CL_C10_ConfigManager::patchMotionFromJson(ST_A20_MotionConfig_t& p_config, 
             v_changed                         = true;
         }
     }
+    
+    // sim
+    JsonObjectConst j_sim = j_motion["sim"].as<JsonObjectConst>();
+    if (!j_sim.isNull()) {
+        const char* v_pc = A40_ComFunc::Json_getStr(j_sim, "presetCode", "");
+        if (v_pc && v_pc[0] && strcmp(v_pc, p_config.sim.presetCode) != 0) {
+            strlcpy(p_config.sim.presetCode, v_pc, sizeof(p_config.sim.presetCode));
+            v_changed = true;
+        }
+        const char* v_sc = A40_ComFunc::Json_getStr(j_sim, "styleCode", "");
+        if (v_sc && v_sc[0] && strcmp(v_sc, p_config.sim.styleCode) != 0) {
+            strlcpy(p_config.sim.styleCode, v_sc, sizeof(p_config.sim.styleCode));
+            v_changed = true;
+        }
+    
+        #define PATCH_SIM_BOOL(field, key) \
+            if (!j_sim[key].isNull()) { \
+                bool v = j_sim[key].as<bool>(); \
+                if (v != p_config.sim.field) { p_config.sim.field = v; v_changed = true; } \
+            }
+        #define PATCH_SIM_FLOAT(field, key) \
+            if (!j_sim[key].isNull()) { \
+                float v = j_sim[key].as<float>(); \
+                if (v != p_config.sim.field) { p_config.sim.field = v; v_changed = true; } \
+            }
+    
+        PATCH_SIM_BOOL(fanPowerEnabled, "fanPowerEnabled");
+        PATCH_SIM_FLOAT(intensity,       "intensity");
+        PATCH_SIM_FLOAT(variability,     "variability");
+        PATCH_SIM_FLOAT(gustFreq,        "gustFreq");
+        PATCH_SIM_FLOAT(fanLimit,        "fanLimit");
+        PATCH_SIM_FLOAT(minFan,          "minFan");
+        PATCH_SIM_FLOAT(turbSigma,       "turbSigma");
+        PATCH_SIM_FLOAT(turbLenScale,    "turbLenScale");
+        PATCH_SIM_FLOAT(thermalStrength, "thermalStrength");
+        PATCH_SIM_FLOAT(thermalRadius,   "thermalRadius");
+    
+        #undef PATCH_SIM_BOOL
+        #undef PATCH_SIM_FLOAT
+    }
+
 
     if (v_changed) {
         //  (3) Dirty 원자 set
@@ -1037,4 +1114,19 @@ void CL_C10_ConfigManager::toJson_Motion(const ST_A20_MotionConfig_t& p, JsonDoc
     d["motion"]["timing"]["simIntervalMs"]     = p.timing.simIntervalMs;
     d["motion"]["timing"]["gustIntervalMs"]    = p.timing.gustIntervalMs;
     d["motion"]["timing"]["thermalIntervalMs"] = p.timing.thermalIntervalMs;
+    
+    // sim
+    d["motion"]["sim"]["presetCode"]      = p.sim.presetCode;
+    d["motion"]["sim"]["styleCode"]       = p.sim.styleCode;
+    d["motion"]["sim"]["fanPowerEnabled"] = p.sim.fanPowerEnabled;
+    d["motion"]["sim"]["intensity"]       = p.sim.intensity;
+    d["motion"]["sim"]["variability"]     = p.sim.variability;
+    d["motion"]["sim"]["gustFreq"]        = p.sim.gustFreq;
+    d["motion"]["sim"]["fanLimit"]        = p.sim.fanLimit;
+    d["motion"]["sim"]["minFan"]          = p.sim.minFan;
+    d["motion"]["sim"]["turbSigma"]       = p.sim.turbSigma;
+    d["motion"]["sim"]["turbLenScale"]    = p.sim.turbLenScale;
+    d["motion"]["sim"]["thermalStrength"] = p.sim.thermalStrength;
+    d["motion"]["sim"]["thermalRadius"]   = p.sim.thermalRadius;
+
 }

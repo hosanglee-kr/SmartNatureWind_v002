@@ -64,12 +64,12 @@
   let chartWind, chartParam, chartTurbThermSig, chartEvent, chartPreset, chartTiming;
 
   function initCharts() {
-    const ctxWind        = $("#chartWind");
-    const ctxParam       = $("#chartParams");
+    const ctxWind = $("#chartWind");
+    const ctxParam = $("#chartParams");
     const ctxTurbThermSig = $("#chartTurbThermSig");
-    const ctxEvent       = $("#chartEvents");
-    const ctxPreset      = $("#chartPreset");
-    const ctxTiming      = $("#chartTiming");
+    const ctxEvent = $("#chartEvents");
+    const ctxPreset = $("#chartPreset");
+    const ctxTiming = $("#chartTiming");
 
     if (!ctxWind || !ctxParam || !ctxTurbThermSig || !ctxEvent || !ctxPreset || !ctxTiming) {
       console.error("[ChartT2] Canvas 요소가 일부 없습니다.");
@@ -89,7 +89,7 @@
         scales: {
           ...baseOptions.scales,
           yWind: { position: "left", min: 0, max: 20 },
-          yPWM:  { position: "right", min: 0, max: 100, grid: { drawOnChartArea: false } }
+          yPWM: { position: "right", min: 0, max: 100, grid: { drawOnChartArea: false } }
         }
       }
     });
@@ -98,10 +98,10 @@
       type: "line",
       data: {
         datasets: [
-          { label: "강도(Intensity %)",     borderColor: "#4caf50", data: [] },
+          { label: "강도(Intensity %)", borderColor: "#4caf50", data: [] },
           { label: "가변성(Variability %)", borderColor: "#ff9800", data: [] },
-          { label: "팬 최대(Fan Limit %)",  borderColor: "#00bcd4", data: [] },
-          { label: "팬 최소(Min Fan %)",    borderColor: "#e91e63", data: [] }
+          { label: "팬 최대(Fan Limit %)", borderColor: "#00bcd4", data: [] },
+          { label: "팬 최소(Min Fan %)", borderColor: "#e91e63", data: [] }
         ]
       },
       options: {
@@ -117,8 +117,8 @@
       type: "line",
       data: {
         datasets: [
-          { label: "난류 시그마(Turb Sig)",  yAxisID: "ySig", borderColor: "#9c27b0", data: [], tension: 0.3 },
-          { label: "난류 길이(Turb Len)",    yAxisID: "yLen", borderColor: "#795548", data: [], tension: 0.3 },
+          { label: "난류 시그마(Turb Sig)", yAxisID: "ySig", borderColor: "#9c27b0", data: [], tension: 0.3 },
+          { label: "난류 길이(Turb Len)", yAxisID: "yLen", borderColor: "#795548", data: [], tension: 0.3 },
           { label: "열기포 세기(Therm Str)", yAxisID: "ySig", borderColor: "#8bc34a", data: [], tension: 0.3, borderDash: [5, 5] },
           { label: "열기포 반경(Therm Rad)", yAxisID: "yLen", borderColor: "#ffc107", data: [], tension: 0.3, borderDash: [5, 5] }
         ]
@@ -137,8 +137,8 @@
       type: "line",
       data: {
         datasets: [
-          { label: "돌풍(Gust)",       borderColor: "#f44336", data: [], stepped: true },
-          { label: "열기포(Thermal)",  borderColor: "#03a9f4", data: [], stepped: true }
+          { label: "돌풍(Gust)", borderColor: "#f44336", data: [], stepped: true },
+          { label: "열기포(Thermal)", borderColor: "#03a9f4", data: [], stepped: true }
         ]
       },
       options: {
@@ -170,8 +170,8 @@
       type: "line",
       data: {
         datasets: [
-          { label: "Sim Interval (ms)",     borderColor: "#9e9e9e", data: [], tension: 0.3 },
-          { label: "Gust Interval (ms)",    borderColor: "#bdbdbd", data: [], tension: 0.3 },
+          { label: "Sim Interval (ms)", borderColor: "#9e9e9e", data: [], tension: 0.3 },
+          { label: "Gust Interval (ms)", borderColor: "#bdbdbd", data: [], tension: 0.3 },
           { label: "Thermal Interval (ms)", borderColor: "#e0e0e0", data: [], tension: 0.3 }
         ]
       },
@@ -186,44 +186,65 @@
   }
 
   // ======================= WS 데이터 → 차트 반영 =======================
+  // [diffOnly 대응] 백엔드는 매 tick마다 최신 1개만 전송
+  //  → 프론트는 append + max 120개 유지
+  const MAX_CHART_POINTS = 120;   // S10 CHART_CAPACITY와 동일
+
+  function _appendDataset(dataset, recs, key, transform) {
+    if (!Array.isArray(dataset) || !Array.isArray(recs)) return;
+
+    for (const r of recs) {
+      const x = Number(r.t) || 0;
+      if (!x) continue;
+
+      let y = r[key];
+      if (transform) y = transform(y);
+
+      // 중복 timestamp 방지 (동일 t 는 마지막 값으로 교체)
+      const last = dataset[dataset.length - 1];
+      if (last && last.x === x) {
+        last.y = y;
+      } else {
+        dataset.push({ x, y });
+      }
+    }
+
+    // cap
+    if (dataset.length > MAX_CHART_POINTS) {
+      dataset.splice(0, dataset.length - MAX_CHART_POINTS);
+    }
+  }
 
   function processChartRecords(recs) {
     if (!Array.isArray(recs) || recs.length === 0) return;
 
-    // [Epoch] backend가 epoch ms를 반환하므로 그대로 사용
-    const toXY = (key) =>
-      recs.map((r) => ({
-        x: Number(r.t) || 0,
-        y: r[key]
-      }));
-
     // 1) 풍속 / PWM
-    chartWind.data.datasets[0].data = toXY("wind");
-    chartWind.data.datasets[1].data = toXY("pwm");
+    _appendDataset(chartWind.data.datasets[0].data, recs, "wind");
+    _appendDataset(chartWind.data.datasets[1].data, recs, "pwm");
 
     // 2) 핵심 파라미터
-    chartParam.data.datasets[0].data = toXY("intensity");
-    chartParam.data.datasets[1].data = toXY("variability");
-    chartParam.data.datasets[2].data = toXY("fanLimit");
-    chartParam.data.datasets[3].data = toXY("minFan");
+    _appendDataset(chartParam.data.datasets[0].data, recs, "intensity");
+    _appendDataset(chartParam.data.datasets[1].data, recs, "variability");
+    _appendDataset(chartParam.data.datasets[2].data, recs, "fanLimit");
+    _appendDataset(chartParam.data.datasets[3].data, recs, "minFan");
 
     // 3) 난류/열기포
-    chartTurbThermSig.data.datasets[0].data = toXY("turb_sig");
-    chartTurbThermSig.data.datasets[1].data = toXY("turb_len");
-    chartTurbThermSig.data.datasets[2].data = toXY("therm_str");
-    chartTurbThermSig.data.datasets[3].data = toXY("therm_rad");
+    _appendDataset(chartTurbThermSig.data.datasets[0].data, recs, "turb_sig");
+    _appendDataset(chartTurbThermSig.data.datasets[1].data, recs, "turb_len");
+    _appendDataset(chartTurbThermSig.data.datasets[2].data, recs, "therm_str");
+    _appendDataset(chartTurbThermSig.data.datasets[3].data, recs, "therm_rad");
 
     // 4) 이벤트 (0/1)
-    chartEvent.data.datasets[0].data = toXY("gust").map((p) => ({ x: p.x, y: p.y ? 1 : 0 }));
-    chartEvent.data.datasets[1].data = toXY("thermal").map((p) => ({ x: p.x, y: p.y ? 1 : 0 }));
+    _appendDataset(chartEvent.data.datasets[0].data, recs, "gust", (v) => v ? 1 : 0);
+    _appendDataset(chartEvent.data.datasets[1].data, recs, "thermal", (v) => v ? 1 : 0);
 
     // 5) 프리셋 인덱스
-    chartPreset.data.datasets[0].data = toXY("preset");
+    _appendDataset(chartPreset.data.datasets[0].data, recs, "preset");
 
     // 6) 타이밍
-    chartTiming.data.datasets[0].data = toXY("sim_int");
-    chartTiming.data.datasets[1].data = toXY("gust_int");
-    chartTiming.data.datasets[2].data = toXY("thermal_int");
+    _appendDataset(chartTiming.data.datasets[0].data, recs, "sim_int");
+    _appendDataset(chartTiming.data.datasets[1].data, recs, "gust_int");
+    _appendDataset(chartTiming.data.datasets[2].data, recs, "thermal_int");
 
     charts.forEach((c) => c.update("none"));
 
@@ -292,8 +313,8 @@
     });
 
     document.querySelectorAll(".chart-container").forEach((container) => {
-      const header   = container.querySelector(".chart-header");
-      const content  = container.querySelector(".chart-content");
+      const header = container.querySelector(".chart-header");
+      const content = container.querySelector(".chart-content");
       const btnToggle = container.querySelector(".btn-toggle");
 
       if (!header || !content || !btnToggle) return;

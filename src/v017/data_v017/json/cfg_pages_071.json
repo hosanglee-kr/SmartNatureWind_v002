@@ -104,8 +104,8 @@
     { "uriFrom": "/info", "uriTo": "/P090_info_071.html" }
   ],
   "assets": [
-    { "uri": "/P000_common_070.css", "path": "/html_v3/P000_common_070.css", "isCommon": true },
-    { "uri": "/P000_common_070.js" , "path": "/html_v3/P000_common_070.js" , "isCommon": true },
-    { "uri": "/P001_API_070.js"    , "path": "/html_v3/P001_API_070.js"    , "isCommon": true }
+    { "uri": "/P000_common_071.css", "path": "/html_v3/P000_common_071.css", "isCommon": true },
+    { "uri": "/P000_common_071.js" , "path": "/html_v3/P000_common_071.js" , "isCommon": true },
+    { "uri": "/P001_API_071.js"    , "path": "/html_v3/P001_API_071.js"    , "isCommon": true }
   ]
 }

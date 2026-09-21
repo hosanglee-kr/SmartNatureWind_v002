@@ -677,9 +677,9 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
         v_c.isCommon = p_isCommon;
     };
 
-    v_addCommonAsset("/P000_common_070.css", "/html_v3/P000_common_070.css", true);
-    v_addCommonAsset("/P000_common_070.js",  "/html_v3/P000_common_070.js",  true);
-    v_addCommonAsset("/P001_API_070.js",     "/html_v3/P001_API_070.js",     true);
+    v_addCommonAsset("/P000_common_071.css", "/html_v3/P000_common_071.css", true);
+    v_addCommonAsset("/P000_common_071.js",  "/html_v3/P000_common_071.js",  true);
+    v_addCommonAsset("/P001_API_071.js",     "/html_v3/P001_API_071.js",     true);
 }
 
 

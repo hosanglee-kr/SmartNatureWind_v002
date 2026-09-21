@@ -208,10 +208,20 @@ static bool C10_loadWindDictFromJsonChecked(const JsonObjectConst& p_windDictObj
         JsonArrayConst v_arr = p_windDictObj["presets"].as<JsonArrayConst>();
         for (JsonObjectConst v_jsonObj_preset : v_arr) {
             if (p_out.presetCount >= (uint8_t)EN_A20_WINDPRESET_COUNT) break;
-
+    
             ST_A20_PresetEntry_t& v_preset = p_out.presets[p_out.presetCount];
             C10_fromJson_WindPreset(v_jsonObj_preset, v_preset);
-
+    
+            // [Track-1 #1-3] idx 무결성 검증 (경고만, 로직 영향 없음)
+            if (!v_jsonObj_preset["idx"].isNull()) {
+                uint8_t v_fileIdx = v_jsonObj_preset["idx"].as<uint8_t>();
+                if (v_fileIdx != p_out.presetCount) {
+                    CL_D10_Logger::log(EN_L10_LOG_WARN,
+                        "[C10] windDict preset idx mismatch: file=%u, arrayPos=%u (code=%s)",
+                        (unsigned)v_fileIdx, (unsigned)p_out.presetCount, v_preset.code);
+                }
+            }
+    
             // 운영급 검증: code/name trim+길이+문자+공백/중복
             char v_code[A20_Const::MAX_CODE_LEN];
             char v_name[A20_Const::MAX_NAME_LEN];
@@ -246,6 +256,16 @@ static bool C10_loadWindDictFromJsonChecked(const JsonObjectConst& p_windDictObj
 
             ST_A20_StyleEntry_t& v_s = p_out.styles[p_out.styleCount];
             C10_fromJson_WindStyle(v_jsonObj_style, v_s);
+            
+            // [Track-1 #1-3] idx 무결성 검증
+            if (!v_jsonObj_style["idx"].isNull()) {
+                uint8_t v_fileIdx = v_jsonObj_style["idx"].as<uint8_t>();
+                if (v_fileIdx != p_out.styleCount) {
+                    CL_D10_Logger::log(EN_L10_LOG_WARN,
+                        "[C10] windDict style idx mismatch: file=%u, arrayPos=%u (code=%s)",
+                        (unsigned)v_fileIdx, (unsigned)p_out.styleCount, v_s.code);
+                }
+            }
 
             // 운영급 검증
             char v_code[A20_Const::MAX_CODE_LEN];
@@ -422,6 +442,7 @@ bool CL_C10_ConfigManager::saveWindDict(const ST_A20_WindDict_t& p_cfg) {
 
         JsonObject v_jsonObj_preset = d["windDict"]["presets"][v_i].to<JsonObject>();
 
+        v_jsonObj_preset["idx"]  = v_i;   // [Track-1 #1-3] 배열 위치 저장
         v_jsonObj_preset["name"] = v_name;
         v_jsonObj_preset["code"] = v_code;
 
@@ -455,9 +476,10 @@ bool CL_C10_ConfigManager::saveWindDict(const ST_A20_WindDict_t& p_cfg) {
 
         JsonObject v_jsonObj_style = d["windDict"]["styles"][v_i].to<JsonObject>();
 
+        v_jsonObj_style["idx"]  = v_i;   // [Track-1 #1-3] 배열 위치 저장
         v_jsonObj_style["name"] = v_name;
         v_jsonObj_style["code"] = v_code;
-
+        
         JsonObject v_f           = v_jsonObj_style["factors"].to<JsonObject>();
         v_f["intensityFactor"]   = v_s.factors.intensityFactor;
         v_f["variabilityFactor"] = v_s.factors.variabilityFactor;
@@ -490,8 +512,10 @@ void CL_C10_ConfigManager::toJson_WindDict(const ST_A20_WindDict_t& p_cfg, JsonD
 
     for (uint8_t v_i = 0; v_i < v_presetCount; v_i++) {
         const ST_A20_PresetEntry_t& v_preset         = p_cfg.presets[v_i];
+        
         JsonObject                  v_jsonObj_preset = d["windDict"]["presets"][v_i].to<JsonObject>();
 
+        v_jsonObj_preset["idx"]  = v_i;   // [Track-1 #1-3] 배열 위치 노출
         v_jsonObj_preset["name"] = v_preset.name;
         v_jsonObj_preset["code"] = v_preset.code;
 
@@ -515,8 +539,10 @@ void CL_C10_ConfigManager::toJson_WindDict(const ST_A20_WindDict_t& p_cfg, JsonD
 
     for (uint8_t v_i = 0; v_i < v_styleCount; v_i++) {
         const ST_A20_StyleEntry_t& v_s             = p_cfg.styles[v_i];
+        
         JsonObject                 v_jsonObj_style = d["windDict"]["styles"][v_i].to<JsonObject>();
 
+        v_jsonObj_style["idx"]  = v_i;   // [Track-1 #1-3] 배열 위치 노출
         v_jsonObj_style["name"] = v_s.name;
         v_jsonObj_style["code"] = v_s.code;
 

@@ -636,8 +636,8 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
         p_cfg.pageCount = 1;
 
         ST_A20_PageItem_t& v_p = p_cfg.pages[0];
-        A40_ComFunc::copyStr2Buffer_safe(v_p.uri,   "/P010_main_021.html",       sizeof(v_p.uri));
-        A40_ComFunc::copyStr2Buffer_safe(v_p.path,  "/html_v2/P010_main_021.html", sizeof(v_p.path));
+        A40_ComFunc::copyStr2Buffer_safe(v_p.uri,   "/P010_main_071.html",       sizeof(v_p.uri));
+        A40_ComFunc::copyStr2Buffer_safe(v_p.path,  "/html_v3/P010_main_071.html", sizeof(v_p.path));
         A40_ComFunc::copyStr2Buffer_safe(v_p.label, "Main",                     sizeof(v_p.label));
         v_p.enable = true;
         v_p.isMain = true;
@@ -646,13 +646,13 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
         v_p.pageAssetCount = 0;
         if (A20_Const::MAX_PAGE_ASSETS >= 1) {
             ST_A20_PageAsset_t& v_a0 = v_p.pageAssets[v_p.pageAssetCount++];
-            A40_ComFunc::copyStr2Buffer_safe(v_a0.uri,  "/P010_main_021.css", sizeof(v_a0.uri));
-            A40_ComFunc::copyStr2Buffer_safe(v_a0.path, "/html_v2/P010_main_021.css", sizeof(v_a0.path));
+            A40_ComFunc::copyStr2Buffer_safe(v_a0.uri,  "/P010_main_071.css", sizeof(v_a0.uri));
+            A40_ComFunc::copyStr2Buffer_safe(v_a0.path, "/html_v3/P010_main_071.css", sizeof(v_a0.path));
         }
         if (A20_Const::MAX_PAGE_ASSETS >= 2) {
             ST_A20_PageAsset_t& v_a1 = v_p.pageAssets[v_p.pageAssetCount++];
-            A40_ComFunc::copyStr2Buffer_safe(v_a1.uri,  "/P010_main_021.js", sizeof(v_a1.uri));
-            A40_ComFunc::copyStr2Buffer_safe(v_a1.path, "/html_v2/P010_main_021.js", sizeof(v_a1.path));
+            A40_ComFunc::copyStr2Buffer_safe(v_a1.uri,  "/P010_main_071.js", sizeof(v_a1.uri));
+            A40_ComFunc::copyStr2Buffer_safe(v_a1.path, "/html_v3/P010_main_071.js", sizeof(v_a1.path));
         }
     }
 
@@ -664,9 +664,9 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
         A40_ComFunc::copyStr2Buffer_safe(v_r.uriTo,   p_to,   sizeof(v_r.uriTo));
     };
 
-    v_addRedirect("/",          "/P010_main_021.html");
-    v_addRedirect("/index.html","/P010_main_021.html");
-    v_addRedirect("/P010_main", "/P010_main_021.html");
+    v_addRedirect("/",          "/P010_main_071.html");
+    v_addRedirect("/index.html","/P010_main_071.html");
+    v_addRedirect("/P010_main", "/P010_main_071.html");
 
     // common asset 추가(내부 유틸)
     auto v_addCommonAsset = [&](const char* p_uri, const char* p_path, bool p_isCommon) {
@@ -677,9 +677,11 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
         v_c.isCommon = p_isCommon;
     };
 
-    v_addCommonAsset("/P000_common_001.css", "/html_v2/P000_common_001.css", true);
-    v_addCommonAsset("/P000_common_006.js",  "/html_v2/P000_common_006.js",  true);
+    v_addCommonAsset("/P000_common_070.css", "/html_v3/P000_common_070.css", true);
+    v_addCommonAsset("/P000_common_070.js",  "/html_v3/P000_common_070.js",  true);
+    v_addCommonAsset("/P001_API_070.js",     "/html_v3/P001_API_070.js",     true);
 }
+
 
 
 

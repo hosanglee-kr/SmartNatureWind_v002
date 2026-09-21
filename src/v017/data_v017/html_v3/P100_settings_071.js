@@ -412,6 +412,35 @@
             await loadSystemInfo();
         }
     }
+    
+    // [v025 #9] 설정 백업 다운로드
+    async function downloadConfigBackup() {
+        const data = await fetchApi("/api/v001/config", "GET", null, "설정 백업");
+        if (!data) return;
+        
+        try {
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            
+            const ts = new Date();
+            const pad = (n) => String(n).padStart(2, "0");
+            const filename = `snw_config_${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}_${pad(ts.getHours())}${pad(ts.getMinutes())}.json`;
+            
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showToast(`설정 다운로드 완료: ${filename}`, "ok");
+        } catch (e) {
+            showToast(`다운로드 실패: ${e.message}`, "err");
+        }
+    }
+
 
 
     // 팬 커브 저장
@@ -644,6 +673,7 @@
         // 정보
         $("#btnCheckUpdate")?.addEventListener("click", checkFirmwareUpdate);
         $("#btnRefreshInfo")?.addEventListener("click", loadSystemInfo);
+        $("#btnDownloadConfig")?.addEventListener("click", downloadConfigBackup);
         $("#btnRefreshLogs")?.addEventListener("click", loadLogs);
 
         // 폼

@@ -427,3 +427,62 @@ pre#logConsole {
   70%  { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
   100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
 }
+
+
+/* ======================= Round 4: 신규 UI ======================= */
+
+/* 프리셋 설명 툴팁 (#1) */
+.preset-desc {
+  margin-top: 6px;
+  padding: 6px 10px;
+  background-color: #f7f9fb;
+  border-left: 3px solid #3498db;
+  border-radius: 4px;
+  font-size: 0.85em;
+  line-height: 1.4;
+  color: #4a637a;
+  min-height: 1.2em;
+}
+.preset-desc:empty { display: none; }
+
+/* 로그 콘솔 (필터 대응, #7) */
+.log-view {
+  background-color: #2c3e50;
+  color: #ecf0f1;
+  padding: 12px 15px;
+  border-radius: 8px;
+  max-height: 400px;
+  min-height: 100px;
+  overflow-y: auto;
+  font-size: 0.85em;
+  line-height: 1.5;
+  font-family: monospace;
+  white-space: pre-wrap;
+}
+
+.log-line {
+  padding: 2px 0;
+  border-bottom: 1px dotted rgba(236, 240, 241, 0.1);
+}
+.log-line:last-child { border-bottom: none; }
+
+.log-line[data-level="1"] { color: #e74c3c; font-weight: 600; }  /* ERROR */
+.log-line[data-level="2"] { color: #f1c40f; }                     /* WARN */
+.log-line[data-level="3"] { color: #ecf0f1; }                     /* INFO */
+.log-line[data-level="4"] { color: #95a5a6; }                     /* DEBUG */
+
+.log-filter-group {
+  display: inline-flex;
+  gap: 4px;
+  margin-right: 8px;
+}
+.log-filter-group .btn.active {
+  background-color: #3498db;
+  color: #fff;
+  border-color: #2980b9;
+}
+
+/* 저장 상태 배지 (#4) */
+#saveStatusBadge {
+  margin-right: 6px;
+}

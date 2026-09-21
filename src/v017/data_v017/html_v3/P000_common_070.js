@@ -269,7 +269,7 @@ function setApiKey(key) {
 
 
 /**
- * 공통 fetch 래퍼
+ * 공통 fetch 래퍼 (v2 — 사용자 친화적 에러 메시지)
  * @param {string} url - API URL
  * @param {object} [options] - fetch 옵션 (method, body 등)
  * @param {boolean} [silent=false] - true면 성공/실패 토스트 표시 안 함
@@ -285,23 +285,63 @@ async function apiFetch(url, options = {}, silent = false, desc = "") {
         }
         const apiKey = getApiKey();
         if (apiKey) headers.set("X-API-Key", apiKey);
-
-        const resp = await fetch(url, { ...options, headers });
+        
+        // 네트워크 레벨 오류 분리
+        let resp;
+        try {
+            resp = await fetch(url, { ...options, headers });
+        } catch (networkErr) {
+            console.error("[apiFetch] network error:", networkErr);
+            if (!silent) notify(`네트워크 연결을 확인하세요. (${desc || "요청"})`, "err");
+            return null;
+        }
+        
         const text = await resp.text();
-
+        
+        // ─── HTTP 상태별 사용자 메시지 ───
         if (resp.status === 401) {
-            if (!silent) notify(`[401] ${desc || "요청"} 실패: 인증 필요`, "err");
+            if (!silent) notify(`${desc || "요청"} 실패: 인증이 필요합니다. (API Key를 확인하세요)`, "err");
             throw new Error("Unauthorized");
         }
+        if (resp.status === 403) {
+            if (!silent) notify(`${desc || "요청"} 실패: 접근 권한이 없습니다.`, "err");
+            throw new Error("Forbidden");
+        }
+        if (resp.status === 404) {
+            if (!silent) notify(`${desc || "요청"} 실패: 요청한 기능을 찾을 수 없습니다.`, "err");
+            throw new Error("Not Found");
+        }
+        if (resp.status === 413) {
+            if (!silent) notify(`${desc || "요청"} 실패: 파일 크기가 너무 큽니다.`, "err");
+            throw new Error("Payload Too Large");
+        }
+        if (resp.status === 429) {
+            if (!silent) notify(`${desc || "요청"} 실패: 너무 자주 요청했습니다. 잠시 후 다시 시도하세요.`, "err");
+            throw new Error("Rate Limited");
+        }
+        if (resp.status >= 500) {
+            if (!silent) notify(`${desc || "요청"} 실패: 서버 오류가 발생했습니다. 잠시 후 다시 시도하세요.`, "err");
+            throw new Error("Server Error " + resp.status);
+        }
         if (!resp.ok) {
-            if (!silent) notify(`${desc || "요청"} 실패: ${text || resp.status}`, "err");
+            // 기타 4xx — 서버가 보낸 error 필드 사용 시도
+            let userMsg = "";
+            try {
+                const parsed = JSON.parse(text);
+                userMsg = parsed.error || parsed.message || "";
+            } catch {}
+            const displayMsg = userMsg ? `: ${userMsg}` : "";
+            if (!silent) notify(`${desc || "요청"} 실패${displayMsg}`, "err");
             throw new Error(text || String(resp.status));
         }
-
+        
         if (desc && !silent) notify(`${desc} 성공`, "ok");
         try { return text ? JSON.parse(text) : null; } catch { return text; }
     } catch (e) {
-        if (e.message !== "Unauthorized" && !silent) {
+        // 이미 위에서 개별 메시지 처리된 케이스는 중복 표시 방지
+        const quiet = ["Unauthorized", "Forbidden", "Not Found", "Payload Too Large", "Rate Limited"];
+        const isServerErr = e.message && e.message.startsWith("Server Error");
+        if (!silent && !quiet.includes(e.message) && !isServerErr) {
             notify(`${desc || "요청"} 실패: ${e.message}`, "err");
         }
         return null;

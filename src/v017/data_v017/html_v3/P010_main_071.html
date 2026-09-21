@@ -14,7 +14,7 @@
 <body>
 	<nav class="nav-bar">
 		<div class="nav-container">
-			<a class="nav-logo" href="/html_v3/P010_main_070.html">Smart Nature Wind</a>
+			<a class="nav-logo" href="/html_v3/P010_main_071.html">Smart Nature Wind</a>
 			<ul class="nav-menu" id="navMenu"></ul>
 		</div>
 	</nav>
@@ -23,39 +23,41 @@
 		<h1>
 			Smart Nature Wind - Main
 			<span class="info-label info" id="fwVer">FW …</span>
+			<a id="apiKeyBadge" href="/P100_settings_071.html" class="info-label err" style="display:none; text-decoration:none;">🔑 API Key 미설정</a>
+			<a id="fwUpdateBadge" href="/P100_settings_071.html" class="info-label warn" style="display:none; text-decoration:none;">⬆️ 새 펌웨어</a>
 		</h1>
 
 		<div class="grid">
 
 			<!-- 1. 상태 -->
 			<section class="card col-12">
-			    <div class="row middle">
-			        <div class="section-title">상태</div>
-			        <div class="right">
-			            <span id="overrideBadge" class="info-label warn" style="display:none;">🟡 임시 적용 중 — 저장 안 됨</span>
-			            <span id="timeBadge" class="info-label err" style="display:none;">시간 미동기</span>
-			            <button class="btn" id="btnRefresh">상태 새로고침</button>
-			        </div>
-			    </div>
-			
-			    <div class="grid">
-			        <div class="col-6">
-			            <div class="row tight"><div><label>시뮬 상태</label><span id="simActive" class="info-label info">-</span></div></div>
-			            <div class="row tight"><div><label>Phase</label><span id="phase" class="info-label info">-</span></div></div>
-			            <div class="row tight"><div><label>풍속(m/s)</label><span id="wind" class="info-label info">-</span></div></div>
-			            <div class="row tight"><div><label>PWM</label><span id="pwm" class="info-label info">-</span></div></div>
-			            <div class="row tight"><div><label>제어 상태</label><span id="controlState" class="info-label info">-</span></div></div>
-			            <div class="row tight"><div><label>실행 대상</label><span id="runTarget" class="info-label info">-</span></div></div>
-			        </div>
-			        <div class="col-6">
-			            <div class="row tight"><div><label>Wi-Fi 모드</label><span id="wifiMode" class="info-label info">-</span></div></div>
-			            <div class="row tight"><div><label>SSID</label><span id="curSsid" class="info-label info">-</span></div></div>
-			            <div class="row tight"><div><label>IP</label><span id="ip" class="info-label info">-</span></div></div>
-			        </div>
-			    </div>
+				<div class="row middle">
+					<div class="section-title">상태</div>
+					<div class="right">
+						<span id="saveStatusBadge" class="info-label info">저장됨</span>
+						<span id="timeBadge" class="info-label err" style="display:none;">시간 미동기</span>
+						<button class="btn" id="btnRefresh">상태 새로고침</button>
+					</div>
+				</div>
+
+				<div class="grid">
+					<div class="col-6">
+						<div class="row tight"><div><label>시뮬 상태</label><span id="simActive" class="info-label info">-</span></div></div>
+						<div class="row tight"><div><label>Phase</label><span id="phase" class="info-label info">-</span></div></div>
+						<div class="row tight"><div><label>풍속(m/s)</label><span id="wind" class="info-label info">-</span></div></div>
+						<div class="row tight"><div><label>PWM</label><span id="pwm" class="info-label info">-</span></div></div>
+						<div class="row tight"><div><label>제어 상태</label><span id="controlState" class="info-label info">-</span></div></div>
+						<div class="row tight"><div><label>실행 대상</label><span id="runTarget" class="info-label info">-</span></div></div>
+					</div>
+					<div class="col-6">
+						<div class="row tight"><div><label>Wi-Fi 모드</label><span id="wifiMode" class="info-label info">-</span></div></div>
+						<div class="row tight"><div><label>SSID</label><span id="curSsid" class="info-label info">-</span></div></div>
+						<div class="row tight"><div><label>IP</label><span id="ip" class="info-label info">-</span></div></div>
+					</div>
+				</div>
 			</section>
-			
-			<!-- 2. 프로파일 실행 (신규) -->
+
+			<!-- 2. 프로파일 실행 -->
 			<section class="card col-12">
 				<div class="row middle">
 					<strong class="section-title">🎯 프로파일 실행</strong>
@@ -78,7 +80,7 @@
 				</div>
 			</section>
 
-			<!-- 3. 풍속 설정 (임시 적용 통합) -->
+			<!-- 3. 풍속 설정 -->
 			<section class="card col-12">
 				<div class="row middle">
 					<strong class="section-title">풍속 설정</strong>
@@ -91,6 +93,7 @@
 					<div class="col-4">
 						<label>프리셋 <span class="muted">(선택 시 값 자동 채움)</span></label>
 						<select id="preset"></select>
+						<div id="presetDesc" class="preset-desc muted"></div>
 					</div>
 					<div class="col-4">
 						<label>스타일</label>
@@ -264,9 +267,16 @@
 			<section class="card col-12">
 				<div class="row middle">
 					<strong class="section-title">실시간 로그 콘솔 (/ws/log)</strong>
-					<div class="right"><button class="btn" id="btnClearLog">로그 지우기</button></div>
+					<div class="right">
+						<div class="log-filter-group">
+							<button class="btn btn-small active" data-log-filter="all">전체</button>
+							<button class="btn btn-small" data-log-filter="warn">WARN+</button>
+							<button class="btn btn-small" data-log-filter="err">ERROR</button>
+						</div>
+						<button class="btn" id="btnClearLog">로그 지우기</button>
+					</div>
 				</div>
-				<pre id="logConsole">로그 로딩 중...</pre>
+				<div id="logConsole" class="log-view">로그 로딩 중...</div>
 			</section>
 
 		</div>

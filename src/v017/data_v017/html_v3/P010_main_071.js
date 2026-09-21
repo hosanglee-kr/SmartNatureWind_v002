@@ -1,14 +1,13 @@
 /* P010_main_071.js
  * ------------------------------------------------------
- * 모듈명 : Smart Nature Wind Main UI Logic
+ * 모듈명 : Smart Nature Wind Main UI Logic (v025)
  * ------------------------------------------------------
- * 기능:
- *  - 상태/설정 로딩 (config, state, motion, user_profiles, wifi/state)
- *  - 프리셋 선택 시 자동 값 채움 (preset × style)
- *  - 임시 적용 (override) — 저장 안 함
- *  - 프로파일 실행/중지 (R3-P010-Prof)
- *  - 저장 (motion.sim patch + config save + override clear)
- *  - WebSocket 로그/상태, WiFi 30초 폴링
+ * [v025] Round 4-A/B 반영
+ *  - #1 프리셋 설명 툴팁
+ *  - #3 API Key 상태 배지
+ *  - #4 저장 상태 통합 배지
+ *  - #7 로그 레벨 필터
+ *  - #13 펌웨어 업데이트 배지
  * ------------------------------------------------------
  */
 
@@ -27,11 +26,17 @@ const elIp           = () => document.getElementById("ip");
 const elControlState = () => document.getElementById("controlState");
 const elRunTarget    = () => document.getElementById("runTarget");
 
+// [v025] 신규
+const elApiKeyBadge     = () => document.getElementById("apiKeyBadge");
+const elFwUpdateBadge   = () => document.getElementById("fwUpdateBadge");
+const elSaveStatusBadge = () => document.getElementById("saveStatusBadge");
+const elPresetDesc      = () => document.getElementById("presetDesc");
+const elLogView         = () => document.getElementById("logConsole");
+
 // 프로파일 실행
 const elProfileSelect    = () => document.getElementById("profileSelect");
 const elProfileRunStatus = () => document.getElementById("profileRunStatus");
 
-const elOverrideBadge  = () => document.getElementById("overrideBadge");
 const elTimeBadge      = () => document.getElementById("timeBadge");
 const elOverrideStatus = () => document.getElementById("overrideStatus");
 const elOverrideSeconds = () => document.getElementById("overrideSeconds");
@@ -71,7 +76,6 @@ const elUpload       = () => document.getElementById("fileUpload");
 const elUploadMsg    = () => document.getElementById("uploadMsg");
 const elOTA          = () => document.getElementById("fileOTA");
 const elOtaMsg       = () => document.getElementById("otaMsg");
-const elLogConsole   = () => document.getElementById("logConsole");
 const elBtnSaveAll   = () => document.getElementById("btnSaveAllConfig");
 
 /* ==============================
@@ -90,6 +94,9 @@ let g_overrideActive  = false;
 let g_userProfiles    = [];
 let g_activeProfileNo = 0;
 
+// 로그 필터
+let g_logFilter = "all";   // "all" | "warn" | "err"
+
 /* ==============================
  * 3. Dirty / 상태 배지
  * ============================== */
@@ -107,6 +114,7 @@ function updateDirtyButton() {
 		btn.style.background = "#2ecc71";
 		btn.style.color = "#fff";
 	}
+	_updateSaveStatusBadge();
 }
 
 function markDirty() {
@@ -115,12 +123,75 @@ function markDirty() {
 	_updateSaveAttention();
 }
 
+// [v025 #4] 저장 상태 통합 배지
+function _updateSaveStatusBadge() {
+	const el = elSaveStatusBadge();
+	if (!el) return;
+
+	if (g_overrideActive && g_configDirty) {
+        el.textContent = "🟡 임시 실행 중 — 저장 안 됨";
+        el.className = "info-label warn"; 
+	} else if (g_configDirty) {
+		el.textContent = "📝 변경 있음 (저장 필요)";
+		el.className = "info-label warn";
+	} else if (g_overrideActive) {
+		el.textContent = "🎬 임시 실행 중";
+		el.className = "info-label warn";
+	} else {
+		el.textContent = "✅ 저장됨";
+		el.className = "info-label ok";
+	}
+}
+
 // [Q3-b] override + dirty 시 저장 버튼 강조
 function _updateSaveAttention() {
 	const btnSaveSim = document.getElementById("btnSaveSim");
 	if (!btnSaveSim) return;
 	const needAttention = g_overrideActive && g_configDirty;
 	btnSaveSim.classList.toggle("btn-attention", needAttention);
+}
+
+/* ==============================
+ * 3-1. [v025 #3] API Key 배지
+ * ============================== */
+function updateApiKeyBadge() {
+	const badge = elApiKeyBadge();
+	if (!badge) return;
+	const hasKey = !!getApiKey();
+	badge.style.display = hasKey ? "none" : "inline-block";
+}
+
+/* ==============================
+ * 3-2. [v025 #13] 펌웨어 업데이트 배지
+ * ============================== */
+async function checkFirmwareUpdate() {
+	const badge = elFwUpdateBadge();
+	if (!badge) return;
+	const data = await apiFetch(SNW_API.API_HTTP_FW_CHECK, { method: "GET" }, true);
+	if (data && data.status === "available") {
+		badge.textContent = `⬆️ 새 펌웨어 (${data.latest_version || "?"})`;
+		badge.style.display = "inline-block";
+	}
+}
+
+/* ==============================
+ * 3-3. [v025 #1] 프리셋 설명
+ * ============================== */
+function updatePresetDescription() {
+	const el = elPresetDesc();
+	if (!el) return;
+
+	const presetCode = elPreset() ? elPreset().value : "";
+	if (!presetCode) { el.textContent = ""; return; }
+
+	const preset = g_windDictPresets.find((p) => p.code === presetCode);
+	if (!preset) { el.textContent = ""; return; }
+
+	const pf = preset.factors || {};
+	const name = preset.name || preset.label || presetCode;
+	const desc = `${name} — 강도 ${_r2(pf.windIntensity)} · 변동 ${_r2(pf.windVariability)} · 돌풍 ${_r2(pf.gustFrequency)} · 팬상한 ${_r2(pf.fanLimit)}`;
+
+	el.textContent = desc;
 }
 
 /* ==============================
@@ -173,9 +244,6 @@ function _applySimToUi(sim, control) {
 	const ovActive = !!(ov && ov.active);
 	g_overrideActive = ovActive;
 
-	const ovBadge = elOverrideBadge();
-	if (ovBadge) ovBadge.style.display = ovActive ? "inline-block" : "none";
-
 	const ovStatus = elOverrideStatus();
 	if (ovStatus) {
 		if (ovActive) {
@@ -189,7 +257,7 @@ function _applySimToUi(sim, control) {
 		}
 	}
 
-	// 제어 상태 (control.state / stateCode)
+	// 제어 상태
 	{
 		const stateCode = control.stateCode;
 		const stateStr  = control.state || "-";
@@ -197,21 +265,20 @@ function _applySimToUi(sim, control) {
 		const elCS = elControlState();
 		if (elCS) {
 			elCS.textContent = stateStr;
-			// stateCode별 색상
 			switch (stateCode) {
-				case 0:  elCS.className = "info-label info";   break; // IDLE
-				case 1:  elCS.className = "info-label warn";   break; // OVERRIDE
+				case 0:  elCS.className = "info-label info";   break;
+				case 1:  elCS.className = "info-label warn";   break;
 				case 2:
-				case 3:  elCS.className = "info-label ok";     break; // PROFILE_RUN / SCHEDULE_RUN
-				case 4:  elCS.className = "info-label info";   break; // MOTION_BLOCKED
+				case 3:  elCS.className = "info-label ok";     break;
+				case 4:  elCS.className = "info-label info";   break;
 				case 5:
-				case 6:  elCS.className = "info-label err";    break; // AUTOOFF_STOPPED / TIME_INVALID
+				case 6:  elCS.className = "info-label err";    break;
 				default: elCS.className = "info-label info";   break;
 			}
 		}
 	}
 
-	// 실행 대상 (override > schedule > profile 우선)
+	// 실행 대상
 	{
 		const sch  = control.schedule   || {};
 		const prof = control.profile    || {};
@@ -219,11 +286,8 @@ function _applySimToUi(sim, control) {
 		let target = "없음";
 
 		if (ov && ov.active) {
-			if (ov.useFixed) {
-				target = `Override: 고정 ${ov.fixedPercent ?? 0}%`;
-			} else {
-				target = `Override: ${ov.presetCode || "-"}`;
-			}
+			if (ov.useFixed) target = `Override: 고정 ${ov.fixedPercent ?? 0}%`;
+			else             target = `Override: ${ov.presetCode || "-"}`;
 		} else if (sch.fromRunSource && sch.name) {
 			target = `스케줄: ${sch.name}`;
 			if (sch.schNo) target += ` (#${sch.schNo})`;
@@ -253,7 +317,6 @@ function _applySimToUi(sim, control) {
 			}
 		}
 
-		// 프로파일 select 자동 동기화 (dirty 아닐 때만)
 		if (!g_configDirty && elProfileSelect() && active && prof.profileNo) {
 			elProfileSelect().value = prof.profileNo;
 		}
@@ -265,7 +328,8 @@ function _applySimToUi(sim, control) {
 	const tb = elTimeBadge();
 	if (tb) tb.style.display = timeValid ? "none" : "inline-block";
 
-	// 저장 버튼 강조 갱신
+	// 저장 상태 배지 갱신
+	_updateSaveStatusBadge();
 	_updateSaveAttention();
 }
 
@@ -285,7 +349,6 @@ async function loadConfig() {
 
 		if (!cfg) return;
 
-		// Wi-Fi
 		if (cfg.wifi) {
 			if (elWifiModeSel()) elWifiModeSel().value = cfg.wifi.wifiMode ?? 0;
 			if (elApSsid()) elApSsid().value = cfg.wifi.ap ? cfg.wifi.ap.ssid || "" : "";
@@ -300,7 +363,6 @@ async function loadConfig() {
 			renderStaList();
 		}
 
-		// PWM
 		if (cfg.hw && cfg.hw.fanPwm) {
 			if (elPwmPin())     elPwmPin().value     = cfg.hw.fanPwm.pin ?? "";
 			if (elPwmChannel()) elPwmChannel().value = cfg.hw.fanPwm.channel ?? "";
@@ -308,10 +370,8 @@ async function loadConfig() {
 			if (elPwmRes())     elPwmRes().value     = cfg.hw.fanPwm.res ?? "";
 		}
 
-		// 프리셋/스타일 옵션
 		loadPresetsFromConfig(cfg);
 
-		// Motion / Wind (config → motion.sim)
 		const sim = (motionData && motionData.motion && motionData.motion.sim) ? motionData.motion.sim : {};
 		if (elIntensity())   elIntensity().value   = sim.intensity ?? "";
 		if (elVariability()) elVariability().value = sim.variability ?? "";
@@ -327,7 +387,6 @@ async function loadConfig() {
 		if (elStyle() && sim.styleCode)   elStyle().value  = sim.styleCode;
 		if (elFanPower() && sim.fanPowerEnabled !== undefined) elFanPower().checked = !!sim.fanPowerEnabled;
 
-		// Timing
 		const timing = (cfg.motion && cfg.motion.timing) ? cfg.motion.timing : cfg.timing;
 		if (timing) {
 			if (elSimInt())     elSimInt().value     = timing.simIntervalMs ?? "";
@@ -335,21 +394,21 @@ async function loadConfig() {
 			if (elThermalInt()) elThermalInt().value = timing.thermalIntervalMs ?? "";
 		}
 
-		// API Key
 		if (cfg.security && cfg.security.apiKey && !getApiKey()) {
 			setApiKey(cfg.security.apiKey);
 			if (elApiKeyInput()) elApiKeyInput().value = cfg.security.apiKey;
+			updateApiKeyBadge();
 		}
 
 		g_configDirty = false;
 		updateDirtyButton();
+		updatePresetDescription();
 	} finally {
 		hideLoading();
 	}
 }
 
 function loadPresetsFromConfig(cfg) {
-	// Presets
 	const sel = elPreset();
 	if (sel) {
 		sel.innerHTML = "";
@@ -374,7 +433,6 @@ function loadPresetsFromConfig(cfg) {
 		}
 	}
 
-	// Styles
 	const styleSel = elStyle();
 	if (styleSel) {
 		styleSel.innerHTML = "";
@@ -400,7 +458,7 @@ function loadPresetsFromConfig(cfg) {
 }
 
 /* ==============================
- * 5. 프리셋/스타일 자동 채움 (Q4)
+ * 5. 프리셋/스타일 자동 채움
  * ============================== */
 function _r2(v) {
 	const n = Number(v);
@@ -410,14 +468,13 @@ function _r2(v) {
 function onPresetOrStyleChanged() {
 	const presetCode = elPreset() ? elPreset().value : "";
 	const styleCode  = elStyle()  ? elStyle().value  : "";
-	if (!presetCode) return;
+	if (!presetCode) { updatePresetDescription(); return; }
 
 	const preset = g_windDictPresets.find((p) => p.code === presetCode);
-	if (!preset || !preset.factors) return;
+	if (!preset || !preset.factors) { updatePresetDescription(); return; }
 
 	const style = g_windDictStyles.find((s) => s.code === styleCode) || {};
 	const sf = style.factors || {};
-
 	const pf = preset.factors;
 
 	const intV  = _r2((pf.windIntensity ?? 0)      * (sf.intensityFactor    ?? 1.0));
@@ -440,6 +497,7 @@ function onPresetOrStyleChanged() {
 	if (elThermStr())    elThermStr().value    = thBV;
 	if (elThermRad())    elThermRad().value    = thRV;
 
+	updatePresetDescription();
 	markDirty();
 }
 
@@ -467,7 +525,6 @@ async function applyTempPreset() {
 	const sf = style.factors || {};
 	const pf = preset.factors;
 
-	// 폼 값 - (preset × style) = 델타
 	const baseInt  = (pf.windIntensity ?? 0)      * (sf.intensityFactor   ?? 1.0);
 	const baseVar  = (pf.windVariability ?? 0)    * (sf.variabilityFactor ?? 1.0);
 	const baseGust = (pf.gustFrequency ?? 0)      * (sf.gustFactor        ?? 1.0);
@@ -490,13 +547,7 @@ async function applyTempPreset() {
 		thermalBubbleRadius:      (Number(elThermRad()    && elThermRad().value)    || 0) - baseThR
 	};
 
-	const body = {
-		presetCode,
-		styleCode,
-		durationSec: sec,
-		forever,
-		adjust: adj
-	};
+	const body = { presetCode, styleCode, durationSec: sec, forever, adjust: adj };
 
 	await apiFetch(SNW_API.API_HTTP_CTL_OVR_PRESET, {
 		method: "POST",
@@ -515,7 +566,6 @@ async function stopTemp() {
  * 7. 저장
  * ============================== */
 async function saveMotionPatch() {
-	// config 저장 (영구)
 	const motionBody = {
 		motion: {
 			sim: {
@@ -535,18 +585,9 @@ async function saveMotionPatch() {
 		}
 	};
 
-	await apiFetch(SNW_API.API_HTTP_MOTION, {
-		method: "POST",
-		body: JSON.stringify(motionBody)
-	}, false, "풍속 설정");
+	await apiFetch(SNW_API.API_HTTP_MOTION, { method: "POST", body: JSON.stringify(motionBody) }, false, "풍속 설정");
+	await apiFetch(SNW_API.API_HTTP_CONFIG_SAVE, { method: "POST", body: JSON.stringify({}) }, true, "");
 
-	// 파일 저장
-	await apiFetch(SNW_API.API_HTTP_CONFIG_SAVE, {
-		method: "POST",
-		body: JSON.stringify({})
-	}, true, "");
-
-	// override 해제 (기존)
 	if (g_overrideActive) {
 		await apiFetch(SNW_API.API_HTTP_CTL_OVR_CLEAR, { method: "POST" }, true, "");
 	}
@@ -554,69 +595,42 @@ async function saveMotionPatch() {
 	g_configDirty = false;
 	updateDirtyButton();
 	notify("풍속 설정이 저장되었습니다.", "ok");
-
 	setTimeout(loadStateOnce, 300);
 }
 
 async function saveTimingPatch() {
-	const body = {
-		motion: {
-			timing: {
-				simIntervalMs:     Number(elSimInt().value || 0),
-				gustIntervalMs:    Number(elGustInt().value || 0),
-				thermalIntervalMs: Number(elThermalInt().value || 0)
-			}
-		}
-	};
-	await apiFetch(SNW_API.API_HTTP_MOTION, {
-		method: "POST",
-		body: JSON.stringify(body)
-	}, false, "타이밍 설정");
+	const body = { motion: { timing: {
+		simIntervalMs:     Number(elSimInt().value || 0),
+		gustIntervalMs:    Number(elGustInt().value || 0),
+		thermalIntervalMs: Number(elThermalInt().value || 0)
+	}}};
+	await apiFetch(SNW_API.API_HTTP_MOTION, { method: "POST", body: JSON.stringify(body) }, false, "타이밍 설정");
 	markDirty();
 }
 
 async function saveWifiApPatch() {
-	const body = {
-		wifi: {
-			wifiMode: Number(elWifiModeSel().value || 0),
-			ap: { ssid: elApSsid().value || "", pass: elApPass().value || "" }
-		}
-	};
-	await apiFetch(SNW_API.API_HTTP_WIFI_CONFIG, {
-		method: "POST",
-		body: JSON.stringify(body)
-	}, false, "Wi-Fi AP 설정");
+	const body = { wifi: {
+		wifiMode: Number(elWifiModeSel().value || 0),
+		ap: { ssid: elApSsid().value || "", pass: elApPass().value || "" }
+	}};
+	await apiFetch(SNW_API.API_HTTP_WIFI_CONFIG, { method: "POST", body: JSON.stringify(body) }, false, "Wi-Fi AP 설정");
 	markDirty();
 }
 
 async function saveWifiStaPatch() {
-	const body = {
-		wifi: {
-			sta: g_staList.map((item) => ({ ssid: item.ssid, pass: item.pass || "" }))
-		}
-	};
-	await apiFetch(SNW_API.API_HTTP_WIFI_CONFIG, {
-		method: "POST",
-		body: JSON.stringify(body)
-	}, false, "Wi-Fi STA 목록");
+	const body = { wifi: { sta: g_staList.map((item) => ({ ssid: item.ssid, pass: item.pass || "" })) }};
+	await apiFetch(SNW_API.API_HTTP_WIFI_CONFIG, { method: "POST", body: JSON.stringify(body) }, false, "Wi-Fi STA 목록");
 	markDirty();
 }
 
 async function savePwmPatch() {
-	const body = {
-		hw: {
-			fanPwm: {
-				pin:     Number(elPwmPin().value || 0),
-				channel: Number(elPwmChannel().value || 0),
-				freq:    Number(elPwmFreq().value || 0),
-				res:     Number(elPwmRes().value || 0)
-			}
-		}
-	};
-	await apiFetch(SNW_API.API_HTTP_SYSTEM, {
-		method: "POST",
-		body: JSON.stringify(body)
-	}, false, "PWM 하드웨어");
+	const body = { hw: { fanPwm: {
+		pin:     Number(elPwmPin().value || 0),
+		channel: Number(elPwmChannel().value || 0),
+		freq:    Number(elPwmFreq().value || 0),
+		res:     Number(elPwmRes().value || 0)
+	}}};
+	await apiFetch(SNW_API.API_HTTP_SYSTEM, { method: "POST", body: JSON.stringify(body) }, false, "PWM 하드웨어");
 	markDirty();
 }
 
@@ -624,29 +638,17 @@ async function savePwmPatch() {
  * 8. 전체 저장 / 초기화
  * ============================== */
 async function saveAllConfig() {
-	if (!g_configDirty) {
-		notify("변경 사항이 없습니다.", "info");
-		return;
-	}
+	if (!g_configDirty) { notify("변경 사항이 없습니다.", "info"); return; }
 	if (!confirm("현재까지의 메모리 변경 내용을 모두 저장하시겠습니까?")) return;
 
-	await apiFetch(SNW_API.API_HTTP_CONFIG_SAVE, {
-		method: "POST",
-		body: JSON.stringify({ save_all: true })
-	}, false, "전체 Config 저장");
-
+	await apiFetch(SNW_API.API_HTTP_CONFIG_SAVE, { method: "POST", body: JSON.stringify({ save_all: true }) }, false, "전체 Config 저장");
 	g_configDirty = false;
 	updateDirtyButton();
 }
 
 async function factoryReset() {
 	if (!confirm("⚠️ 모든 설정을 기본값으로 초기화합니다.\n진행하시겠습니까?")) return;
-
-	await apiFetch(SNW_API.API_HTTP_CONFIG_INIT, {
-		method: "POST",
-		body: JSON.stringify({ factory: true })
-	}, false, "Factory Reset");
-
+	await apiFetch(SNW_API.API_HTTP_CONFIG_INIT, { method: "POST", body: JSON.stringify({ factory: true }) }, false, "Factory Reset");
 	await loadConfig();
 	await loadStateOnce();
 }
@@ -676,9 +678,7 @@ async function loadWifiStateOnce() {
 async function loadUserProfiles() {
 	const data = await apiFetch(SNW_API.API_HTTP_USER_PROFILES, { method: "GET" }, true);
 	let profiles = [];
-	if (data && data.userProfiles && Array.isArray(data.userProfiles.profiles)) {
-		profiles = data.userProfiles.profiles;
-	}
+	if (data && data.userProfiles && Array.isArray(data.userProfiles.profiles)) profiles = data.userProfiles.profiles;
 	g_userProfiles = profiles;
 
 	const sel = elProfileSelect();
@@ -701,23 +701,17 @@ async function loadUserProfiles() {
 		sel.appendChild(opt);
 	});
 
-	// 실행 중인 프로파일이 있으면 그걸로 선택
-	if (g_activeProfileNo > 0 && sel.querySelector(`option[value="${g_activeProfileNo}"]`)) {
-		sel.value = g_activeProfileNo;
-	}
+	if (g_activeProfileNo > 0 && sel.querySelector(`option[value="${g_activeProfileNo}"]`)) sel.value = g_activeProfileNo;
 }
 
 /* ==============================
- * 9-2. 프로파일 실행
+ * 9-2. 프로파일 실행/중지
  * ============================== */
 async function runSelectedProfile() {
 	const sel = elProfileSelect();
 	if (!sel) return;
 	const no = Number(sel.value);
-	if (!no || no <= 0) {
-		notify("실행할 프로파일을 선택하세요.", "warn");
-		return;
-	}
+	if (!no || no <= 0) { notify("실행할 프로파일을 선택하세요.", "warn"); return; }
 
 	const target = g_userProfiles.find((p) => Number(p.profileNo) === no);
 	if (target && target.enabled === false) {
@@ -725,27 +719,13 @@ async function runSelectedProfile() {
 		return;
 	}
 
-	const result = await apiFetch(SNW_API.API_HTTP_CTL_PROF_SEL, {
-		method: "POST",
-		body: JSON.stringify({ id: no })
-	}, false, `프로파일 #${no} 실행`);
-
-	if (result) {
-		setTimeout(loadStateOnce, 300);
-	}
+	const result = await apiFetch(SNW_API.API_HTTP_CTL_PROF_SEL, { method: "POST", body: JSON.stringify({ id: no }) }, false, `프로파일 #${no} 실행`);
+	if (result) setTimeout(loadStateOnce, 300);
 }
 
-/* ==============================
- * 9-3. 프로파일 중지
- * ============================== */
 async function stopActiveProfile() {
-	const result = await apiFetch(SNW_API.API_HTTP_CTL_PROF_STOP, {
-		method: "POST"
-	}, false, "프로파일 중지");
-
-	if (result) {
-		setTimeout(loadStateOnce, 300);
-	}
+	const result = await apiFetch(SNW_API.API_HTTP_CTL_PROF_STOP, { method: "POST" }, false, "프로파일 중지");
+	if (result) setTimeout(loadStateOnce, 300);
 }
 
 function renderStaList() {
@@ -838,6 +818,7 @@ function applyApiKeyFromInput() {
 	const input = elApiKeyInput();
 	if (!input) return;
 	setApiKey(input.value.trim());
+	updateApiKeyBadge();
 	notify("API Key가 브라우저에 저장되었습니다.", "ok");
 }
 
@@ -879,16 +860,66 @@ function handleOtaUpload() {
 /* ==============================
  * 11. 초기 로그 / WebSocket
  * ============================== */
+// [v025 #7] 로그 라인 append (data-level 부여)
+function _appendLogLine(ts, lv, msg) {
+	const el = elLogView();
+	if (!el) return;
+
+	// 초기 placeholder("로그 로딩 중...") 제거
+	if (el.textContent.trim() === "로그 로딩 중...") el.textContent = "";
+
+	const level = Number.isFinite(Number(lv)) ? Number(lv) : 3;
+
+	const line = document.createElement("div");
+	line.className = "log-line";
+	line.dataset.level = String(level);
+
+	const tsStr = (typeof ts === "number" && ts > 0)
+		? new Date(ts).toLocaleTimeString()
+		: (typeof ts === "string" ? ts : "");
+
+	line.textContent = `${tsStr ? "[" + tsStr + "] " : ""}${msg}`;
+
+	// 필터 적용
+	const visible = g_logFilter === "all"
+		|| (g_logFilter === "warn" && level <= 2)
+		|| (g_logFilter === "err"  && level <= 1);
+	if (!visible) line.style.display = "none";
+
+	el.appendChild(line);
+
+	// 최대 300줄 유지
+	while (el.children.length > 300) el.removeChild(el.firstChild);
+
+	// 스크롤 (필터 걸린 라인도 스크롤 위치는 최하단)
+	el.scrollTop = el.scrollHeight;
+}
+
+// [v025 #7] 로그 필터 적용
+function _applyLogFilter() {
+	const el = elLogView();
+	if (!el) return;
+
+	Array.from(el.children).forEach((line) => {
+		const level = Number(line.dataset.level || 3);
+		let visible = true;
+		if (g_logFilter === "warn") visible = level <= 2;
+		else if (g_logFilter === "err") visible = level <= 1;
+
+		line.style.display = visible ? "" : "none";
+	});
+}
+
 async function loadLogsOnce() {
-	const el = elLogConsole();
+	const el = elLogView();
 	if (!el) return;
 	const data = await apiFetch(SNW_API.API_HTTP_LOGS, { method: "GET" }, true);
 	if (data && Array.isArray(data.logs)) {
-		el.textContent = data.logs
-			.map(l => `[${l.ts ?? "?"}] L${l.lv ?? "?"} ${l.msg ?? ""}`)
-			.join("\n");
-		if (el.textContent) el.textContent += "\n";
-		el.scrollTop = el.scrollHeight;
+		el.textContent = "";
+		data.logs.forEach((l) => {
+			_appendLogLine(l.ts, l.lv, l.msg || "");
+		});
+		if (!el.children.length) el.textContent = "";
 	} else {
 		el.textContent = "";
 	}
@@ -899,15 +930,22 @@ function initWebSocketLog() {
 		const url = buildWsUrl(SNW_API.WS_API_LOG);
 		const ws = new WebSocket(url);
 		g_wsLog = ws;
+
 		ws.onopen = () => {
-			const el = elLogConsole();
-			if (el) { el.textContent += "[WS] 로그 스트림 연결됨.\n"; el.scrollTop = el.scrollHeight; }
+			_appendLogLine(Date.now(), 3, "[WS] 로그 스트림 연결됨.");
 		};
 		ws.onmessage = (ev) => {
-			const el = elLogConsole();
-			if (!el) return;
-			el.textContent += ev.data + "\n";
-			el.scrollTop = el.scrollHeight;
+			// 서버 broadcastLog 형식: {ts, lv, msg}
+			try {
+				const rec = JSON.parse(ev.data);
+				if (rec && (rec.msg || rec.message)) {
+					_appendLogLine(rec.ts || rec.t, rec.lv ?? rec.level ?? 3, rec.msg || rec.message);
+				} else {
+					_appendLogLine(Date.now(), 3, ev.data);
+				}
+			} catch {
+				_appendLogLine(Date.now(), 3, ev.data);
+			}
 		};
 		ws.onclose = () => console.log("[WS-LOG] disconnected");
 		ws.onerror = (err) => console.error("[WS-LOG] error:", err);
@@ -917,7 +955,7 @@ function initWebSocketLog() {
 }
 
 function clearLogConsole() {
-	const el = elLogConsole();
+	const el = elLogView();
 	if (el) el.textContent = "";
 }
 
@@ -946,32 +984,27 @@ function initWebSocketState() {
  * 12. 이벤트 바인딩
  * ============================== */
 function bindEvents() {
-	// 상태
 	const btnRefresh = document.getElementById("btnRefresh");
 	if (btnRefresh) btnRefresh.addEventListener("click", () => {
 		loadStateOnce();
 		loadWifiStateOnce();
 	});
 
-	// 프로파일 실행/중지
 	const btnProfileRun = document.getElementById("btnProfileRun");
 	if (btnProfileRun) btnProfileRun.addEventListener("click", runSelectedProfile);
 
 	const btnProfileStop = document.getElementById("btnProfileStop");
 	if (btnProfileStop) btnProfileStop.addEventListener("click", stopActiveProfile);
 
-	// 프리셋/스타일 자동 채움
 	if (elPreset()) elPreset().addEventListener("change", onPresetOrStyleChanged);
 	if (elStyle())  elStyle().addEventListener("change", onPresetOrStyleChanged);
 
-	// 임시 적용
 	const btnApplyTemp = document.getElementById("btnApplyTemp");
 	if (btnApplyTemp) btnApplyTemp.addEventListener("click", applyTempPreset);
 
 	const btnStopTemp = document.getElementById("btnStopTemp");
 	if (btnStopTemp) btnStopTemp.addEventListener("click", stopTemp);
 
-	// 저장
 	const btnSaveSim = document.getElementById("btnSaveSim");
 	if (btnSaveSim) btnSaveSim.addEventListener("click", saveMotionPatch);
 
@@ -1010,7 +1043,16 @@ function bindEvents() {
 	const btnClearLog = document.getElementById("btnClearLog");
 	if (btnClearLog) btnClearLog.addEventListener("click", clearLogConsole);
 
-	// 팬 전원 / 폼 변경 → dirty
+	// [v025 #7] 로그 필터 버튼
+	document.querySelectorAll("[data-log-filter]").forEach((btn) => {
+		btn.addEventListener("click", () => {
+			document.querySelectorAll("[data-log-filter]").forEach((b) => b.classList.remove("active"));
+			btn.classList.add("active");
+			g_logFilter = btn.dataset.logFilter || "all";
+			_applyLogFilter();
+		});
+	});
+
 	if (elFanPower()) elFanPower().addEventListener("change", markDirty);
 
 	const inputSelectors = [
@@ -1037,6 +1079,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 	if (elApiKeyInput()) elApiKeyInput().value = key;
 
 	updateDirtyButton();
+	updateApiKeyBadge();     // [v025 #3]
+	_updateSaveStatusBadge(); // [v025 #4]
 	bindEvents();
 
 	await loadLogsOnce();
@@ -1045,9 +1089,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 	await loadFwVersion();
 	await loadConfig();
-	await loadUserProfiles();      // 프로파일 목록 로드
+	await loadUserProfiles();
 	await loadStateOnce();
 	await loadWifiStateOnce();
+
+	checkFirmwareUpdate();   // [v025 #13] 비동기, 결과 대기 안 함
 
 	if (g_wifiStateTimer) clearInterval(g_wifiStateTimer);
 	g_wifiStateTimer = setInterval(loadWifiStateOnce, 30000);

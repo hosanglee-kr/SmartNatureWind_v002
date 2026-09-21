@@ -1,7 +1,7 @@
 /*
  * ------------------------------------------------------
- * 소스명 : P090_user_001.js
- * 모듈명 : Smart Nature Wind Help & Info Controller (v001)
+ * 소스명 : P090_user_060.js
+ * 모듈명 : Smart Nature Wind Help & Info Controller
  * ------------------------------------------------------
  * 기능 요약:
  * - 🎯 /api/system/info를 호출하여 펌웨어 버전 정보를 표시

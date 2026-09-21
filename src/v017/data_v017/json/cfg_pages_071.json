@@ -51,15 +51,15 @@
       ]
     },
     {
-      "uri": "/P090_user_060.html",
-      "path": "/html_v3/P090_user_060.html",
+      "uri": "/P090_info_071.html",
+      "path": "/html_v3/P090_info_071.html",
       "label": "Info. & Help",
       "enable": true,
       "isMain": false,
       "order": 200,
       "pageAssets": [
-        { "uri": "/P090_user_060.css", "path": "/html_v3/P090_user_060.css" },
-        { "uri": "/P090_user_060.js", "path": "/html_v3/P090_user_060.js" }
+        { "uri": "/P090_info_071.css", "path": "/html_v3/P090_info_071.css" },
+        { "uri": "/P090_info_071.js", "path": "/html_v3/P090_info_071.js" }
       ]
     },
     {
@@ -101,7 +101,7 @@
     { "uriFrom": "/schedules_t2", "uriTo": "/P080_sch_t2_071.html" },
     { "uriFrom": "/userProfile_t2", "uriTo": "/P085_userProfiles_t2_071.html" },
     { "uriFrom": "/settings", "uriTo": "/P100_settings_071.html" },
-    { "uriFrom": "/info", "uriTo": "/P090_user_060.html" }
+    { "uriFrom": "/info", "uriTo": "/P090_info_071.html" }
   ],
   "assets": [
     { "uri": "/P000_common_070.css", "path": "/html_v3/P000_common_070.css", "isCommon": true },

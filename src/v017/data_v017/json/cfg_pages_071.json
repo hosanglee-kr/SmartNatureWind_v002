@@ -9,6 +9,11 @@
       "order": 10,
       "pageAssets": [
         { "uri": "/P010_main_071.css", "path": "/html_v3/P010_main_071.css" },
+        { "uri": "/P010_main_core_071.js", "path": "/html_v3/P010_main_core_071.js" },
+        { "uri": "/P010_main_preset_071.js", "path": "/html_v3/P010_main_preset_071.js" },
+        { "uri": "/P010_main_ws_071.js", "path": "/html_v3/P010_main_ws_071.js" },
+        { "uri": "/P010_main_wifi_071.js", "path": "/html_v3/P010_main_wifi_071.js" },
+        { "uri": "/P010_main_misc_071.js", "path": "/html_v3/P010_main_misc_071.js" },
         { "uri": "/P010_main_071.js", "path": "/html_v3/P010_main_071.js" }
       ]
     },
@@ -94,18 +99,18 @@
     }
   ],
   "reDirect": [
-    { "uriFrom": "/", "uriTo": "/P010_main_071.html" },
-    { "uriFrom": "/index.html", "uriTo": "/P010_main_071.html" },
-    { "uriFrom": "/main", "uriTo": "/P010_main_071.html" },
-    { "uriFrom": "/chart_t2", "uriTo": "/P050_chart_t2_071.html" },
-    { "uriFrom": "/schedules_t2", "uriTo": "/P080_sch_t2_071.html" },
+    { "uriFrom": "/"              , "uriTo": "/P010_main_071.html"            },
+    { "uriFrom": "/index.html"    , "uriTo": "/P010_main_071.html"            },
+    { "uriFrom": "/main"          , "uriTo": "/P010_main_071.html"            },
+    { "uriFrom": "/chart_t2"      , "uriTo": "/P050_chart_t2_071.html"        },
+    { "uriFrom": "/schedules_t2"  , "uriTo": "/P080_sch_t2_071.html"          },
     { "uriFrom": "/userProfile_t2", "uriTo": "/P085_userProfiles_t2_071.html" },
-    { "uriFrom": "/settings", "uriTo": "/P100_settings_071.html" },
-    { "uriFrom": "/info", "uriTo": "/P090_info_071.html" }
+    { "uriFrom": "/settings"      , "uriTo": "/P100_settings_071.html"        },
+    { "uriFrom": "/info"          , "uriTo": "/P090_info_071.html"            }
   ],
   "assets": [
     { "uri": "/P000_common_071.css", "path": "/html_v3/P000_common_071.css", "isCommon": true },
     { "uri": "/P000_common_071.js" , "path": "/html_v3/P000_common_071.js" , "isCommon": true },
-    { "uri": "/P001_API_071.js"    , "path": "/html_v3/P001_API_071.js"    , "isCommon": true }
+    { "uri": "/P001_comm_API_071.js", "path": "/html_v3/P001_comm_API_071.js", "isCommon": true }
   ]
 }

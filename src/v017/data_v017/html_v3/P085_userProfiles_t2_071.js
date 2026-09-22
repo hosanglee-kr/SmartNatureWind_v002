@@ -7,7 +7,6 @@
  * - /api/v001/windProfile (presets/styles)
  * - /api/v001/control/profile/select · stop (실행/중지)
  * - /api/v001/state 30초 폴링 (실행 중 프로파일 표시)
- * - API Key: localStorage["snw_api_key"]
  * ------------------------------------------------------
  */
 
@@ -24,65 +23,9 @@
   const API_PROF_SELECT   = `${API_BASE}/control/profile/select`;
   const API_PROF_STOP     = `${API_BASE}/control/profile/stop`;
 
-  const API_KEY_STORAGE_KEY = "snw_api_key";
   const MAX_PROFILES        = 6;
   const MAX_SEGMENTS        = 8;
   const STATE_POLL_MS       = 30000;
-
-  const $ = (s, r = document) => r.querySelector(s);
-  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-
-  const getApiKey = () => {
-    try { return localStorage.getItem(API_KEY_STORAGE_KEY) || ""; } catch { return ""; }
-  };
-
-  const setLoading = (flag) => {
-    const el = $("#loadingOverlay");
-    if (el) el.style.display = flag ? "flex" : "none";
-  };
-
-  const toast = (msg, type = "info") => {
-    if (typeof window.showToast === "function") window.showToast(msg, type);
-    else console.log(`[TOAST-${type}]`, msg);
-  };
-
-  async function fetchApi(url, method = "GET", body = null, desc = "") {
-    setLoading(true);
-    try {
-      const opt = { method, headers: { Accept: "application/json" } };
-      const apiKey = getApiKey();
-      if (apiKey) opt.headers["X-API-Key"] = apiKey;
-
-      if (body) {
-        opt.headers["Content-Type"] = "application/json";
-        opt.body = JSON.stringify(body);
-      }
-
-      const resp = await fetch(url, opt);
-      const text = await resp.text();
-
-      if (resp.status === 401) {
-        toast(`[401] ${desc || "작업"} 실패: 인증 필요`, "err");
-        throw new Error("Unauthorized");
-      }
-      if (!resp.ok) {
-        toast(`${desc || "작업"} 실패: ${text || resp.status}`, "err");
-        throw new Error(text || String(resp.status));
-      }
-      if (desc && method !== "GET") toast(`${desc} 성공`, "ok");
-
-      if (!text) return null;
-      try { return JSON.parse(text); } catch { return text; }
-    } catch (e) {
-      if (e.message !== "Unauthorized") {
-        console.error(e);
-        if (desc) toast(`${desc} 실패: ${e.message}`, "err");
-      }
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }
 
   // ======================= 2. 상태 =======================
   let currentProfiles = [];
@@ -100,7 +43,7 @@
   }
 
   function _suggestNextSegNo() {
-    const rows = $$("#segmentsBody .segment-row");
+    const rows = SNW.$$("#segmentsBody .segment-row");
     let maxNo = 0;
     rows.forEach(r => {
       const n = Number(r.querySelector(".seg-no")?.value) || 0;
@@ -135,7 +78,7 @@
   // ======================= 5. Config Dirty =======================
   function setDirtyStatus(isDirty) {
     configDirty = !!isDirty;
-    const btn = $("#btnSaveAllConfig");
+    const btn = SNW.$("#btnSaveAllConfig");
     if (!btn) return;
     if (configDirty) {
       btn.style.backgroundColor = "#dc2626";
@@ -150,7 +93,7 @@
 
   async function pollConfigDirty() {
     try {
-      const apiKey = getApiKey();
+      const apiKey = SNW.getApiKey();
       const resp = await fetch(API_CONFIG_DIRTY, {
         headers: { Accept: "application/json", ...(apiKey ? { "X-API-Key": apiKey } : {}) },
       });
@@ -167,10 +110,10 @@
 
   async function saveAllConfig() {
     if (!configDirty) {
-      toast("저장할 변경 사항이 없습니다.", "warn");
+      SNW.toast("저장할 변경 사항이 없습니다.", "warn");
       return;
     }
-    const res = await fetchApi(API_CONFIG_SAVE, "POST", {}, "전체 설정 파일 저장");
+    const res = await SNW.api.post(API_CONFIG_SAVE, {}, "전체 설정 파일 저장");
     if (res !== null) {
       setDirtyStatus(false);
       await loadUserProfiles();
@@ -179,7 +122,7 @@
 
   // ======================= 6. WindDict =======================
   async function loadWindDict() {
-    const data = await fetchApi(API_WIND_PROFILE, "GET", null, "");
+    const data = await SNW.api.get(API_WIND_PROFILE, "");
     if (!data || !data.windDict) {
       windPresets = [];
       windStyles  = [];
@@ -192,7 +135,7 @@
   // ======================= 7. 실행 상태 폴링 [필수 2] =======================
   async function pollActiveProfile() {
     try {
-      const data = await fetchApi(API_STATE, "GET", null, "");
+      const data = await SNW.api.get(API_STATE, "", true);
       if (data && data.control) {
         const prof = data.control.profile || {};
         // [백엔드] fromRunSource=true일 때만 USER_PROFILE 실행 중
@@ -214,7 +157,7 @@
   }
 
   function updateActiveIndicator() {
-    const badge = $("#activeProfileBadge");
+    const badge = SNW.$("#activeProfileBadge");
     if (!badge) return;
     if (activeProfileNo > 0) {
       badge.style.display = "inline-block";
@@ -226,7 +169,7 @@
   }
 
   function updateProfileCount() {
-    const el = $("#profileCount");
+    const el = SNW.$("#profileCount");
     if (!el) return;
     el.textContent = `${currentProfiles.length}/${MAX_PROFILES}`;
     el.className = currentProfiles.length >= MAX_PROFILES
@@ -236,8 +179,8 @@
 
   // ======================= 8. 목록 =======================
   async function loadUserProfiles() {
-    const data = await fetchApi(API_USER_PROFILES, "GET", null, "");
-    const noMsg = $("#noProfileMessage");
+    const data = await SNW.api.get(API_USER_PROFILES, "");
+    const noMsg = SNW.$("#noProfileMessage");
 
     let profiles = [];
     if (data && data.userProfiles && Array.isArray(data.userProfiles.profiles)) {
@@ -253,7 +196,7 @@
   }
 
   function renderProfileList(profiles) {
-    const tbody = $("#profileListBody");
+    const tbody = SNW.$("#profileListBody");
     if (!tbody) return;
     tbody.innerHTML = "";
 
@@ -315,12 +258,12 @@
   }
 
   function addSegmentRow(seg = null, appendToEnd = true) {
-    const tbody = $("#segmentsBody");
+    const tbody = SNW.$("#segmentsBody");
     if (!tbody) return;
 
     const currentCount = tbody.querySelectorAll(".segment-row").length;
     if (!seg && currentCount >= MAX_SEGMENTS) {
-      toast(`세그먼트는 최대 ${MAX_SEGMENTS}개까지 추가 가능합니다.`, "warn");
+      SNW.toast(`세그먼트는 최대 ${MAX_SEGMENTS}개까지 추가 가능합니다.`, "warn");
       return;
     }
 
@@ -410,58 +353,58 @@
   }
 
   function openModal(profile = null) {
-    const modal = $("#profileModal");
-    const form  = $("#profileForm");
+    const modal = SNW.$("#profileModal");
+    const form  = SNW.$("#profileForm");
     if (!modal || !form) return;
 
     form.reset();
-    $("#segmentsBody").innerHTML = "";
+    SNW.$("#segmentsBody").innerHTML = "";
 
     if (profile) {
-      $("#modalTitle").textContent = `프로파일 수정: ${profile.name}`;
-      $("#profileId").value   = profile.profileId ?? "";
-      $("#profileNo").value   = profile.profileNo ?? "";
-      $("#profileName").value = profile.name || "";
-      $("#profileEnabled").checked = profile.enabled !== false;
-      $("#repeatSegments").checked = profile.repeatSegments !== false;
-      $("#repeatCount").value = profile.repeatCount ?? 1;
+      SNW.$("#modalTitle").textContent = `프로파일 수정: ${profile.name}`;
+      SNW.$("#profileId").value   = profile.profileId ?? "";
+      SNW.$("#profileNo").value   = profile.profileNo ?? "";
+      SNW.$("#profileName").value = profile.name || "";
+      SNW.$("#profileEnabled").checked = profile.enabled !== false;
+      SNW.$("#repeatSegments").checked = profile.repeatSegments !== false;
+      SNW.$("#repeatCount").value = profile.repeatCount ?? 1;
 
       const ao = profile.autoOff || {};
       const timer   = ao.timer   || {};
       const offTime = ao.offTime || {};
       const offTemp = ao.offTemp || {};
 
-      $("#autoOffTimerEnabled").checked    = timer.enabled ?? false;
-      $("#autoOffTimerMinutes").value      = timer.minutes ?? 0;
-      $("#autoOffOffTimeEnabled").checked  = offTime.enabled ?? false;
-      $("#autoOffOffTimeTime").value       = offTime.time || "00:00";
-      $("#autoOffOffTempEnabled").checked  = offTemp.enabled ?? false;
-      $("#autoOffOffTempTemp").value       = offTemp.temp ?? 0;
+      SNW.$("#autoOffTimerEnabled").checked    = timer.enabled ?? false;
+      SNW.$("#autoOffTimerMinutes").value      = timer.minutes ?? 0;
+      SNW.$("#autoOffOffTimeEnabled").checked  = offTime.enabled ?? false;
+      SNW.$("#autoOffOffTimeTime").value       = offTime.time || "00:00";
+      SNW.$("#autoOffOffTempEnabled").checked  = offTemp.enabled ?? false;
+      SNW.$("#autoOffOffTempTemp").value       = offTemp.temp ?? 0;
 
       const pir = profile.motion?.pir || {};
-      $("#motionPirEnabled").checked = pir.enabled ?? false;
-      $("#motionPirHold").value      = pir.holdSec ?? 0;
+      SNW.$("#motionPirEnabled").checked = pir.enabled ?? false;
+      SNW.$("#motionPirHold").value      = pir.holdSec ?? 0;
 
       const segs = Array.isArray(profile.segments) ? profile.segments : [];
       segs.forEach((s) => addSegmentRow(s, true));
     } else {
-      $("#modalTitle").textContent = "새 프로파일 생성";
-      $("#profileId").value   = "";
-      $("#profileNo").value   = _suggestNextProfileNo();
-      $("#profileName").value = "";
-      $("#profileEnabled").checked = true;
-      $("#repeatSegments").checked = true;
-      $("#repeatCount").value = 1;
+      SNW.$("#modalTitle").textContent = "새 프로파일 생성";
+      SNW.$("#profileId").value   = "";
+      SNW.$("#profileNo").value   = _suggestNextProfileNo();
+      SNW.$("#profileName").value = "";
+      SNW.$("#profileEnabled").checked = true;
+      SNW.$("#repeatSegments").checked = true;
+      SNW.$("#repeatCount").value = 1;
 
-      $("#autoOffTimerEnabled").checked   = false;
-      $("#autoOffTimerMinutes").value     = 0;
-      $("#autoOffOffTimeEnabled").checked = false;
-      $("#autoOffOffTimeTime").value      = "00:00";
-      $("#autoOffOffTempEnabled").checked = false;
-      $("#autoOffOffTempTemp").value      = 0;
+      SNW.$("#autoOffTimerEnabled").checked   = false;
+      SNW.$("#autoOffTimerMinutes").value     = 0;
+      SNW.$("#autoOffOffTimeEnabled").checked = false;
+      SNW.$("#autoOffOffTimeTime").value      = "00:00";
+      SNW.$("#autoOffOffTempEnabled").checked = false;
+      SNW.$("#autoOffOffTempTemp").value      = 0;
 
-      $("#motionPirEnabled").checked = false;
-      $("#motionPirHold").value      = 0;
+      SNW.$("#motionPirEnabled").checked = false;
+      SNW.$("#motionPirHold").value      = 0;
 
       addSegmentRow({
         segId: 0, segNo: 10, onMinutes: 20, offMinutes: 10,
@@ -479,14 +422,14 @@
   }
 
   function closeModal() {
-    const modal = $("#profileModal");
+    const modal = SNW.$("#profileModal");
     if (modal) modal.style.display = "none";
   }
 
   // ======================= 10. 폼 → 객체 =======================
   function buildSegmentsFromUI() {
     const segments = [];
-    $$("#segmentsBody .segment-row").forEach((row, idx) => {
+    SNW.$$("#segmentsBody .segment-row").forEach((row, idx) => {
       const getVal = (sel) => row.querySelector(sel)?.value ?? "";
 
       segments.push({
@@ -515,26 +458,26 @@
   }
 
   function buildProfileFromForm() {
-    const idRaw = $("#profileId").value;
+    const idRaw = SNW.$("#profileId").value;
     const profileId = idRaw ? Number(idRaw) : 0;
 
     return {
       profileId,
-      profileNo: Number($("#profileNo").value) || 0,
-      name: $("#profileName").value.trim(),
-      enabled: $("#profileEnabled").checked,
-      repeatSegments: $("#repeatSegments").checked,
-      repeatCount: Number($("#repeatCount").value) || 0,
+      profileNo: Number(SNW.$("#profileNo").value) || 0,
+      name: SNW.$("#profileName").value.trim(),
+      enabled: SNW.$("#profileEnabled").checked,
+      repeatSegments: SNW.$("#repeatSegments").checked,
+      repeatCount: Number(SNW.$("#repeatCount").value) || 0,
       segments: buildSegmentsFromUI(),
       autoOff: {
-        timer:   { enabled: $("#autoOffTimerEnabled").checked,    minutes: Number($("#autoOffTimerMinutes").value) || 0 },
-        offTime: { enabled: $("#autoOffOffTimeEnabled").checked,  time: $("#autoOffOffTimeTime").value || "00:00" },
-        offTemp: { enabled: $("#autoOffOffTempEnabled").checked,  temp: Number($("#autoOffOffTempTemp").value) || 0 },
+        timer:   { enabled: SNW.$("#autoOffTimerEnabled").checked,    minutes: Number(SNW.$("#autoOffTimerMinutes").value) || 0 },
+        offTime: { enabled: SNW.$("#autoOffOffTimeEnabled").checked,  time: SNW.$("#autoOffOffTimeTime").value || "00:00" },
+        offTemp: { enabled: SNW.$("#autoOffOffTempEnabled").checked,  temp: Number(SNW.$("#autoOffOffTempTemp").value) || 0 },
       },
       motion: {
         pir: {
-          enabled: $("#motionPirEnabled").checked,
-          holdSec: Number($("#motionPirHold").value) || 0,
+          enabled: SNW.$("#motionPirEnabled").checked,
+          holdSec: Number(SNW.$("#motionPirHold").value) || 0,
         },
       },
     };
@@ -546,10 +489,10 @@
 
     const profile = buildProfileFromForm();
 
-    if (!profile.name) { toast("프로파일 이름을 입력하세요.", "err"); return; }
+    if (!profile.name) { SNW.toast("프로파일 이름을 입력하세요.", "err"); return; }
 
     if (!profile.profileNo || profile.profileNo <= 0) {
-      toast("프로파일 번호(profileNo)를 입력하세요 (0 초과).", "err");
+      SNW.toast("프로파일 번호(profileNo)를 입력하세요 (0 초과).", "err");
       return;
     }
     const dupNo = currentProfiles.find(p =>
@@ -557,22 +500,22 @@
       String(p.profileId) !== String(profile.profileId)
     );
     if (dupNo) {
-      toast(`profileNo ${profile.profileNo}은(는) "${dupNo.name}"에서 사용 중입니다.`, "err");
+      SNW.toast(`profileNo ${profile.profileNo}은(는) "${dupNo.name}"에서 사용 중입니다.`, "err");
       return;
     }
 
     if (!profile.segments.length) {
-      toast("최소 1개 이상의 세그먼트가 필요합니다.", "err");
+      SNW.toast("최소 1개 이상의 세그먼트가 필요합니다.", "err");
       return;
     }
 
     const segNos = profile.segments.map(s => s.segNo);
     if (segNos.some(n => !n || n <= 0)) {
-      toast("세그먼트 번호(segNo)는 0보다 커야 합니다.", "err");
+      SNW.toast("세그먼트 번호(segNo)는 0보다 커야 합니다.", "err");
       return;
     }
     if (new Set(segNos).size !== segNos.length) {
-      toast("세그먼트 번호(segNo)가 중복됩니다.", "err");
+      SNW.toast("세그먼트 번호(segNo)가 중복됩니다.", "err");
       return;
     }
 
@@ -587,7 +530,10 @@
       desc = `프로파일 ${profile.profileId} 수정`;
     }
 
-    const result = await fetchApi(url, method, { profile }, desc);
+    const result = (method === "POST")
+      ? await SNW.api.post(url, { profile }, desc)
+      : await SNW.api.put(url, { profile }, desc);
+
     if (result !== null) {
       setDirtyStatus(true);
       closeModal();
@@ -597,7 +543,7 @@
 
   async function deleteProfile(profileId, name) {
     if (!confirm(`프로파일 [${name} (ID: ${profileId})] 을(를) 삭제하시겠습니까?`)) return;
-    const result = await fetchApi(`${API_USER_PROFILES}/${profileId}`, "DELETE", null, `프로파일 ${name} 삭제`);
+    const result = await SNW.api.del(`${API_USER_PROFILES}/${profileId}`, `프로파일 ${name} 삭제`);
     if (result !== null) {
       setDirtyStatus(true);
       await loadUserProfiles();
@@ -606,8 +552,8 @@
 
   // [필수 1] 실행/중지
   async function runProfile(profileNo) {
-    const result = await fetchApi(
-      API_PROF_SELECT, "POST",
+    const result = await SNW.api.post(
+      API_PROF_SELECT,
       { id: Number(profileNo) },
       `프로파일 #${profileNo} 실행`
     );
@@ -618,7 +564,7 @@
   }
 
   async function stopProfile() {
-    const result = await fetchApi(API_PROF_STOP, "POST", null, "프로파일 중지");
+    const result = await SNW.api.post(API_PROF_STOP, null, "프로파일 중지");
     if (result) {
       await pollActiveProfile();
     }
@@ -656,7 +602,7 @@
     } else if (target.classList.contains("btn-delete")) {
       // [필수 2] 실행 중 삭제 경고
       if (Number(profile.profileNo) === activeProfileNo) {
-        toast("실행 중인 프로파일은 삭제 전에 먼저 중지하세요.", "warn");
+        SNW.toast("실행 중인 프로파일은 삭제 전에 먼저 중지하세요.", "warn");
         return;
       }
       await deleteProfile(profile.profileId, profile.name);
@@ -665,27 +611,27 @@
 
   // ======================= 12. 이벤트 =======================
   function bindEvents() {
-    $("#btnCreateNewProfile")?.addEventListener("click", () => {
+    SNW.$("#btnCreateNewProfile")?.addEventListener("click", () => {
       // [필수 3] 최대 개수 방어
       if (currentProfiles.length >= MAX_PROFILES) {
-        toast(`프로파일은 최대 ${MAX_PROFILES}개까지 생성 가능합니다.`, "warn");
+        SNW.toast(`프로파일은 최대 ${MAX_PROFILES}개까지 생성 가능합니다.`, "warn");
         return;
       }
       openModal(null);
     });
 
-    $("#btnRefreshList")?.addEventListener("click", loadUserProfiles);
-    $("#btnSaveAllConfig")?.addEventListener("click", saveAllConfig);
+    SNW.$("#btnRefreshList")?.addEventListener("click", loadUserProfiles);
+    SNW.$("#btnSaveAllConfig")?.addEventListener("click", saveAllConfig);
 
-    $("#btnCloseModal")?.addEventListener("click", closeModal);
-    $("#btnCancelModal")?.addEventListener("click", closeModal);
-    $("#profileForm")?.addEventListener("submit", saveProfile);
+    SNW.$("#btnCloseModal")?.addEventListener("click", closeModal);
+    SNW.$("#btnCancelModal")?.addEventListener("click", closeModal);
+    SNW.$("#profileForm")?.addEventListener("submit", saveProfile);
 
-    $("#profileListBody")?.addEventListener("click", handleProfileActions);
+    SNW.$("#profileListBody")?.addEventListener("click", handleProfileActions);
 
-    $("#btnAddSegment")?.addEventListener("click", () => addSegmentRow(null, true));
+    SNW.$("#btnAddSegment")?.addEventListener("click", () => addSegmentRow(null, true));
 
-    $("#segmentsBody")?.addEventListener("click", (e) => {
+    SNW.$("#segmentsBody")?.addEventListener("click", (e) => {
       const del = e.target.closest(".btn-del-seg");
       if (del) {
         const row = del.closest(".segment-row");
@@ -696,8 +642,8 @@
 
   // ======================= 13. 초기화 =======================
   document.addEventListener("DOMContentLoaded", async () => {
-    if (!getApiKey()) {
-      toast("API Key가 비어 있습니다. 메인 설정 페이지에서 먼저 설정해 주세요.", "warn");
+    if (!SNW.getApiKey()) {
+      SNW.toast("API Key가 비어 있습니다. 메인 설정 페이지에서 먼저 설정해 주세요.", "warn");
     }
     bindEvents();
     await loadWindDict();
@@ -706,18 +652,17 @@
     pollActiveProfile();   // [필수 2] 30초 폴링 시작
     
     // [Round 4-C #11] P010에서 편집 요청(?edit=<profileId>) 수신
-		const params = new URLSearchParams(window.location.search);
-		const editId = params.get("edit");
-		if (editId) {
-			const target = currentProfiles.find((p) => String(p.profileId) === String(editId));
-			if (target) {
-				openModal(target);
-				// URL 정리 (F5 재오픈 방지)
-				window.history.replaceState({}, "", window.location.pathname);
-			} else {
-				toast(`편집 대상 프로파일(ID ${editId})을 찾을 수 없습니다.`, "warn");
-			}
-		}
-
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get("edit");
+    if (editId) {
+      const target = currentProfiles.find((p) => String(p.profileId) === String(editId));
+      if (target) {
+        openModal(target);
+        // URL 정리 (F5 재오픈 방지)
+        window.history.replaceState({}, "", window.location.pathname);
+      } else {
+        SNW.toast(`편집 대상 프로파일(ID ${editId})을 찾을 수 없습니다.`, "warn");
+      }
+    }
   });
 })();

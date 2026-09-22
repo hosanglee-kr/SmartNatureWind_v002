@@ -1,5 +1,5 @@
 /**
- * P001_API_071.js
+ * P001_comm_API_071.js
  * Smart Nature Wind - REST API Constants (전역 객체 버전)
  * 백엔드 W10_Web_Const_070.h와 동기화됨
  * 사용: SNW_API.API_HTTP_STATE 등으로 접근

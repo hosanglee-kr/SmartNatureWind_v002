@@ -1,6 +1,6 @@
 /*
  * ------------------------------------------------------
- * 소스명 : P080_schedules_t2_071.js
+ * 소스명 : P080_sch_t2_071.js
  * 모듈명 : Smart Nature Wind Schedule Manager Controller
  * ------------------------------------------------------
  * 기능 요약:
@@ -24,59 +24,7 @@
   const API_CONFIG_SAVE     = `${API_BASE}/config/save`;
   const API_GEMINI_PROXY    = `${API_BASE}/ai/gemini`;
 
-  const API_KEY_STORAGE_KEY = "snw_api_key";
   const DAY_LABELS = ["월", "화", "수", "목", "금", "토", "일"];
-
-  const $ = (s, r = document) => r.querySelector(s);
-  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-
-  const getApiKey = () => {
-    try { return localStorage.getItem(API_KEY_STORAGE_KEY) || ""; } catch { return ""; }
-  };
-
-  const setLoading = (flag) => {
-    const el = $("#loadingOverlay");
-    if (el) el.style.display = flag ? "flex" : "none";
-  };
-
-  const toast = (msg, type = "info") => {
-    if (typeof window.showToast === "function") window.showToast(msg, type);
-    else console.log(`[TOAST-${type}]`, msg);
-  };
-
-  async function fetchApi(url, method = "GET", body = null, desc = "") {
-    setLoading(true);
-    try {
-      const opt = { method, headers: { Accept: "application/json" } };
-      const apiKey = getApiKey();
-      if (apiKey) opt.headers["X-API-Key"] = apiKey;
-      if (body) {
-        opt.headers["Content-Type"] = "application/json";
-        opt.body = JSON.stringify(body);
-      }
-      const resp = await fetch(url, opt);
-      const text = await resp.text();
-      if (resp.status === 401) {
-        toast(`[401] ${desc || "작업"} 실패: 인증 필요`, "err");
-        throw new Error("Unauthorized");
-      }
-      if (!resp.ok) {
-        toast(`${desc || "작업"} 실패: ${text || resp.status}`, "err");
-        throw new Error(text || String(resp.status));
-      }
-      if (desc && method !== "GET") toast(`${desc} 성공`, "ok");
-      if (!text) return null;
-      try { return JSON.parse(text); } catch { return text; }
-    } catch (e) {
-      if (e.message !== "Unauthorized") {
-        console.error(e);
-        if (desc) toast(`${desc} 실패: ${e.message}`, "err");
-      }
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }
 
   // ======================= 2. 요일/시간 유틸 =======================
   const formatDaysFromBoolArray = (days) => {
@@ -124,7 +72,7 @@
 
   // [A] segNo 자동 제안 (현재 DOM 기준)
   function _suggestNextSegNo() {
-    const rows = $$("#segmentListBody .segment-row");
+    const rows = SNW.$$("#segmentListBody .segment-row");
     let maxNo = 0;
     rows.forEach(r => {
       const n = Number(r.querySelector(".seg-no")?.value) || 0;
@@ -179,7 +127,7 @@
   // ======================= 4. Config Dirty =======================
   function setDirtyStatus(isDirty) {
     configDirty = !!isDirty;
-    const btn = $("#btnSaveAllConfig");
+    const btn = SNW.$("#btnSaveAllConfig");
     if (!btn) return;
     if (configDirty) {
       btn.style.backgroundColor = "#dc2626";
@@ -194,7 +142,7 @@
 
   async function pollConfigDirty() {
     try {
-      const apiKey = getApiKey();
+      const apiKey = SNW.getApiKey();
       const resp = await fetch(API_CONFIG_DIRTY, {
         headers: { Accept: "application/json", ...(apiKey ? { "X-API-Key": apiKey } : {}) },
       });
@@ -211,10 +159,10 @@
 
   async function saveAllConfig() {
     if (!configDirty) {
-      toast("저장할 변경 사항이 없습니다.", "warn");
+      SNW.toast("저장할 변경 사항이 없습니다.", "warn");
       return;
     }
-    const res = await fetchApi(API_CONFIG_SAVE, "POST", {}, "전체 설정 파일 저장");
+    const res = await SNW.api.post(API_CONFIG_SAVE, {}, "전체 설정 파일 저장");
     if (res !== null) {
       setDirtyStatus(false);
       await loadSchedules();
@@ -223,7 +171,7 @@
 
   // ======================= 5. WindDict =======================
   async function loadWindDict() {
-    const data = await fetchApi(API_WIND_PROFILE, "GET", null, "");
+    const data = await SNW.api.get(API_WIND_PROFILE, "");
     if (!data || !data.windDict) {
       windPresets = [];
       windStyles  = [];
@@ -235,8 +183,8 @@
 
   // ======================= 6. 스케줄 목록 =======================
   async function loadSchedules() {
-    const data = await fetchApi(API_SCHEDULES, "GET", null, "");
-    const noMsg = $("#noScheduleMessage");
+    const data = await SNW.api.get(API_SCHEDULES, "");
+    const noMsg = SNW.$("#noScheduleMessage");
 
     currentSchedules = (data && Array.isArray(data.schedules)) ? data.schedules : [];
     renderScheduleList(currentSchedules);
@@ -245,7 +193,7 @@
   }
 
   function renderScheduleList(schedules) {
-    const tbody = $("#scheduleListBody");
+    const tbody = SNW.$("#scheduleListBody");
     if (!tbody) return;
     tbody.innerHTML = "";
 
@@ -285,14 +233,14 @@
 
   // ======================= 7. 모달 =======================
   function resetPeriodDaysUI() {
-    $$("#periodDays label").forEach((lab) => lab.classList.remove("checked"));
-    $$("#periodDays input[type='checkbox']").forEach((el) => (el.checked = false));
+    SNW.$$("#periodDays label").forEach((lab) => lab.classList.remove("checked"));
+    SNW.$$("#periodDays input[type='checkbox']").forEach((el) => (el.checked = false));
   }
 
   function applyPeriodDaysUI(days) {
     resetPeriodDaysUI();
     if (!Array.isArray(days) || days.length !== 7) return;
-    $$("#periodDays input[type='checkbox']").forEach((input) => {
+    SNW.$$("#periodDays input[type='checkbox']").forEach((input) => {
       const idx = Number(input.dataset.index);
       if (!Number.isNaN(idx) && days[idx]) {
         input.checked = true;
@@ -317,7 +265,7 @@
   }
 
   function renderSegmentsInModal(segments) {
-    const tbody = $("#segmentListBody");
+    const tbody = SNW.$("#segmentListBody");
     if (!tbody) return;
     tbody.innerHTML = "";
     const segs = Array.isArray(segments) ? segments : [];
@@ -326,7 +274,7 @@
 
   // [A] segNo 자동 제안 / [B] mode 조건부
   function addSegmentRow(seg = null, appendToEnd = true) {
-    const tbody = $("#segmentListBody");
+    const tbody = SNW.$("#segmentListBody");
     if (!tbody) return;
 
     const row = document.createElement("tr");
@@ -418,26 +366,26 @@
   }
 
   function openModal(schedule = null) {
-    const modal = $("#scheduleModal");
-    const form  = $("#scheduleForm");
+    const modal = SNW.$("#scheduleModal");
+    const form  = SNW.$("#scheduleForm");
     if (!modal || !form) return;
 
     form.reset();
     resetPeriodDaysUI();
-    $("#segmentListBody").innerHTML = "";
+    SNW.$("#segmentListBody").innerHTML = "";
 
     if (schedule) {
-      $("#modalTitle").textContent = `스케줄 수정: ${schedule.name}`;
-      $("#scheduleId").value = schedule.schId ?? "";
-      $("#schNo").value      = schedule.schNo ?? "";
-      $("#scheduleName").value = schedule.name || "";
-      $("#isEnabled").checked  = !!schedule.enabled;
-      $("#repeatSegments").checked = schedule.repeatSegments ?? true;
-      $("#repeatCount").value = schedule.repeatCount ?? 1;
+      SNW.$("#modalTitle").textContent = `스케줄 수정: ${schedule.name}`;
+      SNW.$("#scheduleId").value = schedule.schId ?? "";
+      SNW.$("#schNo").value      = schedule.schNo ?? "";
+      SNW.$("#scheduleName").value = schedule.name || "";
+      SNW.$("#isEnabled").checked  = !!schedule.enabled;
+      SNW.$("#repeatSegments").checked = schedule.repeatSegments ?? true;
+      SNW.$("#repeatCount").value = schedule.repeatCount ?? 1;
 
       const period = schedule.period || {};
-      $("#periodStart").value = period.startTime || "08:00";
-      $("#periodEnd").value   = period.endTime   || "23:00";
+      SNW.$("#periodStart").value = period.startTime || "08:00";
+      SNW.$("#periodEnd").value   = period.endTime   || "23:00";
       applyPeriodDaysUI(Array.isArray(period.days) ? period.days : [1,1,1,1,1,1,1]);
 
       const ao      = schedule.autoOff || {};
@@ -445,41 +393,41 @@
       const offTime = ao.offTime || {};
       const offTemp = ao.offTemp || {};
 
-      $("#autoOffTimerEnabled").checked = timer.enabled ?? false;
-      $("#autoOffTimerMinutes").value   = timer.minutes ?? 0;
-      $("#autoOffTimeEnabled").checked  = offTime.enabled ?? false;
-      $("#autoOffTime").value           = offTime.time || "00:00";
-      $("#autoOffTempEnabled").checked  = offTemp.enabled ?? false;
-      $("#autoOffTemp").value           = offTemp.temp ?? 0;
+      SNW.$("#autoOffTimerEnabled").checked = timer.enabled ?? false;
+      SNW.$("#autoOffTimerMinutes").value   = timer.minutes ?? 0;
+      SNW.$("#autoOffTimeEnabled").checked  = offTime.enabled ?? false;
+      SNW.$("#autoOffTime").value           = offTime.time || "00:00";
+      SNW.$("#autoOffTempEnabled").checked  = offTemp.enabled ?? false;
+      SNW.$("#autoOffTemp").value           = offTemp.temp ?? 0;
 
       const motion = schedule.motion || {};
       const pir = motion.pir || {};
-      $("#pirEnabled").checked = pir.enabled ?? false;
-      $("#pirHoldSec").value   = pir.holdSec ?? 0;
+      SNW.$("#pirEnabled").checked = pir.enabled ?? false;
+      SNW.$("#pirHoldSec").value   = pir.holdSec ?? 0;
 
       renderSegmentsInModal(schedule.segments || []);
     } else {
-      $("#modalTitle").textContent = "새 스케줄 생성";
-      $("#scheduleId").value = "";
+      SNW.$("#modalTitle").textContent = "새 스케줄 생성";
+      SNW.$("#scheduleId").value = "";
       // [A] schNo 자동 제안
-      $("#schNo").value = _suggestNextSchNo();
-      $("#scheduleName").value = "";
-      $("#isEnabled").checked = true;
-      $("#repeatSegments").checked = true;
-      $("#repeatCount").value = 1;
-      $("#periodStart").value = "08:00";
-      $("#periodEnd").value = "23:00";
+      SNW.$("#schNo").value = _suggestNextSchNo();
+      SNW.$("#scheduleName").value = "";
+      SNW.$("#isEnabled").checked = true;
+      SNW.$("#repeatSegments").checked = true;
+      SNW.$("#repeatCount").value = 1;
+      SNW.$("#periodStart").value = "08:00";
+      SNW.$("#periodEnd").value = "23:00";
       applyPeriodDaysUI([1,1,1,1,1,1,1]);
 
-      $("#autoOffTimerEnabled").checked = false;
-      $("#autoOffTimerMinutes").value = 0;
-      $("#autoOffTimeEnabled").checked = false;
-      $("#autoOffTime").value = "00:00";
-      $("#autoOffTempEnabled").checked = false;
-      $("#autoOffTemp").value = 0;
+      SNW.$("#autoOffTimerEnabled").checked = false;
+      SNW.$("#autoOffTimerMinutes").value = 0;
+      SNW.$("#autoOffTimeEnabled").checked = false;
+      SNW.$("#autoOffTime").value = "00:00";
+      SNW.$("#autoOffTempEnabled").checked = false;
+      SNW.$("#autoOffTemp").value = 0;
 
-      $("#pirEnabled").checked = true;
-      $("#pirHoldSec").value = 120;
+      SNW.$("#pirEnabled").checked = true;
+      SNW.$("#pirHoldSec").value = 120;
 
       addSegmentRow({
         segId: 0, segNo: 10, onMinutes: 20, offMinutes: 10,
@@ -497,14 +445,14 @@
   }
 
   function closeModal() {
-    const modal = $("#scheduleModal");
+    const modal = SNW.$("#scheduleModal");
     if (modal) modal.style.display = "none";
   }
 
   // ======================= 8. 폼 → 객체 =======================
   function buildDaysFromUI() {
     const days = [0,0,0,0,0,0,0];
-    $$("#periodDays input[type='checkbox']").forEach((input) => {
+    SNW.$$("#periodDays input[type='checkbox']").forEach((input) => {
       const idx = Number(input.dataset.index);
       if (!Number.isNaN(idx) && idx >= 0 && idx < 7) days[idx] = input.checked ? 1 : 0;
     });
@@ -513,7 +461,7 @@
 
   function buildSegmentsFromUI() {
     const segments = [];
-    $$("#segmentListBody .segment-row").forEach((row, idx) => {
+    SNW.$$("#segmentListBody .segment-row").forEach((row, idx) => {
       const getVal = (sel) => row.querySelector(sel)?.value ?? "";
 
       segments.push({
@@ -542,29 +490,29 @@
   }
 
   function buildScheduleFromForm() {
-    const schIdRaw = $("#scheduleId").value;
+    const schIdRaw = SNW.$("#scheduleId").value;
     const schId = schIdRaw ? Number(schIdRaw) : 0;
 
     return {
       schId,
-      schNo: Number($("#schNo").value) || 0,
-      name: $("#scheduleName").value.trim(),
-      enabled: $("#isEnabled").checked,
-      repeatSegments: $("#repeatSegments").checked,
-      repeatCount: Number($("#repeatCount").value) || 0,
+      schNo: Number(SNW.$("#schNo").value) || 0,
+      name: SNW.$("#scheduleName").value.trim(),
+      enabled: SNW.$("#isEnabled").checked,
+      repeatSegments: SNW.$("#repeatSegments").checked,
+      repeatCount: Number(SNW.$("#repeatCount").value) || 0,
       period: {
         days: buildDaysFromUI(),
-        startTime: $("#periodStart").value || "00:00",
-        endTime:   $("#periodEnd").value   || "23:59",
+        startTime: SNW.$("#periodStart").value || "00:00",
+        endTime:   SNW.$("#periodEnd").value   || "23:59",
       },
       segments: buildSegmentsFromUI(),
       autoOff: {
-        timer:   { enabled: $("#autoOffTimerEnabled").checked, minutes: Number($("#autoOffTimerMinutes").value) || 0 },
-        offTime: { enabled: $("#autoOffTimeEnabled").checked,  time: $("#autoOffTime").value || "00:00" },
-        offTemp: { enabled: $("#autoOffTempEnabled").checked,  temp: Number($("#autoOffTemp").value) || 0 },
+        timer:   { enabled: SNW.$("#autoOffTimerEnabled").checked, minutes: Number(SNW.$("#autoOffTimerMinutes").value) || 0 },
+        offTime: { enabled: SNW.$("#autoOffTimeEnabled").checked,  time: SNW.$("#autoOffTime").value || "00:00" },
+        offTemp: { enabled: SNW.$("#autoOffTempEnabled").checked,  temp: Number(SNW.$("#autoOffTemp").value) || 0 },
       },
       motion: {
-        pir: { enabled: $("#pirEnabled").checked, holdSec: Number($("#pirHoldSec").value) || 0 },
+        pir: { enabled: SNW.$("#pirEnabled").checked, holdSec: Number(SNW.$("#pirHoldSec").value) || 0 },
       },
     };
   }
@@ -577,35 +525,35 @@
     const schedule = buildScheduleFromForm();
 
     // 이름
-    if (!schedule.name) { toast("스케줄 이름을 입력해주세요.", "err"); return; }
+    if (!schedule.name) { SNW.toast("스케줄 이름을 입력해주세요.", "err"); return; }
 
     // [A] schNo 검증
     if (!schedule.schNo || schedule.schNo <= 0) {
-      toast("스케줄 번호(schNo)를 입력하세요 (0 초과).", "err");
+      SNW.toast("스케줄 번호(schNo)를 입력하세요 (0 초과).", "err");
       return;
     }
     const dupNo = currentSchedules.find(s =>
       Number(s.schNo) === schedule.schNo && String(s.schId) !== String(schedule.schId)
     );
     if (dupNo) {
-      toast(`schNo ${schedule.schNo}은(는) "${dupNo.name}" 에서 사용 중입니다.`, "err");
+      SNW.toast(`schNo ${schedule.schNo}은(는) "${dupNo.name}" 에서 사용 중입니다.`, "err");
       return;
     }
 
     // 세그먼트 존재
     if (!Array.isArray(schedule.segments) || schedule.segments.length === 0) {
-      toast("최소 1개 이상의 세그먼트를 추가해주세요.", "err"); return;
+      SNW.toast("최소 1개 이상의 세그먼트를 추가해주세요.", "err"); return;
     }
 
     // [A] segNo 중복/0 검증
     const segNos = schedule.segments.map(s => s.segNo);
     if (segNos.some(n => !n || n <= 0)) {
-      toast("세그먼트 번호(segNo)는 0보다 커야 합니다.", "err");
+      SNW.toast("세그먼트 번호(segNo)는 0보다 커야 합니다.", "err");
       return;
     }
     const segSet = new Set(segNos);
     if (segSet.size !== segNos.length) {
-      toast("세그먼트 번호(segNo)가 중복됩니다.", "err");
+      SNW.toast("세그먼트 번호(segNo)가 중복됩니다.", "err");
       return;
     }
 
@@ -613,7 +561,7 @@
     const conflicts = checkOverlap(schedule);
     if (conflicts.length > 0) {
       const list = conflicts.map(c => `"${c.name}" (${c.period.startTime}~${c.period.endTime})`).join(", ");
-      toast(`⚠️ 시간 겹침: ${list}`, "warn");
+      SNW.toast(`⚠️ 시간 겹침: ${list}`, "warn");
       // 저장은 계속 (백엔드 정책 warn-only)
     }
 
@@ -629,7 +577,10 @@
     }
 
     const payload = { schedule };
-    const result = await fetchApi(url, method, payload, desc);
+    const result = (method === "POST")
+      ? await SNW.api.post(url, payload, desc)
+      : await SNW.api.put(url, payload, desc);
+
     if (result !== null) {
       setDirtyStatus(true);
       closeModal();
@@ -638,7 +589,7 @@
   }
 
   async function deleteSchedule(schId, name) {
-    const result = await fetchApi(`${API_SCHEDULES}/${schId}`, "DELETE", null, `스케줄 ${name} 삭제`);
+    const result = await SNW.api.del(`${API_SCHEDULES}/${schId}`, `스케줄 ${name} 삭제`);
     if (result !== null) {
       setDirtyStatus(true);
       await loadSchedules();
@@ -674,12 +625,12 @@
       body.generationConfig.responseMimeType = "application/json";
       body.generationConfig.responseSchema = responseSchema;
     }
-    const resp = await fetchApi(API_GEMINI_PROXY, { method: "POST", body: JSON.stringify(body) }, false, "");
+    const resp = await SNW.api.post(API_GEMINI_PROXY, body, "", true);
     return resp?.candidates?.[0]?.content?.parts?.[0]?.text || null;
   }
 
   async function handleSuggestName() {
-    const nameInput = $("#scheduleName");
+    const nameInput = SNW.$("#scheduleName");
     if (!nameInput) return;
 
     const item = buildScheduleFromForm();
@@ -705,18 +656,18 @@
 
 이름을 제안하세요:`;
 
-    showLoading();
+    SNW.loading.show();
     try {
       const suggested = await callGemini(userQuery, systemPrompt);
       if (suggested) {
         const clean = suggested.trim().replace(/^['"“‘”’\s]+/, '').replace(/['"“‘”’\s]+$/, '');
         nameInput.value = clean;
-        toast(`AI 추천 이름: ${clean}`, "ok");
+        SNW.toast(`AI 추천 이름: ${clean}`, "ok");
       }
     } catch (e) {
-      toast(`이름 추천 실패: ${e.message}`, "err");
+      SNW.toast(`이름 추천 실패: ${e.message}`, "err");
     } finally {
-      hideLoading();
+      SNW.loading.hide();
     }
   }
 
@@ -726,7 +677,7 @@
 
     const mode = row.querySelector(".seg-mode")?.value;
     if (mode !== "PRESET") {
-      toast("프리셋 모드일 때만 AI 최적화를 사용할 수 있습니다.", "warn");
+      SNW.toast("프리셋 모드일 때만 AI 최적화를 사용할 수 있습니다.", "warn");
       return;
     }
 
@@ -745,7 +696,7 @@
 
 windIntensity와 windVariability를 조정하여 JSON으로 출력하십시오.`;
 
-    showLoading();
+    SNW.loading.show();
     try {
       const responseSchema = {
         type: "OBJECT",
@@ -766,11 +717,11 @@ windIntensity와 windVariability를 조정하여 JSON으로 출력하십시오.`
       if (iInput) iInput.value = iV.toFixed(1);
       if (vInput) vInput.value = vV.toFixed(1);
 
-      toast(`AI 조정 완료 — 강도 ${iV.toFixed(1)}, 변동 ${vV.toFixed(1)}`, "ok");
+      SNW.toast(`AI 조정 완료 — 강도 ${iV.toFixed(1)}, 변동 ${vV.toFixed(1)}`, "ok");
     } catch (e) {
-      toast(`AI 조정 실패: ${e.message}`, "err");
+      SNW.toast(`AI 조정 실패: ${e.message}`, "err");
     } finally {
-      hideLoading();
+      SNW.loading.hide();
     }
   }
   
@@ -854,18 +805,18 @@ function renderSchedulePreview() {
 
   // ======================= 11. 이벤트 =======================
   function bindEvents() {
-    $("#btnCreateNew")?.addEventListener("click", () => openModal(null));
-    $("#btnRefreshList")?.addEventListener("click", loadSchedules);
-    $("#btnRefreshPreview")?.addEventListener("click", renderSchedulePreview);
-    $("#btnSaveAllConfig")?.addEventListener("click", saveAllConfig);
-    $("#btnSuggestName")?.addEventListener("click", handleSuggestName);
+    SNW.$("#btnCreateNew")?.addEventListener("click", () => openModal(null));
+    SNW.$("#btnRefreshList")?.addEventListener("click", loadSchedules);
+    SNW.$("#btnRefreshPreview")?.addEventListener("click", renderSchedulePreview);
+    SNW.$("#btnSaveAllConfig")?.addEventListener("click", saveAllConfig);
+    SNW.$("#btnSuggestName")?.addEventListener("click", handleSuggestName);
 
-    $("#btnCloseModal")?.addEventListener("click", closeModal);
-    $("#btnCancelModal")?.addEventListener("click", closeModal);
-    $("#scheduleForm")?.addEventListener("submit", saveSchedule);
-    $("#scheduleListBody")?.addEventListener("click", handleScheduleActions);
+    SNW.$("#btnCloseModal")?.addEventListener("click", closeModal);
+    SNW.$("#btnCancelModal")?.addEventListener("click", closeModal);
+    SNW.$("#scheduleForm")?.addEventListener("submit", saveSchedule);
+    SNW.$("#scheduleListBody")?.addEventListener("click", handleScheduleActions);
 
-    const periodDays = $("#periodDays");
+    const periodDays = SNW.$("#periodDays");
     if (periodDays) {
       periodDays.addEventListener("change", (e) => {
         const input = e.target.closest("input[type='checkbox']");
@@ -875,9 +826,9 @@ function renderSchedulePreview() {
       });
     }
 
-    $("#btnAddSegment")?.addEventListener("click", () => addSegmentRow(null, true));
+    SNW.$("#btnAddSegment")?.addEventListener("click", () => addSegmentRow(null, true));
 
-    $("#segmentListBody")?.addEventListener("click", (e) => {
+    SNW.$("#segmentListBody")?.addEventListener("click", (e) => {
       const del = e.target.closest(".btn-del-seg");
       if (del) {
         const row = del.closest(".segment-row");
@@ -891,8 +842,8 @@ function renderSchedulePreview() {
 
   // ======================= 12. 초기화 =======================
   document.addEventListener("DOMContentLoaded", async () => {
-    if (!getApiKey()) {
-      toast("API Key가 비어 있습니다. 메인 설정 페이지에서 먼저 설정해 주세요.", "warn");
+    if (!SNW.getApiKey()) {
+      SNW.toast("API Key가 비어 있습니다. 메인 설정 페이지에서 먼저 설정해 주세요.", "warn");
     }
     bindEvents();
     await loadWindDict();

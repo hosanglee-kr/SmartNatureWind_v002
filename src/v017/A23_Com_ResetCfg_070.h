@@ -644,16 +644,19 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
         v_p.order  = 10;
 
         v_p.pageAssetCount = 0;
-        if (A20_Const::MAX_PAGE_ASSETS >= 1) {
-            ST_A20_PageAsset_t& v_a0 = v_p.pageAssets[v_p.pageAssetCount++];
-            A40_ComFunc::copyStr2Buffer_safe(v_a0.uri,  "/P010_main_071.css", sizeof(v_a0.uri));
-            A40_ComFunc::copyStr2Buffer_safe(v_a0.path, "/html_v3/P010_main_071.css", sizeof(v_a0.path));
-        }
-        if (A20_Const::MAX_PAGE_ASSETS >= 2) {
-            ST_A20_PageAsset_t& v_a1 = v_p.pageAssets[v_p.pageAssetCount++];
-            A40_ComFunc::copyStr2Buffer_safe(v_a1.uri,  "/P010_main_071.js", sizeof(v_a1.uri));
-            A40_ComFunc::copyStr2Buffer_safe(v_a1.path, "/html_v3/P010_main_071.js", sizeof(v_a1.path));
-        }
+        auto v_addPageAsset = [&](const char* p_uri, const char* p_path) {
+            if (v_p.pageAssetCount >= A20_Const::MAX_PAGE_ASSETS) return;
+            ST_A20_PageAsset_t& v_a = v_p.pageAssets[v_p.pageAssetCount++];
+            A40_ComFunc::copyStr2Buffer_safe(v_a.uri,  p_uri,  sizeof(v_a.uri));
+            A40_ComFunc::copyStr2Buffer_safe(v_a.path, p_path, sizeof(v_a.path));
+        };
+        v_addPageAsset("/P010_main_071.css",        "/html_v3/P010_main_071.css");
+        v_addPageAsset("/P010_main_core_071.js",   "/html_v3/P010_main_core_071.js");
+        v_addPageAsset("/P010_main_preset_071.js", "/html_v3/P010_main_preset_071.js");
+        v_addPageAsset("/P010_main_ws_071.js",     "/html_v3/P010_main_ws_071.js");
+        v_addPageAsset("/P010_main_wifi_071.js",   "/html_v3/P010_main_wifi_071.js");
+        v_addPageAsset("/P010_main_misc_071.js",   "/html_v3/P010_main_misc_071.js");
+        v_addPageAsset("/P010_main_071.js",        "/html_v3/P010_main_071.js");
     }
 
     // redirect 추가(내부 유틸)
@@ -679,7 +682,7 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
 
     v_addCommonAsset("/P000_common_071.css", "/html_v3/P000_common_071.css", true);
     v_addCommonAsset("/P000_common_071.js",  "/html_v3/P000_common_071.js",  true);
-    v_addCommonAsset("/P001_API_071.js",     "/html_v3/P001_API_071.js",     true);
+    v_addCommonAsset("/P001_comm_API_071.js", "/html_v3/P001_comm_API_071.js", true);
 }
 
 

@@ -12,15 +12,14 @@
  * [v009] 백엔드 epoch ms 전환 정합
  *  - timestamp: epoch ms (SNTP sync 후)
  *  - WS payload: root 레벨 "chart" 배열
- *  - WS 인증: buildWsUrl(SNW_API.WS_API_CHART) 사용
+ *  - WS 인증: SNW.buildWsUrl(SNW_API.WS_API_CHART) 사용
  * ------------------------------------------------------
  */
 
 (() => {
   "use strict";
 
-  const $ = (s, r = document) => r.querySelector(s);
-  const refreshLabel = $("#refreshInfo");
+  const refreshLabel = SNW.$("#refreshInfo");
 
   let isPaused = false;
   const charts = [];
@@ -64,12 +63,12 @@
   let chartWind, chartParam, chartTurbThermSig, chartEvent, chartPreset, chartTiming;
 
   function initCharts() {
-    const ctxWind = $("#chartWind");
-    const ctxParam = $("#chartParams");
-    const ctxTurbThermSig = $("#chartTurbThermSig");
-    const ctxEvent = $("#chartEvents");
-    const ctxPreset = $("#chartPreset");
-    const ctxTiming = $("#chartTiming");
+    const ctxWind = SNW.$("#chartWind");
+    const ctxParam = SNW.$("#chartParams");
+    const ctxTurbThermSig = SNW.$("#chartTurbThermSig");
+    const ctxEvent = SNW.$("#chartEvents");
+    const ctxPreset = SNW.$("#chartPreset");
+    const ctxTiming = SNW.$("#chartTiming");
 
     if (!ctxWind || !ctxParam || !ctxTurbThermSig || !ctxEvent || !ctxPreset || !ctxTiming) {
       console.error("[ChartT2] Canvas 요소가 일부 없습니다.");
@@ -259,12 +258,12 @@
 
   function initWebSocket() {
     // [인증] buildWsUrl 사용 (?apiKey=xxx 자동 부착)
-    const url = buildWsUrl(SNW_API.WS_API_CHART);
+    const url = SNW.buildWsUrl(SNW_API.WS_API_CHART);
     const ws = new WebSocket(url);
 
     ws.onopen = () => {
       if (refreshLabel) refreshLabel.textContent = "✅ 실시간 차트 데이터 수신 중...";
-      if (window.showToast) window.showToast("/ws/chart 연결 성공", "ok");
+      SNW.toast("/ws/chart 연결 성공", "ok");
     };
 
     ws.onmessage = (event) => {
@@ -277,13 +276,13 @@
         }
       } catch (e) {
         console.error("[ChartT2] WS 데이터 파싱 오류:", e);
-        if (window.showToast) window.showToast("WS 데이터 파싱 오류", "err");
+        SNW.toast("WS 데이터 파싱 오류", "err");
       }
     };
 
     ws.onclose = () => {
       if (refreshLabel) refreshLabel.textContent = "❌ WS 연결 끊김. 5초 후 재연결 시도...";
-      if (window.showToast) window.showToast("/ws/chart 연결 끊김", "warn");
+      SNW.toast("/ws/chart 연결 끊김", "warn");
       setTimeout(initWebSocket, 5000);
     };
 
@@ -296,20 +295,20 @@
   // ======================= 이벤트 =======================
 
   function bindEvents() {
-    $("#btnPause")?.addEventListener("click", () => {
+    SNW.$("#btnPause")?.addEventListener("click", () => {
       isPaused = true;
       if (refreshLabel) refreshLabel.textContent = "⏸ 갱신 일시정지됨";
-      if (window.showToast) window.showToast("차트 갱신 일시정지", "warn");
+      SNW.toast("차트 갱신 일시정지", "warn");
     });
 
-    $("#btnResume")?.addEventListener("click", () => {
+    SNW.$("#btnResume")?.addEventListener("click", () => {
       isPaused = false;
-      if (window.showToast) window.showToast("차트 갱신 재개", "ok");
+      SNW.toast("차트 갱신 재개", "ok");
     });
 
-    $("#btnResetZoomAll")?.addEventListener("click", () => {
+    SNW.$("#btnResetZoomAll")?.addEventListener("click", () => {
       charts.forEach((c) => c.resetZoom && c.resetZoom());
-      if (window.showToast) window.showToast("모든 차트 줌 초기화", "ok");
+      SNW.toast("모든 차트 줌 초기화", "ok");
     });
 
     document.querySelectorAll(".chart-container").forEach((container) => {

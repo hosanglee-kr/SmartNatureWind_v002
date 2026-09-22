@@ -1,33 +1,55 @@
-# Workspace Context7 Rules (v2.0)
+# Workspace Context7 Rules (v2.2)
 
-이 프로젝트는 ESP32를 위한 특정 Arduino 라이브러리를 사용합니다. 코드 작성이나 디버깅 시 항상 Context7 MCP 서버를 사용하여 최신 문서와 코드 스니펫을 참조하십시오.
+이 프로젝트는 ESP32-S3 기반 Smart Nature Wind 프로젝트로, 특정 Arduino 라이브러리를 사용합니다. 코드 작성이나 디버깅 시 항상 Context7 MCP 서버를 사용하여 최신 문서와 코드 스니펫을 참조하십시오.
 
 ## 필수 라이브러리 ID (Required Library IDs)
-- **ArduinoJson**: `/bblanchon/arduinojson` (반드시 v7.x 사용)
-- **ESPAsyncWebServer**: `/esp32async/espasyncwebserver`
+- **ArduinoJson**: `/bblanchon/arduinojson` (반드시 v7.x 사용, 현재 ^7.4.3)
+- **ESPAsyncWebServer**: `/esp32async/espasyncwebserver` (비동기 웹서버, 정규식 라우팅 지원)
 - **AsyncTCP**: `/esp32async/asynctcp`
+- **NimBLE-Arduino**: `/h2zero/NimBLE-Arduino` (저전력 BLE 스택)
+- **Adafruit Sensor & NeoPixel**: `/adafruit/Adafruit_NeoPixel`, `/adafruit/DHT-sensor-library`
 - **PlatformIO**: `/platformio/platformio-docs`
+
+## 모듈 접두사 체계 (Module Prefix Conventions)
+소스 파일 및 심볼은 역할에 따른 모듈 접두사를 반드시 부여합니다.
+
+| 모듈 약어 | 담당 영역 및 설명 | 대표 파일 예시 (v017 기준) |
+| :--- | :--- | :--- |
+| **A00** | 메인 부팅 시퀀스 및 주기 루프 위임 | `A00_Main_071.cpp`, `A00_Main_071.h` |
+| **A20** | 전역 상수, 설정 테이블, 공통 매크로 | `A20_Const_070.h`, `A20_Const_Sys_070.h` |
+| **A22~A29** | 공통 유틸리티, 룩업테이블, 파서/리셋 | `A22_Com_Lookup_070.h`, `A25_Com_Utils_070.h` |
+| **A30** | 상태 표시 LED / NeoPixel 제어 | `A30_LED_070.h` |
+| **C10** | 환경설정(Config) 로드/저장/검증 | `C10_Config_070.h`, `C10_Config_Core_070.cpp` |
+| **CT10** | 장치 제어(Control), 상태 관리, WS 브로커 | `CT10_Ctl_070.h`, `CT10_Ctl_Basic_070.cpp` |
+| **D10** | 시스템 로거 (로그 레벨 필터링 및 출력) | `D10_Logger_070.h` |
+| **M10** | 모션 및 풍향 제어 로직 | `M10_MotionLogic_070.h` |
+| **N10** | NVS 비휘발성 플래시 스토리지 관리 | `N10_NvsManager_070.cpp`, `N10_NvsManager_070.h` |
+| **P10** | 팬 모터 하드웨어 PWM 제어 | `P10_PWM_ctrl_070.h` |
+| **S10 / S20** | 바람 시뮬레이션(Simul), 물리 엔진, 솔버 | `S10_Simul_070.h`, `S20_WindSolver_070.h` |
+| **TM10** | 시간 관리 (NTP 동기화, 타이머, 스케줄링) | `TM10_TimeMg_070.h` |
+| **W10** | 웹 서버(Web), REST API 라우팅, 웹소켓 | `W10_Web_070.h`, `W10_Web_Routes_070.cpp` |
+| **WF10** | Wi-Fi 연결 및 네트워크 매니저 | `WF10_WiFiMgr_070.cpp`, `WF10_WiFiMgr_070.h` |
 
 ## 코드 네이밍 규칙 (Code Naming Conventions)
 다음 접두사와 대소문자 규칙을 엄격히 준수하십시오. **변수명은 의미를 명확히 알 수 있도록 충분히 길게 작성하며, 과도한 약어 사용을 지양합니다.**
 
 | 구분 | 패턴 | 예시 |
 | :--- | :--- | :--- |
-| **파일명** | `[영문접두사][숫자]_[이름]_[버전].cpp/h` | `W10_Web_Routes_050.cpp` |
-| **클래스명** | `CL_[영문접두사][숫자]_[이름]` | `CL_W10_WebAPI` |
-| **구조체** | `ST_[영문접두사][숫자]_[이름]_t` | `ST_A20_ConfigRoot_t` |
-| **Enum** | `EN_[영문접두사][숫자]_[이름]` | `EN_L10_LOG_INFO` |
+| **파일명** | `[영문접두사][숫자]_[이름]_[버전].cpp/h` | `W10_Web_Routes_070.cpp`, `A00_Main_071.cpp` |
+| **클래스명** | `CL_[영문접두사][숫자]_[이름]` | `CL_W10_WebAPI`, `CL_D10_Logger`, `CL_C10_Config` |
+| **구조체** | `ST_[영문접두사][숫자]_[이름]_t` | `ST_A20_ConfigRoot_t`, `ST_S10_WindState_t` |
+| **Enum** | `EN_[영문접두사][숫자]_[이름]` | `EN_L10_LOG_INFO`, `EN_CT10_MODE_MANUAL` |
 | **전역 상수/매크로** | `G_[영문접두사][숫자]_[이름]` | `G_W10_PAGES_JSON`, `G_S10_GUST_INTERVAL_MS` |
-| **전역 변수** | `g_[영문접두사][숫자]_[이름]` | `g_A20_config_root` |
+| **전역 변수** | `g_[영문접두사][숫자]_[이름]` | `g_A20_config_root`, `g_CT10_deviceState` |
 | **정적 멤버 변수** | `s_[이름]` | `s_webServer`, `s_configMutex` |
-| **Private 멤버 변수** | `_[이름]` | `_dirty_systemConfig` |
+| **Private 멤버 변수** | `_[이름]` | `_dirty_systemConfig`, `_currentSpeed` |
 | **지역 변수** | `v_[이름]` | `v_jsonDocument`, `v_isSuccess`, `v_temperatureValue` |
 | **함수 인자** | `p_[이름]` | `p_requestObject`, `p_jsonDocument` |
-| **전역 함수** | `[영문접두사][숫자]_[이름]` | `W10_guessMimeType` |
-| **클래스 메서드** | `camelCase` (접두사 없음) | `begin`, `sendJsonResponse` |
+| **전역 함수** | `[영문접두사][숫자]_[이름]` | `W10_guessMimeType`, `A00_init`, `A00_run` |
+| **클래스 메서드** | `camelCase` (접두사 없음) | `begin`, `sendJsonResponse`, `updateState` |
 
 ## 구현 규칙 (Implementation Rules)
-1. **파일 헤더**: 모든 소스 파일은 표준 헤더 블록(소스명, 모듈약어, 모듈명, 기능요약)으로 시작해야 합니다.
+1. **파일 헤더**: 모든 소스 파일은 표준 헤더 블록(소스명, 모듈약어, 모듈명, 기능요약, 버전 정보)으로 시작해야 합니다.
 2. **변수 명명 (가독성)**:
     - 변수명은 역할이나 데이터를 명확히 설명할 수 있도록 **충분히 길게** 작성하십시오.
     - 예: `v_doc` -> `v_jsonDocument`, `v_res` -> `v_response`, `v_idx` -> `v_index`
@@ -39,12 +61,16 @@
 4. **함수 내 주석**: 복잡한 로직은 단계별로 주석을 답니다. (예: `// 1. 입력 파라미터 검증`, `// 2. 물리 모델 계산`)
 5. **ArduinoJson**:
     - 항상 `JsonDocument` 단일 타입을 사용하십시오 (v7.x 전용).
-    - `createNestedArray`, `createNestedObject` 사용을 금지합니다.
+    - `createNestedArray`, `createNestedObject` 사용을 금지합니다 (`doc["key"].to<JsonObject>()` 등 v7 문법 사용).
 6. **문자열 및 메모리**:
     - 안전한 초기화를 위해 `memset` + `strlcpy` 패턴을 사용하십시오.
     - 풍속 등 물리량 계산 시 `float` 타입을 사용하며, 상수 뒤에 `f`를 붙입니다. (`1.0f`)
 7. **에러 처리**: API 에러 응답 시 `{"error": "메시지"}` 표준 형식을 유지합니다.
+8. **응답 언어**: 모든 설명 및 답변은 명확하고 이해하기 쉬운 **한국어**로 작성합니다.
 
 ## 디렉토리 구조 (Directory Structure)
-- `src/v[XXX]`: 버전별 소스 디렉토리 (버전 업그레이드 시 폴더명 변경)
+- `src/v[XXX]`: 현재 활성 버전 소스 디렉토리 (현재: `src/v017`)
+- `src/v[XXX]/data_v[XXX]`: LittleFS 파일시스템 업로드 정적 웹 리소스 및 기본 설정 JSON
+- `src/main.cpp`: 아두이노 표준 엔트리포인트 (`setup`, `loop`에서 최신 버전 `A00_init`/`A00_run` 호출)
 - `include`: 프로젝트 공용 헤더 파일
+

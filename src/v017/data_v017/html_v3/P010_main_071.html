@@ -81,6 +81,49 @@
 				</div>
 			</section>
 			
+			<!-- 2-0. 실행 컨텍스트 미니맵 (신규) -->
+			<section class="card col-12">
+				<div class="row middle">
+					<strong class="section-title" id="cmmLabel">🕒 실행 컨텍스트</strong>
+					<div class="right tight">
+						<div class="cmm-window-toggle">
+							<button class="btn btn-small active" data-cmm-window="30">30분</button>
+							<button class="btn btn-small"        data-cmm-window="60">1시간</button>
+							<button class="btn btn-small"        data-cmm-window="180">3시간</button>
+						</div>
+					</div>
+				</div>
+
+				<div class="cmm-timeline" id="cmmTimeline">
+					<div class="cmm-empty">데이터 수집 중...</div>
+				</div>
+
+				<div class="cmm-axis" id="cmmAxis">
+					<span>-30분</span>
+					<span>-20분</span>
+					<span>-10분</span>
+					<span>현재</span>
+				</div>
+
+				<p class="muted cmm-note">
+					※ 프리셋 변경 이력은 페이지 로드 이후부터 수집됩니다.
+				</p>
+			</section>
+
+			<!-- 2-0-1. 프리셋 이력 통계 (신규) -->
+			<section class="card col-12">
+				<div class="row middle">
+					<strong class="section-title">📊 프리셋 사용 통계</strong>
+					<div class="right tight">
+						<span id="cmmStatWindow" class="info-label info">최근 30분</span>
+					</div>
+				</div>
+
+				<div class="cmm-stats-grid" id="cmmStatsGrid">
+					<div class="cmm-stat-empty">데이터 수집 중...</div>
+				</div>
+			</section>
+
 			<!-- 2-1. 최근 이벤트 히스토리 (#14) -->
 			<section class="card col-12">
 				<div class="row middle">

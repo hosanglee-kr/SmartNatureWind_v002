@@ -73,6 +73,31 @@ function bindEvents() {
     document.getElementById("btnClearLog")?.addEventListener("click", W.clearLogConsole);
     document.getElementById("btnClearEvents")?.addEventListener("click", M.clearEvents);
 
+    // 실행 컨텍스트 미니맵 토글
+    document.querySelectorAll("[data-cmm-window]").forEach((btn) => {
+        const w = Number(btn.dataset.cmmWindow);
+        btn.classList.toggle("active", w === C._getCmmWindowMin());
+
+        btn.addEventListener("click", () => {
+            const newW = Number(btn.dataset.cmmWindow);
+            if (![30, 60, 180].includes(newW)) return;
+            if (newW === C._getCmmWindowMin()) return;
+
+            C._setCmmWindowMin(newW);
+            SNW.store.set("snw_cmm_window", newW);
+
+            document.querySelectorAll("[data-cmm-window]").forEach((b) => {
+                b.classList.toggle("active", Number(b.dataset.cmmWindow) === newW);
+            });
+
+            M._cmmLastRender = 0;
+            M.renderContextMinimap();
+
+            const wStr = (newW < 60) ? `${newW}분` : `${newW / 60}시간`;
+            SNW.toast(`미니맵 윈도우: ${wStr}`, "info");
+        });
+    });
+
     // 로그 필터
     document.querySelectorAll("[data-log-filter]").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -132,6 +157,20 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // 이벤트 히스토리 초기 렌더
     M.renderEventHistory();
+
+    // 실행 컨텍스트 미니맵 초기화
+    M.renderContextMinimap();
+    M.initMinimapClick();
+
+    // 프리셋 통계 초기 렌더
+    M.renderPresetStats();
+
+    // 30초마다 재렌더 (윈도우 슬라이딩 반영)
+    setInterval(() => {
+        M._cmmLastRender = 0;
+        M.renderContextMinimap();
+        M.renderPresetStats();
+    }, 30000);
 
     // 펌웨어 확인 (비동기, 결과 대기 안 함)
     C.checkFirmwareUpdate();

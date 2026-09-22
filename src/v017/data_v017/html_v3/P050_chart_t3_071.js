@@ -215,6 +215,207 @@
   Chart.register(eventMarkerPlugin);
 
   // ============================================================
+  // Crosshair (동기화 세로선)
+  // ============================================================
+  let _crosshairTs = null;            // 현재 크로스헤어 시각 (ms)
+  let _crosshairUpdatePending = false;
+  let _overlayHideTimer = null;
+
+  const crosshairPlugin = {
+      id: "snwCrosshair",
+
+      // 그리드 아래, 데이터 위
+      beforeDatasetsDraw(chart) {
+          if (_crosshairTs === null) return;
+          const { ctx, chartArea, scales } = chart;
+          if (!chartArea || !scales || !scales.x) return;
+
+          const xScale = scales.x;
+          if (!Number.isFinite(xScale.min) || !Number.isFinite(xScale.max)) return;
+          if (_crosshairTs < xScale.min || _crosshairTs > xScale.max) return;
+
+          const x = xScale.getPixelForValue(_crosshairTs);
+          if (x < chartArea.left || x > chartArea.right) return;
+
+          ctx.save();
+          ctx.strokeStyle = "rgba(231, 76, 60, 0.5)";
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 3]);
+
+          ctx.beginPath();
+          ctx.moveTo(x, chartArea.top);
+          ctx.lineTo(x, chartArea.bottom);
+          ctx.stroke();
+
+          // 상단 삼각형 인디케이터
+          ctx.setLineDash([]);
+          ctx.fillStyle = "rgba(231, 76, 60, 0.75)";
+          ctx.beginPath();
+          ctx.moveTo(x, chartArea.top + 6);
+          ctx.lineTo(x - 4, chartArea.top);
+          ctx.lineTo(x + 4, chartArea.top);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.restore();
+      }
+  };
+
+  Chart.register(crosshairPlugin);
+
+  // ============================================================
+  // 크로스헤어 오버레이 갱신
+  // ============================================================
+  function _renderCrosshairOverlay(ts) {
+      const el = document.getElementById("chartContextOverlay");
+      if (!el) return;
+
+      // 시각
+      const d = new Date(ts);
+      const pad = (n) => String(n).padStart(2, "0");
+      document.getElementById("ccoTime").textContent =
+          `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+
+      // 데이터 조회 — chartWind의 wind/pwm
+      const windDs = chartWind?.data?.datasets?.[0]?.data || [];
+      const pwmDs  = chartWind?.data?.datasets?.[1]?.data || [];
+
+      const pickNearest = (ds) => {
+          if (!ds.length) return null;
+          let best = null, bestD = Infinity;
+          for (const p of ds) {
+              const dd = Math.abs(p.x - ts);
+              if (dd < bestD) { bestD = dd; best = p; }
+          }
+          return (bestD <= 3000) ? best : null;   // ±3초 이내
+      };
+
+      const w = pickNearest(windDs);
+      const p = pickNearest(pwmDs);
+
+      document.getElementById("ccoWind").textContent = w ? `${Number(w.y).toFixed(2)} m/s` : "-";
+      document.getElementById("ccoPwm").textContent  = p ? `${Number(p.y).toFixed(1)} %`    : "-";
+
+      // 프리셋 / 스타일 (chartPresetStyle)
+      const pDs = chartPresetStyle?.data?.datasets?.[0]?.data || [];
+      const sDs = chartPresetStyle?.data?.datasets?.[1]?.data || [];
+      const pPt = pickNearest(pDs);
+      const sPt = pickNearest(sDs);
+
+      document.getElementById("ccoPreset").textContent = pPt ? presetLabel(Math.round(pPt.y)) : "-";
+      document.getElementById("ccoStyle").textContent  = sPt ? styleLabel(Math.round(sPt.y))  : "-";
+
+      // 이벤트 상태 (gust/thermal)
+      const gDs = chartEvent?.data?.datasets?.[0]?.data || [];
+      const tDs = chartEvent?.data?.datasets?.[1]?.data || [];
+      const gPt = pickNearest(gDs);
+      const tPt = pickNearest(tDs);
+      const gustOn    = gPt && gPt.y === 1;
+      const thermalOn = tPt && tPt.y === 1;
+
+      const evParts = [];
+      evParts.push(gustOn    ? "🔥 돌풍" : "·");
+      evParts.push(thermalOn ? "♨️ 열기포" : "·");
+      document.getElementById("ccoEvents").textContent = evParts.join(" ");
+
+      // 이벤트 마커 근처 여부 (±3초)
+      const evRow   = document.getElementById("ccoEventRow");
+      const evMsgEl = document.getElementById("ccoEventMsg");
+      let nearestEvent = null, bestD = 3000;
+      for (const e of eventHistory) {
+          const dd = Math.abs(e.ts - ts);
+          if (dd < bestD) { bestD = dd; nearestEvent = e; }
+      }
+      if (nearestEvent) {
+          evRow.style.display = "flex";
+          evMsgEl.textContent = nearestEvent.msg;
+      } else {
+          evRow.style.display = "none";
+      }
+
+      el.style.display = "block";
+  }
+
+  function _scheduleCrosshairRender() {
+      if (_crosshairUpdatePending) return;
+      _crosshairUpdatePending = true;
+      requestAnimationFrame(() => {
+          _crosshairUpdatePending = false;
+          charts.forEach(c => c && c.update("none"));
+      });
+  }
+
+  // ============================================================
+  // 크로스헤어 hover 핸들러
+  // ============================================================
+  function attachCrosshairHover(chart) {
+      const canvas = chart.canvas;
+      if (!canvas) return;
+
+      canvas.addEventListener("mousemove", (e) => {
+          // 이벤트 마커 근처면 크로스헤어 숨김
+          if (eventMarkersEnabled) {
+              const rect = canvas.getBoundingClientRect();
+              const mx = e.clientX - rect.left;
+              const my = e.clientY - rect.top;
+              const evt = findNearestEvent(chart, mx, my);
+              if (evt) {
+                  if (_crosshairTs !== null) {
+                      _crosshairTs = null;
+                      _scheduleCrosshairRender();
+                  }
+                  const overlay = document.getElementById("chartContextOverlay");
+                  if (overlay) overlay.style.display = "none";
+                  return;
+              }
+          }
+
+          const { chartArea, scales } = chart;
+          if (!chartArea || !scales || !scales.x) return;
+          const rect = canvas.getBoundingClientRect();
+          const mx = e.clientX - rect.left;
+          if (mx < chartArea.left || mx > chartArea.right) {
+              _clearCrosshair();
+              return;
+          }
+
+          const xValue = scales.x.getValueForPixel(mx);
+          if (!Number.isFinite(xValue)) return;
+
+          _crosshairTs = xValue;
+          _scheduleCrosshairRender();
+          _renderCrosshairOverlay(xValue);
+
+          if (_overlayHideTimer) {
+              clearTimeout(_overlayHideTimer);
+              _overlayHideTimer = null;
+          }
+      });
+
+      canvas.addEventListener("mouseleave", () => {
+          _overlayHideTimer = setTimeout(() => {
+              _clearCrosshair();
+          }, 200);
+      });
+  }
+
+  function _clearCrosshair() {
+      if (_crosshairTs === null) return;
+      _crosshairTs = null;
+      _scheduleCrosshairRender();
+
+      const el = document.getElementById("chartContextOverlay");
+      if (el) el.style.display = "none";
+  }
+
+  // 전역: ESC 키 → 크로스헤어 강제 종료
+  document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && _crosshairTs !== null) {
+          _clearCrosshair();
+      }
+  });
+
+  // ============================================================
   // 마커 Hover / Tooltip 유틸
   // ============================================================
   function getMarkerTooltip() {
@@ -577,6 +778,42 @@
 
   const DEFAULT_STYLE_NAMES = ["⚖️ Balance", "⚡ Active", "🎯 Focus", "🧘 Relax", "😴 Sleep"];
 
+  // ============================================================
+  // 실행 컨텍스트 미니맵 상수
+  // ============================================================
+  const CMM_WINDOW_KEY = "snw_cmm_window";       // localStorage 키
+  const CMM_UPDATE_MIN = 2000;                    // 최소 갱신 간격 (ms)
+  let   _cmmLastRender = 0;
+
+  // 시간 윈도우 (분) — localStorage 로드, 기본 30분
+  let   _cmmWindowMin = Number(SNW.store.get(CMM_WINDOW_KEY, 30));
+  if (![30, 60, 180].includes(_cmmWindowMin)) _cmmWindowMin = 30;
+
+  function _cmmWindowMs() {
+      return _cmmWindowMin * 60 * 1000;
+  }
+
+  // 프리셋 10색 팔레트 (자연풍 테마 색상과 매칭)
+  const PRESET_COLORS = [
+      "#27ae60",   // 0 시골 (초록)
+      "#3498db",   // 1 지중해성 (파랑)
+      "#2980b9",   // 2 해변 (진한 파랑)
+      "#7f8c8d",   // 3 산 (회색)
+      "#e67e22",   // 4 대평원 (주황)
+      "#16a085",   // 5 항구 (청록)
+      "#2ecc71",   // 6 숲 (연두)
+      "#e74c3c",   // 7 도시 석양 (빨강)
+      "#9b59b6",   // 8 열대 소나기 (보라)
+      "#34495e",   // 9 사막의 밤 (네이비)
+  ];
+
+  const EVENT_DOT_COLORS = {
+      1: "#e74c3c",   // ERR
+      2: "#f39c12",   // WARN
+      3: "#3498db",   // INFO
+      4: "#95a5a6",   // DEBUG
+  };
+
   async function loadWindDict() {
     try {
       const data = await SNW.api.get(SNW_API.API_HTTP_WIND_PROFILE, "", true);
@@ -634,6 +871,7 @@
     const c = new Chart(ctx, config);
     charts.push(c);
     attachMarkerHover(c);
+    attachCrosshairHover(c);
     return c;
   };
 
@@ -1111,6 +1349,238 @@
         chartSensor.update("none");
       }
     }
+
+    // [신규] 실행 컨텍스트 미니맵 갱신 (스로틀됨)
+    scheduleMinimapUpdate();
+  }
+
+  // ============================================================
+  // 실행 컨텍스트 미니맵
+  // ============================================================
+  function buildContextSegments() {
+      const now = Date.now();
+      const minTs = now - _cmmWindowMs();
+
+      const pDs = chartPresetStyle?.data?.datasets?.[0]?.data || [];
+      if (pDs.length < 2) return [];
+
+      // 윈도우 내 데이터만
+      const recent = pDs.filter(p => p.x >= minTs);
+      if (recent.length < 2) return [];
+
+      // 시작점: 윈도우 시작 이전 마지막 샘플로 경계 확장
+      const before = pDs.filter(p => p.x < minTs);
+      const first = before.length
+          ? { x: minTs, y: before[before.length - 1].y }
+          : recent[0];
+
+      // 세그먼트 분할
+      const segments = [];
+      let curStart = minTs;
+      let curPreset = Math.round(first.y);
+
+      for (let i = 0; i < recent.length; i++) {
+          const newPreset = Math.round(recent[i].y);
+          if (newPreset !== curPreset) {
+              segments.push({
+                  start: curStart,
+                  end: recent[i].x,
+                  presetIdx: curPreset,
+              });
+              curStart = recent[i].x;
+              curPreset = newPreset;
+          }
+      }
+      // 마지막
+      segments.push({
+          start: curStart,
+          end: now,
+          presetIdx: curPreset,
+      });
+
+      return segments;
+  }
+
+  function renderContextMinimap() {
+      const el = document.getElementById("cmmTimeline");
+      if (!el) return;
+
+      const now = Date.now();
+      const minTs = now - _cmmWindowMs();
+      const total = now - minTs;
+
+      const segments = buildContextSegments();
+
+      if (!segments.length) {
+          el.innerHTML = '<div class="cmm-empty">데이터 수집 중...</div>';
+          renderPresetStats();
+          return;
+      }
+
+      // ── 블록 생성 ──
+      const blocksHtml = segments.map((seg) => {
+          const left  = ((seg.start - minTs) / total) * 100;
+          const width = ((seg.end - seg.start) / total) * 100;
+
+          const preset = presetMap.get(seg.presetIdx);
+          const name = preset ? preset.name : presetLabel(seg.presetIdx);
+          const code = preset ? preset.code : `#${seg.presetIdx}`;
+          const color = PRESET_COLORS[seg.presetIdx] || "#607d8b";
+
+          const durMin = Math.max(1, Math.round((seg.end - seg.start) / 60000));
+          const startStr = new Date(seg.start).toLocaleTimeString("ko-KR", { hour12: false });
+
+          return `<div class="cmm-block"
+                       style="left:${left.toFixed(3)}%; width:${Math.max(width, 0.15).toFixed(3)}%; background:${color};"
+                       data-ts="${Math.floor((seg.start + seg.end) / 2)}"
+                       title="${name} (${code}) · ${startStr} · ${durMin}분">
+                  </div>`;
+      }).join("");
+
+      // ── 이벤트 도트 생성 ──
+      const eventsHtml = eventHistory
+          .filter(e => e.ts >= minTs && e.ts <= now)
+          .map((e) => {
+              const left = ((e.ts - minTs) / total) * 100;
+              const color = EVENT_DOT_COLORS[e.level] || EVENT_DOT_COLORS[4];
+              const ts = new Date(e.ts).toLocaleTimeString("ko-KR", { hour12: false });
+              return `<div class="cmm-event-dot"
+                           style="left:${left.toFixed(3)}%; background:${color};"
+                           title="[${ts}] ${escapeHtml ? escapeHtml(e.msg) : e.msg}">
+                      </div>`;
+          }).join("");
+
+      el.innerHTML = blocksHtml + eventsHtml;
+
+      // 시간축 라벨 동적 갱신
+      _updateCmmAxisLabels();
+
+      // 헤더 라벨 갱신
+      const labelEl = document.getElementById("cmmLabel");
+      if (labelEl) {
+          const w = _cmmWindowMin;
+          const wStr = (w < 60) ? `${w}분` : `${w / 60}시간`;
+          labelEl.textContent = `🕒 실행 컨텍스트 (최근 ${wStr})`;
+      }
+
+      // 프리셋 사용 통계 갱신
+      renderPresetStats();
+  }
+
+  function _updateCmmAxisLabels() {
+      const el = document.getElementById("cmmAxis");
+      if (!el) return;
+
+      const w = _cmmWindowMin;
+      const labels = [];
+
+      const marks = [w, Math.round(w * 2 / 3), Math.round(w * 1 / 3), 0];
+      marks.forEach((m) => {
+          if (m === 0) {
+              labels.push("현재");
+          } else if (m < 60) {
+              labels.push(`-${m}분`);
+          } else {
+              const h = m / 60;
+              labels.push(Number.isInteger(h) ? `-${h}시간` : `-${m}분`);
+          }
+      });
+
+      el.innerHTML = labels.map(t => `<span>${t}</span>`).join("");
+  }
+
+  // ============================================================
+  // 프리셋 사용 통계 (Top 3)
+  //  - chartPresetStyle 데이터 기반
+  //  - buildContextSegments() 재사용 → 중복 계산 없음
+  // ============================================================
+  function renderPresetStats() {
+      const el = document.getElementById("cmmStatsGrid");
+      const winEl = document.getElementById("cmmStatWindow");
+      if (!el) return;
+
+      // 윈도우 라벨
+      if (winEl) {
+          const w = _cmmWindowMin;
+          const wStr = (w < 60) ? `최근 ${w}분` : `최근 ${w / 60}시간`;
+          winEl.textContent = wStr;
+      }
+
+      // 세그먼트 재사용
+      const segments = buildContextSegments();
+      if (!segments.length) {
+          el.innerHTML = '<div class="cmm-stat-empty">데이터 수집 중...</div>';
+          return;
+      }
+
+      // 프리셋별 누적 시간
+      const durations = {};   // code → ms
+      segments.forEach((seg) => {
+          const p = presetMap.get(seg.presetIdx);
+          if (!p) return;
+          const code = p.code || `#${seg.presetIdx}`;
+          durations[code] = (durations[code] || 0) + (seg.end - seg.start);
+      });
+
+      // Top 3 정렬
+      const entries = Object.entries(durations)
+          .map(([code, ms]) => {
+              const idx = [...presetMap.entries()].find(([, v]) => v.code === code)?.[0];
+              const p = presetMap.get(idx);
+              return {
+                  code,
+                  ms,
+                  name: p ? (p.name || code) : code,
+                  color: PRESET_COLORS[(idx !== undefined ? idx : 0) % PRESET_COLORS.length] || "#607d8b",
+              };
+          })
+          .sort((a, b) => b.ms - a.ms)
+          .slice(0, 3);
+
+      if (!entries.length) {
+          el.innerHTML = '<div class="cmm-stat-empty">현재 윈도우 내 이력 없음</div>';
+          return;
+      }
+
+      const totalMs = entries.reduce((s, e) => s + e.ms, 0);
+      const maxMs   = entries[0].ms;
+
+      const fmtDur = (ms) => {
+          const s = Math.floor(ms / 1000);
+          if (s < 60) return `${s}초`;
+          const m = Math.floor(s / 60);
+          if (m < 60) return `${m}분`;
+          const h = Math.floor(m / 60);
+          const rm = m % 60;
+          return rm ? `${h}시간 ${rm}분` : `${h}시간`;
+      };
+
+      el.innerHTML = entries.map((e, idx) => {
+          const rank = idx + 1;
+          const rankLabel = ["🥇", "🥈", "🥉"][idx] || `#${rank}`;
+          const pctTotal = totalMs > 0 ? Math.round((e.ms / totalMs) * 100) : 0;
+          const barW = Math.round((e.ms / maxMs) * 100);
+
+          return `<div class="cmm-stat-card rank-${rank}" style="border-left-color:${e.color};">
+              <span class="cmm-stat-rank">${rankLabel}</span>
+              <div class="cmm-stat-name">${e.name}</div>
+              <div class="cmm-stat-code">${e.code}</div>
+              <div class="cmm-stat-bar-wrap">
+                  <div class="cmm-stat-bar" style="width:${barW}%; background:${e.color};"></div>
+              </div>
+              <div class="cmm-stat-duration">
+                  <span class="dur-value">${fmtDur(e.ms)}</span>
+                  <span class="dur-pct">${pctTotal}%</span>
+              </div>
+          </div>`;
+      }).join("");
+  }
+
+  function scheduleMinimapUpdate() {
+      const now = Date.now();
+      if (now - _cmmLastRender < CMM_UPDATE_MIN) return;
+      _cmmLastRender = now;
+      renderContextMinimap();
   }
 
   let statePollTimer = null;
@@ -1144,6 +1614,7 @@
         const data = JSON.parse(event.data);
         if (Array.isArray(data.chart)) {
           processChartRecords(data.chart);
+          scheduleMinimapUpdate();   // [신규] 미니맵 스로틀 갱신
         }
       } catch (e) {
         console.error("[ChartT3] WS 파싱 오류:", e);
@@ -1307,6 +1778,57 @@
         }
       });
     });
+
+    // 실행 컨텍스트 미니맵 클릭 → 크로스헤어 이동
+    document.getElementById("cmmTimeline")?.addEventListener("click", (e) => {
+        const block = e.target.closest(".cmm-block");
+        if (!block) return;
+
+        const ts = Number(block.dataset.ts);
+        if (!Number.isFinite(ts)) return;
+
+        _crosshairTs = ts;
+        _scheduleCrosshairRender();
+        _renderCrosshairOverlay(ts);
+
+        document.querySelector(".chart-section, .chart-grid")?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+        });
+
+        if (window.showToast) {
+            const t = new Date(ts).toLocaleTimeString("ko-KR", { hour12: false });
+            window.showToast(`차트 시각 이동: ${t}`, "info");
+        }
+    });
+
+    // 미니맵 시간 윈도우 토글
+    document.querySelectorAll("[data-cmm-window]").forEach((btn) => {
+        const w = Number(btn.dataset.cmmWindow);
+        btn.classList.toggle("active", w === _cmmWindowMin);
+
+        btn.addEventListener("click", () => {
+            const newW = Number(btn.dataset.cmmWindow);
+            if (![30, 60, 180].includes(newW)) return;
+            if (newW === _cmmWindowMin) return;
+
+            _cmmWindowMin = newW;
+            SNW.store.set(CMM_WINDOW_KEY, newW);
+
+            document.querySelectorAll("[data-cmm-window]").forEach((b) => {
+                b.classList.toggle("active", Number(b.dataset.cmmWindow) === newW);
+            });
+
+            _cmmLastRender = 0;
+            renderContextMinimap();
+            renderPresetStats();
+
+            if (window.showToast) {
+                const wStr = (newW < 60) ? `${newW}분` : `${newW / 60}시간`;
+                window.showToast(`미니맵 윈도우: ${wStr}`, "info");
+            }
+        });
+    });
   }
 
   // ============================================================
@@ -1330,7 +1852,19 @@
       if (_markerTooltipEl && _markerTooltipEl.parentNode) {
         _markerTooltipEl.parentNode.removeChild(_markerTooltipEl);
       }
+      if (_overlayHideTimer) clearTimeout(_overlayHideTimer);
     });
+
+    // 실행 컨텍스트 미니맵 & 통계 초기 렌더
+    renderContextMinimap();
+    renderPresetStats();
+
+    // 30초마다 강제 재렌더 (윈도우 슬라이딩 + 통계)
+    setInterval(() => {
+        _cmmLastRender = 0;
+        renderContextMinimap();
+        renderPresetStats();
+    }, 30000);
 
     console.log("[ChartT3] init complete");
   });

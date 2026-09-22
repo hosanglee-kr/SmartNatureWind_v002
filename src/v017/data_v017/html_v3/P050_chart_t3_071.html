@@ -19,6 +19,17 @@
 
 <body>
 
+	<!-- Chart Crosshair Context Overlay -->
+	<div id="chartContextOverlay" class="chart-context-overlay" style="display:none;">
+		<div class="cco-row cco-time" id="ccoTime">--:--:--</div>
+		<div class="cco-row"><span class="cco-lb">💨 풍속</span><span id="ccoWind">-</span> <span class="cco-sep">·</span> <span class="cco-lb">PWM</span><span id="ccoPwm">-</span></div>
+		<div class="cco-row"><span class="cco-lb">🎨 프리셋</span><span id="ccoPreset">-</span> <span class="cco-sep">·</span> <span class="cco-lb">스타일</span><span id="ccoStyle">-</span></div>
+		<div class="cco-row"><span class="cco-lb">⚡</span><span id="ccoEvents">-</span></div>
+		<div class="cco-row cco-ev-row" id="ccoEventRow" style="display:none;">
+			<span class="cco-lb">📍 이벤트</span><span id="ccoEventMsg">-</span>
+		</div>
+	</div>
+
 	<header class="nav-bar">
 		<div class="nav-container">
 			<a href="/" class="nav-logo">Smart Nature Wind</a>
@@ -60,6 +71,47 @@
 					<div class="summary-label">센서</div>
 					<div class="summary-value" id="sumSensor">-</div>
 					<div class="summary-sub" id="sumUptime">-</div>
+				</div>
+			</div>
+
+			<!-- ═══════════════════════════════════════════════════ -->
+			<!-- 실행 컨텍스트 히스토리 미니맵 (신규) -->
+			<!-- ═══════════════════════════════════════════════════ -->
+			<div class="context-minimap-wrapper">
+				<div class="cmm-header">
+					<span class="cmm-label" id="cmmLabel">🕒 실행 컨텍스트</span>
+					<div class="cmm-right">
+						<div class="cmm-window-toggle">
+							<button class="btn btn-small active" data-cmm-window="30">30분</button>
+							<button class="btn btn-small"        data-cmm-window="60">1시간</button>
+							<button class="btn btn-small"        data-cmm-window="180">3시간</button>
+						</div>
+						<span class="cmm-hint">블록 클릭 = 차트 이동</span>
+					</div>
+				</div>
+
+				<div class="cmm-timeline" id="cmmTimeline">
+					<div class="cmm-empty">데이터 수집 중...</div>
+				</div>
+
+				<div class="cmm-axis" id="cmmAxis">
+					<span>-30분</span>
+					<span>-20분</span>
+					<span>-10분</span>
+					<span>현재</span>
+				</div>
+
+				<!-- ═══════════════════════════════════════════════════ -->
+				<!-- 프리셋 사용 통계 (신규) -->
+				<!-- ═══════════════════════════════════════════════════ -->
+				<div class="cmm-stats-wrapper">
+					<div class="cmm-stats-header">
+						<span class="cmm-label">📊 프리셋 사용 통계</span>
+						<span id="cmmStatWindow" class="info-label info">최근 30분</span>
+					</div>
+					<div class="cmm-stats-grid" id="cmmStatsGrid">
+						<div class="cmm-stat-empty">데이터 수집 중...</div>
+					</div>
 				</div>
 			</div>
 		</section>

@@ -94,6 +94,61 @@ C.state = {
     lastOverrideAct:  false,
     lastCfgSnapshot:  null,
     wifiStateTimer:   null,
+    presetHistory:    [],     // [{ ts, code, name }]
+};
+
+// ============================================================
+// 2-1) 실행 컨텍스트 미니맵 (P010 로컬 추적)
+// ============================================================
+const CMM_WINDOW_KEY = "snw_cmm_window";
+const CMM_HISTORY_MAX = 300;    // 프리셋 이력 최대 개수
+
+let   _cmmWindowMin = Number(SNW.store.get(CMM_WINDOW_KEY, 30));
+if (![30, 60, 180].includes(_cmmWindowMin)) _cmmWindowMin = 30;
+
+// 프리셋 10색 팔레트
+C.PRESET_COLORS = [
+    "#27ae60", "#3498db", "#2980b9", "#7f8c8d", "#e67e22",
+    "#16a085", "#2ecc71", "#e74c3c", "#9b59b6", "#34495e",
+];
+
+C.EVENT_DOT_COLORS = {
+    1: "#e74c3c",   // ERR
+    2: "#f39c12",   // WARN
+    3: "#3498db",   // INFO
+    4: "#95a5a6",   // DEBUG
+};
+
+C._cmmWindowMs = () => _cmmWindowMin * 60 * 1000;
+C._getCmmWindowMin = () => _cmmWindowMin;
+C._setCmmWindowMin = (v) => { _cmmWindowMin = v; };
+
+// ── 프리셋 이력 기록 ──
+C.recordPresetHistory = (code) => {
+    if (!code) return;
+    const hist = C.state.presetHistory;
+    const last = hist[hist.length - 1];
+    if (last && last.code === code) return;   // 변경 없음 → 무시
+
+    const preset = C.state.windDictPresets.find(p => p.code === code);
+    hist.push({
+        ts: Date.now(),
+        code: code,
+        name: preset ? (preset.name || code) : code,
+    });
+    if (hist.length > CMM_HISTORY_MAX) hist.shift();
+
+    // 즉시 렌더 트리거 (P010_misc에서 처리)
+    if (SNW.P010.misc && SNW.P010.misc.scheduleMinimapUpdate) {
+        SNW.P010.misc.scheduleMinimapUpdate();
+    }
+};
+
+// ── 프리셋 컬러 조회 ──
+C.getPresetColor = (code) => {
+    const idx = C.state.windDictPresets.findIndex(p => p.code === code);
+    const safeIdx = (idx >= 0) ? idx : 0;
+    return C.PRESET_COLORS[safeIdx % C.PRESET_COLORS.length];
 };
 
 // ============================================================
@@ -287,6 +342,11 @@ C._applySimToUi = (sim, control) => {
         if (C.el.preset() && sim.presetCode) C.el.preset().value = sim.presetCode;
         if (C.el.style()  && sim.styleCode)  C.el.style().value  = sim.styleCode;
         if (C.el.fanPower() && sim.fanPowerEnabled !== undefined) C.el.fanPower().checked = !!sim.fanPowerEnabled;
+    }
+
+    // [신규] 프리셋 이력 기록 (변경 시점만 push됨)
+    if (sim.presetCode) {
+        C.recordPresetHistory(sim.presetCode);
     }
 
     // Override

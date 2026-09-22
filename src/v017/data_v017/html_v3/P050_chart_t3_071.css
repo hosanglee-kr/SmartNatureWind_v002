@@ -575,3 +575,387 @@
     flex: 1 1 100%;
   }
 }
+
+/* ============================================================ */
+/* Chart Crosshair Context Overlay                              */
+/* ============================================================ */
+
+.chart-context-overlay {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 1500;
+    min-width: 260px;
+    max-width: 340px;
+    background: rgba(44, 62, 80, 0.94);
+    color: #ecf0f1;
+    border-radius: 10px;
+    padding: 12px 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    font-size: 0.85em;
+    line-height: 1.5;
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+    animation: ccoFadeIn 0.15s ease-out;
+    border-left: 4px solid #3498db;
+}
+
+@keyframes ccoFadeIn {
+    from { opacity: 0; transform: translateX(6px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.chart-context-overlay .cco-row {
+    margin-bottom: 3px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: baseline;
+}
+
+.chart-context-overlay .cco-row:last-child {
+    margin-bottom: 0;
+}
+
+.chart-context-overlay .cco-time {
+    font-family: ui-monospace, monospace;
+    font-size: 1.05em;
+    font-weight: 700;
+    color: #3498db;
+    border-bottom: 1px solid rgba(236,240,241,0.15);
+    padding-bottom: 5px;
+    margin-bottom: 8px;
+}
+
+.chart-context-overlay .cco-lb {
+    color: #95a5a6;
+    font-size: 0.9em;
+    flex-shrink: 0;
+}
+
+.chart-context-overlay .cco-sep {
+    color: #566573;
+    margin: 0 2px;
+}
+
+.chart-context-overlay .cco-ev-row {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px dotted rgba(236,240,241,0.15);
+}
+
+.chart-context-overlay #ccoEventMsg {
+    color: #f39c12;
+    font-weight: 600;
+}
+
+/* ============================================================ */
+/* 실행 컨텍스트 히스토리 미니맵                                */
+/* ============================================================ */
+
+.context-minimap-wrapper {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px dotted #d6e2ed;
+}
+
+.cmm-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.cmm-label {
+    font-size: 0.85em;
+    font-weight: 700;
+    color: #4a637a;
+}
+
+.cmm-hint {
+    font-size: 0.75em;
+    color: #95a5a6;
+    font-family: ui-monospace, monospace;
+}
+
+.cmm-header .cmm-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cmm-window-toggle {
+    display: inline-flex;
+    gap: 3px;
+    background: #f1f4f8;
+    padding: 2px;
+    border-radius: 6px;
+    border: 1px solid #d6e2ed;
+}
+
+.cmm-window-toggle .btn-small {
+    padding: 3px 10px;
+    font-size: 0.78em;
+    line-height: 1.2;
+    border-radius: 4px;
+    background: transparent;
+    color: #566573;
+    border: none;
+    transition: all 0.15s;
+}
+
+.cmm-window-toggle .btn-small:hover {
+    background: #e1ecf4;
+    color: #2980b9;
+}
+
+.cmm-window-toggle .btn-small.active {
+    background: #3498db;
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(52,152,219,0.35);
+}
+
+/* ── 타임라인 (블록 + 이벤트 도트) ── */
+.cmm-timeline {
+    position: relative;
+    height: 34px;
+    background: #ecf0f1;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: crosshair;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+    user-select: none;
+    transition: box-shadow 0.15s;
+}
+
+.cmm-timeline:hover {
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.12), 0 0 0 2px rgba(52,152,219,0.15);
+}
+
+.cmm-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #95a5a6;
+    font-size: 0.82em;
+}
+
+/* ── 프리셋 블록 ── */
+.cmm-block {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-right: 1px solid rgba(255,255,255,0.35);
+    transition: filter 0.12s;
+    cursor: pointer;
+    min-width: 1px;
+}
+
+.cmm-block:last-child {
+    border-right: none;
+}
+
+.cmm-block:hover {
+    filter: brightness(1.18);
+    z-index: 2;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.6);
+}
+
+/* ── 이벤트 도트 ── */
+.cmm-event-dot {
+    position: absolute;
+    top: 3px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    border: 1.5px solid #ffffff;
+    box-shadow: 0 0 4px rgba(0,0,0,0.35);
+    pointer-events: none;
+    z-index: 3;
+    transform: translateX(-50%);
+}
+
+/* ── 시간축 ── */
+.cmm-axis {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font-size: 0.7em;
+    color: #95a5a6;
+    font-family: ui-monospace, monospace;
+    padding: 0 2px;
+}
+
+/* ── 하단 프리셋 범례 ── */
+.cmm-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+    font-size: 0.75em;
+    color: #566573;
+}
+
+.cmm-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.cmm-legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+}
+
+/* ============================================================ */
+/* 프리셋 사용 통계 (P050)                                      */
+/* ============================================================ */
+
+.cmm-stats-wrapper {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px dotted #d6e2ed;
+}
+
+.cmm-stats-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.cmm-stats-header .cmm-label {
+    font-size: 0.85em;
+    font-weight: 700;
+    color: #4a637a;
+}
+
+.cmm-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+@media (max-width: 600px) {
+    .cmm-stats-grid { grid-template-columns: 1fr; }
+}
+
+.cmm-stat-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 20px;
+    color: #95a5a6;
+    font-size: 0.85em;
+}
+
+.cmm-stat-card {
+    padding: 12px 14px;
+    background: #ffffff;
+    border-radius: 8px;
+    border-left: 5px solid #3498db;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.cmm-stat-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+}
+
+.cmm-stat-rank {
+    display: inline-block;
+    font-size: 0.75em;
+    font-weight: 700;
+    color: #ffffff;
+    background: #34495e;
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+}
+
+.cmm-stat-card.rank-1 .cmm-stat-rank { background: #d4a017; }
+.cmm-stat-card.rank-2 .cmm-stat-rank { background: #7f8c8d; }
+.cmm-stat-card.rank-3 .cmm-stat-rank { background: #b87333; }
+
+.cmm-stat-name {
+    font-size: 1.05em;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 4px;
+    word-break: keep-all;
+}
+
+.cmm-stat-code {
+    font-family: ui-monospace, monospace;
+    font-size: 0.8em;
+    color: #7f8c8d;
+    margin-bottom: 8px;
+}
+
+.cmm-stat-bar-wrap {
+    height: 6px;
+    background: #ecf0f1;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.cmm-stat-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease-out;
+}
+
+.cmm-stat-duration {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.8em;
+}
+
+.cmm-stat-duration .dur-value {
+    font-weight: 700;
+    color: #2c3e50;
+    font-family: ui-monospace, monospace;
+}
+
+.cmm-stat-duration .dur-pct {
+    color: #95a5a6;
+    font-family: ui-monospace, monospace;
+}
+
+/* 모바일 반응형: 크로스헤어 오버레이 및 미니맵 헤더 */
+@media (max-width: 768px) {
+    .chart-context-overlay {
+        top: auto;
+        bottom: 20px;
+        right: 20px;
+        left: 20px;
+        max-width: none;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .cmm-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .cmm-header .cmm-right {
+        width: 100%;
+        justify-content: space-between;
+        margin-top: 4px;
+    }
+    .cmm-header .cmm-hint {
+        font-size: 0.7em;
+    }
+}

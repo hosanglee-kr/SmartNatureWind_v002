@@ -616,3 +616,234 @@ pre#logConsole {
         margin-bottom: 0;
     }
 }
+
+/* ============================================================ */
+/* 실행 컨텍스트 미니맵 (P010)                                  */
+/* ============================================================ */
+
+.cmm-window-toggle {
+    display: inline-flex;
+    gap: 3px;
+    background: #f1f4f8;
+    padding: 2px;
+    border-radius: 6px;
+    border: 1px solid #d6e2ed;
+}
+
+.cmm-window-toggle .btn-small {
+    padding: 3px 10px;
+    font-size: 0.78em;
+    line-height: 1.2;
+    border-radius: 4px;
+    background: transparent;
+    color: #566573;
+    border: none;
+    transition: all 0.15s;
+}
+.cmm-window-toggle .btn-small:hover {
+    background: #e1ecf4;
+    color: #2980b9;
+}
+.cmm-window-toggle .btn-small.active {
+    background: #3498db;
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(52,152,219,0.35);
+}
+
+/* ── 타임라인 ── */
+.cmm-timeline {
+    position: relative;
+    height: 34px;
+    background: #ecf0f1;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: crosshair;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+    user-select: none;
+    margin-top: 10px;
+    transition: box-shadow 0.15s;
+}
+.cmm-timeline:hover {
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.12), 0 0 0 2px rgba(52,152,219,0.15);
+}
+.cmm-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #95a5a6;
+    font-size: 0.82em;
+}
+
+/* ── 프리셋 블록 ── */
+.cmm-block {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-right: 1px solid rgba(255,255,255,0.35);
+    transition: filter 0.12s;
+    cursor: pointer;
+    min-width: 1px;
+}
+.cmm-block:last-child { border-right: none; }
+.cmm-block:hover {
+    filter: brightness(1.18);
+    z-index: 2;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.6);
+}
+
+/* ── 이벤트 도트 ── */
+.cmm-event-dot {
+    position: absolute;
+    top: 3px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    border: 1.5px solid #ffffff;
+    box-shadow: 0 0 4px rgba(0,0,0,0.35);
+    pointer-events: none;
+    z-index: 3;
+    transform: translateX(-50%);
+}
+
+/* ── 시간축 ── */
+.cmm-axis {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font-size: 0.7em;
+    color: #95a5a6;
+    font-family: ui-monospace, monospace;
+    padding: 0 2px;
+}
+
+.cmm-note {
+    margin-top: 8px;
+    font-size: 0.78em;
+    text-align: right;
+}
+
+@media (max-width: 600px) {
+    .cmm-window-toggle .btn-small {
+        padding: 2px 7px;
+        font-size: 0.72em;
+    }
+}
+
+/* ============================================================ */
+/* 이벤트 리스트 강조 (미니맵 클릭 시)                          */
+/* ============================================================ */
+
+.event-line.evt-highlight {
+    background-color: #fff8e1;
+    box-shadow: inset 4px 0 0 #f39c12;
+    animation: evtHighlightPulse 1.5s ease-out 2;
+    border-radius: 4px;
+}
+
+@keyframes evtHighlightPulse {
+    0%   { background-color: #ffe082; box-shadow: inset 4px 0 0 #e67e22; }
+    50%  { background-color: #fff3b0; box-shadow: inset 4px 0 0 #f39c12; }
+    100% { background-color: #fff8e1; box-shadow: inset 4px 0 0 #f39c12; }
+}
+
+/* ============================================================ */
+/* 프리셋 이력 통계                                              */
+/* ============================================================ */
+
+.cmm-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+    .cmm-stats-grid { grid-template-columns: 1fr; }
+}
+
+.cmm-stat-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 20px;
+    color: #95a5a6;
+    font-size: 0.85em;
+}
+
+.cmm-stat-card {
+    padding: 12px 14px;
+    background: #ffffff;
+    border-radius: 8px;
+    border-left: 5px solid #3498db;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.cmm-stat-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+}
+
+.cmm-stat-rank {
+    display: inline-block;
+    font-size: 0.75em;
+    font-weight: 700;
+    color: #ffffff;
+    background: #34495e;
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+}
+
+.cmm-stat-card.rank-1 .cmm-stat-rank { background: #d4a017; }
+.cmm-stat-card.rank-2 .cmm-stat-rank { background: #7f8c8d; }
+.cmm-stat-card.rank-3 .cmm-stat-rank { background: #b87333; }
+
+.cmm-stat-name {
+    font-size: 1.05em;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 4px;
+    word-break: keep-all;
+}
+
+.cmm-stat-code {
+    font-family: ui-monospace, monospace;
+    font-size: 0.8em;
+    color: #7f8c8d;
+    margin-bottom: 8px;
+}
+
+.cmm-stat-bar-wrap {
+    height: 6px;
+    background: #ecf0f1;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.cmm-stat-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease-out;
+}
+
+.cmm-stat-duration {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.8em;
+}
+
+.cmm-stat-duration .dur-value {
+    font-weight: 700;
+    color: #2c3e50;
+    font-family: ui-monospace, monospace;
+}
+
+.cmm-stat-duration .dur-pct {
+    color: #95a5a6;
+    font-family: ui-monospace, monospace;
+}
+

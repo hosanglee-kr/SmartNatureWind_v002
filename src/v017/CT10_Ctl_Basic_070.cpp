@@ -56,6 +56,65 @@
 
 #include <DHT.h>
 
+// ==================================================
+// [Phase 2] DHT 센서 공유 캐시
+//  - 온도/습도를 한 번의 read로 함께 캐시
+//  - 2초 주기 read 정책 유지
+//  - 온도 조회 / 습도 조회 어느 쪽에서도 캐시 공유
+// ==================================================
+namespace {
+struct ST_CT10_DhtCache {
+    DHT*     dht         = nullptr;
+    int16_t  pin         = -1;
+    uint32_t lastReadMs  = 0;
+    float    temp        = 24.0f;
+    float    hum         = 55.0f;
+};
+ST_CT10_DhtCache s_dhtCache;
+
+// 실제 read 수행 (캐시 갱신)
+void _ct10_readDhtIfNeeded() {
+    if (!g_A20_config_root.system) return;
+
+    const auto& conf = g_A20_config_root.system->hw.tempHum;
+    if (!conf.enabled) return;
+
+    int16_t v_pin = (conf.pin > 0) ? (int16_t)conf.pin : 4;
+
+    // 최초 1회 객체 생성
+    if (!s_dhtCache.dht) {
+        s_dhtCache.pin = v_pin;
+        s_dhtCache.dht = new DHT(s_dhtCache.pin, DHT22);
+        s_dhtCache.dht->begin();
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] DHT22 init on pin %d", s_dhtCache.pin);
+    } else if (s_dhtCache.pin != v_pin) {
+        // 운영 안정성 우선: 재부팅 권고 로그만, delete/re-init 안 함
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[CT10] DHT pin changed (%d->%d). Recommend reboot to apply safely.",
+                           s_dhtCache.pin, v_pin);
+    }
+
+    // 2초 캐시 정책
+    uint32_t v_now = millis();
+    if (v_now - s_dhtCache.lastReadMs < 2000UL) return;
+    s_dhtCache.lastReadMs = v_now;
+
+    float v_t = s_dhtCache.dht ? s_dhtCache.dht->readTemperature() : NAN;
+    float v_h = s_dhtCache.dht ? s_dhtCache.dht->readHumidity()    : NAN;
+
+    if (isnan(v_t)) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] DHT temperature read failed");
+    } else {
+        s_dhtCache.temp = v_t;
+    }
+    if (isnan(v_h)) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] DHT humidity read failed");
+    } else {
+        s_dhtCache.hum = v_h;
+    }
+}
+} // namespace
+
 // --------------------------------------------------
 // override remain sec
 // --------------------------------------------------
@@ -305,45 +364,21 @@ bool CL_CT10_ControlManager::checkAutoOff(EN_CT10_reason_t* p_reasonOrNull /*=nu
 // - 정책:
 //   - 최초 1회만 new
 //   - 핀 변경 감지 시: 재부팅 권고 로그 + 기존 객체 유지(안전 우선)
+// - [Phase 2] 캐시를 파일-스코프(s_dhtCache)로 이관
+//   → 온도/습도가 동일 read 결과를 공유
 // --------------------------------------------------
 float CL_CT10_ControlManager::getCurrentTemperatureMock() {
-    static DHT*     s_dht          = nullptr;
-    static int16_t  s_dhtPin       = -1;
-    static uint32_t s_lastRead     = 0;
-    static float    s_lastTemp     = 24.0f;
+    _ct10_readDhtIfNeeded();
+    return s_dhtCache.temp;
+}
 
-    if (!g_A20_config_root.system) return s_lastTemp;
-
-    const auto& conf = g_A20_config_root.system->hw.tempHum;
-    if (!conf.enabled) return 24.0f;
-
-    int16_t v_pin = (conf.pin > 0) ? (int16_t)conf.pin : 4;
-
-    if (!s_dht) {
-        s_dhtPin = v_pin;
-        s_dht = new DHT(s_dhtPin, DHT22);
-        s_dht->begin();
-        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] DHT22 init on pin %d", s_dhtPin);
-    } else if (s_dhtPin != v_pin) {
-        // 운영 안정성 우선: delete/re-init 하지 않음
-        CL_D10_Logger::log(EN_L10_LOG_WARN,
-                           "[CT10] DHT pin changed (%d->%d). Recommend reboot to apply safely.",
-                           s_dhtPin, v_pin);
-        // 계속 기존 핀의 센서 값을 유지(또는 fallback)
-    }
-
-    uint32_t v_now = millis();
-    if (v_now - s_lastRead < 2000UL) return s_lastTemp;
-    s_lastRead = v_now;
-
-    float v_t = s_dht ? s_dht->readTemperature() : NAN;
-    if (isnan(v_t)) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] DHT read failed");
-    } else {
-        s_lastTemp = v_t;
-    }
-
-    return s_lastTemp;
+// --------------------------------------------------
+// [Phase 2] humidity getter
+//  - 동일 캐시 사용, 추가 read 부담 없음
+// --------------------------------------------------
+float CL_CT10_ControlManager::getCurrentHumidityMock() {
+    _ct10_readDhtIfNeeded();
+    return s_dhtCache.hum;
 }
 
 // --------------------------------------------------

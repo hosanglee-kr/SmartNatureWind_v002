@@ -290,6 +290,7 @@ void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
 
         v_jo["t"]           = (uint64_t)v_e.timestamp; // 밀리초 timestamp
         v_jo["wind"]        = v_e.wind_speed;
+        v_jo["targetWind"]  = v_e.target_wind;         // [신규] 목표 풍속
         v_jo["pwm"]         = v_e.pwm_duty;
         v_jo["intensity"]   = v_intensity;
         v_jo["variability"] = v_variability;

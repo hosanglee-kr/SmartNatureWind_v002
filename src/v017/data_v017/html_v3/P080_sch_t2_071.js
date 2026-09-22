@@ -81,6 +81,43 @@
     return maxNo + 10;
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 프리셋 설명 힌트
+  // ═══════════════════════════════════════════════════════════
+  function bindPresetHint(row) {
+    const sel = row.querySelector(".seg-preset");
+    if (!sel) return;
+
+    const show = () => {
+      const code = sel.value;
+      const hint = document.getElementById("presetHint");
+      if (!hint) return;
+
+      if (!code) {
+        hint.innerHTML = '<span class="muted">💡 프리셋을 선택하세요.</span>';
+        hint.classList.remove("active");
+        return;
+      }
+      const preset = windPresets.find(p => p.code === code);
+      if (preset && preset.factors) {
+        const f = preset.factors;
+        const r2 = (v) => Number.isFinite(Number(v)) ? Number(v).toFixed(1) : "-";
+        hint.innerHTML =
+          `🌊 <strong>${preset.name || code}</strong> — ` +
+          `강도 ${r2(f.windIntensity)} · 변동 ${r2(f.windVariability)} · ` +
+          `돌풍 ${r2(f.gustFrequency)} · 팬상한 ${r2(f.fanLimit)}`;
+        hint.classList.add("active");
+      } else {
+        hint.innerHTML = `<span class="muted">${code} (설명 없음)</span>`;
+        hint.classList.remove("active");
+      }
+    };
+
+    sel.addEventListener("mouseenter", show);
+    sel.addEventListener("focus", show);
+    sel.addEventListener("change", show);
+  }
+
   // [B] Overlap 사전 검증 (요일 + 시간)
   function checkOverlap(schedule) {
     const parseMin = (hhmm) => {
@@ -250,6 +287,88 @@
     });
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // 순서 변경 & 복제
+  // ═══════════════════════════════════════════════════════════
+  function moveSegment(row, direction) {
+    const tbody = row.parentNode;
+    if (!tbody) return;
+    const rows = Array.from(tbody.querySelectorAll(".segment-row"));
+    const idx = rows.indexOf(row);
+    if (idx < 0) return;
+
+    if (direction === "up" && idx > 0) tbody.insertBefore(row, rows[idx - 1]);
+    else if (direction === "down" && idx < rows.length - 1) tbody.insertBefore(rows[idx + 1], row);
+    else return;
+
+    renumberSegNos();
+    updateMoveButtonStates();
+    schedulePreviewUpdate();
+  }
+
+  function renumberSegNos() {
+    const rows = document.querySelectorAll("#segmentListBody .segment-row");
+    rows.forEach((row, idx) => {
+      const segNoInput = row.querySelector(".seg-no");
+      if (segNoInput) segNoInput.value = (idx + 1) * 10;
+    });
+  }
+
+  function updateMoveButtonStates() {
+    const rows = Array.from(document.querySelectorAll("#segmentListBody .segment-row"));
+    rows.forEach((row, idx) => {
+      const up   = row.querySelector(".btn-move-up");
+      const down = row.querySelector(".btn-move-down");
+      if (up)   up.disabled   = (idx === 0);
+      if (down) down.disabled = (idx === rows.length - 1);
+    });
+  }
+
+  function duplicateSegment(row) {
+    const tbody = row.parentNode;
+    if (!tbody) return;
+
+    const currentCount = tbody.querySelectorAll(".segment-row").length;
+    if (currentCount >= 8) {
+      SNW.toast("세그먼트는 최대 8개까지 추가 가능합니다.", "warn");
+      return;
+    }
+
+    const clone = row.cloneNode(true);
+    const newSegNo = _suggestNextSegNo();
+    const segNoInput = clone.querySelector(".seg-no");
+    if (segNoInput) segNoInput.value = newSegNo;
+
+    const idCell = clone.querySelector("td:first-child");
+    if (idCell) idCell.textContent = "auto";
+
+    tbody.insertBefore(clone, row.nextSibling);
+    bindSegmentRowEvents(clone);
+    applySegmentModeState(clone);
+    updateMoveButtonStates();
+    schedulePreviewUpdate();
+    SNW.toast("세그먼트를 복제했습니다.", "ok");
+  }
+
+  function bindSegmentRowEvents(row) {
+    row.querySelector(".seg-mode")?.addEventListener("change", () => {
+      applySegmentModeState(row);
+      schedulePreviewUpdate();
+    });
+
+    row.querySelector(".btn-move-up")?.addEventListener("click",   () => moveSegment(row, "up"));
+    row.querySelector(".btn-move-down")?.addEventListener("click", () => moveSegment(row, "down"));
+    row.querySelector(".btn-dup-seg")?.addEventListener("click",   () => duplicateSegment(row));
+    row.querySelector(".btn-ai-adjust")?.addEventListener("click", (e) => handleOptimizeAdjust(e.currentTarget));
+
+    bindPresetHint(row);
+
+    row.querySelectorAll("input, select").forEach((el) => {
+      el.addEventListener("input",  schedulePreviewUpdate);
+      el.addEventListener("change", schedulePreviewUpdate);
+    });
+  }
+
   // [B] mode별 필드 상태 적용
   function applySegmentModeState(row) {
     const mode = row.querySelector(".seg-mode")?.value || "PRESET";
@@ -349,20 +468,144 @@
           <input type="number" class="seg-adj-thermrad" step="0.1" placeholder="열반경" value="${adjThermRad}" />
         </div>
       </td>
-      <td>
+      <td class="seg-actions">
+        <button type="button" class="btn btn-small btn-move-up"   title="위로 이동">↑</button>
+        <button type="button" class="btn btn-small btn-move-down" title="아래로 이동">↓</button>
+        <button type="button" class="btn btn-small btn-dup-seg"   title="복제">📋</button>
         <button type="button" class="btn btn-small btn-ai-adjust" title="AI 조정">🤖</button>
-        <button type="button" class="btn btn-small btn-err btn-del-seg">삭제</button>
+        <button type="button" class="btn btn-small btn-err btn-del-seg" title="삭제">🗑</button>
       </td>
     `;
-
-    // [B] mode change 리스너
-    row.querySelector(".seg-mode").addEventListener("change", () => applySegmentModeState(row));
 
     if (appendToEnd) tbody.appendChild(row);
     else tbody.insertBefore(row, tbody.firstChild);
 
-    // 초기 상태 반영
+    bindSegmentRowEvents(row);
     applySegmentModeState(row);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 실행 미리보기 & 실행 중 배지
+  // ═══════════════════════════════════════════════════════════
+  let _previewTimer = null;
+  function schedulePreviewUpdate() {
+    if (_previewTimer) clearTimeout(_previewTimer);
+    _previewTimer = setTimeout(updatePreviewPanel, 200);
+  }
+
+  function updatePreviewPanel() {
+    const pvPeriod   = document.getElementById("pvPeriod");
+    const pvDuration = document.getElementById("pvDuration");
+    const pvSegCount = document.getElementById("pvSegCount");
+    const pvRepeat   = document.getElementById("pvRepeat");
+    const pvViz      = document.getElementById("pvTimelineViz");
+    if (!pvViz) return;
+
+    // period 정보
+    const startTime = document.getElementById("periodStart")?.value || "08:00";
+    const endTime   = document.getElementById("periodEnd")?.value   || "23:00";
+    const daysArr   = [0,0,0,0,0,0,0];
+    document.querySelectorAll("#periodDays input[type='checkbox']").forEach((c) => {
+      const i = Number(c.dataset.index);
+      if (i >= 0 && i < 7) daysArr[i] = c.checked ? 1 : 0;
+    });
+    const DAYS = ["월","화","수","목","금","토","일"];
+    const onDays = daysArr.map((v, i) => v ? DAYS[i] : "").filter(Boolean);
+    let dayStr = "미사용";
+    if (onDays.length === 7) dayStr = "매일";
+    else if (onDays.length === 5 && onDays[0]==="월" && onDays[4]==="금") dayStr = "주중";
+    else if (onDays.length === 2 && onDays[5]==="토" && onDays[6]==="일") dayStr = "주말";
+    else if (onDays.length > 0) dayStr = onDays.join(",");
+
+    if (pvPeriod) pvPeriod.textContent = `${dayStr} ${startTime}~${endTime}`;
+
+    // 세그먼트 수집 (DOM)
+    const rows = Array.from(document.querySelectorAll("#segmentListBody .segment-row"));
+    const segments = rows.map((row) => {
+      const g = (s) => row.querySelector(s)?.value ?? "";
+      return {
+        mode:       g(".seg-mode") || "PRESET",
+        presetCode: g(".seg-preset") || "",
+        onMinutes:  Number(g(".seg-on-min"))  || 0,
+        offMinutes: Number(g(".seg-off-min")) || 0,
+        fixedSpeed: Number(g(".seg-fixed-speed")) || 0,
+      };
+    });
+
+    const repeatEnabled = document.getElementById("repeatSegments")?.checked ?? true;
+    const repeatCount   = Number(document.getElementById("repeatCount")?.value) || 0;
+
+    let totalOn = 0, totalOff = 0;
+    segments.forEach((s) => { totalOn += s.onMinutes; totalOff += s.offMinutes; });
+    const cycleMinutes = totalOn + totalOff;
+
+    let effCycles = 1;
+    if (repeatEnabled) effCycles = (repeatCount > 0) ? repeatCount : 0;
+
+    const fmtMin = (m) => {
+      if (m < 60) return `${m}분`;
+      const h = Math.floor(m / 60);
+      const r = m % 60;
+      return r ? `${h}시간 ${r}분` : `${h}시간`;
+    };
+
+    if (pvDuration) {
+      if (!segments.length) pvDuration.textContent = "-";
+      else if (effCycles === 0) pvDuration.textContent = `${fmtMin(cycleMinutes)} (무한)`;
+      else pvDuration.textContent = `${fmtMin(cycleMinutes * effCycles)} (${effCycles}회)`;
+    }
+    if (pvSegCount) pvSegCount.textContent = String(segments.length);
+    if (pvRepeat) {
+      if (!repeatEnabled) pvRepeat.textContent = "1회";
+      else if (repeatCount > 0) pvRepeat.textContent = `${repeatCount}회`;
+      else pvRepeat.textContent = "무한";
+    }
+
+    if (!segments.length) {
+      pvViz.innerHTML = '<div class="muted" style="padding:20px;text-align:center;width:100%;">세그먼트가 없습니다.</div>';
+      return;
+    }
+    const total = segments.reduce((sum, s) => sum + s.onMinutes + s.offMinutes, 0);
+    if (total === 0) {
+      pvViz.innerHTML = '<div class="muted" style="padding:20px;text-align:center;width:100%;">시간 설정이 없습니다.</div>';
+      return;
+    }
+
+    const bars = [];
+    segments.forEach((s, idx) => {
+      const onPct  = (s.onMinutes  / total) * 100;
+      const offPct = (s.offMinutes / total) * 100;
+
+      if (s.onMinutes > 0) {
+        const label = s.mode === "FIXED"
+          ? `S${idx+1} FIXED ${s.fixedSpeed}%`
+          : `S${idx+1} ${s.presetCode || "PRESET"}`;
+        const cls = s.mode === "FIXED" ? "pv-fixed" : "pv-preset";
+        bars.push(`<div class="pv-bar ${cls}" style="flex:${onPct};" title="${label} · ON ${s.onMinutes}분">${label}</div>`);
+      }
+      if (s.offMinutes > 0) {
+        bars.push(`<div class="pv-bar pv-off" style="flex:${offPct};" title="S${idx+1} OFF ${s.offMinutes}분">OFF</div>`);
+      }
+    });
+    pvViz.innerHTML = bars.join("");
+  }
+
+  async function checkScheduleRunning(schedule) {
+    if (!schedule || !schedule.schNo) return false;
+    try {
+      const data = await SNW.api.get(SNW_API.API_HTTP_STATE, "", true);
+      if (!data || !data.control || !data.control.schedule) return false;
+      const s = data.control.schedule;
+      return s.fromRunSource && Number(s.schNo) === Number(schedule.schNo);
+    } catch {
+      return false;
+    }
+  }
+
+  function updateLiveEditBadge(isRunning) {
+    const badge = document.getElementById("liveEditBadge");
+    if (!badge) return;
+    badge.style.display = isRunning ? "block" : "none";
   }
 
   function openModal(schedule = null) {
@@ -439,6 +682,25 @@
           thermalBubbleStrength: 0, thermalBubbleRadius: 0,
         },
       }, true);
+    }
+
+    updateMoveButtonStates();
+    updatePreviewPanel();
+
+    const hint = document.getElementById("presetHint");
+    if (hint) {
+      hint.innerHTML = '<span class="muted">💡 프리셋에 마우스를 올리면 설명이 표시됩니다.</span>';
+      hint.classList.remove("active");
+    }
+
+    updateLiveEditBadge(false);
+    if (schedule) {
+      checkScheduleRunning(schedule).then((isRunning) => {
+        const m = document.getElementById("scheduleModal");
+        if (m && m.style.display === "flex") {
+          updateLiveEditBadge(isRunning);
+        }
+      });
     }
 
     modal.style.display = "flex";
@@ -832,12 +1094,27 @@ function renderSchedulePreview() {
       const del = e.target.closest(".btn-del-seg");
       if (del) {
         const row = del.closest(".segment-row");
-        if (row && row.parentNode) row.parentNode.removeChild(row);
-        return;
+        if (row && row.parentNode) {
+          row.parentNode.removeChild(row);
+          renumberSegNos();
+          updateMoveButtonStates();
+          schedulePreviewUpdate();
+        }
       }
-      const aiBtn = e.target.closest(".btn-ai-adjust");
-      if (aiBtn) { handleOptimizeAdjust(aiBtn); return; }
     });
+
+    [
+      "#repeatSegments", "#repeatCount",
+      "#periodStart", "#periodEnd"
+    ].forEach((sel) => {
+      const el = document.querySelector(sel);
+      if (el) {
+        el.addEventListener("change", schedulePreviewUpdate);
+        el.addEventListener("input",  schedulePreviewUpdate);
+      }
+    });
+
+    document.getElementById("periodDays")?.addEventListener("change", schedulePreviewUpdate);
   }
 
   // ======================= 12. 초기화 =======================

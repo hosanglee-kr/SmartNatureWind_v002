@@ -243,6 +243,203 @@
     });
   }
 
+  // ===========================================================
+  // [UX 확장] 순서 변경, 복제, AI 조정, 프리셋 힌트
+  // ===========================================================
+  function moveSegment(row, direction) {
+    const tbody = row.parentNode;
+    if (!tbody) return;
+
+    const rows = Array.from(tbody.querySelectorAll(".segment-row"));
+    const idx = rows.indexOf(row);
+    if (idx < 0) return;
+
+    if (direction === "up" && idx > 0) {
+      tbody.insertBefore(row, rows[idx - 1]);
+    } else if (direction === "down" && idx < rows.length - 1) {
+      tbody.insertBefore(rows[idx + 1], row);
+    } else {
+      return;
+    }
+
+    renumberSegNos();
+    updateMoveButtonStates();
+    schedulePreviewUpdate();
+    setDirtyStatus(true);
+  }
+
+  function renumberSegNos() {
+    const rows = document.querySelectorAll("#segmentsBody .segment-row");
+    rows.forEach((row, idx) => {
+      const segNoInput = row.querySelector(".seg-no");
+      if (segNoInput) segNoInput.value = (idx + 1) * 10;
+    });
+  }
+
+  function updateMoveButtonStates() {
+    const rows = Array.from(document.querySelectorAll("#segmentsBody .segment-row"));
+    rows.forEach((row, idx) => {
+      const up   = row.querySelector(".btn-move-up");
+      const down = row.querySelector(".btn-move-down");
+      if (up)   up.disabled   = (idx === 0);
+      if (down) down.disabled = (idx === rows.length - 1);
+    });
+  }
+
+  function duplicateSegment(row) {
+    const tbody = row.parentNode;
+    if (!tbody) return;
+
+    const currentCount = tbody.querySelectorAll(".segment-row").length;
+    if (currentCount >= MAX_SEGMENTS) {
+      SNW.toast(`세그먼트는 최대 ${MAX_SEGMENTS}개까지 추가 가능합니다.`, "warn");
+      return;
+    }
+
+    const clone = row.cloneNode(true);
+
+    const newSegNo = _suggestNextSegNo();
+    const segNoInput = clone.querySelector(".seg-no");
+    if (segNoInput) segNoInput.value = newSegNo;
+
+    const idCell = clone.querySelector("td:first-child");
+    if (idCell) idCell.textContent = "auto";
+
+    tbody.insertBefore(clone, row.nextSibling);
+
+    bindSegmentRowEvents(clone);
+    applySegmentModeState(clone);
+    updateMoveButtonStates();
+    schedulePreviewUpdate();
+
+    SNW.toast("세그먼트를 복제했습니다.", "ok");
+  }
+
+  async function handleOptimizeAdjust(button) {
+    const row = button.closest(".segment-row");
+    if (!row) return;
+
+    const mode = row.querySelector(".seg-mode")?.value;
+    if (mode !== "PRESET") {
+      SNW.toast("프리셋 모드일 때만 AI 최적화를 사용할 수 있습니다.", "warn");
+      return;
+    }
+
+    const userPrompt = window.prompt(
+      "원하는 바람의 느낌을 짧게 설명하세요.\n" +
+      "(예: 더 부드럽고 약하게 / 더 강하고 역동적으로)"
+    );
+    if (!userPrompt || !userPrompt.trim()) return;
+
+    const presetCode = row.querySelector(".seg-preset")?.value || "";
+    const presetName = windPresets.find(p => p.code === presetCode)?.name || presetCode || "(없음)";
+
+    const systemPrompt =
+      "당신은 스마트 윈드 시스템의 바람 엔지니어입니다. 사용자가 묘사한 바람의 느낌을 현실화하기 위해 " +
+      "필요한 'windIntensity'와 'windVariability'의 조정값을 JSON으로만 반환합니다. " +
+      "조정값은 -1.0에서 +1.0 사이의 float(소수점 첫째 자리)입니다.";
+
+    const userQuery =
+      `현재 프리셋: ${presetName} (${presetCode})\n` +
+      `사용자 요구: "${userPrompt}"\n\n` +
+      `windIntensity와 windVariability를 조정하여 JSON으로 출력하십시오.`;
+
+    const reqBody = {
+      contents: [{ parts: [{ text: userQuery }] }],
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      generationConfig: {
+        temperature: 0.7, maxOutputTokens: 512,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            windIntensity:   { type: "NUMBER" },
+            windVariability: { type: "NUMBER" },
+          },
+          propertyOrdering: ["windIntensity", "windVariability"],
+        },
+      },
+    };
+
+    SNW.loading.show();
+    try {
+      const data = await SNW.api.post(SNW_API.API_HTTP_GEMINI_PROXY, reqBody, "", true);
+      if (!data) throw new Error("AI 응답 없음");
+
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) throw new Error("AI 응답 없음");
+
+      const adj = JSON.parse(text);
+      const iV = Math.max(-1, Math.min(1, Math.round((adj.windIntensity   ?? 0) * 10) / 10));
+      const vV = Math.max(-1, Math.min(1, Math.round((adj.windVariability ?? 0) * 10) / 10));
+
+      const iInput = row.querySelector(".seg-adj-wind");
+      const vInput = row.querySelector(".seg-adj-var");
+      if (iInput) iInput.value = iV.toFixed(1);
+      if (vInput) vInput.value = vV.toFixed(1);
+
+      SNW.toast(`AI 조정 완료 — 강도 ${iV.toFixed(1)}, 변동 ${vV.toFixed(1)}`, "ok");
+    } catch (e) {
+      SNW.toast(`AI 조정 실패: ${e.message}`, "err");
+    } finally {
+      SNW.loading.hide();
+    }
+  }
+
+  function bindPresetHint(row) {
+    const sel = row.querySelector(".seg-preset");
+    if (!sel) return;
+
+    const showHint = () => {
+      const code = sel.value;
+      const hint = document.getElementById("presetHint");
+      if (!hint) return;
+
+      if (!code) {
+        hint.innerHTML = '<span class="muted">💡 프리셋을 선택하세요.</span>';
+        hint.classList.remove("active");
+        return;
+      }
+
+      const preset = windPresets.find(p => p.code === code);
+      if (preset && preset.factors) {
+        const f = preset.factors;
+        const r2 = (v) => Number.isFinite(Number(v)) ? Number(v).toFixed(1) : "-";
+        hint.innerHTML =
+          `🌊 <strong>${preset.name || code}</strong> — ` +
+          `강도 ${r2(f.windIntensity)} · 변동 ${r2(f.windVariability)} · ` +
+          `돌풍 ${r2(f.gustFrequency)} · 팬상한 ${r2(f.fanLimit)}`;
+        hint.classList.add("active");
+      } else {
+        hint.innerHTML = `<span class="muted">${code} (설명 없음)</span>`;
+        hint.classList.remove("active");
+      }
+    };
+
+    sel.addEventListener("mouseenter", showHint);
+    sel.addEventListener("focus", showHint);
+    sel.addEventListener("change", showHint);
+  }
+
+  function bindSegmentRowEvents(row) {
+    row.querySelector(".seg-mode")?.addEventListener("change", () => {
+      applySegmentModeState(row);
+      schedulePreviewUpdate();
+    });
+
+    row.querySelector(".btn-move-up")?.addEventListener("click", () => moveSegment(row, "up"));
+    row.querySelector(".btn-move-down")?.addEventListener("click", () => moveSegment(row, "down"));
+    row.querySelector(".btn-dup-seg")?.addEventListener("click", () => duplicateSegment(row));
+    row.querySelector(".btn-ai-adjust")?.addEventListener("click", (e) => handleOptimizeAdjust(e.currentTarget));
+
+    bindPresetHint(row);
+
+    row.querySelectorAll("input, select").forEach((el) => {
+      el.addEventListener("input", schedulePreviewUpdate);
+      el.addEventListener("change", schedulePreviewUpdate);
+    });
+  }
+
   // ======================= 9. 모달 =======================
   function applySegmentModeState(row) {
     const mode = row.querySelector(".seg-mode")?.value || "PRESET";
@@ -339,17 +536,142 @@
           <input type="number" class="seg-adj-thermrad" step="0.1" placeholder="열반경" value="${adjThermRad}" />
         </div>
       </td>
-      <td>
-        <button type="button" class="btn btn-small btn-err btn-del-seg">삭제</button>
+      <td class="seg-actions">
+        <button type="button" class="btn btn-small btn-move-up"   title="위로 이동">↑</button>
+        <button type="button" class="btn btn-small btn-move-down" title="아래로 이동">↓</button>
+        <button type="button" class="btn btn-small btn-dup-seg"   title="복제">📋</button>
+        <button type="button" class="btn btn-small btn-ai-adjust" title="AI 조정">🤖</button>
+        <button type="button" class="btn btn-small btn-err btn-del-seg" title="삭제">🗑</button>
       </td>
     `;
-
-    row.querySelector(".seg-mode").addEventListener("change", () => applySegmentModeState(row));
 
     if (appendToEnd) tbody.appendChild(row);
     else tbody.insertBefore(row, tbody.firstChild);
 
+    bindSegmentRowEvents(row);
     applySegmentModeState(row);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 실행 미리보기 & 실행 중 배지
+  // ═══════════════════════════════════════════════════════════
+  let _previewTimer = null;
+
+  function schedulePreviewUpdate() {
+    if (_previewTimer) clearTimeout(_previewTimer);
+    _previewTimer = setTimeout(updatePreviewPanel, 200);
+  }
+
+  function updatePreviewPanel() {
+    const pvDuration = document.getElementById("pvDuration");
+    const pvSegCount = document.getElementById("pvSegCount");
+    const pvRepeat   = document.getElementById("pvRepeat");
+    const pvViz      = document.getElementById("pvTimelineViz");
+
+    if (!pvViz) return;
+
+    const rows = Array.from(document.querySelectorAll("#segmentsBody .segment-row"));
+    const segments = rows.map((row) => {
+      const getVal = (s) => row.querySelector(s)?.value ?? "";
+      return {
+        mode:       getVal(".seg-mode") || "PRESET",
+        presetCode: getVal(".seg-preset") || "",
+        styleCode:  getVal(".seg-style") || "",
+        onMinutes:  Number(getVal(".seg-on-min"))  || 0,
+        offMinutes: Number(getVal(".seg-off-min")) || 0,
+        fixedSpeed: Number(getVal(".seg-fixed-speed")) || 0,
+      };
+    });
+
+    const repeatEnabled = document.getElementById("repeatSegments")?.checked ?? true;
+    const repeatCount   = Number(document.getElementById("repeatCount")?.value) || 0;
+
+    let totalOn = 0, totalOff = 0;
+    segments.forEach((s) => { totalOn += s.onMinutes; totalOff += s.offMinutes; });
+
+    const cycleMinutes = totalOn + totalOff;
+
+    let effectiveCycles = 1;
+    if (repeatEnabled) {
+      if (repeatCount > 0) effectiveCycles = repeatCount;
+      else effectiveCycles = 0;
+    }
+
+    const fmtMin = (m) => {
+      if (m < 60) return `${m}분`;
+      const h = Math.floor(m / 60);
+      const r = m % 60;
+      return r ? `${h}시간 ${r}분` : `${h}시간`;
+    };
+
+    if (pvDuration) {
+      if (!segments.length) {
+        pvDuration.textContent = "-";
+      } else if (effectiveCycles === 0) {
+        pvDuration.textContent = `${fmtMin(cycleMinutes)} (무한 반복)`;
+      } else {
+        pvDuration.textContent = `${fmtMin(cycleMinutes * effectiveCycles)} (${effectiveCycles}회)`;
+      }
+    }
+    if (pvSegCount) pvSegCount.textContent = String(segments.length);
+    if (pvRepeat) {
+      if (!repeatEnabled) pvRepeat.textContent = "1회";
+      else if (repeatCount > 0) pvRepeat.textContent = `${repeatCount}회`;
+      else pvRepeat.textContent = "무한";
+    }
+
+    if (!segments.length) {
+      pvViz.innerHTML = '<div class="muted" style="padding:20px; text-align:center; width:100%;">세그먼트가 없습니다.</div>';
+      return;
+    }
+
+    const total = segments.reduce((sum, s) => sum + s.onMinutes + s.offMinutes, 0);
+    if (total === 0) {
+      pvViz.innerHTML = '<div class="muted" style="padding:20px; text-align:center; width:100%;">시간 설정이 없습니다.</div>';
+      return;
+    }
+
+    const bars = [];
+    segments.forEach((s, idx) => {
+      const onPct  = (s.onMinutes  / total) * 100;
+      const offPct = (s.offMinutes / total) * 100;
+
+      if (s.onMinutes > 0) {
+        const label = s.mode === "FIXED"
+          ? `S${idx+1} FIXED ${s.fixedSpeed}%`
+          : `S${idx+1} ${s.presetCode || "PRESET"}`;
+        const cls = s.mode === "FIXED" ? "pv-fixed" : "pv-preset";
+        const tooltip = `${label} · ON ${s.onMinutes}분`;
+        bars.push(`<div class="pv-bar ${cls}" style="flex:${onPct};" title="${tooltip}">${label}</div>`);
+      }
+      if (s.offMinutes > 0) {
+        const tooltip = `S${idx+1} OFF ${s.offMinutes}분`;
+        bars.push(`<div class="pv-bar pv-off" style="flex:${offPct};" title="${tooltip}">OFF</div>`);
+      }
+    });
+
+    let vizHtml = bars.join("");
+    if (repeatEnabled && repeatCount > 1) {
+      vizHtml = vizHtml.replace(
+        /(<div class="pv-bar pv-(?:preset|fixed)"[^>]*>)/g,
+        (match, p1, offset, str) => {
+          if (str.indexOf("pv-repeat-marker") < 0 && str.lastIndexOf(p1) === offset) {
+            return p1 + `<span class="pv-repeat-marker">×${repeatCount}</span>`;
+          }
+          return match;
+        }
+      );
+    }
+
+    pvViz.innerHTML = vizHtml;
+  }
+
+  function updateLiveEditBadge(profile) {
+    const badge = document.getElementById("liveEditBadge");
+    if (!badge) return;
+
+    const isRunning = profile && Number(profile.profileNo) === activeProfileNo;
+    badge.style.display = isRunning ? "block" : "none";
   }
 
   function openModal(profile = null) {
@@ -416,6 +738,16 @@
           thermalBubbleStrength: 0, thermalBubbleRadius: 0,
         },
       }, true);
+    }
+
+    updateMoveButtonStates();
+    updatePreviewPanel();
+    updateLiveEditBadge(profile);
+
+    const hint = document.getElementById("presetHint");
+    if (hint) {
+      hint.innerHTML = '<span class="muted">💡 프리셋에 마우스를 올리면 설명이 표시됩니다.</span>';
+      hint.classList.remove("active");
     }
 
     modal.style.display = "flex";
@@ -520,24 +852,57 @@
     }
 
     const isUpdate = !!profile.profileId;
-    let url = API_USER_PROFILES;
-    let method = "POST";
-    let desc = "새 프로파일 생성";
+    const url = isUpdate
+      ? `${API_USER_PROFILES}/${profile.profileId}`
+      : API_USER_PROFILES;
+    const desc = isUpdate
+      ? `프로파일 ${profile.profileId} 수정`
+      : "새 프로파일 생성";
 
-    if (isUpdate) {
-      url = `${API_USER_PROFILES}/${profile.profileId}`;
-      method = "PUT";
-      desc = `프로파일 ${profile.profileId} 수정`;
+    const result = isUpdate
+      ? await SNW.api.put(url, { profile }, desc)
+      : await SNW.api.post(url, { profile }, desc);
+
+    if (result === null) return;
+
+    setDirtyStatus(true);
+
+    // [신규] 저장 후 서버 재조회 → 실제 segId 반영
+    await loadUserProfiles();
+
+    const savedProfile = currentProfiles.find(p =>
+      isUpdate
+        ? String(p.profileId) === String(profile.profileId)
+        : Number(p.profileNo) === profile.profileNo
+    );
+
+    if (!savedProfile) {
+      if (isUpdate) closeModal();
+      return;
     }
 
-    const result = (method === "POST")
-      ? await SNW.api.post(url, { profile }, desc)
-      : await SNW.api.put(url, { profile }, desc);
+    // hidden profileId 갱신 (신규 생성 → PUT 경로로 재저장 가능)
+    const idInput = document.getElementById("profileId");
+    if (idInput) idInput.value = savedProfile.profileId;
 
-    if (result !== null) {
-      setDirtyStatus(true);
+    // 세그먼트 재렌더 (실제 segId 반영)
+    const tbody = document.getElementById("segmentsBody");
+    if (tbody) {
+      tbody.innerHTML = "";
+      (savedProfile.segments || []).forEach(seg => addSegmentRow(seg, true));
+      updateMoveButtonStates();
+      updatePreviewPanel();
+    }
+
+    // 모달 타이틀 갱신
+    const title = document.getElementById("modalTitle");
+    if (title) title.textContent = `프로파일 수정: ${savedProfile.name}`;
+
+    if (isUpdate) {
       closeModal();
-      await loadUserProfiles();
+      SNW.toast("수정 완료", "ok");
+    } else {
+      SNW.toast("프로파일 생성 완료 · 세그먼트 ID 자동 반영", "ok");
     }
   }
 
@@ -635,7 +1000,20 @@
       const del = e.target.closest(".btn-del-seg");
       if (del) {
         const row = del.closest(".segment-row");
-        if (row && row.parentNode) row.parentNode.removeChild(row);
+        if (row && row.parentNode) {
+          row.parentNode.removeChild(row);
+          renumberSegNos();
+          updateMoveButtonStates();
+          schedulePreviewUpdate();
+        }
+      }
+    });
+
+    ["#repeatSegments", "#repeatCount"].forEach((sel) => {
+      const el = document.querySelector(sel);
+      if (el) {
+        el.addEventListener("change", schedulePreviewUpdate);
+        el.addEventListener("input",  schedulePreviewUpdate);
       }
     });
   }

@@ -170,6 +170,7 @@ class CL_S10_Simulation {
 	 struct ST_ChartEntry {
 		uint64_t      timestamp;   // [Epoch] epoch ms (SNTP sync 후)
 	    float         wind_speed;
+	    float         target_wind; // [신규] 목표 풍속 (Target vs Actual 차트용)
 	    float         pwm_duty;
 	    float         intensity;
 	    float         variability;

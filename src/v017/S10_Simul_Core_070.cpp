@@ -355,6 +355,7 @@ void CL_S10_Simulation::tick() {
             ST_ChartEntry v_e{};
             v_e.timestamp        = v_epochMs;              // ← epoch ms
             v_e.wind_speed       = currentWindSpeed;
+            v_e.target_wind      = targetWindSpeed;        // [신규] Target vs Actual
             v_e.pwm_duty         = _pwm ? _pwm->P10_getDutyPercent() : 0.0f;
             v_e.intensity        = userIntensity;
             v_e.variability      = userVariability;

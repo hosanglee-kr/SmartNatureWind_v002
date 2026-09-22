@@ -409,6 +409,7 @@ class CL_CT10_ControlManager {
 
     // static uint16_t parseHHMMtoMin(const char* p_time);
     static float getCurrentTemperatureMock();
+    static float getCurrentHumidityMock();   // [Phase 2] 습도 노출
 
     int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg, bool p_allowOverlap = true);
     // int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg);

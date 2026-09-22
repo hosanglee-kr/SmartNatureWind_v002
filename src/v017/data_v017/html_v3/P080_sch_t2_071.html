@@ -82,6 +82,10 @@
 			<form id="scheduleForm">
 				<input type="hidden" id="scheduleId" name="schId" value="">
 				
+				<div id="liveEditBadge" class="live-edit-badge" style="display:none;">
+					🟢 실행 중 — 이 스케줄이 현재 시간 조건에 부합합니다 (저장 시 다음 사이클부터 반영)
+				</div>
+				
 				<!-- 1. 기본 정보 -->
 				<section class="card section-block">
 					<h3 class="section-subtitle">기본 정보</h3>
@@ -152,6 +156,10 @@
 						<div class="right tight">
 							<button type="button" class="btn ok" id="btnAddSegment">➕ 세그먼트 추가</button>
 						</div>
+					</div>
+					
+					<div class="preset-hint" id="presetHint">
+						<span class="muted">💡 프리셋에 마우스를 올리면 설명이 표시됩니다.</span>
 					</div>
 					
 					<div class="segment-list-container">
@@ -228,6 +236,27 @@
 							</div>
 						</div>
 					</div>
+				</section>
+				
+				<section class="card section-block preview-block">
+					<h3 class="section-subtitle">👁 실행 미리보기</h3>
+
+					<div class="preview-info">
+						<span class="pv-item">📅 스케줄: <strong id="pvPeriod">-</strong></span>
+						<span class="pv-item">⏱ 총 소요: <strong id="pvDuration">-</strong></span>
+						<span class="pv-item">📊 세그먼트: <strong id="pvSegCount">-</strong>개</span>
+						<span class="pv-item">🔁 반복: <strong id="pvRepeat">-</strong></span>
+					</div>
+
+					<div id="pvTimelineViz" class="preview-timeline-viz">
+						<div class="muted" style="padding: 20px; text-align:center; width:100%;">
+							세그먼트가 없습니다.
+						</div>
+					</div>
+
+					<p class="muted pv-note">
+						※ 실제 실행 시간은 각 세그먼트의 ON/OFF 시간과 반복 횟수에 따라 결정됩니다.
+					</p>
 				</section>
 				
 				<div class="modal-actions">

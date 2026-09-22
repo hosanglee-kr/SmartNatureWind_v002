@@ -631,13 +631,30 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
         v_ao["offTimeLastMin"]  = (int)autoOffRt.offTimeLastMin;    
     }    
     
-    // 9) Dirty flags    
-    {    
-        JsonObject v_dirty = A40_ComFunc::Json_ensureObject(v_ctl["dirty"]);    
-        v_dirty["state"]   = _dirtyState;    
-        v_dirty["metrics"] = _dirtyMetrics;    
-        v_dirty["chart"]   = _dirtyChart;    
-        v_dirty["summary"] = _dirtySummary;    
+    // 8-1) [Phase 2] Sensor snapshot
+    //  - DHT22 온도/습도 (2초 캐시 재사용)
+    //  - PIR 모션 상태 (isActive)
+    //  - 프론트 요약 카드 / 센서 차트용
+    {
+        JsonObject v_sensor = A40_ComFunc::Json_ensureObject(v_ctl["sensor"]);
+
+        v_sensor["tempC"]    = getCurrentTemperatureMock();
+        v_sensor["humidity"] = getCurrentHumidityMock();
+
+        bool v_motionAct = false;
+        if (motion) {
+            v_motionAct = motion->isActive();
+        }
+        v_sensor["motionActive"] = v_motionAct;
+    }
+
+    // 9) Dirty flags
+    {
+        JsonObject v_dirty = A40_ComFunc::Json_ensureObject(v_ctl["dirty"]);
+        v_dirty["state"]   = _dirtyState;
+        v_dirty["metrics"] = _dirtyMetrics;
+        v_dirty["chart"]   = _dirtyChart;
+        v_dirty["summary"] = _dirtySummary;
     }    
 
     // 10) Simulation snapshot 병합 (S10 toJson → p_doc["sim"])

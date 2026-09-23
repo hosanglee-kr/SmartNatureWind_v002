@@ -1,14 +1,15 @@
 # Orbit Web API 연계 모니터링 대시보드: 기준정보(Master Data) 및 공통 코드(Code Master) DB 설계 및 구현 방안
 
-- **문서 번호**: DOC-ORBIT-MASTER-001
+> [!NOTE]
+> 본 문서는 스케줄(Schedule), 순찰 런(Run), 액션 이벤트(Run Event), 캡처(Run Capture), 미디어 파일(Media File), 측정 실측치(Run Key Result), 이상 감지(Anomaly) 등 운영·점검 이력 데이터가 전면 확장됨에 따라 **[Orbit_대시보드_통합_DB_설계_및_구현방안_002.md](file:///d:/02_LSE_PJT/202607%20LS%EC%9D%BC%EB%A0%89_%EB%B6%80%EC%82%B0_Spot%EB%A1%9C%EB%B4%87/90.Spot_Code_PJT/96.orbit_API_DB_Modeling/OrbitAPI_GET/src/docs/Orbit_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C_%ED%86%B5%ED%95%A9_DB_%EC%84%A4%EA%B3%84_%EB%B0%8F_%EA%B5%AC%ED%98%84%EB%B0%A9%EC%95%88_002.md)** 로 공식 명칭이 변경 및 통합되었습니다.
+
+- **문서 번호**: DOC-ORBIT-MASTER-001 (통합 문서: DOC-ORBIT-INTEGRATED-002 참조)
 - **작성일자**: 2026-09-23
-- **버전**: v1.5.0 (증분 적재를 위한 Watermark Table 관리 방식 설계 추가)
-- **적용 RDBMS**: **Microsoft SQL Server 2019 / 2022 (T-SQL)**
-- **적용 백엔드**: **Python Flask 3.x** (REST API, Blueprint, CORS, Scoped Session)
-- **적용 시스템**: Boston Dynamics Spot / Orbit 연계 2D 디지털 트윈 관제 대시보드
-- **저장 위치**: `OrbitAPI_GET/src/docs/Orbit_대시보드_기준정보_마스터_DB_설계_및_구현방안_001.md`
+- **버전**: v1.5.0
+- **통합 문서 이동**: [Orbit_대시보드_통합_DB_설계_및_구현방안_002.md 바로가기](file:///d:/02_LSE_PJT/202607%20LS%EC%9D%BC%EB%A0%89_%EB%B6%80%EC%82%B0_Spot%EB%A1%9C%EB%B4%87/90.Spot_Code_PJT/96.orbit_API_DB_Modeling/OrbitAPI_GET/src/docs/Orbit_%EB%8C%80%EC%8B%9C%EB%B3%B4%EB%93%9C_%ED%86%B5%ED%95%A9_DB_%EC%84%A4%EA%B3%84_%EB%B0%8F_%EA%B5%AC%ED%98%84%EB%B0%A9%EC%95%88_002.md)
 
 ---
+
 
 ## 1. 추진 배경 및 기준정보(Master Data) DB의 필요성
 

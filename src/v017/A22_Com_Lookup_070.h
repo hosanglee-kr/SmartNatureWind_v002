@@ -47,6 +47,11 @@
 
 #include "D10_Logger_070.h"
 
+// [o] self-sufficient: A20_Const_070.h 경유 없이도 단독 include 가능
+//  - ST_A20_WindDict_t / ST_A20_WindPreset_t / ST_A20_WindStyles_t
+//  - EN_A20_segment_mode_t / G_A20_SegmentMode_Arr / G_A20_WindPreset_Arr / G_A20_WindStyle_Arr
+#include "A20_Const_Sch_070.h"
+
 // NOTE:
 // - 본 헤더는 A20_Const_070.h에서 include하여 사용합니다.
 // - A20_Const_070.h에 정의된 타입/상수/전역(예: A20_Const::*, ST_A20_*, EN_A20_*)에 의존합니다.

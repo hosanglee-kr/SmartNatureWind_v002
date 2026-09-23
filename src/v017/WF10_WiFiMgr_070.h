@@ -39,6 +39,7 @@
 #include <WiFiMulti.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
+#include <freertos/task.h> 
 #include <lwip/dns.h>
 #include <time.h>
 
@@ -122,7 +123,40 @@ class CL_WF10_WiFiManager {
 
     static bool        isStaConnected();
     static const char* getStaStatusString();
+    
+    
+    public:
+    // --------------------------------------------------
+    // [WF10-task] 재연결 요청 상태 (E-2)
+    //  - OK        : 요청 성공 (task signaled)
+    //  - COALESCED : 이미 pending (중복 요청)
+    //  - FAILED    : task 생성 실패
+    // --------------------------------------------------
+    typedef enum : uint8_t {
+        EN_WF10_REQ_OK        = 0,
+        EN_WF10_REQ_COALESCED = 1,
+        EN_WF10_REQ_FAILED    = 2
+    } EN_WF10_req_result_t;
+  
+    // --------------------------------------------------
+    // [WF10-task] 재연결 요청 (async_tcp → WiFi 전용 태스크)
+    //  - HTTP 라우트는 requestReconnect()로 semaphore만 give
+    //  - WiFi 태스크가 실제 applyConfig 실행 (loopTask 보호)
+    // --------------------------------------------------
+    static EN_WF10_req_result_t requestReconnect();       // 즉시 반환 (semaphore give)
+
 
   private:
     static const char* _encTypeToString(wifi_auth_mode_t p_mode);
+    
+    // --------------------------------------------------
+    // [WF10-task] WiFi 재연결 전용 태스크
+    //  - startSTA 블로킹을 loopTask에서 완전 분리
+    //  - WDT 미등록 (자체 블로킹 자유)
+    // --------------------------------------------------
+    static TaskHandle_t      s_wifiTaskHandle;
+    static SemaphoreHandle_t s_wifiRequestSem;
+    static void              _wifiTask(void* p_param);
+    static bool              _ensureWifiTask();   // 최초 1회 생성
+    
 };

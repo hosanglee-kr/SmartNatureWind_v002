@@ -55,6 +55,43 @@ AsyncWebSocket* CL_W10_WebAPI::s_wsServerChart   = &s_wsChart;
 AsyncWebSocket* CL_W10_WebAPI::s_wsServerMetrics = &s_wsMetrics;
 AsyncWebSocket* CL_W10_WebAPI::s_wsServerSummary = &s_wsSummary;
 
+
+// --------------------------------------------------
+// [Runtime Apply] 시스템 설정 패치 후 런타임 반영
+//  - Logger level: CL_D10_Logger::setLevel (즉시)
+//  - Hostname   : WiFi.setHostname (WiFi 재연결 시 반영)
+//  - W10이 C10과 WF10 모두 접근 가능한 유일한 지점
+// --------------------------------------------------
+static void _applySystemRuntime(const ST_A20_SystemConfig_t& p_sys) {
+    // 1) Logger level
+    EN_L10_LogLevel_t v_lv = EN_L10_LOG_INFO;
+    const char* v_lvStr = p_sys.system.logging.level;
+
+    if (v_lvStr && v_lvStr[0]) {
+        if      (strcasecmp(v_lvStr, "NONE")  == 0) v_lv = EN_L10_LOG_NONE;
+        else if (strcasecmp(v_lvStr, "ERROR") == 0) v_lv = EN_L10_LOG_ERROR;
+        else if (strcasecmp(v_lvStr, "WARN")  == 0) v_lv = EN_L10_LOG_WARN;
+        else if (strcasecmp(v_lvStr, "INFO")  == 0) v_lv = EN_L10_LOG_INFO;
+        else if (strcasecmp(v_lvStr, "DEBUG") == 0) v_lv = EN_L10_LOG_DEBUG;
+    }
+
+    EN_L10_LogLevel_t v_oldLv = CL_D10_Logger::getLevel();
+    if (v_oldLv != v_lv) {
+        CL_D10_Logger::setLevel(v_lv);
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
+                           "[W10] Log level changed: %d -> %d",
+                           (int)v_oldLv, (int)v_lv);
+    }
+
+    // 2) Hostname (WiFi 재연결 시 반영)
+    if (p_sys.meta.deviceName[0] != '\0') {
+        WiFi.setHostname(p_sys.meta.deviceName);
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
+                           "[W10] Hostname set: %s (재연결 후 반영)",
+                           p_sys.meta.deviceName);
+    }
+}
+
 // --------------------------------------------------
 // 초기화
 // --------------------------------------------------
@@ -69,6 +106,7 @@ void CL_W10_WebAPI::begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_co
     // routeWifi();
     routeDiag();
     routeScan();
+    routeWifiState();
     routeAuthTest();
     routeWifiConfig();
     routeTimeSet();
@@ -203,6 +241,9 @@ void CL_W10_WebAPI::routeSystem() {
             bool v_changed = false;
             if (g_A20_config_root.system) {
                 v_changed = CL_C10_ConfigManager::patchSystemFromJson(*g_A20_config_root.system, v_doc);
+                if (v_changed) {
+                    _applySystemRuntime(*g_A20_config_root.system);   // ← 추가
+                }
             }
 
             JsonDocument v_res;
@@ -232,6 +273,9 @@ void CL_W10_WebAPI::routeSystem() {
             bool v_changed = false;
             if (g_A20_config_root.system) {
                 v_changed = CL_C10_ConfigManager::patchSystemFromJson(*g_A20_config_root.system, v_doc);
+                if (v_changed) {
+                    _applySystemRuntime(*g_A20_config_root.system);   // ← 추가
+                }
             }
 
             JsonDocument v_res;
@@ -240,9 +284,11 @@ void CL_W10_WebAPI::routeSystem() {
         });
 }
 
+
 // --------------------------------------------------
-// 5. /api/motion
+// 5. /api/v001/motion (GET/POST/PATCH)
 // --------------------------------------------------
+
 void CL_W10_WebAPI::routeMotion() {
     // GET
     s_server->on(W10_Const::HTTP_API_MOTION, HTTP_GET, [](AsyncWebServerRequest* p_request) {
@@ -283,12 +329,51 @@ void CL_W10_WebAPI::routeMotion() {
             bool v_changed = false;
             if (g_A20_config_root.motion) {
                 v_changed = CL_C10_ConfigManager::patchMotionFromJson(*g_A20_config_root.motion, v_doc);
+                if (v_changed && s_control) {
+                    // config → S10 runtime 즉시 반영
+                    s_control->applyMotionSimConfigToSim();
+                }
             }
 
             JsonDocument v_res;
             v_res["updated"] = v_changed;
             sendJson(p_request, v_res);
         });
+    
+    
+    // PATCH: 
+    s_server->on(
+        W10_Const::HTTP_API_MOTION,
+        HTTP_PATCH,
+        [](AsyncWebServerRequest* p_request) {},
+        nullptr,
+        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+            if (!checkApiKey(p_request)) {
+                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+                return;
+            }
+            if (p_index + p_len != p_total) return;
+
+            JsonDocument v_doc;
+            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
+                p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
+                return;
+            }
+
+            bool v_changed = false;
+            if (g_A20_config_root.motion) {
+                v_changed = CL_C10_ConfigManager::patchMotionFromJson(*g_A20_config_root.motion, v_doc);
+                if (v_changed && s_control) {
+                    // config → S10 runtime 즉시 반영
+                    s_control->applyMotionSimConfigToSim();
+                }
+            }
+
+            JsonDocument v_res;
+            v_res["updated"] = v_changed;
+            sendJson(p_request, v_res);
+        });
+
 }
 
 // --------------------------------------------------
@@ -302,17 +387,22 @@ void CL_W10_WebAPI::routeWindProfile() {
             return;
         }
 
-        JsonDocument      v_doc;
-        ST_A20_WindDict_t v_dict;
-        memset(&v_dict, 0, sizeof(v_dict));
+        // [P0-1] async_tcp 스택 보호: WindDict(~1.5KB)를 static 승격
+        //  - loadWindDict/toJson_WindDict 모두 내부 mutex 보유 → 재진입 안전
+        //  - async_tcp 단일 태스크이므로 static 경쟁 없음
+        static ST_A20_WindDict_t s_dict;
+        memset(&s_dict, 0, sizeof(s_dict));
 
-        if (CL_C10_ConfigManager::loadWindDict(v_dict)) {
-            CL_C10_ConfigManager::toJson_WindDict(v_dict, v_doc);
+        JsonDocument v_doc;
+
+        if (CL_C10_ConfigManager::loadWindDict(s_dict)) {
+            CL_C10_ConfigManager::toJson_WindDict(s_dict, v_doc);
             sendJson(p_request, v_doc);
         } else {
             p_request->send(500, "application/json", "{\"error\":\"load failed\"}");
         }
     });
+
 
     // POST: 신규 생성
     s_server->on(
@@ -356,7 +446,6 @@ void CL_W10_WebAPI::routeWindProfileID() {
     // PUT: 수정
     s_server->on((String(W10_Const::HTTP_API_WIND_PROFILE) + "/([0-9]+)").c_str(),
                  HTTP_PUT,
-                 // "/api/windProfile/([0-9]+)", HTTP_PUT,
                  [](AsyncWebServerRequest* p_request) {},
                  nullptr,
                  [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
@@ -738,24 +827,39 @@ void CL_W10_WebAPI::routeControl() {
         s_control->stopUserProfile();
         p_request->send(200, "application/json", "{\"result\":\"ok\"}");
     });
-
+    
     // override/fixed
     s_server->on(W10_Const::HTTP_API_CTL_OVR_FIXED, HTTP_POST, [](AsyncWebServerRequest* p_request) {
         if (!checkApiKey(p_request)) {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
-        if (!p_request->hasParam("percent", true) || !p_request->hasParam("seconds", true)) {
-            p_request->send(400, "application/json", "{\"error\":\"missing param\"}");
+    
+        if (!p_request->hasParam("percent", true)) {
+            p_request->send(400, "application/json", "{\"error\":\"missing param: percent\"}");
             return;
         }
+    
         float    v_pct = p_request->getParam("percent", true)->value().toFloat();
-        uint32_t v_sec = (uint32_t)p_request->getParam("seconds", true)->value().toInt();
+        uint32_t v_sec = p_request->hasParam("seconds", true)
+                            ? (uint32_t)p_request->getParam("seconds", true)->value().toInt()
+                            : 0;
+    
+        // [forever] 무제한 플래그
+        bool v_forever = false;
+        if (p_request->hasParam("forever", true)) {
+            String f = p_request->getParam("forever", true)->value();
+            f.toLowerCase();
+            v_forever = (f == "true" || f == "1");
+        }
+    
         if (s_control) {
-            s_control->startOverrideFixed(v_pct, v_sec);
+            s_control->startOverrideFixed(v_pct, v_sec, v_forever);
         }
         p_request->send(200, "application/json", "{\"result\":\"ok\"}");
     });
+
+    
 
     // override/preset (JSON Body)
     s_server->on(
@@ -779,7 +883,8 @@ void CL_W10_WebAPI::routeControl() {
             const char* v_preset = v_doc["presetCode"] | "";
             const char* v_style  = v_doc["styleCode"] | "BALANCE";
             uint32_t    v_sec    = v_doc["durationSec"] | 0;
-
+            bool        v_forever = v_doc["forever"] | false;    // ← 추가
+            
             ST_A20_AdjustDelta_t v_adj;
             memset(&v_adj, 0, sizeof(v_adj));
             if (v_doc["adjust"].is<JsonObject>()) {
@@ -789,12 +894,17 @@ void CL_W10_WebAPI::routeControl() {
                 v_adj.gustFrequency   = v_aj["gustFrequency"] | 0.0f;
                 v_adj.fanLimit        = v_aj["fanLimit"] | 0.0f;
                 v_adj.minFan          = v_aj["minFan"] | 0.0f;
+                v_adj.turbulenceLengthScale    = v_aj["turbulenceLengthScale"] | 0.0f;
+                v_adj.turbulenceIntensitySigma = v_aj["turbulenceIntensitySigma"] | 0.0f;
+                v_adj.thermalBubbleStrength    = v_aj["thermalBubbleStrength"] | 0.0f;
+                v_adj.thermalBubbleRadius      = v_aj["thermalBubbleRadius"] | 0.0f;
             }
-
+            
             if (s_control) {
-                s_control->startOverridePreset(v_preset, v_style, &v_adj, v_sec);
+                s_control->startOverridePreset(v_preset, v_style, &v_adj, v_sec, v_forever);   // ← 파라미터 추가
             }
             p_request->send(200, "application/json", "{\"result\":\"ok\"}");
+
         });
 
     // override/clear
@@ -941,6 +1051,7 @@ void CL_W10_WebAPI::routeLogs() {
     });
 }
 
+
 // --------------------------------------------------
 // 15. /api/reload
 // --------------------------------------------------
@@ -957,6 +1068,12 @@ void CL_W10_WebAPI::routeReload() {
             p_request->send(500, "application/json", "{\"error\":\"reload failed\"}");
             return;
         }
+
+        // [Runtime Apply] 재로드된 system 설정을 런타임 반영
+        if (g_A20_config_root.system) {
+            _applySystemRuntime(*g_A20_config_root.system);
+        }
+
         p_request->send(200, "application/json", "{\"result\":\"ok\"}");
     });
 }
@@ -994,6 +1111,23 @@ void CL_W10_WebAPI::routeScan() {
 }
 
 // --------------------------------------------------
+// 17-1. /api/v001/wifi/state  (Wi-Fi 런타임 상태)
+//  - WF10_WiFiManager::getWifiStateJson 재사용
+//  - 응답: {"wifi":{"state":{...}}}
+// --------------------------------------------------
+void CL_W10_WebAPI::routeWifiState() {
+    s_server->on(W10_Const::HTTP_API_WIFI_STATE, HTTP_GET, [](AsyncWebServerRequest* p_request) {
+        if (!checkApiKey(p_request)) {
+            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            return;
+        }
+        JsonDocument v_doc;
+        CL_WF10_WiFiManager::getWifiStateJson(v_doc);
+        sendJson(p_request, v_doc);
+    });
+}
+
+// --------------------------------------------------
 // 18. /api/config/init  (factoryResetFromDefault 통일)
 // --------------------------------------------------
 void CL_W10_WebAPI::routeConfigInit() {
@@ -1016,9 +1150,11 @@ void CL_W10_WebAPI::routeConfigInit() {
     });
 }
 
+
 // --------------------------------------------------
-// 19. /api/motion/feed (PIR / BLE)
+// 19. /api/v001/motion/pir/feed (PIR)
 // --------------------------------------------------
+
 void CL_W10_WebAPI::routeMotionFeed() {
     // PIR
     s_server->on(
@@ -1112,6 +1248,7 @@ void CL_W10_WebAPI::routeConfigDirtySave() {
 // --------------------------------------------------
 // 통합된 /api/network/wifi/config (GET/POST/PATCH)
 // --------------------------------------------------
+
 void CL_W10_WebAPI::routeWifiConfig() {
     // GET: 현재 설정 조회
     s_server->on(W10_Const::HTTP_API_WIFI_CONFIG, HTTP_GET, [](AsyncWebServerRequest* p_request) {
@@ -1129,7 +1266,7 @@ void CL_W10_WebAPI::routeWifiConfig() {
         sendJson(p_request, v_doc);
 
     });
-
+    
     // POST: 설정 변경 및 시스템 즉시 적용
     s_server->on(
         W10_Const::HTTP_API_WIFI_CONFIG,
@@ -1159,10 +1296,24 @@ void CL_W10_WebAPI::routeWifiConfig() {
 
             if (v_changed) {
                 CL_C10_ConfigManager::saveDirtyConfigs();
-                CL_WF10_WiFiManager::applyConfig(*g_A20_config_root.wifi);
-                v_res["status"]      = "applied";
-                v_res["need_reboot"] = true;
-                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config integrated & applied via config endpoint.");
+                
+                auto v_req = CL_WF10_WiFiManager::requestReconnect();
+                switch (v_req) {
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_OK:
+                        v_res["status"] = "requested";
+                        break;
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_COALESCED:
+                        v_res["status"] = "coalesced";
+                        break;
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_FAILED:
+                    default:
+                        v_res["status"] = "task_failed";
+                        break;
+                }
+
+                v_res["need_reboot"] = false;
+                v_res["note"] = "WiFi reconnect signaled to background task";
+                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config saved, reconnect signaled to WiFi task.");
             } else {
                 v_res["status"]      = "no_change";
                 v_res["need_reboot"] = false;
@@ -1201,10 +1352,24 @@ void CL_W10_WebAPI::routeWifiConfig() {
 
             if (v_changed) {
                 CL_C10_ConfigManager::saveDirtyConfigs();
-                CL_WF10_WiFiManager::applyConfig(*g_A20_config_root.wifi);
-                v_res["status"]      = "applied";
-                v_res["need_reboot"] = true;
-                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config integrated & applied via PATCH.");
+                
+                auto v_req = CL_WF10_WiFiManager::requestReconnect();
+                switch (v_req) {
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_OK:
+                        v_res["status"] = "requested";
+                        break;
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_COALESCED:
+                        v_res["status"] = "coalesced";
+                        break;
+                    case CL_WF10_WiFiManager::EN_WF10_REQ_FAILED:
+                    default:
+                        v_res["status"] = "task_failed";
+                        break;
+                }
+                
+                v_res["need_reboot"] = false;
+                v_res["note"] = "WiFi reconnect signaled to background task";
+                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] WiFi config saved, reconnect signaled to WiFi task.");
             } else {
                 v_res["status"]      = "no_change";
                 v_res["need_reboot"] = false;
@@ -1239,6 +1404,9 @@ void CL_W10_WebAPI::routeTimeSet() {
             bool v_changed = false;
             if (g_A20_config_root.system) {
                 v_changed = CL_C10_ConfigManager::patchSystemFromJson(*g_A20_config_root.system, v_doc);
+                if (v_changed) {
+                    _applySystemRuntime(*g_A20_config_root.system);   // ← 추가
+                }
             }
 
             JsonDocument v_res;
@@ -1280,7 +1448,8 @@ void CL_W10_WebAPI::routeFirmwareCheck() {
         if (strcmp(v_current_version, v_latest_version) < 0) {
             v_doc["status"]         = "available";
             v_doc["latest_version"] = v_latest_version;
-            v_doc["url"]            = "/api/update/latest";
+            v_doc["url"]            = "/api/v001/fwUpdate";
+            
         } else {
             v_doc["status"]         = "latest";
             v_doc["latest_version"] = v_current_version;

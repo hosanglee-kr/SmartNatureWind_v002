@@ -1,0 +1,129 @@
+{
+  "pages": [
+    {
+      "uri": "/P010_main_071.html",
+      "path": "/html_v3/P010_main_071.html",
+      "label": "Main",
+      "enable": true,
+      "isMain": true,
+      "order": 10,
+      "pageAssets": [
+        { "uri": "/P010_main_071.css", "path": "/html_v3/P010_main_071.css" },
+        { "uri": "/P010_main_core_071.js", "path": "/html_v3/P010_main_core_071.js" },
+        { "uri": "/P010_main_preset_071.js", "path": "/html_v3/P010_main_preset_071.js" },
+        { "uri": "/P010_main_ws_071.js", "path": "/html_v3/P010_main_ws_071.js" },
+        { "uri": "/P010_main_wifi_071.js", "path": "/html_v3/P010_main_wifi_071.js" },
+        { "uri": "/P010_main_misc_071.js", "path": "/html_v3/P010_main_misc_071.js" },
+        { "uri": "/P010_main_071.js", "path": "/html_v3/P010_main_071.js" }
+      ]
+    },
+
+    {
+      "uri": "/P080_sch_t2_071.html",
+      "path": "/html_v3/P080_sch_t2_071.html",
+      "label": "Schedule T2",
+      "enable": true,
+      "isMain": false,
+      "order": 30,
+      "pageAssets": [
+        { "uri": "/P080_sch_t2_071.css", "path": "/html_v3/P080_sch_t2_071.css" },
+        { "uri": "/P080_sch_t2_071.js", "path": "/html_v3/P080_sch_t2_071.js" }
+      ]
+    },
+    {
+      "uri": "/P050_chart_t2_071.html",
+      "path": "/html_v3/P050_chart_t2_071.html",
+      "label": "Chart T2",
+      "enable": true,
+      "isMain": false,
+      "order": 50,
+      "pageAssets": [
+        { "uri": "/P050_chart_t2_071.css", "path": "/html_v3/P050_chart_t2_071.css" },
+        { "uri": "/P050_chart_t2_071.js", "path": "/html_v3/P050_chart_t2_071.js" }
+      ]
+    },
+    {
+      "uri": "/P050_chart_t3_071.html",
+      "path": "/html_v3/P050_chart_t3_071.html",
+      "label": "Chart T3",
+      "enable": true,
+      "isMain": false,
+      "order": 51,
+      "pageAssets": [
+        { "uri": "/P050_chart_t3_071.css", "path": "/html_v3/P050_chart_t3_071.css" },
+        { "uri": "/P050_chart_t3_071.js", "path": "/html_v3/P050_chart_t3_071.js" }
+      ]
+    },
+
+    {
+      "uri": "/P085_userProfiles_t2_071.html",
+      "path": "/html_v3/P085_userProfiles_t2_071.html",
+      "label": "UserProfile T2",
+      "enable": true,
+      "isMain": false,
+      "order": 85,
+      "pageAssets": [
+        { "uri": "/P085_userProfiles_t2_071.css", "path": "/html_v3/P085_userProfiles_t2_071.css" },
+        { "uri": "/P085_userProfiles_t2_071.js", "path": "/html_v3/P085_userProfiles_t2_071.js" }
+      ]
+    },
+    {
+      "uri": "/P090_info_071.html",
+      "path": "/html_v3/P090_info_071.html",
+      "label": "Info. & Help",
+      "enable": true,
+      "isMain": false,
+      "order": 200,
+      "pageAssets": [
+        { "uri": "/P090_info_071.css", "path": "/html_v3/P090_info_071.css" },
+        { "uri": "/P090_info_071.js", "path": "/html_v3/P090_info_071.js" }
+      ]
+    },
+    {
+      "uri": "/P100_settings_071.html",
+      "path": "/html_v3/P100_settings_071.html",
+      "label": "System",
+      "enable": true,
+      "isMain": false,
+      "order": 100,
+      "pageAssets": [
+        { "uri": "/P100_settings_071.css", "path": "/html_v3/P100_settings_071.css" },
+        { "uri": "/P100_settings_071.js", "path": "/html_v3/P100_settings_071.js" }
+      ]
+    },
+    {
+      "uri": "/P110_config_060.html",
+      "path": "/html_v3/P110_config_060.html",
+      "label": "Config(미구현)",
+      "enable": false,
+      "isMain": false,
+      "order": 110,
+      "pageAssets": []
+    },
+    {
+      "uri": "/P120_diag_060.html",
+      "path": "/html_v3/P120_diag_060.html",
+      "label": "System Diag.(미구현)",
+      "enable": false,
+      "isMain": false,
+      "order": 120,
+      "pageAssets": []
+    }
+  ],
+  "reDirect": [
+    { "uriFrom": "/"              , "uriTo": "/P010_main_071.html"            },
+    { "uriFrom": "/index.html"    , "uriTo": "/P010_main_071.html"            },
+    { "uriFrom": "/main"          , "uriTo": "/P010_main_071.html"            },
+    { "uriFrom": "/chart_t2"      , "uriTo": "/P050_chart_t2_071.html"        },
+    { "uriFrom": "/chart_t3"      , "uriTo": "/P050_chart_t3_071.html"        },
+    { "uriFrom": "/schedules_t2"  , "uriTo": "/P080_sch_t2_071.html"          },
+    { "uriFrom": "/userProfile_t2", "uriTo": "/P085_userProfiles_t2_071.html" },
+    { "uriFrom": "/settings"      , "uriTo": "/P100_settings_071.html"        },
+    { "uriFrom": "/info"          , "uriTo": "/P090_info_071.html"            }
+  ],
+  "assets": [
+    { "uri": "/P000_common_071.css", "path": "/html_v3/P000_common_071.css", "isCommon": true },
+    { "uri": "/P000_common_071.js" , "path": "/html_v3/P000_common_071.js" , "isCommon": true },
+    { "uri": "/P001_comm_API_071.js", "path": "/html_v3/P001_comm_API_071.js", "isCommon": true }
+  ]
+}

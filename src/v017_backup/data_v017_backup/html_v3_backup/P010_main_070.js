@@ -75,6 +75,8 @@ let g_configDirty = false;
 let g_staList = []; // [{ssid, pass}, ...]
 let g_wsLog = null;
 let g_wsState = null;
+let g_wifiStateTimer = null; // 30초 폴링 핸들
+
 
 /** Dirty 플래그 UI 반영 */
 function updateDirtyButton() {
@@ -118,16 +120,14 @@ async function loadFwVersion() {
 async function loadStateOnce() {
 	const data = await apiFetch(SNW_API.API_HTTP_STATE, { method: "GET" }, true);
 	if (!data) return;
-
-	// sim 정보 추정
-	const sim = data.sim || data.motion || data.state || {};
-	const wifi = (data.wifi && data.wifi.state) ? data.wifi.state : data.wifi || {};
-
-	const simActive = sim.active !== undefined ? sim.active : sim.simActive;
-	const phase     = sim.phase !== undefined ? sim.phase : sim.phaseName;
-	const wind      = sim.wind !== undefined ? sim.wind : sim.wind_ms;
-	const pwm       = sim.pwm !== undefined ? sim.pwm : sim.pwm_val;
-
+	
+	const sim = data.sim || {};
+	
+	const simActive = sim.active; // S10 toJson: "active"
+	const phase = sim.phase; // S10 toJson: "phase"
+	const wind = sim.windSpeed; // S10 toJson: "windSpeed"
+	const pwm = sim.pwmDuty; // S10 toJson: "pwmDuty"
+	
 	const elA = elSimActive();
 	if (elA) {
 		if (simActive === true || simActive === 1 || simActive === "on") {
@@ -140,102 +140,109 @@ async function loadStateOnce() {
 			elA.classList.add("err");
 		}
 	}
+	
 	const elP = elPhase();
 	if (elP) elP.textContent = phase != null ? String(phase) : "-";
-
+	
 	const elW = elWind();
 	if (elW) elW.textContent = wind != null ? String(wind) : "-";
-
+	
 	const elPw = elPwm();
 	if (elPw) elPw.textContent = pwm != null ? String(pwm) : "-";
-
-	const elWM = elWifiMode();
-	if (elWM) elWM.textContent = (wifi.mode_name || wifi.mode || "-").toString();
-
-	const elWS = elCurSsid();
-	if (elWS) elWS.textContent = wifi.ssid || "-";
-
-	const elIP = elIp();
-	if (elIP) elIP.textContent = wifi.ip || "-";
+	
+	// 프리셋 select 동기화
+	if (elPreset() && sim.presetCode && !g_configDirty) {
+		elPreset().value = sim.presetCode;
+	}
 }
 
 async function loadConfig() {
-	// showLoading은 apiFetch 내부에서 호출되지만, 응답 이후에도 UI 처리가 필요하므로 다시 showLoading
 	showLoading();
-	const cfg = await apiFetch(SNW_API.API_HTTP_CONFIG, { method: "GET" }, true);
-	showLoading();  // apiFetch가 hideLoading을 호출했으므로 다시 표시
-	if (!cfg) {
-		hideLoading();
-		return;
-	}
-
-	// ---- Wi-Fi ----
-	if (cfg.wifi) {
-		if (elWifiModeSel()) elWifiModeSel().value = cfg.wifi.wifiMode ?? 0;
-		if (elApSsid()) elApSsid().value = cfg.wifi.ap ? cfg.wifi.ap.ssid || "" : "";
-		if (elApPass()) elApPass().value = cfg.wifi.ap ? cfg.wifi.ap.pass || "" : "";
-
-		g_staList = [];
-		if (Array.isArray(cfg.wifi.sta)) {
-			cfg.wifi.sta.forEach((item) => {
-				if (item && item.ssid) {
-					g_staList.push({ ssid: item.ssid, pass: item.pass || "" });
-				}
-			});
+	try {
+		// ─────────────────────────────────────────────
+		// [병렬 조회] config + simulation
+		//  - 순차 await로 인한 오버레이 깜빡임 제거
+		//  - 네트워크 두 요청 동시 처리 → 체감 속도 향상
+		// ─────────────────────────────────────────────
+		const [cfg, simData] = await Promise.all([
+			apiFetch(SNW_API.API_HTTP_CONFIG, { method: "GET" }, true),
+			apiFetch(SNW_API.API_HTTP_SIMULATION, { method: "GET" }, true)
+		]);
+		if (!cfg) return;
+		
+		// ---- Wi-Fi ----
+		if (cfg.wifi) {
+			if (elWifiModeSel()) elWifiModeSel().value = cfg.wifi.wifiMode ?? 0;
+			if (elApSsid()) elApSsid().value = cfg.wifi.ap ? cfg.wifi.ap.ssid || "" : "";
+			if (elApPass()) elApPass().value = cfg.wifi.ap ? cfg.wifi.ap.pass || "" : "";
+			
+			g_staList = [];
+			if (Array.isArray(cfg.wifi.sta)) {
+				cfg.wifi.sta.forEach((item) => {
+					if (item && item.ssid) {
+						g_staList.push({ ssid: item.ssid, pass: item.pass || "" });
+					}
+				});
+			}
+			renderStaList();
 		}
-		renderStaList();
+		
+		// ---- PWM HW ----
+		if (cfg.hw && cfg.hw.fanPwm) {
+			if (elPwmPin()) elPwmPin().value = cfg.hw.fanPwm.pin ?? "";
+			if (elPwmChannel()) elPwmChannel().value = cfg.hw.fanPwm.channel ?? "";
+			if (elPwmFreq()) elPwmFreq().value = cfg.hw.fanPwm.freq ?? "";
+			if (elPwmRes()) elPwmRes().value = cfg.hw.fanPwm.res ?? "";
+		}
+		
+		// ---- Presets (option 목록 채우기) ----
+		//  - 프리셋 select 동기화보다 먼저 실행되어야 함
+		//    (option이 없으면 value 할당이 무시됨)
+		loadPresetsFromConfig(cfg);
+		
+		// ---- Motion / Wind (S10 sim에서 로드) ----
+		//  - config 응답에는 런타임 풍속값 없음 → /simulation 응답의 sim 사용
+		//  - 폼 초기값 세팅 담당 (화면 표시는 loadStateOnce)
+		const sim = (simData && simData.sim) ? simData.sim : {};
+		
+		if (elIntensity()) elIntensity().value = sim.intensity ?? "";
+		if (elVariability()) elVariability().value = sim.variability ?? "";
+		if (elGustFreq()) elGustFreq().value = sim.gustFreq ?? "";
+		if (elFanLimit()) elFanLimit().value = sim.fanLimit ?? "";
+		if (elMinFan()) elMinFan().value = sim.minFan ?? "";
+		if (elTurbLen()) elTurbLen().value = sim.turbLenScale ?? "";
+		if (elTurbSig()) elTurbSig().value = sim.turbSigma ?? "";
+		if (elThermStr()) elThermStr().value = sim.thermalStrength ?? "";
+		if (elThermRad()) elThermRad().value = sim.thermalRadius ?? "";
+		
+		// 프리셋 select 동기화
+		//  - option 목록 채운 뒤 반드시 실행
+		//  - sim.presetCode가 option의 value(p.code)와 매칭
+		if (elPreset() && sim.presetCode) {
+			elPreset().value = sim.presetCode;
+		}
+		
+		// ---- Timing ----
+		const timing = (cfg.motion && cfg.motion.timing) ? cfg.motion.timing : cfg.timing;
+		if (timing) {
+			if (elSimInt()) elSimInt().value = timing.simIntervalMs ?? "";
+			if (elGustInt()) elGustInt().value = timing.gustIntervalMs ?? "";
+			if (elThermalInt()) elThermalInt().value = timing.thermalIntervalMs ?? "";
+		}
+		
+		// ---- Security(API Key) ----
+		if (cfg.security && cfg.security.apiKey && !getApiKey()) {
+			setApiKey(cfg.security.apiKey);
+			if (elApiKeyInput()) elApiKeyInput().value = cfg.security.apiKey;
+		}
+		
+		g_configDirty = false;
+		updateDirtyButton();
+	} finally {
+		hideLoading();
 	}
-
-	// ---- PWM HW ----
-	if (cfg.hw && cfg.hw.fanPwm) {
-		if (elPwmPin())     elPwmPin().value     = cfg.hw.fanPwm.pin      ?? "";
-		if (elPwmChannel()) elPwmChannel().value = cfg.hw.fanPwm.channel  ?? "";
-		if (elPwmFreq())    elPwmFreq().value    = cfg.hw.fanPwm.freq     ?? "";
-		if (elPwmRes())     elPwmRes().value     = cfg.hw.fanPwm.res      ?? "";
-	}
-
-	// ---- Motion / Wind ----
-	let motion = null;
-	if (cfg.motion && cfg.motion.current) {
-		motion = cfg.motion.current;
-	} else if (cfg.motion && cfg.motion.active) {
-		motion = cfg.motion.active;
-	} else if (cfg.control && cfg.control.wind) {
-		motion = cfg.control.wind;
-	}
-
-	if (motion) {
-		if (elIntensity())   elIntensity().value   = motion.intensity   ?? "";
-		if (elGustFreq())    elGustFreq().value    = motion.gust_freq   ?? "";
-		if (elVariability()) elVariability().value = motion.variability ?? "";
-		if (elFanLimit())    elFanLimit().value    = motion.fanLimit   ?? "";
-		if (elMinFan())      elMinFan().value      = motion.minFan     ?? "";
-		if (elTurbLen())     elTurbLen().value     = motion.turb_len    ?? "";
-		if (elTurbSig())     elTurbSig().value     = motion.turb_sig    ?? "";
-		if (elThermStr())    elThermStr().value    = motion.therm_str   ?? "";
-		if (elThermRad())    elThermRad().value    = motion.thermalBubbleRadius ?? motion.therm_rad   ?? "";
-	}
-
-	// ---- Timing ----
-	const timing = (cfg.motion && cfg.motion.timing) ? cfg.motion.timing : cfg.timing;
-	if (timing) {
-		if (elSimInt())     elSimInt().value     = timing.simIntervalMs     ?? "";
-		if (elGustInt())    elGustInt().value    = timing.gustIntervalMs    ?? "";
-		if (elThermalInt()) elThermalInt().value = timing.thermalIntervalMs ?? "";
-	}
-
-	loadPresetsFromConfig(cfg);
-
-	// ---- Security(API Key) ----
-	if (cfg.security && cfg.security.apiKey && !getApiKey()) {
-		setApiKey(cfg.security.apiKey);
-		if (elApiKeyInput()) elApiKeyInput().value = cfg.security.apiKey;
-	}
-
-	g_configDirty = false;
-	updateDirtyButton();
-	hideLoading();
 }
+
 
 function loadPresetsFromConfig(cfg) {
 	const sel = elPreset();
@@ -350,27 +357,27 @@ function renderScanList(networks) {
  * 6. 섹션별 메모리 패치 (PATCH)
  * ============================== */
 
-// P010_main_070.js saveMotionPatch
-
 async function saveMotionPatch() {
 	const body = {
-		windIntensity: Number(elIntensity().value || 0),
-		gustFrequency: Number(elGustFreq().value || 0),
-		windVariability: Number(elVariability().value || 0),
-		fanLimit: Number(elFanLimit().value || 0),
-		minFan: Number(elMinFan().value || 0),
-		turbulenceLengthScale: Number(elTurbLen().value || 0),
-		turbulenceIntensitySigma: Number(elTurbSig().value || 0),
-		thermalBubbleStrength: Number(elThermStr().value || 0),
-		thermalBubbleRadius: Number(elThermRad().value || 0),
-		presetCode: elPreset().value || null
+		sim: {
+			presetCode: elPreset().value || null,
+			intensity: Number(elIntensity().value || 0),
+			variability: Number(elVariability().value || 0),
+			gustFreq: Number(elGustFreq().value || 0),
+			fanLimit: Number(elFanLimit().value || 0),
+			minFan: Number(elMinFan().value || 0),
+			turbLenScale: Number(elTurbLen().value || 0),
+			turbSigma: Number(elTurbSig().value || 0),
+			thermalStrength: Number(elThermStr().value || 0),
+			thermalRadius: Number(elThermRad().value || 0)
+		}
 	};
-
+	
 	await apiFetch(SNW_API.API_HTTP_SIMULATION, {
 		method: "POST",
 		body: JSON.stringify(body)
 	}, false, "풍속 설정");
-
+	
 	markDirty();
 }
 
@@ -491,6 +498,22 @@ async function scanWifi() {
 	const list = (data && data.wifi && data.wifi.scan) ? data.wifi.scan : data || [];
 	renderScanList(list);
 	notify("Wi-Fi 스캔 완료", "ok");
+}
+
+async function loadWifiStateOnce() {
+	const data = await apiFetch(SNW_API.API_HTTP_WIFI_STATE, { method: "GET" }, true);
+	if (!data) return;
+	
+	const wifi = (data.wifi && data.wifi.state) ? data.wifi.state : {};
+	
+	const elWM = elWifiMode();
+	if (elWM) elWM.textContent = (wifi.mode_name || wifi.mode || "-").toString();
+	
+	const elWS = elCurSsid();
+	if (elWS) elWS.textContent = wifi.ssid || "-";
+	
+	const elIP = elIp();
+	if (elIP) elIP.textContent = wifi.ip || "-";
 }
 
 function addStaFromScan() {
@@ -633,15 +656,14 @@ function initWebSocketState() {
 
 function handleStateUpdateFromWs(data) {
 	if (!data) return;
-
-	const sim = data.sim || data.motion || data.state || {};
-	const wifi = (data.wifi && data.wifi.state) ? data.wifi.state : data.wifi || {};
-
-	const simActive = sim.active !== undefined ? sim.active : sim.simActive;
-	const phase     = sim.phase !== undefined ? sim.phase : sim.phaseName;
-	const wind      = sim.wind !== undefined ? sim.wind : sim.wind_ms;
-	const pwm       = sim.pwm !== undefined ? sim.pwm : sim.pwm_val;
-
+	
+	const sim = data.sim || {};
+	
+	const simActive = sim.active;
+	const phase = sim.phase;
+	const wind = sim.windSpeed;
+	const pwm = sim.pwmDuty;
+	
 	const elA = elSimActive();
 	if (elA) {
 		if (simActive === true || simActive === 1 || simActive === "on") {
@@ -654,23 +676,24 @@ function handleStateUpdateFromWs(data) {
 			elA.classList.add("err");
 		}
 	}
+	
 	const elP = elPhase();
 	if (elP) elP.textContent = phase != null ? String(phase) : "-";
-
+	
 	const elW = elWind();
 	if (elW) elW.textContent = wind != null ? String(wind) : "-";
-
+	
 	const elPw = elPwm();
 	if (elPw) elPw.textContent = pwm != null ? String(pwm) : "-";
+	
+    // 프리셋 select 동기화
+	//  - dirty 상태에서는 사용자 입력 보호를 위해 동기화 skip
+	//  - dirty 아닐 때만 서버 값으로 맞춤
+	if (elPreset() && sim.presetCode && !g_configDirty) {
+		elPreset().value = sim.presetCode;
+	}
 
-	const elWM = elWifiMode();
-	if (elWM) elWM.textContent = (wifi.mode_name || wifi.mode || "-").toString();
 
-	const elWS = elCurSsid();
-	if (elWS) elWS.textContent = wifi.ssid || "-";
-
-	const elIP = elIp();
-	if (elIP) elIP.textContent = wifi.ip || "-";
 }
 
 /* ==============================
@@ -752,4 +775,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 	await loadFwVersion();
 	await loadConfig();
 	await loadStateOnce();
+	await loadWifiStateOnce(); 
+
+	// ─────────────────────────────────────────────
+	// [WiFi 상태 30초 폴링]
+	//  - /ws/state는 control 정보만 담당 → WiFi는 별도 REST 주기 조회
+	//  - 페이지 이탈 시 clearInterval로 정리
+	// ─────────────────────────────────────────────
+	if (g_wifiStateTimer) clearInterval(g_wifiStateTimer);
+	g_wifiStateTimer = setInterval(loadWifiStateOnce, 30000);
+	
+	// 페이지 이탈 시 정리 (선택: 브라우저 종료에는 미실행되지만 페이지 이동 시 유효)
+	window.addEventListener("beforeunload", () => {
+		if (g_wifiStateTimer) {
+			clearInterval(g_wifiStateTimer);
+			g_wifiStateTimer = null;
+		}
+	});
 });

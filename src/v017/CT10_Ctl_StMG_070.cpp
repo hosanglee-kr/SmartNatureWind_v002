@@ -1,7 +1,7 @@
 // CT10_Ctl_StMG_070.cpp
 
 #include "CT10_Ctl_070.h"
-
+#include "N10_NvsManager_070.h"
 // ======================================================
 // [CT10] Minimal State-Management Patch Set (Function Unit Full)
 // - 추가 목적: "지금 CT10이 왜/무엇을/어떤 소스로 제어 중인지"를 SSOT로 관리
@@ -114,32 +114,66 @@ ST_CT10_Decision_t CL_CT10_ControlManager::decideRunSource() {
         // override는 tickOverride()에서 실제 반영/timeout 처리
         return v_d;
     }
+    
+    // [B-2] AutoOff 래치 우선 처리
+    //  - 트리거 후 사용자 재개 없이는 자동 재진입 차단
+    //  - reason은 onAutoOffTriggered의 값 유지
+    // --------------------------------------------------
+    if (_autoOffLatched) {
+        v_d.nextState     = EN_CT10_STATE_AUTOOFF_STOPPED;
+        v_d.reason        = runCtx.reason;      // 기존 reason 유지
+        v_d.nextRunSource = EN_CT10_RUN_NONE;
+        v_d.wantSimStop   = true;
+        return v_d;
+    }
 
     // --------------------------------------------------
     // 2) ProfileMode 전용
     //   - ProfileMode 켜진 경우 schedule은 항상 배제
     // --------------------------------------------------
+    
     if (useProfileMode) {
         if (runSource == EN_CT10_RUN_USER_PROFILE && curProfileIndex >= 0) {
+            // [B-1] profile motion 검사 (flip-flop 방지)
+            if (g_A20_config_root.userProfiles) {
+                ST_A20_UserProfilesRoot_t& v_up = *g_A20_config_root.userProfiles;
+                if ((uint8_t)curProfileIndex < v_up.count) {
+                    if (isMotionBlocked(v_up.items[(uint8_t)curProfileIndex].motion)) {
+                        v_d.nextState        = EN_CT10_STATE_MOTION_BLOCKED;
+                        v_d.reason           = EN_CT10_REASON_MOTION_NO_PRESENCE;
+                        v_d.nextRunSource    = EN_CT10_RUN_USER_PROFILE;
+                        v_d.nextProfileIndex = curProfileIndex;
+                        v_d.wantSimStop      = true;
+                        return v_d;
+                    }
+                }
+            }
             v_d.nextState        = EN_CT10_STATE_PROFILE_RUN;
             v_d.reason           = EN_CT10_REASON_PROFILE_MODE;
             v_d.nextRunSource    = EN_CT10_RUN_USER_PROFILE;
             v_d.nextProfileIndex = curProfileIndex;
             return v_d;
         }
-
-        // ProfileMode인데 실행할 프로파일 없으면 Idle
-        v_d.nextState     = EN_CT10_STATE_IDLE;
-        v_d.reason        = EN_CT10_REASON_PROFILE_MODE;
-        v_d.nextRunSource = EN_CT10_RUN_NONE;
-        // profileMode에서는 schedule 금지
-        return v_d;
     }
 
     // --------------------------------------------------
     // 3) UserProfile (schedule과 별개로 실행)
     // --------------------------------------------------
     if (runSource == EN_CT10_RUN_USER_PROFILE && curProfileIndex >= 0) {
+        // [B-1] profile motion 검사
+        if (g_A20_config_root.userProfiles) {
+            ST_A20_UserProfilesRoot_t& v_up = *g_A20_config_root.userProfiles;
+            if ((uint8_t)curProfileIndex < v_up.count) {
+                if (isMotionBlocked(v_up.items[(uint8_t)curProfileIndex].motion)) {
+                    v_d.nextState        = EN_CT10_STATE_MOTION_BLOCKED;
+                    v_d.reason           = EN_CT10_REASON_MOTION_NO_PRESENCE;
+                    v_d.nextRunSource    = EN_CT10_RUN_USER_PROFILE;
+                    v_d.nextProfileIndex = curProfileIndex;
+                    v_d.wantSimStop      = true;
+                    return v_d;
+                }
+            }
+        }
         v_d.nextState        = EN_CT10_STATE_PROFILE_RUN;
         v_d.reason           = EN_CT10_REASON_USER_PROFILE_ACTIVE;
         v_d.nextRunSource    = EN_CT10_RUN_USER_PROFILE;
@@ -171,8 +205,20 @@ ST_CT10_Decision_t CL_CT10_ControlManager::decideRunSource() {
 
         // 겹침 허용 기본 (이미 findActiveScheduleIndex에 파라미터 추가 완료)
         int v_activeIdx = findActiveScheduleIndex(v_cfg, true /* overlapAllowed default */);
-
+        
         if (v_activeIdx >= 0) {
+            // [B-1] schedule motion 검사
+            if ((uint8_t)v_activeIdx < v_cfg.count) {
+                ST_A20_ScheduleItem_t& v_s = v_cfg.items[(uint8_t)v_activeIdx];
+                if (isMotionBlocked(v_s.motion)) {
+                    v_d.nextState         = EN_CT10_STATE_MOTION_BLOCKED;
+                    v_d.reason            = EN_CT10_REASON_MOTION_NO_PRESENCE;
+                    v_d.nextRunSource     = EN_CT10_RUN_SCHEDULE;
+                    v_d.nextScheduleIndex = (int8_t)v_activeIdx;
+                    v_d.wantSimStop       = true;
+                    return v_d;
+                }
+            }
             v_d.nextState         = EN_CT10_STATE_SCHEDULE_RUN;
             v_d.reason            = EN_CT10_REASON_SCHEDULE_ACTIVE;
             v_d.nextRunSource     = EN_CT10_RUN_SCHEDULE;
@@ -235,7 +281,7 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
     if (p_d.wantSimStop) {
         if (sim.active) sim.stop();
     }
-
+    
     // 3) source 전환이면 세그먼트 런타임/autoOff 런타임 초기화/재설정
     if (v_sourceChanged) {
         // 공통: 이전 소스에서 빠져나올 때 sim 정지(운영 안전)
@@ -260,6 +306,16 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
                 ST_A20_SchedulesRoot_t& v_cfg = *g_A20_config_root.schedules;
                 if ((uint8_t)curScheduleIndex < v_cfg.count) {
                     initAutoOffFromSchedule(v_cfg.items[(uint8_t)curScheduleIndex]);
+                    
+                    runCtx.activeSchId     = v_cfg.items[(uint8_t)curScheduleIndex].schId;
+                    runCtx.activeSchNo     = v_cfg.items[(uint8_t)curScheduleIndex].schNo;
+                    runCtx.activeProfileNo = 0;
+            
+                    
+                    // [B-3] N10 런타임 저장 (schedule)
+                    CL_N10_NvsManager::setRunMode(1, 0);   // mode=SCHEDULE, source=UNKNOWN(자동)
+                    CL_N10_NvsManager::setLastSchedule((int16_t)v_cfg.items[(uint8_t)curScheduleIndex].schNo);
+
                 } else {
                     memset(&autoOffRt, 0, sizeof(autoOffRt));
                 }
@@ -277,6 +333,11 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
                 ST_A20_UserProfilesRoot_t& v_cfg = *g_A20_config_root.userProfiles;
                 if ((uint8_t)curProfileIndex < v_cfg.count) {
                     initAutoOffFromUserProfile(v_cfg.items[(uint8_t)curProfileIndex]);
+                    
+                    runCtx.activeProfileNo = v_cfg.items[(uint8_t)curProfileIndex].profileNo;
+                    runCtx.activeSchId     = 0;
+                    runCtx.activeSchNo     = 0;
+            
                 } else {
                     memset(&autoOffRt, 0, sizeof(autoOffRt));
                 }
@@ -290,7 +351,7 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
             profileSegRt.index  = -1;
         }
     }
-
+    
     // 4) runCtx 업데이트
     runCtx.state          = p_d.nextState;
     runCtx.reason         = p_d.reason;
@@ -298,15 +359,14 @@ void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
     if (v_stateChanged || v_sourceChanged) {
         runCtx.lastStateChangeMs = runCtx.lastDecisionMs;
     }
-
-    // 5) runCtx에 "현재 선택된 개체 정보" 캐시(웹 상태 출력/디버그용)
-    // - 정책:
-    //   - 일반 상태: 현재 runSource 기준으로 snapshot 갱신
-    //   - TIME_INVALID / AUTOOFF_STOPPED: 마지막 대상 snapshot 유지(단 seg는 0)
-    // --------------------------------------------------
-    if (runCtx.state == EN_CT10_STATE_TIME_INVALID || runCtx.state == EN_CT10_STATE_AUTOOFF_STOPPED) {
-        // 마지막 실행 대상(스케줄/프로필)은 유지
-        // 단, 현재는 정지 상태이므로 seg만 0 (UI 표현 도움)
+    
+    // [Fix-4] TIME_INVALID 진입 시 hold + seg 리셋 (이전 onTimeInvalid 기능 통합)
+    //  - stateHoldUntilMs: 3초 hold (이벤트 상태 UI 표시)
+    //  - activeSegId/No: 0 리셋 (정지 표현)
+    //  - 이미 shouldHoldEventState가 hold 동안 tickLoop을 우회
+    if (v_stateChanged && runCtx.state == EN_CT10_STATE_TIME_INVALID) {
+        runCtx.stateHoldUntilMs = runCtx.lastDecisionMs + S_EVENT_HOLD_MS;
+        runCtx.stateAckRequired = false;
         runCtx.activeSegId = 0;
         runCtx.activeSegNo = 0;
     }

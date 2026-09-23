@@ -1,15 +1,15 @@
 {
   "pages": [
     {
-      "uri": "/P010_main_070.html",
-      "path": "/html_v3/P010_main_070.html",
+      "uri": "/P010_main_071.html",
+      "path": "/html_v3/P010_main_071.html",
       "label": "Main",
       "enable": true,
       "isMain": true,
       "order": 10,
       "pageAssets": [
-        { "uri": "/P010_main_070.css", "path": "/html_v3/P010_main_070.css" },
-        { "uri": "/P010_main_070.js", "path": "/html_v3/P010_main_070.js" }
+        { "uri": "/P010_main_071.css", "path": "/html_v3/P010_main_071.css" },
+        { "uri": "/P010_main_071.js", "path": "/html_v3/P010_main_071.js" }
       ]
     },
     {
@@ -38,64 +38,64 @@
 
     },
     {
-      "uri": "/P040_dashboard_060.html",
-      "path": "/html_v3/P040_dashboard_060.html",
+      "uri": "/P040_dashboard_070.html",
+      "path": "/html_v3/P040_dashboard_070.html",
       "label": "Dashboard",
       "enable": true,
       "isMain": false,
       "order": 40,
       "pageAssets": [
-        { "uri": "/P040_dashboard_060.css", "path": "/html_v3/P040_dashboard_060.css" },
-        { "uri": "/P040_dashboard_061.js", "path": "/html_v3/P040_dashboard_061.js" }
+        { "uri": "/P040_dashboard_070.css", "path": "/html_v3/P040_dashboard_070.css" },
+        { "uri": "/P040_dashboard_070.js", "path": "/html_v3/P040_dashboard_070.js" }
       ]
 
     },
     {
-      "uri": "/P050_chart_t2_060.html",
-      "path": "/html_v3/P050_chart_t2_060.html",
+      "uri": "/P050_chart_t2_070.html",
+      "path": "/html_v3/P050_chart_t2_070.html",
       "label": "Chart T2",
       "enable": true,
       "isMain": false,
       "order": 50,
       "pageAssets": [
-        { "uri": "/P050_chart_t2_060.css", "path": "/html_v3/P050_chart_t2_060.css" },
-        { "uri": "/P050_chart_t2_060.js", "path": "/html_v3/P050_chart_t2_060.js" }
+        { "uri": "/P050_chart_t2_070.css", "path": "/html_v3/P050_chart_t2_070.css" },
+        { "uri": "/P050_chart_t2_070.js", "path": "/html_v3/P050_chart_t2_070.js" }
       ]
     },
     {
-      "uri": "/P060_sim_details_060.html",
-      "path": "/html_v3/P060_sim_details_060.html",
+      "uri": "/P060_sim_details_070.html",
+      "path": "/html_v3/P060_sim_details_070.html",
       "label": "Simulate",
       "enable": true,
       "isMain": false,
       "order": 60,
       "pageAssets": [
-        { "uri": "/P060_sim_details_060.css", "path": "/html_v3/P060_sim_details_060.css" },
-        { "uri": "/P060_sim_details_060.js", "path": "/html_v3/P060_sim_details_060.js" }
+        { "uri": "/P060_sim_details_070.css", "path": "/html_v3/P060_sim_details_070.css" },
+        { "uri": "/P060_sim_details_070.js", "path": "/html_v3/P060_sim_details_070.js" }
       ]
     },
     {
-      "uri": "/P070_profile_060.html",
-      "path": "/html_v3/P070_profile_060.html",
+      "uri": "/P070_profile_070.html",
+      "path": "/html_v3/P070_profile_070.html",
       "label": "Profiles",
       "enable": true,
       "isMain": false,
       "order": 70,
       "pageAssets": [
-        { "uri": "/P070_profile_060.css", "path": "/html_v3/P070_profile_060.css" },
-        { "uri": "/P070_profile_060.js", "path": "/html_v3/P070_profile_060.js" }
+        { "uri": "/P070_profile_070.css", "path": "/html_v3/P070_profile_070.css" },
+        { "uri": "/P070_profile_070.js", "path": "/html_v3/P070_profile_070.js" }
       ]
     },
     {
-      "uri": "/P080_sch_t2_060.html",
-      "path": "/html_v3/P080_sch_t2_060.html",
+      "uri": "/P080_sch_t2_070.html",
+      "path": "/html_v3/P080_sch_t2_070.html",
       "label": "Schedule T2",
       "enable": true,
       "isMain": false,
       "order": 80,
       "pageAssets": [
-        { "uri": "/P080_sch_t2_060.css", "path": "/html_v3/P080_sch_t2_060.css" },
-        { "uri": "/P080_sch_t2_060.js", "path": "/html_v3/P080_sch_t2_060.js" }
+        { "uri": "/P080_sch_t2_070.css", "path": "/html_v3/P080_sch_t2_070.css" },
+        { "uri": "/P080_sch_t2_070.js", "path": "/html_v3/P080_sch_t2_070.js" }
       ]
     },
     {
@@ -123,15 +123,15 @@
       ]
     },
     {
-      "uri": "/P100_settings_060.html",
-      "path": "/html_v3/P100_settings_060.html",
+      "uri": "/P100_settings_071.html",
+      "path": "/html_v3/P100_settings_071.html",
       "label": "System",
       "enable": true,
       "isMain": false,
       "order": 100,
       "pageAssets": [
-        { "uri": "/P100_settings_060.css", "path": "/html_v3/P100_settings_060.css" },
-        { "uri": "/P100_settings_060.js", "path": "/html_v3/P100_settings_060.js" }
+        { "uri": "/P100_settings_071.css", "path": "/html_v3/P100_settings_071.css" },
+        { "uri": "/P100_settings_071.js", "path": "/html_v3/P100_settings_071.js" }
       ]
     },
     {
@@ -154,19 +154,18 @@
     }
   ],
   "reDirect": [
-    { "uriFrom": "/", "uriTo": "/P010_main_070.html" },
-    { "uriFrom": "/index.html", "uriTo": "/P010_main_070.html" },
-    { "uriFrom": "/P010_main", "uriTo": "/P010_main_070.html" },
+    { "uriFrom": "/", "uriTo": "/P010_main_071.html" },
+    { "uriFrom": "/index.html", "uriTo": "/P010_main_071.html" },
+    { "uriFrom": "/main", "uriTo": "/P010_main_071.html" },
     { "uriFrom": "/dashboard", "uriTo": "/P040_dashboard_070.html" },
-    { "uriFrom": "/P040_dashboard", "uriTo": "/P040_dashboard_060.html" },
     { "uriFrom": "/chart_t1", "uriTo": "/P020_chart_t1_070.html" },
-    { "uriFrom": "/chart_t2", "uriTo": "/P050_chart_t2_060.html" },
-    { "uriFrom": "/profiles", "uriTo": "/P070_profile_060.html" },
+    { "uriFrom": "/chart_t2", "uriTo": "/P050_chart_t2_070.html" },
+    { "uriFrom": "/profiles", "uriTo": "/P070_profile_070.html" },
     { "uriFrom": "/schedules_t1", "uriTo": "/P030_sch_t1_070.html" },
-    { "uriFrom": "/schedules_t2", "uriTo": "/P080_sch_t2_060.html" },
+    { "uriFrom": "/schedules_t2", "uriTo": "/P080_sch_t2_070.html" },
     { "uriFrom": "/userProfile_t2", "uriTo": "/P085_userProfiles_t2_060.html" },
-    { "uriFrom": "/settings", "uriTo": "/P100_settings_060.html" },
-    { "uriFrom": "/sim_details", "uriTo": "/P060_sim_details_060.html" },
+    { "uriFrom": "/settings", "uriTo": "/P100_settings_071.html" },
+    { "uriFrom": "/sim_details", "uriTo": "/P060_sim_details_070.html" },
     { "uriFrom": "/info", "uriTo": "/P090_user_060.html" }
   ],
   "assets": [

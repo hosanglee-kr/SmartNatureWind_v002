@@ -43,7 +43,11 @@
 #include <new>
 
 #include "C10_Config_070.h"
-// #include "A40_Com_Func_047.h"   // A40_IO, CL_A40_MutexGuard_Semaphore
+
+// [o-2] explicit include (A20_Const_070.h에서 제거됨)
+#include "A25_Com_Utils_070.h"     // A40_ComFunc / A40_IO / CL_A40_MutexGuard_Semaphore
+#include "A23_Com_ResetCfg_070.h"  // A20_resetXxxDefault (내부적으로 A25 재포함)
+
 
 // ------------------------------------------------------
 // 전역 Config Root 정의
@@ -71,6 +75,14 @@ ST_A20_cfg_jsonFile_t CL_C10_ConfigManager::s_cfgJsonFileMap{};
 SemaphoreHandle_t CL_C10_ConfigManager::s_recursiveMutex = nullptr;
 
 portMUX_TYPE CL_C10_ConfigManager::s_rootSwapMux = portMUX_INITIALIZER_UNLOCKED;
+
+// [E-1] pending free 큐 정의
+ST_A20_ConfigRoot_t CL_C10_ConfigManager::s_pendingFree[CL_C10_ConfigManager::PENDING_FREE_SLOTS] = {};
+uint32_t            CL_C10_ConfigManager::s_pendingFreeMs[CL_C10_ConfigManager::PENDING_FREE_SLOTS] = {0, 0};
+uint8_t             CL_C10_ConfigManager::s_pendingFreeCount = 0;
+
+// [F-1] pending 큐 보호 portMUX
+portMUX_TYPE CL_C10_ConfigManager::s_pendingFreeMux = portMUX_INITIALIZER_UNLOCKED;
 
 
 // =====================================================
@@ -355,6 +367,84 @@ void CL_C10_ConfigManager::freeAll(ST_A20_ConfigRoot_t& p_root) {
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] All config objects freed");
 }
 
+// =====================================================
+// [E-1] pending free 큐 (지연 free)
+// [F-1] portMUX 기반 (C10 recursive mutex 실패 시 leak 방지)
+// =====================================================
+
+void CL_C10_ConfigManager::queuePendingFree(const ST_A20_ConfigRoot_t& p_old) {
+    // [F-1] 단일 critical section: full 처리 + 신규 등록
+    //  - 두 CS 분리 시 사이에 다른 태스크 진입 → 배열 오버플로우 위험
+    //  - freeAll만 critical 밖으로 분리
+    ST_A20_ConfigRoot_t v_oldest;
+    memset(&v_oldest, 0, sizeof(v_oldest));
+    bool v_hasOldest = false;
+    uint8_t v_newCount = 0;
+
+    portENTER_CRITICAL(&s_pendingFreeMux);
+
+    if (s_pendingFreeCount >= PENDING_FREE_SLOTS) {
+        // 슬롯 full: oldest 분리
+        v_oldest    = s_pendingFree[0];
+        v_hasOldest = true;
+
+        for (uint8_t i = 1; i < PENDING_FREE_SLOTS; i++) {
+            s_pendingFree[i - 1]   = s_pendingFree[i];
+            s_pendingFreeMs[i - 1] = s_pendingFreeMs[i];
+        }
+        s_pendingFreeCount = PENDING_FREE_SLOTS - 1;
+    }
+
+    // 신규 등록 (같은 CS 안에서)
+    s_pendingFree[s_pendingFreeCount]   = p_old;
+    s_pendingFreeMs[s_pendingFreeCount] = millis();
+    s_pendingFreeCount++;
+    v_newCount = s_pendingFreeCount;
+
+    portEXIT_CRITICAL(&s_pendingFreeMux);
+
+    // critical 밖: oldest free (오래 걸림)
+    if (v_hasOldest) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] pending queue full → oldest freed immediately");
+        freeAll(v_oldest);
+    }
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] pending free queued (count=%u)", v_newCount);
+}
+
+void CL_C10_ConfigManager::processPendingFree() {
+    // [F-1] grace 경과 항목을 로컬 배열로 옮긴 후 critical 밖에서 free
+    ST_A20_ConfigRoot_t v_expired[PENDING_FREE_SLOTS];
+    memset(v_expired, 0, sizeof(v_expired));
+    uint8_t v_expiredCount = 0;
+
+    uint32_t v_now = millis();
+
+    // [F-1] critical section: expired 분리 + compaction
+    portENTER_CRITICAL(&s_pendingFreeMux);
+    uint8_t v_keep = 0;
+    for (uint8_t i = 0; i < s_pendingFreeCount; i++) {
+        if (v_now - s_pendingFreeMs[i] >= PENDING_FREE_GRACE_MS) {
+            v_expired[v_expiredCount++] = s_pendingFree[i];
+            memset(&s_pendingFree[i], 0, sizeof(s_pendingFree[i]));
+        } else {
+            if (v_keep != i) {
+                s_pendingFree[v_keep]   = s_pendingFree[i];
+                s_pendingFreeMs[v_keep] = s_pendingFreeMs[i];
+            }
+            v_keep++;
+        }
+    }
+    s_pendingFreeCount = v_keep;
+    portEXIT_CRITICAL(&s_pendingFreeMux);
+
+    // critical 밖: 실제 free
+    for (uint8_t i = 0; i < v_expiredCount; i++) {
+        freeAll(v_expired[i]);
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] pending free executed (idx=%u)", i);
+    }
+}
+
 // -----------------------------------------------------
 // Dirty Config 저장
 //  - 실제로 저장된 섹션 수/실패 수 기반으로 로그 출력
@@ -392,33 +482,35 @@ bool CL_C10_ConfigManager::saveDirtyConfigs() {
             CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] dirty-save failed: %s", p_name);
         }
     };
+    
+    
 
     // =====================================================
     // 섹션별 저장 (람다 wrapper)
     // =====================================================
     auto saveSystem_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveSystemConfig(*reinterpret_cast<const ST_A20_SystemConfig_t*>(p));
+        return CL_C10_ConfigManager::saveSystemConfig(*static_cast<const ST_A20_SystemConfig_t*>(p));
     };
     auto saveWifi_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveWifiConfig(*reinterpret_cast<const ST_A20_WifiConfig_t*>(p));
+        return CL_C10_ConfigManager::saveWifiConfig(*static_cast<const ST_A20_WifiConfig_t*>(p));
     };
     auto saveMotion_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveMotionConfig(*reinterpret_cast<const ST_A20_MotionConfig_t*>(p));
+        return CL_C10_ConfigManager::saveMotionConfig(*static_cast<const ST_A20_MotionConfig_t*>(p));
     };
     auto saveNvs_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveNvsSpecConfig(*reinterpret_cast<const ST_A20_NvsSpecConfig_t*>(p));
+        return CL_C10_ConfigManager::saveNvsSpecConfig(*static_cast<const ST_A20_NvsSpecConfig_t*>(p));
     };
     auto saveSchedules_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveSchedules(*reinterpret_cast<const ST_A20_SchedulesRoot_t*>(p));
+        return CL_C10_ConfigManager::saveSchedules(*static_cast<const ST_A20_SchedulesRoot_t*>(p));
     };
     auto saveUserProfiles_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveUserProfiles(*reinterpret_cast<const ST_A20_UserProfilesRoot_t*>(p));
+        return CL_C10_ConfigManager::saveUserProfiles(*static_cast<const ST_A20_UserProfilesRoot_t*>(p));
     };
     auto saveWind_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveWindDict(*reinterpret_cast<const ST_A20_WindDict_t*>(p));
+        return CL_C10_ConfigManager::saveWindDict(*static_cast<const ST_A20_WindDict_t*>(p));
     };
     auto saveWeb_wrap = [](const void* p) -> bool {
-        return CL_C10_ConfigManager::saveWebPageConfig(*reinterpret_cast<const ST_A20_WebPageConfig_t*>(p));
+        return CL_C10_ConfigManager::saveWebPageConfig(*static_cast<const ST_A20_WebPageConfig_t*>(p));
     };
 
     // =====================================================

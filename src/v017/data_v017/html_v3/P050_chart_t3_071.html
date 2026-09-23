@@ -1,0 +1,394 @@
+<!-- P050_chart_t3_071.html -->
+
+<!doctype html>
+<html lang="ko">
+
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+	<title>🌬️ Smart Nature Wind 차트 모니터링 T3</title>
+
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.umd.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+
+	<link rel="stylesheet" href="./P000_common_071.css">
+	<link rel="stylesheet" href="./P050_chart_t3_071.css">
+</head>
+
+<body>
+
+	<!-- Chart Crosshair Context Overlay -->
+	<div id="chartContextOverlay" class="chart-context-overlay" style="display:none;">
+		<div class="cco-row cco-time" id="ccoTime">--:--:--</div>
+		<div class="cco-row"><span class="cco-lb">💨 풍속</span><span id="ccoWind">-</span> <span class="cco-sep">·</span> <span class="cco-lb">PWM</span><span id="ccoPwm">-</span></div>
+		<div class="cco-row"><span class="cco-lb">🎨 프리셋</span><span id="ccoPreset">-</span> <span class="cco-sep">·</span> <span class="cco-lb">스타일</span><span id="ccoStyle">-</span></div>
+		<div class="cco-row"><span class="cco-lb">⚡</span><span id="ccoEvents">-</span></div>
+		<div class="cco-row cco-ev-row" id="ccoEventRow" style="display:none;">
+			<span class="cco-lb">📍 이벤트</span><span id="ccoEventMsg">-</span>
+		</div>
+	</div>
+
+	<header class="nav-bar">
+		<div class="nav-container">
+			<a href="/" class="nav-logo">Smart Nature Wind</a>
+			<nav>
+				<ul class="nav-menu" id="navMenu"></ul>
+			</nav>
+		</div>
+	</header>
+
+	<div class="wrap">
+		<h1>🌬️ 차트 모니터링 T3 (실시간 데이터)</h1>
+
+		<!-- ═══════════════════════════════════════════════════ -->
+		<!-- 1. 요약 카드 -->
+		<!-- ═══════════════════════════════════════════════════ -->
+		<section class="card summary-card col-12">
+			<div class="summary-grid">
+				<div class="summary-item preset-item">
+					<div class="summary-label">프리셋</div>
+					<div class="summary-value" id="sumPreset">-</div>
+					<div class="summary-sub" id="sumPresetCode">-</div>
+				</div>
+
+				<div class="summary-item style-item">
+					<div class="summary-label">스타일</div>
+					<div class="summary-value" id="sumStyle">-</div>
+					<div class="summary-sub" id="sumStyleCode">-</div>
+				</div>
+
+				<div class="summary-item state-item">
+					<div class="summary-label">제어 상태</div>
+					<div class="summary-value">
+						<span id="sumCtlState" class="info-label info">-</span>
+					</div>
+					<div class="summary-sub" id="sumRunTarget">-</div>
+				</div>
+
+				<div class="summary-item sensor-item">
+					<div class="summary-label">센서</div>
+					<div class="summary-value" id="sumSensor">-</div>
+					<div class="summary-sub" id="sumUptime">-</div>
+				</div>
+			</div>
+
+			<!-- ═══════════════════════════════════════════════════ -->
+			<!-- 실행 컨텍스트 히스토리 미니맵 (신규) -->
+			<!-- ═══════════════════════════════════════════════════ -->
+			<div class="context-minimap-wrapper">
+				<div class="cmm-header">
+					<span class="cmm-label" id="cmmLabel">🕒 실행 컨텍스트</span>
+					<div class="cmm-right">
+						<div class="cmm-window-toggle">
+							<button class="btn btn-small active" data-cmm-window="30">30분</button>
+							<button class="btn btn-small"        data-cmm-window="60">1시간</button>
+							<button class="btn btn-small"        data-cmm-window="180">3시간</button>
+						</div>
+						<span class="cmm-hint">블록 클릭 = 차트 이동</span>
+					</div>
+				</div>
+
+				<div class="cmm-timeline" id="cmmTimeline">
+					<div class="cmm-empty">데이터 수집 중...</div>
+				</div>
+
+				<div class="cmm-axis" id="cmmAxis">
+					<span>-30분</span>
+					<span>-20분</span>
+					<span>-10분</span>
+					<span>현재</span>
+				</div>
+
+				<!-- ═══════════════════════════════════════════════════ -->
+				<!-- 프리셋 사용 통계 (신규) -->
+				<!-- ═══════════════════════════════════════════════════ -->
+				<div class="cmm-stats-wrapper">
+					<div class="cmm-stats-header">
+						<span class="cmm-label">📊 프리셋 사용 통계</span>
+						<span id="cmmStatWindow" class="info-label info">최근 30분</span>
+					</div>
+					<div class="cmm-stats-grid" id="cmmStatsGrid">
+						<div class="cmm-stat-empty">데이터 수집 중...</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- ═══════════════════════════════════════════════════ -->
+		<!-- 2. 설정값 vs 실제 적용값 비교 테이블 -->
+		<!-- ═══════════════════════════════════════════════════ -->
+		<section class="card compare-card col-12">
+			<div class="row middle">
+				<strong class="section-title">⚙️ 설정값 vs 실제 적용값</strong>
+				<div class="right">
+					<span id="compareTimestamp" class="muted">-</span>
+				</div>
+			</div>
+
+			<div class="compare-grid">
+				<!-- 🎯 Target -->
+				<div class="compare-col">
+					<h4>🎯 설정 (Target)</h4>
+					<table class="compare-table">
+						<tr><td>강도</td>           <td id="setIntensity">-</td></tr>
+						<tr><td>가변성</td>         <td id="setVariability">-</td></tr>
+						<tr><td>돌풍 빈도</td>      <td id="setGustFreq">-</td></tr>
+						<tr><td>팬 최대</td>        <td id="setFanLimit">-</td></tr>
+						<tr><td>팬 최소</td>        <td id="setMinFan">-</td></tr>
+						<tr><td>난류 σ</td>         <td id="setTurbSigma">-</td></tr>
+						<tr><td>열기포 세기</td>    <td id="setThermalStr">-</td></tr>
+						<tr><td>목표 풍속</td>      <td id="setWindTarget">-</td></tr>
+					</table>
+				</div>
+
+				<!-- 📊 Applied -->
+				<div class="compare-col">
+					<h4>📊 실제 (Applied)</h4>
+					<table class="compare-table">
+						<tr><td>강도</td>           <td id="appIntensity">-</td></tr>
+						<tr><td>가변성</td>         <td id="appVariability">-</td></tr>
+						<tr><td>돌풍 빈도</td>      <td id="appGustFreq">-</td></tr>
+						<tr><td>팬 최대</td>        <td id="appFanLimit">-</td></tr>
+						<tr><td>팬 최소</td>        <td id="appMinFan">-</td></tr>
+						<tr><td>난류 σ</td>         <td id="appTurbSigma">-</td></tr>
+						<tr><td>열기포 세기</td>    <td id="appThermalStr">-</td></tr>
+						<tr><td>실제 풍속</td>      <td id="appWindActual">-</td></tr>
+					</table>
+				</div>
+
+				<!-- ⚡ PWM / 상태 -->
+				<div class="compare-col">
+					<h4>⚡ PWM / 상태</h4>
+					<table class="compare-table">
+						<tr><td>PWM Duty</td>       <td id="appPwmDuty">-</td></tr>
+						<tr><td>Phase</td>          <td id="appPhase">-</td></tr>
+						<tr><td>돌풍</td>           <td id="appGust">-</td></tr>
+						<tr><td>열기포</td>         <td id="appThermal">-</td></tr>
+						<tr><td>시뮬 Active</td>    <td id="appSimActive">-</td></tr>
+						<tr><td>Override</td>       <td id="appOverride">-</td></tr>
+						<tr><td>센서 (온/습)</td>   <td id="appSensorTempHum">-</td></tr>
+						<tr><td>모션</td>           <td id="appMotion">-</td></tr>
+					</table>
+				</div>
+			</div>
+		</section>
+
+		<!-- ═══════════════════════════════════════════════════ -->
+		<!-- 2-1. 이벤트 히스토리 + 통계 -->
+		<!-- ═══════════════════════════════════════════════════ -->
+		<section class="card events-card col-12">
+			<div class="row middle">
+				<strong class="section-title">📋 이벤트 히스토리 & 통계</strong>
+				<div class="right">
+					<div class="log-filter-group">
+						<button class="btn btn-small active" data-evt-filter="all">전체</button>
+						<button class="btn btn-small" data-evt-filter="warn">WARN+</button>
+						<button class="btn btn-small" data-evt-filter="err">ERROR</button>
+					</div>
+					<button class="btn btn-small" id="btnClearEvents">🗑 초기화</button>
+					<button class="btn btn-small" id="btnExportEvents">📥 내보내기</button>
+				</div>
+			</div>
+
+			<div class="events-grid">
+				<!-- 좌: 이벤트 리스트 -->
+				<div class="events-list-container">
+					<div class="events-list-header">
+						<span>시각</span>
+						<span>레벨</span>
+						<span>이벤트</span>
+					</div>
+					<div id="eventList" class="events-list">
+						<div class="muted events-empty">이벤트 없음 — 실시간 대기 중...</div>
+					</div>
+					<div class="events-footer">
+						<span id="eventCount">0</span> / 100 개
+					</div>
+				</div>
+
+				<!-- 우: 이벤트 통계 -->
+				<div class="events-stats">
+					<h4>최근 1시간 통계</h4>
+					<table class="stats-table">
+						<tr>
+							<td>🛑 AutoOff</td>
+							<td id="statAutoOff">0</td>
+						</tr>
+						<tr>
+							<td>👤 Motion Blocked</td>
+							<td id="statMotion">0</td>
+						</tr>
+						<tr>
+							<td>🎬 Override 시작</td>
+							<td id="statOverride">0</td>
+						</tr>
+						<tr>
+							<td>🔥 Gust</td>
+							<td id="statGust">0</td>
+						</tr>
+						<tr>
+							<td>♨️ Thermal</td>
+							<td id="statThermal">0</td>
+						</tr>
+						<tr>
+							<td>🎨 프리셋 변경</td>
+							<td id="statPreset">0</td>
+						</tr>
+						<tr>
+							<td>⏰ 시간 미동기</td>
+							<td id="statTimeInvalid">0</td>
+						</tr>
+						<tr class="stats-total-row">
+							<td>총 이벤트</td>
+							<td id="statTotal">0</td>
+						</tr>
+					</table>
+					<div class="stats-window" id="statsWindow">-</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- ═══════════════════════════════════════════════════ -->
+		<!-- 3. 실시간 제어 패널 -->
+		<!-- ═══════════════════════════════════════════════════ -->
+		<section class="card control-panel col-12">
+			<div class="row middle">
+				<strong class="section-title">실시간 모니터링 제어</strong>
+				<div class="right tight">
+					<span class="info-label info" id="refreshInfo">🕒 WebSocket 연결 중...</span>
+					<button class="btn ok" id="btnResume">▶ 재개</button>
+					<button class="btn warn" id="btnPause">⏸ 일시정지</button>
+					<button class="btn" id="btnResetZoomAll">🔍 줌 초기화</button>
+					<button class="btn ok" id="btnToggleMarkers">📍 이벤트 마커 ON</button>
+				</div>
+			</div>
+
+			<!-- 이벤트 마커 범례 -->
+			<div class="marker-legend">
+				<span class="mk-label">이벤트 마커:</span>
+				<span class="mk-item"><span class="mk-dot" style="background:#e74c3c"></span>ERR</span>
+				<span class="mk-item"><span class="mk-dot" style="background:#f39c12"></span>WARN</span>
+				<span class="mk-item"><span class="mk-dot" style="background:#3498db"></span>INFO</span>
+				<span class="mk-item"><span class="mk-dot" style="background:#95a5a6"></span>DEBUG</span>
+				<span class="mk-hint">※ 마커 클릭 = 리스트 참조 · ESC = 해제</span>
+				<span class="mk-active-hint"></span>
+			</div>
+		</section>
+
+		<!-- ═══════════════════════════════════════════════════ -->
+		<!-- 4. 차트 8종 -->
+		<!-- ═══════════════════════════════════════════════════ -->
+		<section class="chart-section">
+			<div class="grid chart-grid">
+
+				<!-- 1. 풍속 / PWM -->
+				<div class="chart-container col-6">
+					<div class="chart-header">
+						<h3>💨 풍속 / PWM Duty</h3>
+						<button class="btn-toggle">▲</button>
+					</div>
+					<div class="chart-content">
+						<canvas id="chartWind"></canvas>
+					</div>
+				</div>
+
+				<!-- 2. Target vs Actual -->
+				<div class="chart-container col-6">
+					<div class="chart-header">
+						<h3>🎯 목표 vs 실제 풍속</h3>
+						<button class="btn-toggle">▲</button>
+					</div>
+					<div class="chart-content">
+						<canvas id="chartTargetActual"></canvas>
+					</div>
+				</div>
+
+				<!-- 3. 프리셋 & 스타일 -->
+				<div class="chart-container col-6">
+					<div class="chart-header">
+						<h3>🎨 프리셋 & 스타일 이력</h3>
+						<button class="btn-toggle">▲</button>
+					</div>
+					<div class="chart-content">
+						<canvas id="chartPresetStyle"></canvas>
+					</div>
+				</div>
+
+				<!-- 4. 핵심 매개변수 -->
+				<div class="chart-container col-6">
+					<div class="chart-header">
+						<h3>🎛️ 핵심 매개변수 (Intensity / Variability / Fan)</h3>
+						<button class="btn-toggle">▲</button>
+					</div>
+					<div class="chart-content">
+						<canvas id="chartParams"></canvas>
+					</div>
+				</div>
+
+				<!-- 5. 난류 / 열기포 -->
+				<div class="chart-container col-6">
+					<div class="chart-header">
+						<h3>🌪️ 난류 / 열기포</h3>
+						<button class="btn-toggle">▲</button>
+					</div>
+					<div class="chart-content">
+						<canvas id="chartTurbThermSig"></canvas>
+					</div>
+				</div>
+
+				<!-- 6. 이벤트 -->
+				<div class="chart-container col-6">
+					<div class="chart-header">
+						<h3>⚡ 이벤트 (Gust / Thermal)</h3>
+						<button class="btn-toggle">▲</button>
+					</div>
+					<div class="chart-content">
+						<canvas id="chartEvents"></canvas>
+					</div>
+				</div>
+
+				<!-- 7. 타이밍 -->
+				<div class="chart-container col-6">
+					<div class="chart-header">
+						<h3>⏱️ 시뮬레이션 타이밍</h3>
+						<button class="btn-toggle">▲</button>
+					</div>
+					<div class="chart-content">
+						<canvas id="chartTiming"></canvas>
+					</div>
+				</div>
+
+				<!-- 8. 센서 -->
+				<div class="chart-container col-6">
+					<div class="chart-header">
+						<h3>🌡️ 센서 (온도 / 습도)</h3>
+						<button class="btn-toggle">▲</button>
+					</div>
+					<div class="chart-content">
+						<canvas id="chartSensor"></canvas>
+						<div class="sensor-placeholder" id="sensorPlaceholder">
+							센서 데이터 스트림 대기 중...
+						</div>
+					</div>
+				</div>
+
+			</div>
+		</section>
+
+		<div class="hr"></div>
+		<div class="muted">© 2540.kr SmartNatureWind (T3 Chart Monitor v010)</div>
+	</div>
+
+	<div id="loadingOverlay" style="display:none;">
+		<div class="spinner"></div>
+	</div>
+	<div id="toastContainer"></div>
+
+	<script src="./P000_common_071.js" defer></script>
+	<script src="./P001_comm_API_071.js" defer></script>
+	<script src="./P050_chart_t3_071.js" defer></script>
+</body>
+
+</html>

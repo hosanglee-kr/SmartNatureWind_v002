@@ -18,9 +18,41 @@
 
 // 외부 종속성 헤더 포함
 #include "A20_Const_070.h"
+
+// [o-2] explicit include (A20_Const_070.h에서 제거됨)
+#include "A25_Com_Utils_070.h"     // A40_ComFunc / A40_IO / CL_A40_MutexGuard_Semaphore
+#include "A22_Com_Lookup_070.h"    // A20_modeFromString / A20_findPresetIndexByCode
+
 #include "C10_Config_070.h"
 #include "D10_Logger_070.h"
 #include "P10_PWM_ctrl_070.h"
+
+// ==================================================
+// [Epoch] millis() → epoch ms 변환 헬퍼
+//  - SNTP sync 완료 시점에 base 캡처
+//  - SNTP 미동기화 동안은 p_okOut=false (차트 버퍼 push 스킵)
+//  - rolling buffer(120개)이므로 base 캡처 후 drift 무시 가능
+// ==================================================
+#include <time.h>
+
+static uint64_t S10_millis2EpochMs(uint32_t p_millis, bool* p_okOut) {
+    static time_t   s_baseSec = 0;
+    static uint32_t s_baseMs  = 0;
+
+    if (s_baseSec == 0) {
+        time_t v_now = time(nullptr);
+        if (v_now > 1700000000) {          // 2023-11-15 이후 = SNTP sync 완료
+            s_baseSec = v_now;
+            s_baseMs  = p_millis;
+        } else {
+            if (p_okOut) *p_okOut = false;
+            return 0;
+        }
+    }
+
+    if (p_okOut) *p_okOut = true;
+    return (uint64_t)s_baseSec * 1000ULL + (uint64_t)(p_millis - s_baseMs);
+}
 
 // ==================================================
 // 초기화 / 정지 / 리셋
@@ -36,17 +68,64 @@ void CL_S10_Simulation::begin(CL_P10_PWM& p_pwm) {
     if (_recursiveMutex == nullptr) {
         _recursiveMutex = xSemaphoreCreateRecursiveMutex();
     }
+    
+    // [b-2] ring buffer 초기화
+    s_chartHead  = 0;
+    s_chartCount = 0;
+    // s_chartBuffer[]는 POD이고 write-then-read 순서이므로 memset 불필요
 
     // fanConfig 스냅샷 초기화
     _fanCfgSnap = nullptr;
 
     resetDefaults();
+    
+    // Config override
+    //  - g_root.motion->sim 이 로드되어 있으면 런타임 값 덮어쓰기
+    //  - C10::loadAll 후에 S10::begin이 호출되므로 안전
+    if (g_A20_config_root.motion) {
+        const ST_A20_MotSimCfg_t& v_src = g_A20_config_root.motion->sim;
+
+        userIntensity   = A40_ComFunc::clampVal<float>(v_src.intensity,   0.0f, 100.0f);
+        userVariability = A40_ComFunc::clampVal<float>(v_src.variability, 0.0f, 100.0f);
+        userGustFreq    = A40_ComFunc::clampVal<float>(v_src.gustFreq,    0.0f, 100.0f);
+        fanLimitPct     = A40_ComFunc::clampVal<float>(v_src.fanLimit,    0.0f, 100.0f);
+        minFanPct       = A40_ComFunc::clampVal<float>(v_src.minFan,      0.0f, 100.0f);
+        turbSigma       = v_src.turbSigma;
+        turbLenScale    = v_src.turbLenScale;
+        thermalStrength = v_src.thermalStrength;
+        thermalRadius   = v_src.thermalRadius;
+        fanPowerEnabled = v_src.fanPowerEnabled;
+
+        if (v_src.presetCode[0]) {
+            memset(presetCode, 0, sizeof(presetCode));
+            strlcpy(presetCode, v_src.presetCode, sizeof(presetCode));
+        }
+        if (v_src.styleCode[0]) {
+            memset(styleCode, 0, sizeof(styleCode));
+            strlcpy(styleCode, v_src.styleCode, sizeof(styleCode));
+        }
+        
+        // preset core + phase 재적용
+        //  - resetDefaults()에서 OCEAN 기준으로 초기화된 물리 파라미터를
+        //    config의 presetCode 기준으로 재계산
+        //  - baseMinWind / baseMaxWind / gustProbBase /
+        //    gustStrengthMax / thermalFreqBase 갱신
+        //  - initPhaseFromBase()로 phaseMinWind/phaseMaxWind 재설정
+        applyPresetCore(presetCode);
+        initPhaseFromBase();
+    
+
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
+                           "[S10] Config applied: preset=%s intensity=%.1f",
+                           presetCode, userIntensity);
+    }
 
     // 풍속 이력 버퍼(history) 초기화 및 인덱스 리셋 (평균 풍속 계산용)
     memset(history, 0, sizeof(history));
     historyIndex  = 0;
     historyCount  = 0;
     avgWindCached = 0.0f;
+    sumWindHistory = 0.0f;   // [b-1] 추가
 
     // ESP32 HW RNG 호출(시드/지터 유도)
     (void)esp_random();
@@ -170,11 +249,8 @@ void CL_S10_Simulation::tick() {
         return; // 반환 타입 bool인 경우 false 반환
     }
 
-    // portENTER_CRITICAL(&_flagSpinlock);
-
     // 1) 비활성 상태면 종료
     if (!active) {
-        // // portEXIT_CRITICAL(&_flagSpinlock);
         return;
     }
 
@@ -199,7 +275,7 @@ void CL_S10_Simulation::tick() {
     const uint32_t v_minIntervalMs = v_baseMs + v_jitterMs;
 
     if (_tickNowMs - lastUpdateMs < (unsigned long)v_minIntervalMs) {
-        // portEXIT_CRITICAL(&_flagSpinlock);
+    
         return;
     }
 
@@ -263,34 +339,38 @@ void CL_S10_Simulation::tick() {
         v_bc_delta      = v_delta;
         v_bc_phase      = phase;
     }
-
-    // 15) 차트 샘플링(1Hz / 이벤트 중 2Hz)
+    
+    // 15) 차트 샘플링 (1Hz / 이벤트 중 2Hz)
     const uint32_t v_chartIntervalMs = (gustActive || thermalActive) ? G_S10_CHART_HZ2_MS : G_S10_CHART_HZ1_MS;
+    
+    //  [b-2] + [Epoch] epoch ms 전환
     if (_tickNowMs - s_lastChartLogMs > (unsigned long)v_chartIntervalMs) {
-        if (s_chartBuffer.size() >= 120) {
-            s_chartBuffer.pop_front();
+        s_lastChartLogMs = _tickNowMs;   // interval 타이머는 millis로 유지
+    
+        // SNTP sync 여부 확인 (미동기화 시 버퍼 push 스킵)
+        bool     v_epochOk = false;
+        uint64_t v_epochMs = S10_millis2EpochMs(_tickNowMs, &v_epochOk);
+    
+        if (v_epochOk) {
+            ST_ChartEntry v_e{};
+            v_e.timestamp        = v_epochMs;              // ← epoch ms
+            v_e.wind_speed       = currentWindSpeed;
+            v_e.target_wind      = targetWindSpeed;        // [신규] Target vs Actual
+            v_e.pwm_duty         = _pwm ? _pwm->P10_getDutyPercent() : 0.0f;
+            v_e.intensity        = userIntensity;
+            v_e.variability      = userVariability;
+            v_e.turbulence_sigma = turbSigma;
+            v_e.preset_index     = static_cast<uint8_t>(A20_getStaticPresetIndexByCode(presetCode));
+            v_e.gust_active      = gustActive;
+            v_e.thermal_active   = thermalActive;
+    
+            // ring push
+            s_chartBuffer[s_chartHead] = v_e;
+            s_chartHead = (uint8_t)((s_chartHead + 1u) % CHART_CAPACITY);
+            if (s_chartCount < CHART_CAPACITY) s_chartCount++;
         }
-
-        ST_ChartEntry v_e{};
-        v_e.timestamp        = _tickNowMs;
-        v_e.wind_speed       = currentWindSpeed;
-        v_e.pwm_duty         = _pwm ? _pwm->P10_getDutyPercent() : 0.0f;
-        v_e.intensity        = userIntensity;
-        v_e.variability      = userVariability;
-        v_e.turbulence_sigma = turbSigma;
-
-        // presetCode(문자열)를 기반으로 정적 인덱스를 안전하게 추출
-        v_e.preset_index = static_cast<uint8_t>(A20_getStaticPresetIndexByCode(presetCode));
-        // v_e.preset_index	 = (uint8_t)A20_getPresetIndexByCode(presetCode);
-
-        v_e.gust_active    = gustActive;
-        v_e.thermal_active = thermalActive;
-
-        s_chartBuffer.push_back(v_e);
-        s_lastChartLogMs = _tickNowMs;
     }
 
-    // portEXIT_CRITICAL(&_flagSpinlock);
 
     // ---- (B) 락 밖에서 브로드캐스트 수행 ----
     if (v_needBroadcast) {
@@ -331,8 +411,6 @@ void CL_S10_Simulation::applyResolvedWind(const ST_A20_ResolvedWind_t& p_resolve
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[S10] %s: Mutex timeout", __func__);
         return; // 반환 타입 bool인 경우 false 반환
     }
-
-    // portENTER_CRITICAL(&_flagSpinlock);
 
     // 시간 캡처(Phase 초기화 시 사용하는 _tickNowSec 일관성 보장)
     _tickNowMs  = millis();
@@ -395,8 +473,6 @@ void CL_S10_Simulation::applyResolvedWind(const ST_A20_ResolvedWind_t& p_resolve
 
     // 새 목표 생성
     generateTarget();
-
-    // portEXIT_CRITICAL(&_flagSpinlock);
 }
 
 /**

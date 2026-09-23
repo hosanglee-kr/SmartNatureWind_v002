@@ -46,6 +46,17 @@
 
 #include "D10_Logger_070.h"
 
+// [o] self-sufficient: A20_Const_070.h 경유 없이도 단독 include 가능
+//  - A40_ComFunc::copyStr2Buffer_safe
+//  - A20_Const::* 상수 및 ST_A20_* 전체 타입
+#include "A20_Const_Const_070.h"
+#include "A20_Const_WS_070.h"
+#include "A20_Const_Wifi_070.h"
+#include "A20_Const_Motion_070.h"
+#include "A20_Const_Sch_070.h"
+#include "A20_Const_Sys_070.h"
+#include "A25_Com_Utils_070.h"
+
 // NOTE:
 // - 본 헤더는 A20_Const_070.h에서 include하여 사용합니다.
 // - A20_Const_070.h에 정의된 타입/상수/전역(예: A20_Const::*, ST_A20_*, EN_A20_*)에 의존합니다.
@@ -426,6 +437,26 @@ inline void A20_resetMotionDefault(ST_A20_MotionConfig_t& p_cfg) {
     p_cfg.timing.simIntervalMs     = 500;
     p_cfg.timing.gustIntervalMs    = 2000;
     p_cfg.timing.thermalIntervalMs = 3000;
+    
+
+    // sim — S10 resetDefaults()와 동일한 기본값
+    A40_ComFunc::copyStr2Buffer_safe(p_cfg.sim.presetCode,
+        G_A20_WindPreset_Arr[EN_A20_WINDPRESET_OCEAN].code,
+        sizeof(p_cfg.sim.presetCode));
+    A40_ComFunc::copyStr2Buffer_safe(p_cfg.sim.styleCode,
+        G_A20_WindStyle_Arr[EN_A20_WINDSTYLE_BALANCE].code,
+        sizeof(p_cfg.sim.styleCode));
+    p_cfg.sim.fanPowerEnabled = true;
+    p_cfg.sim.intensity       = 70.0f;
+    p_cfg.sim.variability     = 50.0f;
+    p_cfg.sim.gustFreq        = 45.0f;
+    p_cfg.sim.fanLimit        = 90.0f;
+    p_cfg.sim.minFan          = 10.0f;
+    p_cfg.sim.turbSigma       = 0.5f;
+    p_cfg.sim.turbLenScale    = 40.0f;
+    p_cfg.sim.thermalStrength = 2.0f;
+    p_cfg.sim.thermalRadius   = 18.0f;
+
 }
 
 
@@ -605,24 +636,27 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
         p_cfg.pageCount = 1;
 
         ST_A20_PageItem_t& v_p = p_cfg.pages[0];
-        A40_ComFunc::copyStr2Buffer_safe(v_p.uri,   "/P010_main_021.html",       sizeof(v_p.uri));
-        A40_ComFunc::copyStr2Buffer_safe(v_p.path,  "/html_v2/P010_main_021.html", sizeof(v_p.path));
+        A40_ComFunc::copyStr2Buffer_safe(v_p.uri,   "/P010_main_071.html",       sizeof(v_p.uri));
+        A40_ComFunc::copyStr2Buffer_safe(v_p.path,  "/html_v3/P010_main_071.html", sizeof(v_p.path));
         A40_ComFunc::copyStr2Buffer_safe(v_p.label, "Main",                     sizeof(v_p.label));
         v_p.enable = true;
         v_p.isMain = true;
         v_p.order  = 10;
 
         v_p.pageAssetCount = 0;
-        if (A20_Const::MAX_PAGE_ASSETS >= 1) {
-            ST_A20_PageAsset_t& v_a0 = v_p.pageAssets[v_p.pageAssetCount++];
-            A40_ComFunc::copyStr2Buffer_safe(v_a0.uri,  "/P010_main_021.css", sizeof(v_a0.uri));
-            A40_ComFunc::copyStr2Buffer_safe(v_a0.path, "/html_v2/P010_main_021.css", sizeof(v_a0.path));
-        }
-        if (A20_Const::MAX_PAGE_ASSETS >= 2) {
-            ST_A20_PageAsset_t& v_a1 = v_p.pageAssets[v_p.pageAssetCount++];
-            A40_ComFunc::copyStr2Buffer_safe(v_a1.uri,  "/P010_main_021.js", sizeof(v_a1.uri));
-            A40_ComFunc::copyStr2Buffer_safe(v_a1.path, "/html_v2/P010_main_021.js", sizeof(v_a1.path));
-        }
+        auto v_addPageAsset = [&](const char* p_uri, const char* p_path) {
+            if (v_p.pageAssetCount >= A20_Const::MAX_PAGE_ASSETS) return;
+            ST_A20_PageAsset_t& v_a = v_p.pageAssets[v_p.pageAssetCount++];
+            A40_ComFunc::copyStr2Buffer_safe(v_a.uri,  p_uri,  sizeof(v_a.uri));
+            A40_ComFunc::copyStr2Buffer_safe(v_a.path, p_path, sizeof(v_a.path));
+        };
+        v_addPageAsset("/P010_main_071.css",        "/html_v3/P010_main_071.css");
+        v_addPageAsset("/P010_main_core_071.js",   "/html_v3/P010_main_core_071.js");
+        v_addPageAsset("/P010_main_preset_071.js", "/html_v3/P010_main_preset_071.js");
+        v_addPageAsset("/P010_main_ws_071.js",     "/html_v3/P010_main_ws_071.js");
+        v_addPageAsset("/P010_main_wifi_071.js",   "/html_v3/P010_main_wifi_071.js");
+        v_addPageAsset("/P010_main_misc_071.js",   "/html_v3/P010_main_misc_071.js");
+        v_addPageAsset("/P010_main_071.js",        "/html_v3/P010_main_071.js");
     }
 
     // redirect 추가(내부 유틸)
@@ -633,9 +667,9 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
         A40_ComFunc::copyStr2Buffer_safe(v_r.uriTo,   p_to,   sizeof(v_r.uriTo));
     };
 
-    v_addRedirect("/",          "/P010_main_021.html");
-    v_addRedirect("/index.html","/P010_main_021.html");
-    v_addRedirect("/P010_main", "/P010_main_021.html");
+    v_addRedirect("/",          "/P010_main_071.html");
+    v_addRedirect("/index.html","/P010_main_071.html");
+    v_addRedirect("/P010_main", "/P010_main_071.html");
 
     // common asset 추가(내부 유틸)
     auto v_addCommonAsset = [&](const char* p_uri, const char* p_path, bool p_isCommon) {
@@ -646,9 +680,11 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
         v_c.isCommon = p_isCommon;
     };
 
-    v_addCommonAsset("/P000_common_001.css", "/html_v2/P000_common_001.css", true);
-    v_addCommonAsset("/P000_common_006.js",  "/html_v2/P000_common_006.js",  true);
+    v_addCommonAsset("/P000_common_071.css", "/html_v3/P000_common_071.css", true);
+    v_addCommonAsset("/P000_common_071.js",  "/html_v3/P000_common_071.js",  true);
+    v_addCommonAsset("/P001_comm_API_071.js", "/html_v3/P001_comm_API_071.js", true);
 }
+
 
 
 

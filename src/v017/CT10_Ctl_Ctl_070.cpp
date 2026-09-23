@@ -2,7 +2,7 @@
  * ------------------------------------------------------
  * 소스명 : CT10_Ctl_Ctl_070.cpp
  * 모듈약어 : CT10
- * 모듈명 : Smart Nature Wind 제어 통합 Manager (v050, Control)
+ * 모듈명 : Smart Nature Wind 제어 통합 Manager (Control)
  * ------------------------------------------------------
  * 기능 요약:
  * - begin/tick 및 Override/Profile/Schedule 제어 루프 구현
@@ -17,6 +17,11 @@
  */
 
 #include "CT10_Ctl_070.h"
+
+// [o-2] explicit include (A20_Const_070.h에서 제거됨)
+#include "A25_Com_Utils_070.h"     // A40_ComFunc / A40_IO / CL_A40_MutexGuard_Semaphore
+
+#include "N10_NvsManager_070.h"
 
 // --------------------------------------------------
 // [CT10] runCtx snapshot helpers (최소)
@@ -61,6 +66,7 @@ void CL_CT10_ControlManager::clearManual() {
     instance().stopOverride();
 }
 
+
 bool CL_CT10_ControlManager::reloadAll() {
     // [A-min] 새 root를 로컬에 로드 (기존 g_A20_config_root는 손대지 않음)
     ST_A20_ConfigRoot_t v_new;
@@ -96,6 +102,19 @@ bool CL_CT10_ControlManager::reloadAll() {
     memset(&v_inst.scheduleSegRt, 0, sizeof(v_inst.scheduleSegRt));
     memset(&v_inst.profileSegRt,  0, sizeof(v_inst.profileSegRt));
     memset(&v_inst.runCtx,        0, sizeof(v_inst.runCtx));
+    
+    // [A-2] 영속 필드 리셋 (설정 재적용이므로 offTime 트리거 이력 초기화)
+    v_inst._persistOffTimeLastYday = -1;
+    
+    // [B-2] AutoOff 래치 리셋 (설정 재적용)
+    v_inst._autoOffLatched = false;
+    
+    // [C-3] N10 런타임 상태 리셋 (설정 재적용)
+    //  - reload는 설정 전면 교체이므로 이전 NVS 런타임 무효
+    //  - 즉시 flush(true)로 NVS 반영
+    //  - [Policy] 부팅 복원은 하지 않으므로 N10 상태는 순수 "정보 기록" 목적
+    //    → reload 시에도 이전 상태 초기화가 정합적
+    CL_N10_NvsManager::resetRuntime();
 
     v_inst.scheduleSegRt.index = -1;
     v_inst.profileSegRt.index  = -1;
@@ -112,10 +131,13 @@ bool CL_CT10_ControlManager::reloadAll() {
     v_inst.markDirty("metrics");
     
     // [A-min] CT10 mutex 해제 후 구버전 root 해제
-    //  - freeAll은 C10 mutex를 별도 획득 (중첩 없음)
-    //  - CT10 mutex hold 시간 최소화 (다른 태스크 블록 방지)
+    //  - [E-1] 즉시 free 하지 않고 pending 큐에 등록 (W10 reader UAF 방지)
+    //  - processPendingFree()가 grace(3초) 경과 후 실제 free
+    //  - 사유: W10 GET이 getRootSnapshot 후 toJson 실행 사이에 v_old 참조
+    //          → 즉시 free 시 dangling pointer 접근
     v_guard.unlock();
-    CL_C10_ConfigManager::freeAll(v_old);
+    CL_C10_ConfigManager::queuePendingFree(v_old);
+    
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] reloadAll done");
     return true;
@@ -196,6 +218,9 @@ void CL_CT10_ControlManager::setProfileMode(bool p_profileMode) {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return;
     
+    // [B-2] 사용자 모드 변경 → AutoOff 래치 해제
+    _autoOffLatched = false;
+    
     useProfileMode = p_profileMode;
 
     if (!p_profileMode) {
@@ -226,6 +251,9 @@ bool CL_CT10_ControlManager::startUserProfileByNo(uint16_t p_profileNo) {
         if (!v_p.enabled) continue;
 
         if (v_p.profileNo == p_profileNo) {
+            // [B-2] 사용자 프로파일 시작 → AutoOff 래치 해제
+            _autoOffLatched = false;
+            
             runSource                  = EN_CT10_RUN_USER_PROFILE;
             curProfileIndex            = (int8_t)v_i;
 
@@ -235,6 +263,10 @@ bool CL_CT10_ControlManager::startUserProfileByNo(uint16_t p_profileNo) {
             profileSegRt.loopCount     = 0;
 
             initAutoOffFromUserProfile(v_p);
+            
+            // [B-3] N10 런타임 상태 저장 (profile)
+            CL_N10_NvsManager::setRunMode(2, 2);   // mode=USER_PROFILE, source=WEB
+            CL_N10_NvsManager::setLastUserProfile((int16_t)p_profileNo);
 
             // UI 혼선 방지: 스케줄 인덱스는 프로필 구동 시 무의미
             curScheduleIndex = -1;
@@ -263,6 +295,9 @@ void CL_CT10_ControlManager::stopUserProfile() {
     profileSegRt.index = -1;
 
     sim.stop();
+    
+    // [B-3] N10 런타임 상태 저장 (OFF)
+    CL_N10_NvsManager::setRunMode(0, 2);
 
     markDirty("state");
     markDirty("metrics");
@@ -273,28 +308,40 @@ void CL_CT10_ControlManager::stopUserProfile() {
 // --------------------------------------------------
 // override
 // --------------------------------------------------
-void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seconds) {
-
+void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seconds, bool p_forever) {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return;
-    
+
+    _autoOffLatched = false;
+
     memset(&overrideState, 0, sizeof(overrideState));
-    overrideState.active        = true;
-    overrideState.useFixed      = true;
-    overrideState.fixedPercent  = constrain(p_percent, 0.0f, 100.0f);
-    overrideState.endMs         = (p_seconds > 0) ? (millis() + (p_seconds * 1000UL)) : 0;
+    overrideState.active       = true;
+    overrideState.useFixed     = true;
+    overrideState.fixedPercent = constrain(p_percent, 0.0f, 100.0f);
+
+    if (p_forever) {
+        overrideState.endMs = 0;                    // 0 = 무제한
+    } else {
+        uint32_t v_sec = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
+        overrideState.endMs = millis() + (v_sec * 1000UL);
+    }
 
     markDirty("state");
     markDirty("metrics");
 
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Override FIXED %.1f%% (sec=%lu)",
-                       overrideState.fixedPercent, (unsigned long)p_seconds);
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Override FIXED %.1f%% (%s)",
+                       overrideState.fixedPercent,
+                       p_forever ? "forever" : "timed");
+
+    CL_N10_NvsManager::setOverrideFixed(true, overrideState.fixedPercent);
 }
+
 
 void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
                                                  const char* p_styleCode,
                                                  const ST_A20_AdjustDelta_t* p_adj,
-                                                 uint32_t p_seconds) {
+                                                 uint32_t p_seconds,
+                                                 bool p_forever) {
     if (!g_A20_config_root.windDict) return;
 
     ST_A20_ResolvedWind_t v_resolved;
@@ -314,23 +361,26 @@ void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
         return;
     }
 
-    applyManualResolved(v_resolved, p_seconds);
+    applyManualResolved(v_resolved, p_seconds, p_forever);
 }
 
-void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds) {
-
+void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_wind,
+                                                 uint32_t p_seconds,
+                                                 bool p_forever) {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return;
-    
+
     if (!p_wind.valid) {
         CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] applyManual: invalid ResolvedWind");
         return;
     }
 
     if (p_wind.fixedMode) {
-        startOverrideFixed(p_wind.fixedSpeed, p_seconds);
+        startOverrideFixed(p_wind.fixedSpeed, p_seconds, p_forever);
         return;
     }
+
+    _autoOffLatched = false;
 
     memset(&overrideState, 0, sizeof(overrideState));
     overrideState.active          = true;
@@ -338,17 +388,25 @@ void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_
     overrideState.resolvedApplied = false;
     overrideState.fixedPercent    = 0.0f;
     overrideState.resolved        = p_wind;
-    overrideState.endMs           = (p_seconds > 0) ? (millis() + (p_seconds * 1000UL)) : 0;
+
+    if (p_forever) {
+        overrideState.endMs = 0;
+    } else {
+        uint32_t v_sec = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
+        overrideState.endMs = millis() + (v_sec * 1000UL);
+    }
 
     markDirty("state");
     markDirty("metrics");
     markDirty("chart");
 
     CL_D10_Logger::log(EN_L10_LOG_INFO,
-                       "[CT10] applyManual: preset=%s style=%s (sec=%lu)",
+                       "[CT10] applyManual: preset=%s style=%s (%s)",
                        p_wind.presetCode,
                        p_wind.styleCode,
-                       (unsigned long)p_seconds);
+                       p_forever ? "forever" : "timed");
+
+    CL_N10_NvsManager::setOverridePreset(true, p_wind.presetCode, p_wind.styleCode);
 }
 
 void CL_CT10_ControlManager::stopOverride() {
@@ -358,12 +416,59 @@ void CL_CT10_ControlManager::stopOverride() {
     if (!overrideState.active) return;
 
     memset(&overrideState, 0, sizeof(overrideState));
-
+    
+    // [B-3] N10 override 해제
+    CL_N10_NvsManager::clearOverride();
+    
     markDirty("state");
     markDirty("metrics");
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Override cleared");
 }
+
+// --------------------------------------------------
+// config(g_root.motion->sim) → S10 runtime 반영
+//  - W10 routeMotion의 patch 후 호출
+// --------------------------------------------------
+void CL_CT10_ControlManager::applyMotionSimConfigToSim() {
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
+        return;
+    }
+
+    if (!g_A20_config_root.motion) return;
+
+    const ST_A20_MotSimCfg_t& v_src = g_A20_config_root.motion->sim;
+
+    sim.userIntensity   = A40_ComFunc::clampVal<float>(v_src.intensity,   0.0f, 100.0f);
+    sim.userVariability = A40_ComFunc::clampVal<float>(v_src.variability, 0.0f, 100.0f);
+    sim.userGustFreq    = A40_ComFunc::clampVal<float>(v_src.gustFreq,    0.0f, 100.0f);
+    sim.fanLimitPct     = A40_ComFunc::clampVal<float>(v_src.fanLimit,    0.0f, 100.0f);
+    sim.minFanPct       = A40_ComFunc::clampVal<float>(v_src.minFan,      0.0f, 100.0f);
+    sim.turbSigma       = v_src.turbSigma;
+    sim.turbLenScale    = v_src.turbLenScale;
+    sim.thermalStrength = v_src.thermalStrength;
+    sim.thermalRadius   = v_src.thermalRadius;
+    sim.fanPowerEnabled = v_src.fanPowerEnabled;
+
+    if (v_src.presetCode[0]) {
+        memset(sim.presetCode, 0, sizeof(sim.presetCode));
+        strlcpy(sim.presetCode, v_src.presetCode, sizeof(sim.presetCode));
+    }
+    
+    sim.reapplyPresetCore();
+    
+    if (v_src.styleCode[0]) {
+        memset(sim.styleCode, 0, sizeof(sim.styleCode));
+        strlcpy(sim.styleCode, v_src.styleCode, sizeof(sim.styleCode));
+    }
+
+    CL_D10_Logger::log(EN_L10_LOG_DEBUG,
+                       "[CT10] S10 runtime updated from motion.sim (intensity=%.1f)",
+                       sim.userIntensity);
+}
+
 
 // --------------------------------------------------
 // tick loop
@@ -373,7 +478,8 @@ void CL_CT10_ControlManager::tickLoop() {
     // [B-1b] tickLoop 최상단 락 (loopTask 진입점, 재귀 mutex)
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[CT10] %s: Mutex timeout", __func__);
+        // [E-3] reloadAll 등 정상 상황에서도 발생 → DEBUG 하향
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -435,10 +541,20 @@ void CL_CT10_ControlManager::tickLoop() {
     maybePushMetricsDirty();
 }
 
-
-
 // --------------------------------------------------
 // override tick
+// --------------------------------------------------
+// [Policy] Override 중 AutoOff
+//  - 본 함수는 checkAutoOff를 호출하지 않는다.
+//  - Override는 사용자 명시적 개입 → AutoOff 조건보다 우선.
+//  - Override 종료 후 원 소스 재진입 시 AutoOff 재평가.
+//  - AutoOff(특히 offTemp)가 override 중 무시되어도 팬 가동은 안전 방향.
+//
+// [E-7] Override 중 Motion
+//  - 본 함수는 isMotionBlocked를 호출하지 않는다.
+//  - decideRunSource가 Override를 1순위로 반환 → motion 검사 skip.
+//  - 정책: 사용자 override > motion presence gate.
+//  - Override 종료 후 decide가 motion 재평가 → MOTION_BLOCKED 가능.
 // --------------------------------------------------
 bool CL_CT10_ControlManager::tickOverride() {
     if (!overrideState.active)
@@ -503,12 +619,6 @@ bool CL_CT10_ControlManager::tickUserProfile() {
         return true;
     }
 
-    // Motion blocked (이벤트성 상태 전환)
-    if (isMotionBlocked(v_profile.motion)) {
-        onMotionBlocked(EN_CT10_REASON_MOTION_NO_PRESENCE);
-        return true;
-    }
-
     // state/reason은 SSOT(applyDecision)에서만
     
     return tickSegmentSequence(
@@ -539,12 +649,6 @@ bool CL_CT10_ControlManager::tickSchedule() {
     EN_CT10_reason_t v_reason = EN_CT10_REASON_NONE;
     if (checkAutoOff(&v_reason)) {
         onAutoOffTriggered(v_reason);
-        return true;
-    }
-
-    // Motion blocked (이벤트성 상태 전환)
-    if (isMotionBlocked(v_schedule.motion)) {
-        onMotionBlocked(EN_CT10_REASON_MOTION_NO_PRESENCE);
         return true;
     }
 
@@ -590,7 +694,17 @@ bool CL_CT10_ControlManager::tickSegmentSequence(bool p_repeat,
     }
 
     ST_A20_ScheduleSegment_t& v_seg = p_segs[(uint8_t)p_rt.index];
-
+    
+    // [B-1] self-heal: MOTION_BLOCKED 등으로 sim이 죽어있으면 onPhase에 대해 재적용
+    //  - 이전: motion 해제 후 segRt.index >= 0 유지 → tickSegmentSequence 초기 분기 skip
+    //         → applySegmentOn 미호출 → sim 영구 정지
+    //  - 이후: onPhase && !sim.active 시 즉시 재적용
+    //  - phaseStartMs는 유지 (타이머 계속 진행)
+    if (p_rt.onPhase && !sim.active) {
+        applySegmentOn(v_seg);
+        return true;
+    }
+    
     uint32_t v_onMs  = (uint32_t)v_seg.onMinutes  * 60000UL;
     uint32_t v_offMs = (uint32_t)v_seg.offMinutes * 60000UL;
 
@@ -656,6 +770,16 @@ bool CL_CT10_ControlManager::tickSegmentSequence(bool p_repeat,
     }
 
     ST_A20_UserProfileSegment_t& v_seg = p_segs[(uint8_t)p_rt.index];
+    
+    // [B-1] self-heal: MOTION_BLOCKED 등으로 sim이 죽어있으면 onPhase에 대해 재적용
+    //  - 이전: motion 해제 후 segRt.index >= 0 유지 → tickSegmentSequence 초기 분기 skip
+    //         → applySegmentOn 미호출 → sim 영구 정지
+    //  - 이후: onPhase && !sim.active 시 즉시 재적용
+    //  - phaseStartMs는 유지 (타이머 계속 진행)
+    if (p_rt.onPhase && !sim.active) {
+        applySegmentOn(v_seg);
+        return true;
+    }
 
     uint32_t v_onMs  = (uint32_t)v_seg.onMinutes  * 60000UL;
     uint32_t v_offMs = (uint32_t)v_seg.offMinutes * 60000UL;

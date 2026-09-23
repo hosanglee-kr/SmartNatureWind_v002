@@ -17,6 +17,25 @@
  * - diffOnly 모드 지원 (WebSocket/REST 효율 전송)
  * - Phase 변화 또는 급격한 풍속 변화 시 실시간 WebSocket 브로드캐스트
  * - C10_ControlManager 및 W10_WebAPI와 완전 호환 구조
+ // ------------------------------------------------------
+// [Policy] g_A20_config_root 접근 정책 (E-6)
+//  - S10 내부에서 g_A20_config_root.* 에 접근하는 경로:
+//    * tick()           : g_root.motion->timing.*
+//    * toChartJson()    : g_root.motion->timing.*
+//    * applyPresetCore(): (직접 접근 없음, 인자로 dict 전달)
+//  - 접근 보호 전제:
+//    * S10은 CT10 mutex 하에서만 호출되어야 한다.
+//      - tick()           : CT10::tickLoop 내부 (s_stateMutex 보유)
+//      - toChartJson()    : CT10::exportChartJson 내부 (s_stateMutex 보유)
+//    * 직접 호출 경로 (W10 routeSimulation POST 등)는
+//      config 스냅샷을 사용하거나 CT10 mutex를 획득해야 한다.
+//  - reloadAll과의 경합:
+//    * reloadAll은 C10 mutex + CT10 mutex + s_rootSwapMux로 보호
+//    * S10의 g_root.motion 접근은 CT10 mutex 하에서만 발생
+//      → freeAll(지연) 시에도 dangling 없음 (E-1 grace)
+//  - [주의] 향후 새 호출 경로 추가 시 반드시 위 전제 유지.
+// ======================================================
+
  * ------------------------------------------------------
  * [구현 규칙]
  * - 항상 소스 시작 주석 부분 체계 유지 및 내용 업데이트
@@ -34,8 +53,8 @@
  * - type                  : T_모듈약어_ 접두사
  * - typedef               : _t  접미사
  * - enum 상수             : EN_모듈약어_ 접두사
- * - 구조체                : ST_모듈약어_ 접미사
- * - 클래스명              : CL_모듈약어_ 접미사
+ * - 구조체                : ST_모듈약어_ 접두사
+ * - 클래스명              : CL_모듈약어_ 접두사
  * - 클래스 private 멤버   : _ 접두사
  * - 클래스 멤버(함수/변수) : 모듈약어 접두사 미사용
  * - 클래스 정적 멤버      : s_ 접두사
@@ -51,7 +70,6 @@
 #include <string.h>
 
 #include <cmath>
-#include <deque>
 
 #include "A20_Const_070.h"
 #include "C10_Config_070.h"
@@ -145,27 +163,42 @@ class CL_S10_Simulation {
 	float				 history[HISTORY_SIZE];
 	uint8_t				 historyIndex  = 0;
 	uint8_t				 historyCount  = 0;
-	float				 avgWindCached = 0.0f;
+	float                 avgWindCached = 0.0f;
+    // [b-1] O(1) 평균 유지용 running sum
+	float                 sumWindHistory = 0.0f;
 
-	struct ST_ChartEntry {
-		unsigned long timestamp;
-		float		  wind_speed;
-		float		  pwm_duty;
-		float		  intensity;
-		float		  variability;
-		float		  turbulence_sigma;
-		uint8_t		  preset_index;
-		bool		  gust_active;
-		bool		  thermal_active;
+	 struct ST_ChartEntry {
+		uint64_t      timestamp;   // [Epoch] epoch ms (SNTP sync 후)
+	    float         wind_speed;
+	    float         target_wind; // [신규] 목표 풍속 (Target vs Actual 차트용)
+	    float         pwm_duty;
+	    float         intensity;
+	    float         variability;
+	    float         turbulence_sigma;
+	    uint8_t       preset_index;
+	    bool          gust_active;
+	    bool          thermal_active;
 	};
-	static std::deque<ST_ChartEntry> s_chartBuffer;
-	static unsigned long			 s_lastChartLogMs;
-	static unsigned long			 s_lastChartSampleMs;
+	
+	// [b-2] deque → ring buffer (힙 단편화 제거)
+	static const uint8_t CHART_CAPACITY = 120;
+	
+	// (static 멤버 정의로 이관)
+	static ST_ChartEntry s_chartBuffer[CHART_CAPACITY];
+	static uint8_t       s_chartHead;
+	static uint8_t       s_chartCount;
+	static unsigned long s_lastChartLogMs;
+	static unsigned long s_lastChartSampleMs;
 
   public:
 	void begin(CL_P10_PWM& p_pwm);
 	void stop();
 	void resetDefaults();
+	
+	void reapplyPresetCore() {
+	    applyPresetCore(presetCode);
+	    initPhaseFromBase();
+	}
 
 	void tick();
 	void applyResolvedWind(const ST_A20_ResolvedWind_t& p_resolved);
@@ -182,8 +215,7 @@ class CL_S10_Simulation {
 	const ST_A20_FanConfig_t* 	_fanCfgSnap 		= nullptr;
 
 	SemaphoreHandle_t 			_recursiveMutex 	= nullptr;
-	portMUX_TYPE			  	_flagSpinlock	  	= portMUX_INITIALIZER_UNLOCKED; // _flagMutex
-
+	
 	unsigned long			  	_tickNowMs  	= 0;
 	float					  	_tickNowSec 	= 0.0f;
 

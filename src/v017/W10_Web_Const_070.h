@@ -35,6 +35,7 @@ constexpr const char* HTTP_API_SYSTEM  = HTTP_API_BASE "/system";
 
 // constexpr const char* HTTP_API_WIFI             = HTTP_API_BASE "/wifi";
 constexpr const char* HTTP_API_WIFI_SCAN   = HTTP_API_BASE "/wifi/scan";
+constexpr const char* HTTP_API_WIFI_STATE  = HTTP_API_BASE "/wifi/state";   // ← 신규
 constexpr const char* HTTP_API_WIFI_CONFIG = HTTP_API_BASE "/wifi/config";
 
 constexpr const char* HTTP_API_DIAG      = HTTP_API_BASE "/diag";

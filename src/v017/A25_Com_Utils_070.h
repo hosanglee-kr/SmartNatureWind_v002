@@ -579,6 +579,109 @@ inline bool Load_File2JsonDoc_V21(const char* p_path, JsonDocument& p_doc, bool 
     char bak[A20_Const::LEN_PATH + 8];
     if (!_buildPathWithSuffix(bak, sizeof(bak), p_path, ".bak", v_caller)) return false;
 
+    // [l] bak.old 경로 준비 (A-4 이중 백업과 대응)
+    //  - Save 성공 시 bak.old는 삭제됨
+    //  - 정전/실패 시 bak.old 잔존 가능 → 로드 fallback 2순위로 사용
+    char bakOld[A20_Const::LEN_PATH + 12];
+    const bool v_haveBakOld = _buildPathWithSuffix(bakOld, sizeof(bakOld), p_path, ".bak.old", v_caller);
+
+    // -------------------------------------------------
+    // (1) p_path 미존재 → bak → bak.old 순
+    // -------------------------------------------------
+    if (!LittleFS.exists(p_path)) {
+        // 1순위: bak
+        if (p_useBackup && LittleFS.exists(bak)) {
+            p_doc.clear();
+            if (_parseJsonFileToDoc(bak, p_doc, true, v_caller)) {
+                if (LittleFS.rename(bak, p_path)) {
+                    CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] restored from bak: %s", v_caller, p_path);
+                } else {
+                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] restore rename failed: %s -> %s", v_caller, bak, p_path);
+                }
+                return true;
+            }
+        }
+
+        // [l] 2순위: bak.old (직접 p_path로 rename)
+        if (p_useBackup && v_haveBakOld && LittleFS.exists(bakOld)) {
+            p_doc.clear();
+            if (_parseJsonFileToDoc(bakOld, p_doc, true, v_caller)) {
+                if (LittleFS.rename(bakOld, p_path)) {
+                    CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] restored from bak.old: %s", v_caller, p_path);
+                } else {
+                    CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                                       "[IO][%s] restore from bak.old failed: %s -> %s",
+                                       v_caller, bakOld, p_path);
+                }
+                return true;
+            }
+        }
+
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[IO][%s] file not found: %s", v_caller, p_path);
+        return false;
+    }
+
+    // -------------------------------------------------
+    // (2) p_path 정상 파싱 시도
+    // -------------------------------------------------
+    p_doc.clear();
+    if (_parseJsonFileToDoc(p_path, p_doc, false, v_caller)) {
+        return true;
+    }
+
+    // -------------------------------------------------
+    // (3) p_path 손상 → bak → bak.old 순
+    // -------------------------------------------------
+    // 1순위: bak
+    if (p_useBackup && LittleFS.exists(bak)) {
+        p_doc.clear();
+        if (_parseJsonFileToDoc(bak, p_doc, true, v_caller)) {
+            if (!LittleFS.remove(p_path)) {
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] main remove failed (continue): %s", v_caller, p_path);
+            }
+            if (LittleFS.rename(bak, p_path)) {
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] recovered from bak: %s", v_caller, p_path);
+            } else {
+                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] recover rename failed: %s -> %s", v_caller, bak, p_path);
+            }
+            return true;
+        }
+    }
+
+    // [l] 2순위: bak.old
+    if (p_useBackup && v_haveBakOld && LittleFS.exists(bakOld)) {
+        p_doc.clear();
+        if (_parseJsonFileToDoc(bakOld, p_doc, true, v_caller)) {
+            if (!LittleFS.remove(p_path)) {
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] main remove failed (continue): %s", v_caller, p_path);
+            }
+            if (LittleFS.rename(bakOld, p_path)) {
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[IO][%s] recovered from bak.old: %s", v_caller, p_path);
+            } else {
+                CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                                   "[IO][%s] recover rename failed (bak.old): %s -> %s",
+                                   v_caller, bakOld, p_path);
+            }
+            return true;
+        }
+    }
+
+    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] load failed: %s", v_caller, p_path);
+    return false;
+}
+
+/*
+inline bool Load_File2JsonDoc_V21(const char* p_path, JsonDocument& p_doc, bool p_useBackup, const char* p_caller = nullptr) {
+    const char* v_caller = _A40__callerOrUnknown(p_caller);
+
+    if (!p_path || !p_path[0]) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] invalid path", v_caller);
+        return false;
+    }
+
+    char bak[A20_Const::LEN_PATH + 8];
+    if (!_buildPathWithSuffix(bak, sizeof(bak), p_path, ".bak", v_caller)) return false;
+
     if (!LittleFS.exists(p_path)) {
         if (p_useBackup && LittleFS.exists(bak)) {
             p_doc.clear();
@@ -618,6 +721,7 @@ inline bool Load_File2JsonDoc_V21(const char* p_path, JsonDocument& p_doc, bool 
     CL_D10_Logger::log(EN_L10_LOG_ERROR, "[IO][%s] load failed: %s", v_caller, p_path);
     return false;
 }
+*/
 
 // [IO] JsonDocument -> 파일 저장(.tmp atomic + .bak 옵션)
 //

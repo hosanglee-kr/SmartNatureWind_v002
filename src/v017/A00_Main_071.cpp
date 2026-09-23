@@ -1,59 +1,69 @@
-#pragma once
 /*
  * ------------------------------------------------------
- * 소스명 : A00_Main_070.h
+ * 소스명 : A00_Main_071.cpp
  * 모듈 약어 : A00
- * 모듈명 : Smart Nature Wind Main Entrypoint
+ * 모듈명 : Smart Nature Wind Main Entrypoint (Implementation)
  * ------------------------------------------------------
  * 기능 요약:
- * - OTA 제외 모든 보완 사항 적용 버전
- * - 모션센서, Watchdog, FactoryReset, LittleFS WebUI 포함
- * - Wi-Fi LED 상태표시 및 완전 초기화 지원
- * - [Refactored] CT10의 제어 상태 변경 시 브로드캐스트 책임을 위임받음
+ * - A00_init(): 시스템 부팅 시퀀스 (LittleFS → Config → NVS → WiFi
+ *               → Time → PWM → Control → Motion → Web → WS → WDT)
+ * - A00_run() : 메인 루프 (CT10 tick, WS tick, TM10 tick,
+ *               pending free 처리, LED 상태 갱신)
+ * - 전역 인스턴스 정의 (헤더 extern에 대응)
+ * ------------------------------------------------------
+ * [분리 이력 (Track 3-A)]
+ * - A00_Main_070.h에서 이관:
+ *    * g_M10_motionLogic / g_A00_server / g_P10_pwm /
+ *      g_A00_ledController 전역 정의
+ *    * g_A00_control (reference) → A00_getControl() 접근자
+ *    * A00_init / A00_run 구현
+ * - 효과: 헤더 다중 include 시 링크 안전
  * ------------------------------------------------------
  * [구현 규칙]
  * - 주석 구조, 네이밍 규칙, ArduinoJson v7 단일 문서 정책 준수
+ * - 초기화 순서는 A00_init 내에서 의존성 순으로 유지
  * ------------------------------------------------------
  */
 
-#include <Arduino.h>
-#include <ESPAsyncWebServer.h>
+#include "A00_Main_071.h"
+
+// ─────────────────────────────────────────────
+// 구현에 필요한 추가 의존성
+// ─────────────────────────────────────────────
 #include <LittleFS.h>
 #include <WiFi.h>
 #include <WiFiMulti.h>
 #include <esp_task_wdt.h>
 
-#include "A20_Const_070.h"
 #include "C10_Config_070.h"
-#include "CT10_Ctl_070.h"
 #include "D10_Logger_070.h"
 #include "M10_MotionLogic_070.h"
 #include "N10_NvsManager_070.h"
-#include "P10_PWM_ctrl_070.h"
-
-// #include "S10_Simul_070.h"
-// #include "S20_WindSolver_070.h"
-
 #include "W10_Web_070.h"
 #include "WF10_WiFiMgr_070.h"
 #include "TM10_TimeMg_070.h"
 
-#include "A30_LED_070.h"
-
-// [main.cpp] 또는 [MotionLogic.cpp] 파일에 추가
+// ======================================================
+// 전역 변수 정의 (헤더 extern에 대응)
+// ======================================================
 CL_M10_MotionLogic* g_M10_motionLogic = nullptr;
 
-AsyncWebServer g_A00_server(80);
-// static WiFiMulti 		g_A00_wifiMulti;
+AsyncWebServer      g_A00_server(80);
+CL_P10_PWM          g_P10_pwm;
+CL_A30_LED*         g_A00_ledController = nullptr;
 
-CL_CT10_ControlManager& g_A00_control = CL_CT10_ControlManager::instance();
-CL_P10_PWM              g_P10_pwm;
+// ======================================================
+// CT10 접근자
+//  - 매 호출마다 싱글톤 인스턴스 반환 (내부 static 지역변수)
+//  - g_A00_control 변수 대체
+// ======================================================
+CL_CT10_ControlManager& A00_getControl() {
+    return CL_CT10_ControlManager::instance();
+}
 
-CL_A30_LED* g_A00_ledController = nullptr;
-
-// ------------------------------------------------------
-// 메인 초기화
-// ------------------------------------------------------
+// ======================================================
+// 메인 초기화 (A00_init)
+// ======================================================
 void A00_init() {
     CL_D10_Logger::log(EN_L10_LOG_INFO, "=== Smart Nature Wind Boot (v002) ===");
 
@@ -100,6 +110,8 @@ void A00_init() {
     const ST_A20_SystemConfig_t& v_sys  = *g_A20_config_root.system;
 
     // LED 객체 생성 (pin, numPixels 전달)
+    //  - 함수-로컬 static: A00_init이 1회만 호출되므로 안전
+    //  - g_A00_ledController는 수명 동안 이 객체를 가리킴
     static CL_A30_LED s_led(v_sys.hw.led.pin, v_sys.hw.led.numPixels);
     g_A00_ledController = &s_led;
     g_A00_ledController->begin(v_sys.hw.led.defaultBrightness);
@@ -108,13 +120,14 @@ void A00_init() {
     // 4. Wi-Fi 초기화
     // ------------------------------------------------------
     bool v_wifiOk = CL_WF10_WiFiManager::init(v_wifi, v_sys);
-    // bool v_wifiOk = CL_WF10_WiFiManager::init(v_wifi, v_sys, g_A00_wifiMulti);
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] WiFi init result=%d", v_wifiOk ? 1 : 0);
 
     // ------------------------------------------------------
     // 5. Time Manager 초기화
     //  - localtime() null 방어는 TM10 내부에서도 해야 하지만,
     //    여기서도 "시간 준비 전" 상태를 전제로 동작하도록 함
+    //  - TM10::begin()은 멱등 가드(running/wifiUp) 보유
+    //    → WF10 init 내부의 begin() 호출과 중복 안전
     // ------------------------------------------------------
     CL_TM10_TimeManager::begin();
 
@@ -127,17 +140,22 @@ void A00_init() {
 
     // ------------------------------------------------------
     // 7. Motion Logic
-    //  - 전역 포인터(g_M10_motionLogic)는 여기서 직접 new 하지 않는 정책이면 nullptr 유지
-    //  - M10_begin() 내부에서 singleton/정적 관리라면 OK
+    //  - M10_begin() 내부에서 singleton/정적 관리
+    //  - 전역 포인터(g_M10_motionLogic)는 M10_begin()에서 세팅됨
     // ------------------------------------------------------
     CL_M10_MotionLogic::M10_begin();
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[M10] Motion Logic started");
 
+    // [A-1] CT10에 M10 주입 (누락 시 motion blocking 무력)
+    //  - 접근자(A00_getControl) 로 참조 획득
+    //  - CT10::begin() 이후에 호출 (begin에서 멤버 초기화 순서 고려)
+    A00_getControl().setMotion(g_M10_motionLogic);
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] M10 wired to CT10 (ptr=%p)", (void*)g_M10_motionLogic);
+
     // ------------------------------------------------------
     // 8. Web API + Web UI
     // ------------------------------------------------------
-    CL_W10_WebAPI::begin(g_A00_server, g_A00_control);
-    // CL_W10_WebAPI::begin(g_A00_server, g_A00_control, g_A00_wi);
+    CL_W10_WebAPI::begin(g_A00_server, A00_getControl());
     g_A00_server.begin();
 
     // ------------------------------------------------------
@@ -153,6 +171,7 @@ void A00_init() {
     // ------------------------------------------------------
     // 10. Watchdog 초기화
     //  - init 후 add(NULL) 순서 유지
+    //  - 마지막 배치: 초기화 도중 블로킹(WiFi 재시도 등) 회피
     // ------------------------------------------------------
     esp_task_wdt_init(10, true);
     esp_task_wdt_add(NULL);
@@ -160,11 +179,12 @@ void A00_init() {
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] Init complete. Ready.");
 }
 
-// ------------------------------------------------------
-// 메인 루프
-// ------------------------------------------------------
+// ======================================================
+// 메인 루프 (A00_run)
+// ======================================================
 void A00_run() {
     uint32_t v_now = millis();
+    (void)v_now;   // [W-2] N10 flush 이연으로 현재 미사용 (TODO 블록 활성화 시 사용)
 
     // Watchdog feed
     esp_task_wdt_reset();
@@ -189,6 +209,13 @@ void A00_run() {
     } else {
         CL_TM10_TimeManager::tick(nullptr);
     }
+
+    // ------------------------------------------------------
+    // [E-1] pending free 처리 (reloadAll의 지연 free)
+    //  - 3초 grace 경과 후 실제 freeAll 실행
+    //  - 매 loopTask 주기(≤10ms) 호출 → 3초 후 자연 정리
+    // ------------------------------------------------------
+    CL_C10_ConfigManager::processPendingFree();
 
     //// // NVS Dirty Flush (10초마다)
     //// if (v_now - v_lastFlush >= 10000) {

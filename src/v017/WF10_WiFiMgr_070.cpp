@@ -14,6 +14,10 @@
  */
 
 #include "WF10_WiFiMgr_070.h"
+
+// [o-2] explicit include (A20_Const_070.h에서 제거됨)
+#include "A25_Com_Utils_070.h"     // A40_ComFunc / A40_IO / CL_A40_MutexGuard_Semaphore
+
 #include <esp_netif.h>
 // dns_getserver/ipaddr_ntoa 사용 위해 lwIP 헤더를 직접 포함
 #include <lwip/dns.h>
@@ -29,6 +33,11 @@ bool              CL_WF10_WiFiManager::s_staConnected      = false;
 wl_status_t       CL_WF10_WiFiManager::s_lastStaStatus     = WL_IDLE_STATUS;
 uint8_t           CL_WF10_WiFiManager::s_reconnectAttempts = 0;
 SemaphoreHandle_t CL_WF10_WiFiManager::s_wifiMutex         = nullptr;
+
+// [WF10-task] 추가
+TaskHandle_t      CL_WF10_WiFiManager::s_wifiTaskHandle   = nullptr;
+SemaphoreHandle_t CL_WF10_WiFiManager::s_wifiRequestSem    = nullptr;
+
 
 // --------------------------------------------------
 // 이벤트 등록
@@ -46,7 +55,7 @@ void CL_WF10_WiFiManager::attachWiFiEvents() {
             // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
             CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
             if (!v_guard.isAcquired()) {
-                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout (GOT_IP)", "WF10::EVT_STA_GOT_IP");
+                CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] %s: Mutex busy (GOT_IP)", "WF10::EVT_STA_GOT_IP");
                 return;
             }
 
@@ -68,7 +77,7 @@ void CL_WF10_WiFiManager::attachWiFiEvents() {
                 // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
                 CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, "WF10::EVT_STA_DISCONNECTED");
                 if (!v_guard.isAcquired()) {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout (DISCONN)", __func__);
+                    CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] %s: Mutex busy (DISCONN)", __func__);
                     return;
                 }
 
@@ -105,7 +114,7 @@ bool CL_WF10_WiFiManager::init(const ST_A20_WifiConfig_t&   p_cfg_wifi,
     // Mutex 가드 생성 (함수 종료 시 자동 해제 보장, 가드 생성 시 s_mutex가 nullptr이면 내부에서 Recursive Mutex를 자동 생성함)
     CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] %s: Mutex busy", __func__);
         return false;
     }
 
@@ -120,6 +129,11 @@ bool CL_WF10_WiFiManager::init(const ST_A20_WifiConfig_t&   p_cfg_wifi,
     char v_hostname[32];
     snprintf(v_hostname, sizeof(v_hostname), "NatureWind-%04X", (uint16_t)(esp_random() & 0xFFFF));
     WiFi.setHostname(v_hostname);
+    
+    // [WF10-task] 재연결 태스크 최초 1회 생성
+    //  - init()은 부팅 시 main에서 1회 + task 내부에서도 호출 가능
+    //  - 멱등성: _ensureWifiTask()가 중복 생성 방지
+    _ensureWifiTask();
 
     bool v_ap_ok  = false;
     bool v_sta_ok = false;
@@ -197,7 +211,7 @@ bool CL_WF10_WiFiManager::startAP(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t
 bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t p_maxTries) {
     CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] %s: Mutex busy", __func__);
         return false;
     }
 
@@ -257,7 +271,7 @@ bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_
 void CL_WF10_WiFiManager::getWifiStateJson(JsonDocument& p_doc) {
     CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout", __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] %s: Mutex busy", __func__);
         return;
     }
 
@@ -307,10 +321,14 @@ void CL_WF10_WiFiManager::scanNetworksToJson(JsonDocument& p_doc) {
 // 헬퍼 메서드
 // --------------------------------------------------
 bool CL_WF10_WiFiManager::isStaConnected() {
-    CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, 0, __func__); // 즉시 확인
+    // [C-1] timeout 10ms: applyConfig 재연결 중에도 LED 폴링이 정상 반환
+    //  - 0ms는 mutex 보유 중 즉시 false 반환 → LED 오표시(빨강)
+    //  - s_staConnected 값은 원자적 읽기로도 안전하나, WiFi.status()까지
+    //    일관 조회를 위해 mutex 획득 유지
+    CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, 10, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex timeout", __func__);
-        return false;
+        // mutex 미획득 시 stale 값이라도 반환 (LED 빨강 오표시 방지)
+        return s_staConnected;
     }
     return s_staConnected && (WiFi.status() == WL_CONNECTED);
 }
@@ -363,32 +381,129 @@ bool CL_WF10_WiFiManager::applyConfig(const ST_A20_WifiConfig_t& p_cfg) {
     WiFi.disconnect(true);
     WiFi.softAPdisconnect(true);
 
-    // 2) WiFiMulti 준비
-    //  후보 중복 방지: 내부 WiFiMulti 리셋
+    // 2) WiFiMulti 준비 (후보 중복 방지)
     s_wifiMulti = WiFiMulti();
 
-    // WiFiMulti v_multi;
+    // 3) [P0-race] system config 스냅샷 (원자 캡처)
+    //  - raw g_A20_config_root 접근 금지 (reloadAll의 freeAll과 race)
+    ST_A20_ConfigRoot_t v_snap;
+    CL_C10_ConfigManager::getRootSnapshot(v_snap);
 
-    // 3) system config 존재 여부 확인
-    if (!g_A20_config_root.system) {
+    // 4) system null 방어 (fallback)
+    if (!v_snap.system) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR,
                            "[WiFi] applyConfig: system config is null. "
                            "Proceeding without system-time integration (TM10 will be limited).");
 
         ST_A20_SystemConfig_t v_sys;
         memset(&v_sys, 0, sizeof(v_sys));
-        // 최소 안전 기본값(타임존/서버는 TM10에서 fallback을 갖는 전제)
         strlcpy(v_sys.timeCfg.ntpServer, "pool.ntp.org", sizeof(v_sys.timeCfg.ntpServer));
-        strlcpy(v_sys.timeCfg.timezone, "Asia/Seoul", sizeof(v_sys.timeCfg.timezone));
-        v_sys.timeCfg.syncIntervalMin = 360; // 6시간
+        strlcpy(v_sys.timeCfg.timezone,  "Asia/Seoul",   sizeof(v_sys.timeCfg.timezone));
+        v_sys.timeCfg.syncIntervalMin = 360;   // 6시간
 
         bool v_ok = init(p_cfg, v_sys, 1, 15, true);
         return v_ok;
     }
 
-    // 4) 기존 init() 로직 재사용 (AP/STA까지)
-    bool v_ok = init(p_cfg, *g_A20_config_root.system, 1, 15, true);
+    // 5) 기존 init() 로직 재사용 (AP/STA까지) — 스냅샷 포인터 사용
+    bool v_ok = init(p_cfg, *v_snap.system, 1, 15, true);
 
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[WiFi] Configuration applied (ok=%d, mode=%d)", (int)v_ok, (int)p_cfg.wifiMode);
+    CL_D10_Logger::log(EN_L10_LOG_INFO,
+                       "[WiFi] Configuration applied (ok=%d, mode=%d)",
+                       (int)v_ok, (int)p_cfg.wifiMode);
     return v_ok;
+}
+
+// ==================================================
+// [WF10-task] 재연결 요청 (async_tcp → WiFi task, 즉시 반환)
+// ==================================================
+CL_WF10_WiFiManager::EN_WF10_req_result_t CL_WF10_WiFiManager::requestReconnect() {
+    // [E-2] task 생성 실패는 COALESCED로 오인되지 않도록 구분 반환
+    if (!_ensureWifiTask()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] Reconnect request failed: task unavailable");
+        return EN_WF10_REQ_FAILED;
+    }
+
+    if (xSemaphoreGive(s_wifiRequestSem) != pdTRUE) {
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] Reconnect already pending (coalesced)");
+        return EN_WF10_REQ_COALESCED;
+    }
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] Reconnect requested (WiFi task signaled)");
+    return EN_WF10_REQ_OK;
+}
+
+// ==================================================
+// [WF10-task] WiFi 재연결 전용 태스크
+//  - startSTA의 최대 90초 블로킹을 loopTask에서 완전 분리
+//  - WDT 미등록 (esp_task_wdt_add 호출 없음)
+// ==================================================
+bool CL_WF10_WiFiManager::_ensureWifiTask() {
+    if (s_wifiTaskHandle != nullptr) return true;
+
+    if (s_wifiRequestSem == nullptr) {
+        s_wifiRequestSem = xSemaphoreCreateBinary();
+        if (s_wifiRequestSem == nullptr) {
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] semaphore create failed");
+            return false;
+        }
+    }
+
+    BaseType_t v_ret = xTaskCreate(
+        _wifiTask,
+        "WF10_Reconnect",
+        8192,          // [stack] startSTA+String+WiFiMulti 여유
+        nullptr,
+        1,             // [priority] loopTask와 동일 (1)
+        &s_wifiTaskHandle
+    );
+
+    if (v_ret != pdPASS) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] task create failed (ret=%d)", (int)v_ret);
+        vSemaphoreDelete(s_wifiRequestSem);
+        s_wifiRequestSem = nullptr;
+        s_wifiTaskHandle = nullptr;
+        return false;
+    }
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] Reconnect task created (prio=1, stack=8192)");
+    return true;
+}
+
+void CL_WF10_WiFiManager::_wifiTask(void* p_param) {
+    (void)p_param;
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10][Task] started, waiting for requests...");
+
+    // 파일-스코프 static (task 1개 → 경쟁 없음)
+    static ST_A20_WifiConfig_t s_wifiSnap;
+
+    while (true) {
+        // 무한 대기 (blocking, WDT 미등록)
+        if (xSemaphoreTake(s_wifiRequestSem, portMAX_DELAY) != pdTRUE) continue;
+
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        
+        if (!v_snap.wifi || !v_snap.system) {
+            CL_D10_Logger::log(EN_L10_LOG_WARN, "[WF10][Task] skip: config null");
+            continue;
+        }
+        memcpy(&s_wifiSnap, v_snap.wifi, sizeof(s_wifiSnap));
+        
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10][Task] applying WiFi config...");
+        bool v_ok = applyConfig(s_wifiSnap);
+
+        // [E-5] WiFi task 스택 사용량 측정
+        //  - uxTaskGetStackHighWaterMark(NULL): 현재 태스크의 최소 여유 스택(워터마크) 반환
+        //  - 반환값 StackType_t 단위 (ESP32: uint32_t = 4 bytes)
+        //  - 8192B = 2048 words. 안전 마진 권장: hwm ≥ 512 words(2KB free)
+        UBaseType_t v_hwm = uxTaskGetStackHighWaterMark(NULL);
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
+                          "[WF10][Task] done (ok=%d, stack_free_min=%u bytes / %u words)",
+                          (int)v_ok,
+                          (unsigned)(v_hwm * sizeof(StackType_t)),
+                          (unsigned)v_hwm);
+                          
+    }
 }

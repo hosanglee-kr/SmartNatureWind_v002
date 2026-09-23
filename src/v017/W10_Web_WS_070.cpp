@@ -37,6 +37,43 @@
 #include "W10_Web_070.h"
 
 // --------------------------------------------------
+// [WS 인증] 핸드셰이크 단계 쿼리 파라미터 apiKey 검사
+//  - ESPAsyncWebServer 3.12.1: AsyncWebSocketClient::request() 부재
+//  - handleHandshake()가 유일하게 AsyncWebServerRequest* 접근 가능
+//  - 반환 false → 연결 거부 (서버가 401 상당 응답 후 종료)
+//  - API Key 미설정 시 통과 (개발/개방 모드)
+// --------------------------------------------------
+static bool _wsHandshakeAuth(AsyncWebServerRequest* p_request) {
+    if (!p_request) return false;
+
+    // 1) API Key 미설정 → 개방 모드
+    const char* v_key = nullptr;
+    if (g_A20_config_root.system && g_A20_config_root.system->security.apiKey[0] != '\0') {
+        v_key = g_A20_config_root.system->security.apiKey;
+    }
+    if (!v_key || v_key[0] == '\0') return true;
+
+    // 2) 쿼리 파라미터 apiKey
+    if (!p_request->hasParam("apiKey")) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[W10][WS] handshake reject: missing apiKey (uri=%s)",
+                           p_request->url().c_str());
+        return false;
+    }
+
+    const String& v_val = p_request->getParam("apiKey")->value();
+    if (v_val != v_key) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[W10][WS] handshake reject: invalid apiKey (uri=%s)",
+                           p_request->url().c_str());
+        return false;
+    }
+
+    return true;
+}
+
+
+// --------------------------------------------------
 // 브로드캐스트 유틸리티
 // --------------------------------------------------
 void CL_W10_WebAPI::_broadcast(AsyncWebSocket* p_ws, JsonDocument& p_doc, bool p_diffOnly) {
@@ -78,10 +115,22 @@ void CL_W10_WebAPI::wsCleanupTick() {
 // --------------------------------------------------
 // WebSocket 초기화 및 라우팅
 // --------------------------------------------------
+
 void CL_W10_WebAPI::routeWebSocket() {
     // 운영급 방어: 서버/핸들러 미초기화 시 크래시 방지
     if (!s_server) return;
     if (!s_wsServerLogs || !s_wsServerState || !s_wsServerChart || !s_wsServerSummary || !s_wsServerMetrics) return;
+
+    // [WS 인증] 핸드셰이크 단계에서 쿼리 apiKey 검증
+    //  - ESPAsyncWebServer 3.12.1: request() 부재 → handleHandshake 유일
+    //  - 각 WS 인스턴스에 공통 정책 적용 (개별 onEvent 수정 불필요)
+    // ─────────────────────────────────────────────
+    s_wsServerLogs   ->handleHandshake(_wsHandshakeAuth);
+    s_wsServerState  ->handleHandshake(_wsHandshakeAuth);
+    s_wsServerChart  ->handleHandshake(_wsHandshakeAuth);
+    s_wsServerSummary->handleHandshake(_wsHandshakeAuth);
+    s_wsServerMetrics->handleHandshake(_wsHandshakeAuth);
+
 
     // 로그 WS
     s_wsServerLogs->onEvent([](AsyncWebSocket*, AsyncWebSocketClient* client, AwsEventType type, void*, uint8_t*, size_t) {

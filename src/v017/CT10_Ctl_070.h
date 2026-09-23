@@ -3,7 +3,7 @@
  * ------------------------------------------------------
  * 소스명 : CT10_Ctl_070.h
  * 모듈약어 : CT10
- * 모듈명 : Smart Nature Wind 제어 통합 Manager (v050)
+ * 모듈명 : Smart Nature Wind 제어 통합 Manager
  * ------------------------------------------------------
  * 기능 요약:
  * - Schedule / UserProfile / Manual Override 기반 풍속 제어
@@ -17,6 +17,32 @@
  * - 정적 싱글톤 인터페이스 제공 (W10_WebAPI에서 직접 사용)
  * - 구현은 cpp 3개로 분리:
  *    1) json 처리, 2) control 처리, 3) misc/유틸/보조
+* [Policy] 주요 운영 정책 요약
+*  - Override vs AutoOff:
+*    * tickOverride는 checkAutoOff를 호출하지 않는다.
+*    * Override는 사용자 명시적 개입 → AutoOff 조건보다 우선.
+*    * Override 종료 후 원 소스 재진입 시 AutoOff 재평가.
+*    * AutoOff(특히 offTemp)가 override 중 무시되어도 팬 가동은 안전 방향.
+*
+*  - [E-7] Override vs Motion:
+*    * decideRunSource의 1순위가 Override → motion 검사 이전 반환.
+*    * tickOverride는 isMotionBlocked를 호출하지 않는다.
+*    * Override는 사용자 명시적 개입 → motion 무시가 정책.
+*    * Override 종료 후 원 소스 재진입 시 motion 재평가
+*      (decideRunSource가 MOTION_BLOCKED 반환 가능).
+*
+*  - Override 지속시간:
+*    * durationSec=0이면 S_OVERRIDE_DEFAULT_SEC(20분) 기본 적용.
+*    * 무기한 override는 지원하지 않음 (재부팅/타임아웃 정책 단순화).
+*
+*  - AutoOff timer:
+*    * source(schedule/profile) 진입 시마다 timerStartMs 재설정.
+*    * 세션별 독립 타이머 (누적 아님). source 전환 시 이전 타이머 무효화.
+*    * 사유: 각 스케줄/프로파일의 "1회 실행 최대 시간" 제한 목적.
+*
+*  - 부팅 복원:
+*    * N10(NVS)은 저장만. 부팅 시 Override/UserProfile 자동 복원 안 함.
+*    * Schedule은 시간 조건 재평가, AutoOff는 source 진입 시 자동 로드.
  * ------------------------------------------------------
  * [구현 규칙]
  * - 주석 구조, 네이밍 규칙, ArduinoJson v7 단일 문서 정책 준수
@@ -241,7 +267,6 @@ class CL_CT10_ControlManager {
 
     // JSON 관련(구현은 json cpp)
     void exportStateJson_v02(JsonDocument& p_doc);
-    void exportStateJson_v01(JsonDocument& p_doc);
     void exportChartJson(JsonDocument& p_doc, bool p_diffOnly);
     void exportSummaryJson(JsonDocument& p_doc);
     void exportMetricsJson(JsonDocument& p_doc);
@@ -251,13 +276,21 @@ class CL_CT10_ControlManager {
     bool startUserProfileByNo(uint16_t p_profileNo);
     void stopUserProfile();
 
-    void startOverrideFixed(float p_percent, uint32_t p_seconds);
+
+    void startOverrideFixed(float p_percent, uint32_t p_seconds, bool p_forever = false);
     void startOverridePreset(const char*                 p_presetCode,
                              const char*                 p_styleCode,
                              const ST_A20_AdjustDelta_t* p_adj,
-                             uint32_t                    p_seconds);
-    void applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds);
+                             uint32_t                    p_seconds,
+                             bool                        p_forever = false);
+    void applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds, bool p_forever = false);
+    
     void stopOverride();
+    
+    // [NEW] config → S10 runtime 반영
+    //  - W10 routeMotion patch 후 호출
+    //  - S10::begin()도 부팅 시 직접 config를 읽음
+    void applyMotionSimConfigToSim();
 
     // tick(구현은 control cpp)
     void tickLoop();
@@ -301,9 +334,12 @@ class CL_CT10_ControlManager {
     // --------------------------------------------------
     static constexpr uint32_t S_TICK_MIN_INTERVAL_MS     = 40UL;   // 25Hz
     static constexpr uint32_t S_METRICS_PUSH_INTERVAL_MS = 1500UL; // metrics dirty 주기
-    
-    
-    
+    static constexpr uint32_t S_EVENT_HOLD_MS            = 3000UL; // 이벤트 상태(AUTOOFF/TIME_INVALID) hold 시간
+
+    // [Policy] Override 지속 시간: durationSec=0 시 20분 기본 적용 (무기한 없음)
+    static constexpr uint32_t S_OVERRIDE_DEFAULT_SEC     = 1200UL;
+
+
       // --------------------------------------------------
       // [B-1b] 상태 일관성 보호용 재귀 뮤텍스
       //  - async_tcp(HTTP/WS connect) ↔ loopTask(tickLoop/CT10_WS_tick) race 방지
@@ -321,6 +357,21 @@ class CL_CT10_ControlManager {
     bool _dirtySummary = false;
 
     ST_CT10_RunContext_t runCtx;
+    
+    // --------------------------------------------------
+    // [A-2] offTime 재트리거 방지 영속 필드
+    //  - source 재진입(initAutoOffFromSchedule/FromUserProfile)에도 유지
+    //  - yday 기반: 같은 날 1회만 트리거, yday가 바뀌면 자연 재활성화
+    //  - reloadAll()에서만 리셋 (설정 재적용 대비)
+    // --------------------------------------------------
+    int16_t _persistOffTimeLastYday = -1;
+    
+    // [B-2] AutoOff 래치
+    //  - AutoOff(timer/offTime/offTemp) 트리거 시 true
+    //  - decideRunSource가 강제 AUTOOFF_STOPPED 반환 → 자동 재진입 차단
+    //  - 사용자 명시적 재개(setMode/startOverride/ackEvent)에서 해제
+    // --------------------------------------------------
+    bool _autoOffLatched = false;
 
   private:
     // --------------------------------------------------
@@ -358,6 +409,7 @@ class CL_CT10_ControlManager {
 
     // static uint16_t parseHHMMtoMin(const char* p_time);
     static float getCurrentTemperatureMock();
+    static float getCurrentHumidityMock();   // [Phase 2] 습도 노출
 
     int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg, bool p_allowOverlap = true);
     // int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg);
@@ -378,12 +430,9 @@ class CL_CT10_ControlManager {
     void updateRunCtxOnSegmentOn_Profile(const ST_A20_UserProfileItem_t& p_p, const ST_A20_UserProfileSegment_t& p_seg);
     void updateRunCtxOnSegmentOff();
 
-    // time invalid 이벤트 상태 전환(SSOT: tick에서 호출)
-    void onTimeInvalid(EN_CT10_reason_t p_reason = EN_CT10_REASON_TIME_NOT_VALID);
-
   private:
     // decide/apply
-    ST_CT10_Decision_t decideRunSource(); // (cpp에 ST_CT10_Decision_t가 있다면 선언 위치 조정 필요)
+    ST_CT10_Decision_t decideRunSource();
     void               applyDecision(const ST_CT10_Decision_t& p_d);
 
   private:

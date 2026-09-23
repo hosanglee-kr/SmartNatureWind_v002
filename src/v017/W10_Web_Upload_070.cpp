@@ -89,7 +89,7 @@ String CL_W10_WebAPI::getUploadPath(const String& p_filename) {
 
 
 // ------------------------------------------------------
-// /upload (LittleFS 파일 업로드)
+// /api/v001/fileUpload (LittleFS 파일 업로드)
 // ------------------------------------------------------
 
 void CL_W10_WebAPI::routeUpload() {
@@ -196,8 +196,9 @@ void CL_W10_WebAPI::routeUpload() {
 
 
 // ------------------------------------------------------
-// /update (OTA 펌웨어 업데이트)
+// /api/v001/fwUpdate (OTA 펌웨어 업데이트)
 // ------------------------------------------------------
+
 void CL_W10_WebAPI::routeUpdate() {
 	s_server->on(
 		W10_Const::HTTP_API_FW_UPDATE,	// "/update",

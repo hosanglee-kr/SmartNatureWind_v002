@@ -25,6 +25,10 @@
  */
 
 #include "A20_Const_070.h"
+#include "A25_Com_Utils_070.h"
+#include "A22_Com_Lookup_070.h"
+
+
 
 // ------------------------------------------------------
 // Wind Profile 해석 함수

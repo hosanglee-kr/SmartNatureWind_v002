@@ -43,12 +43,16 @@
 #include <freertos/semphr.h>
 #include <cstring>
 #include <cstdio>
-using namespace std;
 
 #include <vector>
 
 // 외부 종속성 헤더 포함 (외부에서 제공되어야 함: 시스템 상수, 설정, 로그, PWM 제어)
 #include "A20_Const_070.h"
+
+// [o-2] explicit include (A20_Const_070.h에서 제거됨)
+#include "A25_Com_Utils_070.h"     // A40_ComFunc / A40_IO / CL_A40_MutexGuard_Semaphore
+#include "A22_Com_Lookup_070.h"    // A20_modeFromString / A20_findPresetIndexByCode
+
 #include "C10_Config_070.h"
 #include "D10_Logger_070.h"
 #include "P10_PWM_ctrl_070.h"
@@ -57,9 +61,11 @@ using namespace std;
 // ------------------------------------------------------
 // 정적 멤버 정의 (클래스 인스턴스와 무관하게 유지되는 공유 데이터)
 // ------------------------------------------------------
-std::deque<CL_S10_Simulation::ST_ChartEntry> CL_S10_Simulation::s_chartBuffer;
-unsigned long                                CL_S10_Simulation::s_lastChartLogMs    = 0;
-unsigned long                                CL_S10_Simulation::s_lastChartSampleMs = 0;
+CL_S10_Simulation::ST_ChartEntry CL_S10_Simulation::s_chartBuffer[CL_S10_Simulation::CHART_CAPACITY];
+uint8_t                          CL_S10_Simulation::s_chartHead            = 0;
+uint8_t                          CL_S10_Simulation::s_chartCount           = 0;
+unsigned long                    CL_S10_Simulation::s_lastChartLogMs       = 0;
+unsigned long                    CL_S10_Simulation::s_lastChartSampleMs    = 0;
 
 // ==================================================
 // JSON Export (현재 시뮬레이션 상태)
@@ -103,8 +109,6 @@ void CL_S10_Simulation::toJson(JsonDocument& p_doc) {
         return; // 반환 타입 bool인 경우 false 반환
     }
 
-    // portENTER_CRITICAL(&_flagSpinlock);
-
     JsonObject v_objSim = p_doc["sim"].to<JsonObject>();
 
     v_objSim["active"]          = active;
@@ -142,8 +146,6 @@ void CL_S10_Simulation::toJson(JsonDocument& p_doc) {
     v_objSim["gustProbBase"]    = gustProbBase;
     v_objSim["gustStrengthMax"] = gustStrengthMax;
     v_objSim["thermalFreqBase"] = thermalFreqBase;
-
-    // portEXIT_CRITICAL(&_flagSpinlock);
 }
 
 // ==================================================
@@ -173,6 +175,7 @@ void CL_S10_Simulation::toJson(JsonDocument& p_doc) {
  * }
  */
 
+    
 void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
     // 시간 기준: _tickNowMs 우선, 0이면 millis() 1회 fallback
     unsigned long v_nowMs = _tickNowMs;
@@ -240,8 +243,13 @@ void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
             v_gustInterval    = g_A20_config_root.motion->timing.gustIntervalMs;
             v_thermalInterval = g_A20_config_root.motion->timing.thermalIntervalMs;
         }
-
-        // Full Dump 전송 간격 제한: diffOnly는 제한하지 않음
+        
+        // [b-2 회귀 fix] empty guard
+        if (s_chartCount == 0) {
+            return;
+        }
+        
+        // Full Dump 전송 간격 제한 (Critical-2와 함께 반영)
         if (!p_diffOnly) {
             const unsigned long v_elapsedMs = (v_nowMs >= s_lastChartSampleMs) ? (v_nowMs - s_lastChartSampleMs) : 0UL;
             if (v_elapsedMs < G_S10_CHART_FULL_MIN_MS) {
@@ -249,20 +257,28 @@ void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
             }
             s_lastChartSampleMs = v_nowMs;
         }
+        
+        
 
-        if (s_chartBuffer.empty()) {
-            return;
-        }
-
+        // Full Dump 전송 간격 제한: diffOnly는 제한하지 않음
         if (p_diffOnly) {
+            // 최신 1개: head-1 (wrap 방지)
+            uint8_t v_lastIdx = (s_chartHead == 0) ? (CHART_CAPACITY - 1) : (s_chartHead - 1);
             v_entries.reserve(1);
-            v_entries.push_back(s_chartBuffer.back());
+            v_entries.push_back(s_chartBuffer[v_lastIdx]);
         } else {
-            v_entries.reserve((size_t)s_chartBuffer.size());
-            for (const auto& v_e : s_chartBuffer) {
-                v_entries.push_back(v_e);
+            // 오래된 것부터 순서대로
+            //  - 아직 full 아니면 [0, count)
+            //  - full이면 [head, head+CAPACITY) (wrap)
+            uint8_t v_start = (s_chartCount < CHART_CAPACITY) ? 0 : s_chartHead;
+
+            v_entries.reserve(s_chartCount);
+            for (uint8_t v_i = 0; v_i < s_chartCount; v_i++) {
+                uint8_t v_idx = (uint8_t)((v_start + v_i) % CHART_CAPACITY);
+                v_entries.push_back(s_chartBuffer[v_idx]);
             }
         }
+
     } // 락 해제
 
     // ---- (B) 락 밖에서 JSON 생성 ----
@@ -274,6 +290,7 @@ void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
 
         v_jo["t"]           = (uint64_t)v_e.timestamp; // 밀리초 timestamp
         v_jo["wind"]        = v_e.wind_speed;
+        v_jo["targetWind"]  = v_e.target_wind;         // [신규] 목표 풍속
         v_jo["pwm"]         = v_e.pwm_duty;
         v_jo["intensity"]   = v_intensity;
         v_jo["variability"] = v_variability;
@@ -333,12 +350,10 @@ bool CL_S10_Simulation::patchFromJson(const JsonDocument& p_doc) {
         return false; // 반환 타입 bool인 경우 false 반환
     }
 
-    // portENTER_CRITICAL(&_flagSpinlock);
-
     JsonObjectConst v_sim = p_doc["sim"].as<JsonObjectConst>();
     if (v_sim.isNull()) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[S10] patchFromJson failed: 'sim' object not found.");
-        // portEXIT_CRITICAL(&_flagSpinlock);
+    
         return false;
     }
 
@@ -499,7 +514,6 @@ bool CL_S10_Simulation::patchFromJson(const JsonDocument& p_doc) {
                            turbSigma);
     }
 
-    // portEXIT_CRITICAL(&_flagSpinlock);
     return v_changed;
 }
 
@@ -510,17 +524,20 @@ bool CL_S10_Simulation::patchFromJson(const JsonDocument& p_doc) {
  * @brief 현재 풍속을 순환 버퍼(history)에 저장하고 평균 풍속 캐시를 갱신합니다.
  */
 void CL_S10_Simulation::_updateWindHistory(float p_speed) {
-    history[historyIndex] = p_speed;
-    historyIndex          = (uint8_t)((historyIndex + 1u) % HISTORY_SIZE);
+    // [b-1] O(1) running sum 기반 평균 갱신
     if (historyCount < HISTORY_SIZE) {
+        history[historyIndex] = p_speed;
+        historyIndex          = (uint8_t)((historyIndex + 1u) % HISTORY_SIZE);
         historyCount++;
+        sumWindHistory += p_speed;
+        avgWindCached   = sumWindHistory / (float)historyCount;
+    } else {
+        float v_old = history[historyIndex];
+        history[historyIndex] = p_speed;
+        historyIndex          = (uint8_t)((historyIndex + 1u) % HISTORY_SIZE);
+        sumWindHistory += (p_speed - v_old);
+        avgWindCached   = sumWindHistory / (float)HISTORY_SIZE;
     }
-
-    float v_sum = 0.0f;
-    for (uint8_t v_i = 0; v_i < historyCount; v_i++) {
-        v_sum += history[v_i];
-    }
-    avgWindCached = (historyCount > 0) ? (v_sum / (float)historyCount) : p_speed;
 }
 
 // --------------------------------------------------

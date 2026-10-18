@@ -244,7 +244,7 @@ bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_
         delay(v_wait);
         v_wait = (v_wait < 4000) ? (v_wait * 2) : 4000;
     }
-
+    
     // [재획득] 결과 업데이트를 위해 다시 락
     if (!v_guard.acquireTicks(G_A40_MUTEX_TIMEOUT_100)) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] %s: Mutex re-acquire fail", __func__);
@@ -258,6 +258,35 @@ bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_
         }
         s_staConnected  = true;
         s_lastStaStatus = WL_CONNECTED;
+
+        // ==========================================================
+        // [FIX-1] 부팅 경로에서 GOT_IP 이벤트 콜백이 mutex 경합으로
+        //         누락될 수 있으므로, 연결 성공 직후 명시적으로
+        //         TM10에 통지한다 (멱등).
+        //
+        //  배경:
+        //   - init() → startSTA() 호출 경로에서 init()이 여전히
+        //     s_wifiMutex 를 보유 중 → GOT_IP 이벤트 콜백은
+        //     100ms timeout 으로 실패하고 조용히 리턴
+        //   - 결과적으로 TM10::s_wifiUp = false 로 남아
+        //     SNTP 영구 미시작 → TIME_INVALID 상태 고착
+        //
+        //  안전성:
+        //   - TM10::onWiFiConnected() 는 내부적으로
+        //     멱등 (기존 SNTP 정지 → 재시작) 이므로
+        //     이벤트 콜백과 중복 실행되어도 무해
+        //   - TM10 은 WF10 mutex 를 획득하지 않으므로
+        //     데드락 없음
+        // ==========================================================
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        if (v_snap.system) {
+            CL_TM10_TimeManager::onWiFiConnected(*v_snap.system);
+            CL_D10_Logger::log(EN_L10_LOG_INFO,
+                               "[WF10] %s: TM10 notified (explicit, STA up)",
+                               __func__);
+        }
+
         return true;
     }
 
@@ -439,6 +468,42 @@ CL_WF10_WiFiManager::EN_WF10_req_result_t CL_WF10_WiFiManager::requestReconnect(
 //  - WDT 미등록 (esp_task_wdt_add 호출 없음)
 // ==================================================
 bool CL_WF10_WiFiManager::_ensureWifiTask() {
+    // ==========================================================
+    // [FIX-2] 멱등성 + 이중 생성 방지
+    //
+    //  배경:
+    //   - _ensureWifiTask() 는 다음 두 경로에서 호출됨:
+    //       (a) init()              → loopTask
+    //       (b) requestReconnect()  → async_tcp (HTTP 라우트)
+    //   - 최초 부팅 시 (a)와 (b)가 거의 동시에 실행될 수 있어
+    //     `if (s_wifiTaskHandle != nullptr)` 체크가 두 태스크 모두
+    //     통과 → xTaskCreate() 이중 실행 → 태스크/세마포어 누수
+    //
+    //  설계:
+    //   - Fast path: 이미 생성됨 → mutex 없이 즉시 반환
+    //     (포인터 읽기는 ESP32 단일 메모리 버스에서 실용적 원자)
+    //   - Slow path: 생성 크리티컬 섹션만 s_wifiMutex 로 보호
+    //     (recursive mutex 이므로 init() 내부 호출도 안전)
+    //   - Double-check: 락 획득 사이 다른 태스크가 생성했을 수 있음
+    // ==========================================================
+
+    // --- Fast path: 이미 생성되었으면 즉시 반환 ---
+    if (s_wifiTaskHandle != nullptr) return true;
+
+    // --- Slow path: 생성은 반드시 하나의 태스크만 ---
+    CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) {
+        // init()/startSTA() 가 락 보유 중일 가능성
+        //  - init() 은 반드시 _ensureWifiTask() 를 먼저 호출한 뒤
+        //    startSTA() 로 진입하므로, 여기서 락 실패하면
+        //    이미 다른 경로에서 생성 중이거나 완료된 상태
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG,
+                           "[WF10] %s: Mutex busy (task creating?)",
+                           __func__);
+        return (s_wifiTaskHandle != nullptr);
+    }
+
+    // --- Double-check: 락 획득 사이에 다른 태스크가 생성했을 수 있음 ---
     if (s_wifiTaskHandle != nullptr) return true;
 
     if (s_wifiRequestSem == nullptr) {

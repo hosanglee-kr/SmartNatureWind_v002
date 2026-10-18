@@ -73,6 +73,15 @@ class CL_W10_WebAPI {
     static void broadcastChart(JsonDocument& p_doc, bool p_diffOnly = true);
     static void broadcastSummary(JsonDocument& p_doc, bool p_diffOnly = true);
 
+    // ======================================================
+    // [F-05] system 설정 런타임 반영 (Logger level, hostname 등)
+    //  - W10 라우트(routeSystem/routeTimeSet) 뿐 아니라
+    //    A00_run()에서 pending reload 완료 후에도 호출됨
+    //  - 이전: file-static _applySystemRuntime() → private
+    //  - 변경: public static method로 승격
+    // ======================================================
+    static void applySystemRuntimeFromConfig(const ST_A20_SystemConfig_t& p_sys);
+  
   private:
     // --------------------------------------------------
     // 정적 멤버 (Routes.cpp, WebSockets.cpp, Static.cpp, Upload.cpp 공유)

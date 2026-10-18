@@ -61,6 +61,47 @@ AsyncWebSocket* CL_W10_WebAPI::s_wsServerSummary = &s_wsSummary;
 //  - Logger level: CL_D10_Logger::setLevel (즉시)
 //  - Hostname   : WiFi.setHostname (WiFi 재연결 시 반영)
 //  - W10이 C10과 WF10 모두 접근 가능한 유일한 지점
+//
+//  [F-05] public static 승격:
+//   - W10 라우트 뿐 아니라 A00_run()의 pending reload 완료 후에도 호출
+//   - 기존 file-static `_applySystemRuntime` → class member로 이동
+// --------------------------------------------------
+void CL_W10_WebAPI::applySystemRuntimeFromConfig(const ST_A20_SystemConfig_t& p_sys) {
+    // 1) Logger level
+    EN_L10_LogLevel_t v_lv = EN_L10_LOG_INFO;
+    const char* v_lvStr = p_sys.system.logging.level;
+
+    if (v_lvStr && v_lvStr[0]) {
+        if      (strcasecmp(v_lvStr, "NONE")  == 0) v_lv = EN_L10_LOG_NONE;
+        else if (strcasecmp(v_lvStr, "ERROR") == 0) v_lv = EN_L10_LOG_ERROR;
+        else if (strcasecmp(v_lvStr, "WARN")  == 0) v_lv = EN_L10_LOG_WARN;
+        else if (strcasecmp(v_lvStr, "INFO")  == 0) v_lv = EN_L10_LOG_INFO;
+        else if (strcasecmp(v_lvStr, "DEBUG") == 0) v_lv = EN_L10_LOG_DEBUG;
+    }
+
+    EN_L10_LogLevel_t v_oldLv = CL_D10_Logger::getLevel();
+    if (v_oldLv != v_lv) {
+        CL_D10_Logger::setLevel(v_lv);
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
+                           "[W10] Log level changed: %d -> %d",
+                           (int)v_oldLv, (int)v_lv);
+    }
+
+    // 2) Hostname (WiFi 재연결 시 반영)
+    if (p_sys.meta.deviceName[0] != '\0') {
+        WiFi.setHostname(p_sys.meta.deviceName);
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
+                           "[W10] Hostname set: %s (재연결 후 반영)",
+                           p_sys.meta.deviceName);
+    }
+}
+
+/*
+// --------------------------------------------------
+// [Runtime Apply] 시스템 설정 패치 후 런타임 반영
+//  - Logger level: CL_D10_Logger::setLevel (즉시)
+//  - Hostname   : WiFi.setHostname (WiFi 재연결 시 반영)
+//  - W10이 C10과 WF10 모두 접근 가능한 유일한 지점
 // --------------------------------------------------
 static void _applySystemRuntime(const ST_A20_SystemConfig_t& p_sys) {
     // 1) Logger level
@@ -91,6 +132,7 @@ static void _applySystemRuntime(const ST_A20_SystemConfig_t& p_sys) {
                            p_sys.meta.deviceName);
     }
 }
+*/
 
 // --------------------------------------------------
 // 초기화
@@ -242,7 +284,7 @@ void CL_W10_WebAPI::routeSystem() {
             if (g_A20_config_root.system) {
                 v_changed = CL_C10_ConfigManager::patchSystemFromJson(*g_A20_config_root.system, v_doc);
                 if (v_changed) {
-                    _applySystemRuntime(*g_A20_config_root.system);   // ← 추가
+                    CL_W10_WebAPI::applySystemRuntimeFromConfig(*g_A20_config_root.system);   // ← 추가
                 }
             }
 
@@ -274,7 +316,7 @@ void CL_W10_WebAPI::routeSystem() {
             if (g_A20_config_root.system) {
                 v_changed = CL_C10_ConfigManager::patchSystemFromJson(*g_A20_config_root.system, v_doc);
                 if (v_changed) {
-                    _applySystemRuntime(*g_A20_config_root.system);   // ← 추가
+                    CL_W10_WebAPI::applySystemRuntimeFromConfig(*g_A20_config_root.system);   // ← 추가
                 }
             }
 
@@ -325,19 +367,23 @@ void CL_W10_WebAPI::routeMotion() {
                 p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
                 return;
             }
-
+            
             bool v_changed = false;
             if (g_A20_config_root.motion) {
                 v_changed = CL_C10_ConfigManager::patchMotionFromJson(*g_A20_config_root.motion, v_doc);
                 if (v_changed && s_control) {
-                    // config → S10 runtime 즉시 반영
-                    s_control->applyMotionSimConfigToSim();
+                    // [F-06] Deferred: async_tcp에서 CT10 mutex 경합 회피
+                    //  - 여기서는 flag만 set (atomic store)
+                    //  - 실제 applyMotionSimConfigToSim()은
+                    //    CT10::tickLoop() 시작부에서 loopTask가 실행
+                    s_control->requestMotionSimApply();
                 }
             }
-
+            
             JsonDocument v_res;
             v_res["updated"] = v_changed;
             sendJson(p_request, v_res);
+
         });
     
     
@@ -365,7 +411,7 @@ void CL_W10_WebAPI::routeMotion() {
                 v_changed = CL_C10_ConfigManager::patchMotionFromJson(*g_A20_config_root.motion, v_doc);
                 if (v_changed && s_control) {
                     // config → S10 runtime 즉시 반영
-                    s_control->applyMotionSimConfigToSim();
+                    s_control->requestMotionSimApply();
                 }
             }
 
@@ -1055,6 +1101,9 @@ void CL_W10_WebAPI::routeLogs() {
 // --------------------------------------------------
 // 15. /api/reload
 // --------------------------------------------------
+// --------------------------------------------------
+// 15. /api/reload  ([F-05] loopTask 위임으로 async_tcp 블로킹 회피)
+// --------------------------------------------------
 void CL_W10_WebAPI::routeReload() {
     s_server->on(W10_Const::HTTP_API_RELOAD, HTTP_POST, [](AsyncWebServerRequest* p_request) {
         if (!checkApiKey(p_request)) {
@@ -1062,19 +1111,23 @@ void CL_W10_WebAPI::routeReload() {
             return;
         }
 
-        // [A-min] CT10::reloadAll로 통합 위임 (CT10 mutex + swap + free 일괄)
-        bool v_ok = CL_CT10_ControlManager::reloadAll();
-        if (!v_ok) {
-            p_request->send(500, "application/json", "{\"error\":\"reload failed\"}");
+        // ======================================================
+        // [F-05] Deferred reload:
+        //  - async_tcp에서 flag만 세팅 후 즉시 202 반환
+        //  - loopTask A00_run()이 다음 cycle에 reloadAll() 실행
+        //  - 이전: async_tcp 블로킹 100~500ms (파일 I/O)
+        //  - 이미 pending 중이면 409 반환 (재진입 방지)
+        // ======================================================
+        if (!CL_CT10_ControlManager::requestReload()) {
+            p_request->send(409, "application/json",
+                            "{\"error\":\"reload already pending\"}");
             return;
         }
 
-        // [Runtime Apply] 재로드된 system 설정을 런타임 반영
-        if (g_A20_config_root.system) {
-            _applySystemRuntime(*g_A20_config_root.system);
-        }
-
-        p_request->send(200, "application/json", "{\"result\":\"ok\"}");
+        JsonDocument v_res;
+        v_res["result"] = "queued";
+        v_res["note"]   = "reload executes on next loopTask cycle";
+        sendJson(p_request, v_res, 202);
     });
 }
 
@@ -1405,7 +1458,7 @@ void CL_W10_WebAPI::routeTimeSet() {
             if (g_A20_config_root.system) {
                 v_changed = CL_C10_ConfigManager::patchSystemFromJson(*g_A20_config_root.system, v_doc);
                 if (v_changed) {
-                    _applySystemRuntime(*g_A20_config_root.system);   // ← 추가
+                    CL_W10_WebAPI::applySystemRuntimeFromConfig(*g_A20_config_root.system);   // ← 추가
                 }
             }
 

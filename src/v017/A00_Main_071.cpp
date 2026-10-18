@@ -183,11 +183,28 @@ void A00_init() {
 // 메인 루프 (A00_run)
 // ======================================================
 void A00_run() {
-    uint32_t v_now = millis();
-    (void)v_now;   // [W-2] N10 flush 이연으로 현재 미사용 (TODO 블록 활성화 시 사용)
-
     // Watchdog feed
     esp_task_wdt_reset();
+
+    // ======================================================
+    // [F-05] Pending reload 처리 (loopTask 위임)
+    //  - W10 routeReload는 async_tcp에서 flag만 세팅 → 여기서 실행
+    //  - reloadAll은 C10 mutex + CT10 mutex + portMUX + 파일 I/O(100~500ms)
+    //  - async_tcp 블로킹 회피 목적. fan은 reload 전 sim.stop 상태
+    //  - 이 블록은 tickLoop 이전 (CT10 mutex 미보유) 에서 실행
+    // ======================================================
+    if (CL_CT10_ControlManager::consumePendingReload()) {
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
+                           "[A00] Executing pending reload (loopTask)...");
+        bool v_reloadOk = CL_CT10_ControlManager::reloadAll();
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
+                           "[A00] Pending reload done (ok=%d)", (int)v_reloadOk);
+
+        // 재로드된 system 설정을 런타임 반영 (Logger level, hostname)
+        if (v_reloadOk && g_A20_config_root.system) {
+            CL_W10_WebAPI::applySystemRuntimeFromConfig(*g_A20_config_root.system);
+        }
+    }
 
     // ------------------------------------------------------
     // 1) Control tick
@@ -200,9 +217,17 @@ void A00_run() {
     CT10_WS_tick();
 
     // ------------------------------------------------------
+    // [F-03] M10 tick (PIR holdSec 감쇠 + 상태 전이)
+    //  - 이전: 호출자 부재로 PIR 상태 영구 미갱신 (holdSec 만료 안 됨)
+    //  - 이후: 매 loop tick → holdSec 초과 시 _pir.active=false 반영
+    //  - isActive() 부팅 직후 false-positive (F-09) 도 자연 해소
+    // ------------------------------------------------------
+    if (g_M10_motionLogic) {
+        g_M10_motionLogic->tick();
+    }
+
+    // ------------------------------------------------------
     // 3) Time Manager tick
-    //  - localtime() null 방어는 TM10 내부에서도 필수
-    //  - system nullptr 방어 유지
     // ------------------------------------------------------
     if (g_A20_config_root.system) {
         CL_TM10_TimeManager::tick(g_A20_config_root.system);
@@ -212,16 +237,15 @@ void A00_run() {
 
     // ------------------------------------------------------
     // [E-1] pending free 처리 (reloadAll의 지연 free)
-    //  - 3초 grace 경과 후 실제 freeAll 실행
-    //  - 매 loopTask 주기(≤10ms) 호출 → 3초 후 자연 정리
     // ------------------------------------------------------
     CL_C10_ConfigManager::processPendingFree();
 
-    //// // NVS Dirty Flush (10초마다)
-    //// if (v_now - v_lastFlush >= 10000) {
-    ////     v_lastFlush = v_now;
-    ////     CL_N10_NvsManager::flushIfNeeded();
-    //// }
+    // ------------------------------------------------------
+    // [F-04] N10 dirty flush (10s 주기, 내부 게이트)
+    //  - 이전: 호출자 부재로 NVS 런타임 정보 영구 미저장
+    //  - 이후: 매 loop 호출, N10::tick 내부에서 s_dirty + 10s 체크
+    // ------------------------------------------------------
+    CL_N10_NvsManager::tick();
 
     // ------------------------------------------------------
     // 4) LED 업데이트

@@ -655,7 +655,18 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
         v_dirty["metrics"] = _dirtyMetrics;
         v_dirty["chart"]   = _dirtyChart;
         v_dirty["summary"] = _dirtySummary;
-    }    
+    }
+    
+    // ======================================================
+    // [I-1] Pending reload 상태 노출
+    //  - POST /api/v001/reload 가 202로 즉시 반환되므로,
+    //    프론트엔드는 본 필드로 실제 실행 완료 시점을 폴링
+    //  - true : reload 요청 수락됨, loopTask가 아직 미실행
+    //  - false: idle (요청 없음 또는 이미 실행 완료)
+    //  - markDirty("state")가 reloadAll 내부에서 호출되므로
+    //    WS /state 브로드캐스트에도 자동 포함됨
+    // ======================================================
+    v_ctl["pendingReload"] = CL_CT10_ControlManager::isReloadPending();
 
     // 10) Simulation snapshot 병합 (S10 toJson → p_doc["sim"])
     //  - /state 응답 + WS /state push에 sim 포함

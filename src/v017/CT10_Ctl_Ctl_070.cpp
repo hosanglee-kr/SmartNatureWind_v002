@@ -195,6 +195,14 @@ void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
     runCtx.activeSegNo     = 0;
     runCtx.activeProfileNo = 0;
 
+    // ======================================================
+    // [I-3] pending motion.sim apply 리셋
+    //  - begin() 재호출 시 이전 flag 잔재 제거
+    //  - reload 경로에서 잔재 flag가 남아 있으면
+    //    다음 tick에서 새 S10에 오래된 config가 적용될 수 있음
+    // ======================================================
+    _pendingMotionSimApply.store(false, std::memory_order_release);
+
     sim.begin(p_pwm);
 
     active = true;
@@ -481,6 +489,18 @@ void CL_CT10_ControlManager::tickLoop() {
         // [E-3] reloadAll 등 정상 상황에서도 발생 → DEBUG 하향
         CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
         return;
+    }
+
+    // ------------------------------------------------------
+    // [F-06] Deferred: pending motion.sim apply
+    //  - W10 routeMotion이 async_tcp에서 requestMotionSimApply() 호출
+    //  - 여기서 실제 applyMotionSimConfigToSim() 실행 (mutex 이미 보유)
+    //  - active 여부와 무관하게 처리 (파라미터만 갱신, 다음 tick에 반영)
+    // ------------------------------------------------------
+    if (_pendingMotionSimApply.exchange(false, std::memory_order_acq_rel)) {
+        applyMotionSimConfigToSim();
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG,
+                           "[CT10] MotionSim apply consumed (loopTask)");
     }
 
     if (!active || !pwm) return;

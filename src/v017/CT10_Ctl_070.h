@@ -70,11 +70,11 @@
  * - 함수 인자             : p_ 접두사
  * ------------------------------------------------------
  */
-
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <string.h>
 #include <time.h>
+#include <atomic>                              // [F-05][F-06] 추가
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 
@@ -249,6 +249,46 @@ class CL_CT10_ControlManager {
 
     static bool reloadAll();
 
+    // ======================================================
+    // [F-05] Pending reload (async_tcp → loopTask 위임)
+    //  - W10 routeReload는 본 API만 호출 후 202 Accepted 즉시 응답
+    //  - loopTask A00_run이 consumePendingReload()로 실행
+    //  - 이미 pending이면 requestReload()는 false 반환 (중복 방지)
+    // ======================================================
+    static bool requestReload() {
+        bool v_expected = false;
+        return s_pendingReload.compare_exchange_strong(
+            v_expected, true,
+            std::memory_order_acq_rel,
+            std::memory_order_acquire);
+    }
+    static bool consumePendingReload() {
+        return s_pendingReload.exchange(false, std::memory_order_acq_rel);
+    }
+    
+    // ======================================================
+    // [I-1] pending reload 상태 조회 (읽기 전용)
+    //  - W10 exportStateJson_v02 에서 control.pendingReload 노출
+    //  - 프론트엔드 폴링: reload 요청 후 false로 전환되는 시점 감시
+    //  - acquire: 이후 관측이 최신 swap을 반영하도록 보장
+    // ======================================================
+    static bool isReloadPending() {
+        return s_pendingReload.load(std::memory_order_acquire);
+    }
+
+      // ======================================================
+      // [F-06] Motion.sim 재적용 위임 (async_tcp → loopTask)
+      //  - W10 routeMotion patch 후 본 함수만 호출 (mutex 경합 회피)
+      //  - CT10::tickLoop 시작부에서 실제 applyMotionSimConfigToSim() 실행
+      // ======================================================
+      void requestMotionSimApply() {
+          _pendingMotionSimApply.store(true, std::memory_order_release);
+          CL_D10_Logger::log(EN_L10_LOG_DEBUG,
+                             "[CT10] MotionSim apply requested (deferred)");
+      }
+      
+
+
     // - 공유 static doc 제거: W10(async_tcp) ↔ CT10_WS_tick(loopTask) 데이터 레이스
     // - 호출자는 caller-owned JsonDocument 사용:
     //     JsonDocument v_doc;  ct.exportStateJson_v02(v_doc);  serializeJson(v_doc, ...);
@@ -287,11 +327,6 @@ class CL_CT10_ControlManager {
     
     void stopOverride();
     
-    // [NEW] config → S10 runtime 반영
-    //  - W10 routeMotion patch 후 호출
-    //  - S10::begin()도 부팅 시 직접 config를 읽음
-    void applyMotionSimConfigToSim();
-
     // tick(구현은 control cpp)
     void tickLoop();
 
@@ -339,15 +374,29 @@ class CL_CT10_ControlManager {
     // [Policy] Override 지속 시간: durationSec=0 시 20분 기본 적용 (무기한 없음)
     static constexpr uint32_t S_OVERRIDE_DEFAULT_SEC     = 1200UL;
 
+    // --------------------------------------------------
+    // [F-05] pending reload flag (static, atomic)
+    //  - async_tcp ↔ loopTask 원자 교환
+    //  - C++17 inline static → 헤더 정의만으로 단일 인스턴스 보장
+    // --------------------------------------------------
+    inline static std::atomic<bool> s_pendingReload{false};
+    
+    // --------------------------------------------------
+    // [F-06] pending motion.sim apply flag (instance, atomic)
+    //  - instance는 singleton이므로 사실상 전역
+    //  - s_stateMutex 없이 async_tcp에서 set 가능하도록 atomic 사용
+    // --------------------------------------------------
+    std::atomic<bool> _pendingMotionSimApply{false};
 
-      // --------------------------------------------------
-      // [B-1b] 상태 일관성 보호용 재귀 뮤텍스
-      //  - async_tcp(HTTP/WS connect) ↔ loopTask(tickLoop/CT10_WS_tick) race 방지
-      //  - 대상: runCtx / overrideState / autoOffRt / runSource / curXxxIndex / segRt / dirty flags
-      //  - Lazy-init: CL_A40_MutexGuard_Semaphore가 최초 진입 시 생성
-      //  - recursive: startOverridePreset→applyManualResolved→startOverrideFixed 중첩 지원
-      // --------------------------------------------------
-      static SemaphoreHandle_t s_stateMutex;
+
+    // --------------------------------------------------
+    // [B-1b] 상태 일관성 보호용 재귀 뮤텍스
+    //  - async_tcp(HTTP/WS connect) ↔ loopTask(tickLoop/CT10_WS_tick) race 방지
+    //  - 대상: runCtx / overrideState / autoOffRt / runSource / curXxxIndex / segRt / dirty flags
+    //  - Lazy-init: CL_A40_MutexGuard_Semaphore가 최초 진입 시 생성
+    //  - recursive: startOverridePreset→applyManualResolved→startOverrideFixed 중첩 지원
+    // --------------------------------------------------
+    static SemaphoreHandle_t s_stateMutex;
 
   private:
     // Dirty 플래그 (private)
@@ -419,6 +468,15 @@ class CL_CT10_ControlManager {
     void onMotionBlocked(EN_CT10_reason_t p_reason);
 
     void maybePushMetricsDirty();
+    
+    // ======================================================
+    // [I-4] config → S10 runtime 반영 (private)
+    //  - 외부 진입점: requestMotionSimApply() (flag set)
+    //  - 실행 컨텍스트: tickLoop() 시작부 (loopTask, s_stateMutex 보유)
+    //  - s_stateMutex 는 recursive 이므로 내부 재진입 안전
+    //  - 직접 호출 금지 (F-06 위임 정책 우회 방지)
+    // ======================================================
+    void applyMotionSimConfigToSim();
 
     // 로그 개선용: preset/style 이름 조회
     const char* findPresetNameByCode(const char* p_code) const;

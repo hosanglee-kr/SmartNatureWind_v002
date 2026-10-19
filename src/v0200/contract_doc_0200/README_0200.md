@@ -78,7 +78,6 @@ src/v0200/
 
 | ID | 심각도 | 상태 | 내용 요약 | 해결 및 반영 내역 |
 |---|---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
 | **F-01** | 🔴 High | ✅ 해결 | WF10 GOT_IP 이벤트 처리 누락 | `startSTA` 후 TM10 명시 통지 및 NTP 트리거 |
 | **F-02** | 🟡 Mid | ✅ 해결 | 이중 `xTaskCreate` 호출 위험 | `_ensureWifiTask` 내 mutex 보호 및 중복 생성 방지 |
 | **F-03** | 🔴 High | ✅ 해결 | M10 tick 미호출로 인한 센서 갱신 누락 | `A00_run()` 내 M10 tick 주기 호출 추가 |
@@ -93,6 +92,8 @@ src/v0200/
 | **I-2** | 🟡 Mid | ✅ 해결 | motion patch 후 reload 시 설정 소실 | `SPEC_0200.md` §5.1에 지속성 정책 문서화 |
 | **I-3** | 🟢 Low | ✅ 해결 | `_pendingMotionSimApply` 리셋 시점 모호 | `begin()` 시 방어적 store 수행 |
 | **I-4** | 🟢 Low | ✅ 해결 | `applyMotionSimConfigToSim` public 노출 | 클래스 내부 private으로 캡슐화 |
+| **I-5** | 🟢 Low | ⏸ 수용 | reload 실행 중 LED 상태 표시 약 500ms 지연 | 사람 체감 불가능한 짧은 순단으로 수용 |
+| **I-6** | 🟢 Low | ✅ 해결 | 다중 분할 JS 로드로 인한 async_tcp LWIP 소켓 고갈 및 플래시 I/O 부하 | 메인 JS 단일 번들(`P010_bundle_0200.js`) + 전 에셋 Gzip 압축 (동시요청 11→4, LittleFS -73.3%) |
 
 ---
 
@@ -171,13 +172,38 @@ python src/v0200/tools_0200/commit_contracts_0200.py -m "docs(contracts): F-05 r
   python src/v0200/tools_0200/pio_gzip_0200.py
   ```
 
+### 5.3 웹 자산 변경 시 재빌드 필수 (v0200, [B-N-5])
+
+웹 자산(HTML/CSS/JS)을 수정한 뒤에는 **반드시 다음 순서**로 실행:
+
+```bash
+pio run --target uploadfs
+```
+
+이유:
+- `pio_gzip_0200.py`가 `buildfs` / `uploadfs` 타깃에서만 실행됨
+- 일반 `pio run --target upload` (펌웨어만) 실행 시 번들/Gzip 미재생성
+- 웹 자산 소스(`data_src_v0200/`) 변경이 `data_v0200/`에 반영되지 않음
+
+정상 동작 확인:
+```bash
+# Gzip 헤더 확인
+curl -I -H "Accept-Encoding: gzip" http://<IP>/html_v3/P010_bundle_0200.js
+# → Content-Encoding: gzip 헤더가 포함되어야 함
+
+# 번들 파일 존재 확인
+curl -I http://<IP>/P010_bundle_0200.js
+```
+
+주의: `Accept-Encoding: gzip` 헤더가 없는 클라이언트(예: curl 기본)는 원본(raw) 파일을 받음. 이는 [C-G-1]의 표준 준수 정책에 따른 정상 동작.
+
 ---
 
 ## 6. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
+| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 + (v1.2의 Gzip/번들/소스-배포 분리 유지) | Antigravity AI |
 | 2026-10-19 | v1.2 | 웹 에셋 JS 번들링(`P010_bundle_0200.js`) 및 Gzip 사전 압축 파이프라인(`pio_gzip_0200.py`), 소스/배포 분리(`data_src_v0200` ↔ `data_v0200`), C++ `.gz` 서빙 반영 | Antigravity AI |
 | 2026-10-19 | v1.1 | 현재 폴더/파일 구조(`src/v0200/contract_doc_0200/*_0200.md`)로 전면 현행화, v0200 전체 디렉토리 트리 추가, Python 커밋 스크립트 경로 현행화 | Antigravity AI |
 | (초기) | v1.0 | 최초 계약 문서 체계 수립, 감사 이력 F-01~I-4 등록 | 개발팀 |

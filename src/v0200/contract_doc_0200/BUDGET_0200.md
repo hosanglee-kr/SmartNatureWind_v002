@@ -9,7 +9,6 @@
 
 | 태스크 ID | 태스크 명칭 | 코어 친화도 | 우선순위 | 실행 주기 | 스택 할당 | WCET (최악 실행 시간 추정) | 안전 마진 / 비고 |
 |---|---|---|---|---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
 | **T-loop** | `loopTask` | Core 1 / 0 | 1 | 10 ms (`delay(10)`) | 8,192 B | 평상시 15~25 ms<br>(Reload 시 단일 스파이크 100~500 ms) | 3~4 KB 여유, WDT 10초 대비 5% 미만 소비 |
 | **T-async** | `async_tcp` | Core 1 / 0 | 1 | 비동기 이벤트 | 4,096 B | 일반 API < 5 ms<br>(F-05/F-06 위임으로 대기 제거) | [F-10] 8,192 B 증설 후보 관리 |
 | **T-wf** | `WF10_Reconnect` | Any | 1 | 세마포어 이벤트 | 8,192 B | 재연결 실패 시 최대 90초 (5회 시도) | WDT 미등록 태스크 (블로킹 허용) |
@@ -47,7 +46,6 @@
 
 | HTTP / WS 라우트 | 주요 실행 내용 | 예상 WCET | F-05 / F-06 적용 전후 비교 |
 |---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
 | **`POST /api/v001/reload`** | `requestReload()` (atomic CAS) | **< 1 ms** | **✅ 해결: 기존 100~500ms 파일 I/O 블로킹 제거** |
 | **`POST /api/v001/motion`** | `patchMotionFromJson` + `requestMotionSimApply` | **< 5 ms** | **✅ 해결: 기존 CT10 뮤텍스 대기(최대 100ms) 제거** |
 | `POST /api/v001/config/save` | `saveDirtyConfigs()` (LittleFS 쓰기) | 50 ~ 200 ms | 명시적 저장 요청 (동기 파일 I/O 허용) |
@@ -62,7 +60,6 @@
 
 | 기능 블록 | 최대 블로킹 시간 | 영향 받는 태스크 | 완화 및 방어 전략 |
 |---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
 | `LittleFS` 파일 읽기/쓰기 | 10 ~ 200 ms | T-loop (reload) / T-async (save) | 원자적 rename 및 파일 크기 상한 제한 |
 | `WiFiMulti.run()` | 회당 2초 × 최대 5회 | **T-wf 전용** | 메인 제어 루프에서 분리된 전담 태스크에서만 실행 |
 | `S10::toChartJson()` 직렬화 | 1 ~ 3 ms | T-loop | 정적 capacity 사전 할당 및 file-static 문서 사용 |
@@ -75,7 +72,6 @@
 
 | 태스크 | 할당된 스택 | 최대 사용 추정량 (High Water Mark) | 안전 마진 | 관리 방침 |
 |---|---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
 | `loopTask` | 8,192 B | 3,500 ~ 4,500 B | ~3.5 KB | reload 시 재귀 깊이 최소화로 안정적 |
 | `async_tcp` | 4,096 B | 2,500 ~ 3,200 B | ~1.0 KB | F-05로 부담 완화, Gemini/OTA 고려 8KB 상향 후보 |
 | `WF10_Reconnect` | 8,192 B | 3,000 ~ 4,000 B | ~4.0 KB | 태스크 종료 시 HighWaterMark 로깅 |
@@ -87,7 +83,6 @@
 
 | 관측 지표 | 수집 및 계측 위치 | 정상 목표치 | 이상 시 조치 |
 |---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
 | `dt_max` | `A00_run` 진입/이탈 시간 측정 | < 30 ms (Reload 제외) | 초과 시 WebSocket 브로드캐스트 스로틀 강화 |
 | `reload_cycle_ms` | `reloadAll()` 전후 millis | < 1,000 ms | 초과 시 LittleFS 조각화 및 플래시 I/O 점검 |
 | `pendingReload_latency` | `requestReload` → 소비 시점 간격 | < 50 ms | 초과 시 loopTask 지연 분석 |
@@ -101,7 +96,6 @@
 ### 7.1 LittleFS 플래시 스토리지 절감 예산
 | 항목 | 번들링/Gzip 적용 전 | 번들링/Gzip 적용 후 | 절감 효과 |
 |---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
 | **총 웹 에셋 크기** | 428.9 KB (29개 파일) | **114.6 KB** (29개 Gzip 파일) | **-314.3 KB (-73.3%)** |
 | **메인 대시보드 스크립트** | 8개 파일 총 158.4 KB | `P010_bundle_0200.js.gz` **36.2 KB** | **-122.2 KB (-77.1%)** |
 | **LittleFS 잔여 여유 공간** | 약 65% | **약 90% 이상** | 설정 JSON 백업(`.bak`) 및 로그 공간 극대화 |
@@ -117,7 +111,7 @@
 ## 8. 개정 이력
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
+| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 + (v1.2의 플래시/소켓 예산 지표 유지) | Antigravity AI |
 | 2026-10-19 | v1.2 | 웹 에셋 Gzip 사전 압축 및 번들링 적용에 따른 플래시 스토리지(428.9KB→114.6KB, -73.3%) 및 동시 HTTP 소켓 예산(11개→4개) 최적화 지표 반영 | Antigravity AI |
 | 2026-10-19 | v1.1 | v0200 소스 코드 기준 WCET 및 스택 예산 정밀 동기화, `_0200.md` 체계 링크 현행화 | Antigravity AI |
 | (초기) | v1.0 | 최초 정적 감사 기반 자원 예산서 작성 | 개발팀 |

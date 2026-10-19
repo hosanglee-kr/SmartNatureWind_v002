@@ -9,7 +9,6 @@
 
 | 태스크 ID | 태스크 식별자 | 생성 주체 | 우선순위 | 스택 할당 | 핵심 역할 및 설명 |
 |---|---|---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
 | **T-loop** | `loopTask` | Arduino Core | 1 | 8,192 B | `A00_run()` 메인 주기 루프 실행 (CT10, M10, TM10, N10, LED, 지연 Free) |
 | **T-async** | `async_tcp` | ESPAsyncWebServer / AsyncTCP | 1 | 4,096 B | HTTP 비동기 요청 처리, WebSocket 프레임 수신 및 이벤트 핸들러 |
 | **T-wf** | `WF10_Reconnect` | `CL_WF10_WiFiManager::_ensureWifiTask` | 1 | 8,192 B | Wi-Fi 연결 및 재연결 전담 (블로킹 분리, WDT 미등록) |
@@ -23,7 +22,6 @@
 
 | 뮤텍스 / 세마포어 심볼 | 타입 | 초기화 시점 | 획득 타임아웃 | 소유 모듈 및 보호 대상 |
 |---|---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
 | `CL_CT10_ControlManager::s_stateMutex` | Recursive Mutex | Lazy-init (첫 접근 시) | 100 ms | CT10 장치 제어 상태(`runCtx`), FSM 상태 전이, 오버라이드, 런타임 |
 | `CL_C10_ConfigManager::s_recursiveMutex` | Recursive Mutex | `CL_C10_ConfigManager::begin()` | 100 ms | 파일 I/O 및 설정 CRUD/검증 동시성 보호 |
 | `CL_C10_ConfigManager::s_rootSwapMux` | `portMUX_TYPE` (Spinlock) | 정적 컴파일 타임 | Critical Section | `g_A20_config_root` 8개 포인터 원자적 스냅샷/스왑 보호 |
@@ -42,7 +40,6 @@
 
 | 전역 심볼 | 소유 모듈 | 허용된 Reader (읽기) | 허용된 Writer (쓰기) | 동시성 보호 규약 |
 |---|---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
 | `g_A20_config_root` (8개 섹션 포인터) | C10 | 모든 태스크 | `CL_CT10_ControlManager::reloadAll` 내부 swap만 허용 | 반드시 `CL_C10_ConfigManager::getRootSnapshot(v_snap)`으로 스냅샷 복사 후 접근 |
 | `g_A00_server` | A00 | 모든 태스크 | `A00_init()` 초기화 시점만 | 시작 후 라우트 등록/호출 불변 |
 | `g_P10_pwm` | A00 | CT10, S10 | `A00_init()` 초기화 시점만 | `CL_P10_PWM::P10_begin` 후 쓰레드 안전 하드웨어 제어 |
@@ -129,7 +126,6 @@
 
 | 패턴명 | 발생 트리거 | 실행 컨텍스트 | 안전성 보장 기제 |
 |---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
 | **Pending Reload (F-05)** | T-async `requestReload()` | T-loop `consumePendingReload()` → `reloadAll()` | `s_pendingReload` (`std::atomic<bool>`) atomic CAS |
 | **Pending Motion.Sim Apply (F-06)** | T-async `requestMotionSimApply()` | T-loop `tickLoop` 시작부 → `applyMotionSimConfigToSim()` | `_pendingMotionSimApply` (`std::atomic<bool>`) atomic store/exchange |
 | **Pending Memory Free (E-1)** | `reloadAll()` 완료 시점 | T-loop `CL_C10_ConfigManager::processPendingFree()` | 3초 grace period + 2-슬롯 spinlock 큐 |
@@ -144,7 +140,6 @@
 
 | ID | 심각도 | 위치 | 결함 내용 및 리스크 | 해결 및 반영 내역 | 상태 |
 |---|---|---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
 | **F-01** | 🔴 High | `WF10::startSTA` | GOT_IP 이벤트 mutex 경합으로 TM10 통지 누락 시 영구 NTP 미동기 | `startSTA` 성공 시 TM10 명시 직접 통지 경로 추가 | ✅ 해결 |
 | **F-02** | 🟡 Mid | `WF10::_ensureWifiTask` | 동시 요청 시 재연결 태스크 이중 `xTaskCreate` 생성 위험 | mutex 보호 및 핸들 double-check 방어 | ✅ 해결 |
 | **F-03** | 🔴 High | `A00_run` | `M10::tick()` 호출자 누락으로 PIR holdSec 만료 불가 | `A00_run()` 내에 `g_M10_motionLogic->tick()` 배치 | ✅ 해결 |
@@ -167,7 +162,7 @@
 ## 8. 개정 이력
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
+| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 + (v1.2의 Gzip 서빙 계약 유지) | Antigravity AI |
 | 2026-10-19 | v1.2 | W10 LittleFS 정적 파일 서빙 시 `.gz` 사전 압축 우선 탐색 및 `Content-Encoding: gzip` 헤더 응답 규약, I-6 웹 에셋 번들/Gzip 최적화 반영 | Antigravity AI |
 | 2026-10-19 | v1.1 | v0200 소스 코드 실제 심볼 및 함수 시그니처 정밀 동기화, `_0200.md` 체계 링크 현행화 | Antigravity AI |
 | (초기) | v1.0 | 최초 정적 감사 기반 동시성 계약서 작성 | 개발팀 |

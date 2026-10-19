@@ -10,7 +10,6 @@
 
 | 상태 변수 / 객체 | 단독 기록자 (Writer) | 허용된 조회자 (Reader) | 동시성 보호 기제 | 비고 |
 |---|---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
 | `runCtx` (`CL_CT10_ControlManager`) | T-loop (`CT10::tickLoop`) | T-async (`exportStateJson_v02`), T-loop | `CT10::s_stateMutex` (100ms) | 제어 상태(FSM) 및 이유, 홀드 시간 |
 | `overrideState` | T-loop, T-async (`startOverride*`) | T-loop (`tickOverride`, `decideRunSource`) | `CT10::s_stateMutex` | 수동/오버라이드 풍속 및 잔여시간 |
 | `autoOffRt` | T-loop (`CT10::tickLoop`) | T-loop | `CT10::s_stateMutex` | 타이머/시간/온도 자동종료 런타임 |
@@ -75,7 +74,6 @@
 
 | 이전 상태 (From) | 전이 상태 (To) | 진입 조건 (Entry Trigger) | 수반 액션 (Side Effect) | 이탈 조건 (Exit Condition) |
 |---|---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
 | Any | **OVERRIDE** | 수동 조작 API 호출 (`startOverride*`) | 기존 세그먼트 런타임 클리어, 팬 즉시 구동 | 오버라이드 시간 만료 또는 명시적 정지 |
 | Any | **AUTOOFF_STOPPED**| 타이머 만료, offTime 도달, 한계온도 초과 | `sim.stop()`, `_autoOffLatched = true` | `ackEvent()`, `setMode()`, `startOverride()` |
 | Any | **MOTION_BLOCKED** | 활성 스케줄/프로파일 중 `isMotionBlocked()` | `sim.stop()` | 재실 감지 회복 (F-03 M10 tick으로 갱신) |
@@ -172,7 +170,7 @@ T-async (async_tcp)                          T-loop (loopTask / CT10::tickLoop)
 ## 7. 개정 이력
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
+| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 + (v1.2의 번들 상태 규격 유지) | Antigravity AI |
 | 2026-10-19 | v1.2 | W10 정적 파일 서빙 시 `.gz` 사전 압축 탐색 및 `P010_bundle_0200.js` 번들 상태 규격 동기화 | Antigravity AI |
 | 2026-10-19 | v1.1 | v0200 소스 코드 Enum 및 런타임 변수명 전면 동기화, `_persistOffTimeLastYday` 추가, 문서 링크 체계 현행화 | Antigravity AI |
 | (초기) | v1.0 | 최초 정적 감사 기반 상태 소유권 및 FSM 명세 작성 | 개발팀 |

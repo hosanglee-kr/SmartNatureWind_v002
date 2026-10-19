@@ -10,9 +10,11 @@
 해결:
   - "## N. 개정 이력" 섹션 이전 본문에서만 정규식 제거
   - 개정이력 테이블 자체는 건드리지 않음
+  - --strict: CI gate용, dry-run + strict + bleed 발견 시 exit 1
 
 사용:
   python src/v0200/tools_0200/fix_table_bleed.py --dry-run
+  python src/v0200/tools_0200/fix_table_bleed.py --dry-run --strict   # CI gate
   python src/v0200/tools_0200/fix_table_bleed.py
 """
 
@@ -34,7 +36,7 @@ if sys.platform == "win32":
         pass
 
 # 대상 문서 (contract_doc_0200 디렉토리 내)
-TARGET_DOCS: tuple[str, ...] = (
+TARGET_DOCS: tuple = (
     "README_0200.md",
     "SPEC_0200.md",
     "CONTRACT_0200.md",
@@ -54,8 +56,7 @@ REVISION_SECTION_MARKERS = (
     "## 6. 개정 이력",
 )
 
-# 제거 대상 패턴:
-#   | 2026-10-19 | v2.0 | v0200 승격: ... | Antigravity AI |
+# 제거 대상 패턴
 BLEED_PATTERN = re.compile(
     r'^\|\s*2026-10-19\s*\|\s*v2\.0\s*\|.*?Antigravity AI\s*\|\s*$\r?\n',
     re.MULTILINE,
@@ -63,7 +64,6 @@ BLEED_PATTERN = re.compile(
 
 
 def find_revision_section_index(content: str) -> int:
-    """개정이력 섹션 시작 위치 반환 (없으면 -1)."""
     for marker in REVISION_SECTION_MARKERS:
         idx = content.find(marker)
         if idx >= 0:
@@ -72,23 +72,18 @@ def find_revision_section_index(content: str) -> int:
 
 
 def fix_document(path: Path, dry_run: bool) -> int:
-    """단일 문서 수정. 제거된 행 수 반환."""
     if not path.is_file():
         print(f"  [SKIP] 파일 없음: {path.name}")
         return 0
 
     original = path.read_text(encoding="utf-8")
-
     rev_idx = find_revision_section_index(original)
-    if rev_idx < 0:
-        # 개정이력 섹션 없으면 파일 전체에 적용
-        body = original
-        tail = ""
-    else:
-        body = original[:rev_idx]
-        tail = original[rev_idx:]
 
-    # 본문에서만 제거
+    if rev_idx < 0:
+        body, tail = original, ""
+    else:
+        body, tail = original[:rev_idx], original[rev_idx:]
+
     matches = BLEED_PATTERN.findall(body)
     removed_count = len(matches)
 
@@ -112,16 +107,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="v0200 계약 문서 테이블 개정이력 행 자동 제거",
     )
-    parser.add_argument(
-        "-n", "--dry-run",
-        action="store_true",
-        help="파일 수정 없이 검사만",
-    )
-    parser.add_argument(
-        "--dir",
-        default="src/v0200/contract_doc_0200",
-        help="문서 디렉토리 (기본: src/v0200/contract_doc_0200)",
-    )
+    parser.add_argument("-n", "--dry-run", action="store_true",
+                        help="파일 수정 없이 검사만")
+    parser.add_argument("--dir", default="src/v0200/contract_doc_0200",
+                        help="문서 디렉토리")
+    parser.add_argument("--strict", action="store_true",
+                        help="CI gate: dry-run 중 bleed 발견 시 exit 1")
     args = parser.parse_args()
 
     root = Path(args.dir).resolve()
@@ -133,6 +124,8 @@ def main() -> int:
     print(f" [A-P0] 테이블 개정이력 행 제거: {root}")
     if args.dry_run:
         print(" 모드: DRY-RUN")
+    if args.strict:
+        print(" 모드: STRICT (gate)")
     print("=" * 60)
 
     total_removed = 0
@@ -141,6 +134,11 @@ def main() -> int:
 
     print()
     print(f" 총 제거: {total_removed}행 ({'DRY-RUN' if args.dry_run else '적용 완료'})")
+
+    # CI gate: dry-run + strict + bleed 발견 시 실패
+    if args.strict and args.dry_run and total_removed > 0:
+        print(f"[STRICT] bleed {total_removed}행 발견 → exit 1", file=sys.stderr)
+        return 1
     return 0
 
 

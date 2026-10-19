@@ -4,8 +4,7 @@ src/v0200/contract_doc_0200 커밋 스크립트 (Python 3.7+ 크로스 플랫폼
 
 기능:
   1. git 저장소 루트 자동 감지 (git rev-parse --show-toplevel)
-  2. src/v0200/contract_doc_0200/ 필수 문서 존재 검증
-     (README/SPEC/CONTRACT/STATE/FLOW/BUDGET/TEST_PLAN/UI_TERMINOLOGY)
+  2. 필수 문서 존재 검증 (--strict 시 선택 문서도 필수화)
   3. staging 후 단일 커밋
   4. 커밋 후 요약 출력 (author/date, 다음 push 명령)
 
@@ -13,6 +12,7 @@ src/v0200/contract_doc_0200 커밋 스크립트 (Python 3.7+ 크로스 플랫폼
   python src/v0200/tools_0200/commit_contracts_0200.py
   python src/v0200/tools_0200/commit_contracts_0200.py -m "docs(contracts): 계약 문서 갱신"
   python src/v0200/tools_0200/commit_contracts_0200.py --dry-run
+  python src/v0200/tools_0200/commit_contracts_0200.py --dry-run --strict  # CI gate
 
 지원 OS: Windows / macOS / Linux
 인코딩 : UTF-8 강제 (Windows cp949 회피)
@@ -40,6 +40,11 @@ REQUIRED_FILES: Tuple[str, ...] = (
     "src/v0200/contract_doc_0200/TEST_PLAN_0200.md",
 )
 
+# 선택 문서 (--strict 시 필수화)
+OPTIONAL_FILES: Tuple[str, ...] = (
+    "src/v0200/contract_doc_0200/Ref/UI_TERMINOLOGY_0200.md",
+)
+
 DEFAULT_MSG = "src/v0200/contract_doc_0200: 계약 문서 갱신"
 CONTRACTS_REL = "src/v0200/contract_doc_0200"
 
@@ -63,7 +68,6 @@ if sys.platform == "win32":
 # 헬퍼
 # ============================================================
 def _run(cmd: Sequence[str], cwd: Path, check: bool = True) -> subprocess.CompletedProcess:
-    """서브프로세스 실행 (UTF-8 강제)."""
     env = os.environ.copy()
     env.setdefault("PYTHONIOENCODING", "utf-8")
     return subprocess.run(
@@ -87,7 +91,6 @@ def _info(msg: str = "") -> None:
 
 
 def find_repo_root(start: Path) -> Path:
-    """`git rev-parse --show-toplevel`로 저장소 루트 감지."""
     try:
         res = _run(["git", "rev-parse", "--show-toplevel"], cwd=start, check=True)
     except FileNotFoundError:
@@ -106,14 +109,26 @@ def find_repo_root(start: Path) -> Path:
     return Path(root)
 
 
-def verify_required_files(repo_root: Path) -> None:
-    """필수 계약 문서 존재 확인."""
+def verify_required_files(repo_root: Path, strict: bool) -> None:
+    """필수 계약 문서 존재 확인. --strict 시 선택 문서도 필수."""
     missing: List[str] = [rel for rel in REQUIRED_FILES if not (repo_root / rel).is_file()]
     if missing:
         _err("필수 문서 누락:")
         for m in missing:
             print(f"  - {m}", file=sys.stderr)
         sys.exit(EXIT_MISSING)
+
+    # 선택 문서 검증
+    opt_missing = [rel for rel in OPTIONAL_FILES if not (repo_root / rel).is_file()]
+    if opt_missing:
+        if strict:
+            _err("--strict: 선택 문서 누락:")
+            for m in opt_missing:
+                print(f"  - {m}", file=sys.stderr)
+            sys.exit(EXIT_MISSING)
+        else:
+            for m in opt_missing:
+                print(f"[WARN] 선택 문서 없음 (--strict 시 실패): {m}", file=sys.stderr)
 
 
 # ============================================================
@@ -128,6 +143,7 @@ def main() -> int:
             "  python src/v0200/tools_0200/commit_contracts_0200.py\n"
             "  python src/v0200/tools_0200/commit_contracts_0200.py -m 'docs(contracts): 계약 문서 갱신'\n"
             "  python src/v0200/tools_0200/commit_contracts_0200.py --dry-run\n"
+            "  python src/v0200/tools_0200/commit_contracts_0200.py --dry-run --strict  # CI gate\n"
         ),
     )
     parser.add_argument(
@@ -140,12 +156,17 @@ def main() -> int:
         action="store_true",
         help="실제 커밋 없이 검증만 수행",
     )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="선택 문서(Ref/UI_TERMINOLOGY_0200.md)도 필수로 검증 (CI gate)",
+    )
     args = parser.parse_args()
 
     # ---- 저장소 루트 감지 -----------------------------------
     script_dir = Path(__file__).resolve().parent
     repo_root  = find_repo_root(script_dir)
-    verify_required_files(repo_root)
+    verify_required_files(repo_root, args.strict)
 
     # ---- 헤더 요약 -----------------------------------------
     _info("=" * 60)
@@ -154,6 +175,8 @@ def main() -> int:
     _info(f" 메시지   : {args.message}")
     if args.dry_run:
         _info(" 모드     : DRY-RUN (실제 커밋 없음)")
+    if args.strict:
+        _info(" 모드     : STRICT (선택 문서 필수)")
     _info("=" * 60)
 
     # ---- [1/4] 변경 사항 확인 ------------------------------

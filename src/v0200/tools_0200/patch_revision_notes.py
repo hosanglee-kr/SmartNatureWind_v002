@@ -9,9 +9,11 @@
 해결:
   - v2.0 행의 "변경 내용" 끝에 "(v1.2의 Gzip/번들 지표 유지)" 등 병기
   - 대상 문서: README / CONTRACT / STATE / FLOW / BUDGET / SPEC
+  - --check: CI gate용, 미병기 대상 발견 시 exit 1
 
 사용:
   python src/v0200/tools_0200/patch_revision_notes.py --dry-run
+  python src/v0200/tools_0200/patch_revision_notes.py --check   # CI gate
   python src/v0200/tools_0200/patch_revision_notes.py
 """
 
@@ -32,7 +34,7 @@ if sys.platform == "win32":
         pass
 
 # (파일명, 병기할 접미사)
-TARGETS: tuple[tuple[str, str], ...] = (
+TARGETS: tuple = (
     ("README_0200.md",   " + (v1.2의 Gzip/번들/소스-배포 분리 유지)"),
     ("SPEC_0200.md",     " + (v1.2의 Gzip 파이프라인/번들 지표 유지)"),
     ("CONTRACT_0200.md", " + (v1.2의 Gzip 서빙 계약 유지)"),
@@ -59,7 +61,6 @@ def patch_file(path: Path, suffix: str, dry_run: bool) -> int:
     def _repl(m: re.Match) -> str:
         nonlocal modified
         before, middle, after = m.group(1), m.group(2), m.group(3)
-        # 이미 병기됐으면 skip
         if "유지)" in middle:
             return m.group(0)
         modified = True
@@ -82,9 +83,12 @@ def patch_file(path: Path, suffix: str, dry_run: bool) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="v0200 개정이력 v2.0 행 문구 보강")
-    parser.add_argument("-n", "--dry-run", action="store_true", help="파일 수정 없이 검사만")
+    parser.add_argument("-n", "--dry-run", action="store_true",
+                        help="파일 수정 없이 검사만")
     parser.add_argument("--dir", default="src/v0200/contract_doc_0200",
                         help="문서 디렉토리")
+    parser.add_argument("--check", action="store_true",
+                        help="CI gate: 미병기 대상 발견 시 exit 1 (내부적으로 dry-run 실행)")
     args = parser.parse_args()
 
     root = Path(args.dir).resolve()
@@ -92,18 +96,28 @@ def main() -> int:
         print(f"[ERROR] 디렉토리 없음: {root}", file=sys.stderr)
         return 1
 
+    # --check는 내부적으로 dry-run 강제
+    dry = args.dry_run or args.check
+
     print("=" * 60)
     print(f" [A-P2] 개정이력 v2.0 문구 병기: {root}")
-    if args.dry_run:
+    if args.check:
+        print(" 모드: CHECK (gate)")
+    elif dry:
         print(" 모드: DRY-RUN")
     print("=" * 60)
 
     total = 0
     for name, suffix in TARGETS:
-        total += patch_file(root / name, suffix, args.dry_run)
+        total += patch_file(root / name, suffix, dry)
 
     print()
-    print(f" 총 수정: {total}건 ({'DRY-RUN' if args.dry_run else '적용 완료'})")
+    print(f" 총 수정: {total}건 ({'DRY-RUN' if dry else '적용 완료'})")
+
+    # CI gate: check 모드에서 미병기 발견 시 실패
+    if args.check and total > 0:
+        print(f"[CHECK] 병기 미완료 {total}건 → exit 1", file=sys.stderr)
+        return 1
     return 0
 
 

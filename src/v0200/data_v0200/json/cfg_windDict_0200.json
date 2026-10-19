@@ -1,11 +1,11 @@
 {
   "windDict": {
-    "version": "070",
+    "version": "0200",
     "jsonFile": "cfg_windDict_0200.json",
     "presets": [
       {
         "idx": 0,
-        "name": "Ocean",
+        "name": "Ocean Breeze",
         "code": "OCEAN",
         "factors": {
           "windIntensity": 70,

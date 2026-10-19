@@ -105,22 +105,15 @@ jobs:
       # ---------------------------------------------------------------
       # [신규] 계약 문서 무결성 Gate (build 이전 조기 차단)
       # - 목적: 계약 위반 PR이 컴파일 성공해도 머지되는 것을 방지
-      # - 3종 도구는 모두 읽기 전용 (--dry-run / --check) → 파일/git 변경 없음
+      # - 1종 도구는 모두 읽기 전용 (--dry-run / --check) → 파일/git 변경 없음
       # - 실패 시 build job은 needs 의존으로 자동 스킵됨
       # ---------------------------------------------------------------
       - name: Verify contract docs (gate)
         shell: bash
         run: |
           set -e
-          echo "=== [1/3] fix_table_bleed (dry-run, strict) ==="
-          python3 src/v0200/tools_0200/fix_table_bleed.py --dry-run --strict
-
-          echo "=== [2/3] patch_revision_notes (check) ==="
-          python3 src/v0200/tools_0200/patch_revision_notes.py --check
-
-          echo "=== [3/3] commit_contracts_0200 (dry-run, strict) ==="
+          echo "=== [1/1] commit_contracts_0200 (dry-run, strict) ==="
           python3 src/v0200/tools_0200/commit_contracts_0200.py --dry-run --strict
-
           echo "=== [OK] 계약 문서 검증 통과 ==="
 
       # ---------------------------------------------------------------

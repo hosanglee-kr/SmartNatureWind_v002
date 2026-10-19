@@ -26,9 +26,7 @@ src/v0200/
 ├── tools_0200/                    # 빌드/검증 보조 도구
 │   ├── pio_gzip_0200.py           # 웹 에셋 번들링 + Gzip 사전 압축
 │   ├── commit_contracts_0200.py   # 계약 문서 검증/동시 커밋 (Python 3.7+)
-│   ├── migrate_to_0201.py         # 0200→0201 접미사 마이그레이션
-│   ├── fix_table_bleed.py         # 계약 문서 테이블 침식 자동 제거
-│   └── patch_revision_notes.py    # 개정이력 v2.0 문구 병기
+│   └── migrate_to_0201.py         # 0200→0201 접미사 마이그레이션
 │
 ├── data_src_v0200/                # [웹 개발 원본] (8분할 JS + HTML/CSS)
 ├── data_v0200/                    # [배포 스테이징] LittleFS 이미지 대상
@@ -195,14 +193,6 @@ python src/v0200/tools_0200/commit_contracts_0200.py -m "docs(contracts): F-05 �
 # 0200 → 0201 접미사 마이그레이션 (검증/적용)
 python src/v0200/tools_0200/migrate_to_0201.py --dry-run
 python src/v0200/tools_0200/migrate_to_0201.py --docs
-
-# 계약 문서 테이블 침식 제거
-python src/v0200/tools_0200/fix_table_bleed.py --dry-run
-python src/v0200/tools_0200/fix_table_bleed.py
-
-# 개정이력 v2.0 문구 병기
-python src/v0200/tools_0200/patch_revision_notes.py --dry-run
-python src/v0200/tools_0200/patch_revision_notes.py
 
 # 웹 리소스 gzip 번들 빌드
 python src/v0200/tools_0200/pio_gzip_0200.py

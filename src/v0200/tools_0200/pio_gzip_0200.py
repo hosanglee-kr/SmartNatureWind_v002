@@ -13,13 +13,16 @@ Smart Nature Wind v0200 — LittleFS Web Staging + Gzip 사전 압축 및 JS 번
 사용:
   python src/v0200/tools_0200/pio_gzip_0200.py
   (또는 platformio.ini의 extra_scripts 연동 시 pio run --target uploadfs 시 자동 실행)
+
+[개정 이력]
+  - SCons hook: run_staging() 반환값을 검사하여 실패 시 sys.exit()로 빌드 중단
+  - 미사용 import(os, re) 제거
+  - SCons 타겟 매칭에서 중복 "fs" substring 제거
 """
 
 from __future__ import annotations
 
 import gzip
-import os
-import re
 import shutil
 import sys
 from pathlib import Path
@@ -67,7 +70,7 @@ def find_project_root() -> Path:
     return Path.cwd()
 
 
-def gzip_file(src_path: Path, dst_gz_path: Path) -> tuple[int, int]:
+def gzip_file(src_path: Path, dst_gz_path: Path) -> tuple:
     """파일을 읽어 Gzip Level 9로 압축 저장 (raw_bytes, gz_bytes 반환)."""
     dst_gz_path.parent.mkdir(parents=True, exist_ok=True)
     raw_data = src_path.read_bytes()
@@ -264,12 +267,19 @@ except Exception:
 
 if is_scons:
     # PlatformIO 빌드 컨텍스트: buildfs / uploadfs 타깃일 때만 실행
+    # [개정] "fs" substring은 buildfs/uploadfs에 이미 포함되므로 중복 제거
     _targets_str = " ".join(COMMAND_LINE_TARGETS).lower()  # type: ignore
-    _is_fs_target = any(t in _targets_str for t in ["buildfs", "uploadfs", "fs"])
+    _is_fs_target = any(t in _targets_str for t in ["buildfs", "uploadfs"])
 
     if _is_fs_target:
         _env_proj_dir = Path(env["PROJECT_DIR"])  # type: ignore
-        run_staging(_env_proj_dir)
+        # [개정] run_staging 반환값을 검사하여 실패 시 빌드 중단
+        #  - 이전: 반환값 무시 → staging 실패해도 buildfs가 계속 진행
+        #  - 이후: 실패 시 sys.exit()로 SCons 파이프라인 중단
+        _ret = run_staging(_env_proj_dir)
+        if _ret != 0:
+            print(f"[pio_gzip_0200] staging 실패 (exit={_ret})", file=sys.stderr)
+            sys.exit(_ret)
     else:
         # 일반 펌웨어 빌드 시에는 불필요한 I/O 및 인코딩 간섭 회피
         pass
@@ -277,3 +287,4 @@ elif __name__ == "__main__":
     # 독립 CLI 실행 컨텍스트
     root = find_project_root()
     sys.exit(run_staging(root))
+    

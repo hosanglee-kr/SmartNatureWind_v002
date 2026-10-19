@@ -33,19 +33,19 @@
 // ─────────────────────────────────────────────
 // 타입 노출용 include (extern/prototype에 필요)
 // ─────────────────────────────────────────────
-#include "A20_Const_070.h"       // g_M10_motionLogic extern 선언
-#include "CT10_Ctl_070.h"        // CL_CT10_ControlManager (접근자 반환형)
-#include "P10_PWM_ctrl_070.h"    // CL_P10_PWM
-#include "A30_LED_070.h"         // CL_A30_LED
+#include "A20_Const_070.h"    // g_M10_motionLogic extern 선언
+#include "CT10_Ctl_070.h"     // CL_CT10_ControlManager (접근자 반환형)
+#include "P10_PWM_ctrl_070.h" // CL_P10_PWM
+#include "A30_LED_070.h"      // CL_A30_LED
 
 // ======================================================
 // 전역 인스턴스 (extern 선언)
 //  - 실제 정의는 A00_Main_070.cpp에서 단 한 번만 수행
 //  - g_M10_motionLogic은 A20_Const_070.h에 extern이 이미 존재
 // ======================================================
-extern AsyncWebServer      g_A00_server;
-extern CL_P10_PWM          g_P10_pwm;
-extern CL_A30_LED*         g_A00_ledController;
+extern AsyncWebServer g_A00_server;
+extern CL_P10_PWM     g_P10_pwm;
+extern CL_A30_LED*    g_A00_ledController;
 
 // ======================================================
 // CT10 접근자

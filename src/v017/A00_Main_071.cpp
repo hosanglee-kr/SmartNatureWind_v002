@@ -48,9 +48,9 @@
 // ======================================================
 CL_M10_MotionLogic* g_M10_motionLogic = nullptr;
 
-AsyncWebServer      g_A00_server(80);
-CL_P10_PWM          g_P10_pwm;
-CL_A30_LED*         g_A00_ledController = nullptr;
+AsyncWebServer g_A00_server(80);
+CL_P10_PWM     g_P10_pwm;
+CL_A30_LED*    g_A00_ledController = nullptr;
 
 // ======================================================
 // CT10 접근자
@@ -194,11 +194,9 @@ void A00_run() {
     //  - 이 블록은 tickLoop 이전 (CT10 mutex 미보유) 에서 실행
     // ======================================================
     if (CL_CT10_ControlManager::consumePendingReload()) {
-        CL_D10_Logger::log(EN_L10_LOG_INFO,
-                           "[A00] Executing pending reload (loopTask)...");
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] Executing pending reload (loopTask)...");
         bool v_reloadOk = CL_CT10_ControlManager::reloadAll();
-        CL_D10_Logger::log(EN_L10_LOG_INFO,
-                           "[A00] Pending reload done (ok=%d)", (int)v_reloadOk);
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] Pending reload done (ok=%d)", (int)v_reloadOk);
 
         // 재로드된 system 설정을 런타임 반영 (Logger level, hostname)
         if (v_reloadOk && g_A20_config_root.system) {

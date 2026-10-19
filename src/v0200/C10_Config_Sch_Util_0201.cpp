@@ -18,21 +18,6 @@
 
 #include <string.h>
 
-// =====================================================
-// ID/NO 정책 상수
-// =====================================================
-#ifndef G_C10_SCH_ID_START
-# define G_C10_SCH_ID_START 1
-#endif
-#ifndef G_C10_SCH_ID_STEP
-# define G_C10_SCH_ID_STEP 1
-#endif
-#ifndef G_C10_SEG_ID_START
-# define G_C10_SEG_ID_START 1
-#endif
-#ifndef G_C10_SEG_ID_STEP
-# define G_C10_SEG_ID_STEP 1
-#endif
 
 // =====================================================
 // Helper 구현

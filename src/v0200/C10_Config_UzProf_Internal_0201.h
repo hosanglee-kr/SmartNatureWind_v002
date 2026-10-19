@@ -16,6 +16,23 @@
 #include "C10_Config_0201.h"
 #include "A20_Const_0201.h"
 
+// =====================================================
+// [FIX] UzProf ID/NO 정책 매크로 (분할 파일 공유)
+// =====================================================
+#ifndef G_C10_PROFILE_ID_START
+# define G_C10_PROFILE_ID_START 1
+#endif
+#ifndef G_C10_PROFILE_ID_STEP
+# define G_C10_PROFILE_ID_STEP 1
+#endif
+#ifndef G_C10_PROFILE_SEG_ID_START
+# define G_C10_PROFILE_SEG_ID_START 1
+#endif
+#ifndef G_C10_PROFILE_SEG_ID_STEP
+# define G_C10_PROFILE_SEG_ID_STEP 1
+#endif
+
+
 // ------------------------------------------------------
 // Helper declarations (C10_Config_UzProf_Util_0201.cpp 정의)
 // ------------------------------------------------------

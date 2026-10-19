@@ -19,6 +19,26 @@
 #include "C10_Config_0201.h"    // ST_A20_ScheduleItem_t 등 (A20_Const_0201.h 경유)
 #include "A20_Const_0201.h"
 
+// =====================================================
+// [FIX] Sch ID/NO 정책 매크로 (분할 파일 공유)
+//  - 이전: Util_0201.cpp 파일 스코프 → 다른 .cpp에서 미참조
+//  - 이후: Internal 헤더로 이동 → 5파일 모두 참조 가능
+//  - #ifndef 가드로 다중 include 안전
+// =====================================================
+#ifndef G_C10_SCH_ID_START
+# define G_C10_SCH_ID_START 1
+#endif
+#ifndef G_C10_SCH_ID_STEP
+# define G_C10_SCH_ID_STEP 1
+#endif
+#ifndef G_C10_SEG_ID_START
+# define G_C10_SEG_ID_START 1
+#endif
+#ifndef G_C10_SEG_ID_STEP
+# define G_C10_SEG_ID_STEP 1
+#endif
+
+
 // ------------------------------------------------------
 // Helper declarations (defined in C10_Config_Sch_Util_0201.cpp)
 // ------------------------------------------------------

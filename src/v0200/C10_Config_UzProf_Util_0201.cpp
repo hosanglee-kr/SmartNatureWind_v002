@@ -16,18 +16,6 @@
 
 #include <string.h>
 
-#ifndef G_C10_PROFILE_ID_START
-# define G_C10_PROFILE_ID_START 1
-#endif
-#ifndef G_C10_PROFILE_ID_STEP
-# define G_C10_PROFILE_ID_STEP 1
-#endif
-#ifndef G_C10_PROFILE_SEG_ID_START
-# define G_C10_PROFILE_SEG_ID_START 1
-#endif
-#ifndef G_C10_PROFILE_SEG_ID_STEP
-# define G_C10_PROFILE_SEG_ID_STEP 1
-#endif
 
 // =====================================================
 // profileId (uint8) 자동 발급

@@ -13,6 +13,7 @@
 
 #include "A25_Com_Utils_0201.h"
 #include "A23_Com_ResetCfg_0201.h"
+#include "A22_Com_Lookup_0201.h"    // [FIX] A20_modeToString
 
 #include <string.h>
 

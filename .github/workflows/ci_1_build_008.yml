@@ -239,13 +239,14 @@ jobs:
         if: success()
         shell: bash
         run: |
-          if [ -d "data" ] || [ -d "src/data" ]; then
+          DATA_DIR=$(python3 -c "import configparser; c=configparser.ConfigParser(); c.read('platformio.ini'); print(c.get('platformio', 'data_dir', fallback='data'))" 2>/dev/null || echo "src/v0200/data_v0200")
+          if [ -d "$DATA_DIR" ] || [ -d "data" ] || [ -d "src/data" ] || [ -d "src/v0200/data_v0200" ]; then
             set +e
-            echo -e "\n=== Starting buildfs target ===" | tee -a pio-build.log
+            echo -e "\n=== Starting buildfs target (data_dir: $DATA_DIR) ===" | tee -a pio-build.log
             pio run -e ${{ matrix.environments }} --target buildfs 2>&1 | tee -a pio-build.log
             exit ${PIPESTATUS[0]}
           else
-            echo "[buildfs skipped] No data folder" | tee -a pio-build.log
+            echo "[buildfs skipped] No data folder ($DATA_DIR)" | tee -a pio-build.log
           fi
 
       # ---------------------------------------------------------------

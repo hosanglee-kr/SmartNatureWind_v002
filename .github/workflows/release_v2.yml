@@ -93,10 +93,10 @@ jobs:
           rm -f *-all*.bin *-test*.bin *-test*.zip
           ls -l
 
-      - name: Zip source code
+      - name: Zip source code (v0200 Active Sources)
         run: |
-          echo "Zipping source code"
-          zip -r Sources.zip src
+          echo "Zipping v0200 active source code"
+          zip -r Sources.zip src/v0200 src/main.cpp include platformio.ini
           mv Sources.zip toDeploy
           ls -l
           if ls *.bin 1> /dev/null 2>&1; then

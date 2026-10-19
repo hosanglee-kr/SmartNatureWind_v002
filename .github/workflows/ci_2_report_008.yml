@@ -1,7 +1,7 @@
 # =====================================================================
 # .github/workflows/ci_2_report_008.yml
 # ---------------------------------------------------------------------
-# PR 빌드 실패 리포트 파이프라인 (에이전트 단일 컨텍스트 집약형)
+# Smart Nature Wind v0200 PR 빌드 실패 리포트 파이프라인 (에이전트 단일 컨텍스트 집약형)
 #
 # [설계 원칙]
 #   1. 단일 본문 집약 (No Multi-Comment):
@@ -282,6 +282,7 @@ jobs:
             const quickContext = [
               `## ⚡ AI 에이전트 작업 가이드 (Quick Context)`,
               ``,
+              `- **활성 펌웨어 버전**: \`v0200\` (\`src/v0200/\`)`,
               `- **실패 환경 (${failures.length}개)**: ${envNamesShort || '(없음)'}`,
               `- **재현 커맨드**: \`pio run -e "<env>"\``,
               `- **우선 수정 소스**: ${allPrj.length ? allPrj.slice(0, 5).map(f => `\`${f}\``).join(', ') + (allPrj.length > 5 ? ` … (+${allPrj.length - 5})` : '') : '_파일 특정 불가_'}`,
@@ -289,7 +290,7 @@ jobs:
               ``,
               `**🤖 에이전트 CLI 실행 가이드:**`,
               '```bash',
-              `gh issue view ${prNumber} | claude "이슈의 컴파일 에러와 대상 파일을 분석하여 소스코드를 수정한 후, 각 환경별 pio run 명령으로 로컬 빌드를 검증하십시오."`,
+              `gh issue view ${prNumber} | claude "src/v0200/ 기반 활성 소스코드에서 컴파일 에러를 분석하여 수정한 후, 각 환경별 pio run 명령으로 로컬 빌드를 검증하십시오."`,
               '```',
               ``,
             ].join('\n');

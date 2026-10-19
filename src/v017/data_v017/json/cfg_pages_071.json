@@ -9,6 +9,7 @@
       "order": 10,
       "pageAssets": [
         { "uri": "/P010_main_071.css", "path": "/html_v3/P010_main_071.css" },
+        { "uri": "/P010_bundle_071.js", "path": "/html_v3/P010_bundle_071.js" },
         { "uri": "/P010_main_core_071.js", "path": "/html_v3/P010_main_core_071.js" },
         { "uri": "/P010_main_preset_071.js", "path": "/html_v3/P010_main_preset_071.js" },
         { "uri": "/P010_main_ws_071.js", "path": "/html_v3/P010_main_ws_071.js" },

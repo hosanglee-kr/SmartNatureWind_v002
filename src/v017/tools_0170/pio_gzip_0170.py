@@ -1,409 +1,273 @@
-# =======================================================
-# File: src/v0415/tools_v0415/pio_gzip_0415.py
-# ---------------------------------------------------------------------
-# AirMouse Elite S3 v0.400.x — LittleFS www staging + gzip 생성
-#                          + [Phase 5.3] 빌드 전 정합성 검증
-#
-# [방식 A] 소스/파생물 최소 분리
-#   - data_v0415/json/**  : 소스(VCS)     — 본 스크립트가 손대지 않음
-#   - data_v0415/www/**   : 파생물(.gitignore) — 매 buildfs마다 클린 후 재생성
-#
-# [설계 요약]
-#   1) SRC(원본):  <PROJECT>/src/v0415/data_v0415_www/**
-#   2) DST(빌드fs): <PROJECT>/src/v0415/data_v0415/www/** (= PROJECT_DATA_DIR/www)
-#   3) 규칙
-#      - html/css/js : DST에 .gz 생성(원본은 DST에 두지 않음 → LittleFS 절약)
-#      - svg/png/webp/ico/txt/json : DST에 원본 복사( gzip 생성 X )
-#      - 하위 폴더 구조 동일 유지, 동일 파일 존재 시 overwrite
-#   4) buildfs 직전 DST/www 전체 삭제 → 구파일 잔존으로 인한 잘못된 서빙 방지
-#
-# [Phase 5.3 검증]
-#   - 다음 타깃에서 검증 스크립트를 순차 실행:
-#       · buildprog  (일반 펌웨어 빌드) — 검증만 (CI 실패 조기 감지)
-#       · buildfs / uploadfs           — 검증 + clean + sync + gzip
-#       1) check_i18n_0415.py    : KO/EN 키 1:1 정합성
-#       2) check_schema_0415.py  : 백엔드 H ↔ 프론트 JS ↔ 오프라인 기본값 필드명 3자 비교
-#   - 하나라도 실패(exit != 0) 시 SystemExit(1) → 빌드 중단
-#   - 긴급 우회: 환경변수 G_SKIP_VERIFY=1
-#
-# [SCons 환경 주의]
-#   - PlatformIO의 extra_scripts는 exec() 컨텍스트로 로드되므로 __file__ 미정의.
-#   - 경로는 env["PROJECT_DIR"] 기준으로 구성한다.
-#
-# [정책 메모]
-#   - platformio.ini: data_dir = ./src/v0415/data_v0415
-#   - extra_scripts : pre:src/v0415/tools_v0415/pio_gzip_0415.py
-#   - json/config_0415.json, json/boot_state_0415.json, json/public/*.json 은
-#     VCS 커밋 대상이며, 이 스크립트는 관여하지 않는다.
-# =======================================================
-Import("env")
-import os
-import sys
+#!/usr/bin/env python3
+"""
+Smart Nature Wind v017 — LittleFS Web Staging + Gzip 사전 압축 및 JS 번들링 스크립트
+
+기능:
+  1. SRC(개발 원본): src/v017/data_src_v017/html_v3/
+  2. DST(배포 스테이징): src/v017/data_v017/html_v3/
+  3. 메인 대시보드(P010_main_071.html)의 8개 JS 모듈을 단일 P010_bundle_071.js로 결합
+  4. P010_main_071.html 내 script 태그를 번들 태그로 자동 치환
+  5. 모든 HTML, CSS, JS 파일을 Level 9 Gzip(.gz)으로 사전 압축하여 LittleFS 용량 및 LWIP TCP 소켓 절감
+  6. PlatformIO extra_scripts (pre:buildfs / uploadfs) 및 CLI 직접 실행 모두 지원
+
+사용:
+  python src/v017/tools_0170/pio_gzip_0170.py
+  (또는 platformio.ini의 extra_scripts 연동 시 pio run --target uploadfs 시 자동 실행)
+"""
+
+from __future__ import annotations
+
 import gzip
-import shutil
-import subprocess
+import os
 import re
-from SCons.Script import COMMAND_LINE_TARGETS
+import shutil
+import sys
+from pathlib import Path
+from typing import List, Sequence, Set
 
-# -------------------------------------------------------
-# [경로 정의]
-# -------------------------------------------------------
-# SCons의 exec() 컨텍스트에서는 __file__이 정의되지 않으므로
-# PROJECT_DIR 기반으로 경로를 조립한다.
-_PROJECT_DIR = env["PROJECT_DIR"]
-
-# SRC: version-controlled 웹 소스 (v0415)
-SRC_WWW_DIR = os.path.join(_PROJECT_DIR, "src", "v0415", "data_v0415_www")
-
-# DST: buildfs 스테이징 (data_dir 기준 www/)
-DST_WWW_DIR = os.path.join(env["PROJECT_DATA_DIR"], "www")
-
-# 검증 스크립트 위치 (본 파일과 동일 디렉토리)
-THIS_DIR = os.path.join(_PROJECT_DIR, "src", "v0415", "tools_v0415")
-
-# -------------------------------------------------------
-# [확장자 및 제외 정책]
-# -------------------------------------------------------
-GZ_EXTS = {".html", ".css", ".js"}
-COPY_ONLY_EXTS = {".svg", ".png", ".webp", ".ico", ".txt", ".json"}
-COPY_ONLY_NAMES = {"robots.txt", "favicon.ico"}
-
-EXCLUDE_NAMES = {
-    "index_0415_standalone.html", "index_0415_standalone2.html", "index_0415_standalone3.html"
-}
-
-
-# =======================================================
-# [JS 번들링 설정]
-# ESP32 LWIP TCP 소켓 고갈(8개 한계) 방지를 위해
-# 10개 JS 모듈(9 lib + 1 app)을 단일 번들로 결합
-#   - v0415 rev16: am_host_0415.js 편입 (Multi-Host UI)
-#   - 로드 순서 SSOT: SPEC §프로젝트 구조 (rev16)
-# =======================================================
-BUNDLE_JS_ORDER = [
-    "lib/am_base_0415.js",
-    "lib/am_i18n_0415.js",
-    # Phase 5-B 분할: am_offline 3-모듈
-    "lib/am_offline_data_0415.js",
-    "lib/am_offline_store_0415.js",
-    "lib/am_offline_0415.js",
-    "lib/am_profile_0415.js",
-    "lib/am_macro_0415.js",
-    # Phase 5-B 분할: am_config 3-모듈
-    "lib/am_config_motion_0415.js",   # ← 신규 (B-5)
-    "lib/am_config_system_0415.js",   # ← 신규 (B-6)
-    "lib/am_config_0415.js",          # 축소 (B-4)
-    "lib/am_status_0415.js",
-    "lib/am_remote_0415.js",
-    "lib/am_host_0415.js",
-    "app_0415_0001.js",
-]
-
-BUNDLE_OUTPUT_NAME = "app_bundle_0415.js"
-BUNDLE_SET = {p.replace("\\", "/") for p in BUNDLE_JS_ORDER}
-
-
-# =======================================================
-# [Phase 5.3] 정합성 검증
-# =======================================================
-def _run_verify_script(script_name, description, timeout_sec=30):
-    """단일 검증 스크립트 실행. 성공(exit 0) 시 True, 실패 시 False."""
-    script_path = os.path.join(THIS_DIR, script_name)
-
-    if not os.path.isfile(script_path):
-        print(f"[verify] SKIP: {script_name} not found (dev-only check)")
-        return True
-
-    print(f"[verify] running {script_name}  ({description})", flush=True)
+# Windows 콘솔 UTF-8 출력 보장
+if sys.platform == "win32":
     try:
-        result = subprocess.run(
-            [sys.executable, script_path],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            timeout=timeout_sec,
-            cwd=_PROJECT_DIR,
-        )
-    except subprocess.TimeoutExpired:
-        print(f"[verify] FAIL: {script_name} timed out ({timeout_sec}s)", flush=True)
-        return False
-    except Exception as exc:
-        print(f"[verify] FAIL: {script_name} exec error: {exc}", flush=True)
-        return False
-
-    # stdout/stderr 출력 (들여쓰기)
-    if result.stdout:
-        for line in result.stdout.rstrip().splitlines():
-            print(f"  {line}")
-    if result.stderr:
-        for line in result.stderr.rstrip().splitlines():
-            print(f"  {line}", file=sys.stderr)
-
-    if result.returncode != 0:
-        print(f"[verify] [FAIL] {script_name} FAILED (exit={result.returncode})", flush=True)
-        return False
-
-    print(f"[verify] [PASS] {script_name} passed", flush=True)
-    return True
+        if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8")
+        if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 
-def run_verification():
-    """전체 검증 시퀀스. 실패 시 SystemExit. G_SKIP_VERIFY=1로 우회 가능."""
-    if os.environ.get("G_SKIP_VERIFY") == "1":
-        print("[verify] SKIPPED by G_SKIP_VERIFY=1", flush=True)
+# ============================================================
+# 설정 및 경로 상수
+# ============================================================
+GZ_EXTS: Set[str] = {".html", ".css", ".js"}
+COPY_ONLY_EXTS: Set[str] = {".svg", ".png", ".jpg", ".webp", ".ico", ".txt", ".json", ".woff", ".woff2"}
+
+# 메인 대시보드 로드 순서 의존성 (8개 모듈)
+MAIN_BUNDLE_JS_ORDER: Sequence[str] = (
+    "P000_common_071.js",
+    "P001_comm_API_071.js",
+    "P010_main_core_071.js",
+    "P010_main_preset_071.js",
+    "P010_main_ws_071.js",
+    "P010_main_wifi_071.js",
+    "P010_main_misc_071.js",
+    "P010_main_071.js",
+)
+
+MAIN_BUNDLE_OUTPUT_NAME = "P010_bundle_071.js"
+
+
+def find_project_root() -> Path:
+    """Git 저장소 루트 또는 platformio.ini가 위치한 프로젝트 루트 감지."""
+    cur = Path(__file__).resolve().parent
+    while cur != cur.parent:
+        if (cur / "platformio.ini").is_file():
+            return cur
+        cur = cur.parent
+    return Path.cwd()
+
+
+def gzip_file(src_path: Path, dst_gz_path: Path) -> tuple[int, int]:
+    """파일을 읽어 Gzip Level 9로 압축 저장 (raw_bytes, gz_bytes 반환)."""
+    dst_gz_path.parent.mkdir(parents=True, exist_ok=True)
+    raw_data = src_path.read_bytes()
+    raw_size = len(raw_data)
+
+    with gzip.open(dst_gz_path, "wb", compresslevel=9) as f_out:
+        f_out.write(raw_data)
+
+    gz_size = dst_gz_path.stat().st_size
+    return raw_size, gz_size
+
+
+def build_main_bundle(src_dir: Path, dst_dir: Path) -> None:
+    """메인 대시보드 JS 모듈 8개를 하나로 번들링 후 raw 및 gz 저장."""
+    bundle_parts: List[str] = []
+    total_raw = 0
+
+    print(f"\n[1/3] 메인 JS 번들링 ({len(MAIN_BUNDLE_JS_ORDER)}개 모듈 -> {MAIN_BUNDLE_OUTPUT_NAME}):")
+    for rel_name in MAIN_BUNDLE_JS_ORDER:
+        js_file = src_dir / rel_name
+        if not js_file.is_file():
+            print(f"  [WARN] 번들 소스 파일 누락: {rel_name}", file=sys.stderr)
+            continue
+        content = js_file.read_text(encoding="utf-8")
+        size = len(content.encode("utf-8"))
+        total_raw += size
+        header = f"\n/* ===== BUNDLE: {rel_name} ({size} bytes) ===== */\n"
+        bundle_parts.append(header + content + "\n")
+        print(f"  + {rel_name:<26} ({size:>6,} bytes)")
+
+    bundle_full = "".join(bundle_parts)
+
+    # 1. raw 번들 저장 (디버깅/폴백용)
+    bundle_dst_raw = dst_dir / MAIN_BUNDLE_OUTPUT_NAME
+    bundle_dst_raw.write_text(bundle_full, encoding="utf-8")
+
+    # 2. .gz 압축 번들 저장
+    bundle_dst_gz = dst_dir / f"{MAIN_BUNDLE_OUTPUT_NAME}.gz"
+    with gzip.open(bundle_dst_gz, "wb", compresslevel=9) as f_out:
+        f_out.write(bundle_full.encode("utf-8"))
+
+    gz_size = bundle_dst_gz.stat().st_size
+    ratio = (1.0 - (gz_size / total_raw)) * 100.0 if total_raw > 0 else 0.0
+    print(f"  ==> 번들 결과: {total_raw:>6,} B -> {gz_size:>6,} B (gz 압축률: {ratio:.1f}% 절감)")
+
+
+def process_main_html(src_dir: Path, dst_dir: Path) -> None:
+    """P010_main_071.html 내 8개 script 태그를 번들 태그로 치환 후 raw 및 gz 저장."""
+    src_html = src_dir / "P010_main_071.html"
+    if not src_html.is_file():
         return
 
-    print("[verify] ---- Start verification ----", flush=True)
+    html_content = src_html.read_text(encoding="utf-8")
 
-    checks = [
-        ("check_i18n_0415.py",   "KO/EN key parity"),
-        ("check_schema_0415.py", "backend<->frontend field names"),
-    ]
+    # 번들 대상 스크립트 경로 집합
+    target_scripts = {
+        f"./{name}" for name in MAIN_BUNDLE_JS_ORDER
+    } | {name for name in MAIN_BUNDLE_JS_ORDER}
 
-    all_ok = True
-    for name, desc in checks:
-        if not _run_verify_script(name, desc):
-            all_ok = False
-            # 첫 실패에서 즉시 중단하지 않고 모두 보고
-            # (개발자가 한 번에 여러 이슈를 볼 수 있도록)
+    lines = html_content.splitlines(keepends=True)
+    new_lines: List[str] = []
+    bundle_inserted = False
+    replaced_count = 0
 
-    print("[verify] ---- End verification ----", flush=True)
+    for line in lines:
+        is_target_script = False
+        if "<script" in line:
+            for script_name in target_scripts:
+                if f'src="{script_name}"' in line or f"src='{script_name}'" in line:
+                    is_target_script = True
+                    break
 
-    if not all_ok:
-        print("", flush=True)
-        print("[verify] [FAIL] Verification FAILED. Build aborted.", flush=True)
-        print("[verify]    Fix the reported issues, or set G_SKIP_VERIFY=1 to bypass (hotfix only).", flush=True)
-        raise SystemExit(1)
+        if is_target_script:
+            replaced_count += 1
+            if not bundle_inserted:
+                new_lines.append(f'\t<script src="./{MAIN_BUNDLE_OUTPUT_NAME}" defer></script>\n')
+                bundle_inserted = True
+        else:
+            new_lines.append(line)
 
+    new_html = "".join(new_lines)
 
-# =======================================================
-# [유틸]
-# =======================================================
-def ensure_dir(path):
-    if path and not os.path.isdir(path):
-        os.makedirs(path, exist_ok=True)
+    dst_html_raw = dst_dir / "P010_main_071.html"
+    dst_html_raw.write_text(new_html, encoding="utf-8")
 
-
-def relpath_safe(path, base):
-    return os.path.relpath(path, base).replace("\\", "/")
-
-
-def gzip_file(src_path, dst_gz_path):
-    ensure_dir(os.path.dirname(dst_gz_path))
-    with open(src_path, "rb") as f_in:
-        with gzip.open(dst_gz_path, "wb", compresslevel=9) as f_out:
-            shutil.copyfileobj(f_in, f_out)
-
-    orig_size = os.path.getsize(src_path)
-    gz_size   = os.path.getsize(dst_gz_path)
-    ratio     = (1 - (gz_size / orig_size)) * 100 if orig_size > 0 else 0
-    print(f"  [GZIP] {os.path.basename(src_path)}: "
-          f"{orig_size} -> {gz_size} bytes ({ratio:.1f}% saved)")
-
-
-def copy_file(src_path, dst_path):
-    ensure_dir(os.path.dirname(dst_path))
-    shutil.copy2(src_path, dst_path)
-    print(f"  [COPY] {os.path.basename(src_path)} -> "
-          f"{relpath_safe(dst_path, env['PROJECT_DATA_DIR'])}")
-
-
-# =======================================================
-# [JS 번들링 및 HTML 번들 태그 치환]
-# =======================================================
-def create_js_bundle(src_dir, dst_dir):
-    bundle_chunks = []
-    total_raw_bytes = 0
-    missing = []
-
-    for rel_path in BUNDLE_JS_ORDER:
-        src_path = os.path.join(src_dir, rel_path.replace("/", os.sep))
-        if not os.path.isfile(src_path):
-            missing.append(rel_path)
-            continue
-        with open(src_path, "r", encoding="utf-8") as f:
-            content = f.read()
-        total_raw_bytes += len(content.encode("utf-8"))
-        bundle_chunks.append(f"/* === {os.path.basename(src_path)} === */\n" + content + "\n;")
-
-    # ★ 누락 시 빌드 중단 (조용한 기능 사망 방지)
-    if missing:
-        raise SystemExit(f"[BUNDLE][FATAL] missing components: {missing}")
-
-    bundle_content = "\n".join(bundle_chunks)
-    dst_gz_path = os.path.join(dst_dir, BUNDLE_OUTPUT_NAME + ".gz")
-    ensure_dir(os.path.dirname(dst_gz_path))
-
-    with gzip.open(dst_gz_path, "wb", compresslevel=9) as f_out:
-        f_out.write(bundle_content.encode("utf-8"))
-
-    gz_size = os.path.getsize(dst_gz_path)
-    ratio = (1 - (gz_size / total_raw_bytes)) * 100 if total_raw_bytes > 0 else 0
-    print(f"  [BUNDLE] {len(BUNDLE_JS_ORDER)} JS files -> {BUNDLE_OUTPUT_NAME}.gz: "
-          f"{total_raw_bytes} -> {gz_size} bytes ({ratio:.1f}% saved)")
-
-
-def process_and_gzip_html(src_path, dst_gz_path):
-    """HTML 파일의 10개 개별 script 태그를 단일 app_bundle_0415.js 태그로 치환 후 gzip."""
-    with open(src_path, "r", encoding="utf-8") as f:
-        html = f.read()
-
-    # 9개 개별 script 태그 패턴 검색 및 치환
-    script_pattern = re.compile(
-        r'(?:[ \t]*<script\s+src=["\']\./(?:lib/am_[^"\']+\.js|app_[^"\']+\.js)["\']>\s*</script>\s*\n?)+',
-        re.MULTILINE
-    )
-    bundle_tag = f'  <script src="./{BUNDLE_OUTPUT_NAME}"></script>\n'
-    new_html = script_pattern.sub(bundle_tag, html)
-
-    ensure_dir(os.path.dirname(dst_gz_path))
-    with gzip.open(dst_gz_path, "wb", compresslevel=9) as f_out:
+    dst_html_gz = dst_dir / "P010_main_071.html.gz"
+    with gzip.open(dst_html_gz, "wb", compresslevel=9) as f_out:
         f_out.write(new_html.encode("utf-8"))
 
-    orig_size = os.path.getsize(src_path)
-    gz_size = os.path.getsize(dst_gz_path)
-    ratio = (1 - (gz_size / orig_size)) * 100 if orig_size > 0 else 0
-    print(f"  [GZIP-HTML] {os.path.basename(src_path)}: "
-          f"{orig_size} -> {gz_size} bytes ({ratio:.1f}% saved, bundled script tag)")
+    orig_size = len(html_content.encode("utf-8"))
+    gz_size = dst_html_gz.stat().st_size
+    ratio = (1.0 - (gz_size / orig_size)) * 100.0 if orig_size > 0 else 0.0
+    print(f"\n[2/3] 메인 HTML script 태그 치환 (치환된 script 태그 수: {replaced_count}):")
+    print(f"  P010_main_071.html: {orig_size:>6,} B -> {gz_size:>6,} B (gz 압축률: {ratio:.1f}% 절감)")
 
 
-# =======================================================
-# [DST 클린]
-# =======================================================
-def clean_dst_www():
-    if os.path.isdir(DST_WWW_DIR):
-        shutil.rmtree(DST_WWW_DIR, ignore_errors=True)
-    ensure_dir(DST_WWW_DIR)
+def process_all_assets(src_dir: Path, dst_dir: Path) -> None:
+    """모든 정적 에셋 복사 및 Gzip 사전 압축."""
+    print("\n[3/3] 전체 정적 에셋 스테이징 및 Gzip 압축:")
+
+    total_raw_all = 0
+    total_gz_all = 0
+    file_count = 0
+
+    for item in sorted(src_dir.rglob("*")):
+        if not item.is_file():
+            continue
+
+        rel = item.relative_to(src_dir)
+        ext = item.suffix.lower()
+
+        # 이미 처리한 메인 파일은 통계만 누적
+        if rel.name == "P010_main_071.html":
+            dst_gz = dst_dir / f"{rel.name}.gz"
+            total_raw_all += item.stat().st_size
+            total_gz_all += dst_gz.stat().st_size if dst_gz.is_file() else 0
+            file_count += 1
+            continue
+
+        dst_raw = dst_dir / rel
+        dst_raw.parent.mkdir(parents=True, exist_ok=True)
+
+        if ext in GZ_EXTS:
+            # 1. raw 파일 복사 (하위 호환성 및 개발용)
+            shutil.copy2(item, dst_raw)
+            # 2. .gz 압축 파일 생성
+            dst_gz = dst_dir / f"{rel}.gz"
+            raw_sz, gz_sz = gzip_file(item, dst_gz)
+            total_raw_all += raw_sz
+            total_gz_all += gz_sz
+            ratio = (1.0 - (gz_sz / raw_sz)) * 100.0 if raw_sz > 0 else 0.0
+            print(f"  [GZ] {str(rel):<30} {raw_sz:>6,} B -> {gz_sz:>6,} B ({ratio:.1f}% 절감)")
+            file_count += 1
+        elif ext in COPY_ONLY_EXTS:
+            shutil.copy2(item, dst_raw)
+            sz = item.stat().st_size
+            total_raw_all += sz
+            total_gz_all += sz
+            print(f"  [CP] {str(rel):<30} {sz:>6,} B (단순 복사)")
+            file_count += 1
+
+    overall_ratio = (1.0 - (total_gz_all / total_raw_all)) * 100.0 if total_raw_all > 0 else 0.0
+    print("\n" + "=" * 60)
+    print(" [OK] Web Assets Gzip Staging Summary")
+    print("=" * 60)
+    print(f" Processed files : {file_count}")
+    print(f" Total raw size  : {total_raw_all:>8,} bytes ({total_raw_all / 1024:.1f} KB)")
+    print(f" Total gz size   : {total_gz_all:>8,} bytes ({total_gz_all / 1024:.1f} KB)")
+    print(f" Saved ratio     : {overall_ratio:.1f}% saved")
+    print("=" * 60)
 
 
-# =======================================================
-# [SYNC] data_v0415_www → data_v0415/www
-# =======================================================
-def sync_www():
-    if not os.path.isdir(SRC_WWW_DIR):
-        print(f"[WWW] SRC missing: {SRC_WWW_DIR}")
-        return
+def run_staging(project_root: Path) -> int:
+    """스테이징 및 압축 메인 루틴."""
+    src_dir = project_root / "src" / "v017" / "data_src_v017" / "html_v3"
+    dst_dir = project_root / "src" / "v017" / "data_v017" / "html_v3"
 
-    ensure_dir(DST_WWW_DIR)
+    if not src_dir.is_dir():
+        print(f"[ERROR] Source dir not found: {src_dir}", file=sys.stderr)
+        return 1
 
-    for root, _dirs, files in os.walk(SRC_WWW_DIR):
-        for fn in files:
-            if fn in EXCLUDE_NAMES:
-                continue
+    print("=" * 60)
+    print(" Smart Nature Wind v017 - Web Asset Gzip Bundler")
+    print(f" SRC: {src_dir}")
+    print(f" DST: {dst_dir}")
+    print("=" * 60)
 
-            src_path = os.path.join(root, fn)
-            ext      = os.path.splitext(fn)[1].lower()
+    # 1. 번들링
+    build_main_bundle(src_dir, dst_dir)
+    # 2. 메인 HTML 태그 치환
+    process_main_html(src_dir, dst_dir)
+    # 3. 전체 에셋 복사 및 압축
+    process_all_assets(src_dir, dst_dir)
 
-            rel      = relpath_safe(src_path, SRC_WWW_DIR)
-            dst_path = os.path.join(DST_WWW_DIR, rel.replace("/", os.sep))
-
-            # A) 번들에 포함되는 JS 모듈은 개별 복사 skip (LittleFS 플래시 절약)
-            if rel in BUNDLE_SET:
-                continue
-
-            # B) index_0415.html: 번들 script 태그 치환 후 gzip
-            if fn == "index_0415.html":
-                process_and_gzip_html(src_path, dst_path + ".gz")
-                continue
-
-            # 1) 일반 gzip 대상 (css/기타 html/기타 js)
-            if ext in GZ_EXTS:
-                gzip_file(src_path, dst_path + ".gz")
-                continue
-
-            # 2) 복사만 대상 (이미지/txt/json 등)
-            if ext in COPY_ONLY_EXTS or fn.lower() in COPY_ONLY_NAMES:
-                copy_file(src_path, dst_path)
-                continue
-
-            # 3) 기타 파일은 무시 (원치 않는 파일 유입 방지)
-            # print(f"  [SKIP] {rel}")
-
-    # C) 10개 JS 모듈(9 lib + 1 app) 결합 단일 번들 생성
-    create_js_bundle(SRC_WWW_DIR, DST_WWW_DIR)
+    return 0
 
 
-# =======================================================
-# [PRE-ACTION] buildprog / buildfs / uploadfs 훅
-# -------------------------------------------------------
-# 시퀀스 (프로세스 내 1회 보장):
-#   1) 검증 (check_i18n / check_schema) — 실패 시 즉시 중단
-#   2) DST 클린 (buildfs 계열만)
-#   3) SRC → DST 동기화 + gzip (buildfs 계열만)
-# =======================================================
-_has_run_verify = False   # [개선 2] 검증 1회 보장 (buildprog ↔ buildfs 공유)
-_has_run_sync   = False   # [개선 2] clean+sync 1회 보장 (buildfs 계열)
+# ============================================================
+# PlatformIO SCons Hook & CLI 진입점
+# ============================================================
+try:
+    # PlatformIO extra_scripts 환경인지 확인
+    Import("env")  # type: ignore
+    from SCons.Script import COMMAND_LINE_TARGETS  # type: ignore
+    is_scons = True
+except Exception:
+    is_scons = False
 
+if is_scons:
+    # PlatformIO 빌드 컨텍스트: buildfs / uploadfs 타깃일 때만 실행
+    _targets_str = " ".join(COMMAND_LINE_TARGETS).lower()  # type: ignore
+    _is_fs_target = any(t in _targets_str for t in ["buildfs", "uploadfs", "fs"])
 
-def _ensure_verify_done():
-    """검증이 프로세스 내에서 1회만 실행되도록 보장."""
-    global _has_run_verify
-    if _has_run_verify:
-        return
-    _has_run_verify = True
-    run_verification()
-
-
-def run_verify_only(source=None, target=None, env=None):
-    """[개선 2] buildprog pre-action: 검증만 실행 (gzip 동기화 없음).
-
-    목적: 일반 빌드(`pio run -e esp32-s3-zero`)에서도 i18n/schema 검증을
-          실행하여 CI에서 실패를 조기에 감지 (firmware 빌드 시간 낭비 방지).
-    """
-    _ensure_verify_done()
-
-
-def run_www_sync(source=None, target=None, env=None):
-    """buildfs/uploadfs pre-action: 검증 + clean + sync + gzip.
-
-    검증은 `_ensure_verify_done()`으로 1회만 실행됨.
-    buildfs 계열에서는 clean + sync + gzip 을 수행.
-    """
-    global _has_run_sync
-    if _has_run_sync:
-        return
-    _has_run_sync = True
-
-    # ---- 검증 (buildprog에서 이미 했으면 skip) ----
-    _ensure_verify_done()
-
-    # ---- DST 클린 ----
-    print("[WWW] Clean start")
-    clean_dst_www()
-    print("[WWW] Clean done")
-
-    # ---- Sync + Gzip ----
-    print("[WWW] Sync+Gzip start")
-    sync_www()
-    print("[WWW] Sync+Gzip done")
-
-
-# =======================================================
-# [HOOK 등록]
-# =======================================================
-
-# 1) CLI/IDE에서 buildfs/uploadfs 타깃 요청 시 즉시 실행 (early sync)
-if any(t in COMMAND_LINE_TARGETS for t in ["buildfs", "uploadfs"]):
-    run_www_sync()
-
-# 2) LittleFS 바이너리 빌드 노드 pre-action (mklittlefs 직전 보장)
-#    [개선 1] fs_bin_name 조건 안전화:
-#      - 기존: `"${ESP32_FS_IMAGE_NAME}" in env` (항상 False → fallback 고정)
-#      - 변경: env.subst() 결과가 리터럴 "${...}"이면 미정의로 간주 → fallback
-_fs_name_raw = env.subst("${ESP32_FS_IMAGE_NAME}").strip()
-if _fs_name_raw and not _fs_name_raw.startswith("${"):
-    fs_bin_name = _fs_name_raw + ".bin"
-else:
-    fs_bin_name = "littlefs.bin"
-
-fs_bin_path = os.path.join(env.subst("$BUILD_DIR"), fs_bin_name)
-env.AddPreAction(fs_bin_path, run_www_sync)
-
-# 3) buildfs 타깃 pre-action (하위 호환성)
-env.AddPreAction("buildfs", run_www_sync)
-
-# 4) [개선 2] buildprog 타깃 pre-action → 일반 빌드에서도 검증 실행
-#    - `pio run -e esp32-s3-zero` 시점에 i18n/schema 검증 → CI 조기 실패
-#    - `_ensure_verify_done()`이 buildfs와 공유되어 중복 실행 방지
-env.AddPreAction("buildprog", run_verify_only)
+    if _is_fs_target:
+        _env_proj_dir = Path(env["PROJECT_DIR"])  # type: ignore
+        run_staging(_env_proj_dir)
+    else:
+        # 일반 펌웨어 빌드 시에는 불필요한 I/O 및 인코딩 간섭 회피
+        pass
+elif __name__ == "__main__":
+    # 독립 CLI 실행 컨텍스트
+    root = find_project_root()
+    sys.exit(run_staging(root))

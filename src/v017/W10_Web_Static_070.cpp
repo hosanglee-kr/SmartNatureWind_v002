@@ -135,6 +135,16 @@ void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_fil
 
     // 2. 람다 캡처 (v_uri, v_file, v_mime은 shared_ptr이므로 값 복사 시 참조 카운트가 증가하여 안전함)
     s_server->on(v_uri.get(), HTTP_GET, [v_file, v_mime](AsyncWebServerRequest* r) {
+        // [GZ] .gz 압축 파일 우선 서빙 (LittleFS 용량 및 전송 속도 최적화)
+        String v_gzFile = String(v_file.get()) + ".gz";
+        if (LittleFS.exists(v_gzFile)) {
+            auto* v_resp = r->beginResponse(LittleFS, v_gzFile, v_mime.get());
+            v_resp->addHeader("Content-Encoding", "gzip");
+            CL_W10_WebAPI::_applyHeaders(v_resp, false);
+            r->send(v_resp);
+            return;
+        }
+
         if (LittleFS.exists(v_file.get())) {
             auto* v_resp = r->beginResponse(LittleFS, v_file.get(), v_mime.get());
             CL_W10_WebAPI::_applyHeaders(v_resp, false);
@@ -331,7 +341,7 @@ void CL_W10_WebAPI::routeStaticAssets() {
 			}
 
 			// 파일 존재 여부 확인 후 리다이렉트
-			if (LittleFS.exists(v_default_html))
+			if (LittleFS.exists(v_default_html) || LittleFS.exists(v_default_html + ".gz"))
 				r->redirect(v_default_html);
 			else
 				r->redirect("/");  // 최악의 경우 루프지만, JSON/FS 구성이 잘못된 상황

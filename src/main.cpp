@@ -11,14 +11,12 @@
  *  - A00_init() 호출로 시스템 부팅 시퀀스 수행
  *  - A00_run() 을 loop() 에서 주기 호출 (메인 루프 위임)
  * ------------------------------------------------------
- * [A00 초기화 순서 요약]
- *   1) LittleFS mount
- *   2) Config(C10) + NVS(N10)
- *   3) LED (A30)
- *   4) Wi-Fi(WF10) + Time(TM10)
- *   5) PWM(P10) + Control(CT10) + Motion(M10)
- *   6) Web(W10) + CT10 WS Broker
- *   7) Watchdog (init 후 add)
+ * [Batch E] 매직넘버 상수화 (E-10)
+ *  - delay(1500) → A20_Const::G_A00_SERIAL_INIT_DELAY_MS
+ *  - delay(100)  → A20_Const::G_A00_USB_CDC_POLL_MS
+ * ------------------------------------------------------
+ * [Batch F] Logger 초기 레벨 정책 (F-4)
+ *  - DEBUG → INFO (config 로드 후 applySystemRuntimeFromConfig가 오버라이드)
  * ------------------------------------------------------
  * [API / WS 진입점]
  *  - REST     : /api/v001/*
@@ -27,7 +25,7 @@
  * ------------------------------------------------------
  * [구현 규칙]
  *  - 본 파일은 엔트리포인트 역할만 수행 (비즈니스 로직 금지)
- *  - 실제 초기화/루프 구현은 A00_Main_0200 로 위임
+ *  - 실제 초기화/루프 구현은 A00_Main_0201 로 위임
  *  - Logger 는 A00_init 이전에 초기화 (부팅 로그 확보 목적)
  * ------------------------------------------------------
  */
@@ -35,24 +33,22 @@
 #include <Arduino.h>
 #include <LittleFS.h>
 
-#include "v0200/A00_Main_0200.h"
-
+#include "v0200/A00_Main_0201.h"
+#include "v0200/A20_Const_Const_0201.h"   // [E-10] 부트 지연 상수
 
 // ======================================================
 // Arduino setup() — 부팅 시 1회 실행
 // ======================================================
 void setup() {
-
     // --------------------------------------------------
     // 1) Serial 콘솔 초기화
     // --------------------------------------------------
     Serial.begin(115200);
-    delay(1500);
+    delay(A20_Const::G_A00_SERIAL_INIT_DELAY_MS);
 
     // ESP32-S3 Native USB CDC: PC와 동기화될 때까지 대기
-    //  - 이 블록이 없으면 초기 1~2초 로그가 유실됨
     while (!Serial) {
-        delay(100);
+        delay(A20_Const::G_A00_USB_CDC_POLL_MS);
     }
 
     Serial.println();
@@ -64,13 +60,13 @@ void setup() {
 
     // --------------------------------------------------
     // 2) Logger 초기화 + 로그 레벨 설정
-    //  - Logger 는 A00_init() 이전에 준비 (부팅 로그 확보)
-    //  - 운영 시 EN_L10_LOG_INFO / 디버깅 시 EN_L10_LOG_DEBUG
+    //  - [F-4] 초기 레벨은 안전값 INFO.
+    //    system.logging.level config 로드 후
+    //    W10::applySystemRuntimeFromConfig()가 자동 재설정.
+    //  - 개발 디버깅 시 EN_L10_LOG_DEBUG로 임시 변경 후 사용.
     // --------------------------------------------------
     CL_D10_Logger::begin(Serial);
-
-    CL_D10_Logger::setLevel(EN_L10_LOG_DEBUG);
-    // CL_D10_Logger::setLevel(EN_L10_LOG_INFO);
+    CL_D10_Logger::setLevel(EN_L10_LOG_INFO);
 
     delay(1000);
 
@@ -85,7 +81,7 @@ void setup() {
     A00_init();
 
     // --------------------------------------------------
-    // 4) 부팅 완료 안내 (콘솔)
+    // 4) 부팅 완료 안내
     // --------------------------------------------------
     Serial.println();
     Serial.println("[BOOT] Initialization complete");
@@ -96,11 +92,10 @@ void setup() {
     Serial.println();
 }
 
-
 // ======================================================
 // Arduino loop() — 무한 반복
 //  - 실제 로직은 A00_run() 에 위임
-//  - A00_run() 내부에서 WDT feed + delay(10) 수행
+//  - A00_run() 내부에서 WDT feed + delay 수행
 // ======================================================
 void loop() {
     A00_run();

@@ -41,9 +41,12 @@ REQUIRED_FILES: Tuple[str, ...] = (
 )
 
 # 선택 문서 (--strict 시 필수화)
-OPTIONAL_FILES: Tuple[str, ...] = (
-    "src/v0200/contract_doc_0200/Ref/UI_TERMINOLOGY_0200.md",
-)
+#  - 현재 빈 튜플: Ref/UI_TERMINOLOGY_0200.md 는 향후 프론트엔드 정리 시 작성 예정
+#  - 파일 실제 작성 후 아래 형태로 등록하면 --strict gate가 자동 활성화됨:
+#      OPTIONAL_FILES = (
+#          "src/v0200/contract_doc_0200/Ref/UI_TERMINOLOGY_0200.md",
+#      )
+OPTIONAL_FILES: Tuple[str, ...] = ()
 
 DEFAULT_MSG = "src/v0200/contract_doc_0200: 계약 문서 갱신"
 CONTRACTS_REL = "src/v0200/contract_doc_0200"
@@ -118,7 +121,7 @@ def verify_required_files(repo_root: Path, strict: bool) -> None:
             print(f"  - {m}", file=sys.stderr)
         sys.exit(EXIT_MISSING)
 
-    # 선택 문서 검증
+    # 선택 문서 검증 (OPTIONAL_FILES가 빈 튜플이면 자연히 통과)
     opt_missing = [rel for rel in OPTIONAL_FILES if not (repo_root / rel).is_file()]
     if opt_missing:
         if strict:
@@ -159,7 +162,7 @@ def main() -> int:
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="선택 문서(Ref/UI_TERMINOLOGY_0200.md)도 필수로 검증 (CI gate)",
+        help="선택 문서(OPTIONAL_FILES 등록 시)도 필수로 검증 (CI gate)",
     )
     args = parser.parse_args()
 

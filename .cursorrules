@@ -13,29 +13,29 @@
 ## 모듈 접두사 체계 (Module Prefix Conventions)
 소스 파일 및 심볼은 역할에 따른 모듈 접두사를 반드시 부여합니다.
 
-| 모듈 약어 | 담당 영역 및 설명 | 대표 파일 예시 (v017 기준) |
+| 모듈 약어 | 담당 영역 및 설명 | 대표 파일 예시 (v0200 기준) |
 | :--- | :--- | :--- |
-| **A00** | 메인 부팅 시퀀스 및 주기 루프 위임 | `A00_Main_071.cpp`, `A00_Main_071.h` |
-| **A20** | 전역 상수, 설정 테이블, 공통 매크로 | `A20_Const_070.h`, `A20_Const_Sys_070.h` |
-| **A22~A29** | 공통 유틸리티, 룩업테이블, 파서/리셋 | `A22_Com_Lookup_070.h`, `A25_Com_Utils_070.h` |
-| **A30** | 상태 표시 LED / NeoPixel 제어 | `A30_LED_070.h` |
-| **C10** | 환경설정(Config) 로드/저장/검증 | `C10_Config_070.h`, `C10_Config_Core_070.cpp` |
-| **CT10** | 장치 제어(Control), 상태 관리, WS 브로커 | `CT10_Ctl_070.h`, `CT10_Ctl_Basic_070.cpp` |
-| **D10** | 시스템 로거 (로그 레벨 필터링 및 출력) | `D10_Logger_070.h` |
-| **M10** | 모션 및 풍향 제어 로직 | `M10_MotionLogic_070.h` |
-| **N10** | NVS 비휘발성 플래시 스토리지 관리 | `N10_NvsManager_070.cpp`, `N10_NvsManager_070.h` |
-| **P10** | 팬 모터 하드웨어 PWM 제어 | `P10_PWM_ctrl_070.h` |
-| **S10 / S20** | 바람 시뮬레이션(Simul), 물리 엔진, 솔버 | `S10_Simul_070.h`, `S20_WindSolver_070.h` |
-| **TM10** | 시간 관리 (NTP 동기화, 타이머, 스케줄링) | `TM10_TimeMg_070.h` |
-| **W10** | 웹 서버(Web), REST API 라우팅, 웹소켓 | `W10_Web_070.h`, `W10_Web_Routes_070.cpp` |
-| **WF10** | Wi-Fi 연결 및 네트워크 매니저 | `WF10_WiFiMgr_070.cpp`, `WF10_WiFiMgr_070.h` |
+| **A00** | 메인 부팅 시퀀스 및 주기 루프 위임 | `A00_Main_0200.cpp`, `A00_Main_0200.h` |
+| **A20** | 전역 상수, 설정 테이블, 공통 매크로 | `A20_Const_0200.h`, `A20_Const_Sys_0200.h` |
+| **A22~A29** | 공통 유틸리티, 룩업테이블, 파서/리셋 | `A22_Com_Lookup_0200.h`, `A25_Com_Utils_0200.h` |
+| **A30** | 상태 표시 LED / NeoPixel 제어 | `A30_LED_0200.h` |
+| **C10** | 환경설정(Config) 로드/저장/검증 | `C10_Config_0200.h`, `C10_Config_Core_0200.cpp` |
+| **CT10** | 장치 제어(Control), 상태 관리, WS 브로커 | `CT10_Ctl_0200.h`, `CT10_Ctl_Basic_0200.cpp` |
+| **D10** | 시스템 로거 (로그 레벨 필터링 및 출력) | `D10_Logger_0200.h` |
+| **M10** | 모션 및 풍향 제어 로직 | `M10_MotionLogic_0200.h` |
+| **N10** | NVS 비휘발성 플래시 스토리지 관리 | `N10_NvsManager_0200.cpp`, `N10_NvsManager_0200.h` |
+| **P10** | 팬 모터 하드웨어 PWM 제어 | `P10_PWM_ctrl_0200.h` |
+| **S10 / S20** | 바람 시뮬레이션(Simul), 물리 엔진, 솔버 | `S10_Simul_0200.h`, `S20_WindSolver_0200.h` |
+| **TM10** | 시간 관리 (NTP 동기화, 타이머, 스케줄링) | `TM10_TimeMg_0200.h` |
+| **W10** | 웹 서버(Web), REST API 라우팅, 웹소켓 | `W10_Web_0200.h`, `W10_Web_Routes_0200.cpp` |
+| **WF10** | Wi-Fi 연결 및 네트워크 매니저 | `WF10_WiFiMgr_0200.cpp`, `WF10_WiFiMgr_0200.h` |
 
 ## 코드 네이밍 규칙 (Code Naming Conventions)
 다음 접두사와 대소문자 규칙을 엄격히 준수하십시오. **변수명은 의미를 명확히 알 수 있도록 충분히 길게 작성하며, 과도한 약어 사용을 지양합니다.**
 
 | 구분 | 패턴 | 예시 |
 | :--- | :--- | :--- |
-| **파일명** | `[영문접두사][숫자]_[이름]_[버전].cpp/h` | `W10_Web_Routes_070.cpp`, `A00_Main_071.cpp` |
+| **파일명** | `[영문접두사][숫자]_[이름]_[버전].cpp/h` | `W10_Web_Routes_0200.cpp`, `A00_Main_0200.cpp` |
 | **클래스명** | `CL_[영문접두사][숫자]_[이름]` | `CL_W10_WebAPI`, `CL_D10_Logger`, `CL_C10_Config` |
 | **구조체** | `ST_[영문접두사][숫자]_[이름]_t` | `ST_A20_ConfigRoot_t`, `ST_S10_WindState_t` |
 | **Enum** | `EN_[영문접두사][숫자]_[이름]` | `EN_L10_LOG_INFO`, `EN_CT10_MODE_MANUAL` |
@@ -69,7 +69,7 @@
 8. **응답 언어**: 모든 설명 및 답변은 명확하고 이해하기 쉬운 **한국어**로 작성합니다.
 
 ## 디렉토리 구조 (Directory Structure)
-- `src/v[XXX]`: 현재 활성 버전 소스 디렉토리 (현재: `src/v017`)
+- `src/v[XXX]`: 현재 활성 버전 소스 디렉토리 (현재: `src/v0200`)
 - `src/v[XXX]/data_v[XXX]`: LittleFS 파일시스템 업로드 정적 웹 리소스 및 기본 설정 JSON
 - `src/main.cpp`: 아두이노 표준 엔트리포인트 (`setup`, `loop`에서 최신 버전 `A00_init`/`A00_run` 호출)
 - `include`: 프로젝트 공용 헤더 파일

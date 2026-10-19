@@ -1,0 +1,499 @@
+#pragma once
+/*
+ * ------------------------------------------------------
+ * 소스명 : CT10_Ctl_0200.h
+ * 모듈약어 : CT10
+ * 모듈명 : Smart Nature Wind 제어 통합 Manager
+ * ------------------------------------------------------
+ * 기능 요약:
+ * - Schedule / UserProfile / Manual Override 기반 풍속 제어
+ * - WindDict 기반 해석 (resolveWindParams) 후 S10.applyResolvedWind 연동
+ * - PWM(P10) / Simulation(S10) 통합 제어
+ * - Motion (PIR ) 및 AutoOff 조건 훅 제공
+ * - Web UI / 버튼에서 Profile 선택, Override 즉시 반영
+ * - JSON 상태 Export (control / override / autoOff / sim / metrics)
+ * - Dirty 플래그 기반 A00 diffOnly API 연동 지원 (A00이 브로드캐스트 처리)
+ * - Override 타임아웃 및 AutoOff 발생 시 Dirty 플래그 자동 설정
+ * - 정적 싱글톤 인터페이스 제공 (W10_WebAPI에서 직접 사용)
+ * - 구현은 cpp 3개로 분리:
+ *    1) json 처리, 2) control 처리, 3) misc/유틸/보조
+* [Policy] 주요 운영 정책 요약
+*  - Override vs AutoOff:
+*    * tickOverride는 checkAutoOff를 호출하지 않는다.
+*    * Override는 사용자 명시적 개입 → AutoOff 조건보다 우선.
+*    * Override 종료 후 원 소스 재진입 시 AutoOff 재평가.
+*    * AutoOff(특히 offTemp)가 override 중 무시되어도 팬 가동은 안전 방향.
+*
+*  - [E-7] Override vs Motion:
+*    * decideRunSource의 1순위가 Override → motion 검사 이전 반환.
+*    * tickOverride는 isMotionBlocked를 호출하지 않는다.
+*    * Override는 사용자 명시적 개입 → motion 무시가 정책.
+*    * Override 종료 후 원 소스 재진입 시 motion 재평가
+*      (decideRunSource가 MOTION_BLOCKED 반환 가능).
+*
+*  - Override 지속시간:
+*    * durationSec=0이면 S_OVERRIDE_DEFAULT_SEC(20분) 기본 적용.
+*    * 무기한 override는 지원하지 않음 (재부팅/타임아웃 정책 단순화).
+*
+*  - AutoOff timer:
+*    * source(schedule/profile) 진입 시마다 timerStartMs 재설정.
+*    * 세션별 독립 타이머 (누적 아님). source 전환 시 이전 타이머 무효화.
+*    * 사유: 각 스케줄/프로파일의 "1회 실행 최대 시간" 제한 목적.
+*
+*  - 부팅 복원:
+*    * N10(NVS)은 저장만. 부팅 시 Override/UserProfile 자동 복원 안 함.
+*    * Schedule은 시간 조건 재평가, AutoOff는 source 진입 시 자동 로드.
+ * ------------------------------------------------------
+ * [구현 규칙]
+ * - 주석 구조, 네이밍 규칙, ArduinoJson v7 단일 문서 정책 준수
+ * - 소스 시작 주석 부분 구현규칙, 코드네이밍규칙 내용 그대로 유지, 수정금지
+ * - ArduinoJson v7.x.x 사용 (v6 이하 사용 금지)
+ * - JsonDocument 단일 타입만 사용
+ * - createNestedArray/Object/containsKey 사용 금지
+ * - memset + strlcpy 기반 안전 초기화
+ * - 주석/필드명은 JSON 구조와 동일하게 유지
+
+ * ------------------------------------------------------
+ * [코드 네이밍 규칙]
+ * - 전역 상수,매크로      : G_모듈약어_ 접두사
+ * - 전역 변수             : g_모듈약어_ 접두사
+ * - 전역 함수             : 모듈약어_ 접두사
+ * - type                  : T_모듈약어_ 접두사
+ * - typedef               : _t  접미사
+ * - enum 상수             : EN_모듈약어_ 접두사
+ * - 구조체                : ST_모듈약어_ 접두사
+ * - 클래스명              : CL_모듈약어_ 접두사
+ * - 클래스 private 멤버   : _ 접두사
+ * - 클래스 멤버(함수/변수) : 모듈약어 접두사 미사용
+ * - 클래스 정적 멤버      : s_ 접두사
+ * - 함수 로컬 변수        : v_ 접두사
+ * - 함수 인자             : p_ 접두사
+ * ------------------------------------------------------
+ */
+#include <Arduino.h>
+#include <ArduinoJson.h>
+#include <string.h>
+#include <time.h>
+#include <atomic>                              // [F-05][F-06] 추가
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+
+// 종속성 모듈 헤더
+#include "A20_Const_0200.h"
+#include "C10_Config_0200.h"
+#include "D10_Logger_0200.h"
+#include "M10_MotionLogic_0200.h"
+#include "P10_PWM_ctrl_0200.h"
+#include "S10_Simul_0200.h"
+#include "S20_WindSolver_0200.h"
+
+#include "TM10_TimeMg_0200.h"
+
+// ------------------------------------------------------
+// 런타임 상태 구조체
+// ------------------------------------------------------
+
+// 현재 제어를 실행 중인 주체 (Schedule, UserProfile 등)
+typedef enum : uint8_t {
+    EN_CT10_RUN_NONE         = 0,
+    EN_CT10_RUN_SCHEDULE     = 1,
+    EN_CT10_RUN_USER_PROFILE = 2
+} EN_CT10_run_source_t;
+
+// ------------------------------------------------------
+// [CT10] 상태/이유 Enum (최소)
+// ------------------------------------------------------
+typedef enum : uint8_t {
+    EN_CT10_STATE_IDLE            = 0,
+    EN_CT10_STATE_OVERRIDE        = 1,
+    EN_CT10_STATE_PROFILE_RUN     = 2,
+    EN_CT10_STATE_SCHEDULE_RUN    = 3,
+    EN_CT10_STATE_MOTION_BLOCKED  = 4,
+    EN_CT10_STATE_AUTOOFF_STOPPED = 5,
+    EN_CT10_STATE_TIME_INVALID    = 6
+} EN_CT10_state_t;
+
+typedef enum : uint8_t {
+    EN_CT10_REASON_NONE                = 0,
+    EN_CT10_REASON_OVERRIDE_ACTIVE     = 1,
+    EN_CT10_REASON_PROFILE_MODE        = 2,
+    EN_CT10_REASON_USER_PROFILE_ACTIVE = 3,
+    EN_CT10_REASON_SCHEDULE_ACTIVE     = 4,
+    EN_CT10_REASON_NO_ACTIVE_SCHEDULE  = 5,
+    EN_CT10_REASON_NO_SCHEDULES        = 6,
+    EN_CT10_REASON_TIME_NOT_VALID      = 7,
+    EN_CT10_REASON_MOTION_NO_PRESENCE  = 8,
+    EN_CT10_REASON_AUTOOFF_TIMER       = 9,
+    EN_CT10_REASON_AUTOOFF_TIME        = 10,
+    EN_CT10_REASON_AUTOOFF_TEMP        = 11
+} EN_CT10_reason_t;
+
+// --------------------------------------------------
+// [CT10] 내부 Decision 구조체 (cpp 내부 전용)
+// --------------------------------------------------
+typedef struct {
+    EN_CT10_state_t  nextState;
+    EN_CT10_reason_t reason;
+
+    EN_CT10_run_source_t nextRunSource;
+    int8_t               nextScheduleIndex;
+    int8_t               nextProfileIndex;
+
+    bool wantSimStop;      // 상태 전환 시 sim.stop 필요 여부(정책)
+    bool wantResetSegRt;   // segment runtime reset 필요 여부(정책)
+    bool wantResetAutoOff; // autoOffRt reset/init 필요 여부(정책)
+} ST_CT10_Decision_t;
+
+// ------------------------------------------------------
+// [CT10] 런 컨텍스트(웹/디버그/SSOT)
+// ------------------------------------------------------
+typedef struct {
+    EN_CT10_state_t  state;
+    EN_CT10_reason_t reason;
+
+    uint32_t lastDecisionMs;
+    uint32_t lastStateChangeMs;
+
+    // AutoOff 상태 유지용
+    uint32_t stateHoldUntilMs; // millis() 기준. 0이면 hold 없음
+    bool     stateAckRequired; // true면 ack 전까지 유지(옵션)
+
+    // 선택된 대상 snapshot
+    uint8_t  activeSchId;
+    uint16_t activeSchNo;
+
+    uint8_t  activeSegId;
+    uint16_t activeSegNo;
+
+    uint16_t activeProfileNo;
+} ST_CT10_RunContext_t;
+
+// Override 제어 상태 (ResolvedWind 기반)
+typedef struct {
+    bool                  active;          // Override 활성 여부
+    bool                  useFixed;        // true: 고정 PWM 비율 사용, false: ResolvedWind 사용
+    bool                  resolvedApplied; // ResolvedWind를 S10에 1회 적용했는지 여부 (S10 상태 리셋 방지)
+    unsigned long         endMs;           // 0이면 타이머 없음(무한)
+    float                 fixedPercent;    // 0~100, useFixed==true 일 때만 사용
+    ST_A20_ResolvedWind_t resolved;        // 수동 바람 설정 (useFixed==false 일 때의 바람 파라미터)
+} ST_CT10_Override_t;
+
+// Segment 실행 상태 (Schedule 또는 Profile)
+typedef struct {
+    int8_t        index;        // 현재 seg index (-1이면 아직 시작 전)
+    bool          onPhase;      // true: On 구간(팬 작동), false: Off 구간(팬 정지)
+    unsigned long phaseStartMs; // 현재 phase 시작 시간 (Millis 기준)
+    uint8_t       loopCount;    // 반복 횟수 카운트 (0부터 시작)
+} ST_CT10_SegmentRuntime_t;
+
+// AutoOff 런타임 상태 (현재 적용된 AutoOff 조건)
+typedef struct {
+    bool          timerArmed;   // 타이머 AutoOff 활성 여부
+    unsigned long timerStartMs; // 타이머 시작 시간
+    uint32_t      timerMinutes; // 설정된 타이머 시간 (분)
+
+    bool     offTimeEnabled; // 지정 시간 AutoOff 활성 여부
+    uint16_t offTimeMinutes; // AutoOff가 발동되는 하루 중 시간 (분 단위, 0~1439)
+
+    // offTime 재트리거 방지 런타임(전역 static 제거)
+    // - 같은 day + 같은 minute이면 재트리거 방지
+    // - tm_yday: 0~365
+    int16_t offTimeLastYday; // init: -1
+    int16_t offTimeLastMin;  // init: -1 (0~1439)
+
+    bool  offTempEnabled; // 온도 기반 AutoOff 활성 여부
+    float offTemp;        // AutoOff가 발동되는 온도 (섭씨)
+} ST_CT10_AutoOffRuntime_t;
+
+const char* CT10_stateToString(EN_CT10_state_t p_s);
+const char* CT10_reasonToString(EN_CT10_reason_t p_r);
+
+// ------------------------------------------------------
+// WS Scheduler (CT10_Control_WS_xxx.cpp)
+// ------------------------------------------------------
+void CT10_WS_begin();
+void CT10_WS_tick();
+
+// ------------------------------------------------------
+// S10 → CT10 Dirty 브리지 (inline, A00 의존 제거)
+// ------------------------------------------------------
+void CT10_markDirtyFromSim(const char* p_key);
+
+// ------------------------------------------------------
+// WS Broker injection (W10 바인딩용)
+// ------------------------------------------------------
+void CT10_WS_setBrokers(void (*p_state)(JsonDocument&, bool),
+                        void (*p_metrics)(JsonDocument&, bool),
+                        void (*p_chart)(JsonDocument&, bool),
+                        void (*p_summary)(JsonDocument&, bool),
+                        void (*p_cleanup)());
+
+// ======================================================
+// CL_CT10_ControlManager 클래스
+// ======================================================
+class CL_CT10_ControlManager {
+  public:
+    // --------------------------------------------------
+    // 싱글톤 정적 인터페이스 (W10 등 외부 모듈용)
+    // --------------------------------------------------
+    static CL_CT10_ControlManager& instance();
+
+    static bool begin(); // 전역 PWM 인스턴스(g_P10_pwm) 기반 begin
+    static void tick();  // 주기 호출
+
+    static void setMode(bool p_profileMode);
+    static bool setActiveUserProfile(uint16_t p_profileNo);
+
+    static void applyManual(const ST_A20_ResolvedWind_t& p_wind);
+    static void clearManual();
+
+    static bool reloadAll();
+
+    // ======================================================
+    // [F-05] Pending reload (async_tcp → loopTask 위임)
+    //  - W10 routeReload는 본 API만 호출 후 202 Accepted 즉시 응답
+    //  - loopTask A00_run이 consumePendingReload()로 실행
+    //  - 이미 pending이면 requestReload()는 false 반환 (중복 방지)
+    // ======================================================
+    static bool requestReload() {
+        bool v_expected = false;
+        return s_pendingReload.compare_exchange_strong(
+            v_expected, true,
+            std::memory_order_acq_rel,
+            std::memory_order_acquire);
+    }
+    static bool consumePendingReload() {
+        return s_pendingReload.exchange(false, std::memory_order_acq_rel);
+    }
+    
+    // ======================================================
+    // [I-1] pending reload 상태 조회 (읽기 전용)
+    //  - W10 exportStateJson_v02 에서 control.pendingReload 노출
+    //  - 프론트엔드 폴링: reload 요청 후 false로 전환되는 시점 감시
+    //  - acquire: 이후 관측이 최신 swap을 반영하도록 보장
+    // ======================================================
+    static bool isReloadPending() {
+        return s_pendingReload.load(std::memory_order_acquire);
+    }
+
+      // ======================================================
+      // [F-06] Motion.sim 재적용 위임 (async_tcp → loopTask)
+      //  - W10 routeMotion patch 후 본 함수만 호출 (mutex 경합 회피)
+      //  - CT10::tickLoop 시작부에서 실제 applyMotionSimConfigToSim() 실행
+      // ======================================================
+      void requestMotionSimApply() {
+          _pendingMotionSimApply.store(true, std::memory_order_release);
+          CL_D10_Logger::log(EN_L10_LOG_DEBUG,
+                             "[CT10] MotionSim apply requested (deferred)");
+      }
+      
+
+
+    // - 공유 static doc 제거: W10(async_tcp) ↔ CT10_WS_tick(loopTask) 데이터 레이스
+    // - 호출자는 caller-owned JsonDocument 사용:
+    //     JsonDocument v_doc;  ct.exportStateJson_v02(v_doc);  serializeJson(v_doc, ...);
+    // - WS tick 전용 static doc은 CT10_Ctl_IOWS_070.cpp 파일 내부로 격리
+    // (toXxxJson 4개 static 선언 삭제)
+
+    // header에 static 추가
+    static inline void ackEvent() { instance().ackEventState(); }
+
+  public:
+    // --------------------------------------------------
+    // 외부에서 필요한 인스턴스 API
+    // --------------------------------------------------
+    void begin(CL_P10_PWM& p_pwm);
+    void setMotion(CL_M10_MotionLogic* p_motion);
+
+    // JSON 관련(구현은 json cpp)
+    void exportStateJson_v02(JsonDocument& p_doc);
+    void exportChartJson(JsonDocument& p_doc, bool p_diffOnly);
+    void exportSummaryJson(JsonDocument& p_doc);
+    void exportMetricsJson(JsonDocument& p_doc);
+
+    // 모드/프로파일/오버라이드
+    void setProfileMode(bool p_profileMode);
+    bool startUserProfileByNo(uint16_t p_profileNo);
+    void stopUserProfile();
+
+
+    void startOverrideFixed(float p_percent, uint32_t p_seconds, bool p_forever = false);
+    void startOverridePreset(const char*                 p_presetCode,
+                             const char*                 p_styleCode,
+                             const ST_A20_AdjustDelta_t* p_adj,
+                             uint32_t                    p_seconds,
+                             bool                        p_forever = false);
+    void applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds, bool p_forever = false);
+    
+    void stopOverride();
+    
+    // tick(구현은 control cpp)
+    void tickLoop();
+
+    // Dirty 플래그
+    void markDirty(const char* p_key);
+    bool consumeDirtyState();
+    bool consumeDirtyMetrics();
+    bool consumeDirtyChart();
+    bool consumeDirtySummary();
+
+  public:
+    // --------------------------------------------------
+    // 런타임 상태 (멤버)
+    // --------------------------------------------------
+    bool active         = false;
+    bool useProfileMode = false;
+
+    EN_CT10_run_source_t runSource = EN_CT10_RUN_NONE;
+
+    int8_t curScheduleIndex = -1;
+    int8_t curProfileIndex  = -1;
+
+    ST_CT10_SegmentRuntime_t scheduleSegRt;
+    ST_CT10_SegmentRuntime_t profileSegRt;
+
+    ST_CT10_Override_t       overrideState;
+    ST_CT10_AutoOffRuntime_t autoOffRt;
+
+    CL_P10_PWM*         pwm    = nullptr;
+    CL_M10_MotionLogic* motion = nullptr;
+
+    CL_S10_Simulation sim;
+
+    unsigned long lastTickMs        = 0;
+    unsigned long lastMetricsPushMs = 0;
+
+  private:
+    // --------------------------------------------------
+    // 내부 상수 (Magic number)
+    // --------------------------------------------------
+    static constexpr uint32_t S_TICK_MIN_INTERVAL_MS     = 40UL;   // 25Hz
+    static constexpr uint32_t S_METRICS_PUSH_INTERVAL_MS = 1500UL; // metrics dirty 주기
+    static constexpr uint32_t S_EVENT_HOLD_MS            = 3000UL; // 이벤트 상태(AUTOOFF/TIME_INVALID) hold 시간
+
+    // [Policy] Override 지속 시간: durationSec=0 시 20분 기본 적용 (무기한 없음)
+    static constexpr uint32_t S_OVERRIDE_DEFAULT_SEC     = 1200UL;
+
+    // --------------------------------------------------
+    // [F-05] pending reload flag (static, atomic)
+    //  - async_tcp ↔ loopTask 원자 교환
+    //  - C++17 inline static → 헤더 정의만으로 단일 인스턴스 보장
+    // --------------------------------------------------
+    inline static std::atomic<bool> s_pendingReload{false};
+    
+    // --------------------------------------------------
+    // [F-06] pending motion.sim apply flag (instance, atomic)
+    //  - instance는 singleton이므로 사실상 전역
+    //  - s_stateMutex 없이 async_tcp에서 set 가능하도록 atomic 사용
+    // --------------------------------------------------
+    std::atomic<bool> _pendingMotionSimApply{false};
+
+
+    // --------------------------------------------------
+    // [B-1b] 상태 일관성 보호용 재귀 뮤텍스
+    //  - async_tcp(HTTP/WS connect) ↔ loopTask(tickLoop/CT10_WS_tick) race 방지
+    //  - 대상: runCtx / overrideState / autoOffRt / runSource / curXxxIndex / segRt / dirty flags
+    //  - Lazy-init: CL_A40_MutexGuard_Semaphore가 최초 진입 시 생성
+    //  - recursive: startOverridePreset→applyManualResolved→startOverrideFixed 중첩 지원
+    // --------------------------------------------------
+    static SemaphoreHandle_t s_stateMutex;
+
+  private:
+    // Dirty 플래그 (private)
+    bool _dirtyState   = false;
+    bool _dirtyMetrics = false;
+    bool _dirtyChart   = false;
+    bool _dirtySummary = false;
+
+    ST_CT10_RunContext_t runCtx;
+    
+    // --------------------------------------------------
+    // [A-2] offTime 재트리거 방지 영속 필드
+    //  - source 재진입(initAutoOffFromSchedule/FromUserProfile)에도 유지
+    //  - yday 기반: 같은 날 1회만 트리거, yday가 바뀌면 자연 재활성화
+    //  - reloadAll()에서만 리셋 (설정 재적용 대비)
+    // --------------------------------------------------
+    int16_t _persistOffTimeLastYday = -1;
+    
+    // [B-2] AutoOff 래치
+    //  - AutoOff(timer/offTime/offTemp) 트리거 시 true
+    //  - decideRunSource가 강제 AUTOOFF_STOPPED 반환 → 자동 재진입 차단
+    //  - 사용자 명시적 재개(setMode/startOverride/ackEvent)에서 해제
+    // --------------------------------------------------
+    bool _autoOffLatched = false;
+
+  private:
+    // --------------------------------------------------
+    // 내부 유틸 / control / misc (구현은 cpp 분리)
+    // --------------------------------------------------
+    uint32_t calcOverrideRemainSec() const;
+
+    bool tickOverride();
+    bool tickUserProfile();
+    bool tickSchedule();
+
+    // segment 처리: schedule/profile 오버로드(템플릿 제거)
+    bool tickSegmentSequence(bool                      p_repeat,
+                             uint8_t                   p_repeatCount,
+                             ST_A20_ScheduleSegment_t* p_segs,
+                             uint8_t                   p_count,
+                             ST_CT10_SegmentRuntime_t& p_rt);
+    bool tickSegmentSequence(bool                         p_repeat,
+                             uint8_t                      p_repeatCount,
+                             ST_A20_UserProfileSegment_t* p_segs,
+                             uint8_t                      p_count,
+                             ST_CT10_SegmentRuntime_t&    p_rt);
+
+    void applySegmentOn(const ST_A20_ScheduleSegment_t& p_seg);
+    void applySegmentOn(const ST_A20_UserProfileSegment_t& p_seg);
+    void applySegmentOff();
+
+    void initAutoOffFromUserProfile(const ST_A20_UserProfileItem_t& p_up);
+    void initAutoOffFromSchedule(const ST_A20_ScheduleItem_t& p_s);
+
+    void ackEventState();
+    void onAutoOffTriggered(EN_CT10_reason_t p_reason);
+    bool checkAutoOff(EN_CT10_reason_t* p_reasonOrNull = nullptr);
+    // bool checkAutoOff();
+
+    // static uint16_t parseHHMMtoMin(const char* p_time);
+    static float getCurrentTemperatureMock();
+    static float getCurrentHumidityMock();   // [Phase 2] 습도 노출
+
+    int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg, bool p_allowOverlap = true);
+    // int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg);
+
+    bool shouldHoldEventState() const;
+    bool isMotionBlocked(const ST_A20_Motion_t& p_motionCfg);
+    void onMotionBlocked(EN_CT10_reason_t p_reason);
+
+    void maybePushMetricsDirty();
+    
+    // ======================================================
+    // [I-4] config → S10 runtime 반영 (private)
+    //  - 외부 진입점: requestMotionSimApply() (flag set)
+    //  - 실행 컨텍스트: tickLoop() 시작부 (loopTask, s_stateMutex 보유)
+    //  - s_stateMutex 는 recursive 이므로 내부 재진입 안전
+    //  - 직접 호출 금지 (F-06 위임 정책 우회 방지)
+    // ======================================================
+    void applyMotionSimConfigToSim();
+
+    // 로그 개선용: preset/style 이름 조회
+    const char* findPresetNameByCode(const char* p_code) const;
+    const char* findStyleNameByCode(const char* p_code) const;
+
+    // [CT10] runCtx snapshot update (Segment on/off에서만 사용)
+    // --------------------------------------------------
+    void updateRunCtxOnSegmentOn_Schedule(const ST_A20_ScheduleItem_t& p_s, const ST_A20_ScheduleSegment_t& p_seg);
+    void updateRunCtxOnSegmentOn_Profile(const ST_A20_UserProfileItem_t& p_p, const ST_A20_UserProfileSegment_t& p_seg);
+    void updateRunCtxOnSegmentOff();
+
+  private:
+    // decide/apply
+    ST_CT10_Decision_t decideRunSource();
+    void               applyDecision(const ST_CT10_Decision_t& p_d);
+
+  private:
+    // 생성자 숨김
+    CL_CT10_ControlManager() = default;
+};

@@ -668,6 +668,14 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     // ======================================================
     v_ctl["pendingReload"] = CL_CT10_ControlManager::isReloadPending();
 
+    // ======================================================
+    // [B-N-1] 마지막 reloadAll 결과 노출
+    //  - 프론트엔드: pendingReload false 전환 시 본 필드 확인
+    //  - true : 마지막 reload 성공 (또는 초기 미시도)
+    //  - false: 마지막 reload 실패 (사용자 알림 권장)
+    // ======================================================
+    v_ctl["lastReloadOk"] = CL_CT10_ControlManager::isLastReloadOk();
+
     // 10) Simulation snapshot 병합 (S10 toJson → p_doc["sim"])
     //  - /state 응답 + WS /state push에 sim 포함
     //  - 프론트는 별도 /simulation 호출 없이 처리 가능

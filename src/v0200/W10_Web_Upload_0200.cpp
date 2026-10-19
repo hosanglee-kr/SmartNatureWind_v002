@@ -130,19 +130,28 @@ void CL_W10_WebAPI::routeUpload() {
         [](AsyncWebServerRequest* p_request, const String& p_filename, size_t p_index, uint8_t* p_data, size_t p_len, bool p_final) {
             if (!checkApiKey(p_request)) return;
 
+            // ==================================================
+            // [B-N-4] 실패 분기에서 반드시 s_upFile.close() 호출
+            //  - 미close 시 다음 업로드가 이전 핸들 재사용
+            //  - 파일 손상/오염 가능성 방지
+            // ==================================================
+            auto safeAbort = [](const char* reason) {
+                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] upload abort: %s", reason);
+                if (s_upFile) { s_upFile.close(); s_upFile = File(); }
+                s_uploadError = true;
+            };
+
             // ─── 첫 청크: 파일 열기 ───
             if (p_index == 0) {
                 // 동시 업로드 방지
                 if (s_upFile && s_upFile.available()) {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] Upload rejected: concurrent upload");
-                    s_uploadError = true;
+                    safeAbort("concurrent upload");
                     return;
                 }
 
                 // 크기 제한 확인
                 if (p_request->contentLength() > G_W10_MAX_UPLOAD_SIZE) {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] Upload rejected: size %u exceeds limit", p_request->contentLength());
-                    s_uploadError = true;
+                    safeAbort("size exceeds limit");
                     return;
                 }
 
@@ -151,8 +160,7 @@ void CL_W10_WebAPI::routeUpload() {
 
                 // 여유 공간 확인
                 if (LittleFS.usedBytes() + p_request->contentLength() > LittleFS.totalBytes()) {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] Upload rejected: insufficient space");
-                    s_uploadError = true;
+                    safeAbort("insufficient space");
                     return;
                 }
                 
@@ -164,8 +172,7 @@ void CL_W10_WebAPI::routeUpload() {
 
                 s_upFile = LittleFS.open(finalPath, "w");
                 if (!s_upFile) {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] Failed to open file for writing: %s", finalPath.c_str());
-                    s_uploadError = true;
+                    safeAbort("open failed");
                     return;
                 }
 
@@ -179,8 +186,7 @@ void CL_W10_WebAPI::routeUpload() {
             if (!s_uploadError && s_upFile && p_len > 0) {
                 size_t written = s_upFile.write(p_data, p_len);
                 if (written != p_len) {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] Write error: %u/%u bytes", written, p_len);
-                    s_uploadError = true;
+                    safeAbort("write failed");
                 } else {
                     s_uploadTotal += written;
                 }

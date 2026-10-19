@@ -73,6 +73,7 @@ bool CL_CT10_ControlManager::reloadAll() {
     bool v_ok = CL_C10_ConfigManager::loadAll(v_new);
     if (!v_ok) {
         CL_C10_ConfigManager::freeAll(v_new);
+        s_lastReloadOk.store(false, std::memory_order_release);   // [B-N-1]
         return false;
     }
 
@@ -80,6 +81,7 @@ bool CL_CT10_ControlManager::reloadAll() {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
         CL_C10_ConfigManager::freeAll(v_new);
+        s_lastReloadOk.store(false, std::memory_order_release);   // [B-N-1]
         return false;
     }
     
@@ -139,7 +141,8 @@ bool CL_CT10_ControlManager::reloadAll() {
     CL_C10_ConfigManager::queuePendingFree(v_old);
     
 
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] reloadAll done");
+    s_lastReloadOk.store(true, std::memory_order_release);        // [B-N-1]
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] reloadAll done (lastReloadOk=true)");
     return true;
 }
 

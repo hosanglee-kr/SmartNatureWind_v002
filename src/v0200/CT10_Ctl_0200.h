@@ -276,6 +276,18 @@ class CL_CT10_ControlManager {
         return s_pendingReload.load(std::memory_order_acquire);
     }
 
+    // ======================================================
+    // [B-N-1] 마지막 reloadAll 결과 노출 (성공/실패)
+    //  - A00_run이 reloadAll() 호출 후 결과를 저장
+    //  - state export에 control.lastReloadOk 로 노출
+    //  - 초기값 true (아직 시도 없음 = "문제 없음" 해석)
+    //  - 프론트엔드는 pendingReload가 false로 전환된 시점에서
+    //    본 필드를 읽어 성공/실패 판별
+    // ======================================================
+    static bool isLastReloadOk() {
+        return s_lastReloadOk.load(std::memory_order_acquire);
+    }
+
       // ======================================================
       // [F-06] Motion.sim 재적용 위임 (async_tcp → loopTask)
       //  - W10 routeMotion patch 후 본 함수만 호출 (mutex 경합 회피)
@@ -380,6 +392,12 @@ class CL_CT10_ControlManager {
     //  - C++17 inline static → 헤더 정의만으로 단일 인스턴스 보장
     // --------------------------------------------------
     inline static std::atomic<bool> s_pendingReload{false};
+
+    // --------------------------------------------------
+    // [B-N-1] 마지막 reloadAll 결과 (성공=true, 실패=false)
+    //  - 초기값 true: "아직 시도 없음" = 문제 없음으로 해석
+    // --------------------------------------------------
+    inline static std::atomic<bool> s_lastReloadOk{true};
     
     // --------------------------------------------------
     // [F-06] pending motion.sim apply flag (instance, atomic)

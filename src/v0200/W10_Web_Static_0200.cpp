@@ -201,8 +201,14 @@ void CL_W10_WebAPI::routeStaticAssets() {
 	uint16_t	 v_page_count  = 0;
 	uint16_t	 v_asset_count = 0;
 
+	// ======================================================
+	// [N-2] 정적 폴더 라우트를 pages JSON 로드 이전에 등록
+	//  - pages JSON 손상 시에도 최소한 정적 파일 접근 보장
+	// ======================================================
+	s_server->serveStatic(W10_Const::PATH_STATIC_HTML, LittleFS, W10_Const::PATH_STATIC_HTML);
+
 	if (!W10_loadPagesJson(v_doc, v_page_count, v_asset_count)) {
-		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] Failed to load pages JSON. Cannot register static routes.");
+		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] Failed to load pages JSON. Static folder routing is active, menu/routes skipped.");
 		return;
 	}
 
@@ -341,16 +347,18 @@ void CL_W10_WebAPI::routeStaticAssets() {
 			}
 
 			// 파일 존재 여부 확인 후 리다이렉트
-			if (LittleFS.exists(v_default_html) || LittleFS.exists(v_default_html + ".gz"))
+			if (LittleFS.exists(v_default_html) || LittleFS.exists(v_default_html + ".gz")) {
 				r->redirect(v_default_html);
-			else
-				r->redirect("/");  // 최악의 경우 루프지만, JSON/FS 구성이 잘못된 상황
+			} else {
+				// [B-N-3] 무한 루프 대신 명시적 404
+				String v_msg = "main page not found: " + v_default_html
+				             + "\nCheck cfg_pages JSON and /html_v3 files.";
+				r->send(404, "text/plain; charset=utf-8", v_msg);
+			}
 		});
 	}
 
-	// 4) 정적 폴더 매핑
-	// - "/html_v3/..." 경로는 모두 LittleFS의 "/html_v3" 폴더에서 정적 서빙
-	s_server->serveStatic(W10_Const::PATH_STATIC_HTML, LittleFS, W10_Const::PATH_STATIC_HTML);
+	// 4) 정적 폴더 매핑은 위 [N-2]에서 시작 시점에 등록됨
 
 	// 5) 메뉴 API
 	s_server->on(W10_Const::HTTP_API_MENU, HTTP_GET, W10_getMenuJson);

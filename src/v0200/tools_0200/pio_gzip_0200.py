@@ -89,8 +89,14 @@ def build_main_bundle(src_dir: Path, dst_dir: Path) -> None:
     for rel_name in MAIN_BUNDLE_JS_ORDER:
         js_file = src_dir / rel_name
         if not js_file.is_file():
-            print(f"  [WARN] 번들 소스 파일 누락: {rel_name}", file=sys.stderr)
-            continue
+            # [C-G-3] 번들 소스 누락 시 조용히 skip 금지
+            #  - 8개 중 1개 누락 → 런타임 ReferenceError
+            #  - 빌드는 성공 → 개발자가 원인 모름
+            #  - 즉시 실패로 명확한 피드백
+            print(f"  [ERROR] 번들 소스 파일 누락: {rel_name}", file=sys.stderr)
+            print(f"          expected at: {js_file}", file=sys.stderr)
+            print(f"          web 자산 소스(data_src_v0200/html_v3)를 확인하세요.", file=sys.stderr)
+            sys.exit(1)
         content = js_file.read_text(encoding="utf-8")
         size = len(content.encode("utf-8"))
         total_raw += size

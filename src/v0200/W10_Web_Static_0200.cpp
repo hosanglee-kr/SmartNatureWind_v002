@@ -70,6 +70,20 @@ const char* CL_W10_WebAPI::W10_guessMime(const char* p_path) {
 		return "text/css; charset=utf-8";
 	if (strstr(p_path, ".js"))
 		return "application/javascript; charset=utf-8";
+	if (strstr(p_path, ".json"))
+		return "application/json; charset=utf-8";
+	if (strstr(p_path, ".svg"))
+		return "image/svg+xml";
+	if (strstr(p_path, ".png"))
+		return "image/png";
+	if (strstr(p_path, ".jpg") || strstr(p_path, ".jpeg"))
+		return "image/jpeg";
+	if (strstr(p_path, ".ico"))
+		return "image/x-icon";
+	if (strstr(p_path, ".woff2"))
+		return "font/woff2";
+	if (strstr(p_path, ".txt"))
+		return "text/plain; charset=utf-8";
 
 	return "application/octet-stream";
 }
@@ -135,9 +149,16 @@ void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_fil
 
     // 2. 람다 캡처 (v_uri, v_file, v_mime은 shared_ptr이므로 값 복사 시 참조 카운트가 증가하여 안전함)
     s_server->on(v_uri.get(), HTTP_GET, [v_file, v_mime](AsyncWebServerRequest* r) {
-        // [GZ] .gz 압축 파일 우선 서빙 (LittleFS 용량 및 전송 속도 최적화)
+        // ==================================================
+        // [G-1] Accept-Encoding 헤더 검사 (HTTP 표준 준수)
+        //  - gzip 미지원 클라이언트(curl 기본 등)에 raw 전송
+        // ==================================================
+        bool v_acceptsGzip = r->hasHeader("Accept-Encoding")
+                          && r->getHeader("Accept-Encoding")->value().indexOf("gzip") >= 0;
+
         String v_gzFile = String(v_file.get()) + ".gz";
-        if (LittleFS.exists(v_gzFile)) {
+
+        if (v_acceptsGzip && LittleFS.exists(v_gzFile)) {
             auto* v_resp = r->beginResponse(LittleFS, v_gzFile, v_mime.get());
             v_resp->addHeader("Content-Encoding", "gzip");
             CL_W10_WebAPI::_applyHeaders(v_resp, false);
@@ -157,6 +178,42 @@ void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_fil
         CL_W10_WebAPI::_applyHeaders(v_resp, true);
         r->send(v_resp);
     });
+}
+
+// ======================================================
+// [C-G-2/G-4] /html_v3/* 전체 경로에 대한 Gzip 지원 라우트
+//  - serveStatic을 대체
+//  - long path (예: /html_v3/P010_main_0200.html) 접근 시에도
+//    Accept-Encoding 검사 후 .gz 우선 서빙
+//  - regex는 platformio.ini의 -D ASYNCWEBSERVER_REGEX 활성화 상태 전제
+// ======================================================
+void CL_W10_WebAPI::W10_registerGzipServe() {
+    s_server->on("^\\/html_v3\\/.+", HTTP_GET, [](AsyncWebServerRequest* r) {
+        String v_path = r->url();
+
+        bool v_acceptsGzip = r->hasHeader("Accept-Encoding")
+                          && r->getHeader("Accept-Encoding")->value().indexOf("gzip") >= 0;
+
+        String v_gzPath = v_path + ".gz";
+        const char* v_mime = W10_guessMime(v_path.c_str());
+
+        if (v_acceptsGzip && LittleFS.exists(v_gzPath)) {
+            auto* v_resp = r->beginResponse(LittleFS, v_gzPath, v_mime);
+            v_resp->addHeader("Content-Encoding", "gzip");
+            _applyHeaders(v_resp, false);
+            r->send(v_resp);
+            return;
+        }
+        if (LittleFS.exists(v_path)) {
+            auto* v_resp = r->beginResponse(LittleFS, v_path, v_mime);
+            _applyHeaders(v_resp, false);
+            r->send(v_resp);
+            return;
+        }
+        r->send(404, "text/plain", "not found: " + v_path);
+    });
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Gzip static serve registered (/html_v3/*)");
 }
 
 
@@ -204,8 +261,10 @@ void CL_W10_WebAPI::routeStaticAssets() {
 	// ======================================================
 	// [N-2] 정적 폴더 라우트를 pages JSON 로드 이전에 등록
 	//  - pages JSON 손상 시에도 최소한 정적 파일 접근 보장
+	//  - [C-G-2/G-4] serveStatic 대신 regex 라우트로 Gzip 지원
+	//  - 모든 /html_v3/* 경로에서 Accept-Encoding 검사 후 .gz 우선 서빙
 	// ======================================================
-	s_server->serveStatic(W10_Const::PATH_STATIC_HTML, LittleFS, W10_Const::PATH_STATIC_HTML);
+	W10_registerGzipServe();
 
 	if (!W10_loadPagesJson(v_doc, v_page_count, v_asset_count)) {
 		CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] Failed to load pages JSON. Static folder routing is active, menu/routes skipped.");

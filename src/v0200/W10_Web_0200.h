@@ -132,6 +132,7 @@ class CL_W10_WebAPI {
     static const char* W10_guessMime(const char* p_path);
     static bool        W10_loadPagesJson(JsonDocument& p_doc, uint16_t& p_page_count, uint16_t& p_asset_count);
     static void        W10_registerStaticRoute(const char* p_uri, const char* p_file, const char* p_mime);
+    static void        W10_registerGzipServe();
     static void        W10_getMenuJson(AsyncWebServerRequest* r);
 
     static String getUploadPath(const String& p_filename);

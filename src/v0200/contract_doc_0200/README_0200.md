@@ -1,217 +1,304 @@
-# src/v0200/contract_doc_0200 — 계약 기반 설계 문서 체계 (CBD)
+# README_0200.md — 계약 기반 설계 문서 체계 (CBD)
 
-본 디렉토리는 Smart Nature Wind v0200 펌웨어의 **계약 기반 설계(Contract-Based Design, CBD)** 문서를 관리한다.  
-동시성 경계, 상태 소유권, 메모리 및 시간 예산, 회귀 테스트 절차를 체계화하여 멀티태스크 펌웨어의 안정성과 일관성을 보장한다.
+> **목적**: 본 디렉토리는 Smart Nature Wind v0200 펌웨어의 계약 기반 설계(Contract-Based Design) 문서를 관리한다.  
+> 동시성 경계, 상태 소유권, 메모리/시간 예산, 회귀 테스트 절차를 체계화하여 멀티태스크 펌웨어의 안정성과 일관성을 보장한다.  
+> **파일명 정책**: 계약 문서 `_0200.md` 유지, 코드 참조 `_0201` 접미사 (Batch B 확정).
 
 ---
 
 ## 1. 디렉토리 및 파일 구조
 
-현재 `src/v0200/` 하위 모듈 및 본 계약 문서 디렉토리의 전체 구조는 다음과 같다.
-
 ```text
 src/v0200/
-├── contract_doc_0200/              # [CBD] 계약 기반 설계 문서군 (본 디렉토리)
-│   ├── README_0200.md             # CBD 체계 안내, 폴더/파일 구조, 감사 이력, 사용 가이드
-│   ├── SPEC_0200.md               # 시스템 최상위 기술 사양 (SSOT: 핀맵, 스키마, 모듈 구성, NVS)
-│   ├── CONTRACT_0200.md           # 동시성 경계, 뮤텍스 인벤토리, 전역 공유자원 접근 규약, 위임 패턴
-│   ├── STATE_0200.md              # 상태 변수 소유권(단일 Writer 원칙), FSM 정의, 위임 플래그 라이프사이클
-│   ├── FLOW_0200.md               # 주요 파이프라인 시퀀스 (부팅, 제어 루프, 비동기 reload, WiFi, 웹소켓)
-│   ├── BUDGET_0200.md             # 태스크별 WCET, 스택/메모리 예산, 블로킹 제한치, 관측성 메트릭
-│   ├── TEST_PLAN_0200.md          # 회귀 테스트 절차서 (T-1 ~ T-8 검증 시나리오 및 합격 기준)
-│   └── Ref/                       # [참조 자료]
-│       └── UI_TERMINOLOGY_0200.md # 웹 UI 한/영 표준 용어 사전 및 가이드라인 (참조용)
+├── contract_doc_0200/              # [CBD] 계약 기반 설계 문서군
+│   ├── README_0200.md             # 본 문서 (총괄 안내, 감사 이력, 워크플로)
+│   ├── SPEC_0200.md               # SSOT (핀맵, 스키마, 모듈, NVS)
+│   ├── CONTRACT_0200.md           # 동시성 경계, 뮤텍스, 위임 패턴
+│   ├── STATE_0200.md              # 상태 소유권, FSM, 위임 플래그
+│   ├── FLOW_0200.md               # 부팅/제어/위임 시퀀스
+│   ├── BUDGET_0200.md             # WCET, 스택, 블로킹, 관측성
+│   ├── TEST_PLAN_0200.md          # 회귀 절차 (T-1~T-28)
+│   └── Ref/
+│       └── UI_TERMINOLOGY_0200.md # 웹 UI 한/영 용어집 (참조)
 │
-├── Req_ImplPlan_0200/             # 요구사항 정의 및 구현 계획서
-│   ├── 0200_001.md                # 1차 구현 계획 및 리팩토링 사양
-│   └── 0200_002.md                 # 2차 구현 계획 및 도구 통합 사양
-│
+├── Req_ImplPlan_0200/             # 요구사항 및 구현 계획서
 ├── User_Manual_0200/              # 사용자 매뉴얼
-│   └── 00.UserManual_0200_r001.md # v0200 사용자 가이드
+├── tools_0200/                    # 빌드/검증 보조 도구
+│   ├── pio_gzip_0200.py           # 웹 에셋 번들링 + Gzip 사전 압축
+│   ├── commit_contracts_0200.py   # 계약 문서 검증/동시 커밋 (Python 3.7+)
+│   ├── migrate_to_0201.py         # 0200→0201 접미사 마이그레이션
+│   ├── fix_table_bleed.py         # 계약 문서 테이블 침식 자동 제거
+│   └── patch_revision_notes.py    # 개정이력 v2.0 문구 병기
 │
-├── tools_0200/                    # 검증 및 빌드 보조 도구
-│   ├── pio_gzip_0200.py           # 웹 에셋 JS 번들링 및 Gzip 사전 압축 스크립트 (PlatformIO 연동)
-│   ├── commit_contracts_0200.py   # 계약 문서 검증 및 동시 커밋 도구 (Python 3.7+)
-│   └── Ref/                       # [참조 스크립트 모음]
+├── data_src_v0200/                # [웹 개발 원본] (8분할 JS + HTML/CSS)
+├── data_v0200/                    # [배포 스테이징] LittleFS 이미지 대상
 │
-├── data_src_v0200/                 # [웹 개발 원본] VCS 형상관리 원본 파일군 (/html_v3)
-├── data_v0200/                     # [배포 스테이징] LittleFS 업로드 데이터 (/html_v3 번들/Gzip, /json)
-│
-└── [C++ 소스 및 헤더 모듈군]
-    ├── A00_Main_0200.*             # 메인 진입점, 초기화 및 A00_run() 주기 루프
-    ├── A20_Const_*.h              # 전역 상수 및 설정 정의
-    ├── A22~A25_Com_*.h            # 공통 유틸리티, 룩업, 리셋 함수
-    ├── A30_LED_0200.h              # 상태 LED / NeoPixel 제어
-    ├── C10_Config_*.cpp/.h        # 설정 로드/저장/검증 및 RootSwap
-    ├── CT10_Ctl_*.cpp/.h          # 중앙 장치 제어기, 상태 머신, 웹소켓 브로커
-    ├── D10_Logger_0200.h           # 시스템 로거
-    ├── M10_MotionLogic_0200.h      # PIR 센서 및 모션 타이머 로직
-    ├── N10_NvsManager_0200.*       # NVS 플래시 스토리지 관리
-    ├── P10_PWM_ctrl_0200.h         # 팬 하드웨어 PWM 제어
-    ├── S10_Simul_*.cpp/.h         # 바람 시뮬레이션 및 물리 엔진
-    ├── S20_WindSolver_0200.h       # 바람 솔버 알고리즘
-    ├── TM10_TimeMg_0200.h          # NTP 동기화 및 시간 관리
-    ├── W10_Web_*.cpp/.h           # 비동기 웹서버, REST API 라우팅, 웹소켓
-    └── WF10_WiFiMgr_0200.*         # WiFi 연결 및 재연결 전담 태스크 관리
+└── [C++ 소스군, 0201 접미사]
+    ├── main.cpp, A00_Main_0201.* (엔트리)
+    ├── A20_Const_*_0201.h (상수/구조체)
+    ├── A22_Com_Lookup_0201.h, A23_Com_ResetCfg_0201.h
+    ├── A25_Com_Utils_0201.h, A25_Com_Utils_IO_0201.cpp (E-2.5 분리)
+    ├── A30_LED_0201.h
+    ├── C10_Config_0201.h, C10_Config_Core/Extras/Sys_0201.cpp
+    ├── C10_Config_Sch_*_0201.* (E-2.3 5분할)
+    ├── C10_Config_UzProf_*_0201.* (E-2.6 5분할)
+    ├── C10_Config_WindDc_*_0201.* (E-2.7 5분할)
+    ├── CT10_Ctl_0201.h, CT10_Ctl_Basic/Ctl/StMG/IOWS_0201.cpp
+    ├── CT10_Ctl_Ctl_Seg/Ovr/Mode_0201.cpp (E-2.4 4분할)
+    ├── D10_Logger_0201.h
+    ├── M10_MotionLogic_0201.h
+    ├── N10_NvsManager_0201.*
+    ├── P10_PWM_ctrl_0201.h (헤더 인라인)
+    ├── S10_Simul_0201.h, S10_Simul_Const_0201.h
+    ├── S10_Simul_Core/Physic/IO_0201.cpp
+    ├── S20_WindSolver_0201.h (헤더 인라인)
+    ├── TM10_TimeMg_0201.h/.cpp (E-2.1 분리)
+    ├── W10_Web_0201.h, W10_Web_Const_0201.h
+    ├── W10_Web_Routes_0201.cpp (Core)
+    ├── W10_Web_Routes_System/Control/Config/Network/CRUD_0201.cpp (E-2.2 6분할)
+    ├── W10_Web_Static/Upload/Util/WS/Gemini_0201.cpp
+    └── WF10_WiFiMgr_0201.*
 ```
 
 ---
 
 ## 2. 문서 목록 및 역할
 
-| 파일명 | 역할 및 주요 내용 | 준수 기준 |
+| 파일 | 역할 | 준수 기준 |
 |---|---|---|
-| [`SPEC_0200.md`](file:///d:/95.2540_PJT/SmartNatureWind_v002/src/v0200/contract_doc_0200/SPEC_0200.md) | 상위 사양 SSOT (ESP32-S3 핀맵, 설정 JSON 스키마, 모듈 구성, 비동기 reload 정책, NVS 키) | **최상위 SSOT** |
-| [`CONTRACT_0200.md`](file:///d:/95.2540_PJT/SmartNatureWind_v002/src/v0200/contract_doc_0200/CONTRACT_0200.md) | 태스크 경계(Context), 뮤텍스 인벤토리, 전역 공유자원 접근 규약(`g_A20_config_root`), 위임 패턴, 감사 결과 | SPEC 준수 |
-| [`STATE_0200.md`](file:///d:/95.2540_PJT/SmartNatureWind_v002/src/v0200/contract_doc_0200/STATE_0200.md) | 상태 변수 소유권(단일 Writer 원칙), FSM 정의, 태스크 간 위임 플래그 라이프사이클 | CONTRACT 준수 |
-| [`FLOW_0200.md`](file:///d:/95.2540_PJT/SmartNatureWind_v002/src/v0200/contract_doc_0200/FLOW_0200.md) | 부팅 시퀀스, 제어 파이프라인, 비동기 reload 흐름, WiFi 재연결, 시간 동기화 시퀀스도 | CONTRACT/STATE 준수 |
-| [`BUDGET_0200.md`](file:///d:/95.2540_PJT/SmartNatureWind_v002/src/v0200/contract_doc_0200/BUDGET_0200.md) | 태스크별 WCET 예산, FreeRTOS 스택 예산, 임계 구역 블로킹 제한치, 관측성 메트릭 | SPEC 준수 |
-| [`TEST_PLAN_0200.md`](file:///d:/95.2540_PJT/SmartNatureWind_v002/src/v0200/contract_doc_0200/TEST_PLAN_0200.md) | 결함 방지 회귀 테스트 절차 (T-1~T-8 시나리오, 절차 및 합격 판정 기준) | 최신 감사/결함 수정 반영 |
-| [`Ref/UI_TERMINOLOGY_0200.md`](file:///d:/95.2540_PJT/SmartNatureWind_v002/src/v0200/contract_doc_0200/Ref/UI_TERMINOLOGY_0200.md) | 웹 프론트엔드 한/영 표준 UI 용어집, 1:1 대응 원칙 및 번역 가이드라인 (참조 자료) | UI/i18n 기준 |
-| [`README_0200.md`](file:///d:/95.2540_PJT/SmartNatureWind_v002/src/v0200/contract_doc_0200/README_0200.md) | CBD 체계 총괄 안내, 폴더/파일 구조, 감사 이력 테이블, 워크플로 및 커밋 도구 가이드 | 본 문서 |
+| `SPEC_0200.md` | 상위 사양 SSOT (핀맵, JSON 스키마, 모듈 구성, Reload 정책, NVS) | **최상위 SSOT** |
+| `CONTRACT_0200.md` | 태스크 경계, 뮤텍스 인벤토리, `g_A20_config_root` 접근 규약, 위임 패턴, 감사 이력 (A-1~F-10) | SPEC 준수 |
+| `STATE_0200.md` | 상태 변수 단일 Writer, FSM, 위임 플래그 라이프사이클, E-2 분할 상태 소유권 | CONTRACT 준수 |
+| `FLOW_0200.md` | 부팅/제어/Reload/WiFi/시간/PIR/A-2 위임/F-2 헬퍼 시퀀스 | CONTRACT/STATE 준수 |
+| `BUDGET_0200.md` | 태스크 WCET, 스택, 블로킹, 관측성, RAM/Flash 실측, Batch 예산 영향 | SPEC 준수 |
+| `TEST_PLAN_0200.md` | 회귀 절차 (T-1~T-28), 트러블슈팅 매트릭스 | 최신 감사 반영 |
+| `Ref/UI_TERMINOLOGY_0200.md` | 웹 한/영 UI 용어집 (참조) | UI/i18n |
+| `README_0200.md` | 본 문서 (CBD 총괄, 감사 이력, 워크플로, 커밋 도구) | 기준점 |
 
 ---
 
 ## 3. 감사 이력 (Audit Findings)
 
-코드 정적 감사 및 런타임 검증을 통해 도출되어 계약 문서에 반영된 핵심 항목:
+### 3.1 기존 이슈 (F-01 ~ I-6)
 
-| ID | 심각도 | 상태 | 내용 요약 | 해결 및 반영 내역 |
+| ID | 심각도 | 상태 | 요약 | 해결 |
 |---|---|---|---|---|
-| **F-01** | 🔴 High | ✅ 해결 | WF10 GOT_IP 이벤트 처리 누락 | `startSTA` 후 TM10 명시 통지 및 NTP 트리거 |
-| **F-02** | 🟡 Mid | ✅ 해결 | 이중 `xTaskCreate` 호출 위험 | `_ensureWifiTask` 내 mutex 보호 및 중복 생성 방지 |
-| **F-03** | 🔴 High | ✅ 해결 | M10 tick 미호출로 인한 센서 갱신 누락 | `A00_run()` 내 M10 tick 주기 호출 추가 |
-| **F-04** | 🔴 High | ✅ 해결 | N10 flush 주기 미호출 | `A00_run()` 내 N10 tick(플러시 큐) 추가 |
-| **F-05** | 🟡 Mid | ✅ 해결 | async_tcp 태스크 내 reload 직접 호출 시 블로킹 | loopTask 위임 패턴 적용 (`control.pendingReload` 플래그) |
-| **F-06** | 🟡 Mid | ✅ 해결 | async_tcp 태스크의 motion patch 시 mutex 경합 | loopTask 위임 패턴 적용 (atomic 플래그) |
-| **F-07** | 🟢 Low | ⏸ 수용 | Logger 링버퍼 동시 접근 시 무보호 | 로그 유실 수준으로 수용 (성능 우선) |
-| **F-08** | 🟢 Low | ⏸ 수용 | A00_run 내 raw root dereference | 단일 Writer 정책에 의해 저위험 수용 |
-| **F-09** | 🟡 Mid | ✅ 해결 | PIR 센서 부팅 직후 false-positive 발생 | F-03 해결(M10 tick)로 정상 만료 처리 |
-| **F-10** | 🟡 Mid | ⚠️ 관측 | async_tcp 태스크 스택 여유 부족 | `CONFIG_ASYNC_TCP_STACK_SIZE` 상향 후보 관리 |
-| **I-1** | 🟡 Mid | ✅ 해결 | 웹 UI에서 reload 완료 시점 확인 불가 | `control.pendingReload` 상태 필드 노출 |
-| **I-2** | 🟡 Mid | ✅ 해결 | motion patch 후 reload 시 설정 소실 | `SPEC_0200.md` §5.1에 지속성 정책 문서화 |
-| **I-3** | 🟢 Low | ✅ 해결 | `_pendingMotionSimApply` 리셋 시점 모호 | `begin()` 시 방어적 store 수행 |
-| **I-4** | 🟢 Low | ✅ 해결 | `applyMotionSimConfigToSim` public 노출 | 클래스 내부 private으로 캡슐화 |
-| **I-5** | 🟢 Low | ⏸ 수용 | reload 실행 중 LED 상태 표시 약 500ms 지연 | 사람 체감 불가능한 짧은 순단으로 수용 |
-| **I-6** | 🟢 Low | ✅ 해결 | 다중 분할 JS 로드로 인한 async_tcp LWIP 소켓 고갈 및 플래시 I/O 부하 | 메인 JS 단일 번들(`P010_bundle_0200.js`) + 전 에셋 Gzip 압축 (동시요청 11→4, LittleFS -73.3%) |
-| **N-1** | 🟢 Low | ✅ 해결 | reload 실패 시 런타임 이전 상태 유지되어 사용자가 성공으로 오인 | `control.lastReloadOk` 필드 추가로 프론트 실패 감지 지원 |
-| **N-2** | 🟡 Mid | ✅ 해결 | pages JSON 손상 시 serveStatic 미등록으로 웹 404 | 정적 라우트 등록을 JSON 로드 실패 분기 앞으로 배치 |
-| **N-3** | 🟡 Mid | ✅ 해결 | root fallback에서 메인 HTML 부재 시 무한 리다이렉트 폭주 | 404 명시적 반환 및 진단 메시지 출력 |
-| **N-4** | 🟡 Mid | ✅ 해결 | 파일 업로드 에러 시 `s_upFile.close()` 누락으로 파일 핸들 누수/오염 | safeAbort 람다로 실패 분기 파일 close 강제 |
-| **G-1** | 🟢 Low | ✅ 해결 | `Accept-Encoding: gzip` 검사 없이 무조건 gzip 서빙하여 curl 등 깨짐 | 헤더 검사 후 gzip/raw 분기 서빙 (HTTP 표준 준수) |
-| **G-2** | 🟡 Mid | ✅ 해결 | long path 접근 시 `serveStatic`이 `.gz` 인식 못해 원본 서빙 | regex 라우트(`^/html_v3/.+`)로 전면 대체하여 long path도 gzip 우선 |
-| **G-3** | 🟢 Low | ✅ 해결 | 번들 소스 JS 파일 누락 시 continue로 무시되어 런타임 에러 | 소스 누락 시 빌드 즉시 실패(`sys.exit(1)`) 처리 |
+| F-01 | 🔴 High | ✅ | WF10 GOT_IP 이벤트 누락 | startSTA 후 TM10 명시 통지 |
+| F-02 | 🟡 Mid | ✅ | 이중 xTaskCreate 위험 | `_ensureWifiTask` mutex 보호 |
+| F-03 | 🔴 High | ✅ | M10 tick 미호출 | `A00_run` 배치 |
+| F-04 | 🔴 High | ✅ | N10 flush 미호출 | `A00_run` 배치 |
+| F-05 | 🟡 Mid | ✅ | async_tcp reload 블로킹 | loopTask 위임 (atomic flag) |
+| F-06 | 🟡 Mid | ✅ | async_tcp motion patch 락 경합 | loopTask 위임 (atomic flag) |
+| F-07 | 🟢 Low | ⏸ | Logger 링버퍼 레이스 | 로그 유실 수용 |
+| F-08 | 🟢 Low | ⏸ | A00_run root raw 역참조 | 저위험 수용 |
+| F-09 | 🟡 Mid | ✅ | PIR 부팅 false-positive | F-03으로 해소 |
+| F-10 | 🟡 Mid | ⚠️ | async_tcp 스택 4KB | 부담 완화, 8KB 후보 관측 |
+| I-1 | 🟡 Mid | ✅ | Reload 완료 판별 불가 | `control.pendingReload` 노출 |
+| I-2 | 🟡 Mid | ✅ | save 없는 reload 시 패치 소실 | SPEC §5.2 명문화 |
+| I-3 | 🟢 Low | ✅ | `_pendingMotionSimApply` 잔재 | begin/reloadAll 방어 store |
+| I-4 | 🟢 Low | ✅ | `applyMotionSimConfigToSim` public 노출 | private 이동 |
+| I-5 | 🟢 Low | ⏸ | reload 중 LED 지연 | 체감 불가 수용 |
+| I-6 | 🟢 Low | ✅ | 다중 JS 로드 LWIP 소켓 고갈 | 번들 + Gzip (11→4) |
+
+### 3.2 N/G 시리즈
+
+| ID | 심각도 | 상태 | 요약 | 해결 |
+|---|---|---|---|---|
+| N-1 | 🟢 Low | ✅ | reload 실패 미노출 | `control.lastReloadOk` |
+| N-2 | 🟡 Mid | ✅ | pages JSON 손상 시 404 | 정적 폴더 우선 등록 |
+| N-3 | 🟡 Mid | ✅ | root 무한 리다이렉트 | 404 + 진단 |
+| N-4 | 🟡 Mid | ✅ | 업로드 핸들 누수 | safeAbort close |
+| G-1 | 🟢 Low | ✅ | Accept-Encoding 미검사 | gzip/raw 분기 |
+| G-2 | 🟡 Mid | ✅ | long path `.gz` 미인식 | regex 라우트 대체 |
+| G-3 | 🟢 Low | ✅ | 번들 소스 누락 무시 | fail-fast `sys.exit(1)` |
+
+### 3.3 Batch A~F 신규
+
+| Batch | ID | 심각도 | 요약 | 상태 |
+|---|---|---|---|---|
+| A | A-1 | 🔴 High | FIXED self-heal 무한 재호출 | ✅ `mode==PRESET` 조건 |
+| A | A-2 | 🔴 High | CT10 `sim`/`motion` public 노출 | ✅ 위임 3종 + private |
+| A | A-3 | 🔴 High | checkApiKey null Core Dump | ✅ null 방어 |
+| B | B-1~B-6 | 🟡 Mid | 버전/NVS 키/기본 preset 리터럴 | ✅ 상수화 |
+| C | C-1~C-8 | 🟢 Low | S10/A00/TM10/WF10 매직넘버 | ✅ `G_S10_*` 등 |
+| D | D-1 | 🟢 Low | WS tick mutex 4회 | ✅ `consumeAllDirty` (4→1) |
+| D | D-2/D-3 | 🟢 Low | 정적 서빙 String 할당 | ✅ 사전 계산/스택 버퍼 |
+| D | D-4 | 🟡 Mid | isStaConnected 10ms mutex | ✅ atomic lock-free |
+| D | D-5 | 🟢 Low | toChartJson 4.8KB vector | ✅ static 배열 (`.bss`) |
+| E | E-1~E-10 | 🟢 Low | Dead Code | ✅ 정리 |
+| E-2 | E-2.1~E-2.7 | 🟢 Low | 29파일 분할 (대형 파일) | ✅ 4~6분할 |
+| F | F-1 | 🟡 Mid | factory reset NVS 잔존 | ✅ `N10::resetRuntime` |
+| F | F-2/F-3 | 🟢 Low | POST/PATCH 60/180줄 중복 | ✅ 공통 헬퍼 |
+| F | F-4 | 🟢 Low | Logger 초기 DEBUG | ✅ INFO 변경 |
+| F | F-5 | 🟡 Mid | profile fall-through | ✅ 명시 IDLE 반환 |
+| F | F-8/F-9 | 🟢 Low | 0.01f/0.33f 하드코딩 | ✅ 상수화 |
+| F | F-10 | 🟢 Low | 분할 시 매크로 파일 스코프 | ✅ Internal 헤더 승격 |
 
 ---
 
 ## 4. CBD 워크플로
 
-### 신규 기능 추가 또는 사양 변경 순서
-1. [`SPEC_0200.md`](file:///d:/95.2540_PJT/SmartNatureWind_v002/src/v0200/contract_doc_0200/SPEC_0200.md) — 기능 사양, 상수, JSON 스키마, 핀맵 추가/변경
-2. [`FLOW_0200.md`](file:///d:/95.2540_PJT/SmartNatureWind_v002/src/v0200/contract_doc_0200/FLOW_0200.md) — 제어/부팅 파이프라인 배치 및 시퀀스 다이어그램 작성
-3. [`CONTRACT_0200.md`](file:///d:/95.2540_PJT/SmartNatureWind_v002/src/v0200/contract_doc_0200/CONTRACT_0200.md) — 태스크 실행 컨텍스트, 뮤텍스 범위, 공유 전역 접근 규약 정의
-4. [`STATE_0200.md`](file:///d:/95.2540_PJT/SmartNatureWind_v002/src/v0200/contract_doc_0200/STATE_0200.md) — 상태 변수 단일 Writer 규정, FSM 천이도, 위임 플래그 정의
-5. [`BUDGET_0200.md`](file:///d:/95.2540_PJT/SmartNatureWind_v002/src/v0200/contract_doc_0200/BUDGET_0200.md) — 태스크 WCET, 스택 요구량, 블로킹 제한 예산 책정
-6. [`TEST_PLAN_0200.md`](file:///d:/95.2540_PJT/SmartNatureWind_v002/src/v0200/contract_doc_0200/TEST_PLAN_0200.md) — 회귀 테스트 시나리오 및 합격 판정 기준 추가
-7. **커밋 스크립트 실행** — 모든 계약 문서와 코드를 정합성에 맞춰 동시 커밋
+### 4.1 신규 기능 추가 / 사양 변경 순서
 
-### 코드 변경 시 필수 원칙
-- 계약 내용(뮤텍스, 태스크 경계, 전역 포인터 접근 등)의 변경이 발생하면 **반드시 계약 문서와 코드를 하나의 커밋으로 동시 반영**한다.
-- 각 문서의 §개정이력 테이블에 동일 날짜 및 버전으로 변경 내역을 동기화한다.
+1. `SPEC_0200.md` — 기능 사양, 상수, JSON 스키마, 핀맵
+2. `FLOW_0200.md` — 제어/부팅 파이프라인 배치
+3. `CONTRACT_0200.md` — 태스크 컨텍스트, 뮤텍스, 공유 자원 규약
+4. `STATE_0200.md` — 단일 Writer, FSM 천이, 위임 플래그
+5. `BUDGET_0200.md` — WCET, 스택, 블로킹 예산
+6. `TEST_PLAN_0200.md` — 회귀 시나리오 및 합격 기준
+7. **커밋 스크립트 실행** — 문서+코드 원자적 커밋
+
+### 4.2 코드 변경 필수 원칙
+
+- 계약 내용(뮤텍스, 태스크 경계, 전역 포인터 접근 등) 변경 시 **반드시 계약 문서와 코드를 하나의 커밋으로 동시 반영**.
+- 각 문서 §개정이력 테이블에 동일 날짜/버전으로 기록.
+
+### 4.3 E-2 파일 분할 원칙 (Batch E-2)
+
+- **R-1**: 외부 `#include` 경로(`*_0201.h`) 100% 보존, public API 무변경
+- **R-2**: 정적 멤버 정의는 원본 .cpp에 유일 유지
+- **R-3**: 다중 .cpp 참조 helper/매크로는 `*_Internal_0201.h`로 승격
+- **R-4**: `platformio.ini`의 `+<*>` 규칙으로 신규 파일 자동 포함
+- **R-5**: 파일당 1커밋 (Batch G에서 통합 커밋)
 
 ---
 
-## 5. 커밋 및 검증 스크립트 사용법
-
-계약 문서의 누락을 방지하고 원자적(Atomic) 커밋을 보장하기 위해 Python 3.7+ 기반 크로스 플랫폼 스크립트를 사용한다.
+## 5. 커밋 및 검증 스크립트
 
 ### 5.1 계약 문서 커밋 (`commit_contracts_0200.py`)
 
-저장소 루트 디렉토리(`d:\95.2540_PJT\SmartNatureWind_v002`)에서 실행한다.
+저장소 루트에서 실행 (Python 3.7+).
 
-#### 검증 모드 (Dry-Run: 실제 커밋 없이 필수 파일 및 변경 사항만 검증)
 ```bash
-# Windows / Linux / macOS 공통
+# 검증 모드 (커밋 없이)
 python src/v0200/tools_0200/commit_contracts_0200.py --dry-run
 
-# Windows py 런처 사용 시
-py -3 src/v0200/tools_0200/commit_contracts_0200.py --dry-run
-```
-
-#### 기본 메시지로 커밋
-```bash
+# 기본 메시지로 커밋
 python src/v0200/tools_0200/commit_contracts_0200.py
+
+# 커스텀 메시지
+python src/v0200/tools_0200/commit_contracts_0200.py -m "docs(contracts): F-05 위임 동기화"
 ```
 
-#### 커스텀 메시지 지정 커밋
-```bash
-python src/v0200/tools_0200/commit_contracts_0200.py -m "docs(contracts): F-05 reload 위임 및 SPEC 동기화"
-```
-
-#### 스크립트 동작 및 종료 코드
-1. `git rev-parse --show-toplevel`로 Git 저장소 루트 자동 감지
-2. `src/v0200/contract_doc_0200/` 내 필수 7개 문서 존재 검증
+**동작**:
+1. `git rev-parse --show-toplevel`로 저장소 루트 감지
+2. `contract_doc_0200/` 필수 7문서 존재 검증
 3. `git add src/v0200/contract_doc_0200/` 자동 스테이징
-4. 스테이징된 변경 사항이 없으면 안전하게 커밋 생략
-5. 커밋 수행 후 최근 로그 요약(Author, Date, 커밋 해시) 및 `git push` 안내 출력
+4. 변경 없으면 커밋 생략 (exit 0)
+5. 커밋 후 요약 + push 안내
 
-| 종료 코드 | 의미 |
-|---|---|
-| `0` | 정상 완료 (또는 변경 사항 없음) |
-| `1` | 필수 계약 문서 누락 |
-| `2` | Git 오류 (저장소 아님, Git 미설치, 커밋 실패 등) |
-| `130` | 사용자 중단 (Ctrl+C) |
+**종료 코드**: `0` 정상 / `1` 문서 누락 / `2` Git 오류 / `130` 사용자 중단
 
----
+### 5.2 연계 검증 도구
 
-### 5.2 연계 검증 도구 (`src/v0200/tools_0200/`)
+```bash
+# 0200 → 0201 접미사 마이그레이션 (검증/적용)
+python src/v0200/tools_0200/migrate_to_0201.py --dry-run
+python src/v0200/tools_0200/migrate_to_0201.py --docs
 
-- **JSON 설정 스키마 검증**:
-  ```bash
-  python src/v0200/tools_0200/check_schema_0200.py
-  ```
-- **다국어(i18n) 사전 키 검증**:
-  ```bash
-  python src/v0200/tools_0200/check_i18n_0200.py
-  ```
-- **웹 리소스 gzip 압축 빌드**:
-  ```bash
-  python src/v0200/tools_0200/pio_gzip_0200.py
-  ```
+# 계약 문서 테이블 침식 제거
+python src/v0200/tools_0200/fix_table_bleed.py --dry-run
+python src/v0200/tools_0200/fix_table_bleed.py
 
-### 5.3 웹 자산 변경 시 재빌드 필수 (v0200, [B-N-5])
+# 개정이력 v2.0 문구 병기
+python src/v0200/tools_0200/patch_revision_notes.py --dry-run
+python src/v0200/tools_0200/patch_revision_notes.py
 
-웹 자산(HTML/CSS/JS)을 수정한 뒤에는 **반드시 다음 순서**로 실행:
+# 웹 리소스 gzip 번들 빌드
+python src/v0200/tools_0200/pio_gzip_0200.py
+```
+
+### 5.3 웹 자산 변경 시 재빌드 필수
 
 ```bash
 pio run --target uploadfs
 ```
 
-이유:
-- `pio_gzip_0200.py`가 `buildfs` / `uploadfs` 타깃에서만 실행됨
-- 일반 `pio run --target upload` (펌웨어만) 실행 시 번들/Gzip 미재생성
-- 웹 자산 소스(`data_src_v0200/`) 변경이 `data_v0200/`에 반영되지 않음
+**이유**:
+- `pio_gzip_0200.py`가 `buildfs`/`uploadfs`에서만 실행됨
+- `pio run --target upload` (펌웨어만) 실행 시 번들/Gzip 미재생성
+- 웹 자산 소스(`data_src_v0200/`) 변경이 `data_v0200/`에 반영 안 됨
 
-정상 동작 확인:
+**정상 동작 확인**:
 ```bash
-# Gzip 헤더 확인
 curl -I -H "Accept-Encoding: gzip" http://<IP>/html_v3/P010_bundle_0200.js
-# → Content-Encoding: gzip 헤더가 포함되어야 함
-
-# 번들 파일 존재 확인
+# → Content-Encoding: gzip 헤더 포함
 curl -I http://<IP>/P010_bundle_0200.js
+# → raw 파일 (Accept-Encoding 미보유 시)
 ```
-
-주의: `Accept-Encoding: gzip` 헤더가 없는 클라이언트(예: curl 기본)는 원본(raw) 파일을 받음. 이는 [C-G-1]의 표준 준수 정책에 따른 정상 동작.
 
 ---
 
-## 6. 개정 이력
+## 6. Batch G 커밋 전략 (v0201 릴리스)
+
+### 6.1 배치별 원자 커밋 (권장)
+
+```bash
+# 1. 리네임만 (E-3)
+git add -A && git commit -m "refactor(v0201): E-3 - 0200→0201 접미사 마이그레이션"
+
+# 2. Batch별 커밋
+git add -A && git commit -m "refactor(v0201): A - P0 이슈 3건 (self-heal, 캡슐화, null 방어)"
+git add -A && git commit -m "refactor(v0201): B - SSOT 정규화 (버전/NVS 키/기본 preset)"
+git add -A && git commit -m "refactor(v0201): C - 매직넘버 상수화 (S10/A00/WF10/TM10)"
+git add -A && git commit -m "refactor(v0201): D - 성능 최적화 (WS mutex/atomic/고정배열)"
+git add -A && git commit -m "refactor(v0201): E - Dead Code 정리"
+git add -A && git commit -m "refactor(v0201): E-2 - 파일 분할 (29파일)"
+git add -A && git commit -m "refactor(v0201): F - 로직 정합성 (NVS reset, PATCH 헬퍼)"
+
+# 3. 문서 최종 커밋
+python src/v0200/tools_0200/commit_contracts_0200.py -m "docs(contracts): v0201 계약 문서 동기화 (A~F 반영)"
+```
+
+### 6.2 최종 검증 게이트
+
+```bash
+# 1. 전체 빌드
+pio run --environment esp32-s3-n16r8   # SUCCESS 필수
+pio run --target buildfs               # Gzip 재빌드 필수
+
+# 2. 링크 무결성
+pio run --environment esp32-s3-n16r8 2>&1 | grep -iE "undefined|multiple"
+# 기대: 0건
+
+# 3. 잔존 참조
+grep -rn "_0200\." src/v0200/*.h src/v0200/*.cpp | grep -v "\.md\|data_v0200\|data_src_v0200"
+# 기대: 0건
+
+# 4. root 직접 접근 화이트리스트 (B-2)
+grep -rn "g_A20_config_root\." src/v0200/W10_Web_Routes_*_0201.cpp
+# 위반 시 리뷰 반려
+
+# 5. 회귀 (T-1~T-28)
+# 필수: T-1, T-3, T-5, T-14, T-16, T-20, T-27
+```
+
+### 6.3 릴리스 태그
+
+```bash
+git tag -a v0201-release-2026-10-20 -m "v0201 릴리스 (A~F 리팩토링 완료)"
+git push origin v0201-release-2026-10-20
+```
+
+---
+
+## 7. 실측 자원 사용량 (2026-10-20 빌드 결과)
+
+| 자원 | 사용 | 총량 | 여유 | 판정 |
+|---|---|---|---|---|
+| **RAM** | 111,596 B (34.1%) | 327,680 B | 216,084 B (65.9%) | ✅ BUDGET §6 >100KB |
+| **Flash** | 1,528,153 B (23.3%) | 6,553,600 B | 5,025,447 B (76.7%) | ✅ 여유 충분 |
+| **littlefs.bin** | 114.4 KB | - | - | ✅ 73% 절감 |
+
+---
+
+## 8. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| 2026-10-19 | v2.1 | N-1~N-4(reload 결과 노출, 정적 라우트 보장, root 404, 업로드 close), G-1~G-4(Accept-Encoding, regex Gzip 서빙, fail-fast) 현행화 | Antigravity AI |
-| 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 + (v1.2의 Gzip/번들/소스-배포 분리 유지) | Antigravity AI |
-| 2026-10-19 | v1.2 | 웹 에셋 JS 번들링(`P010_bundle_0200.js`) 및 Gzip 사전 압축 파이프라인(`pio_gzip_0200.py`), 소스/배포 분리(`data_src_v0200` ↔ `data_v0200`), C++ `.gz` 서빙 반영 | Antigravity AI |
-| 2026-10-19 | v1.1 | 현재 폴더/파일 구조(`src/v0200/contract_doc_0200/*_0200.md`)로 전면 현행화, v0200 전체 디렉토리 트리 추가, Python 커밋 스크립트 경로 현행화 | Antigravity AI |
-| (초기) | v1.0 | 최초 계약 문서 체계 수립, 감사 이력 F-01~I-4 등록 | 개발팀 |
+| 2026-10-20 | v2.2 | Batch A~F 반영: §1 디렉토리 트리 0201 접미사, §3 감사 이력 A~F 통합, §4.3 E-2 분할 원칙, §5.2 도구 4종, §6 Batch G 커밋 전략, §7 실측 자원 사용량 | Antigravity AI |
+| 2026-10-19 | v2.1 | N-1~N-4, G-1~G-3 반영 | Antigravity AI |
+| 2026-10-19 | v2.0 | v0200 승격 | Antigravity AI |
+| 2026-10-19 | v1.2 | JS 번들/Gzip 파이프라인, 소스/배포 분리 | Antigravity AI |
+| 2026-10-19 | v1.1 | 폴더 구조 현행화, 커밋 스크립트 경로 | Antigravity AI |
+| (초기) | v1.0 | 최초 계약 문서 체계 수립 | 개발팀 |

@@ -19,6 +19,7 @@
 #include <new>
 
 #include "A20_Const_Const_0201.h"
+#include "A20_Const_Sch_0201.h"   // [FIX] ST_A20_AutoOff_t, ST_A20_Motion_t (Json_writeAutoOff/Motion에서 사용)
 #include "D10_Logger_0201.h"
 
 // ======================================================

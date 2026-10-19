@@ -235,6 +235,78 @@ pio run --environment esp32-s3-n16r8
 
 ---
 
+## T-10: N-1 (Reload 상태 판별 lastReloadOk 검증)
+
+**목적**: `POST /api/v001/reload` 실행 후 `GET /api/v001/state`를 통해 `control.lastReloadOk`가 정상 노출되는지 검증.
+
+**검증 절차**
+```bash
+# 1. 초기 상태 확인 (true 여야 함)
+curl -s http://<ESP32_IP>/api/v001/state | jq .control.lastReloadOk
+
+# 2. reload 요청
+curl -X POST http://<ESP32_IP>/api/v001/reload
+
+# 3. 100ms 후 상태 확인
+curl -s http://<ESP32_IP>/api/v001/state | jq '{pending: .control.pendingReload, ok: .control.lastReloadOk}'
+```
+
+**합격 판정 기준**
+- [ ] 초기 및 정상 리로드 후 `.control.lastReloadOk`가 `true`로 출력됨.
+- [ ] `.control.pendingReload`가 `false`로 복귀한 후에도 `lastReloadOk` 값이 유지됨.
+
+---
+
+## T-11: G-1 (Accept-Encoding 헤더 호환성 검증)
+
+**목적**: `Accept-Encoding: gzip` 헤더가 없는 클라이언트(예: 기본 curl)에 raw 원본을 서빙하고 헤더가 있을 때만 gzip으로 응답하는지 검증.
+
+**검증 절차**
+```bash
+# 1. gzip 헤더 포함 요청
+curl -I -H "Accept-Encoding: gzip" http://<ESP32_IP>/html_v3/P010_bundle_0200.js
+
+# 2. gzip 헤더 미포함 요청 (curl 기본)
+curl -I http://<ESP32_IP>/html_v3/P010_bundle_0200.js
+```
+
+**합격 판정 기준**
+- [ ] 1번: `Content-Encoding: gzip` 헤더 포함
+- [ ] 2번: `Content-Encoding: gzip` 헤더 미포함 (raw 서빙)
+
+---
+
+## T-12: G-2 / G-4 (Long Path Regex Gzip 서빙 검증)
+
+**목적**: `/html_v3/` long path 접근 시에도 regex 라우트를 통해 `.gz` 우선 서빙이 정상 동작하는지 검증.
+
+**검증 절차**
+```bash
+curl -I -H "Accept-Encoding: gzip" http://<ESP32_IP>/html_v3/P010_main_0200.html
+```
+
+**합격 판정 기준**
+- [ ] HTTP `200 OK`
+- [ ] `Content-Encoding: gzip` 및 `Content-Type: text/html; charset=utf-8` 확인
+
+---
+
+## T-13: N-3 (Root Fallback 무한 루프 차단 검증)
+
+**목적**: LittleFS에 메인 HTML이 존재하지 않을 때 무한 리다이렉트되지 않고 즉시 404를 반환하는지 검증.
+
+**검증 절차**
+```bash
+# (메인 파일 미존재 가상 조건) 루트 접근
+curl -I http://<ESP32_IP>/
+```
+
+**합격 판정 기준**
+- [ ] 정상 시 메인 HTML로 리다이렉트 (HTTP 302)
+- [ ] 메인 HTML 부재 시 무한 루프 없이 HTTP 404 및 안내 메시지 반환
+
+---
+
 ## 📊 회귀 테스트 매트릭스 요약
 
 | 테스트 ID | 검증 대상 | 권장 소요 시간 | 필수 여부 |
@@ -248,6 +320,10 @@ pio run --environment esp32-s3-n16r8
 | **T-7** | I-3 (플래그 리셋) | 정적 코드 분석 | ✅ 필수 |
 | **T-8** | I-4 (Private 캡슐화 컴파일) | 약 1분 (빌드) | ✅ 필수 |
 | **T-9** | I-6 (웹 에셋 번들링 및 Gzip 서빙) | 약 10초 | ✅ 필수 |
+| **T-10** | N-1 (lastReloadOk 상태 노출) | 약 10초 | ✅ 필수 |
+| **T-11** | G-1 (Accept-Encoding 헤더 호환) | 약 5초 | ✅ 필수 |
+| **T-12** | G-2/G-4 (Long Path Regex Gzip) | 약 5초 | ✅ 필수 |
+| **T-13** | N-3 (Root Fallback 404 방어) | 약 5초 | ✅ 필수 |
 
 ---
 
@@ -268,6 +344,7 @@ pio run --environment esp32-s3-n16r8
 ## 개정 이력
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| 2026-10-19 | v2.1 | N-1(T-10 lastReloadOk), G-1(T-11 Accept-Encoding), G-2/G-4(T-12 Regex Gzip), N-3(T-13 Root 404) 회귀 절차 추가 | Antigravity AI |
 | 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 | Antigravity AI |
 | 2026-10-19 | v1.2 | 웹 에셋 번들링 및 Gzip 서빙 무결성 검증 절차(T-9) 추가 | Antigravity AI |
 | 2026-10-19 | v1.1 | v0200 소스 코드와 100% 동기화, curl/jq 명령어 표준화, 트러블슈팅 매트릭스 소스 파일명 갱신 | Antigravity AI |

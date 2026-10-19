@@ -69,7 +69,8 @@
 | `CL_CT10_ControlManager::consumePendingReload()` | ✅ | ❌ | ❌ | ❌ | `A00_run` 최상단에서만 atomic exchange로 소비 |
 | `CL_CT10_ControlManager::reloadAll()` | ✅ | ❌ | ❌ | ❌ | **[F-05]** `loopTask` 컨텍스트에서만 실행 (파일 I/O 블로킹 격리) |
 | `CL_CT10_ControlManager::isReloadPending()` | ✅ | ✅ | ❌ | ❌ | **[I-1]** atomic read, REST/WS 상태 노출용 |
-| `CL_CT10_ControlManager::exportStateJson_v02()` | ✅ | ✅ | ❌ | ❌ | 호출자 소유(`caller-owned`) JsonDocument에 직렬화 |
+| `CL_CT10_ControlManager::isLastReloadOk()` | ✅ | ✅ | ❌ | ❌ | **[B-N-1]** atomic read, 마지막 reloadAll 성공 여부 판별용 |
+| `CL_CT10_ControlManager::exportStateJson_v02()` | ✅ | ✅ | ❌ | ❌ | 호출자 소유(`caller-owned`) JsonDocument에 직렬화 (`control.lastReloadOk` 포함) |
 | `CT10_WS_tick()` | ✅ | ❌ | ❌ | ❌ | `loopTask` 전용 WebSocket 우선순위 스케줄러 |
 | `CL_S10_Simulation::tick()` | 간접 | ❌ | ❌ | ❌ | `CT10::tickLoop` 내부에서만 실행 (직접 호출 금지) |
 | `CL_S10_Simulation::patchFromJson()` | ❌ | ✅ | ❌ | ❌ | HTTP 라우트에서 호출, `_recursiveMutex`로 보호 |
@@ -84,15 +85,20 @@
 | `CL_CT10_ControlManager::requestMotionSimApply()` | ❌ | ✅ | ❌ | ❌ | **[F-06]** atomic store 플래그 세팅만 수행 (< 5ms) |
 | `CL_CT10_ControlManager::applyMotionSimConfigToSim()` | 내부 | ❌ | ❌ | ❌ | **[I-4]** 클래스 내부 private 캡슐화 (`tickLoop`에서 소비) |
 | `CL_C10_ConfigManager::saveDirtyConfigs()` | ❌ | ✅ | ❌ | ❌ | HTTP `/api/v001/config/save` 등에서 동기식 호출 |
+| `CL_W10_WebAPI::W10_registerGzipServe()` | ❌ | ✅ | ❌ | ❌ | **[C-G-2]** 서버 부팅 시 `/html_v3/*` 정규식 라우트 등록 (Accept-Encoding 및 .gz 우선 서빙) |
 
 ### 4.1 W10 정적 웹 에셋 서빙 계약 (Gzip 우선 및 번들링)
 1. **Gzip 사전 압축 우선 서빙 규약**:
-   - 요청 URI에 대해 `LittleFS.exists(uri + ".gz")`를 우선 탐색한다.
-   - `.gz` 파일이 존재할 경우, `request->beginResponse(LittleFS, gzPath, mimeType)` 생성 후 반드시 `response->addHeader("Content-Encoding", "gzip")` 헤더를 부가하여 클라이언트가 자체 압축 해제하도록 위임한다.
-   - `.gz` 파일 부재 시에만 비압축 원본 파일 서빙으로 폴백한다.
-2. **루트(`/`) 리다이렉트 판정 규약**:
-   - 기본 시작 페이지(예: `/P010_main_0200.html`) 검사 시 원본 및 `.gz` 압축본(`exists(firstPage)` || `exists(firstPage + ".gz")`) 모두를 유효한 파일로 인정하여 404 리다이렉트 실패를 방지한다.
-3. **번들링 계약**:
+   - 클라이언트 요청의 `Accept-Encoding` 헤더에 `gzip` 토큰이 포함되어 있는지 반드시 검사한다 (HTTP RFC 7231 준수).
+   - 헤더에 `gzip`이 있고 LittleFS 내에 `uri + ".gz"` 파일이 존재할 경우에만 `addHeader("Content-Encoding", "gzip")`와 함께 압축 데이터를 전송한다.
+   - gzip 미지원 클라이언트(헤더 부재) 또는 `.gz` 미존재 시 원본 raw 파일 서빙으로 안전하게 폴백한다.
+2. **정규식 라우트 기반 Long Path Gzip 지원 규약**:
+   - 기존 `serveStatic`은 `.gz` 파일을 자동 인식하지 못하므로, `^/html_v3/.+` regex 라우트로 대체(`W10_registerGzipServe`)하여 상대 경로 및 풀 패스 요청에서도 100% Gzip 최적화 이점을 보장한다.
+   - 정적 에셋 확장자(`.html`, `.css`, `.js`, `.json`, `.svg`, `.png`, `.jpg`, `.ico`, `.woff2`, `.txt`)는 `W10_guessMime`을 통해 정확한 MIME 타입과 UTF-8 charset을 부여한다.
+3. **루트(`/`) 리다이렉트 및 폴백 규약**:
+   - 기본 시작 페이지(예: `/P010_main_0200.html`) 검사 시 원본 및 `.gz` 압축본(`exists(firstPage)` || `exists(firstPage + ".gz")`) 모두를 유효한 파일로 인정하여 정상 리다이렉트한다.
+   - 메인 파일이 LittleFS에 모두 부재할 경우, 자기 자신(`/`)으로 재리다이렉트하는 무한 루프를 절대 금지하며, 즉시 404 HTTP 응답과 명시적 진단 메시지를 반환한다.
+4. **번들링 계약**:
    - 메인 대시보드 스크립트는 8개 분할 JS 대신 `P010_bundle_0200.js` 단일 파일로 결합 서빙하여 동시 HTTP 요청 수(11건 → 4건) 및 LWIP TCP PCB 소켓 자원 점유를 최소화한다.
 
 ---
@@ -156,12 +162,20 @@
 | **I-4** | 🟢 Low | `CT10` 클래스 | `applyMotionSimConfigToSim` public 노출로 잘못된 호출 위험 | 클래스 private으로 이동 및 내부 위임 소비로 제한 | ✅ 해결 |
 | **I-5** | 🟢 Low | reload 사이클 | reload 실행 중 LED 상태 표시 약 500ms 지연 | 사람 체감 불가능한 짧은 순단으로 수용 | ⏸ 수용 |
 | **I-6** | 🟢 Low | `W10 Static Router` | 다중 분할 JS 로드로 인한 `async_tcp` LWIP 소켓 고갈 및 플래시 I/O 부하 | 메인 JS 단일 번들(`P010_bundle_0200.js`) 및 전 에셋 Gzip 사전 압축 적용으로 동시 요청 11건→4건 단축 및 LittleFS 73.3% 절감 | ✅ 해결 |
+| **N-1** | 🟢 Low | `CT10 reload` | reloadAll 실패 시 런타임 상태 미노출 | `control.lastReloadOk` 필드 export로 프론트 실패 감지 지원 | ✅ 해결 |
+| **N-2** | 🟡 Mid | `W10 Static` | pages JSON 손상 시 serveStatic 미등록으로 웹 404 | 정적 폴더 라우트를 JSON 로드 실패 분기 앞단에 배치 | ✅ 해결 |
+| **N-3** | 🟡 Mid | `W10 Static` | root fallback에서 메인 HTML 부재 시 무한 리다이렉트 루프 폭주 | 404 명시적 반환 및 진단 메시지 전송 | ✅ 해결 |
+| **N-4** | 🟡 Mid | `W10 Upload` | 파일 업로드 중단/에러 시 `s_upFile.close()` 누락으로 핸들 오염/누수 | safeAbort 람다 강제로 실패 분기 즉시 close 보장 | ✅ 해결 |
+| **G-1** | 🟢 Low | `W10 Static` | `Accept-Encoding: gzip` 검사 부재로 무조건 압축 서빙하여 curl 깨짐 | 헤더 검사 후 gzip/raw 분기 서빙 (HTTP 표준 준수) | ✅ 해결 |
+| **G-2** | 🟡 Mid | `W10 Static` | long path 접근 시 serveStatic이 `.gz` 인식 못해 raw 서빙 | regex 라우트(`^/html_v3/.+`)로 대체하여 long path도 gzip 우선 | ✅ 해결 |
+| **G-3** | 🟢 Low | `pio_gzip` | 번들 소스 JS 누락 시 무시 진행되어 브라우저 런타임 에러 | 소스 누락 시 빌드 즉시 실패(`sys.exit(1)`) 처리 | ✅ 해결 |
 
 ---
 
 ## 8. 개정 이력
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| 2026-10-19 | v2.1 | N-1~N-4(reload 결과 노출, 정적 라우트 보장, root 404, 업로드 close), G-1~G-4(Accept-Encoding, regex Gzip 서빙, fail-fast) 현행화 | Antigravity AI |
 | 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 + (v1.2의 Gzip 서빙 계약 유지) | Antigravity AI |
 | 2026-10-19 | v1.2 | W10 LittleFS 정적 파일 서빙 시 `.gz` 사전 압축 우선 탐색 및 `Content-Encoding: gzip` 헤더 응답 규약, I-6 웹 에셋 번들/Gzip 최적화 반영 | Antigravity AI |
 | 2026-10-19 | v1.1 | v0200 소스 코드 실제 심볼 및 함수 시그니처 정밀 동기화, `_0200.md` 체계 링크 현행화 | Antigravity AI |

@@ -94,6 +94,13 @@ src/v0200/
 | **I-4** | 🟢 Low | ✅ 해결 | `applyMotionSimConfigToSim` public 노출 | 클래스 내부 private으로 캡슐화 |
 | **I-5** | 🟢 Low | ⏸ 수용 | reload 실행 중 LED 상태 표시 약 500ms 지연 | 사람 체감 불가능한 짧은 순단으로 수용 |
 | **I-6** | 🟢 Low | ✅ 해결 | 다중 분할 JS 로드로 인한 async_tcp LWIP 소켓 고갈 및 플래시 I/O 부하 | 메인 JS 단일 번들(`P010_bundle_0200.js`) + 전 에셋 Gzip 압축 (동시요청 11→4, LittleFS -73.3%) |
+| **N-1** | 🟢 Low | ✅ 해결 | reload 실패 시 런타임 이전 상태 유지되어 사용자가 성공으로 오인 | `control.lastReloadOk` 필드 추가로 프론트 실패 감지 지원 |
+| **N-2** | 🟡 Mid | ✅ 해결 | pages JSON 손상 시 serveStatic 미등록으로 웹 404 | 정적 라우트 등록을 JSON 로드 실패 분기 앞으로 배치 |
+| **N-3** | 🟡 Mid | ✅ 해결 | root fallback에서 메인 HTML 부재 시 무한 리다이렉트 폭주 | 404 명시적 반환 및 진단 메시지 출력 |
+| **N-4** | 🟡 Mid | ✅ 해결 | 파일 업로드 에러 시 `s_upFile.close()` 누락으로 파일 핸들 누수/오염 | safeAbort 람다로 실패 분기 파일 close 강제 |
+| **G-1** | 🟢 Low | ✅ 해결 | `Accept-Encoding: gzip` 검사 없이 무조건 gzip 서빙하여 curl 등 깨짐 | 헤더 검사 후 gzip/raw 분기 서빙 (HTTP 표준 준수) |
+| **G-2** | 🟡 Mid | ✅ 해결 | long path 접근 시 `serveStatic`이 `.gz` 인식 못해 원본 서빙 | regex 라우트(`^/html_v3/.+`)로 전면 대체하여 long path도 gzip 우선 |
+| **G-3** | 🟢 Low | ✅ 해결 | 번들 소스 JS 파일 누락 시 continue로 무시되어 런타임 에러 | 소스 누락 시 빌드 즉시 실패(`sys.exit(1)`) 처리 |
 
 ---
 
@@ -203,6 +210,7 @@ curl -I http://<IP>/P010_bundle_0200.js
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| 2026-10-19 | v2.1 | N-1~N-4(reload 결과 노출, 정적 라우트 보장, root 404, 업로드 close), G-1~G-4(Accept-Encoding, regex Gzip 서빙, fail-fast) 현행화 | Antigravity AI |
 | 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 + (v1.2의 Gzip/번들/소스-배포 분리 유지) | Antigravity AI |
 | 2026-10-19 | v1.2 | 웹 에셋 JS 번들링(`P010_bundle_0200.js`) 및 Gzip 사전 압축 파이프라인(`pio_gzip_0200.py`), 소스/배포 분리(`data_src_v0200` ↔ `data_v0200`), C++ `.gz` 서빙 반영 | Antigravity AI |
 | 2026-10-19 | v1.1 | 현재 폴더/파일 구조(`src/v0200/contract_doc_0200/*_0200.md`)로 전면 현행화, v0200 전체 디렉토리 트리 추가, Python 커밋 스크립트 경로 현행화 | Antigravity AI |

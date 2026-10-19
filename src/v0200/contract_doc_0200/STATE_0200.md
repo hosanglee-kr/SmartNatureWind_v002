@@ -18,6 +18,7 @@
 | `_autoOffLatched` | T-loop (AutoOff 발동 시 `true`), T-async (`ackEvent` 등 해제 시 `false`) | T-loop (`decideRunSource`) | `CT10::s_stateMutex` | 사용자 확인 전 자동 재시작 방지 래치 |
 | `_pendingMotionSimApply` | T-async (`requestMotionSimApply`) | T-loop (`tickLoop` 최상단) | `std::atomic<bool>` | [F-06] 비동기 모션 패치 위임 플래그 |
 | `s_pendingReload` | T-async (`requestReload` CAS) | T-loop (`consumePendingReload` exchange), 모든 태스크 (`isReloadPending`) | `std::atomic<bool>` | [F-05, I-1] 설정 재로드 위임 플래그 |
+| `s_lastReloadOk` | T-loop (`CL_CT10_ControlManager::reloadAll`) | T-async (`exportStateJson_v02`), 모든 태스크 (`isLastReloadOk`) | `std::atomic<bool>` | [B-N-1] 마지막 설정 reload 성공(true)/실패(false) 상태 플래그 |
 | `sim.*` (`CL_S10_Simulation`) | T-loop (`CT10::tickLoop`), T-async (`patchFromJson`) | T-async (`toJson`, `toChartJson`) | `S10::_recursiveMutex` (100ms) | 풍속, 위상, 난류, 돌풍, 열기포 |
 | `_pir`, `_state` (`CL_M10_MotionLogic`)| T-async (`notifyPIRDetected`), T-loop (`tick`) | T-loop (`isActive`, `toJson`) | `M10::s_stateMutex` (100ms) | [F-03] PIR 감지 타임스탬프 및 상태 |
 | `s_state` (`CL_N10_NvsManager`) | T-loop (CT10 setter / `tick` flush) | T-async (`getState`, `toJson`) | `N10::s_mutex` (100ms) | NVS 비휘발성 저장 런타임 데이터 |
@@ -170,6 +171,7 @@ T-async (async_tcp)                          T-loop (loopTask / CT10::tickLoop)
 ## 7. 개정 이력
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| 2026-10-19 | v2.1 | N-1(s_lastReloadOk 상태 변수 추가), G-2/G-4(Gzip regex 라우팅 상태 규격), N-3(루트 fallback 404 규격) 현행화 | Antigravity AI |
 | 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 + (v1.2의 번들 상태 규격 유지) | Antigravity AI |
 | 2026-10-19 | v1.2 | W10 정적 파일 서빙 시 `.gz` 사전 압축 탐색 및 `P010_bundle_0200.js` 번들 상태 규격 동기화 | Antigravity AI |
 | 2026-10-19 | v1.1 | v0200 소스 코드 Enum 및 런타임 변수명 전면 동기화, `_persistOffTimeLastYday` 추가, 문서 링크 체계 현행화 | Antigravity AI |

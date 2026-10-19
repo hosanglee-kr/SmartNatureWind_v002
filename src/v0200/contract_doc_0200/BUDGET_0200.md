@@ -48,11 +48,14 @@
 |---|---|---|---|
 | **`POST /api/v001/reload`** | `requestReload()` (atomic CAS) | **< 1 ms** | **✅ 해결: 기존 100~500ms 파일 I/O 블로킹 제거** |
 | **`POST /api/v001/motion`** | `patchMotionFromJson` + `requestMotionSimApply` | **< 5 ms** | **✅ 해결: 기존 CT10 뮤텍스 대기(최대 100ms) 제거** |
+| **`GET /api/v001/state`** | `exportStateJson_v02` (`lastReloadOk` 원자 읽기 포함) | **< 2 ms** | **[B-N-1] atomic load로 지연 0, reload 결과 즉시 노출** |
 | `POST /api/v001/config/save` | `saveDirtyConfigs()` (LittleFS 쓰기) | 50 ~ 200 ms | 명시적 저장 요청 (동기 파일 I/O 허용) |
 | `POST /api/v001/system`, `/wifi/config` | 메모리 패치 + 동기 저장 | 50 ~ 200 ms | 명시적 변경 요청 |
 | `GET /api/v001/wifi/scan` | `WiFi.scanNetworks()` | 1 ~ 2 초 | Wi-Fi 라디오 주파수 스캔 (의도된 블로킹) |
 | `POST /api/v001/ai/gemini` | `WiFiClientSecure` SSL 통신 | ≤ 15 초 | 외부 LLM API 지연 (3초 rate limit 적용) |
 | `POST /api/v001/fwUpdate` | OTA 펌웨어 스트리밍 쓰기 | 수십 초 | OTA 전용 세션 블로킹 |
+| **`POST /api/v001/fileUpload`** | `routeUpload` (청크 쓰기 및 `safeAbort` 안전 해제) | **5 ~ 20 ms / 청크** | **[B-N-4] 오류 시 즉시 s_upFile.close()로 핸들 누수 차단** |
+| **`GET /html_v3/*` (정적 서빙)** | `W10_registerGzipServe` (Accept-Encoding 검사 + LittleFS 스트리밍) | **1 ~ 3 ms** | **[C-G-1/G-2] regex 라우팅 기반 .gz 우선 전송 (<3ms)** |
 
 ---
 
@@ -111,6 +114,7 @@
 ## 8. 개정 이력
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| 2026-10-19 | v2.1 | N-1(state lastReloadOk WCET), N-4(업로드 safeAbort), G-1/G-2(정적 Gzip regex 서빙 WCET 예산) 현행화 | Antigravity AI |
 | 2026-10-19 | v2.0 | v0200 승격: 소스/문서/에셋 전체 접미사 _0200 단일화 및 LittleFS/main.cpp 빌드 전환 + (v1.2의 플래시/소켓 예산 지표 유지) | Antigravity AI |
 | 2026-10-19 | v1.2 | 웹 에셋 Gzip 사전 압축 및 번들링 적용에 따른 플래시 스토리지(428.9KB→114.6KB, -73.3%) 및 동시 HTTP 소켓 예산(11개→4개) 최적화 지표 반영 | Antigravity AI |
 | 2026-10-19 | v1.1 | v0200 소스 코드 기준 WCET 및 스택 예산 정밀 동기화, `_0200.md` 체계 링크 현행화 | Antigravity AI |

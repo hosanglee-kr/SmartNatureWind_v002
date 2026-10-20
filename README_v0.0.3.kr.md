@@ -2,13 +2,13 @@
 
 # 🌿 Smart Nature Wind v0200 (스마트 자연풍 독립형 제어기)
 
-[![Firmware Version](https://img.shields.io/badge/Firmware-v0200-blue.svg)](src/v0200/contract_doc_0200/SPEC_0200.md)
+[![Firmware Version](https://img.shields.io/badge/Firmware-v0200%20(FW__2.0.0)-blue.svg)](src/v0200/contract_doc_0200/SPEC_0200.md)
 [![Target MCU](https://img.shields.io/badge/MCU-ESP32--S3--N16R8-orange.svg)](src/v0200/contract_doc_0200/BUDGET_0200.md)
 [![PlatformIO](https://img.shields.io/badge/Framework-PlatformIO%20%7C%20C%2B%2B17-green.svg)](platformio.ini)
-[![Architecture](https://img.shields.io/badge/Arch-FreeRTOS%20CBD%20v2.1-purple.svg)](src/v0200/contract_doc_0200/CONTRACT_0200.md)
+[![Architecture](https://img.shields.io/badge/Arch-FreeRTOS%20CBD%20v2.2-purple.svg)](src/v0200/contract_doc_0200/CONTRACT_0200.md)
 
 * **원작 오픈소스 프로젝트**: [WindScape by Tilman Griesel](https://github.com/TilmanGriesel/WindScape.git)
-* **현재 펌웨어 사양**: **v0200** (ESP32-S3 / C++17 / FreeRTOS / PlatformIO 기반 단독 실행 임베디드 어플라이언스)
+* **현재 펌웨어 사양**: **v0200 (FW_Ver_2.0.0)** (ESP32-S3 / C++17 / FreeRTOS / PlatformIO 기반 단독 실행 임베디드 어플라이언스, C++ 소스 `_0201` 접미사)
 
 ---
 
@@ -30,7 +30,7 @@
 * 📖 [**Smart Nature Wind v0200 종합 사용자 매뉴얼**](src/v0200/User_Manual_0200/UserManual_0200_001.md)
   * 기기 설치, 배선, Wi-Fi(SoftAP/STA) 연결, 6대 웹 화면 조작법, 10대 프리셋 상세 해설, REST API/WebSocket 규격, 고장 진단 및 유지보수 가이드 수록.
 
-### 2. 기술 사양 및 CBD v2.1 엔지니어링 계약서 (Engineering Contracts)
+### 2. 기술 사양 및 CBD v2.2 엔지니어링 계약서 (Engineering Contracts)
 * 📑 [**README_0200.md (계약 문서 세트 총괄 인덱스)**](src/v0200/contract_doc_0200/README_0200.md)
 * 📐 [**SPEC_0200.md (종합 기술 사양서)**](src/v0200/contract_doc_0200/SPEC_0200.md) : 하드웨어 핀맵, 25kHz PWM 타이밍, REST/WebSocket 인터페이스, Gzip Level 9 정적 에셋 파이프라인.
 * 🤝 [**CONTRACT_0200.md (동시성 계약서)**](src/v0200/contract_doc_0200/CONTRACT_0200.md) : FreeRTOS 5대 태스크 구조, 우선순위, Mutex 소유권 및 데드락 방지 계약.
@@ -38,6 +38,10 @@
 * 🔀 [**FLOW_0200.md (실행 흐름도 및 시퀀스 다이어그램)**](src/v0200/contract_doc_0200/FLOW_0200.md) : 부팅 시퀀스, HTTP/WS 처리 루프, 센서 샘플링 및 물리 연산 파이프라인.
 * ⏱️ [**BUDGET_0200.md (자원 및 WCET 예산)**](src/v0200/contract_doc_0200/BUDGET_0200.md) : SRAM/PSRAM/Flash 메모리 버짓, 태스크별 최악 실행 시간(WCET), CPU 점유율 한도.
 * 🧪 [**TEST_PLAN_0200.md (회귀 테스트 및 검증 계획서)**](src/v0200/contract_doc_0200/TEST_PLAN_0200.md) : 단위/통합/스트레스 테스트 케이스 및 장기 안정성 검증 절차.
+
+### 3. 개발 환경 및 AI 에이전트 협업 가이드 (Developer & Agent Setup)
+* 🤖 [**agent.md (개발 환경 및 에이전트 협업 가이드)**](agent.md)
+  * ESP32-S3 PlatformIO 빌드/플래시 설정, C++ `_0201` 모듈 아키텍처, CBD v2.2 계약 준수 및 에이전트 작업 원칙 안내.
 
 ---
 
@@ -196,16 +200,20 @@
   ```
 
 ### 2. 빌드 및 업로드 명령어
-1. **펌웨어 빌드 및 업로드**:
+1. **계약 문서 무결성 사전 검증 (선택/CI Gate)**:
+   ```bash
+   python src/v0200/tools_0200/commit_contracts_0200.py --dry-run --strict
+   ```
+2. **펌웨어 빌드 및 업로드**:
    ```bash
    pio run --target upload
    ```
-2. **파일시스템(LittleFS) 웹 에셋 사전 압축 및 업로드 (최초 1회 필수)**:
+3. **파일시스템(LittleFS) 웹 에셋 사전 압축 및 업로드 (최초 1회 및 웹 에셋 변경 시 필수)**:
    ```bash
    pio run --target uploadfs
    ```
    > [!IMPORTANT]
-   > `uploadfs` 실행 시 빌드 훅 스크립트([pio_gzip_0200.py](pio_gzip_0200.py))가 동작하여 `data_src_v0200`의 HTML/JS/CSS 자원을 Level 9 Gzip으로 자동 압축 후 LittleFS 영역에 플래시합니다.
+   > `uploadfs` 실행 시 빌드 훅 스크립트([pio_gzip_0200.py](src/v0200/tools_0200/pio_gzip_0200.py))가 동작하여 `data_src_v0200`의 HTML/JS/CSS 자원을 Level 9 Gzip으로 자동 압축 후 LittleFS 영역에 플래시합니다.
 
 ---
 

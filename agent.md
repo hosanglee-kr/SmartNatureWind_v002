@@ -14,35 +14,35 @@
 | **빌드 도구** | PlatformIO IDE |
 | **파일 시스템** | LittleFS (`./src/v0200/data_v0200`) |
 | **정적 에셋 파이프라인**| 단일 번들 JS (`P010_bundle_0200.js`) + Level 9 Gzip 사전 압축 (`pio_gzip_0200.py`) |
-| **현재 활성 버전** | **v0200** (단독 실행 풀스택 임베디드 웹 어플라이언스, 접미사 `_0200`) |
-| **소프트웨어 계약** | CBD (Contract-Based Design) v2.1 (동시성, 상태전이, 자원예산 엄격 준수) |
+| **현재 활성 버전** | **v0200 (FW_Ver_2.0.0)** (C++ 백엔드 소스 `_0201` 접미사 / 웹 에셋 `_0200`) |
+| **소프트웨어 계약** | CBD (Contract-Based Design) v2.2 (동시성, 상태전이, 자원예산 엄격 준수) |
 
 ---
 
 ## 📁 2. 프로젝트 소스 및 디렉토리 구조
 
-현재 활성 소스는 **`src/v0200/`** 폴더에 집약되어 있으며, `src/main.cpp`에서 이를 로드하여 위임합니다.
+현재 활성 소스는 **`src/v0200/`** 폴더에 집약되어 있으며, `src/main.cpp`에서 이를 로드하여 위임합니다. C++ 소스군은 **`_0201` 접미사** 체계로 리팩토링되어 모듈별 단일 책임과 명확한 소유권을 갖습니다.
 
 - `src/main.cpp`: 아두이노 표준 메인 진입점. Serial/Logger 초기화 후 `A00_init()` 및 `A00_run()` 호출 위임.
 - `src/v0200/`: 핵심 비즈니스 로직 및 컴포넌트 디렉토리.
-  - `A00_Main_0200.cpp/h`: 부팅 초기화 시퀀스 및 FreeRTOS 메인 루프 위임.
-  - `A20_Const_0200.h`: 시스템 전역 상수, 하드웨어 핀맵 기본값, PWM 타이밍 상수.
-  - `A22~A29`: 공통 룩업테이블, 유틸리티 함수, 팩토리 리셋 헬퍼.
-  - `A30_LED_0200.h`: WS2812B NeoPixel RGB LED 상태 표시기 (7-State FSM 시각화).
-  - `C10_Config_0200.cpp/h`: 환경설정(JSON) 로드/검증/저장 및 스케줄러 관리자.
-  - `CT10_Ctl_0200.cpp/h`: 팬 제어, 센서 연동, 시스템 상태 관리 및 WebSocket 브로커.
-  - `D10_Logger_0200.h`: 통합 링버퍼 로거 (`CL_D10_Logger`).
-  - `M10_MotionLogic_0200.h`: 풍향 및 모션 제어 로직.
-  - `N10_NvsManager_0200.cpp/h`: ESP32 NVS 플래시 메모리 관리자.
-  - `P10_PWM_ctrl_0200.h`: 25kHz 고주파 하드웨어 LEDC PWM 제어기.
-  - `S10_Simul_*.cpp/h`, `S20_WindSolver_0200.h`: 대기역학 물리 엔진 및 자연풍 수치해석 솔버.
-  - `TM10_TimeMg_0200.h`: NTP 동기화 및 RTC 시간 관리자.
+  - `A00_Main_0201.cpp/h`: 부팅 초기화 시퀀스 및 FreeRTOS 메인 루프 위임.
+  - `A20_Const_0201.h`, `A20_Const_Const_0201.h`: 시스템 전역 상수(`G_JSON_VERSION`, 펌웨어 버전 등), 핀맵 기본값, PWM 타이밍.
+  - `A22~A29`: 공통 룩업테이블, 유틸리티 함수(`A25_Com_Utils_IO_0201.cpp` 분리), 팩토리 리셋 헬퍼.
+  - `A30_LED_0201.h`: WS2812B NeoPixel RGB LED 상태 표시기 (7-State FSM 시각화).
+  - `C10_Config_0201.cpp/h`: 환경설정(JSON) 관리자 (`C10_Config_Sch_*`, `C10_Config_UzProf_*`, `C10_Config_WindDc_*` 모듈 분할).
+  - `CT10_Ctl_0201.cpp/h`: 팬 제어, 센서 연동, 시스템 상태 관리 및 WebSocket 브로커 (`CT10_Ctl_Basic/Ctl/StMG/IOWS`, `Seg/Ovr/Mode` 분할).
+  - `D10_Logger_0201.h`: 통합 링버퍼 로거 (`CL_D10_Logger`).
+  - `M10_MotionLogic_0201.h`: 풍향 및 모션 제어 로직.
+  - `N10_NvsManager_0201.cpp/h`: ESP32 NVS 플래시 메모리 관리자.
+  - `P10_PWM_ctrl_0201.h`: 25kHz 고주파 하드웨어 LEDC PWM 제어기.
+  - `S10_Simul_*.cpp/h`, `S20_WindSolver_0201.h`: 대기역학 물리 엔진 및 자연풍 수치해석 솔버.
+  - `TM10_TimeMg_0201.h`: NTP 동기화 및 RTC 시간 관리자.
   - `W10_Web_*.cpp/h`: 비동기 웹서버, REST API 라우팅(`/api/v001/*`), WebSocket 핸들러(`/ws/*`).
-  - `WF10_WiFiMgr_0200.cpp/h`: Wi-Fi SoftAP(`NatureWind`/`2540`) 및 STA 연결/재연결 관리.
+  - `WF10_WiFiMgr_0201.cpp/h`: Wi-Fi SoftAP(`NatureWind`/`2540`) 및 STA 연결/재연결 관리.
   - `data_src_v0200/`: 원본 웹 리소스 (HTML, CSS, 단일 번들 `P010_bundle_0200.js`, 설정 JSON).
   - `data_v0200/`: LittleFS 플래시용 Level 9 Gzip 사전 압축 산출물.
-  - `tools_0200/`: 빌드 전 자동 압축 스크립트 (`pio_gzip_0200.py`).
-  - `contract_doc_0200/`: CBD v2.1 엔지니어링 계약서 7종 (`SPEC`, `CONTRACT`, `STATE`, `FLOW`, `BUDGET`, `TEST_PLAN`, `README`).
+  - `tools_0200/`: 보조 도구 (`pio_gzip_0200.py` 사전 압축, `commit_contracts_0200.py` 계약 검증).
+  - `contract_doc_0200/`: CBD v2.2 엔지니어링 계약서 7종 (`SPEC`, `CONTRACT`, `STATE`, `FLOW`, `BUDGET`, `TEST_PLAN`, `README`).
   - `User_Manual_0200/`: v0200 공식 종합 사용자 매뉴얼 (`UserManual_0200_001.md`).
 
 ---
@@ -108,20 +108,24 @@ build_src_filter =
 
 ## 🛠️ 5. 빌드 및 배포 가이드
 
-1. **컴파일/빌드 검증**:
+1. **계약 문서 무결성 사전 검증 (선택/CI Gate)**:
+   ```bash
+   python src/v0200/tools_0200/commit_contracts_0200.py --dry-run --strict
+   ```
+2. **컴파일/빌드 검증**:
    ```bash
    pio run
    ```
-2. **펌웨어 업로드**:
+3. **펌웨어 업로드**:
    ```bash
    pio run --target upload
    ```
-3. **파일시스템(LittleFS) 사전 압축 및 업로드 (필수)**:
+4. **파일시스템(LittleFS) 사전 압축 및 업로드 (최초 또는 웹 자산 변경 시 필수)**:
    ```bash
    pio run --target uploadfs
    ```
    * `pre:src/v0200/tools_0200/pio_gzip_0200.py`가 자동으로 `data_src_v0200`을 Level 9 Gzip 압축하여 `data_v0200`을 생성한 뒤 플래시에 기록합니다.
-4. **시리얼 모니터링**:
+5. **시리얼 모니터링**:
    ```bash
    pio device monitor
    ```
@@ -132,7 +136,7 @@ build_src_filter =
 
 - **모듈 식별 및 네이밍 규칙**: [.cursorrules](.cursorrules)에 정의된 접두사 규칙(`A00`, `W10`, `CT10`, `C10`, `S10`, `P10` 등)과 변수 명명 원칙(`g_`, `s_`, `m_`, `p_` 등)을 철저히 준수합니다.
 - **문서 참조 링크 규격**: 프로젝트 내 모든 문서 간 참조 링크는 **프로젝트 루트 기준의 상대 경로**(`src/v0200/...`, `platformio.ini` 등)로 표기합니다.
-- **CBD v2.1 동시성/FSM 계약 준수**:
+- **CBD v2.2 동시성/FSM 계약 준수**:
   - 공유 자원 접근 시 [CONTRACT_0200.md](src/v0200/contract_doc_0200/CONTRACT_0200.md)의 Mutex 소유권 및 데드락 방지 원칙 준수.
   - 기기 상태 변경 시 [STATE_0200.md](src/v0200/contract_doc_0200/STATE_0200.md)에 명시된 7대 FSM 상태 전이 규칙 준수.
   - 최악 실행 시간(WCET) 및 메모리 버짓은 [BUDGET_0200.md](src/v0200/contract_doc_0200/BUDGET_0200.md) 기준 내 유지.

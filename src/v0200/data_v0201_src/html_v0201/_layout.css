@@ -1,0 +1,253 @@
+/*
+ * ------------------------------------------------------
+ * 소스명   : _layout.css
+ * 레이어   : CSS (빌드 시 P000_common_0200.css로 concat)
+ * 기능 요약:
+ *  - 앱 Shell 레이아웃 (header/sidebar/main/footer)
+ *  - 반응형 (데스크톱/태블릿/모바일)
+ *  - 사이드바 토글 (L2+)
+ * ------------------------------------------------------
+ */
+
+body {
+    font-family: var(--snw-font);
+    background: var(--snw-bg);
+    color: var(--snw-text);
+    font-size: 14px;
+}
+
+/* =====================================================
+ * 앱 Shell (Grid)
+ * ===================================================== */
+.snw-app {
+    display: grid;
+    grid-template-rows: var(--snw-header-h) 1fr var(--snw-footer-h);
+    grid-template-columns: 1fr;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+/* =====================================================
+ * Header
+ * ===================================================== */
+.snw-header {
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--snw-spacing-sm);
+    padding: 0 var(--snw-spacing-lg);
+    background: var(--snw-surface);
+    border-bottom: 1px solid var(--snw-border);
+    position: sticky;
+    top: 0;
+    z-index: var(--snw-z-header);
+}
+
+.snw-brand {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--snw-text);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.snw-header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--snw-spacing);
+}
+
+.snw-clock {
+    font-family: var(--snw-font-mono);
+    font-size: 13px;
+    color: var(--snw-text-dim);
+    min-width: 52px;
+    text-align: right;
+}
+
+.snw-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--snw-text-faint);
+    transition: background var(--snw-transition);
+}
+
+.snw-status-dot--online  { background: var(--snw-success); box-shadow: 0 0 6px var(--snw-success); }
+.snw-status-dot--offline { background: var(--snw-error); }
+.snw-status-dot--polling { background: var(--snw-warn); }
+
+.snw-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--snw-radius);
+    font-size: 16px;
+    color: var(--snw-text);
+    transition: background var(--snw-transition);
+}
+
+.snw-btn-icon:hover {
+    background: var(--snw-surface-2);
+}
+
+.snw-btn-icon--danger:hover {
+    background: rgba(248, 81, 73, 0.15);
+    color: var(--snw-error);
+}
+
+/* =====================================================
+ * Sidebar
+ * ===================================================== */
+.snw-sidebar {
+    position: fixed;
+    top: var(--snw-header-h);
+    left: 0;
+    bottom: var(--snw-footer-h);
+    width: var(--snw-sidebar-w);
+    background: var(--snw-surface);
+    border-right: 1px solid var(--snw-border);
+    overflow-y: auto;
+    z-index: var(--snw-z-sidebar);
+    transition: transform var(--snw-transition);
+}
+
+.snw-sidebar[hidden] {
+    transform: translateX(-100%);
+}
+
+#nav-menu {
+    display: flex;
+    flex-direction: column;
+    padding: var(--snw-spacing-sm) 0;
+}
+
+#nav-menu a {
+    display: flex;
+    align-items: center;
+    gap: var(--snw-spacing-sm);
+    padding: var(--snw-spacing-sm) var(--snw-spacing-lg);
+    color: var(--snw-text-dim);
+    font-size: 13px;
+    transition: background var(--snw-transition), color var(--snw-transition);
+    border-left: 3px solid transparent;
+}
+
+#nav-menu a:hover {
+    background: var(--snw-surface-2);
+    color: var(--snw-text);
+}
+
+#nav-menu a.is-active {
+    color: var(--snw-primary);
+    background: var(--snw-surface-2);
+    border-left-color: var(--snw-primary);
+}
+
+.snw-nav-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    font-size: 14px;
+}
+
+/* =====================================================
+ * Main
+ * ===================================================== */
+.snw-main {
+    grid-row: 2;
+    padding: var(--snw-spacing-lg);
+    overflow-x: hidden;
+    min-width: 0;
+}
+
+/* =====================================================
+ * Footer
+ * ===================================================== */
+.snw-footer {
+    grid-row: 3;
+    display: flex;
+    align-items: center;
+    gap: var(--snw-spacing);
+    padding: 0 var(--snw-spacing-lg);
+    background: var(--snw-surface);
+    border-top: 1px solid var(--snw-border);
+    font-size: 12px;
+    color: var(--snw-text-dim);
+}
+
+.snw-footer-spacer {
+    flex: 1;
+}
+
+/* =====================================================
+ * 로딩 / 에러
+ * ===================================================== */
+.snw-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    color: var(--snw-text-dim);
+    font-size: 14px;
+}
+
+.snw-loading::before {
+    content: "";
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    border: 2px solid var(--snw-border-hi);
+    border-top-color: var(--snw-primary);
+    border-radius: 50%;
+    animation: snw-spin 0.8s linear infinite;
+}
+
+@keyframes snw-spin {
+    to { transform: rotate(360deg); }
+}
+
+.snw-error {
+    padding: var(--snw-spacing-lg);
+    color: var(--snw-error);
+    text-align: center;
+}
+
+.snw-empty {
+    padding: var(--snw-spacing-lg);
+    color: var(--snw-text-dim);
+    text-align: center;
+    font-size: 13px;
+}
+
+/* =====================================================
+ * 사이드바 열림 시 Main 좌측 여백 (데스크톱)
+ * ===================================================== */
+@media (min-width: 1024px) {
+    body:has(.snw-sidebar:not([hidden])) .snw-app {
+        grid-template-columns: var(--snw-sidebar-w) 1fr;
+    }
+    body:has(.snw-sidebar:not([hidden])) .snw-header {
+        grid-column: 1 / -1;
+    }
+    body:has(.snw-sidebar:not([hidden])) .snw-sidebar {
+        position: sticky;
+        grid-column: 1;
+        grid-row: 2;
+        top: auto;
+        bottom: auto;
+    }
+    body:has(.snw-sidebar:not([hidden])) .snw-main {
+        grid-column: 2;
+    }
+    body:has(.snw-sidebar:not([hidden])) .snw-footer {
+        grid-column: 1 / -1;
+    }
+}

@@ -1,0 +1,35 @@
+/*
+ * ------------------------------------------------------
+ * 소스명   : _profiles.css
+ * 레이어   : CSS (빌드 시 P000_common_0200.css로 concat)
+ * 기능 요약:
+ *  - Profiles 페이지 전용 스타일
+ *  - 프로필 카드 강조 (활성)
+ * ------------------------------------------------------
+ */
+
+.snw - profile - list {
+		gap: var (--snw - spacing);
+	}
+	
+	.snw - profile - item.is - active.snw - profile - name {
+		color: var (--snw - primary);
+		font - weight: 600;
+	}
+	
+	.snw - profile - item.is - active.snw - profile - no {
+		color: var (--snw - primary);
+	}
+	
+	.snw - profile - actions.snw - btn {
+		min - width: 80 px;
+	}
+
+@media(max - width: 767 px) {
+	.snw - profile - actions {
+			flex - direction: column;
+		}
+		.snw - profile - actions.snw - btn {
+			width: 100 % ;
+		}
+}

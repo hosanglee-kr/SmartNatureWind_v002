@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0f1419">
+    <title data-i18n="app.title">Smart Nature Wind</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+    <link rel="stylesheet" href="./P000_common_0200.css">
+</head>
+<body>
+
+<div id="app" class="snw-app">
+
+    <!-- ============================================================
+         Header (모든 페이지 공통)
+         ============================================================ -->
+    <header class="snw-header" id="snw-header">
+        <button class="snw-btn-icon" id="btn-menu" aria-label="Menu"
+                data-i18n-attr="aria-label:header.menu">☰</button>
+        <span class="snw-brand" data-i18n="app.title">Smart Nature Wind</span>
+        <div class="snw-header-right">
+            <span class="snw-status-dot" id="conn-status" title=""></span>
+            <span class="snw-clock" id="header-clock">--:--</span>
+            <button class="snw-btn-icon" id="btn-lang" aria-label="Language">🌐</button>
+        </div>
+    </header>
+
+    <!-- ============================================================
+         사이드 네비게이션 (L2+ 표시, JS가 hidden 토글)
+         ============================================================ -->
+    <aside class="snw-sidebar" id="snw-sidebar" hidden>
+        <nav id="nav-menu"></nav>
+    </aside>
+
+    <!-- ============================================================
+         메인 컨텐츠 (라우터가 동적 렌더)
+         ============================================================ -->
+    <main class="snw-main" id="snw-main">
+        <div class="snw-loading" data-i18n="common.loading">Loading...</div>
+    </main>
+
+    <!-- ============================================================
+         Footer
+         ============================================================ -->
+    <footer class="snw-footer">
+        <span id="footer-status" data-i18n="footer.online">🟢</span>
+        <span class="snw-footer-spacer"></span>
+        <span id="footer-lastUpdate">-</span>
+    </footer>
+
+    <!-- 토스트 호스트 -->
+    <div class="snw-toast-host" id="toast-host"></div>
+</div>
+
+<script src="./P010_bundle_0200.js" defer></script>
+</body>
+</html>

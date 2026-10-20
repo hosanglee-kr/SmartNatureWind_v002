@@ -146,6 +146,37 @@ void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_fil
 // [D-3] W10_registerGzipServe: String 할당 최소화
 // ======================================================
 void CL_W10_WebAPI::W10_registerGzipServe() {
+    
+	// v0201 대응 (v3 + v0201 동시 지원, 하위 호환)
+	s_server->on("^\\/(html_v3|html_v0201)\\/.+", HTTP_GET, [](AsyncWebServerRequest* r) {
+	    String v_url = r->url();
+	    bool v_acceptsGzip = r->hasHeader("Accept-Encoding")
+	                      && r->getHeader("Accept-Encoding")->value().indexOf("gzip") >= 0;
+	    char v_gzPath[192];
+	    int  v_n = snprintf(v_gzPath, sizeof(v_gzPath), "%s.gz", v_url.c_str());
+	    if (v_n < 0 || v_n >= (int)sizeof(v_gzPath)) {
+	        r->send(414, "text/plain; charset=utf-8", "URI too long");
+	        return;
+	    }
+	    const char* v_mime = W10_guessMime(v_url.c_str());
+	    if (v_acceptsGzip && LittleFS.exists(v_gzPath)) {
+	        auto* v_resp = r->beginResponse(LittleFS, v_gzPath, v_mime);
+	        v_resp->addHeader("Content-Encoding", "gzip");
+	        _applyHeaders(v_resp, false);
+	        r->send(v_resp);
+	        return;
+	    }
+	    if (LittleFS.exists(v_url)) {
+	        auto* v_resp = r->beginResponse(LittleFS, v_url, v_mime);
+	        _applyHeaders(v_resp, false);
+	        r->send(v_resp);
+	        return;
+	    }
+	    r->send(404, "text/plain; charset=utf-8", "not found: " + v_url);
+	});
+
+    
+    
     s_server->on("^\\/html_v3\\/.+", HTTP_GET, [](AsyncWebServerRequest* r) {
         // url() 참조 (copy 없음)
         const String& v_url = r->url();

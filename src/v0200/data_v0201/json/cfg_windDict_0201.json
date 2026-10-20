@@ -1,7 +1,7 @@
 {
   "windDict": {
-    "version": "0200",
-    "jsonFile": "cfg_windDict_0200.json",
+    "version": "0201",
+    "jsonFile": "cfg_windDict_0201.json",
     "presets": [
       {
         "idx": 0,

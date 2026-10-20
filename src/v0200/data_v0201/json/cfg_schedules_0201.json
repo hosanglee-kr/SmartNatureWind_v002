@@ -1,6 +1,6 @@
 {
-  "version": "0200",
-  "jsonFile": "cfg_schedules_0200.json",
+  "version": "0201",
+  "jsonFile": "cfg_schedules_0201.json",
   "schedules": [
     {
       "schId": 1,

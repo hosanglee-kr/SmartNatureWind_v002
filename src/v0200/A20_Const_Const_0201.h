@@ -11,8 +11,8 @@ namespace A20_Const {
 	//  - FW_VERSION_SEMVER : 비교용 (SemVer x.y.z, routeFirmwareCheck)
 	//  - D-2 정책: 파일 접미사 _0201 ↔ SemVer 2.0.0 동기
 	// ======================================================
-	constexpr char FW_VERSION[]    				= "FW_Ver_2.0.0";	// 표시용
-	constexpr char FW_VERSION_SEMVER[] 			= "2.0.0";			// 비교용
+	constexpr char FW_VERSION[]    				= "FW_Ver_2.0.1";	// 표시용
+	constexpr char FW_VERSION_SEMVER[] 			= "2.0.1";			// 비교용
 	constexpr char CFG_JSON_FILE[] 				= "/json/10_cfg_jsonFile.json";
 
 	// ======================================================
@@ -39,7 +39,7 @@ namespace A20_Const {
 	//  - reset default(A20_resetXxxDefault)는 이 상수를 사용하지 않음
 	//    (메모리 초기화만 수행, 파일 저장은 saveXxx 함수 담당)
 	// ======================================================
-	constexpr char G_JSON_VERSION[] 			= "0200";
+	constexpr char G_JSON_VERSION[] 			= "0201";
 
 	// ======================================================
 	// [C-4] A00 메인 루프 상수

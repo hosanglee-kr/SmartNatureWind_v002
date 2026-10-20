@@ -1,8 +1,8 @@
 
 {
   "nvsSpec": {
-    "version": "0200",
-    "jsonFile": "cfg_nvsSpec_0200.json",
+    "version": "0201",
+    "jsonFile": "cfg_nvsSpec_0201.json",
     "namespace": "SNW",
     "entries": [
       { "key": "run_mode", "type": "uint8", "defaultValue": "0" },

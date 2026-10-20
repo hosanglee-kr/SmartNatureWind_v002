@@ -241,7 +241,7 @@
 |---|---|---|---|
 | 2026-10-20 | v2.2 | Batch A~F 반영: §2.1 D-4 atomic, §4 A-2/F-2/F-3/D-1 매트릭스, §4.2~§4.4 신규, §7.3 A-1~F-10 통합 | Antigravity AI |
 | 2026-10-19 | v2.1 | N-1~N-4, G-1~G-3 현행화 | Antigravity AI |
-| 2026-10-19 | v2.0 | v0200 승격 | Antigravity AI |
+| 2026-10-19 | v2.0 | v0200 승격 + (v1.2의 Gzip 서빙 계약 유지) | Antigravity AI |
 | 2026-10-19 | v1.2 | W10 Gzip 서빙, I-6 번들 | Antigravity AI |
 | 2026-10-19 | v1.1 | 심볼/시그니처 동기화 | Antigravity AI |
 | (초기) | v1.0 | 최초 정적 감사 기반 계약서 | 개발팀 |

@@ -247,7 +247,7 @@ CT10_WS_tick (T-loop)
 |---|---|---|---|
 | 2026-10-20 | v2.2 | Batch A~F 반영: §1 `_dirty*`/`s_staConnected` atomic 명시, §2.4 F-5 profile fall-through, §3 S10 상수, §4 WF10 C-7/C-8/D-4, §6.3 D-1 배치, §7 AutoOff, §8 E-2 분할 상태 소유권 신규 | Antigravity AI |
 | 2026-10-19 | v2.1 | N-1, G-2/G-4, N-3 현행화 | Antigravity AI |
-| 2026-10-19 | v2.0 | v0200 승격 | Antigravity AI |
+| 2026-10-19 | v2.0 | v0200 승격 + (v1.2의 번들 상태 규격 유지) | Antigravity AI |
 | 2026-10-19 | v1.2 | `_0201` 상태 규격 동기화 | Antigravity AI |
 | 2026-10-19 | v1.1 | Enum/변수명 동기화, `_persistOffTimeLastYday` 추가 | Antigravity AI |
 | (초기) | v1.0 | 최초 정적 감사 기반 상태 명세 | 개발팀 |

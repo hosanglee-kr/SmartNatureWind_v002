@@ -105,8 +105,19 @@ bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg, bo
 
     JsonDocument d;
     JsonObject   v_root = d.to<JsonObject>();
-    v_root["version"]   = "070";
-    v_root["jsonFile"]  = "cfg_schedules_0200.json";
+    // ======================================================
+    // [P3] version/jsonFile 하드코딩 제거
+    // - 10_cfg_jsonFile.json에서 유도된 s_cfgJsonFileMap.schedules를 사용
+    // - version: A20_Const::G_JSON_VERSION 상수 참조
+    // - jsonFile: s_cfgJsonFileMap.schedules의 basename 추출
+    //   (예: "/json/cfg_schedules_0200.json" → "cfg_schedules_0200.json")
+    // - 효과: 파일명 변경 시 10_cfg_jsonFile.json만 수정하면 자동 반영
+    // ======================================================
+    v_root["version"] = A20_Const::G_JSON_VERSION;
+
+    const char* v_path  = s_cfgJsonFileMap.schedules;
+    const char* v_slash = strrchr(v_path, '/');
+    v_root["jsonFile"]  = (v_slash ? (v_slash + 1) : v_path);
 
     JsonArray v_jsSchedules = v_root["schedules"].to<JsonArray>();
     const uint8_t v_maxSch = (v_sorted.count < A20_Const::MAX_SCHEDULES) ? v_sorted.count : A20_Const::MAX_SCHEDULES;

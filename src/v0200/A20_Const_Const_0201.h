@@ -33,6 +33,15 @@ namespace A20_Const {
 	constexpr char DEFAULT_STYLE_NAME[]  		= "Balance";
 
 	// ======================================================
+	// [P3] JSON 파일 version 필드 (SSOT)
+	//  - 파일 접미사 _0200과 동기
+	//  - saveSchedules 등 save 함수가 10_cfg_jsonFile.json 매핑과 함께 참조
+	//  - reset default(A20_resetXxxDefault)는 이 상수를 사용하지 않음
+	//    (메모리 초기화만 수행, 파일 저장은 saveXxx 함수 담당)
+	// ======================================================
+	constexpr char G_JSON_VERSION[] 			= "0200";
+
+	// ======================================================
 	// [C-4] A00 메인 루프 상수
 	// ======================================================
 	constexpr uint32_t G_A00_WDT_TIMEOUT_SEC	= 10;	// [sec] Task WDT 타임아웃

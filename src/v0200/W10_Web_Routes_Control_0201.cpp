@@ -184,6 +184,23 @@ void CL_W10_WebAPI::routeControl() {
         }
         p_request->send(200, "application/json", "{\"result\":\"ok\"}");
     });
+    
+    // [v0202] AUTOOFF_STOPPED 이벤트 ACK
+    //  - 프론트엔드 "확인" 버튼 → s_control->ackEvent() (기존 CT10 API 재사용)
+    //  - ackEventState()는 s_stateMutex 보유 후 _autoOffLatched=false 설정
+    s_server->on(W10_Const::HTTP_API_CTL_ACK, HTTP_POST, [](AsyncWebServerRequest* p_request) {
+        if (!checkApiKey(p_request)) {
+            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            return;
+        }
+        if (s_control) {
+            CL_CT10_ControlManager::ackEvent();
+        }
+        JsonDocument v_res;
+        v_res["result"] = "ok";
+        sendJson(p_request, v_res);
+    });
+
 }
 
 // --------------------------------------------------

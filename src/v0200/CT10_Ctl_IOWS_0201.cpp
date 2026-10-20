@@ -577,6 +577,22 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
         v_dirty["chart"]   = _dirtyChart;
         v_dirty["summary"] = _dirtySummary;
     }
+    
+    // ======================================================
+    // [v0202] 시간 기준점 노출 (millis ↔ epochms 변환용)
+    //  - uptimeMs: 부팅 후 경과 (millis)
+    //  - epochNowMs: SNTP 동기화 완료 시점의 epoch ms (0이면 미동기)
+    //  - 프론트엔드는 serverBootEpochMs = epochNowMs - uptimeMs 로 기준점 확보 후
+    //    각 *Ms 필드(millis)를 절대 시각으로 변환 가능
+    //  - SNTP 미동기 시 epochNowMs=0 → 프론트는 상대 시간 표시만 사용
+    // ======================================================
+    {
+        JsonObject v_sys = A40_ComFunc::Json_ensureObject(v_ctl["system"]);
+        v_sys["uptimeMs"] = (uint32_t)millis();
+        v_sys["epochNowMs"] = CL_TM10_TimeManager::isTimeValid()
+            ? (uint64_t)time(nullptr) * 1000ULL
+            : 0ULL;
+    }
 
     // [I-1] Pending reload 상태
     v_ctl["pendingReload"] = CL_CT10_ControlManager::isReloadPending();

@@ -5,9 +5,9 @@ Smart Nature Wind v0201 — SPA Web Staging (그린필드)
 기능:
   1. SRC: src/v0200/data_v0201_src/html_v0201/  (개발 원본)
   2. DST: src/v0200/data_v0201/html_v0201/      (배포 스테이징)
-  3. JS 번들: html_v0201/*.js (넘버링 정렬) → P010_bundle_0200.js (그대로 유지)
-  4. CSS 번들: html_v0201/_*.css (언더스코어) → P000_common_0200.css
-  5. HTML: index.html → P010_main_0200.html 리네임
+  3. JS 번들: html_v0201/*.js (넘버링 정렬) → P010_bundle_0201.js
+  4. CSS 번들: html_v0201/_*.css (언더스코어) → P000_common_0201.css
+  5. HTML: index.html → P010_main_0201.html 리네임
   6. 모든 텍스트 자산 Level 9 Gzip 사전 압축
   7. PlatformIO SCons hook (buildfs/uploadfs) + CLI 실행 지원
   8. run_staging() 반환값을 SCons hook에서 검사 (실패 시 빌드 중단)
@@ -40,13 +40,13 @@ if sys.platform == "win32":
 # 상수 (v0201 그린필드)
 # ============================================================
 JS_BUNDLE_PATTERN  = "*.js"
-JS_BUNDLE_OUTPUT   = "P010_bundle_0200.js"     # 브라우저 캐시 유지 (파일명 유지)
+JS_BUNDLE_OUTPUT   = "P010_bundle_0201.js"     # 브라우저 캐시 유지 (파일명 유지)
 
 CSS_BUNDLE_PATTERN = "_*.css"
-CSS_BUNDLE_OUTPUT  = "P000_common_0200.css"    # 단일 CSS 유지
+CSS_BUNDLE_OUTPUT  = "P000_common_0201.css"    # 단일 CSS 유지
 
 HTML_SHELL_INPUT   = "index.html"
-HTML_SHELL_OUTPUT  = "P010_main_0200.html"     # 서버 라우팅 유지
+HTML_SHELL_OUTPUT  = "P010_main_0201.html"     # 서버 라우팅 유지
 
 # Gzip 대상 확장자
 GZ_EXTS: Set[str] = {".html", ".css", ".js", ".svg"}

@@ -359,7 +359,7 @@ void CL_W10_WebAPI::routeStaticAssets() {
 		String v_root_path = s_menu_state.main_path;
 
 		s_server->on("/", HTTP_GET, [v_root_path](AsyncWebServerRequest* r) {
-			String v_default_html = String(W10_Const::PATH_STATIC_HTML) + "/P010_main_0200.html";
+			String v_default_html = String(W10_Const::PATH_STATIC_HTML) + "/P010_main_0201.html";
 
 			if (!v_root_path.isEmpty()) {
 				v_default_html = v_root_path.c_str();

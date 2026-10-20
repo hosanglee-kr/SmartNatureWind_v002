@@ -17,9 +17,9 @@
 #      - failure.log: 아티팩트 다운로드가 제한된 CLI 환경을 대비한 후반 500줄 폴백 버퍼.
 #   4. 파일시스템 로그 연속성:
 #      - buildfs 실행 로그를 pio-build.log에 append(tee -a)하여 파일시스템 실패 원인 누락을 차단함.
-#   5. 계약 문서 검증 (신규):
-#      - build 전 계약 문서 무결성 gate를 수행하여 계약 위반 머지를 차단함.
-#      - fix_table_bleed/patch_revision_notes/commit_contracts 3종을 --dry-run/--check로 실행.
+#   5. 계약 문서 검증:
+#      - build 전 계약 문서 무결성 gate(commit_contracts_0200.py)를 수행하여 계약 위반 머지를 차단함.
+#      - commit_contracts_0200.py를 --dry-run/--strict로 실행.
 #      - 실패 시 build job을 needs 의존으로 자동 스킵하여 조기 실패 유도.
 # =====================================================================
 
@@ -167,7 +167,7 @@ jobs:
             echo "  - platformio.ini 문법 및 섹션 네이밍"
             echo "  - [env:*] 섹션 정의 여부"
             echo "  - default_envs 파라미터 유효성"
-            echo "  - 계약 문서 검증 3종(fix_table_bleed/patch_revision_notes/commit_contracts)"
+            echo "  - 계약 문서 검증(commit_contracts_0200.py)"
             echo "--- 러너 환경 정보 ---"
             uname -a
             python3 --version || true

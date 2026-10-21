@@ -34,6 +34,14 @@ window.SNW = window.SNW || {};
 		}
 		
 		connect() {
+			// ======================================================
+			// [OFFLINE] 오프라인일 때는 WS 연결 시도하지 않음
+			// ======================================================
+			if (window.SNW_OFFLINE) {
+				this._openHandlers.forEach(h => { try { h(); } catch {} }); // 연결된 것처럼 처리
+				return;
+			}
+			
 			if (this._closed) return;
 			
 			try {

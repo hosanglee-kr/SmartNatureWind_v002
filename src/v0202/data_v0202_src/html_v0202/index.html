@@ -53,6 +53,15 @@
     <div class="snw-toast-host" id="toast-host"></div>
 </div>
 
-<script src="./P010_bundle_0202.js" defer></script>
+<script>
+    window.SNW_OFFLINE = (location.protocol === 'file:') ||
+        new URLSearchParams(location.search).has('offline');
+    
+    if (window.SNW_OFFLINE) {
+        document.write('<script src="./998.offline_0202.js"><\/script>');
+    }
+</script>
+<script src="./P010_bundle_0202.js"></script>
+
 </body>
 </html>

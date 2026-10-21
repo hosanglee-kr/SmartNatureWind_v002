@@ -61,33 +61,30 @@ window.SNW = window.SNW || {};
 		});
 	}
 	
-	// =====================================================
-	// 부트스트랩 (DOMContentLoaded)
-	// =====================================================
-	document.addEventListener('DOMContentLoaded', async () => {
+
+	// ======================================================
+	// [핵심] index.html 로더가 호출하는 전역 부트스트랩 함수
+	// ======================================================
+	window.SNW_BOOT = async function() {
+		if (window.SNW_BOOT_CALLED) return;
+		window.SNW_BOOT_CALLED = true;
+		
 		try {
-			// 1) i18n 초기 적용
-			SNW.I18n.applyTo(document);
+			if (window.SNW_OFFLINE && SNW.Offline && SNW.Offline.ready) {
+				await SNW.Offline.ready;
+			}
 			
-			// 2) 사용자 레벨 필터
+			SNW.I18n.applyTo(document);
 			if (typeof SNW.LevelUtil !== 'undefined' && SNW.LevelUtil.applyTo) {
 				SNW.LevelUtil.applyTo(document.body);
 			}
 			
-			// 3) 연결 상태 표시
 			_bindConnectionStatus();
 			_bindLastUpdate();
-			
-			// 4) WS + Store 브리지
 			SNW.WsManager.initByLevel();
 			SNW.StoreBridge.start();
-			
-			// 5) 언어 토글
 			_bindLangToggle();
-			
-			// 6) 라우터 초기화 (해시 기반 페이지 마운트)
 			SNW.Router.init();
-			
 			SNW.LogUtil.info('App bootstrap complete');
 		} catch (e) {
 			SNW.LogUtil.error('bootstrap failed', e);
@@ -97,6 +94,14 @@ window.SNW = window.SNW || {};
 				main.appendChild(SNW.DomUtil.html`<div class="snw-error">${SNW.I18n.t('msg.unknown')}</div>`);
 			}
 		}
-	});
+	};
 	
+	// 안전장치: DOMContentLoaded가 이미 지나갔으면 즉시 호출
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', () => { window.SNW_BOOT(); });
+	} else {
+		window.SNW_BOOT();
+	}
+	
+
 })(window.SNW);

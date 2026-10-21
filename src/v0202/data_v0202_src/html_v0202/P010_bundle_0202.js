@@ -526,7 +526,30 @@ window.SNW = window.SNW || {};
     class ApiError extends Error {
         constructor(status, data) { super((data && data.error) || `HTTP ${status}`); this.name = 'ApiError'; this.status = status; this.data = data; }
     }
-    async function _fetch(path, opts={}) {
+    
+    async function _fetch(path, opts = {}) {
+        // ======================================================
+        // [OFFLINE 원천 차단] 오프라인 모드일 때 가상 데이터 즉시 반환
+        // ======================================================
+        if (window.SNW_OFFLINE) {
+            // SNW.Offline._runtime이 있으면 사용, 없으면 빈 객체
+            const rt = (SNW.Offline && SNW.Offline._runtime) ? SNW.Offline._runtime : {};
+            
+            if (path.includes('/state')) return { control: rt.control || {}, sim: rt.sim || {} };
+            if (path.includes('/sim/state')) return { sim: rt.sim || {}, control: rt.control || {} };
+            if (path.includes('/simulation')) return { sim: rt.sim || {} };
+            if (path.includes('/system')) return { system: (SNW.Offline && SNW.Offline._cache && SNW.Offline._cache.system) || {} };
+            if (path.includes('/schedules')) return { schedules: (SNW.Offline && SNW.Offline._cache && SNW.Offline._cache.schedules && SNW.Offline._cache.schedules.schedules) || [] };
+            if (path.includes('/user_profiles')) return { userProfiles: (SNW.Offline && SNW.Offline._cache && SNW.Offline._cache.userProfiles) || {} };
+            if (path.includes('/windProfile')) return (SNW.Offline && SNW.Offline._cache && SNW.Offline._cache.windDict) || {};
+            if (path.includes('/logs')) return { logs: [{ ts: 0, lv: 3, msg: '[Offline Mode]' }] };
+            if (path.includes('/diag')) return { heap: 0, fs_used: 0, fs_total: 0 };
+            if (path.includes('/version')) return { fw: 'FW_Ver_2.0.2', control: 'CT10_Ctl_0202' };
+            
+            // 쓰기(POST 등) 요청은 성공으로 위장
+            return { result: 'ok', updated: true };
+        }
+                        
         const dedupeKey = (opts.method || 'GET') === 'GET' ? path + (opts.body ? JSON.stringify(opts.body) : '') : null;
         if (dedupeKey && inflight.has(dedupeKey)) return inflight.get(dedupeKey);
         const promise = (async () => {
@@ -649,7 +672,16 @@ window.SNW = window.SNW || {};
             const proto = (location.protocol === 'https:') ? 'wss' : 'ws';
             return `${proto}://${location.host}${SNW.CFG.WS_PATH[this.channel]}${q}`;
         }
+        
         connect() {
+			// ======================================================
+			// [OFFLINE] 오프라인일 때는 WS 연결 시도하지 않음
+			// ======================================================
+			if (window.SNW_OFFLINE) {
+				this._openHandlers.forEach(h => { try { h(); } catch {} }); // 연결된 것처럼 처리
+				return;
+			}
+			
             if (this._closed) return;
             try { this.ws = new WebSocket(this.url()); } catch (e) { SNW.LogUtil.warn(`WS[${this.channel}] 생성 실패`, e); return this._scheduleReconnect(); }
             this.ws.onopen = () => {
@@ -1991,49 +2023,105 @@ SNW.Page = SNW.Page || {};
     };
 })(window.SNW);
 
+
 /* ---- 999.app.js ---- */
 window.SNW = window.SNW || {};
-(function (SNW) {
-    'use strict';
-    function _bindConnectionStatus() {
-        const dot = document.getElementById('conn-status');
-        const footerStat = document.getElementById('footer-status');
-        if (!dot && !footerStat) return;
-        const render = (conn) => {
-            if (dot) { dot.className = 'snw-status-dot snw-status-dot--' + conn; dot.title = SNW.I18n.t('footer.' + conn); }
-            if (footerStat) footerStat.textContent = SNW.I18n.t('footer.' + conn);
-        };
-        SNW.Store.watch('connection', render);
-        render(SNW.Store.get().connection);
-    }
-    function _bindLastUpdate() {
-        const el = document.getElementById('footer-lastUpdate'); if (!el) return;
-        const render = (ms) => { if (!ms) { el.textContent = '-'; return; } const sec = Math.round((Date.now() - ms) / 1000); el.textContent = sec < 1 ? '0.0s' : `${sec}s`; };
-        SNW.Store.watch('lastUpdateMs', render);
-        setInterval(() => render(SNW.Store.get().lastUpdateMs), 1000);
-    }
-    function _bindLangToggle() {
-        const btn = document.getElementById('btn-lang'); if (!btn) return;
-        btn.addEventListener('click', () => {
-            const cur = SNW.I18n.getLang();
-            SNW.I18n.setLang(cur === 'ko' ? 'en' : 'ko');
-            SNW.I18n.applyTo(document);
-        });
-    }
-    document.addEventListener('DOMContentLoaded', async () => {
-        try {
-            SNW.I18n.applyTo(document);
-            if (SNW.LevelUtil && SNW.LevelUtil.applyTo) SNW.LevelUtil.applyTo(document.body);
-            _bindConnectionStatus(); _bindLastUpdate();
-            SNW.WsManager.initByLevel();
-            SNW.StoreBridge.start();
-            _bindLangToggle();
-            SNW.Router.init();
-            SNW.LogUtil.info('App bootstrap complete');
-        } catch (e) {
-            SNW.LogUtil.error('bootstrap failed', e);
-            const main = document.getElementById('snw-main');
-            if (main) { main.innerHTML = ''; main.appendChild(SNW.DomUtil.html`<div class="snw-error">${SNW.I18n.t('msg.unknown')}</div>`); }
-        }
-    });
+(function(SNW) {
+	'use strict';
+	
+	// =====================================================
+	// 연결 상태 표시 (Header dot + Footer)
+	// =====================================================
+	function _bindConnectionStatus() {
+		const dot = document.getElementById('conn-status');
+		const footerStat = document.getElementById('footer-status');
+		if (!dot && !footerStat) return;
+		
+		const render = (conn) => {
+			const cls = 'snw-status-dot snw-status-dot--' + conn;
+			if (dot) {
+				dot.className = cls;
+				dot.title = SNW.I18n.t('footer.' + conn);
+			}
+			if (footerStat) {
+				footerStat.textContent = SNW.I18n.t('footer.' + conn);
+			}
+		};
+		
+		SNW.Store.watch('connection', render);
+		render(SNW.Store.get().connection);
+	}
+	
+	// =====================================================
+	// 마지막 업데이트 시각 표시
+	// =====================================================
+	function _bindLastUpdate() {
+		const el = document.getElementById('footer-lastUpdate');
+		if (!el) return;
+		const render = (ms) => {
+			if (!ms) { el.textContent = '-'; return; }
+			const sec = Math.round((Date.now() - ms) / 1000);
+			el.textContent = sec < 1 ? '0.0s' : `${sec}s`;
+		};
+		SNW.Store.watch('lastUpdateMs', render);
+		setInterval(() => render(SNW.Store.get().lastUpdateMs), 1000);
+	}
+	
+	// =====================================================
+	// 언어 토글 버튼
+	// =====================================================
+	function _bindLangToggle() {
+		const btn = document.getElementById('btn-lang');
+		if (!btn) return;
+		btn.addEventListener('click', () => {
+			const cur = SNW.I18n.getLang();
+			SNW.I18n.setLang(cur === 'ko' ? 'en' : 'ko');
+			// 페이지 재적용 (data-i18n)
+			SNW.I18n.applyTo(document);
+			// nav 메뉴 재렌더 (Router가 snw:langchange 이벤트 구독)
+		});
+	}
+	
+	// ======================================================
+	// [핵심] index.html 로더가 호출하는 전역 부트스트랩 함수
+	// ======================================================
+	window.SNW_BOOT = async function() {
+		if (window.SNW_BOOT_CALLED) return;
+		window.SNW_BOOT_CALLED = true;
+		
+		try {
+			if (window.SNW_OFFLINE && SNW.Offline && SNW.Offline.ready) {
+				await SNW.Offline.ready;
+			}
+			
+			SNW.I18n.applyTo(document);
+			if (typeof SNW.LevelUtil !== 'undefined' && SNW.LevelUtil.applyTo) {
+				SNW.LevelUtil.applyTo(document.body);
+			}
+			
+			_bindConnectionStatus();
+			_bindLastUpdate();
+			SNW.WsManager.initByLevel();
+			SNW.StoreBridge.start();
+			_bindLangToggle();
+			SNW.Router.init();
+			SNW.LogUtil.info('App bootstrap complete');
+		} catch (e) {
+			SNW.LogUtil.error('bootstrap failed', e);
+			const main = document.getElementById('snw-main');
+			if (main) {
+				main.innerHTML = '';
+				main.appendChild(SNW.DomUtil.html`<div class="snw-error">${SNW.I18n.t('msg.unknown')}</div>`);
+			}
+		}
+	};
+	
+	// 안전장치: DOMContentLoaded가 이미 지나갔으면 즉시 호출
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', () => { window.SNW_BOOT(); });
+	} else {
+		window.SNW_BOOT();
+	}
+	
+
 })(window.SNW);

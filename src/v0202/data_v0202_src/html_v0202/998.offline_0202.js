@@ -4,7 +4,6 @@ window.SNW = window.SNW || {};
     'use strict';
     if (!window.SNW_OFFLINE) return;
 
-    // 1. 경로 후보군
     let WORKING_JSON_BASE = null;
     const JSON_BASE_CANDIDATES = ['/json/', '../../json/', '../json/', '/src/v0202/data_v0202_src/json/'];
     const FILE_MAP = {
@@ -12,108 +11,47 @@ window.SNW = window.SNW || {};
         nvsSpec:'cfg_nvsSpec_0202.json', schedules:'cfg_schedules_0202.json',
         userProfiles:'cfg_userProfile_0202.json', windDict:'cfg_windDict_0202.json', webPage:'cfg_pages_0202.json'
     };
-    const cache = { system:null, wifi:null, motion:null, nvsSpec:null, schedules:null, userProfiles:null, windDict:null, webPage:null };
+    
+    // [폴백 데이터] JSON 로드 실패 시 사용할 기본 UI 뼈대 데이터
+    const cache = {
+        system: { system: { logging: { level: "INFO" } }, hw: { fanPwm: { pin: 6 }, fanConfig: { startPercentMin: 18 }, pir: { enabled: true, pin: 13, holdSec: 120 }, tempHum: { enabled: true, type: "DHT22", pin: 17, intervalSec: 30 } } },
+        wifi: { wifi: { wifiMode: 2, ap: { ssid: "NatureWind" }, sta: [] } },
+        motion: null, nvsSpec: null,
+        schedules: { schedules: [
+            { schId: 1, schNo: 10, name: "Morning Breeze", enabled: true, segCount: 2, period: { days: [1,1,1,1,1,0,0], startTime: "08:00", endTime: "12:00" } },
+            { schId: 2, schNo: 20, name: "Evening Relax", enabled: false, segCount: 1, period: { days: [1,1,1,1,1,1,1], startTime: "19:00", endTime: "22:00" } }
+        ]},
+        userProfiles: { userProfiles: { profiles: [
+            { profileId: 1, profileNo: 10, name: "수면 모드", enabled: true, segCount: 3 },
+            { profileId: 2, profileNo: 20, name: "집중 모드", enabled: true, segCount: 1 }
+        ]}},
+        windDict: { windDict: { presets: [{ code: "OCEAN", name: "Ocean" }, { code: "FOREST_CANOPY", name: "Forest" }] } },
+        webPage: null
+    };
 
-    // 2. 가상 런타임
     const runtime = {
         control: {
-            active:false, state:'IDLE', stateCode:0, reason:'NONE', reasonCode:0,
-            time:{ valid:false, hour:-1, min:-1, wday:-1 },
-            sensor:{ tempC:24, humidity:55, motionActive:false },
-            system:{ uptimeMs:0, epochNowMs:0 },
-            profile:{ profileNo:0 }, segment:{}, override:{}
+            active: true, state: 'SCHEDULE_RUN', stateCode: 3, reason: 'SCHEDULE_ACTIVE', reasonCode: 4,
+            time: { valid: true, hour: 10, min: 30, wday: 2 },
+            sensor: { tempC: 24.5, humidity: 55, motionActive: true },
+            system: { uptimeMs: 1000, epochNowMs: 0 },
+            profile: { profileNo: 10 }, segment: {}, override: {}
         },
         sim: {
-            active:false, phase:'NORMAL', windSpeed:3.6, targetWind:3.6, pwmDuty:0,
-            presetCode:'OCEAN', styleCode:'BALANCE', intensity:70, variability:50,
-            gustFreq:45, fanLimit:90, minFan:10, turbSigma:0.5, turbLenScale:40,
-            thermalStrength:2, thermalRadius:18, gustActive:false, thermalActive:false, fanPowerEnabled:true
+            active: true, phase: 'NORMAL', windSpeed: 4.5, targetWind: 5.0, pwmDuty: 55.0,
+            presetCode: 'OCEAN', styleCode: 'BALANCE', intensity: 70, variability: 50,
+            gustFreq: 45, fanLimit: 90, minFan: 10, turbSigma: 0.5, turbLenScale: 40,
+            thermalStrength: 2, thermalRadius: 18, gustActive: false, thermalActive: false, fanPowerEnabled: true
         },
-        runtime: { runMode:0, runSource:0, lastScheduleNo:-1, lastUserProfileNo:-1 }
+        runtime: { runMode: 1, runSource: 2, lastScheduleNo: 1, lastUserProfileNo: -1 },
+        chart: Array.from({ length: 20 }).map((_, i) => ({
+            t: Date.now() - (20 - i) * 1000, wind: 3 + Math.random() * 3,
+            targetWind: 5.0, pwm: 40 + Math.random() * 20, gust: 0, thermal: 0
+        }))
     };
 
-    // 3. SNW.Offline 객체 선언 (isReady는 항상 true)
-    SNW.Offline = {
-        ready: null,
-        _cache: cache,
-        _runtime: runtime,
-        isReady: () => true
-    };
+    SNW.Offline = { ready: null, _cache: cache, _runtime: runtime, isReady: () => true };
 
-    // 4. [핵심] SNW.Api 객체 강제 생성 (없으면 새로 만듦)
-    function ensureApi() {
-        if (!SNW.Api) {
-            // ApiError 클래스도 강제 생성
-            SNW.Api = {
-                ApiError: class extends Error {
-                    constructor(status, data) { super((data && data.error) || 'Error'); this.status = status; this.data = data; }
-                },
-                setApiKey: () => {}, getApiKey: () => ''
-            };
-        }
-        const A = SNW.Api;
-
-        // GET 스텁
-        A.getState = async () => ({ control: runtime.control, sim: runtime.sim, runtime: runtime.runtime });
-        A.getSim = async () => ({ sim: runtime.sim });
-        A.getSimState = async () => ({ sim: runtime.sim, control: runtime.control });
-        A.getSystem = async () => ({ ...cache.system });
-        A.listSchedules = async () => ({ ...cache.schedules });
-        A.listProfiles = async () => ({ ...cache.userProfiles });
-        A.listWindProfiles = async () => ({ ...cache.windDict });
-        A.getLogs = async () => ({ logs: [{ ts:0, lv:3, msg:'[Offline] frontend-only mode' }] });
-        A.diag = async () => ({ heap:0, fs_used:0, fs_total:0 });
-        A.version = async () => ({ fw:'FW_Ver_2.0.2', control:'CT10_Ctl_0202', config:'C10', api:'W10', simul:'S10' });
-        A.checkFw = async () => ({ status:'latest' });
-        A.getConfigDirty = async () => ({ system:false, wifi:false, motion:false });
-        A.getWifiState = async () => ({ wifi: { state: { mode_name:'OFFLINE' } } });
-
-        // 쓰기 스텁
-        A.overrideFixed = async () => { runtime.sim.active = true; runtime.control.active = true; return { result:'ok' }; };
-        A.overrideClear = async () => { runtime.sim.active = false; runtime.control.active = false; return { result:'ok' }; };
-        A.overridePreset = async () => ({ result:'ok' });
-        A.patchSim = async (p) => { Object.assign(runtime.sim, p); return { updated:true }; };
-        A.patchMotion = async () => ({ updated:true });
-        A.patchSystem = async () => ({ updated:true });
-        A.saveConfig = async () => ({ result:'saved' });
-        A.reload = async () => ({ result:'queued' });
-        A.ackEvent = async () => ({ result:'ok' });
-        A.feedPir = async () => ({ result:'ok' });
-        A.selectProfile = async () => ({ result:'ok' });
-        A.stopProfile = async () => ({ result:'ok' });
-        A.scanWifi = async () => ({ wifi: { scan: [] } });
-        A.setTime = async () => ({ result:'ok' });
-        A.factoryReset = async () => ({ factory:true });
-        A.gemini = async () => { throw new SNW.Api.ApiError(503, { error:'offline' }); };
-        A.uploadFile = async () => { throw new SNW.Api.ApiError(503, { error:'offline' }); };
-        A.uploadFirmware = async () => { throw new SNW.Api.ApiError(503, { error:'offline' }); };
-        A.addSchedule = async (b) => {
-            if (!cache.schedules) cache.schedules = { schedules: [] };
-            const list = cache.schedules.schedules || [];
-            const id = list.length + 1;
-            list.push(Object.assign({ schId:id, enabled:true }, b.schedule || {}));
-            return { result:'created', id };
-        };
-        A.deleteSchedule = async (id) => {
-            if (cache.schedules && cache.schedules.schedules) {
-                cache.schedules.schedules = cache.schedules.schedules.filter(s => s.schId !== id);
-            }
-            return { deleted:true };
-        };
-        A.updateSchedule = async (id, b) => {
-            if (cache.schedules && cache.schedules.schedules) {
-                const list = cache.schedules.schedules;
-                const idx = list.findIndex(s => s.schId === id);
-                if (idx >= 0) list[idx] = Object.assign(list[idx], b.schedule || {});
-            }
-            return { updated:true };
-        };
-        A.deleteProfile = async () => ({ deleted:true });
-        A.addProfile = async () => ({ result:'created', id:1 });
-        A.updateProfile = async () => ({ updated:true });
-    }
-
-    // 5. JSON 로드
     async function loadAll() {
         for (const base of JSON_BASE_CANDIDATES) {
             try {
@@ -121,15 +59,93 @@ window.SNW = window.SNW || {};
                 if (res.ok) { WORKING_JSON_BASE = base; break; }
             } catch (e) {}
         }
-        if (!WORKING_JSON_BASE) { console.error('[Offline] JSON 경로 못 찾음'); return; }
+        if (!WORKING_JSON_BASE) return;
         console.log('[Offline] JSON 경로:', WORKING_JSON_BASE);
+        
         await Promise.all(Object.entries(FILE_MAP).map(async ([k, f]) => {
-            try { const r = await fetch(WORKING_JSON_BASE + f); cache[k] = await r.json(); } catch(e) {}
+            try { 
+                const r = await fetch(WORKING_JSON_BASE + f); 
+                if (r.ok) {
+                    const data = await r.json();
+                    if (data.system) cache.system = data;
+                    if (data.wifi) cache.wifi = data;
+                    if (data.schedules) cache.schedules = data;
+                    if (data.userProfiles) cache.userProfiles = data;
+                    if (data.windDict) cache.windDict = data;
+                }
+            } catch(e) {}
         }));
         if (cache.motion?.motion?.sim) Object.assign(runtime.sim, cache.motion.motion.sim);
     }
 
-    // 6. WS 스텁
+    function ensureApi() {
+        if (!SNW.Api) SNW.Api = { ApiError: class extends Error { constructor(status) { super('Error'); this.status = status; } } };
+        const A = SNW.Api;
+
+        A.getState = async () => ({ control: runtime.control, sim: runtime.sim, runtime: runtime.runtime });
+        A.getSim = async () => ({ sim: runtime.sim });
+        A.getSystem = async () => cache.system;
+        A.listSchedules = async () => cache.schedules;
+        A.listProfiles = async () => cache.userProfiles;
+        A.listWindProfiles = async () => cache.windDict;
+        A.getWifiConfig = async () => cache.wifi;
+        A.getLogs = async () => ({ logs: [{ ts:0, lv:3, msg:'[Offline] mode' }] });
+        A.diag = async () => ({ heap:1024, fs_used:100, fs_total:200 });
+        A.version = async () => ({ fw:'FW_Ver_2.0.2', control:'CT10_Ctl_0202' });
+        A.getWifiState = async () => ({ wifi: { state: { mode_name:'OFFLINE', ssid:'(offline)', ip:'0.0.0.0', rssi:-50 } } });
+        A.checkFw = async () => ({ status:'latest', current_version:'FW_Ver_2.0.2' });
+        A.getConfigDirty = async () => ({ system:false, wifi:false, motion:false });
+        
+        A.overrideFixed = async () => ({ result:'ok' });
+        A.overrideClear = async () => ({ result:'ok' });
+        A.patchSim = async () => ({ updated:true });
+        A.patchSystem = async () => ({ updated:true });
+        A.patchWifi = async () => ({ updated:true });
+        A.patchMotion = async () => ({ updated:true });
+        A.saveConfig = async () => ({ result:'saved' });
+        A.reload = async () => ({ result:'queued' });
+        A.ackEvent = async () => ({ result:'ok' });
+        A.selectProfile = async () => ({ result:'ok' });
+        A.stopProfile = async () => ({ result:'ok' });
+        A.scanWifi = async () => ({ wifi: { scan: [{ ssid: "TestWiFi1", rssi: -45, enc: "WPA2" }, { ssid: "TestWiFi2", rssi: -70, enc: "OPEN" }] } });
+        
+        // 가상 CRUD
+        A.addSchedule = async (b) => {
+            const list = cache.schedules.schedules || [];
+            const id = list.length + 1;
+            list.push(Object.assign({ schId:id, enabled:true, segCount: 1, period: {days:[1,1,1,1,1,1,1], startTime:"08:00", endTime:"20:00"} }, b.schedule || {}));
+            return { result:'created', id };
+        };
+        A.deleteSchedule = async (id) => {
+            cache.schedules.schedules = cache.schedules.schedules.filter(s => s.schId !== id);
+            return { deleted:true };
+        };
+        A.updateSchedule = async (id, b) => {
+            const idx = cache.schedules.schedules.findIndex(s => s.schId === id);
+            if (idx >= 0) Object.assign(cache.schedules.schedules[idx], b.schedule || {});
+            return { updated:true };
+        };
+        A.addProfile = async (b) => {
+            const list = cache.userProfiles.userProfiles.profiles || [];
+            const id = list.length + 1;
+            list.push(Object.assign({ profileId:id, enabled:true, segCount: 1 }, b.profile || {}));
+            return { result:'created', id };
+        };
+        A.deleteProfile = async (id) => {
+            cache.userProfiles.userProfiles.profiles = cache.userProfiles.userProfiles.profiles.filter(p => p.profileId !== id);
+            return { deleted:true };
+        };
+        A.updateProfile = async (id, b) => {
+            const list = cache.userProfiles.userProfiles.profiles;
+            const idx = list.findIndex(p => p.profileId === id);
+            if (idx >= 0) Object.assign(list[idx], b.profile || {});
+            return { updated:true };
+        };
+        A.gemini = async () => { throw new SNW.Api.ApiError(503); };
+        A.uploadFile = async () => { throw new SNW.Api.ApiError(503); };
+        A.uploadFirmware = async () => { throw new SNW.Api.ApiError(503); };
+    }
+
     function stubWs() {
         if (SNW.WsManager) {
             SNW.WsManager.initByLevel = () => {};
@@ -137,49 +153,31 @@ window.SNW = window.SNW || {};
         }
     }
 
-    // 7. Store 주기 갱신 (가상 WS 대체)
-    function startFakeWs() {
+    function startSimulator() {
         setInterval(() => {
-            if (SNW.Store) {
-                SNW.Store.set({ control: runtime.control, sim: runtime.sim, connection: 'online' });
-            }
-        }, 500);
+            if (!runtime.sim.active) return;
+            runtime.sim.windSpeed = 3 + Math.random() * 4;
+            runtime.sim.pwmDuty = runtime.sim.windSpeed * 10 + 10;
+            runtime.chart.push({ t: Date.now(), wind: runtime.sim.windSpeed, targetWind: 5.0, pwm: runtime.sim.pwmDuty, gust: 0, thermal: 0 });
+            if (runtime.chart.length > 120) runtime.chart.shift();
+            if (SNW.Store) SNW.Store.set({ control: runtime.control, sim: runtime.sim, connection: 'online' });
+        }, 1000);
     }
-    
-    // ======================================================
-	// 8. 부트스트랩 (API 강제 생성 → JSON 로드 → WS 스텁 → ready)
-	// ======================================================
-	SNW.Offline.ready = (async () => {
-		ensureApi(); // SNW.Api가 없어도 강제로 만듦
-		await loadAll();
-		stubWs();
-		startFakeWs();
-		console.log('[Offline] API 강제 생성 완료');
-		
-		// [수정] SNW.LevelUtil이 로드될 때까지 대기 후 L4 권한 강제 부여
-		let waitCount = 0;
-		while (!SNW.LevelUtil && waitCount < 40) { // 최대 2초 대기
-			await new Promise(r => setTimeout(r, 50));
-			waitCount++;
-		}
-		
-		if (SNW.LevelUtil) {
-			SNW.LevelUtil.current = () => 'L4';
-			SNW.LevelUtil.atLeast = (lvl) => true;
-			console.log('[Offline] 모든 메뉴 접근 권한(L4) 강제 활성화');
-		} else {
-			console.warn('[Offline] SNW.LevelUtil을 찾을 수 없습니다.');
-		}
-	})();
-	
-	// 9. 리다이렉트 (해시 정규화) -> Router가 알아서 처리하므로 제거함
-    // 9. 리다이렉트 (해시 정규화)
-    /*
-    setTimeout(() => {
-        if (location.hash === '' || location.hash === '#') {
-            location.replace(location.pathname + location.search + '#/dashboard');
-        }
-    }, 100);
-    */
-})(window.SNW);
 
+    SNW.Offline.ready = (async () => {
+        ensureApi();
+        await loadAll();
+        stubWs();
+        startSimulator();
+        
+        // L4 권한 강제 부여
+        let waitCount = 0;
+        while (!SNW.LevelUtil && waitCount < 40) { await new Promise(r => setTimeout(r, 50)); waitCount++; }
+        if (SNW.LevelUtil) {
+            SNW.LevelUtil.current = () => 'L4';
+            SNW.LevelUtil.atLeast = (lvl) => true;
+            console.log('[Offline] L4 권한 강제 부여');
+        }
+        console.log('[Offline] 준비 완료');
+    })();
+})(window.SNW);

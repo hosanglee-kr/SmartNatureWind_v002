@@ -23,11 +23,13 @@ src/v0200/
 │
 ├── Req_ImplPlan_0200/             # 요구사항 및 구현 계획서
 ├── User_Manual_0200/              # 사용자 매뉴얼
-├── tools_0201/                    # 빌드/검증 보조 도구
-│   └── pio_gzip_0201.py           # 웹 에셋 번들링 + Gzip 사전 압축
+├── tools_0201/                    # v0201 빌드/계약 도구 (pio_gzip_0201.py, commit_contracts_0201.py)
+├── tools_0200/                    # v0200 계약 검증 도구 (commit_contracts_0200.py) 및 참조 자료(Ref/)
 │
 ├── data_v0201_src/                # [웹 개발 원본] (31 JS + 10 CSS + HTML Shell)
 ├── data_v0201/                    # [배포 스테이징] LittleFS 이미지 대상 (json 10개 + html_v0201 3개 자산)
+├── data_src_v0200/                # [레거시 백업] v0200 원본 리소스
+├── data_v0200/                    # [레거시 백업] v0200 배포 리소스
 │
 └── [C++ 소스군, 0201 접미사]
     ├── main.cpp, A00_Main_0201.* (엔트리)
@@ -188,9 +190,8 @@ python src/v0200/tools_0200/commit_contracts_0200.py -m "docs(contracts): F-05 �
 ### 5.2 연계 검증 도구
 
 ```bash
-# 0200 → 0201 접미사 마이그레이션 (검증/적용)
-python src/v0200/tools_0200/migrate_to_0201.py --dry-run
-python src/v0200/tools_0200/migrate_to_0201.py --docs
+# 계약 문서 무결성 사전 검증 (CI Gate)
+python src/v0200/tools_0200/commit_contracts_0200.py --dry-run --strict
 
 # 웹 리소스 gzip 번들 빌드
 python src/v0200/tools_0201/pio_gzip_0201.py
@@ -235,7 +236,8 @@ git add -A && git commit -m "refactor(v0201): E-2 - 파일 분할 (29파일)"
 git add -A && git commit -m "refactor(v0201): F - 로직 정합성 (NVS reset, PATCH 헬퍼)"
 
 # 3. 문서 최종 커밋
-python src/v0200/tools_0200/commit_contracts_0200.py -m "docs(contracts): v0201 계약 문서 동기화 (A~F 반영)"
+python src/v0200/tools_0201/commit_contracts_0201.py -m "docs(contracts): v0201 계약 문서 동기화 (A~F 반영)"
+# (또는 v0200 스크립트: python src/v0200/tools_0200/commit_contracts_0200.py)
 ```
 
 ### 6.2 최종 검증 게이트

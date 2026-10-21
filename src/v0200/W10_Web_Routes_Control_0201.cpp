@@ -71,7 +71,7 @@ void CL_W10_WebAPI::routeControl() {
             p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
             return;
         }
-        CL_D10_Logger::log(EN_L10_LOG_WARN, "[W10] Factory Reset requested via /api/control/factoryReset.");
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[W10] Factory Reset requested via %s", W10_Const::HTTP_API_CTL_FACTORY);
         bool v_ok = CL_C10_ConfigManager::factoryResetFromDefault();
 
         JsonDocument v_doc;

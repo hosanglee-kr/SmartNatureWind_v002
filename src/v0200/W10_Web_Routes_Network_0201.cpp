@@ -190,7 +190,7 @@ void CL_W10_WebAPI::routeFirmwareCheck() {
         if (v_cmp < 0) {
             v_doc["status"]         = "available";
             v_doc["latest_version"] = v_latest_version;
-            v_doc["url"]            = "/api/v001/fwUpdate";
+            v_doc["url"]            = W10_Const::HTTP_API_FW_UPDATE;
         } else {
             v_doc["status"]         = "latest";
             v_doc["latest_version"] = v_current_version;

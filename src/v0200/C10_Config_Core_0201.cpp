@@ -579,12 +579,11 @@ bool CL_C10_ConfigManager::factoryResetFromDefault() {
         if (v_def["pages"].is<JsonArrayConst>() || v_def["webPage"].is<JsonObjectConst>()) {
             JsonDocument v_doc;
             if (v_def["webPage"].is<JsonObjectConst>()) {
-                v_doc["webPage"] = v_def["webPage"];
+                v_doc = v_def["webPage"];
             } else {
-                JsonObject v_web  = v_doc["webPage"].to<JsonObject>();
-                v_web["pages"]    = v_def["pages"];
-                v_web["reDirect"] = v_def["reDirect"];
-                v_web["assets"]   = v_def["assets"];
+                v_doc["pages"]    = v_def["pages"];
+                v_doc["reDirect"] = v_def["reDirect"];
+                v_doc["assets"]   = v_def["assets"];
             }
             if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.webPage, v_doc, true, true, __func__)) v_savedCnt++;
             else v_allSaveOk = false;

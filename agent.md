@@ -25,25 +25,30 @@
 
 - `src/main.cpp`: 아두이노 표준 메인 진입점. Serial/Logger 초기화 후 `A00_init()` 및 `A00_run()` 호출 위임.
 - `src/v0200/`: 핵심 비즈니스 로직 및 컴포넌트 디렉토리.
-  - `A00_Main_0201.cpp/h`: 부팅 초기화 시퀀스 및 FreeRTOS 메인 루프 위임.
-  - `A20_Const_0201.h`, `A20_Const_Const_0201.h`: 시스템 전역 상수(`G_JSON_VERSION`, 펌웨어 버전 등), 핀맵 기본값, PWM 타이밍.
-  - `A22~A29`: 공통 룩업테이블(`A22_Com_Lookup_0201.h`), 유틸리티(`A25_Com_Utils_0201.h`, `A25_Com_Utils_IO_0201.cpp`), 팩토리 리셋 헬퍼(`A23_Com_ResetCfg_0201.h`).
-  - `A30_LED_0201.h`: WS2812B NeoPixel RGB LED 상태 표시기 (7-State FSM 시각화).
-  - `C10_Config_0201.cpp/h`: 환경설정(JSON) 관리자 (`C10_Config_Sch_*`, `C10_Config_UzProf_*`, `C10_Config_WindDc_*` 모듈 분할).
-  - `CT10_Ctl_0201.cpp/h`: 팬 제어, 센서 연동, 시스템 상태 관리 및 WebSocket 브로커 (`CT10_Ctl_Basic/Ctl/StMG/IOWS`, `Seg/Ovr/Mode` 분할).
-  - `D10_Logger_0201.h`: 통합 링버퍼 로거 (`CL_D10_Logger`).
-  - `M10_MotionLogic_0201.h`: 풍향 및 모션 제어 로직.
-  - `N10_NvsManager_0201.cpp/h`: ESP32 NVS 플래시 메모리 관리자.
-  - `P10_PWM_ctrl_0201.h`: 25kHz 고주파 하드웨어 LEDC PWM 제어기.
-  - `S10_Simul_*.cpp/h`, `S20_WindSolver_0201.h`: 대기역학 물리 엔진 및 자연풍 수치해석 솔버.
-  - `TM10_TimeMg_0201.cpp/h`: NTP 동기화 및 RTC 시간 관리자.
-  - `W10_Web_*.cpp/h`: 비동기 웹서버, REST API 라우팅(`/api/v001/*`), WebSocket 핸들러(`/ws/*`).
-  - `WF10_WiFiMgr_0201.cpp/h`: Wi-Fi SoftAP(`NatureWind`/`2540`) 및 STA 연결/재연결 관리.
-  - `data_v0201_src/html_v0201/`: 개발 원본 웹 리소스 (HTML Shell, 10개 CSS, 31개 JS 모듈).
-  - `data_v0201/`: LittleFS 플래시용 배포 스테이징 디렉토리 (`json/` 10개 파일 + `html_v0201/` Level 9 Gzip 번들 자산).
-  - `tools_0201/`: 빌드 전처리 도구 (`pio_gzip_0201.py`).
-  - `contract_doc_0200/`: CBD v2.5 엔지니어링 계약서 7종 (`SPEC`, `CONTRACT`, `STATE`, `FLOW`, `BUDGET`, `TEST_PLAN`, `README`).
-  - `User_Manual_0200/`: v0200 공식 종합 사용자 매뉴얼 (`UserManual_0200_001.md`).
+  - `contract_doc_0200/`: CBD v2.5 엔지니어링 계약서 7종 (`SPEC`, `CONTRACT`, `STATE`, `FLOW`, `BUDGET`, `TEST_PLAN`, `README`) 및 용어집(`Ref/UI_TERMINOLOGY_0170.md`).
+  - `Req_ImplPlan_0200/`: 요구사항 정의서 및 리팩토링 구현 계획서.
+  - `User_Manual_0200/`: 공식 종합 사용자 매뉴얼 (`UserManual_0201_001.md`, `introduce_Doc_0201_001.md`).
+  - `tools_0201/`: 활성 빌드 전처리 도구 (`pio_gzip_0201.py` - PlatformIO extra_scripts 자동 번들/Gzip) 및 계약 커밋 도구 (`commit_contracts_0201.py`).
+  - `tools_0200/`: CBD 계약 검증 도구 (`commit_contracts_0200.py`), 레거시 도구 및 참조 자료(`Ref/`).
+  - `data_v0201_src/`: [웹 개발 원본] SPA 프론트엔드 리소스 (`html_v0201/` 내 HTML Shell, 10개 CSS, 31개 JS 모듈).
+  - `data_v0201/`: [배포 스테이징] LittleFS 플래시 대상 디렉토리 (`json/` 10개 설정 파일 + `html_v0201/` 3개 Gzip 번들 자산).
+  - `data_src_v0200/`, `data_v0200/`: [레거시 백업] v0200 멀티페이지 원본 및 LittleFS 배포 이미지 보관.
+  - **C++ 소스군 (`_0201` 접미사)**:
+    - `A00_Main_0201.cpp/h`: 부팅 초기화 시퀀스 및 FreeRTOS 메인 루프 위임.
+    - `A20_Const_*_0201.h`: 시스템 전역 상수(`A20_Const_0201.h`, `A20_Const_Const_0201.h`, `_Sys_`, `_Sch_`, `_Wifi_`, `_Motion_`, `_WS_`).
+    - `A22~A29`: 공통 룩업테이블(`A22_Com_Lookup_0201.h`), 팩토리 리셋 헬퍼(`A23_Com_ResetCfg_0201.h`), 유틸리티(`A25_Com_Utils_0201.h`, `A25_Com_Utils_IO_0201.cpp`).
+    - `A30_LED_0201.h`: WS2812B NeoPixel RGB LED 상태 표시기 (7-State FSM 시각화).
+    - `C10_Config_0201.h`: 환경설정(JSON) 관리자 (`C10_Config_Core/Extras/Sys_0201.cpp`, `_Sch_*` 5분할, `_UzProf_*` 5분할, `_WindDc_*` 5분할).
+    - `CT10_Ctl_0201.h`: 팬 제어, 센서 연동, 시스템 상태 관리 및 WebSocket 브로커 (`CT10_Ctl_Basic/Ctl/StMG/IOWS_0201.cpp`, `_Ctl_Seg/Ovr/Mode_0201.cpp`).
+    - `D10_Logger_0201.h`: 통합 링버퍼 로거 (`CL_D10_Logger`).
+    - `M10_MotionLogic_0201.h`: 풍향 및 모션 제어 로직.
+    - `N10_NvsManager_0201.cpp/h`: ESP32 NVS 플래시 메모리 관리자.
+    - `P10_PWM_ctrl_0201.h`: 25kHz 고주파 하드웨어 LEDC PWM 제어기 (헤더 인라인).
+    - `S10_Simul_0201.h`, `S10_Simul_Const_0201.h`, `S10_Simul_Core/Physic/IO_0201.cpp`: 대기역학 물리 엔진.
+    - `S20_WindSolver_0201.h`: 자연풍 수치해석 솔버 (헤더 인라인).
+    - `TM10_TimeMg_0201.cpp/h`: NTP 동기화 및 RTC 시간 관리자 (E-2.1 분리).
+    - `W10_Web_0201.h`, `W10_Web_Const_0201.h`: 비동기 웹서버 Core (`_Routes_0201.cpp`, `_Routes_System/Control/Config/Network/CRUD_0201.cpp`, `_Static/Upload/Util/WS/Gemini_0201.cpp`).
+    - `WF10_WiFiMgr_0201.cpp/h`: Wi-Fi SoftAP(`NatureWind`/`2540`) 및 STA 연결/재연결 관리.
 
 ---
 

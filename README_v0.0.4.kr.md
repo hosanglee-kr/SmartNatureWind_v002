@@ -27,7 +27,7 @@
 각 부문별 세부 회로도, 수치 모델, 동시성 계약, 상태 전이, API 규격 및 유지보수 절차는 아래의 상세 전문 문서를 참조하십시오.
 
 ### 1. 사용자 가이드 (User Manual)
-* 📖 [**Smart Nature Wind v0200 종합 사용자 매뉴얼**](src/v0200/User_Manual_0200/UserManual_0200_001.md)
+* 📖 [**Smart Nature Wind v0200 종합 사용자 매뉴얼**](src/v0200/User_Manual_0200/UserManual_0201_001.md)
   * 기기 설치, 배선, Wi-Fi(SoftAP/STA) 연결, 6대 웹 화면 조작법, 10대 프리셋 상세 해설, REST API/WebSocket 규격, 고장 진단 및 유지보수 가이드 수록.
 
 ### 2. 기술 사양 및 CBD v2.2 엔지니어링 계약서 (Engineering Contracts)
@@ -87,10 +87,10 @@
 
 | 모드 | 영문명 | 설명 | 상세 참조 |
 |---|---|---|---|
-| **자연풍 모드** | Natural Wind | 난류, 열기포, 돌풍 알고리즘이 결합되어 실시간으로 변화하는 자연스러운 기류를 생성합니다. | [매뉴얼 §6.1](src/v0200/User_Manual_0200/UserManual_0200_001.md#61-자연풍-시뮬레이션-모드-natural-wind) |
-| **정속 모드** | Constant | 사용자가 지정한 고정 세기(0~100%)로 일정하게 팬을 구동합니다. | [매뉴얼 §6.2](src/v0200/User_Manual_0200/UserManual_0200_001.md#62-정속-모드-constant) |
-| **온도 감응 모드** | Temp-Auto | DHT22 센서의 실내 온도를 바탕으로 풍속을 지능적으로 자동 조정합니다. | [매뉴얼 §6.3](src/v0200/User_Manual_0200/UserManual_0200_001.md#63-온도-감응-자동-모드-temp-auto) |
-| **스케줄 모드** | Schedule | 요일 및 시간대별로 지정된 프리셋과 풍속 규칙에 따라 자동으로 동작합니다. | [매뉴얼 §6.4](src/v0200/User_Manual_0200/UserManual_0200_001.md#64-스케줄-모드-schedule) |
+| **자연풍 모드** | Natural Wind | 난류, 열기포, 돌풍 알고리즘이 결합되어 실시간으로 변화하는 자연스러운 기류를 생성합니다. | [매뉴얼 §6.1](src/v0200/User_Manual_0200/UserManual_0201_001.md#61-자연풍-시뮬레이션-모드-natural-wind) |
+| **정속 모드** | Constant | 사용자가 지정한 고정 세기(0~100%)로 일정하게 팬을 구동합니다. | [매뉴얼 §6.2](src/v0200/User_Manual_0200/UserManual_0201_001.md#62-정속-모드-constant) |
+| **온도 감응 모드** | Temp-Auto | DHT22 센서의 실내 온도를 바탕으로 풍속을 지능적으로 자동 조정합니다. | [매뉴얼 §6.3](src/v0200/User_Manual_0200/UserManual_0201_001.md#63-온도-감응-자동-모드-temp-auto) |
+| **스케줄 모드** | Schedule | 요일 및 시간대별로 지정된 프리셋과 풍속 규칙에 따라 자동으로 동작합니다. | [매뉴얼 §6.4](src/v0200/User_Manual_0200/UserManual_0201_001.md#64-스케줄-모드-schedule) |
 
 > 💡 상태 전이 규칙과 Fail-Safe 조건은 [STATE_0200.md](src/v0200/contract_doc_0200/STATE_0200.md) 문서를 참조하십시오.
 
@@ -113,7 +113,7 @@
 | **9** | **열대 소나기 바람 (Tropical Rain)** | 예측 불가능한 역동적 난류 / 불규칙 돌풍 | 레이싱 콕핏, 게이밍 |
 | **10**| **사막의 밤 바람 (Desert Night)** | 건조하고 고요한 지속 산들바람 | 심야 작업, 깊은 집중 |
 
-> 💡 프리셋별 기저 풍속, 난류 강도, 돌풍 주기 등 물리 파라미터 상세표는 [사용자 매뉴얼 §7](src/v0200/User_Manual_0200/UserManual_0200_001.md#7-10종-자연풍-환경-프리셋-상세-해설)을 참조하십시오.
+> 💡 프리셋별 기저 풍속, 난류 강도, 돌풍 주기 등 물리 파라미터 상세표는 [사용자 매뉴얼 §7](src/v0200/User_Manual_0200/UserManual_0201_001.md#7-10종-자연풍-환경-프리셋-상세-해설)을 참조하십시오.
 
 ---
 
@@ -133,7 +133,7 @@
 2. 실내 공유기의 Wi-Fi SSID와 비밀번호를 입력하고 **[저장 및 재부팅]**을 클릭합니다.
 3. 기기가 공유기에 연결되면 할당받은 IP(예: `http://192.168.0.x`)로 접속하여 사용합니다.
 
-> 💡 상세한 초기 설정 및 화면 가이드는 [사용자 매뉴얼 §4](src/v0200/User_Manual_0200/UserManual_0200_001.md#4-최초-설정-및-네트워크-연결-quick-start)를 참조하십시오.
+> 💡 상세한 초기 설정 및 화면 가이드는 [사용자 매뉴얼 §4](src/v0200/User_Manual_0200/UserManual_0201_001.md#4-최초-설정-및-네트워크-연결-quick-start)를 참조하십시오.
 
 ---
 
@@ -184,7 +184,7 @@
 +-------------------------------------------------------------+
 ```
 
-> 💡 핀 번호 변경 및 상세 전기적 인터페이스는 [사용자 매뉴얼 §3](src/v0200/User_Manual_0200/UserManual_0200_001.md#3-하드웨어-구성-및-배선-가이드) 및 [SPEC_0200.md §2](src/v0200/contract_doc_0200/SPEC_0200.md)를 참조하십시오.
+> 💡 핀 번호 변경 및 상세 전기적 인터페이스는 [사용자 매뉴얼 §3](src/v0200/User_Manual_0200/UserManual_0201_001.md#3-하드웨어-구성-및-배선-가이드) 및 [SPEC_0200.md §2](src/v0200/contract_doc_0200/SPEC_0200.md)를 참조하십시오.
 
 ---
 
@@ -240,7 +240,7 @@
 * `POST /api/v001/ai/gemini` : Gemini AI 프록시 통신
 * `/ws/state`, `/ws/chart`, `/ws/metrics`, `/ws/log`, `/ws/summary` : 실시간 5개 채널 WebSocket 스트리밍
 
-> 💡 웹 화면별 상세 기능은 [사용자 매뉴얼 §5](src/v0200/User_Manual_0200/UserManual_0200_001.md#5-웹-인터페이스-메뉴-가이드), API 명세는 [사용자 매뉴얼 §9](src/v0200/User_Manual_0200/UserManual_0200_001.md#9-rest-api--websocket-명세) 및 [SPEC_0200.md §4](src/v0200/contract_doc_0200/SPEC_0200.md)를 참조하십시오.
+> 💡 웹 화면별 상세 기능은 [사용자 매뉴얼 §5](src/v0200/User_Manual_0200/UserManual_0201_001.md#5-웹-인터페이스-메뉴-가이드), API 명세는 [사용자 매뉴얼 §9](src/v0200/User_Manual_0200/UserManual_0201_001.md#9-rest-api--websocket-명세) 및 [SPEC_0200.md §4](src/v0200/contract_doc_0200/SPEC_0200.md)를 참조하십시오.
 
 ---
 
@@ -265,7 +265,7 @@ Smart Nature Wind의 핵심은 단순 랜덤 함수 난수 생성이 아닌, **�
 3. **돌풍 모델 (Gust Envelope)**: 점진적으로 바람이 강해졌다가 완만하게 사그라드는 비대칭 포락선 형태의 돌풍을 생성합니다.
 4. **관성 완충 (Inertia Filter)**: 팬 날개 모터 및 공기 질량의 물리적 관성을 반영하여 급격한 속도 튐 없이 매끄러운 가감속을 유지합니다.
 
-> 💡 수치 연산 공식 및 프리셋별 상세 파라미터는 [사용자 매뉴얼 §7](src/v0200/User_Manual_0200/UserManual_0200_001.md#7-10종-자연풍-환경-프리셋-상세-해설)을 참조하십시오.
+> 💡 수치 연산 공식 및 프리셋별 상세 파라미터는 [사용자 매뉴얼 §7](src/v0200/User_Manual_0200/UserManual_0201_001.md#7-10종-자연풍-환경-프리셋-상세-해설)을 참조하십시오.
 
 ---
 
@@ -273,11 +273,11 @@ Smart Nature Wind의 핵심은 단순 랜덤 함수 난수 생성이 아닌, **�
 
 | 증상 | 원인 및 점검 사항 | 빠른 조치 방법 | 상세 가이드 |
 |---|---|---|---|
-| **팬이 전혀 돌지 않음** | 5V 전원 미공급 또는 PWM 핀 배선 불량 | 5V/GND 배선 및 설정 화면의 PWM GPIO(기본 GPIO 6) 점검 | [매뉴얼 §12.1](src/v0200/User_Manual_0200/UserManual_0200_001.md#121-자주-묻는-질문-faq) |
-| **웹 페이지 접속 불가** | LittleFS 파일 미업로드 또는 다른 Wi-Fi 접속 | `pio run --target uploadfs` 수행 및 `NatureWind` AP 연결 확인 | [매뉴얼 §12.2](src/v0200/User_Manual_0200/UserManual_0200_001.md#122-증상별-자가-진단-가이드) |
-| **팬이 최고속도로만 회전** | PWM 제어선 단선 또는 모터 최소 듀티 설정 | PWM 신호선(Blue) 결선 점검 및 최저 구동 속도 재설정 | [매뉴얼 §12.2](src/v0200/User_Manual_0200/UserManual_0200_001.md#122-증상별-자가-진단-가이드) |
-| **풍속 변화가 느껴지지 않음** | 현재 모드가 '정속(Constant)' 상태임 | 메인 화면에서 '자연풍(Natural Wind)' 모드로 변경 | [매뉴얼 §5.1](src/v0200/User_Manual_0200/UserManual_0200_001.md#51-메인-대시보드-화면-p010_main_0200html) |
-| **온도/습도 센서 값 표기 안 됨** | DHT22 풀업 저항 누락 또는 핀 번호 오류 | GPIO 17 설정 확인 및 VCC-Data 간 10kΩ 풀업 저항 장착 | [매뉴얼 §12.2](src/v0200/User_Manual_0200/UserManual_0200_001.md#122-증상별-자가-진단-가이드) |
+| **팬이 전혀 돌지 않음** | 5V 전원 미공급 또는 PWM 핀 배선 불량 | 5V/GND 배선 및 설정 화면의 PWM GPIO(기본 GPIO 6) 점검 | [매뉴얼 §12.1](src/v0200/User_Manual_0200/UserManual_0201_001.md#121-자주-묻는-질문-faq) |
+| **웹 페이지 접속 불가** | LittleFS 파일 미업로드 또는 다른 Wi-Fi 접속 | `pio run --target uploadfs` 수행 및 `NatureWind` AP 연결 확인 | [매뉴얼 §12.2](src/v0200/User_Manual_0200/UserManual_0201_001.md#122-증상별-자가-진단-가이드) |
+| **팬이 최고속도로만 회전** | PWM 제어선 단선 또는 모터 최소 듀티 설정 | PWM 신호선(Blue) 결선 점검 및 최저 구동 속도 재설정 | [매뉴얼 §12.2](src/v0200/User_Manual_0200/UserManual_0201_001.md#122-증상별-자가-진단-가이드) |
+| **풍속 변화가 느껴지지 않음** | 현재 모드가 '정속(Constant)' 상태임 | 메인 화면에서 '자연풍(Natural Wind)' 모드로 변경 | [매뉴얼 §5.1](src/v0200/User_Manual_0200/UserManual_0201_001.md#51-메인-대시보드-화면-p010_main_0200html) |
+| **온도/습도 센서 값 표기 안 됨** | DHT22 풀업 저항 누락 또는 핀 번호 오류 | GPIO 17 설정 확인 및 VCC-Data 간 10kΩ 풀업 저항 장착 | [매뉴얼 §12.2](src/v0200/User_Manual_0200/UserManual_0201_001.md#122-증상별-자가-진단-가이드) |
 
 ---
 

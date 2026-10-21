@@ -14,3 +14,4 @@ src/v0200/data_v0201/html_v0201/
 # --- Graphify Cache & Date Backups ---
 graphify-out/cache/
 graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
+graphify-out/*.lock

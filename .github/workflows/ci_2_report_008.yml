@@ -1,7 +1,7 @@
 # =====================================================================
 # .github/workflows/ci_2_report_008.yml
 # ---------------------------------------------------------------------
-# Smart Nature Wind (v0200 / v0201) PR 빌드 실패 리포트 파이프라인 (에이전트 단일 컨텍스트 집약형)
+# Smart Nature Wind (v0202) PR 빌드 실패 리포트 파이프라인 (에이전트 단일 컨텍스트 집약형)
 #
 # [설계 원칙]
 #   1. 단일 본문 집약 (No Multi-Comment):
@@ -294,8 +294,7 @@ jobs:
                   `   - CBD v2.5 계약 문서 7종 무결성 또는 포맷 위반`,
                   `   - **로컬 검증 커맨드**:`,
                   `     \`\`\`bash`,
-                  `     python src/v0200/tools_0201/commit_contracts_0201.py --dry-run --strict`,
-                  `     # 또는: python src/v0200/tools_0200/commit_contracts_0200.py --dry-run --strict`,
+                  `     python src/v0202/tools_0202/commit_contracts_0202.py --dry-run --strict`,
                   `     \`\`\``,
                   `2. **\`platformio.ini\` 설정 오류**:`,
                   `   - 환경 구문 파싱 실패 또는 \`default_envs\` 미존재`,
@@ -337,16 +336,16 @@ jobs:
             const quickContext = [
               `## ⚡ AI 에이전트 작업 가이드 (Quick Context)`,
               ``,
-              `- **활성 펌웨어 / 소스 버전**: \`v0200\` (C++ 백엔드 \`_0201\` 접미사 / LittleFS \`data_v0201\`)`,
+              `- **활성 펌웨어 / 소스 버전**: \`v0202\` (C++ 백엔드 \`_0202\` 접미사 / LittleFS \`data_v0202\`)`,
               `- **개발 규칙 SSOT**: [\`agent.md\`](https://github.com/${owner}/${repo}/blob/${meta.head_sha || 'main'}/agent.md)`,
               `- **실패 환경 / 단계**: \`${envNamesShort}\``,
-              `- **로컬 재현 커맨드**: \`pio run -e esp32-s3-n16r8\` (또는 \`python src/v0200/tools_0201/commit_contracts_0201.py --dry-run --strict\`)`,
+              `- **로컬 재현 커맨드**: \`pio run -e esp32-s3-n16r8\` (또는 \`python src/v0202/tools_0202/commit_contracts_0202.py --dry-run --strict\`)`,
               `- **우선 수정 소스**: ${allPrj.length ? allPrj.slice(0, 5).map(f => `\`${f}\``).join(', ') + (allPrj.length > 5 ? ` … (+${allPrj.length - 5})` : '') : '_파일 특정 불가 또는 사전 게이트 실패_'}`,
               `- **전체 로그 확인**: [Actions Run 링크](${process.env.RUN_URL}) (아티팩트 보존 기간: 7일)`,
               ``,
               `**🤖 에이전트 CLI 실행 가이드:**`,
               '```bash',
-              `gh issue view ${prNumber} | antigravity "agent.md와 contract_doc_0200 규칙을 준수하여 src/v0200/ 활성 소스의 에러를 분석 및 수정하고, pio run으로 로컬 빌드를 검증하십시오."`,
+              `gh issue view ${prNumber} | antigravity "agent.md와 contract_doc_0202 규칙을 준수하여 src/v0202/ 활성 소스의 에러를 분석 및 수정하고, pio run으로 로컬 빌드를 검증하십시오."`,
               '```',
               ``,
             ].join('\n');

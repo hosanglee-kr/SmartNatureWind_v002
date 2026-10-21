@@ -18,8 +18,8 @@
 #   4. 파일시스템 로그 연속성:
 #      - buildfs 실행 로그를 pio-build.log에 append(tee -a)하여 파일시스템 실패 원인 누락을 차단함.
 #   5. 계약 문서 검증:
-#      - build 전 계약 문서 무결성 gate(commit_contracts_0200.py)를 수행하여 계약 위반 머지를 차단함.
-#      - commit_contracts_0200.py를 --dry-run/--strict로 실행.
+#      - build 전 계약 문서 무결성 gate(commit_contracts_0202.py)를 수행하여 계약 위반 머지를 차단함.
+#      - commit_contracts_0202.py를 --dry-run/--strict로 실행.
 #      - 실패 시 build job을 needs 의존으로 자동 스킵하여 조기 실패 유도.
 # =====================================================================
 
@@ -112,8 +112,8 @@ jobs:
         shell: bash
         run: |
           set -e
-          echo "=== [1/1] commit_contracts_0200 (dry-run, strict) ==="
-          python3 src/v0200/tools_0200/commit_contracts_0200.py --dry-run --strict
+          echo "=== [1/1] commit_contracts_0202 (dry-run, strict) ==="
+          python3 src/v0202/tools_0202/commit_contracts_0202.py --dry-run --strict
           echo "=== [OK] 계약 문서 검증 통과 ==="
 
       # ---------------------------------------------------------------
@@ -167,7 +167,7 @@ jobs:
             echo "  - platformio.ini 문법 및 섹션 네이밍"
             echo "  - [env:*] 섹션 정의 여부"
             echo "  - default_envs 파라미터 유효성"
-            echo "  - 계약 문서 검증(commit_contracts_0200.py)"
+            echo "  - 계약 문서 검증(commit_contracts_0202.py)"
             echo "--- 러너 환경 정보 ---"
             uname -a
             python3 --version || true
@@ -239,8 +239,8 @@ jobs:
         if: success()
         shell: bash
         run: |
-          DATA_DIR=$(python3 -c "import configparser; c=configparser.ConfigParser(); c.read('platformio.ini'); print(c.get('platformio', 'data_dir', fallback='data'))" 2>/dev/null || echo "src/v0200/data_v0200")
-          if [ -d "$DATA_DIR" ] || [ -d "data" ] || [ -d "src/data" ] || [ -d "src/v0200/data_v0200" ]; then
+          DATA_DIR=$(python3 -c "import configparser; c=configparser.ConfigParser(); c.read('platformio.ini'); print(c.get('platformio', 'data_dir', fallback='data'))" 2>/dev/null || echo "src/v0202/data_v0202")
+          if [ -d "$DATA_DIR" ] || [ -d "data" ] || [ -d "src/data" ] || [ -d "src/v0202/data_v0202" ]; then
             set +e
             echo -e "\n=== Starting buildfs target (data_dir: $DATA_DIR) ===" | tee -a pio-build.log
             pio run -e ${{ matrix.environments }} --target buildfs 2>&1 | tee -a pio-build.log

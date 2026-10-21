@@ -21,11 +21,11 @@
  * [API / WS 진입점]
  *  - REST     : /api/v001/*
  *  - WebSocket: /ws/{log|state|chart|metrics|summary}
- *  - Web UI   : /  →  /P010_main_0200.html (reDirect)
+ *  - Web UI   : /  →  /P010_main_0202.html (reDirect)
  * ------------------------------------------------------
  * [구현 규칙]
  *  - 본 파일은 엔트리포인트 역할만 수행 (비즈니스 로직 금지)
- *  - 실제 초기화/루프 구현은 A00_Main_0201 로 위임
+ *  - 실제 초기화/루프 구현은 A00_Main_0202 로 위임
  *  - Logger 는 A00_init 이전에 초기화 (부팅 로그 확보 목적)
  * ------------------------------------------------------
  */
@@ -33,8 +33,8 @@
 #include <Arduino.h>
 #include <LittleFS.h>
 
-#include "v0200/A00_Main_0201.h"
-#include "v0200/A20_Const_Const_0201.h"   // [E-10] 부트 지연 상수
+#include "v0202/A00_Main_0202.h"
+#include "v0202/A20_Const_Const_0202.h"   // [E-10] 부트 지연 상수
 
 // ======================================================
 // Arduino setup() — 부팅 시 1회 실행
@@ -62,7 +62,7 @@ void setup() {
     // 2) Logger 초기화 + 로그 레벨 설정
     //  - [F-4] 초기 레벨은 안전값 INFO.
     //    system.logging.level config 로드 후
-    //    W10::applySystemRuntimeFromConfig()가 자동 재설정.
+    //    W10::applySystemRuntimeFromConfig가 자동 재설정.
     //  - 개발 디버깅 시 EN_L10_LOG_DEBUG로 임시 변경 후 사용.
     // --------------------------------------------------
     CL_D10_Logger::begin(Serial);
@@ -88,7 +88,7 @@ void setup() {
     Serial.println("Access endpoints:");
     Serial.println("   REST      : /api/v001/{version|state|system|motion|config|...}");
     Serial.println("   WebSocket : /ws/{log|state|chart|metrics|summary}");
-    Serial.println("   Web UI    : /  (→ /P010_main_0200.html)");
+    Serial.println("   Web UI    : /  (→ /P010_main_0202.html)");
     Serial.println();
 }
 

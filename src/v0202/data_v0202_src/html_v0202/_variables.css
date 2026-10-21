@@ -1,0 +1,102 @@
+/*
+ * ------------------------------------------------------
+ * 소스명   : _variables.css
+ * 레이어   : CSS (빌드 시 P000_common_0200.css로 concat)
+ * 기능 요약:
+ *  - CSS 커스텀 프로퍼티(변수) 정의
+ *  - 다크/라이트 모드 자동 전환 (prefers-color-scheme)
+ *  - 색상/간격/폰트/그림자/애니메이션 통합 관리
+ * ------------------------------------------------------
+ */
+
+:root {
+    /* 색상 (다크 기본) */
+    --snw-bg: #0f1419;
+    --snw-bg-2: #0a0f14;
+    --snw-surface: #1a2028;
+    --snw-surface-2: #232b36;
+    --snw-surface-3: #2f3844;
+    --snw-border: #2f3844;
+    --snw-border-hi: #4a5563;
+    
+    /* 텍스트 */
+    --snw-text: #e6edf3;
+    --snw-text-dim: #8b949e;
+    --snw-text-faint: #59636e;
+    
+    /* 액션 컬러 */
+    --snw-primary: #4a9eff;
+    --snw-primary-hover: #3a8eef;
+    --snw-success: #3fb950;
+    --snw-warn: #d29922;
+    --snw-error: #f85149;
+    --snw-info: #58a6ff;
+    
+    /* 상태 배지 컬러 */
+    --snw-state-gray: #59636e;
+    --snw-state-blue: #4a9eff;
+    --snw-state-green: #3fb950;
+    --snw-state-cyan: #2dd4bf;
+    --snw-state-yellow: #d29922;
+    --snw-state-orange: #f0883e;
+    --snw-state-red: #f85149;
+    
+    /* 차트 컬러 */
+    --snw-chart-wind: #4a9eff;
+    --snw-chart-target: #9aa5b1;
+    --snw-chart-pwm: #f5a623;
+    
+    /* 폰트 */
+    --snw-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, "Apple SD Gothic Neo",
+        "Malgun Gothic", sans-serif;
+    --snw-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    
+    /* 크기 */
+    --snw-radius: 8px;
+    --snw-radius-lg: 12px;
+    --snw-radius-sm: 4px;
+    --snw-spacing: 12px;
+    --snw-spacing-sm: 8px;
+    --snw-spacing-lg: 20px;
+    
+    /* 헤더/사이드바/푸터 */
+    --snw-header-h: 56px;
+    --snw-footer-h: 40px;
+    --snw-sidebar-w: 220px;
+    
+    /* 그림자 */
+    --snw-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --snw-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    --snw-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+    
+    /* 전환 */
+    --snw-transition: 0.2s ease;
+    --snw-transition-fast: 0.1s ease;
+    
+    /* z-index */
+    --snw-z-sidebar: 100;
+    --snw-z-header: 50;
+    --snw-z-toast: 1000;
+    --snw-z-modal: 900;
+}
+
+/* 라이트 모드 자동 전환 */
+@media (prefers-color-scheme: light) {
+    :root {
+        --snw-bg: #f6f8fa;
+        --snw-bg-2: #ffffff;
+        --snw-surface: #ffffff;
+        --snw-surface-2: #f0f3f6;
+        --snw-surface-3: #e6ebf0;
+        --snw-border: #d0d7de;
+        --snw-border-hi: #b0b8c0;
+        --snw-text: #1f2328;
+        --snw-text-dim: #59636e;
+        --snw-text-faint: #8b949e;
+        
+        --snw-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+        --snw-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        --snw-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
+    }
+}

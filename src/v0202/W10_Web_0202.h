@@ -1,0 +1,218 @@
+#pragma once
+
+/*
+ * ------------------------------------------------------
+ * 소스명 : W10_Web_0202.h
+ * 모듈약어 : W10
+ * 모듈명 : Smart Nature Wind Web API Manager (v030)
+ * ------------------------------------------------------
+ * 기능 요약:
+ * - REST API 엔드포인트 선언 및 유틸리티 함수 포함.
+ * - WebSocket 정적 멤버 포인터 포함.
+ * - ArduinoJson v7.4.x 사용
+ * ------------------------------------------------------
+ * [구현 규칙]
+ * - 항상 소스 시작 주석 체계 유지 및 내용 업데이트
+ * - ArduinoJson v7.x.x 사용 (v6 이하 사용 금지)
+ * - JsonDocument 단일 타입만 사용
+ * - createNestedArray/Object/containsKey 사용 금지
+ * - memset + strlcpy 기반 안전 초기화
+ * - 주석/필드명은 JSON 구조와 동일하게 유지
+ * ------------------------------------------------------
+ * [코드 네이밍 규칙]
+ * - 전역 상수,매크로      : G_모듈약어_ 접두사
+ * - 전역 변수             : g_모듈약어_ 접두사
+ * - 전역 함수             : 모듈약어_ 접두사
+ * - type                  : T_모듈약어_ 접두사
+ * - typedef               : _t  접미사
+ * - enum 상수             : EN_모듈약어_ 접두사
+ * - 구조체                : ST_모듈약어_ 접두사
+ * - 클래스명              : CL_모듈약어_ 접두사
+ * - 클래스 private 멤버   : _ 접두사
+ * - 클래스 멤버(함수/변수) : 모듈약어 접두사 미사용
+ * - 클래스 정적 멤버      : s_ 접두사
+ * ------------------------------------------------------
+ */
+
+#include <Arduino.h>
+#include <ArduinoJson.h>
+#include <ESPAsyncWebServer.h>
+#include <LittleFS.h>
+#include <Update.h>    // OTA
+#include <WiFiMulti.h> // WiFiMulti
+
+#include <vector>
+
+#include "A20_Const_0202.h"
+#include "C10_Config_0202.h"
+#include "CT10_Ctl_0202.h"
+#include "D10_Logger_0202.h"
+#include "N10_NvsManager_0202.h"
+#include "W10_Web_Const_0202.h"
+#include "WF10_WiFiMgr_0202.h"
+
+// ------------------------------------------------------
+// WebAPI Manager
+// ------------------------------------------------------
+class CL_W10_WebAPI {
+  public:
+    // --------------------------------------------------
+    // 초기화
+    // --------------------------------------------------
+    // v029: WiFiMulti 인자 포함
+    static void begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_control);
+
+    // cleanupClients 주기 tick (권장)
+    static void wsCleanupTick();
+
+    // --------------------------------------------------
+    // 브로드캐스트 (WebSockets.cpp)
+    // --------------------------------------------------
+    static void broadcastState(JsonDocument& p_doc, bool p_diffOnly = true);
+    static void broadcastMetrics(JsonDocument& p_doc, bool p_diffOnly = true);
+    static void broadcastChart(JsonDocument& p_doc, bool p_diffOnly = true);
+    static void broadcastSummary(JsonDocument& p_doc, bool p_diffOnly = true);
+
+    // ======================================================
+    // [F-05] system 설정 런타임 반영 (Logger level, hostname 등)
+    //  - W10 라우트(routeSystem/routeTimeSet) 뿐 아니라
+    //    A00_run()에서 pending reload 완료 후에도 호출됨
+    //  - 이전: file-static _applySystemRuntime() → private
+    //  - 변경: public static method로 승격
+    // ======================================================
+    static void applySystemRuntimeFromConfig(const ST_A20_SystemConfig_t& p_sys);
+  
+  private:
+    // --------------------------------------------------
+    // 정적 멤버 (Routes.cpp, WebSockets.cpp, Static.cpp, Upload.cpp 공유)
+    // --------------------------------------------------
+    static AsyncWebServer*         s_server;
+    static CL_CT10_ControlManager* s_control;
+
+    static fs::File      s_upFile;
+    inline static bool   s_uploadError         = false;           // 업로드 중 오류 발생 여부
+    inline static size_t s_uploadTotal         = 0;               // 누적 바이트 수
+    static const size_t  G_W10_MAX_UPLOAD_SIZE = 2 * 1024 * 1024; // 2MB 제한
+
+    // WebSocket Servers
+    static AsyncWebSocket* s_wsServerState;
+    static AsyncWebSocket* s_wsServerLogs;
+    static AsyncWebSocket* s_wsServerChart;
+    static AsyncWebSocket* s_wsServerMetrics;
+    static AsyncWebSocket* s_wsServerSummary;
+
+    // --------------------------------------------------
+    // Static Assets & Menu (W10_Web_Static_032.cpp)
+    // --------------------------------------------------
+
+    // JSON 파일 경로 (v032)
+    static const char* G_W10_PAGES_JSON;
+
+    // 페이지 엔트리 구조체 (메뉴 및 메타 정보용)
+    struct ST_W10_PageEntry_t {
+        int    order;
+        String uri;
+        String path;
+        String label;
+        bool   isMain;
+        bool   enable;
+    };
+
+    // 메뉴 API에 필요한 전역 상태 (정적 멤버로 관리)
+    struct ST_W10_MenuState_t {
+        std::vector<ST_W10_PageEntry_t> pages_sorted; // /api/v1/menu 응답용 정렬된 리스트
+        String                          main_path;    // isMain == true 인 첫 번째 페이지 path
+
+        ST_W10_MenuState_t() : pages_sorted(), main_path() {}
+    };
+
+    // 메뉴 상태 (Static.cpp에서만 사용)
+    static ST_W10_MenuState_t s_menu_state;
+
+    static const char* W10_guessMime(const char* p_path);
+    static bool        W10_loadPagesJson(JsonDocument& p_doc, uint16_t& p_page_count, uint16_t& p_asset_count);
+    static void        W10_registerStaticRoute(const char* p_uri, const char* p_file, const char* p_mime);
+    static void        W10_registerGzipServe();
+    static void        W10_getMenuJson(AsyncWebServerRequest* r);
+
+    static String getUploadPath(const String& p_filename);
+
+    // --------------------------------------------------
+    // 라우팅 선언 (Routes.cpp)
+    // --------------------------------------------------
+    // 1. 시스템 정보 조회 및 진단 (GET)
+    static void routeVersion();  // GET /api/v001/version
+    static void routeState();    // GET /api/v001/state
+    static void routeDiag();     // GET /api/v001/diag
+    static void routeMetrics();  // GET /api/v001/metrics
+    static void routeLogs();     // GET /api/v001/logs
+    static void routeAuthTest(); // GET /api/v001/auth/test
+    
+    // 2. 설정 조회 및 패치/CRUD (GET/POST/PUT/DELETE)
+    static void routeSystem();            // GET/POST/PATCH /api/v001/system
+    static void routeMotion();            // GET/POST/PATCH /api/v001/motion
+    static void routeUserProfiles();      // GET/POST /api/v001/user_profiles
+    static void routeUserProfilesID();    // PUT/DELETE /api/v001/user_profiles/{id}
+    static void routeUserProfilesPatch(); // POST /api/v001/user_profiles/patch
+    
+    // 3. 설정 관리 및 저장/적용 (POST/GET)
+    static void routeConfigDirtySave(); // GET/POST /api/v001/config , /config/save , /config/dirty
+    static void routeReload();          // POST /api/v001/reload
+    static void routeConfigInit();      // POST /api/v001/config/init
+    
+    // 4. 네트워크 및 펌웨어 관리 (GET/POST)
+    static void routeScan();          // GET  /api/v001/wifi/scan
+    static void routeWifiState();     // GET  /api/v001/wifi/state
+    static void routeWifiConfig();    // GET/POST/PATCH /api/v001/wifi/config
+    
+    static void routeTimeSet();       // POST /api/v001/system/time/set
+    static void routeFirmwareCheck(); // GET  /api/v001/system/firmware/check
+    static void routeUpload();        // POST /api/v001/fileUpload
+    static void routeUpdate();        // POST /api/v001/fwUpdate
+    
+    // 4-1. AI 프록시
+    static void routeGeminiProxy(); // POST /api/v001/ai/gemini
+    
+    // 5. 제어 및 상태 요약 (POST/GET)
+    static void routeControl();        // 여러 제어용 /api/v001/control/*
+    static void routeControlSummary(); // GET  /api/v001/control/summary
+    static void routeMotionFeed();     // POST /api/v001/motion/pir/feed
+    
+    // 6. 시뮬레이션 제어 (GET/POST)
+    static void routeSimulation(); // GET/POST /api/v001/simulation
+    static void routeSimState();   // GET /api/v001/sim/state
+    
+    // 7. CRUD: Wind Profiles
+    static void routeWindProfile();   // GET/POST /api/v001/windProfile
+    static void routeWindProfileID(); // PUT/DELETE /api/v001/windProfile/{id}
+    
+    // 8. CRUD: Schedules
+    static void routeSchedules();   // GET/POST /api/v001/schedules
+    static void routeSchedulesID(); // PUT/DELETE /api/v001/schedules/{id}
+    
+    // 9. 정적 파일 및 웹소켓
+    static void routeStaticAssets(); // JSON 기반 static routes
+    static void routeWebSocket();    // WS 라우트 초기화
+
+  public:
+    // --------------------------------------------------
+    // 유틸리티 함수
+    // --------------------------------------------------
+    static void _broadcast(AsyncWebSocket* p_ws, JsonDocument& p_doc, bool p_diffOnly);
+
+    // 공통 헤더 적용
+    static void _applyHeaders(AsyncWebServerResponse* p_response, bool p_nocache);
+
+    static void sendJson(AsyncWebServerRequest* p_request, JsonDocument& p_doc, int p_code = 200);
+
+    // W10_Web_070.h 안에서 기존 sendText 교체
+    static void sendText(AsyncWebServerRequest* p_request,
+                                const String&          p_msg,
+                                int                    p_code = 200,
+                                const char*            p_mime = "text/plain; charset=utf-8");
+    // API Key 검사
+    static bool checkApiKey(AsyncWebServerRequest* p_request);
+
+    // JSON Body 파싱
+    static bool parseJsonBody(AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, JsonDocument& p_doc);
+};

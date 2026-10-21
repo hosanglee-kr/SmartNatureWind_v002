@@ -55,11 +55,13 @@
 | **`POST /api/v001/wifi/config`** (POST/PATCH) | **F-3 `_routeWifiConfigPatchBody`** | **< 10 ms** | 헬퍼, `requestReconnect` 즉시 |
 | `POST /api/v001/config/save` | `saveDirtyConfigs()` | 50 ~ 200 ms | 명시적 저장 요청 (동기 I/O 허용) |
 | `POST /api/v001/control/factoryReset` | `factoryResetFromDefault()` + **F-1** `N10::resetRuntime()` | 100 ~ 300 ms | NVS resetRuntime 추가 (F-1) |
+| **`POST /api/v001/control/ack`** | `ackEventState()` | **< 1 ms** | AUTOOFF 래치 해제 |
+| **`GET /api/v001/wifi/state`** | WiFi 상태 JSON 반환 | **< 1 ms** | atomic load 기반 |
 | `GET /api/v001/wifi/scan` | `WiFi.scanNetworks()` | 1 ~ 2 초 | 의도된 블로킹 |
 | `POST /api/v001/ai/gemini` | SSL | ≤ 15 초 | rate limit 3초 |
 | `POST /api/v001/fwUpdate` | OTA 스트리밍 | 수십 초 | OTA 세션 |
 | **`POST /api/v001/fileUpload`** | `routeUpload` + safeAbort | **5 ~ 20 ms / 청크** | **N-4** 즉시 close |
-| **`GET /html_v3/*`** | `W10_registerGzipServe` | **1 ~ 3 ms** | **D-3** 스택 버퍼 (힙 0) |
+| **`GET /(html_v0201\|html_v3)/*`** | `W10_registerGzipServe` | **1 ~ 3 ms** | **D-3** 스택 버퍼 (힙 0), 듀얼 폴백 |
 
 ---
 
@@ -107,7 +109,7 @@
 | 항목 | 이전 | 이후 | 절감 |
 |---|---|---|---|
 | **총 웹 에셋** | 424.3 KB (실측) | **114.4 KB** (실측) | **-73.0%** |
-| **메인 대시보드 스크립트** | 8파일 raw 90.7 KB | `P010_bundle_0200.js.gz` **21.9 KB** | **-75.8%** |
+| **메인 대시보드 스크립트** | 8파일 raw 90.7 KB | `P010_bundle_0201.js.gz` **21.9 KB** | **-75.8%** |
 | **LittleFS 여유** | ~65% | **~90% 이상** | `.bak`/로그 공간 확보 |
 
 ### 7.2 동시 HTTP 소켓
@@ -124,9 +126,9 @@
 
 | 자산 | 소스 파일 수 | 원본 크기 | gzip 크기 | 절감률 |
 |---|---:|---:|---:|---:|
-| `P010_bundle_0200.js` | **31 JS** | 165,923 B | **37,490 B** | **-77.4%** |
-| `P000_common_0200.css` | **10 CSS** | 40,035 B | **7,585 B** | **-81.1%** |
-| `P010_main_0200.html` | 1 HTML | 2,486 B | **976 B** | **-60.7%** |
+| `P010_bundle_0201.js` | **31 JS** | 165,923 B | **37,490 B** | **-77.4%** |
+| `P000_common_0201.css` | **10 CSS** | 40,035 B | **7,585 B** | **-81.1%** |
+| `P010_main_0201.html` | 1 HTML | 2,486 B | **976 B** | **-60.7%** |
 | **합계** | **42 파일** | **208,444 B** | **46,051 B** | **-77.9%** |
 
 **JSON 10개 (gzip 미적용)**: ~50 KB (설정 데이터, 런타임 재사용)
@@ -260,6 +262,9 @@
 
 ## 11. 개정 이력
 
+| 날짜 | 버전 | 변경 내용 | 작성자 |
+|---|---|---|---|
+| 2026-10-21 | v2.4 | `_0201` 자산 실측명 반영, `/control/ack` 및 `/wifi/state` WCET 추가, 듀얼 서빙 폴백 반영 | Antigravity AI |
 | 2026-10-21 | v2.3 | §8 신규 — 프론트엔드 자산 예산 (v0201 SPA). 배포 자산 실측 (JS 37.5 KB / CSS 7.6 KB / HTML 1.0 KB = 46.1 KB gzip), HTTP 요청 예산 (세션 3건), 예산 여유 분석, 확장 우선순위 | Antigravity AI |
 | 2026-10-20 | v2.2 | Batch A~F 반영: §2 D-1 반영, §3 A-2/F-2/F-3 반영, §6 ws_mutex/sta_connected 메트릭, §8 RAM/Flash 실측, §9 Batch 예산 영향 신규 | Antigravity AI |
 | 2026-10-19 | v2.1 | N-1, N-4, G-1/G-2 WCET 현행화 | Antigravity AI |

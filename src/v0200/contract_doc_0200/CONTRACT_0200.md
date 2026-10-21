@@ -93,17 +93,19 @@
 | `CT10::applyMotionSimConfigToSim()` | 내부 | ❌ | ❌ | ❌ | **I-4** private, tickLoop 소비 |
 | `C10::saveDirtyConfigs()` | ❌ | ✅ | ❌ | ❌ | `/config/save` |
 | `C10::factoryResetFromDefault()` | ❌ | ✅ | ❌ | ❌ | **F-1** N10::resetRuntime 호출 |
-| `W10::W10_registerGzipServe()` | ❌ | ✅ | ❌ | ❌ | **C-G-2** 정규식 라우트 |
+| `CT10::ackEventState()` | ❌ | ✅ | ❌ | ❌ | `/control/ack` s_stateMutex 경유 |
+| `W10::W10_registerGzipServe()` | ❌ | ✅ | ❌ | ❌ | **C-G-2** 정규식 `^/(html_v3\|html_v0201)/.+` |
 | `W10::_routeSystemPatchBody()` | ❌ | ✅ | ❌ | ❌ | **F-2** POST/PATCH 헬퍼 |
 | `W10::_routeWifiConfigPatchBody()` | ❌ | ✅ | ❌ | ❌ | **F-3** POST/PATCH 헬퍼 |
 
 ### 4.1 W10 정적 웹 에셋 서빙 계약
 
 1. **Gzip 우선**: `Accept-Encoding` gzip + `.gz` 존재 시만 `Content-Encoding: gzip`. 미지원 시 raw 폴백.
-2. **정규식 라우트**: `^/html_v3/.+` (`W10_registerGzipServe`)로 대체. Long path도 `.gz` 우선.
-3. **MIME 자동 판별**: `W10_guessMime` 확장자별 MIME + UTF-8.
-4. **Root fallback 안전**: 메인 HTML 부재 시 404 + 진단 메시지. `exists(x)` || `exists(x+".gz")`.
-5. **번들링**: `P010_bundle_0200.js` 단일 파일, 동시 HTTP 11→4건.
+2. **정규식 라우트**: `^/(html_v3|html_v0201)/.+` (`W10_registerGzipServe`) 서빙. Long path도 `.gz` 우선.
+3. **듀얼 폴백 서빙**: 기본 `PATH_STATIC_HTML_V0200` (`/html_v0201`) 우선 서빙 후, 부재 시 `PATH_STATIC_HTML` (`/html_v3`) 레거시 호환 폴백.
+4. **MIME 자동 판별**: `W10_guessMime` 확장자별 MIME + UTF-8.
+5. **Root fallback 안전**: 메인 HTML(`P010_main_0201.html`) 부재 시 404 + 진단 메시지. `exists(x)` || `exists(x+".gz")`.
+6. **번들링**: `P010_bundle_0201.js` 단일 파일, 동시 HTTP 11→4건.
 
 ### 4.2 CT10 캡슐화 위임 계약 (A-2)
 
@@ -239,6 +241,7 @@
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| 2026-10-21 | v2.3 | 정규식 라우트(`html_v0201|html_v3`), 듀얼 폴백 서빙, `P010_bundle_0201.js`, `CT10::ackEventState` 일괄 현행화 | Antigravity AI |
 | 2026-10-20 | v2.2 | Batch A~F 반영: §2.1 D-4 atomic, §4 A-2/F-2/F-3/D-1 매트릭스, §4.2~§4.4 신규, §7.3 A-1~F-10 통합 | Antigravity AI |
 | 2026-10-19 | v2.1 | N-1~N-4, G-1~G-3 현행화 | Antigravity AI |
 | 2026-10-19 | v2.0 | v0200 승격 + (v1.2의 Gzip 서빙 계약 유지) | Antigravity AI |

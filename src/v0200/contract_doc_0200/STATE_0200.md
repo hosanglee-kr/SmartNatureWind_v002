@@ -15,7 +15,7 @@
 | `autoOffRt` | T-loop (`tickLoop`) | T-loop | `CT10::s_stateMutex` | AutoOff 런타임 |
 | `scheduleSegRt` / `profileSegRt` | T-loop (`tickSegmentSequence`) | T-loop | `CT10::s_stateMutex` | 세그먼트 스텝/경과 |
 | `_persistOffTimeLastYday` | T-loop (`reloadAll` 리셋) | T-loop (`checkAutoOff`) | `CT10::s_stateMutex` | offTime 재트리거 방지 |
-| `_autoOffLatched` | T-loop (발동 시 `true`), T-async (해제 시 `false`) | T-loop (`decideRunSource`) | `CT10::s_stateMutex` | 사용자 확인 전 재진입 차단 |
+| `_autoOffLatched` | T-loop (발동 시 `true`), T-async (`POST /api/v001/control/ack` 해제 시 `false`) | T-loop (`decideRunSource`) | `CT10::s_stateMutex` | 사용자 확인 전 재진입 차단 |
 | `_pendingMotionSimApply` | T-async (`requestMotionSimApply`) | T-loop (`tickLoop` 최상단) | `std::atomic<bool>` | **F-06** 위임 |
 | `s_pendingReload` | T-async (`requestReload` CAS) | T-loop (`consumePendingReload`), 모든 태스크 (`isReloadPending`) | `std::atomic<bool>` | **F-05, I-1** |
 | `s_lastReloadOk` | T-loop (`reloadAll`) | T-async, 모든 태스크 | `std::atomic<bool>` | **N-1** 성공/실패 |
@@ -202,7 +202,7 @@ CT10_WS_tick (T-loop)
 ### 7.1 래치 해제 경로
 
 `_autoOffLatched = false` 설정 위치 (모두 `s_stateMutex` 하):
-1. `ackEventState()` — 사용자 ACK
+1. `ackEventState()` — 사용자 ACK (`POST /api/v001/control/ack`, UI 모달 확인 버튼)
 2. `setProfileMode()` — 모드 변경
 3. `startOverrideFixed()` / `applyManualResolved()` — 수동 개입
 
@@ -245,6 +245,7 @@ CT10_WS_tick (T-loop)
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| 2026-10-21 | v2.3 | AutoOff 래치 해제 엔드포인트 `/control/ack` (`HTTP_API_CTL_ACK`) 명시 및 현행화 | Antigravity AI |
 | 2026-10-20 | v2.2 | Batch A~F 반영: §1 `_dirty*`/`s_staConnected` atomic 명시, §2.4 F-5 profile fall-through, §3 S10 상수, §4 WF10 C-7/C-8/D-4, §6.3 D-1 배치, §7 AutoOff, §8 E-2 분할 상태 소유권 신규 | Antigravity AI |
 | 2026-10-19 | v2.1 | N-1, G-2/G-4, N-3 현행화 | Antigravity AI |
 | 2026-10-19 | v2.0 | v0200 승격 + (v1.2의 번들 상태 규격 유지) | Antigravity AI |

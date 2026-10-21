@@ -19,17 +19,15 @@ src/v0200/
 │   ├── BUDGET_0200.md             # WCET, 스택, 블로킹, 관측성
 │   ├── TEST_PLAN_0200.md          # 회귀 절차 (T-1~T-28)
 │   └── Ref/
-│       └── UI_TERMINOLOGY_0200.md # 웹 UI 한/영 용어집 (참조)
+│       └── UI_TERMINOLOGY_0170.md # 웹 UI 한/영 용어집 (참조)
 │
 ├── Req_ImplPlan_0200/             # 요구사항 및 구현 계획서
 ├── User_Manual_0200/              # 사용자 매뉴얼
-├── tools_0200/                    # 빌드/검증 보조 도구
-│   ├── pio_gzip_0200.py           # 웹 에셋 번들링 + Gzip 사전 압축
-│   ├── commit_contracts_0200.py   # 계약 문서 검증/동시 커밋 (Python 3.7+)
-│   └── migrate_to_0201.py         # 0200→0201 접미사 마이그레이션
+├── tools_0201/                    # 빌드/검증 보조 도구
+│   └── pio_gzip_0201.py           # 웹 에셋 번들링 + Gzip 사전 압축
 │
-├── data_src_v0200/                # [웹 개발 원본] (8분할 JS + HTML/CSS)
-├── data_v0200/                    # [배포 스테이징] LittleFS 이미지 대상
+├── data_v0201_src/                # [웹 개발 원본] (31 JS + 10 CSS + HTML Shell)
+├── data_v0201/                    # [배포 스테이징] LittleFS 이미지 대상 (json 10개 + html_v0201 3개 자산)
 │
 └── [C++ 소스군, 0201 접미사]
     ├── main.cpp, A00_Main_0201.* (엔트리)
@@ -70,7 +68,7 @@ src/v0200/
 | `FLOW_0200.md` | 부팅/제어/Reload/WiFi/시간/PIR/A-2 위임/F-2 헬퍼 시퀀스 | CONTRACT/STATE 준수 |
 | `BUDGET_0200.md` | 태스크 WCET, 스택, 블로킹, 관측성, RAM/Flash 실측, Batch 예산 영향 | SPEC 준수 |
 | `TEST_PLAN_0200.md` | 회귀 절차 (T-1~T-28), 트러블슈팅 매트릭스 | 최신 감사 반영 |
-| `Ref/UI_TERMINOLOGY_0200.md` | 웹 한/영 UI 용어집 (참조) | UI/i18n |
+| `Ref/UI_TERMINOLOGY_0170.md` | 웹 한/영 UI 용어집 (참조) | UI/i18n |
 | `README_0200.md` | 본 문서 (CBD 총괄, 감사 이력, 워크플로, 커밋 도구) | 기준점 |
 
 ---
@@ -195,7 +193,7 @@ python src/v0200/tools_0200/migrate_to_0201.py --dry-run
 python src/v0200/tools_0200/migrate_to_0201.py --docs
 
 # 웹 리소스 gzip 번들 빌드
-python src/v0200/tools_0200/pio_gzip_0200.py
+python src/v0200/tools_0201/pio_gzip_0201.py
 ```
 
 ### 5.3 웹 자산 변경 시 재빌드 필수
@@ -205,15 +203,15 @@ pio run --target uploadfs
 ```
 
 **이유**:
-- `pio_gzip_0200.py`가 `buildfs`/`uploadfs`에서만 실행됨
+- `pio_gzip_0201.py`가 `buildfs`/`uploadfs`에서 자동 실행됨
 - `pio run --target upload` (펌웨어만) 실행 시 번들/Gzip 미재생성
-- 웹 자산 소스(`data_src_v0200/`) 변경이 `data_v0200/`에 반영 안 됨
+- 웹 자산 소스(`data_v0201_src/`) 변경이 `data_v0201/`에 반영 안 됨
 
 **정상 동작 확인**:
 ```bash
-curl -I -H "Accept-Encoding: gzip" http://<IP>/html_v3/P010_bundle_0200.js
+curl -I -H "Accept-Encoding: gzip" http://<IP>/html_v0201/P010_bundle_0201.js
 # → Content-Encoding: gzip 헤더 포함
-curl -I http://<IP>/P010_bundle_0200.js
+curl -I http://<IP>/P010_main_0201.html
 # → raw 파일 (Accept-Encoding 미보유 시)
 ```
 
@@ -286,6 +284,7 @@ git push origin v0201-release-2026-10-20
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| 2026-10-21 | v2.3 | `tools_0201`, `data_v0201`, `_0201` 자산 및 curl 검증 경로 일괄 현행화 | Antigravity AI |
 | 2026-10-20 | v2.2 | Batch A~F 반영: §1 디렉토리 트리 0201 접미사, §3 감사 이력 A~F 통합, §4.3 E-2 분할 원칙, §5.2 도구 4종, §6 Batch G 커밋 전략, §7 실측 자원 사용량 | Antigravity AI |
 | 2026-10-19 | v2.1 | N-1~N-4, G-1~G-3 반영 | Antigravity AI |
 | 2026-10-19 | v2.0 | v0200 승격 + (v1.2의 Gzip/번들/소스-배포 분리 유지) | Antigravity AI |

@@ -99,7 +99,7 @@ which curl jq || sudo apt install curl jq
 **목적**: `A00_run()`에 `g_M10_motionLogic->tick()`이 배치되어 PIR 감지 후 `holdSec` (기본 10초) 경과 시 `motionActive=false`로 전환되는지 검증.
 
 **사전 조건**:
-- `cfg_motion_0200.json` → `motion.pir.enabled = true`, `motion.pir.holdSec = 10`
+- `cfg_motion_0201.json` → `motion.pir.enabled = true`, `motion.pir.holdSec = 10`
 
 **검증 절차**:
 ```bash
@@ -333,13 +333,13 @@ pio run --environment esp32-s3-n16r8
 **검증 절차**:
 ```bash
 # 1. 번들 JS gzip 헤더
-curl -I -H "Accept-Encoding: gzip" http://$IP/html_v0201/P010_bundle_0200.js
+curl -I -H "Accept-Encoding: gzip" http://$IP/html_v0201/P010_bundle_0201.js
 
 # 2. CSS gzip 헤더
-curl -I -H "Accept-Encoding: gzip" http://$IP/html_v0201/P000_common_0200.css
+curl -I -H "Accept-Encoding: gzip" http://$IP/html_v0201/P000_common_0201.css
 
-# 3. HTML 내 8 script → 1 bundle 대체 확인
-curl -s http://$IP/html_v0201/P010_main_0200.html | grep -c "P010_bundle_0200.js"
+# 3. HTML 내 script 번들 태그 확인
+curl -s http://$IP/html_v0201/P010_main_0201.html | grep -c "P010_bundle_0201.js"
 ```
 
 **합격 판정**:
@@ -372,10 +372,10 @@ curl -s http://$IP/api/v001/state | jq '{pending: .control.pendingReload, ok: .c
 **검증 절차**:
 ```bash
 # 1. gzip 포함
-curl -I -H "Accept-Encoding: gzip" http://$IP/html_v0201/P010_bundle_0200.js
+curl -I -H "Accept-Encoding: gzip" http://$IP/html_v0201/P010_bundle_0201.js
 
 # 2. gzip 미포함 (curl 기본)
-curl -I http://$IP/html_v0201/P010_bundle_0200.js
+curl -I http://$IP/html_v0201/P010_bundle_0201.js
 ```
 
 **합격 판정**:
@@ -388,7 +388,7 @@ curl -I http://$IP/html_v0201/P010_bundle_0200.js
 
 **검증 절차**:
 ```bash
-curl -I -H "Accept-Encoding: gzip" http://$IP/html_v0201/P010_main_0200.html
+curl -I -H "Accept-Encoding: gzip" http://$IP/html_v0201/P010_main_0201.html
 ```
 
 **합격 판정**:
@@ -404,7 +404,7 @@ curl -I -H "Accept-Encoding: gzip" http://$IP/html_v0201/P010_main_0200.html
 ```bash
 # 정상 (메인 HTML 존재)
 curl -I http://$IP/
-# 기대: 302 → /P010_main_0200.html
+# 기대: 302 → /P010_main_0201.html
 
 # 부재 시 (수동 파일 삭제 시뮬레이션 필요, 선택)
 ```
@@ -759,9 +759,9 @@ curl -s -X PATCH $BASE/wifi/config -d '{"wifi":{...}}'
 # http://$IP/
 
 # 2. DevTools Network 탭 확인
-# - HTML: 1건 (P010_main_0200.html)
-# - CSS: 1건 (P000_common_0200.css)
-# - JS: 1건 (P010_bundle_0200.js)
+# - HTML: 1건 (P010_main_0201.html)
+# - CSS: 1건 (P000_common_0201.css)
+# - JS: 1건 (P010_bundle_0201.js)
 # - WS: 4~5건
 
 # 3. HTTP 총 요청 수
@@ -1213,8 +1213,9 @@ git push origin v0201-frontend-2026-10-21
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| 2026-10-20 | v2.2 | Batch A~F 반영: T-14~T-28 신규 15건 추가, §D 트러블슈팅 확장, §C 매트릭스 재정렬 | Antigravity AI |
+| 2026-10-21 | v2.4 | `cfg_motion_0201.json`, `P010_*_0201.*` 자산명, 리다이렉트 기대값 일괄 현행화 | Antigravity AI |
 | 2026-10-21 | **v2.3** | **프론트엔드 v0201 SPA 통합**: T-29~T-35 (7건) 신규, T-36~T-40 정적 감사 확장, T-41~T-45 부하/안정성 신규, §7 매트릭스 재구성 (L1~L5 계층), §8 트러블슈팅 SPA 항목 추가, §9 Phase 7 릴리스 게이트 신규 | Antigravity AI |
+| 2026-10-20 | v2.2 | Batch A~F 반영: T-14~T-28 신규 15건 추가, §D 트러블슈팅 확장, §C 매트릭스 재정렬 | Antigravity AI |
 | 2026-10-19 | v2.1 | N-1 (T-10), G-1 (T-11), G-2/G-4 (T-12), N-3 (T-13) 신규 | Antigravity AI |
 | 2026-10-19 | v2.0 | v0200 승격 | Antigravity AI |
 | 2026-10-19 | v1.2 | T-9 (번들/Gzip 무결성) | Antigravity AI |

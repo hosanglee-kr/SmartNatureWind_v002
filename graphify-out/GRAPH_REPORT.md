@@ -1,472 +1,539 @@
 # Graph Report - SmartNatureWind_v002  (2026-10-21)
 
 ## Corpus Check
-- 141 files · ~159,757 words
+- 137 files · ~160,878 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 21 file(s) not represented in the graph (top: .css 11, (none) 8, .csv 1)
 
 ## Summary
-- 1974 nodes · 5198 edges · 83 communities (81 shown, 2 thin omitted)
-- Extraction: 62% EXTRACTED · 38% INFERRED · 0% AMBIGUOUS · INFERRED: 1970 edges (avg confidence: 0.85)
+- 2151 nodes · 3918 edges · 109 communities (92 shown, 17 thin omitted)
+- Extraction: 88% EXTRACTED · 12% INFERRED · 0% AMBIGUOUS · INFERRED: 484 edges (avg confidence: 0.88)
 - Token cost: 0 input · 0 output
 
+## Graph Freshness
+- Built from commit: `95a98325`
+- Run `git rev-parse HEAD` and compare to check if the graph is stale.
+- Run `graphify update .` after code changes (no API cost).
+
 ## Community Hubs (Navigation)
-- Architecture Contracts & State
-- Architecture Contracts & State
-- FSM State Transitions
-- FSM State Transitions
-- Web API & Networking
-- Web API & Networking
-- Architecture Contracts & State
-- FSM State Transitions
-- Architecture Contracts & State
-- Web API & Networking
-- Web API & Networking
-- System Specifications
-- FSM State Transitions
-- FSM State Transitions
-- Device Control & Broker
-- FSM State Transitions
-- JsonArrayConst
-- Web API & Networking
+- CL_S10_Simulation
+- CL_N10_NvsManager
+- CL_CT10_ControlManager::exportStateJson_v02
+- P010_bundle_0202.js
+- C10_Config_Sys_0202.cpp
+- 040.api.js
+- FRONTEND_REQ_0202.md — 프론트엔드 요구사항 및 상세 명세서 (v1.3)
+- CL_CT10_ControlManager
+- A20_Const_0202.h
+- ST_A20_WebPageConfig_t
+- CL_D10_Logger
+- CL_C10_ConfigManager
+- CL_P10_PWM
+- FRONTEND_IMPL_0202.md — 프론트엔드 최적 재설계 (v2.0)
+- Smart Nature Wind v0202 — 사용자 매뉴얼 (User Manual)
+- CL_WF10_WiFiManager
+- A25_Com_Utils_0202.h
+- FRONTEND_IMPL_0202.md — 프론트엔드 최적 재설계 v3.0 (그린필드)
 - CL_TM10_TimeManager
-- Web API & Networking
-- Web API & Networking
-- A23_Com_ResetCfg_0201h
-- FSM State Transitions
-- Web API & Networking
-- 000constjs
-- Web API & Networking
-- EN_A20_segment_mode_t
-- Web API & Networking
-- FSM State Transitions
-- A20_resetSchedulesDefault
-- _buildPathWithSuffix
-- C10_Config_WindDc_CRUD_02
+- A00_run
+- src_v0202_c10_config_0202
+- A20_resetScheduleItemDefault
+- CT10_Ctl_IOWS_0202.cpp
+- TEST_PLAN_0202.md — 회귀 테스트 절차서 (v2.3)
+- 5.4 프론트엔드 자산 규격 (v2.4 신규)
+- FRONTEND_IMPL_0202.md — 프론트엔드 상세 구현 설계서 (v1.1)
+- CL_C10_ConfigManager::addUserProfilesFromJson
+- t
+- CT10_Ctl_Basic_0202.cpp
+- src_v0202_a20_const_sch_0202
+- html
+- C10_Config_Sch_Util_0202.cpp
 - Web API & Networking
 - Build Guides
-- FSM State Transitions
-- FSM State Transitions
-- applySegmentOff
-- FSM State Transitions
-- Web API & Networking
-- wifi
-- A20_findPresetIndexByCode
-- File
-- Web API & Networking
-- FSM State Transitions
-- Path
-- Web API & Networking
-- 050wsjs
-- Web API & Networking
-- System Specifications
-- 033utiltemplatejs
-- 130uiformjs
-- _bindConnectionStatus
-- FSM State Transitions
-- Web API & Networking
-- CL_A40_MutexGuard_Semapho
-- FSM State Transitions
-- Web API & Networking
-- 034utiltoastjs
-- Web API & Networking
-- applyPresetCore
-- _      _
-- 230pageprofilesjs
-- deleteProfile
-- _     _
-- 060storejs
-- 210pagechartjs
-- 220pageschedulejs
-- Web API & Networking
-- _       _
-- 120uichartjs
-- 240pagesettingsjs
-- FSM State Transitions
-- 030utiltimejs
-- 031utildomjs
-- 260pagefirmwarejs
-- 290pageaijs
-- 032utillogjs
-- 280pagelogsjs
-- 030utilleveljs
-- FSM State Transitions
-- C10_Config_Core_0201cpp
-- Web API & Networking
-- Doc todo001
+- A20_resetWindDictDefault
+- .checkApiKey
+- src_v0202_ct10_ctl_0202
+- 0200_004_백앤드리팩토링.md
+- A23_Com_ResetCfg_0202.h
+- Doc: WindScape Configuration
+- CT10_Ctl_Ctl_Seg_0202.cpp
+- CL_W10_WebAPI
+- mount
+- CL_M10_MotionLogic
+- pio_gzip_0202.py
+- .log
+- 3. 백엔드 Batch A~F 신규
+- .getRootSnapshot
+- BUDGET_0202.md — 시간 및 시스템 자원 예산
+- S10_Simul_Physic_0202.cpp
+- .parseJsonBody
+- WsClient
+- CL_A30_LED
+- W10_Web_Util_0202.cpp
+- CL_A40_MutexGuard_Semaphore
+- 7.3 Batch A~F 신규
+- CL_W10_WebAPI::routeGeminiProxy
+- FLOW_0202.md — 데이터 흐름 및 시퀀스 명세
+- STATE_0202.md — 상태 소유권 및 FSM 명세
+- CT10_Ctl_Ctl_0202.cpp
+- WsClient
+- .applyPresetCore
+- CL_S10_Simulation::tick
+- 033.util.template.js
+- 130.ui.form.js
+- 200.page.dashboard.js
+- .W10_registerGzipServe
+- 034.util.toast.js
+- 070.router.js
+- append
+- .get
+- ST_ChartEntry
+- 💨 스마트 네이처 윈드 (Smart Nature Wind v0202)
+- CL_C10_ConfigManager::saveAll
+- 7.1 래치 해제 경로
+- 230.page.profiles.js
+- _load
+- ST_A20_cfg_jsonFile_t
+- Store
+- ST_W10_PageEntry_t
+- 210.page.chart.js
+- 220.page.schedule.js
+- 120.ui.chart.js
+- 240.page.settings.js
+- 270.page.network.js
+- 030.util.time.js
+- 031.util.dom.js
+- 260.page.firmware.js
+- 290.page.ai.js
+- 0200_003.md
+- Load_File2JsonDoc_V21
+- 032.util.log.js
+- 280.page.logs.js
+- 020.i18n.js
+- 030.util.level.js
+- 250.page.diagnostics.js
+- Doc: /maintenance - 규칙 유지보수 워크플로우
+- 0200_001.md
+- 3️⃣ 실행 예시 (검증 시나리오)
+- W10_Web_Upload_0202.cpp
+- src_v0202_wf10_wifimgr_0202
 
 ## God Nodes (most connected - your core abstractions)
-1. `Doc: 0200_004_백앤드리팩토링` - 418 edges
-2. `Doc: 0200_001` - 215 edges
-3. `Doc: SPEC_0200.md — Smart Nature Wind v0200 종합 기술 사양서` - 150 edges
-4. `Doc: FRONTEND_IMPL_0200.md — 프론트엔드 최적 재설계 v3.0 (그린필드)` - 139 edges
-5. `Doc: CONTRACT_0200.md — 동시성 경계 및 API 계약` - 137 edges
-6. `Doc: STATE_0200.md — 상태 소유권 및 FSM 명세` - 126 edges
-7. `Doc: 0200_003` - 113 edges
-8. `Doc: FLOW_0200.md — 데이터 흐름 및 시퀀스 명세` - 112 edges
-9. `CL_CT10_ControlManager` - 111 edges
-10. `Doc: TEST_PLAN_0200.md — 회귀 테스트 절차서 (v2.3)` - 108 edges
+1. `CL_CT10_ControlManager` - 109 edges
+2. `CL_S10_Simulation` - 85 edges
+3. `CL_C10_ConfigManager` - 78 edges
+4. `CL_W10_WebAPI` - 72 edges
+5. `mount()` - 54 edges
+6. `_fetch()` - 50 edges
+7. `` - 49 edges
+8. `_fetch()` - 48 edges
+9. `CL_N10_NvsManager` - 42 edges
+10. `` - 38 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Doc: 🌌 Antigravity 환경 설정 가이드` --references--> `A00_init()`  [INFERRED]
-  agent.md → src/v0200/A00_Main_0201.cpp
-- `Doc: 🌌 Antigravity 환경 설정 가이드` --references--> `A00_run()`  [INFERRED]
-  agent.md → src/v0200/A00_Main_0201.cpp
-- `Doc: Smart Nature Wind (WindScape)` --references--> `system`  [INFERRED]
-  README.md → src/v0200/A20_Const_Sys_0201.h
-- `Doc: WindScape Configuration` --references--> `system`  [INFERRED]
-  wind-scape.yaml → src/v0200/A20_Const_Sys_0201.h
-- `Doc: 🌌 Antigravity 환경 설정 가이드` --references--> `path`  [INFERRED]
-  agent.md → src/v0200/A20_Const_Sys_0201.h
+- `2. 메인 루프 파이프라인 (`A00_run()`)` --references--> `A00_run()`  [INFERRED]
+  src/v0202/contract_doc_0202/FLOW_0202.md → src/v0202/A00_Main_0202.cpp
+- `3. 공유 전역 자원 접근 규약` --references--> `A00_init()`  [INFERRED]
+  src/v0202/contract_doc_0202/CONTRACT_0202.md → src/v0202/A00_Main_0202.cpp
+- `1. 부팅 시퀀스 (`A00_init()`)` --references--> `A00_init()`  [INFERRED]
+  src/v0202/contract_doc_0202/FLOW_0202.md → src/v0202/A00_Main_0202.cpp
+- `1. 실행 컨텍스트 (FreeRTOS Task)` --references--> `A00_run()`  [INFERRED]
+  src/v0202/contract_doc_0202/CONTRACT_0202.md → src/v0202/A00_Main_0202.cpp
+- `7.1 기존 (F-01~I-6)` --references--> `A00_run()`  [INFERRED]
+  src/v0202/contract_doc_0202/CONTRACT_0202.md → src/v0202/A00_Main_0202.cpp
 
 ## Import Cycles
 - None detected.
 
-## Communities (83 total, 2 thin omitted)
+## Communities (109 total, 17 thin omitted)
 
-### Community 0 - "Architecture Contracts & State"
+### Community 0 - "CL_S10_Simulation"
 Cohesion: 0.03
-Nodes (93): EN_A20_WindPhase_t, 상태 변수 소유권 및 접근 매트릭스, AutoOff 래치 및 이벤트 상태, AutoOff offTime 재트리거 방지, Batch D-1 Dirty 배치 소비, Batch F-5: profile fall-through 차단, CT10 메인 제어 상태머신 (7-State FSM), 상태 전이 우선순위 (`decideRunSource`) (+85 more)
+Nodes (59): CL_S10_Simulation, active, avgWindCached, baseMaxWind, baseMinWind, CHART_CAPACITY, currentWindSpeed, _fanCfgSnap (+51 more)
 
-### Community 1 - "Architecture Contracts & State"
-Cohesion: 0.03
-Nodes (82): Preferences, loop(), A00_init(), A00_run(), begin, loadAll, patchMotionFromJson, processPendingFree (+74 more)
-
-### Community 2 - "FSM State Transitions"
+### Community 1 - "CL_N10_NvsManager"
 Cohesion: 0.06
-Nodes (62): CL_M10_MotionLogic, initAutoOffFromSchedule, initAutoOffFromUserProfile, CL_CT10_ControlManager::startUserProfileByNo(), CL_CT10_ControlManager::applyDecision(), get(), set(), get() (+54 more)
+Nodes (25): CL_CT10_ControlManager::startUserProfileByNo(), CL_CT10_ControlManager::stopUserProfile(), CL_CT10_ControlManager::applyManualResolved(), CL_CT10_ControlManager::startOverrideFixed(), CL_CT10_ControlManager::stopOverride(), CL_N10_NvsManager, G_N10_KEY_AUTOOFF_ENABLED, G_N10_KEY_AUTOOFF_MINUTES (+17 more)
 
-### Community 3 - "FSM State Transitions"
+### Community 2 - "CL_CT10_ControlManager::exportStateJson_v02"
+Cohesion: 0.16
+Nodes (8): CL_CT10_ControlManager::exportChartJson(), CL_CT10_ControlManager::exportMetricsJson(), CL_CT10_ControlManager::exportStateJson_v02(), CL_CT10_ControlManager::exportSummaryJson(), CL_CT10_ControlManager::applyDecision(), CL_CT10_ControlManager::decideRunSource(), CT10_reasonToString(), CT10_stateToString()
+
+### Community 3 - "P010_bundle_0202.js"
 Cohesion: 0.05
-Nodes (48): ackEvent(), addProfile(), addSchedule(), addWindProfile(), _appendMessage(), buildQuery(), clear(), debug() (+40 more)
+Nodes (51): ackEvent(), addProfile(), addSchedule(), addWindProfile(), _appendMessage(), _bindLangToggle(), checkFw(), clear() (+43 more)
 
-### Community 4 - "Web API & Networking"
-Cohesion: 0.05
-Nodes (56): cstring, ctime, ST_A20_CommonAsset_t, isCommon, path, uri, ST_A20_NvsSpecConfig_t, entries (+48 more)
+### Community 4 - "C10_Config_Sys_0202.cpp"
+Cohesion: 0.10
+Nodes (18): A20_resetMotionDefault(), A20_resetSystemDefault(), A20_resetToDefault(), A20_resetWebSocketDefault(), A20_resetWifiDefault(), C10_wsChannelFromName(), CL_C10_ConfigManager::loadMotionConfig(), CL_C10_ConfigManager::loadSystemConfig() (+10 more)
 
-### Community 5 - "Web API & Networking"
+### Community 5 - "040.api.js"
 Cohesion: 0.07
 Nodes (52): ackEvent(), addProfile(), addSchedule(), addWindProfile(), ApiError, buildQuery(), checkFw(), deleteProfile() (+44 more)
 
-### Community 6 - "Architecture Contracts & State"
+### Community 6 - "FRONTEND_REQ_0202.md — 프론트엔드 요구사항 및 상세 명세서 (v1.3)"
 Cohesion: 0.04
-Nodes (53): 📋 목차, 릴리스 차단 필수 세트 (최소 13건), 백엔드 Batch A~F 신규, CI, Doc: TEST_PLAN_0200.md — 회귀 테스트 절차서 (v2.3), Phase 7 릴리스 게이트, T-10. N-1 (`lastReloadOk`) — 상태 노출, T-11. G-1 (Accept-Encoding) — gzip/raw 분 (+45 more)
+Nodes (47): 10. 단계별 구현 로드맵, 11. 계약 준수 사항 및 개발 가이드라인, 12. 개정 이력, 1.1 목적, 1.2 설계 원칙, 1. 목적 및 설계 원칙, 2. 사용자 역할 정의, 3. 페이지 구조 및 Level 접근 Matrix (+39 more)
 
-### Community 7 - "FSM State Transitions"
-Cohesion: 0.04
-Nodes (48): EN_CT10_run_source_t, CL_CT10_ControlManager, ackEventState, applyDecision, applyMotionSimConfigToSim, clearManual, consumeDirtyChart, consumeDirtyMetrics (+40 more)
+### Community 7 - "CL_CT10_ControlManager"
+Cohesion: 0.03
+Nodes (33): 2.3 상태 전이표, CL_CT10_ControlManager, active, _autoOffLatched, autoOffRt, curProfileIndex, curScheduleIndex, _dirtyChart (+25 more)
 
-### Community 8 - "Architecture Contracts & State"
-Cohesion: 0.08
-Nodes (30): arduino, cmath, ST_A20_ReDirectItem_t, uriFrom, uriTo, A20_resetRedirectItemDefault(), 시스템 개요, 모듈 구성 및 파일 매핑 (0201 접미사) (+22 more)
+### Community 8 - "A20_Const_0202.h"
+Cohesion: 0.12
+Nodes (8): CL_M10_MotionLogic, ST_A20_PageAsset_t, path, uri, , EN_A20_WIFI_MODE_AP, EN_A20_WIFI_MODE_AP_STA, EN_A20_WIFI_MODE_STA
 
-### Community 9 - "Web API & Networking"
-Cohesion: 0.07
-Nodes (47): CL_W10_WebAPI, broadcastChart, broadcastMetrics, broadcastState, broadcastSummary, G_W10_PAGES_JSON, routeAuthTest, routeConfigDirtySave (+39 more)
-
-### Community 10 - "Web API & Networking"
+### Community 9 - "ST_A20_WebPageConfig_t"
 Cohesion: 0.06
-Nodes (33): 규칙 준수 여부 점검 (Audit), Doc: /maintenance - 규칙 유지보수 워크플로우, 규칙 고도화 (Improvement), 코드 보완 (Refactor), EN_L10_LogLevel_t, setup(), CL_D10_Logger, BUFFER_SIZE (+25 more)
+Nodes (43): ST_A20_CommonAsset_t, isCommon, path, uri, ST_A20_NvsEntry_t, defaultValue, key, type (+35 more)
 
-### Community 11 - "System Specifications"
+### Community 10 - "CL_D10_Logger"
 Cohesion: 0.06
-Nodes (43): CL_C10_ConfigManager, _dirty_motion, _dirty_nvsSpec, _dirty_schedules, _dirty_system, _dirty_userProfiles, _dirty_webPage, _dirty_wifi (+35 more)
+Nodes (19): setup(), CL_D10_Logger, BUFFER_SIZE, _logLevel, s_buffer, s_count, s_head, s_wsLogs (+11 more)
 
-### Community 12 - "FSM State Transitions"
+### Community 11 - "CL_C10_ConfigManager"
 Cohesion: 0.06
-Nodes (20): CL_CT10_ControlManager::applyManual(), CL_CT10_ControlManager::applyMotionSimConfigToSim(), CL_CT10_ControlManager::begin(), CL_CT10_ControlManager::exportSimJson(), CL_CT10_ControlManager::feedPIR(), CL_CT10_ControlManager::patchSimFromJson(), CL_CT10_ControlManager::setMotion(), CL_M10_MotionLogic (+12 more)
+Nodes (23): CL_C10_ConfigManager, _dirty_motion, _dirty_nvsSpec, _dirty_schedules, _dirty_system, _dirty_userProfiles, _dirty_webPage, _dirty_wifi (+15 more)
 
-### Community 13 - "FSM State Transitions"
+### Community 12 - "CL_P10_PWM"
+Cohesion: 0.11
+Nodes (7): CL_P10_PWM, G_P10_CURVE_SPAN1, G_P10_CURVE_SPAN2, G_P10_CURVE_SPLIT1, G_P10_CURVE_SPLIT2, G_P10_CURVE_ZERO_THRESHOLD, _state
+
+### Community 13 - "FRONTEND_IMPL_0202.md — 프론트엔드 최적 재설계 (v2.0)"
 Cohesion: 0.05
-Nodes (39): autoOffRt, overrideState, runSource, mount(), _refresh(), unmount(), 📋 목차, 화면 레이아웃 (1280×800) (+31 more)
+Nodes (38): 10. HTML 변경 예시 (P010_main_0202.html), 11.1 개발 (로컬 http-server), 11.2 배포, 11.3 디버그 (배포 후), 11. 개발 워크플로 (개발 vs 배포), 12. 최적화 요약 (기존 대비), 13. 리스크 및 완화, 14. 개정 이력 (+30 more)
 
-### Community 14 - "Device Control & Broker"
+### Community 14 - "Smart Nature Wind v0202 — 사용자 매뉴얼 (User Manual)"
 Cohesion: 0.05
-Nodes (41): checkAutoOff, findActiveScheduleIndex, isMotionBlocked, onAutoOffTriggered, tickSegmentSequence, CL_CT10_ControlManager::tickSchedule(), CL_CT10_ControlManager::tickUserProfile(), CL_CT10_ControlManager::decideRunSource() (+33 more)
+Nodes (37): 10.1 팬 모터 안전 듀티 설정, 10.2 설정 저장(`Save`)과 재적용(`Reload`)의 차이점 (중요), 10. 기기 환경설정 및 관리 (`/#/system`), 11. 무선 펌웨어 업데이트 (OTA, `/#/upload`), 12. 자주 묻는 질문 (FAQ) 및 문제 해결, 13. 제품 기술 규격 (Product Specifications), 14. 핵심 조작 요약 치트시트, 1. 30초 빠른 시작 (처음 사용자용) (+29 more)
 
-### Community 15 - "FSM State Transitions"
+### Community 15 - "CL_WF10_WiFiManager"
+Cohesion: 0.06
+Nodes (21): 1. 실행 컨텍스트 (FreeRTOS Task), 2.1 Batch D-4: `s_staConnected` lock-free, 2. 뮤텍스/스핀락/세마포어 인벤토리, 5. 락 획득 순서 및 데드락 방지, 7.2 N/G (N-1~N-4, G-1~G-3), 7. 감사 관측 및 이슈 추적표, 8. 개정 이력, CONTRACT_0202.md — 동시성 경계 및 API 계약 (+13 more)
+
+### Community 16 - "A25_Com_Utils_0202.h"
 Cohesion: 0.08
-Nodes (38): dns, EN_WF10_req_result_t, esp_netif, ip_addr, CL_WF10_WiFiManager, applyConfig, _encTypeToString, _ensureWifiTask (+30 more)
+Nodes (22): _A40__callerOrUnknown(), CL_A40_muxGuard_Critical, _flagSpinlock, cloneStr2SharedStr_safe(), copyStr2Buffer_safe(), Dirty_clearAtomic(), Dirty_readAtomic(), Dirty_setAtomic() (+14 more)
 
-### Community 16 - "JsonArrayConst"
-Cohesion: 0.09
-Nodes (36): JsonArrayConst, JsonObject, JsonVariant, memory, shared_ptr, _A40__callerOrUnknown(), CL_A40_muxGuard_Critical, _flagSpinlock (+28 more)
-
-### Community 17 - "Web API & Networking"
-Cohesion: 0.08
-Nodes (30): get(), capitalize(), _clearMain(), current(), dispatch(), init(), navigate(), parseHash() (+22 more)
+### Community 17 - "FRONTEND_IMPL_0202.md — 프론트엔드 최적 재설계 v3.0 (그린필드)"
+Cohesion: 0.05
+Nodes (36): 10. 부트스트랩 흐름 (`999.app.js`), 11.1 전체 28 JS 파일, 11. 계층별 파일 명세 요약, 12. 런타임 성능 예측 (v3.0), 13.1 신규 페이지 추가 (예: "스케줄러 미리보기"), 13.2 신규 레벨 (L5) 추가, 13. 확장 시나리오, 14. 강점 요약 (v3.0) (+28 more)
 
 ### Community 18 - "CL_TM10_TimeManager"
-Cohesion: 0.13
-Nodes (34): esp_sntp, CL_TM10_TimeManager, applyTimeConfig, begin, _copySysTime, getLocalTime, _isTimeSane, isTimeSyncedRecently (+26 more)
-
-### Community 19 - "Web API & Networking"
-Cohesion: 0.14
-Nodes (31): factoryResetFromDefault, patchSystemFromJson, patchWifiFromJson, TM10_requestTimeSync(), applySystemRuntimeFromConfig, checkApiKey, parseJsonBody, sendJson (+23 more)
-
-### Community 20 - "Web API & Networking"
-Cohesion: 0.11
-Nodes (17): algorithm, arduinojson, cstdio, esp_task_wdt, espasyncwebserver, freertos, littlefs, semphr (+9 more)
-
-### Community 21 - "A23_Com_ResetCfg_0201h"
-Cohesion: 0.10
-Nodes (31): A20_resetAdjustDeltaDefault(), A20_resetAutoOffDefault(), A20_resetMotionCommonDefault(), A20_resetPirDefault(), A20_resetPresetEntryDefault(), A20_resetResolvedWindDefault(), A20_resetSchAutoOffDefault(), A20_resetScheduleItemDefault() (+23 more)
-
-### Community 22 - "FSM State Transitions"
-Cohesion: 0.11
-Nodes (21): EN_CT10_state_t, calcOverrideRemainSec, getCurrentHumidityMock, CL_CT10_ControlManager::consumeAllDirty(), CL_CT10_ControlManager::exportChartJson(), CL_CT10_ControlManager::exportMetricsJson(), CL_CT10_ControlManager::exportStateJson_v02(), CL_CT10_ControlManager::exportSummaryJson() (+13 more)
-
-### Community 23 - "Web API & Networking"
-Cohesion: 0.08
-Nodes (28): s_lastReloadOk, s_pendingReload, ❌ 수정 전 (§3 감사 이력, I-4까지만), ✅ 수정 후 (§3, I-5/I-6 추가), 🔧 [4] `CT10_Ctl_0200.h` — B-N-1a, ✅ 추가 삽입 (§5.2 뒤에 §5.3 신규), Doc: 0200_003, 연계 검증 도구 (`src/v0200/tools_0200/`) (+20 more)
-
-### Community 24 - "000constjs"
-Cohesion: 0.08
-Nodes (22): applyTo(), getLang(), setLang(), t(), navigate(), 설계 철학 (기존 구조의 문제 → 해결), 기존 구조의 3대 문제, `999.app.js` (부트스트랩) (+14 more)
-
-### Community 25 - "Web API & Networking"
-Cohesion: 0.07
-Nodes (28): 📖 이 설명서 사용법, 자연풍 프리셋 10종, 스마트 센서 연동 및 3대 자동 종료 (AutoOff), 바람 스타일 5종, 대 스마트 자동 종료 (AutoOff), 실시간 물리 시뮬레이션 차트 (`/chart_t3`), Doc: Smart Nature Wind v0200 — 사용자 매뉴얼 (User Manual), 자주 묻는 질문 (FAQ) 및 문제 해결 (+20 more)
-
-### Community 26 - "EN_A20_segment_mode_t"
-Cohesion: 0.15
-Nodes (25): EN_A20_segment_mode_t, A20_modeFromString(), A20_modeToString(), A20_resetUserProfilesDefault(), ST_A20_UserProfilesRoot_t, CL_C10_ConfigManager::addUserProfilesFromJson(), CL_C10_ConfigManager::updateUserProfilesFromJson(), JsonDocument (+17 more)
-
-### Community 27 - "Web API & Networking"
 Cohesion: 0.09
-Nodes (26): label, Doc: index, 기술 스택 및 제약, 마이그레이션 (기존 8파일 → 11파일), CI 검증 (선택, v0202), Dashboard 진입 (i18n 적용), Doc: FRONTEND_IMPL_0200.md — 프론트엔드 상세 구현 설계서 (v1.1), FSM 배지 (i18n 자동) (+18 more)
+Nodes (19): CL_TM10_TimeManager, s_activeServerIdx, s_fallbackServers, s_lastRequestMs, s_lastSyncMs, s_mutex, s_nextActionMs, s_primary (+11 more)
 
-### Community 28 - "FSM State Transitions"
-Cohesion: 0.10
-Nodes (19): DHT, A40_parseHHMMtoMin_24h(), CL_CT10_ControlManager::findActiveScheduleIndex(), CL_CT10_ControlManager::getCurrentHumidityMock(), CL_CT10_ControlManager::getCurrentTemperatureMock(), CL_CT10_ControlManager::initAutoOffFromSchedule(), CL_CT10_ControlManager::initAutoOffFromUserProfile(), CL_CT10_ControlManager::isMotionBlocked() (+11 more)
+### Community 19 - "A00_run"
+Cohesion: 0.09
+Nodes (24): loop(), A00_run(), 2. loopTask WCET 예산 (`A00_run()`), 6. 관측성 메트릭, 4.2 CT10 캡슐화 위임 계약 (A-2), 4.4 E-2 분할 시 심볼 공유 계약, 4. 태스크 경계별 함수 호출 매트릭스, 6. 비동기 위임/지연 패턴 (+16 more)
 
-### Community 29 - "A20_resetSchedulesDefault"
-Cohesion: 0.17
-Nodes (24): A20_resetSchedulesDefault(), ST_A20_SchedulesRoot_t, CL_C10_ConfigManager::addScheduleFromJson(), CL_C10_ConfigManager::updateScheduleFromJson(), JsonDocument, CL_C10_ConfigManager::patchSchedulesFromJson(), CL_C10_ConfigManager::toJson_Schedules(), JsonDocument (+16 more)
-
-### Community 30 - "_buildPathWithSuffix"
+### Community 20 - "src_v0202_c10_config_0202"
 Cohesion: 0.11
-Nodes (24): _buildPathWithSuffix(), JsonDocument, _io_callerOrUnknown(), Load_File2JsonDoc_V21(), _parseJsonFileToDoc(), Save_JsonDoc2File_V21(), CL_C10_ConfigManager::begin(), CL_C10_ConfigManager::_loadCfgJsonFile() (+16 more)
+Nodes (10): , EN_C10_OVL_FAIL_ON_OVERLAP, EN_C10_OVL_SKIP_DISABLED, EN_C10_OVL_WARN_ONLY, , EN_L10_LOG_DEBUG, EN_L10_LOG_ERROR, EN_L10_LOG_INFO (+2 more)
 
-### Community 31 - "C10_Config_WindDc_CRUD_02"
-Cohesion: 0.15
-Nodes (20): CL_C10_ConfigManager::addWindProfileFromJson(), CL_C10_ConfigManager::updateWindProfileFromJson(), JsonDocument, C10_hasDupCode(), CL_C10_ConfigManager::patchWindDictFromJson(), CL_C10_ConfigManager::toJson_WindDict(), JsonDocument, ST_A20_WindDict_t (+12 more)
+### Community 21 - "A20_resetScheduleItemDefault"
+Cohesion: 0.12
+Nodes (10): A20_resetAdjustDeltaDefault(), A20_resetAutoOffDefault(), A20_resetMotionCommonDefault(), A20_resetPirDefault(), A20_resetSchAutoOffDefault(), A20_resetScheduleItemDefault(), A20_resetSchedulePeriodDefault(), A20_resetScheduleSegmentDefault() (+2 more)
+
+### Community 22 - "CT10_Ctl_IOWS_0202.cpp"
+Cohesion: 0.11
+Nodes (10): A00_init(), 1. 부팅 시퀀스 (`A00_init()`), CL_CT10_ControlManager::markDirty(), CT10_WS_applyPolicyFromSystem(), CT10_WS_begin(), CT10_WS_buildPriorityOrderFromConfig(), CT10_WS_collectPending(), CT10_WS_measurePayloadBytes() (+2 more)
+
+### Community 23 - "TEST_PLAN_0202.md — 회귀 테스트 절차서 (v2.3)"
+Cohesion: 0.06
+Nodes (34): 10. 개정 이력, 1.1 검증 계층 구조, 1.2 검증 환경, 1.3 사전 준비, 1.4 도구 준비, 1. 검증 개요 및 준비, 4. 프론트엔드 v0202 SPA, 5. 정적 감사 (+26 more)
+
+### Community 24 - "5.4 프론트엔드 자산 규격 (v2.4 신규)"
+Cohesion: 0.06
+Nodes (30): 1.1 리팩토링 이력 (Batch A~F), 1. 시스템 개요, 2. 하드웨어 핀맵, 3.1 코어/상수/유틸, 3.2 설정 관리 (C10), 3.3 중앙 제어 (CT10), 3.4 주변 모듈, 3.5 E-2 파일 분할 원칙 (+22 more)
+
+### Community 25 - "FRONTEND_IMPL_0202.md — 프론트엔드 상세 구현 설계서 (v1.1)"
+Cohesion: 0.07
+Nodes (28): 10. 재사용성 개선 요약, 11.1 Dashboard 진입 (i18n 적용), 11.2 FSM 배지 (i18n 자동), 11.3 언어 변경 이벤트 (페이지 자동 갱신), 11. 페이지 조립 예시 (v1.1 반영), 12. 마이그레이션 (기존 8파일 → 11파일), 13. 개정 이력, 1. 기술 스택 및 제약 (+20 more)
+
+### Community 26 - "CL_C10_ConfigManager::addUserProfilesFromJson"
+Cohesion: 0.14
+Nodes (16): A20_modeFromString(), A20_modeToString(), A20_resetUserProfilesDefault(), CL_C10_ConfigManager::addUserProfilesFromJson(), CL_C10_ConfigManager::updateUserProfilesFromJson(), CL_C10_ConfigManager::patchUserProfilesFromJson(), CL_C10_ConfigManager::toJson_UserProfiles(), CL_C10_ConfigManager::loadUserProfiles() (+8 more)
+
+### Community 27 - "t"
+Cohesion: 0.16
+Nodes (28): _ensure(), error(), _exportJson(), getReasonMeta(), getStateMeta(), handle(), _mountComponents(), _onAdd() (+20 more)
+
+### Community 28 - "CT10_Ctl_Basic_0202.cpp"
+Cohesion: 0.08
+Nodes (17): A40_parseHHMMtoMin_24h(), CL_CT10_ControlManager::checkAutoOff(), CL_CT10_ControlManager::findActiveScheduleIndex(), CL_CT10_ControlManager::getCurrentHumidityMock(), CL_CT10_ControlManager::getCurrentTemperatureMock(), CL_CT10_ControlManager::initAutoOffFromSchedule(), CL_CT10_ControlManager::initAutoOffFromUserProfile(), CL_CT10_ControlManager::isMotionBlocked() (+9 more)
+
+### Community 29 - "src_v0202_a20_const_sch_0202"
+Cohesion: 0.07
+Nodes (27): , EN_A20_CONTROL_RUN_CONTINUE, EN_A20_CONTROL_RUN_SCHEDULE, EN_A20_SEG_MODE_COUNT, EN_A20_SEG_MODE_FIXED, EN_A20_SEG_MODE_PRESET, EN_A20_WIND_PHASE_CALM, EN_A20_WIND_PHASE_COUNT (+19 more)
+
+### Community 30 - "html"
+Cohesion: 0.10
+Nodes (27): _applyPresetList(), applyTo(), atLeast(), capitalize(), _clearMain(), current(), dispatch(), escape() (+19 more)
+
+### Community 31 - "C10_Config_Sch_Util_0202.cpp"
+Cohesion: 0.17
+Nodes (16): A20_resetSchedulesDefault(), CL_C10_ConfigManager::addScheduleFromJson(), CL_C10_ConfigManager::updateScheduleFromJson(), CL_C10_ConfigManager::patchSchedulesFromJson(), CL_C10_ConfigManager::toJson_Schedules(), CL_C10_ConfigManager::loadSchedules(), CL_C10_ConfigManager::saveSchedules(), C10_fromJson_ScheduleItem() (+8 more)
 
 ### Community 32 - "Web API & Networking"
-Cohesion: 0.09
-Nodes (24): 기본 환경, 🏗️ 1. 개발 환경 개요, 📁 2. 프로젝트 소스 및 디렉토리 구조, 📌 2단계 필수 탐색 프로토콜 (Two-Step Navigation Pr, ⚙️ 3. 주요 설정 (`platformio.ini`), 🌐 4. 주요 웹/API 엔드포인트 (v0200), 🛠️ 5. 빌드 및 배포 가이드, 🤖 6. Antigravity와 협업 가이드 (+16 more)
+Cohesion: 0.13
+Nodes (15): 기본 환경, 🏗️ 1. 개발 환경 개요, 📁 2. 프로젝트 소스 및 디렉토리 구조, 📌 2단계 필수 탐색 프로토콜 (Two-Step Navigation Pr, ⚙️ 3. 주요 설정 (`platformio.ini`), 🌐 4. 주요 웹/API 엔드포인트 (v0200), 🛠️ 5. 빌드 및 배포 가이드, 🤖 6. Antigravity와 협업 가이드 (+7 more)
 
 ### Community 33 - "Build Guides"
 Cohesion: 0.08
 Nodes (24): Build Guides, Configuration Reference, Core Wind Metrics**, Demo, Doc: Smart Nature Wind (WindScape), Fan Selection, Features, Hardware (+16 more)
 
-### Community 34 - "FSM State Transitions"
+### Community 34 - "A20_resetWindDictDefault"
+Cohesion: 0.12
+Nodes (14): A20_resetStyleEntryDefault(), A20_resetStyleFactorsDefault(), A20_resetWindDictDefault(), CL_C10_ConfigManager::addWindProfileFromJson(), CL_C10_ConfigManager::updateWindProfileFromJson(), C10_hasDupCode(), CL_C10_ConfigManager::patchWindDictFromJson(), CL_C10_ConfigManager::toJson_WindDict() (+6 more)
+
+### Community 35 - ".checkApiKey"
+Cohesion: 0.17
+Nodes (17): CL_W10_WebAPI::routeConfigDirtySave(), CL_W10_WebAPI::routeConfigInit(), CL_W10_WebAPI::routeReload(), CL_W10_WebAPI::routeControlSummary(), CL_W10_WebAPI::routeSimState(), CL_W10_WebAPI::routeAuthTest(), CL_W10_WebAPI::routeDiag(), CL_W10_WebAPI::routeLogs() (+9 more)
+
+### Community 36 - "src_v0202_ct10_ctl_0202"
+Cohesion: 0.08
+Nodes (23): , EN_CT10_REASON_AUTOOFF_TEMP, EN_CT10_REASON_AUTOOFF_TIME, EN_CT10_REASON_AUTOOFF_TIMER, EN_CT10_REASON_MOTION_NO_PRESENCE, EN_CT10_REASON_NO_ACTIVE_SCHEDULE, EN_CT10_REASON_NO_SCHEDULES, EN_CT10_REASON_NONE (+15 more)
+
+### Community 37 - "0200_004_백앤드리팩토링.md"
+Cohesion: 0.08
+Nodes (23): → 0건 기대, define G_TM10_MAX_SYNC_INTERVAL_MS (24UL * 60UL * 60UL * 1000UL), define G_TM10_MIN_SYNC_INTERVAL_MS (5UL * 60UL * 1000UL), define G_TM10_RETRY_BACKOFF_MS (2000UL), define G_TM10_SYNC_RECENT_WINDOW_MS (10UL * 60UL * 1000UL), define G_TM10_SYNC_TIMEOUT_MS (15000UL), E-6에서 saveToFile 제거 후, 링커가 실제 미참조 확인, → {"state":false,"metrics":false,"chart":false,"summary":false} (소비 후) (+15 more)
+
+### Community 38 - "A23_Com_ResetCfg_0202.h"
 Cohesion: 0.11
-Nodes (24): _applyPresetList(), applyTo(), _bindLangToggle(), checkFw(), diag(), escape(), getConfigDirty(), getLang() (+16 more)
+Nodes (10): A20_findPresetByCode(), A20_findSegModeByCode(), A20_findStyleByCode(), A20_getPresetNameByCode(), A20_getStaticPresetIndexByCode(), A20_resetPageAssetDefault(), A20_resetPageItemDefault(), A20_resetPresetEntryDefault() (+2 more)
 
-### Community 35 - "FSM State Transitions"
-Cohesion: 0.22
-Nodes (23): _exportJson(), getStateMeta(), handle(), _mountComponents(), _onAdd(), _onIntensityChange(), _onPresetSelect(), _onReload() (+15 more)
-
-### Community 36 - "applySegmentOff"
+### Community 40 - "CT10_Ctl_Ctl_Seg_0202.cpp"
 Cohesion: 0.11
-Nodes (21): applySegmentOff, applySegmentOn, findPresetNameByCode, findStyleNameByCode, updateRunCtxOnSegmentOff, updateRunCtxOnSegmentOn_Profile, updateRunCtxOnSegmentOn_Schedule, CL_CT10_ControlManager::applySegmentOff() (+13 more)
+Nodes (8): CL_CT10_ControlManager::applySegmentOff(), CL_CT10_ControlManager::applySegmentOn(), CL_CT10_ControlManager::tickOverride(), CL_CT10_ControlManager::tickSegmentSequence(), CL_CT10_ControlManager::updateRunCtxOnSegmentOff(), CL_CT10_ControlManager::updateRunCtxOnSegmentOn_Profile(), CL_CT10_ControlManager::updateRunCtxOnSegmentOn_Schedule(), CT10_resetActiveSegSnapshot()
 
-### Community 37 - "FSM State Transitions"
+### Community 41 - "CL_W10_WebAPI"
+Cohesion: 0.05
+Nodes (15): CL_W10_WebAPI, G_W10_MAX_UPLOAD_SIZE, G_W10_PAGES_JSON, s_control, s_menu_state, s_server, s_upFile, s_uploadError (+7 more)
+
+### Community 42 - "mount"
 Cohesion: 0.15
 Nodes (22): ai(), _applyInitial(), _applyInitialState(), chart(), dashboard(), delegate(), diagnostics(), epochToTimeStr() (+14 more)
 
-### Community 38 - "Web API & Networking"
-Cohesion: 0.19
-Nodes (10): new, A20_findPresetByCode(), A20_findSegModeByCode(), A20_findStyleByCode(), A20_getPresetNameByCode(), A20_getStaticPresetIndexByCode(), String, ST_A20_SegmentMode_t (+2 more)
+### Community 43 - "CL_M10_MotionLogic"
+Cohesion: 0.14
+Nodes (5): CL_M10_MotionLogic, _onChange, _pir, s_stateMutex, _state
 
-### Community 39 - "wifi"
-Cohesion: 0.13
-Nodes (20): wifi, ST_A20_NvsEntry_t, defaultValue, key, type, active, stop(), _pwm (+12 more)
+### Community 44 - "pio_gzip_0202.py"
+Cohesion: 0.15
+Nodes (13): _err(), find_repo_root(), _info(), main(), _run(), verify_required_files(), build_css_bundle(), build_js_bundle() (+5 more)
 
-### Community 40 - "A20_findPresetIndexByCode"
+### Community 45 - ".log"
+Cohesion: 0.11
+Nodes (13): CL_C10_ConfigManager::begin(), CL_C10_ConfigManager::freeAll(), CL_C10_ConfigManager::freeLazySection(), CL_C10_ConfigManager::getDirtyStatus(), CL_C10_ConfigManager::getRootSnapshot(), CL_C10_ConfigManager::_loadCfgJsonFile(), CL_C10_ConfigManager::processPendingFree(), CL_C10_ConfigManager::queuePendingFree() (+5 more)
+
+### Community 46 - "3. 백엔드 Batch A~F 신규"
+Cohesion: 0.10
+Nodes (18): 3. 백엔드 Batch A~F 신규, T-14. A-1 — FIXED self-heal 폭주 방지, T-15. A-2 — 캡슐화 위임, T-16. B-1 — 버전 SSOT, T-17. C — 매직넘버 상수화 물리 출력 무변동, T-18. D-1 — WS 배치 mutex, T-19. D-2/3/5 — heap 안정성, T-20. E — 링크 무결성 (+10 more)
+
+### Community 47 - ".getRootSnapshot"
 Cohesion: 0.12
-Nodes (15): A20_findPresetIndexByCode(), A20_findStyleIndexByCode(), ST_A20_WindDict_t, applyManualResolved, CL_CT10_ControlManager::startOverridePreset(), ST_A20_AdjustDelta_t, CL_S10_Simulation::applyPresetCore(), CL_S10_Simulation::generateTarget() (+7 more)
+Nodes (8): CL_C10_ConfigManager::toJson_All(), 3.1 `g_A20_config_root` 생명주기 (핵심 CBD 계약), 3. 공유 전역 자원 접근 규약, CL_W10_WebAPI::routeSchedules(), CL_W10_WebAPI::routeUserProfiles(), CL_W10_WebAPI::routeFirmwareCheck(), CL_W10_WebAPI::routeWifiConfig(), _w10_compareSemVer()
 
-### Community 41 - "File"
-Cohesion: 0.13
-Nodes (17): File, ST_A20_PageAsset_t, path, uri, ST_A20_PageItem_t, enable, isMain, order (+9 more)
+### Community 48 - "BUDGET_0202.md — 시간 및 시스템 자원 예산"
+Cohesion: 0.11
+Nodes (17): 11. 개정 이력, 1. 태스크별 자원 할당 매트릭스, 4. 잠재 블로킹 지점 및 완화, 5. FreeRTOS 스택 예산, 7.1 LittleFS 에셋 절감, 7.2 동시 HTTP 소켓, 7. 플래시 및 네트워크 소켓 예산, 8.1 배포 자산 실측 (2026-10-21 CI) (+9 more)
 
-### Community 42 - "Web API & Networking"
+### Community 49 - "S10_Simul_Physic_0202.cpp"
+Cohesion: 0.14
+Nodes (7): A20_findPresetIndexByCode(), A20_findStyleIndexByCode(), CL_S10_Simulation::applyPresetCore(), CL_S10_Simulation::updateGust(), CL_S10_Simulation::updateThermal(), S10_probFromRatePerSec(), S20_resolveWindParams()
+
+### Community 50 - ".parseJsonBody"
 Cohesion: 0.15
-Nodes (16): addWindProfileFromJson, deleteSchedule, deleteUserProfiles, deleteWindProfile, loadWindDict, patchUserProfilesFromJson, saveDirtyConfigs, toJson_WindDict (+8 more)
+Nodes (7): CL_W10_WebAPI::routeControl(), CL_W10_WebAPI::routeMotionFeed(), CL_W10_WebAPI::routeSimulation(), CL_W10_WebAPI::routeSchedulesID(), CL_W10_WebAPI::routeUserProfilesID(), CL_W10_WebAPI::routeUserProfilesPatch(), CL_W10_WebAPI::routeWindProfileID()
 
-### Community 43 - "FSM State Transitions"
-Cohesion: 0.15
-Nodes (10): CL_M10_MotionLogic, _onChange, _pir, s_stateMutex, _state, JsonDocument, SemaphoreHandle_t, ST_M10_MotionState_t (+2 more)
+### Community 51 - "WsClient"
+Cohesion: 0.18
+Nodes (7): closeAll(), get(), getApiKey(), getState(), start(), _waitReloadComplete(), WsClient
 
-### Community 44 - "Path"
+### Community 52 - "CL_A30_LED"
+Cohesion: 0.18
+Nodes (6): CL_A30_LED, _lastLedMs, _ledState, _numPixels, _pin, _pixel
+
+### Community 53 - "W10_Web_Util_0202.cpp"
+Cohesion: 0.22
+Nodes (7): CL_W10_WebAPI::W10_registerGzipServe(), CL_W10_WebAPI::W10_registerStaticRoute(), CL_W10_WebAPI::_applyHeaders(), CL_W10_WebAPI::checkApiKey(), CL_W10_WebAPI::parseJsonBody(), CL_W10_WebAPI::sendJson(), CL_W10_WebAPI::sendText()
+
+### Community 54 - "CL_A40_MutexGuard_Semaphore"
 Cohesion: 0.24
-Nodes (15): gzip, Path, pathlib, scons_script, shutil, build_css_bundle(), build_js_bundle(), find_project_root() (+7 more)
+Nodes (4): CL_A40_MutexGuard_Semaphore, _acquired, _caller, _mutexPtr
 
-### Community 45 - "Web API & Networking"
-Cohesion: 0.19
-Nodes (6): closeAll(), get(), getApiKey(), getState(), start(), WsClient
+### Community 55 - "7.3 Batch A~F 신규"
+Cohesion: 0.20
+Nodes (7): 3. async_tcp WCET (F-05/F-06/D-1 반영 후), 4.3 POST/PATCH 공통 헬퍼 계약 (F-2, F-3), 7.3 Batch A~F 신규, 5.1 API 응답 필드 (Batch N-1, F-2, F-3), CL_W10_WebAPI::routeTimeSet(), _routeWifiConfigPatchBody(), _routeSystemPatchBody()
 
-### Community 46 - "050wsjs"
+### Community 56 - "CL_W10_WebAPI::routeGeminiProxy"
+Cohesion: 0.32
+Nodes (4): CL_W10_WebAPI::routeGeminiProxy(), W10_callGeminiApi(), W10_getGeminiApiKey(), CL_W10_WebAPI::routeUpdate()
+
+### Community 57 - "FLOW_0202.md — 데이터 흐름 및 시퀀스 명세"
+Cohesion: 0.13
+Nodes (14): 10. 예외/폴백 경로, 11.1 빌드 전처리 (`pio_gzip_0202.py`), 11.2 런타임 정적 서빙 (`W10_Web_Static_0202.cpp`), 11. 웹 에셋 빌드/서빙 파이프라인, 12. 개정 이력, 2. 메인 루프 파이프라인 (`A00_run()`), 3. 설정 재로드(Reload) 위임 시퀀스 (F-05), 4. Motion Patch 위임 시퀀스 (F-06) (+6 more)
+
+### Community 58 - "STATE_0202.md — 상태 소유권 및 FSM 명세"
+Cohesion: 0.13
+Nodes (13): 2.1 상태 정의, 2.2 상태 전이 우선순위 (`decideRunSource`), 2.4 Batch F-5: profile fall-through 차단, 2. CT10 메인 제어 상태머신 (7-State FSM), 4. WF10 Wi-Fi 상태머신, 5. TM10 시간 동기화 상태, 6.1 F-05 Pending Reload, 6.2 F-06 Pending Motion.Sim Apply (+5 more)
+
+### Community 59 - "CT10_Ctl_Ctl_0202.cpp"
+Cohesion: 0.14
+Nodes (7): CL_CT10_ControlManager::applyManual(), CL_CT10_ControlManager::applyMotionSimConfigToSim(), CL_CT10_ControlManager::begin(), CL_CT10_ControlManager::exportSimJson(), CL_CT10_ControlManager::feedPIR(), CL_CT10_ControlManager::patchSimFromJson(), CL_CT10_ControlManager::setMotion()
+
+### Community 60 - "WsClient"
 Cohesion: 0.22
 Nodes (4): closeAll(), get(), initByLevel(), WsClient
 
-### Community 47 - "Web API & Networking"
+### Community 61 - ".applyPresetCore"
+Cohesion: 0.17
+Nodes (7): CL_S10_Simulation::applyResolvedWind(), CL_S10_Simulation::begin(), CL_S10_Simulation::resetDefaults(), CL_S10_Simulation::patchFromJson(), CL_S10_Simulation::toChartJson(), CL_S10_Simulation::toJson(), CL_S10_Simulation::updatePhase()
+
+### Community 62 - "CL_S10_Simulation::tick"
 Cohesion: 0.16
-Nodes (14): addScheduleFromJson, addUserProfilesFromJson, getRootSnapshot, toJson_Motion, toJson_NvsSpec, toJson_Schedules, toJson_System, toJson_UserProfiles (+6 more)
+Nodes (5): 10. Batch A~F 예산 영향 요약, 3. S10 시뮬레이션 물리 엔진 상태, CT10_markDirtyFromSim(), CL_S10_Simulation::tick(), S10_millis2EpochMs()
 
-### Community 48 - "System Specifications"
-Cohesion: 0.22
-Nodes (14): saveMotionConfig, saveNvsSpecConfig, saveSchedules, saveSystemConfig, saveUserProfiles, saveWebPageConfig, saveWifiConfig, saveWindDict (+6 more)
-
-### Community 49 - "033utiltemplatejs"
+### Community 63 - "033.util.template.js"
 Cohesion: 0.27
 Nodes (13): ai(), chart(), dashboard(), diagnostics(), firmware(), info(), logs(), network() (+5 more)
 
-### Community 50 - "130uiformjs"
+### Community 64 - "130.ui.form.js"
 Cohesion: 0.20
-Nodes (9): append(), clear(), _levelClass(), refresh(), render(), set(), setItems(), setSelected() (+1 more)
+Nodes (7): append(), _levelClass(), refresh(), render(), setItems(), setSelected(), _trim()
 
-### Community 51 - "_bindConnectionStatus"
-Cohesion: 0.19
-Nodes (9): _bindConnectionStatus(), _bindLastUpdate(), _bindStore(), clockStr(), _ensure(), error(), show(), startClock() (+1 more)
-
-### Community 52 - "FSM State Transitions"
-Cohesion: 0.18
-Nodes (7): Adafruit_NeoPixel, CL_A30_LED, _lastLedMs, _ledState, _numPixels, _pin, _pixel
-
-### Community 53 - "Web API & Networking"
-Cohesion: 0.24
-Nodes (11): AsyncWebServerResponse, _applyHeaders, CL_W10_WebAPI::W10_registerStaticRoute(), CL_W10_WebAPI::_applyHeaders(), CL_W10_WebAPI::checkApiKey(), CL_W10_WebAPI::parseJsonBody(), CL_W10_WebAPI::sendJson(), CL_W10_WebAPI::sendText() (+3 more)
-
-### Community 54 - "CL_A40_MutexGuard_Semapho"
-Cohesion: 0.24
-Nodes (6): CL_A40_MutexGuard_Semaphore, _acquired, _caller, _mutexPtr, SemaphoreHandle_t, TickType_t
-
-### Community 55 - "FSM State Transitions"
+### Community 65 - "200.page.dashboard.js"
 Cohesion: 0.29
-Nodes (10): _applyInitialState(), _applyPresetList(), _bindStore(), mount(), _mountComponents(), _onIntensityChange(), _onPowerToggle(), _onPresetSelect() (+2 more)
+Nodes (9): _applyInitialState(), _applyPresetList(), _bindStore(), mount(), _mountComponents(), _onIntensityChange(), _onPowerToggle(), _onPresetSelect() (+1 more)
 
-### Community 56 - "Web API & Networking"
-Cohesion: 0.23
-Nodes (10): sendText, CL_W10_WebAPI::routeGeminiProxy(), String, W10_callGeminiApi(), W10_getGeminiApiKey(), CL_W10_WebAPI::getUploadPath(), CL_W10_WebAPI::routeUpdate(), String (+2 more)
+### Community 66 - ".W10_registerGzipServe"
+Cohesion: 0.20
+Nodes (5): 4.1 W10 정적 웹 에셋 서빙 계약, 7.1 기존 (F-01~I-6), 5.4.8 v0202 자산 하위 호환, 8. 장애 진단 및 트러블슈팅, CL_W10_WebAPI::routeStaticAssets()
 
-### Community 57 - "034utiltoastjs"
+### Community 67 - "034.util.toast.js"
 Cohesion: 0.33
 Nodes (8): _ensure(), error(), handle(), info(), show(), success(), warn(), wrap()
 
-### Community 58 - "Web API & Networking"
-Cohesion: 0.20
-Nodes (11): atLeast(), capitalize(), _clearMain(), current(), dispatch(), init(), initByLevel(), parseHash() (+3 more)
+### Community 68 - "070.router.js"
+Cohesion: 0.31
+Nodes (8): capitalize(), _clearMain(), dispatch(), init(), parseHash(), renderNavMenu(), _showError(), _showLoading()
 
-### Community 59 - "applyPresetCore"
+### Community 69 - "append"
+Cohesion: 0.20
+Nodes (10): ApiError, append(), buildQuery(), _levelClass(), msToSecLabel(), overrideFixed(), _trim(), uploadFile() (+2 more)
+
+### Community 70 - ".get"
 Cohesion: 0.25
-Nodes (10): applyPresetCore, initPhaseFromBase, resetDefaults, CL_S10_Simulation::applyResolvedWind(), CL_S10_Simulation::begin(), CL_S10_Simulation::resetDefaults(), ST_A20_ResolvedWind_t, CL_S10_Simulation::patchFromJson() (+2 more)
+Nodes (6): _bindConnectionStatus(), _bindLastUpdate(), _bindStore(), clockStr(), startClock(), Store
 
-### Community 60 - "_      _"
+### Community 71 - "ST_ChartEntry"
+Cohesion: 0.18
+Nodes (11): ST_ChartEntry, gust_active, intensity, preset_index, pwm_duty, target_wind, thermal_active, timestamp (+3 more)
+
+### Community 72 - "💨 스마트 네이처 윈드 (Smart Nature Wind v0202)"
+Cohesion: 0.18
+Nodes (10): 🌿 1. 단순한 ‘바람’이 아닌, ‘자연’을 전하다, ⚙️ 2. 대기역학을 품은 바람 — Realistic Wind Physics (S10 / S20), 🚀 3. 외부 허브 없는 Standalone 초고속 풀스택 시스템, 🤖 4. 지능형 센서 연동 & 하드웨어 무소음 규격, 📅 5. 주간 정밀 스케줄러 & 맞춤형 바람 프로파일, 🗺️ 6. 10종 자연풍 테마 프리셋 (Nature Wind Presets), 🔋 7. Plug & Play — 간편한 구성과 확장성, 💡 8. 결론 — 바람을 ‘디자인’하는 새로운 시대 (+2 more)
+
+### Community 74 - "7.1 래치 해제 경로"
 Cohesion: 0.20
-Nodes (10): _“왜 평범한 선풍기 대신, 스마트 네이처 윈드인가?”_, 🌿 1. 단순한 ‘바람’이 아닌, ‘자연’을 전하다, ⚙️ 2. 대기역학을 품은 바람 — Realistic Wind Physi, 🚀 3. 외부 허브 없는 Standalone 풀스택 시스템, 🤖 4. 지능형 센서 & 하드웨어 확장, 📅 5. 개인화 스케줄러 & 사용자 프로필, 🗺️ 6. 10종 자연풍 테마 프리셋, 🔋 7. Plug & Play — 간편한 구성과 확장 (+2 more)
+Nodes (5): 7.1 래치 해제 경로, 7.2 AutoOff offTime 재트리거 방지, 7.3 이벤트 상태 hold/ACK, 7. AutoOff 래치 및 이벤트 상태, CL_CT10_ControlManager::startOverridePreset()
 
-### Community 61 - "230pageprofilesjs"
+### Community 75 - "230.page.profiles.js"
 Cohesion: 0.38
-Nodes (8): _highlightActive(), _load(), mount(), _onDelete(), _onStart(), _onStop(), _renderList(), unmount()
+Nodes (7): _highlightActive(), _load(), mount(), _onDelete(), _onStart(), _onStop(), _renderList()
 
-### Community 62 - "deleteProfile"
+### Community 76 - "_load"
 Cohesion: 0.22
 Nodes (10): deleteProfile(), deleteSchedule(), _highlightActive(), listProfiles(), listSchedules(), _load(), _onDelete(), _onToggle() (+2 more)
 
-### Community 63 - "_     _"
+### Community 77 - "ST_A20_cfg_jsonFile_t"
 Cohesion: 0.22
-Nodes (9): _“공간에 스미는, 가장 편안한 자연의 숨결.”_, 🌬️ 1. 제품 개요, 🌟 2. 제품 가치 & 핵심 컨셉, ⚙️ 3. 주요 기술 특징, 🗺️ 4. 환경 프리셋 (10가지 자연 모드), 💡 5. 사용자 경험 중심 기능, 🌈 6. 제품 포지션 & 브랜드 메시지, 📦 7. 요약 포인트 (한눈에 보는 특징) (+1 more)
+Nodes (9): ST_A20_cfg_jsonFile_t, motion, nvsSpec, schedules, system, userProfiles, webPage, wifi (+1 more)
 
-### Community 64 - "060storejs"
-Cohesion: 0.28
-Nodes (3): start(), stop(), Store
+### Community 79 - "ST_W10_PageEntry_t"
+Cohesion: 0.17
+Nodes (10): ST_W10_MenuState_t, main_path, pages_sorted, ST_W10_PageEntry_t, enable, isMain, label, order (+2 more)
 
-### Community 65 - "210pagechartjs"
+### Community 80 - "210.page.chart.js"
 Cohesion: 0.42
-Nodes (7): _applyInitial(), _exportCsv(), mount(), _onWsChart(), _pushPoint(), _redrawRange(), unmount()
+Nodes (6): _applyInitial(), _exportCsv(), mount(), _onWsChart(), _pushPoint(), _redrawRange()
 
-### Community 66 - "220pageschedulejs"
+### Community 81 - "220.page.schedule.js"
 Cohesion: 0.47
-Nodes (7): _load(), mount(), _onAdd(), _onDelete(), _onToggle(), _renderList(), unmount()
+Nodes (6): _load(), mount(), _onAdd(), _onDelete(), _onToggle(), _renderList()
 
-### Community 67 - "Web API & Networking"
-Cohesion: 0.25
-Nodes (8): ApiError, append(), _levelClass(), msToSecLabel(), _trim(), uploadFile(), uploadFirmware(), uploadWithProgress()
-
-### Community 68 - "_       _"
-Cohesion: 0.25
-Nodes (8): _“왜 평범한 선풍기 대신, 스마트 네이처 윈드 어댑터인가?”_, 🌿 1. 단순한 ‘바람’이 아닌, ‘자연’을 전하다, ⚙️ 2. 대기역학을 품은 바람 — Realistic Wind Physi, 🌈 3. 감성 + 과학의 조화, 🧭 4. 당신의 공간을 ‘자연 환경’으로 바꾸는 디바이스, 🔋 5. Plug & Play — 누구나 쉽게, 즉시 변화, 💡 6. 결론 — 바람을 ‘디자인’하는 시대, Doc: 💨스마트 네이처 윈드 어댑터
-
-### Community 69 - "120uichartjs"
+### Community 82 - "120.ui.chart.js"
 Cohesion: 0.46
 Nodes (7): clear(), destroy(), draw(), _drawSeries(), push(), resize(), setMaxPoints()
 
-### Community 70 - "240pagesettingsjs"
+### Community 83 - "240.page.settings.js"
 Cohesion: 0.43
-Nodes (6): _loadSystem(), mount(), _onReload(), _onSave(), unmount(), _waitReloadComplete()
+Nodes (5): _loadSystem(), mount(), _onReload(), _onSave(), _waitReloadComplete()
 
-### Community 71 - "FSM State Transitions"
+### Community 84 - "270.page.network.js"
 Cohesion: 0.39
-Nodes (6): _loadState(), _loadSystemTime(), mount(), _onSaveTime(), _onScan(), unmount()
+Nodes (5): _loadState(), _loadSystemTime(), mount(), _onSaveTime(), _onScan()
 
-### Community 73 - "031utildomjs"
-Cohesion: 0.33
-Nodes (3): escape(), html(), text()
-
-### Community 74 - "260pagefirmwarejs"
+### Community 87 - "260.page.firmware.js"
 Cohesion: 0.43
-Nodes (5): _loadVersion(), mount(), _onUploadFile(), _onUploadFw(), unmount()
+Nodes (4): _loadVersion(), mount(), _onUploadFile(), _onUploadFw()
 
-### Community 75 - "290pageaijs"
+### Community 88 - "290.page.ai.js"
 Cohesion: 0.43
-Nodes (5): _appendMessage(), mount(), _onSend(), _replaceLastAssistant(), unmount()
+Nodes (4): _appendMessage(), mount(), _onSend(), _replaceLastAssistant()
 
-### Community 76 - "032utillogjs"
-Cohesion: 0.40
-Nodes (3): debug(), info(), isDebug()
+### Community 89 - "0200_003.md"
+Cohesion: 0.29
+Nodes (6): 🔧 [4] `CT10_Ctl_0202.h` — B-N-1a, → Content-Encoding: gzip 헤더가 포함되어야 함, Gzip 헤더 확인, 검증 명령, 번들 파일 존재 확인, 파일 수정 항목
 
-### Community 77 - "280pagelogsjs"
-Cohesion: 0.47
-Nodes (4): _exportJson(), _loadInitial(), mount(), unmount()
-
-### Community 78 - "030utilleveljs"
-Cohesion: 0.60
-Nodes (4): applyTo(), atLeast(), current(), set()
-
-### Community 79 - "FSM State Transitions"
-Cohesion: 0.40
-Nodes (4): ST_W10_MenuState_t, main_path, pages_sorted, vector
-
-### Community 80 - "C10_Config_Core_0201cpp"
-Cohesion: 0.50
-Nodes (3): fs, CL_C10_ConfigManager::getDirtyStatus(), JsonDocument
-
-### Community 81 - "Web API & Networking"
+### Community 90 - "Load_File2JsonDoc_V21"
 Cohesion: 0.67
-Nodes (3): getDirtyStatus, toJson_All, CL_W10_WebAPI::routeConfigDirtySave()
+Nodes (5): _buildPathWithSuffix(), _io_callerOrUnknown(), Load_File2JsonDoc_V21(), _parseJsonFileToDoc(), Save_JsonDoc2File_V21()
+
+### Community 92 - "280.page.logs.js"
+Cohesion: 0.47
+Nodes (3): _exportJson(), _loadInitial(), mount()
+
+### Community 94 - "030.util.level.js"
+Cohesion: 0.60
+Nodes (3): applyTo(), atLeast(), current()
+
+### Community 96 - "Doc: /maintenance - 규칙 유지보수 워크플로우"
+Cohesion: 0.50
+Nodes (4): 규칙 준수 여부 점검 (Audit), Doc: /maintenance - 규칙 유지보수 워크플로우, 규칙 고도화 (Improvement), 코드 보완 (Refactor)
+
+### Community 101 - "0200_001.md"
+Cohesion: 0.50
+Nodes (3): 또는 직접 메시지 지정, 메시지 지정, 실행 정책 오류 시
+
+### Community 102 - "3️⃣ 실행 예시 (검증 시나리오)"
+Cohesion: 0.50
+Nodes (3): 3️⃣ 실행 예시 (검증 시나리오), Linux / macOS, 또는
+
+### Community 104 - "src_v0202_wf10_wifimgr_0202"
+Cohesion: 0.50
+Nodes (4): , EN_WF10_REQ_COALESCED, EN_WF10_REQ_FAILED, EN_WF10_REQ_OK
 
 ## Knowledge Gaps
-- **440 isolated node(s):** `uri`, `uri`, `pageAssetCount`, `uri`, `isCommon` (+435 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 600 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **2 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **353 isolated node(s):** `EN_A20_CONTROL_RUN_CONTINUE`, `EN_A20_CONTROL_RUN_SCHEDULE`, `EN_A20_WIND_PHASE_CALM`, `EN_A20_WIND_PHASE_NORMAL`, `EN_A20_WIND_PHASE_STRONG` (+348 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 942 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **17 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Doc: 0200_004_백앤드리팩토링` connect `FSM State Transitions` to `Architecture Contracts & State`, `Architecture Contracts & State`, `FSM State Transitions`, `Web API & Networking`, `Web API & Networking`, `Architecture Contracts & State`, `FSM State Transitions`, `Architecture Contracts & State`, `Web API & Networking`, `Web API & Networking`, `System Specifications`, `FSM State Transitions`, `FSM State Transitions`, `Device Control & Broker`, `FSM State Transitions`, `JsonArrayConst`, `Web API & Networking`, `CL_TM10_TimeManager`, `Web API & Networking`, `Web API & Networking`, `A23_Com_ResetCfg_0201h`, `FSM State Transitions`, `Web API & Networking`, `Web API & Networking`, `EN_A20_segment_mode_t`, `Web API & Networking`, `FSM State Transitions`, `A20_resetSchedulesDefault`, `_buildPathWithSuffix`, `C10_Config_WindDc_CRUD_02`, `Web API & Networking`, `FSM State Transitions`, `applySegmentOff`, `Web API & Networking`, `wifi`, `A20_findPresetIndexByCode`, `File`, `Web API & Networking`, `FSM State Transitions`, `Path`, `Web API & Networking`, `050wsjs`, `Web API & Networking`, `System Specifications`, `130uiformjs`, `_bindConnectionStatus`, `FSM State Transitions`, `Web API & Networking`, `CL_A40_MutexGuard_Semapho`, `Web API & Networking`, `Web API & Networking`, `applyPresetCore`, `060storejs`, `120uichartjs`, `030utilleveljs`, `FSM State Transitions`, `C10_Config_Core_0201cpp`?**
-  _High betweenness centrality (0.391) - this node is a cross-community bridge._
-- **Why does `Doc: FRONTEND_IMPL_0200.md — 프론트엔드 최적 재설계 v3.0 (그린필드)` connect `Web API & Networking` to `Architecture Contracts & State`, `FSM State Transitions`, `FSM State Transitions`, `Web API & Networking`, `Web API & Networking`, `FSM State Transitions`, `FSM State Transitions`, `000constjs`, `Web API & Networking`, `FSM State Transitions`, `Web API & Networking`, `FSM State Transitions`, `FSM State Transitions`, `FSM State Transitions`, `Web API & Networking`, `wifi`, `File`, `Path`, `Web API & Networking`, `050wsjs`, `033utiltemplatejs`, `130uiformjs`, `_bindConnectionStatus`, `Web API & Networking`, `FSM State Transitions`, `Web API & Networking`, `034utiltoastjs`, `Web API & Networking`, `230pageprofilesjs`, `060storejs`, `210pagechartjs`, `220pageschedulejs`, `120uichartjs`, `240pagesettingsjs`, `FSM State Transitions`, `030utiltimejs`, `031utildomjs`, `260pagefirmwarejs`, `290pageaijs`, `032utillogjs`, `280pagelogsjs`, `030utilleveljs`?**
-  _High betweenness centrality (0.176) - this node is a cross-community bridge._
-- **Why does `Doc: 0200_001` connect `Device Control & Broker` to `Architecture Contracts & State`, `Architecture Contracts & State`, `FSM State Transitions`, `FSM State Transitions`, `Web API & Networking`, `Architecture Contracts & State`, `FSM State Transitions`, `Architecture Contracts & State`, `Web API & Networking`, `Web API & Networking`, `System Specifications`, `FSM State Transitions`, `FSM State Transitions`, `FSM State Transitions`, `JsonArrayConst`, `Web API & Networking`, `CL_TM10_TimeManager`, `Web API & Networking`, `Web API & Networking`, `FSM State Transitions`, `Web API & Networking`, `Web API & Networking`, `EN_A20_segment_mode_t`, `Web API & Networking`, `FSM State Transitions`, `A20_resetSchedulesDefault`, `_buildPathWithSuffix`, `C10_Config_WindDc_CRUD_02`, `Web API & Networking`, `wifi`, `File`, `Web API & Networking`, `FSM State Transitions`, `Path`, `Web API & Networking`, `130uiformjs`, `Web API & Networking`, `Web API & Networking`, `applyPresetCore`, `120uichartjs`, `031utildomjs`, `FSM State Transitions`, `C10_Config_Core_0201cpp`?**
-  _High betweenness centrality (0.076) - this node is a cross-community bridge._
-- **Are the 410 inferred relationships involving `Doc: 0200_004_백앤드리팩토링` (e.g. with `EN_A20_segment_mode_t` and `EN_CT10_run_source_t`) actually correct?**
-  _`Doc: 0200_004_백앤드리팩토링` has 410 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 184 inferred relationships involving `Doc: 0200_001` (e.g. with `File` and `Path`) actually correct?**
-  _`Doc: 0200_001` has 184 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 130 inferred relationships involving `Doc: SPEC_0200.md — Smart Nature Wind v0200 종합 기술 사양서` (e.g. with `File` and `main.cpp`) actually correct?**
-  _`Doc: SPEC_0200.md — Smart Nature Wind v0200 종합 기술 사양서` has 130 INFERRED edges - model-reasoned connections that need verification._
-- **Are the 124 inferred relationships involving `Doc: FRONTEND_IMPL_0200.md — 프론트엔드 최적 재설계 v3.0 (그린필드)` (e.g. with `Path` and `system`) actually correct?**
-  _`Doc: FRONTEND_IMPL_0200.md — 프론트엔드 최적 재설계 v3.0 (그린필드)` has 124 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `CL_CT10_ControlManager` connect `CL_CT10_ControlManager` to `CL_S10_Simulation`, `CL_N10_NvsManager`, `CL_CT10_ControlManager::exportStateJson_v02`, `src_v0202_ct10_ctl_0202`, `CT10_Ctl_Ctl_Seg_0202.cpp`, `CL_W10_WebAPI`, `7.1 래치 해제 경로`, `CL_P10_PWM`, `.log`, `3. 백엔드 Batch A~F 신규`, `A00_run`, `CT10_Ctl_IOWS_0202.cpp`, `STATE_0202.md — 상태 소유권 및 FSM 명세`, `CT10_Ctl_Basic_0202.cpp`, `CL_S10_Simulation::tick`?**
+  _High betweenness centrality (0.066) - this node is a cross-community bridge._
+- **What connects `EN_A20_CONTROL_RUN_CONTINUE`, `EN_A20_CONTROL_RUN_SCHEDULE`, `EN_A20_WIND_PHASE_CALM` to the rest of the system?**
+  _353 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `CL_S10_Simulation` be split into smaller, more focused modules?**
+  _Cohesion score 0.029850746268656716 - nodes in this community are weakly interconnected._
+- **Why does `CL_S10_Simulation` connect `CL_S10_Simulation` to `CL_CT10_ControlManager`, `A20_Const_0202.h`, `ST_ChartEntry`, `CL_P10_PWM`, `.applyPresetCore`, `CL_S10_Simulation::tick`?**
+  _High betweenness centrality (0.056) - this node is a cross-community bridge._
+- **Should `CL_N10_NvsManager` be split into smaller, more focused modules?**
+  _Cohesion score 0.05505279034690799 - nodes in this community are weakly interconnected._
+- **Why does `CL_W10_WebAPI` connect `CL_W10_WebAPI` to `.W10_registerGzipServe`, `.checkApiKey`, `CL_CT10_ControlManager`, `CL_D10_Logger`, `ST_W10_PageEntry_t`, `.parseJsonBody`, `src_v0202_c10_config_0202`, `W10_Web_Util_0202.cpp`, `CT10_Ctl_IOWS_0202.cpp`, `7.3 Batch A~F 신규`, `CL_W10_WebAPI::routeGeminiProxy`?**
+  _High betweenness centrality (0.041) - this node is a cross-community bridge._
+- **Should `P010_bundle_0202.js` be split into smaller, more focused modules?**
+  _Cohesion score 0.05201266395296246 - nodes in this community are weakly interconnected._

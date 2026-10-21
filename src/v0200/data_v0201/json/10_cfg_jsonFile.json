@@ -1,7 +1,7 @@
 {
 	
 	"configJsonFile": {
-		"system"         : "/json/cfg_system_0200.json",
+		"system"         : "/json/cfg_system_0201.json",
 		"wifi"           : "/json/cfg_wifi_0201.json",
 		"motion"         : "/json/cfg_motion_0201.json",
 		"nvsSpec"        : "/json/cfg_nvsSpec_0201.json",

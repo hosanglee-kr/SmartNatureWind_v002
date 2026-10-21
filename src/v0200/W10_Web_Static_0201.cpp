@@ -147,8 +147,8 @@ void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_fil
 // ======================================================
 void CL_W10_WebAPI::W10_registerGzipServe() {
     
-	// v0201 대응 (v3 + v0201 동시 지원, 하위 호환)
-	s_server->on("^\\/(html_v3|html_v0201)\\/.+", HTTP_GET, [](AsyncWebServerRequest* r) {
+	// v0201 대응
+	s_server->on("^\\/(html_v0201)\\/.+", HTTP_GET, [](AsyncWebServerRequest* r) {
 	    String v_url = r->url();
 	    bool v_acceptsGzip = r->hasHeader("Accept-Encoding")
 	                      && r->getHeader("Accept-Encoding")->value().indexOf("gzip") >= 0;

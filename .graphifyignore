@@ -34,6 +34,7 @@ README_*.md              # 과거 버전 README 백업 (README_v0.0.3.kr.md 등)
 !README.md               # 프로젝트 메인 README.md는 분석 대상에 포함
 docs/                    # 제품 소개/데모 이미지(.png, .gif) 및 구버전 히스토리 문서
 plan/                    # 초기 개발/기획 단계 마크다운 문서
+intro_docs/
 
 # ------------------------------------------------------------------------------
 # 4. v0200 내부 레거시/도구/웹 리소스 (v0200 Internal Legacy, Tools & Web Assets)
@@ -63,3 +64,4 @@ src/v0200/data_v0201/html_v0201/ # LittleFS 배포용 웹 스테이징 디렉토
 .cache/                  # 컴파일러/빌드 캐시
 compile_commands.json    # Clang 컴파일 데이터베이스 (pio run -t compiledb 생성물)
 graphify-out/            # Graphify 지식 그래프 산출물 및 임시 캐시
+.github/workflows_backup/

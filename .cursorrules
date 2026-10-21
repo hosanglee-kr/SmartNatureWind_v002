@@ -74,3 +74,23 @@
 - `src/main.cpp`: 아두이노 표준 엔트리포인트 (`setup`, `loop`에서 최신 버전 `A00_init`/`A00_run` 호출)
 - `include`: 프로젝트 공용 헤더 파일
 
+## 지식 그래프 (Graphify) 기반 탐색 원칙 (Strict Invariant)
+
+> [!CAUTION]
+> **전체 소스/문서 직접 열람 및 무차별 Grep 금지 (Graph-First Rule)**:
+> 코드 분석, 기능 구현, 버그 추적, 리팩토링 등 작업 시 소스 코드나 문서를 목적 없이 전체 열람하거나 무차별 grep하는 대신, 지식 그래프를 우선 질의하여 대상 위치를 정밀하게 특정한 후 접근합니다.
+
+### 2단계 필수 탐색 프로토콜 (Two-Step Navigation Protocol)
+1. **[1단계] Graphify 선행 질의 (Mandatory First Step)**:
+   - `graphify query "<목적/질문/심볼>"`: 관련 노드, 커뮤니티, 파일 경로(`src=...`) 및 라인(`loc=...`) 조회
+   - `graphify path "<출발노드>" "<도착노드>"`: 두 심볼/모듈 간 호출 관계 및 최단 의존 경로 추적
+   - `graphify explain "<심볼/함수/클래스명>"`: 특정 심볼의 상세 명세 및 연결 노드 확인
+2. **[2단계] 타겟 라인 정밀 열람 (Pinpoint View)**:
+   - 1단계 결과로 확인된 정확한 파일과 필요한 최소 라인 범위에 한해서만 파일을 열람합니다.
+
+### 지식 그래프 갱신
+코드나 설계를 변경한 후에는 지식 그래프 최신화를 위해 다음 명령어를 실행합니다:
+```powershell
+graphify update .
+```
+

@@ -105,7 +105,7 @@ window.SNW = window.SNW || {};
         TIMEOUT_MS: { DEFAULT:8000, GEMINI:20000, UPLOAD:60000, SCAN:15000 },
         WS_RECONNECT: { BACKOFF_MS:[1000,2000,4000,8000,16000,30000], FAIL_THRESHOLD:3, FALLBACK_POLL_MS:2000 },
         SIM_DEFAULT: { intensity:70, variability:50, gustFreq:45, fanLimit:90, minFan:10, fanPowerEnabled:true },
-        DEFAULT_LEVEL: 'L1',
+        DEFAULT_LEVEL: 'L4',
         UI: {
             TOAST_DEFAULT_MS:3000, TOAST_SUCCESS_MS:2000, TOAST_ERROR_MS:4000,
             PRESET_GRID_MIN_COL:2, PRESET_GRID_MAX_COL:5,
@@ -527,29 +527,29 @@ window.SNW = window.SNW || {};
         constructor(status, data) { super((data && data.error) || `HTTP ${status}`); this.name = 'ApiError'; this.status = status; this.data = data; }
     }
     
-    async function _fetch(path, opts = {}) {
-        // ======================================================
-        // [OFFLINE 원천 차단] 오프라인 모드일 때 가상 데이터 즉시 반환
-        // ======================================================
-        if (window.SNW_OFFLINE) {
-            // SNW.Offline._runtime이 있으면 사용, 없으면 빈 객체
-            const rt = (SNW.Offline && SNW.Offline._runtime) ? SNW.Offline._runtime : {};
-            
-            if (path.includes('/state')) return { control: rt.control || {}, sim: rt.sim || {} };
-            if (path.includes('/sim/state')) return { sim: rt.sim || {}, control: rt.control || {} };
-            if (path.includes('/simulation')) return { sim: rt.sim || {} };
-            if (path.includes('/system')) return { system: (SNW.Offline && SNW.Offline._cache && SNW.Offline._cache.system) || {} };
-            if (path.includes('/schedules')) return { schedules: (SNW.Offline && SNW.Offline._cache && SNW.Offline._cache.schedules && SNW.Offline._cache.schedules.schedules) || [] };
-            if (path.includes('/user_profiles')) return { userProfiles: (SNW.Offline && SNW.Offline._cache && SNW.Offline._cache.userProfiles) || {} };
-            if (path.includes('/windProfile')) return (SNW.Offline && SNW.Offline._cache && SNW.Offline._cache.windDict) || {};
-            if (path.includes('/logs')) return { logs: [{ ts: 0, lv: 3, msg: '[Offline Mode]' }] };
-            if (path.includes('/diag')) return { heap: 0, fs_used: 0, fs_total: 0 };
-            if (path.includes('/version')) return { fw: 'FW_Ver_2.0.2', control: 'CT10_Ctl_0202' };
-            
-            // 쓰기(POST 등) 요청은 성공으로 위장
-            return { result: 'ok', updated: true };
-        }
-                        
+	async function _fetch(path, opts = {}) {
+	    // ======================================================
+	    // [OFFLINE 방어막] 오프라인일 때 무조건 가상 데이터 반환 (404 원천 차단)
+	    // ======================================================
+	    if (window.SNW_OFFLINE) {
+	        console.log('[Offline Fetch] 요청 가로채기:', path);
+	        const rt = (SNW.Offline && SNW.Offline._runtime) ? SNW.Offline._runtime : {};
+	        const cache = (SNW.Offline && SNW.Offline._cache) ? SNW.Offline._cache : {};
+	        
+	        if (path.includes('/state')) return { control: rt.control || {}, sim: rt.sim || {} };
+	        if (path.includes('/sim/state')) return { sim: rt.sim || {}, control: rt.control || {} };
+	        if (path.includes('/simulation')) return { sim: rt.sim || {} };
+	        if (path.includes('/system')) return { system: cache.system || {} };
+	        if (path.includes('/schedules')) return { schedules: (cache.schedules && cache.schedules.schedules) || [] };
+	        if (path.includes('/user_profiles')) return { userProfiles: cache.userProfiles || {} };
+	        if (path.includes('/windProfile')) return cache.windDict || {};
+	        if (path.includes('/logs')) return { logs: [{ ts:0, lv:3, msg:'[Offline Mode]' }] };
+	        if (path.includes('/diag')) return { heap: 0, fs_used: 0, fs_total: 0 };
+	        if (path.includes('/version')) return { fw:'FW_Ver_2.0.2', control:'CT10_Ctl_0202' };
+	        
+	        return { result: 'ok', updated: true }; // POST 등은 성공으로 위장
+	    }
+	
         const dedupeKey = (opts.method || 'GET') === 'GET' ? path + (opts.body ? JSON.stringify(opts.body) : '') : null;
         if (dedupeKey && inflight.has(dedupeKey)) return inflight.get(dedupeKey);
         const promise = (async () => {
@@ -824,6 +824,12 @@ window.SNW = window.SNW || {};
     async function dispatch() {
         const path = parseHash();
         if (path === currentPath) return;
+        
+        const sidebar = document.getElementById('snw-sidebar');
+        if (sidebar && window.innerWidth < 1024) {
+            sidebar.hidden = true;
+        }
+
         const route = ROUTES[path];
         if (!SNW.LevelUtil.atLeast(route.level)) {
             SNW.ToastUtil.warn(SNW.I18n.t('msg.accessDenied'));
@@ -869,6 +875,13 @@ window.SNW = window.SNW || {};
         items.forEach(it => {
             if (it.minLevel && !SNW.LevelUtil.atLeast(it.minLevel)) return;
             const a = SNW.DomUtil.html`<a href="#${it.path}" data-route="${it.path}"><span class="snw-nav-icon">${it.icon}</span><span>${SNW.I18n.t(it.labelKey)}</span></a>`;
+            a.addEventListener('click', () => {
+                if (window.innerWidth < 1024) {
+                    const sidebar = document.getElementById('snw-sidebar');
+                    if (sidebar) sidebar.hidden = true;
+                }
+            });
+
             nav.appendChild(a);
         });
     }
@@ -878,7 +891,19 @@ window.SNW = window.SNW || {};
             window.addEventListener('hashchange', dispatch);
             const btnMenu = document.getElementById('btn-menu');
             const sidebar = document.getElementById('snw-sidebar');
-            if (btnMenu && sidebar) btnMenu.addEventListener('click', () => { sidebar.hidden = !sidebar.hidden; });
+            if (btnMenu && sidebar){
+                btnMenu.addEventListener('click', () => { sidebar.hidden = !sidebar.hidden; });
+            	// 모바일에서 메인 영역 터치 시 사이드바 닫기
+				const main = document.getElementById('snw-main');
+				if (main) {
+				    main.addEventListener('click', () => {
+				        if (!sidebar.hidden && window.innerWidth < 1024) {
+				            sidebar.hidden = true;
+				        }
+				    });
+				}
+            }
+				
             renderNavMenu();
             document.addEventListener('snw:langchange', renderNavMenu);
             dispatch();

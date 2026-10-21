@@ -54,7 +54,10 @@
 </div>
 
 <script>
+    // localhost, 127.0.0.1, file:// 이면 무조건 오프라인 모드로 작동
     window.SNW_OFFLINE = (location.protocol === 'file:') ||
+        location.hostname === 'localhost' ||
+        location.hostname === '127.0.0.1' ||
         new URLSearchParams(location.search).has('offline');
     
     if (window.SNW_OFFLINE) {
@@ -62,6 +65,7 @@
     }
 </script>
 <script src="./P010_bundle_0202.js"></script>
+
 
 </body>
 </html>

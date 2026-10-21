@@ -72,6 +72,14 @@ window.SNW = window.SNW || {};
 		const path = parseHash();
 		if (path === currentPath) return;
 		
+		// ======================================================
+		// [추가] 화면이 모바일(1024px 미만)일 때 메뉴 이동 시 사이드바 자동 닫기
+		// ======================================================
+		const sidebar = document.getElementById('snw-sidebar');
+		if (sidebar && window.innerWidth < 1024) {
+			sidebar.hidden = true;
+		}
+		
 		const route = ROUTES[path];
 		
 		// 사용자 레벨 검사
@@ -144,6 +152,17 @@ window.SNW = window.SNW || {};
                     <span class="snw-nav-icon">${it.icon}</span>
                     <span>${SNW.I18n.t(it.labelKey)}</span>
                 </a>`;
+             
+			// ======================================================
+			// [추가] 메뉴 링크 클릭 시 (모바일 환경이면) 사이드바 닫기
+			// ======================================================
+			a.addEventListener('click', () => {
+				if (window.innerWidth < 1024) {
+					const sidebar = document.getElementById('snw-sidebar');
+					if (sidebar) sidebar.hidden = true;
+				}
+			});
+			
 			nav.appendChild(a);
 		});
 	}
@@ -165,6 +184,16 @@ window.SNW = window.SNW || {};
 				btnMenu.addEventListener('click', () => {
 					sidebar.hidden = !sidebar.hidden;
 				});
+
+				// 모바일에서 메인 영역 터치 시 사이드바 닫기
+				const main = document.getElementById('snw-main');
+				if (main) {
+					main.addEventListener('click', () => {
+						if (!sidebar.hidden && window.innerWidth < 1024) {
+							sidebar.hidden = true;
+						}
+					});
+				}
 			}
 			
 			// nav 렌더링 + 언어 변경 시 재렌더

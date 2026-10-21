@@ -55,28 +55,28 @@ window.SNW = window.SNW || {};
 	// Core fetch (_fetch)
 	// =====================================================
 	async function _fetch(path, opts = {}) {
-		// ======================================================
-		// [OFFLINE 원천 차단] 오프라인 모드일 때 가상 데이터 즉시 반환
-		// ======================================================
-		if (window.SNW_OFFLINE) {
-			// SNW.Offline._runtime이 있으면 사용, 없으면 빈 객체
-			const rt = (SNW.Offline && SNW.Offline._runtime) ? SNW.Offline._runtime : {};
-			
-			if (path.includes('/state')) return { control: rt.control || {}, sim: rt.sim || {} };
-			if (path.includes('/sim/state')) return { sim: rt.sim || {}, control: rt.control || {} };
-			if (path.includes('/simulation')) return { sim: rt.sim || {} };
-			if (path.includes('/system')) return { system: (SNW.Offline && SNW.Offline._cache && SNW.Offline._cache.system) || {} };
-			if (path.includes('/schedules')) return { schedules: (SNW.Offline && SNW.Offline._cache && SNW.Offline._cache.schedules && SNW.Offline._cache.schedules.schedules) || [] };
-			if (path.includes('/user_profiles')) return { userProfiles: (SNW.Offline && SNW.Offline._cache && SNW.Offline._cache.userProfiles) || {} };
-			if (path.includes('/windProfile')) return (SNW.Offline && SNW.Offline._cache && SNW.Offline._cache.windDict) || {};
-			if (path.includes('/logs')) return { logs: [{ ts: 0, lv: 3, msg: '[Offline Mode]' }] };
-			if (path.includes('/diag')) return { heap: 0, fs_used: 0, fs_total: 0 };
-			if (path.includes('/version')) return { fw: 'FW_Ver_2.0.2', control: 'CT10_Ctl_0202' };
-			
-			// 쓰기(POST 등) 요청은 성공으로 위장
-			return { result: 'ok', updated: true };
-		}
-						
+	    // ======================================================
+	    // [OFFLINE 방어막] 오프라인일 때 무조건 가상 데이터 반환 (404 원천 차단)
+	    // ======================================================
+	    if (window.SNW_OFFLINE) {
+	        console.log('[Offline Fetch] 요청 가로채기:', path);
+	        const rt = (SNW.Offline && SNW.Offline._runtime) ? SNW.Offline._runtime : {};
+	        const cache = (SNW.Offline && SNW.Offline._cache) ? SNW.Offline._cache : {};
+	        
+	        if (path.includes('/state')) return { control: rt.control || {}, sim: rt.sim || {} };
+	        if (path.includes('/sim/state')) return { sim: rt.sim || {}, control: rt.control || {} };
+	        if (path.includes('/simulation')) return { sim: rt.sim || {} };
+	        if (path.includes('/system')) return { system: cache.system || {} };
+	        if (path.includes('/schedules')) return { schedules: (cache.schedules && cache.schedules.schedules) || [] };
+	        if (path.includes('/user_profiles')) return { userProfiles: cache.userProfiles || {} };
+	        if (path.includes('/windProfile')) return cache.windDict || {};
+	        if (path.includes('/logs')) return { logs: [{ ts:0, lv:3, msg:'[Offline Mode]' }] };
+	        if (path.includes('/diag')) return { heap: 0, fs_used: 0, fs_total: 0 };
+	        if (path.includes('/version')) return { fw:'FW_Ver_2.0.2', control:'CT10_Ctl_0202' };
+	        
+	        return { result: 'ok', updated: true }; // POST 등은 성공으로 위장
+	    }
+	
 		// GET 요청에 대해서만 in-flight dedupe
 		const dedupeKey = (opts.method || 'GET') === 'GET' ?
 			path + (opts.body ? JSON.stringify(opts.body) : '') :

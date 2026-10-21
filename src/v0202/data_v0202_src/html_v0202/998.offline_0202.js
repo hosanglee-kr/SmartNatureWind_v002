@@ -145,20 +145,41 @@ window.SNW = window.SNW || {};
             }
         }, 500);
     }
-
-    // 8. 부트스트랩 (API 강제 생성 → JSON 로드 → WS 스텁 → ready)
-    SNW.Offline.ready = (async () => {
-        ensureApi();     // SNW.Api가 없어도 강제로 만듦
-        await loadAll();
-        stubWs();
-        startFakeWs();
-        console.log('[Offline] 준비 완료');
-    })();
-
+    
+    // ======================================================
+	// 8. 부트스트랩 (API 강제 생성 → JSON 로드 → WS 스텁 → ready)
+	// ======================================================
+	SNW.Offline.ready = (async () => {
+		ensureApi(); // SNW.Api가 없어도 강제로 만듦
+		await loadAll();
+		stubWs();
+		startFakeWs();
+		console.log('[Offline] API 강제 생성 완료');
+		
+		// [수정] SNW.LevelUtil이 로드될 때까지 대기 후 L4 권한 강제 부여
+		let waitCount = 0;
+		while (!SNW.LevelUtil && waitCount < 40) { // 최대 2초 대기
+			await new Promise(r => setTimeout(r, 50));
+			waitCount++;
+		}
+		
+		if (SNW.LevelUtil) {
+			SNW.LevelUtil.current = () => 'L4';
+			SNW.LevelUtil.atLeast = (lvl) => true;
+			console.log('[Offline] 모든 메뉴 접근 권한(L4) 강제 활성화');
+		} else {
+			console.warn('[Offline] SNW.LevelUtil을 찾을 수 없습니다.');
+		}
+	})();
+	
+	// 9. 리다이렉트 (해시 정규화) -> Router가 알아서 처리하므로 제거함
     // 9. 리다이렉트 (해시 정규화)
+    /*
     setTimeout(() => {
         if (location.hash === '' || location.hash === '#') {
             location.replace(location.pathname + location.search + '#/dashboard');
         }
     }, 100);
+    */
 })(window.SNW);
+

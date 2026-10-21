@@ -77,6 +77,16 @@ JSON_DST_SUBDIR = "json"
 FS_TARGETS_EXACT: Set[str] = {"buildfs", "uploadfs"}
 
 
+
+# ============================================================
+# 상수 추가
+# ============================================================
+# 번들에서 제외할 JS (별도 로드)
+JS_BUNDLE_EXCLUDES: Set[str] = {
+    "998.offline_0202.js",   # 오프라인 어댑터 (조건부 로드)
+}
+
+
 # ============================================================
 # 유틸
 # ============================================================
@@ -99,7 +109,9 @@ def _log(msg: str, tag: str = "") -> None:
 # ============================================================
 def build_js_bundle(src_dir: Path, dst_dir: Path) -> int:
     files = sorted(src_dir.glob(JS_BUNDLE_PATTERN))
-    files = [f for f in files if f.name != JS_BUNDLE_OUTPUT]
+    # 번들 결과물과 오프라인 어댑터 제외
+    files = [f for f in files
+             if f.name != JS_BUNDLE_OUTPUT and f.name not in JS_BUNDLE_EXCLUDES]
 
     if not files:
         print(f"[ERROR] JS 소스 없음: {src_dir}", file=sys.stderr)

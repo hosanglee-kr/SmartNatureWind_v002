@@ -35,7 +35,7 @@ constexpr const char* HTTP_API_SYSTEM  = HTTP_API_BASE "/system";
 
 // constexpr const char* HTTP_API_WIFI             = HTTP_API_BASE "/wifi";
 constexpr const char* HTTP_API_WIFI_SCAN   = HTTP_API_BASE "/wifi/scan";
-constexpr const char* HTTP_API_WIFI_STATE  = HTTP_API_BASE "/wifi/state";   // ← 신규
+constexpr const char* HTTP_API_WIFI_STATE  = HTTP_API_BASE "/wifi/state"; // ← 신규
 constexpr const char* HTTP_API_WIFI_CONFIG = HTTP_API_BASE "/wifi/config";
 
 constexpr const char* HTTP_API_DIAG      = HTTP_API_BASE "/diag";
@@ -115,7 +115,12 @@ constexpr const char* WS_API_SUMMARY = WS_API_BASE "/summary";
 // --------------------------------------------------
 // 10. 파일 시스템 경로 (LittleFS Path)
 // --------------------------------------------------
-constexpr const char* PATH_STATIC_HTML = "/html_v3";
-constexpr const char* PATH_STATIC_JSON = "/json";
+constexpr const char* PATH_STATIC_HTML       = "/html_v3";
+constexpr const char* PATH_STATIC_INDEX_HTML = "/P010_main_0201.html";
+constexpr const char* PATH_STATIC_JSON       = "/json";
+
+constexpr const char* PATH_STATIC_HTML_V0200       = "/html_v0201";
+constexpr const char* PATH_STATIC_INDEX_HTML_V0200 = "/P010_main_0201.html";
+constexpr const char* PATH_STATIC_JSON_V0200       = "/json";
 
 } // namespace W10_Const

@@ -32,16 +32,15 @@
  */
 
 #include "W10_Web_0201.h"
-
-
+#include "W10_Web_Const_0201.h"
 
 // ------------------------------------------------------
 // 안전한 파일명 추출 (경로 탐색 차단)
 // ------------------------------------------------------
 static String extractSafeFileName(const String& p_raw) {
     // 1. 마지막 '/' 또는 '\' 이후만 파일명으로 사용
-    int lastSlash = max(p_raw.lastIndexOf('/'), p_raw.lastIndexOf('\\'));
-    String name = (lastSlash >= 0) ? p_raw.substring(lastSlash + 1) : p_raw;
+    int    lastSlash = max(p_raw.lastIndexOf('/'), p_raw.lastIndexOf('\\'));
+    String name      = (lastSlash >= 0) ? p_raw.substring(lastSlash + 1) : p_raw;
 
     // 2. ".." 제거 (디렉토리 탐색 방지)
     name.replace("..", "");
@@ -59,7 +58,6 @@ static String extractSafeFileName(const String& p_raw) {
     return name;
 }
 
-
 // ------------------------------------------------------
 // 파일 저장 경로를 결정하는 내부 함수 (클래스 내부에 정의)
 // ------------------------------------------------------
@@ -68,7 +66,7 @@ String CL_W10_WebAPI::getUploadPath(const String& p_filename) {
     String v_safeName = extractSafeFileName(p_filename);
 
     // 확장자 추출
-    int v_dotIndex = v_safeName.lastIndexOf('.');
+    int    v_dotIndex = v_safeName.lastIndexOf('.');
     String v_folderPath;
 
     if (v_dotIndex > 0) {
@@ -76,17 +74,22 @@ String CL_W10_WebAPI::getUploadPath(const String& p_filename) {
         v_ext.toLowerCase();
 
         if (v_ext == "json") {
-            v_folderPath = W10_Const::PATH_STATIC_JSON;     // "/json"
-        } else if (v_ext == "html" || v_ext == "js" || v_ext == "css") {
-            v_folderPath = W10_Const::PATH_STATIC_HTML;     // html_v3"
+            v_folderPath = W10_Const::PATH_STATIC_JSON_V0200; // "/json"
+        } else if (v_ext == "html" || v_ext == "js" || v_ext == "css" ||
+                   v_ext == "svg"  || v_ext == "png" || v_ext == "ico" || v_ext == "woff2") {
+            // 로직 구분 가능 시(파일명/경로에 v3 포함) 각각 적용, 불가 시는 V0200 적용
+            if (v_safeName.indexOf("v3") >= 0) {
+                v_folderPath = W10_Const::PATH_STATIC_HTML;       // "/html_v3"
+            } else {
+                v_folderPath = W10_Const::PATH_STATIC_HTML_V0200; // "/html_v0201"
+            }
         } else {
-            v_folderPath = "";  // 기타 확장자는 루트
+            v_folderPath = ""; // 기타 확장자는 루트
         }
     }
 
     return v_folderPath + "/" + v_safeName;
 }
-
 
 // ------------------------------------------------------
 // /api/v001/fileUpload (LittleFS 파일 업로드)
@@ -105,7 +108,7 @@ void CL_W10_WebAPI::routeUpload() {
 
             JsonDocument v_resp;
             if (s_uploadError || !s_upFile) {
-                v_resp["done"]  = false;
+                v_resp["done"] = false;
 
                 if (s_uploadError) {
                     v_resp["error"] = "upload failed: write error";
@@ -137,7 +140,10 @@ void CL_W10_WebAPI::routeUpload() {
             // ==================================================
             auto safeAbort = [](const char* reason) {
                 CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] upload abort: %s", reason);
-                if (s_upFile) { s_upFile.close(); s_upFile = File(); }
+                if (s_upFile) {
+                    s_upFile.close();
+                    s_upFile = File();
+                }
                 s_uploadError = true;
             };
 
@@ -163,7 +169,7 @@ void CL_W10_WebAPI::routeUpload() {
                     safeAbort("insufficient space");
                     return;
                 }
-                
+
                 // 기존 파일 삭제
                 if (LittleFS.exists(finalPath)) {
                     LittleFS.remove(finalPath);
@@ -178,8 +184,11 @@ void CL_W10_WebAPI::routeUpload() {
 
                 s_uploadError = false;
                 s_uploadTotal = 0;
-                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Upload started: %s → %s (%u bytes)",
-                                   p_filename.c_str(), finalPath.c_str(), p_request->contentLength());
+                CL_D10_Logger::log(EN_L10_LOG_INFO,
+                                   "[W10] Upload started: %s → %s (%u bytes)",
+                                   p_filename.c_str(),
+                                   finalPath.c_str(),
+                                   p_request->contentLength());
             }
 
             // ─── 쓰기 ───
@@ -195,55 +204,55 @@ void CL_W10_WebAPI::routeUpload() {
             // ─── 마지막 청크: 파일 닫기 (완료 핸들러에서 최종 처리) ───
             if (p_final && s_upFile) {
                 // 완료 핸들러에서 닫고 응답하므로 여기서는 닫지 않음
-                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Upload finished: %s (%u bytes total)", p_filename.c_str(), s_uploadTotal);
+                CL_D10_Logger::log(EN_L10_LOG_INFO,
+                                   "[W10] Upload finished: %s (%u bytes total)",
+                                   p_filename.c_str(),
+                                   s_uploadTotal);
             }
         });
 }
-
 
 // ------------------------------------------------------
 // /api/v001/fwUpdate (OTA 펌웨어 업데이트)
 // ------------------------------------------------------
 
 void CL_W10_WebAPI::routeUpdate() {
-	s_server->on(
-		W10_Const::HTTP_API_FW_UPDATE,	// "/update",
-		HTTP_POST,
-		[](AsyncWebServerRequest* p_request) {
-			if (!checkApiKey(p_request)) {
-				p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-				return;
-			}
-			if (Update.hasError()) {
-				String v_errMsg = "{\"ota\":\"fail\", \"error\":\"" + String(Update.errorString()) + "\"}";
-				CL_W10_WebAPI::sendText(p_request, v_errMsg, 500);
-			} else {
-				CL_W10_WebAPI::sendText(p_request, "{\"ota\":\"ok\"}");
-				delay(300);
-				ESP.restart();
-			}
-		},
-		[](AsyncWebServerRequest* p_request, const String&, size_t p_index, uint8_t* p_data, size_t p_len, bool p_final) {
-			if (!checkApiKey(p_request))
-				return;
+    s_server->on(
+        W10_Const::HTTP_API_FW_UPDATE, // "/update",
+        HTTP_POST,
+        [](AsyncWebServerRequest* p_request) {
+            if (!checkApiKey(p_request)) {
+                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+                return;
+            }
+            if (Update.hasError()) {
+                String v_errMsg = "{\"ota\":\"fail\", \"error\":\"" + String(Update.errorString()) + "\"}";
+                CL_W10_WebAPI::sendText(p_request, v_errMsg, 500);
+            } else {
+                CL_W10_WebAPI::sendText(p_request, "{\"ota\":\"ok\"}");
+                delay(300);
+                ESP.restart();
+            }
+        },
+        [](AsyncWebServerRequest* p_request, const String&, size_t p_index, uint8_t* p_data, size_t p_len, bool p_final) {
+            if (!checkApiKey(p_request)) return;
 
-			if (p_index == 0) {
-				if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
-					CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] OTA begin failed: %s", Update.errorString());
-				}
-			}
+            if (p_index == 0) {
+                if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
+                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] OTA begin failed: %s", Update.errorString());
+                }
+            }
 
-			if (p_len > 0) {
-				Update.write(p_data, p_len);
-			}
+            if (p_len > 0) {
+                Update.write(p_data, p_len);
+            }
 
-			if (p_final) {
-				if (Update.end(true)) {
-					CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] OTA finished successfully");
-				} else {
-					CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] OTA end failed: %s", Update.errorString());
-				}
-			}
-		});
+            if (p_final) {
+                if (Update.end(true)) {
+                    CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] OTA finished successfully");
+                } else {
+                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] OTA end failed: %s", Update.errorString());
+                }
+            }
+        });
 }
-

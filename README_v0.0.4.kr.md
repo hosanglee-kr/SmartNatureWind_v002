@@ -1,21 +1,21 @@
 ![WindScape Title](https://github.com/TilmanGriesel/WindScape/blob/main/docs/title.png?raw=true)
 
-# 🌿 Smart Nature Wind v0200 (스마트 자연풍 독립형 제어기)
+# 🌿 Smart Nature Wind v0202 (스마트 자연풍 독립형 제어기)
 
-[![Firmware Version](https://img.shields.io/badge/Firmware-v0200%20(FW__2.0.0)-blue.svg)](src/v0200/contract_doc_0200/SPEC_0200.md)
-[![Target MCU](https://img.shields.io/badge/MCU-ESP32--S3--N16R8-orange.svg)](src/v0200/contract_doc_0200/BUDGET_0200.md)
+[![Firmware Version](https://img.shields.io/badge/Firmware-v0202%20(FW__2.0.2)-blue.svg)](src/v0202/contract_doc_0202/SPEC_0202.md)
+[![Target MCU](https://img.shields.io/badge/MCU-ESP32--S3--N16R8-orange.svg)](src/v0202/contract_doc_0202/BUDGET_0202.md)
 [![PlatformIO](https://img.shields.io/badge/Framework-PlatformIO%20%7C%20C%2B%2B17-green.svg)](platformio.ini)
-[![Architecture](https://img.shields.io/badge/Arch-FreeRTOS%20CBD%20v2.5-purple.svg)](src/v0200/contract_doc_0200/CONTRACT_0200.md)
+[![Architecture](https://img.shields.io/badge/Arch-FreeRTOS%20CBD%20v2.5-purple.svg)](src/v0202/contract_doc_0202/CONTRACT_0202.md)
 
 * **원작 오픈소스 프로젝트**: [WindScape by Tilman Griesel](https://github.com/TilmanGriesel/WindScape.git)
-* **현재 펌웨어 사양**: **v0200 (FW_Ver_2.0.0)** (ESP32-S3 / C++17 / FreeRTOS / PlatformIO 기반 단독 실행 임베디드 어플라이언스, C++ 소스 `_0201` 접미사)
+* **현재 펌웨어 사양**: **v0202 (FW_Ver_2.0.2)** (ESP32-S3 / C++17 / FreeRTOS / PlatformIO 기반 단독 실행 임베디드 어플라이언스, C++ 소스 `_0202` 접미사)
 
 ---
 
 *단순히 일정한 세기만 내보내는 일반 DC 선풍기나 PC 팬을,  
 실제 대기역학(대기 경계층 난류, 열기포, 돌풍)을 정밀 계산하여 자연의 숨결을 그대로 재현하는 스마트 독립형 제어기 프로젝트입니다.*
 
-**Smart Nature Wind v0200**은 외부 홈오토메이션 서버(Home Assistant, ESPHome 등) 종속 없이, **ESP32-S3 기기 자체에서 완벽하게 단독 구동되는 풀스택 임베디드 웹 어플라이언스**입니다.
+**Smart Nature Wind v0202**은 외부 홈오토메이션 서버(Home Assistant, ESPHome 등) 종속 없이, **ESP32-S3 기기 자체에서 완벽하게 단독 구동되는 풀스택 임베디드 웹 어플라이언스**입니다.
 
 기기 내부 플래시 메모리(LittleFS)에 탑재된 초경량 싱글 번들 웹서버, 실시간 WebSocket 물리 차트, 10종 자연풍 대기역학 모델, 온습도(DHT22) 및 인체감지(PIR) 센서 연동 지능형 제어, 개인화 스케줄러 및 3단계 자동 꺼짐(Auto-Off) 보호 체계를 제공합니다.
 
@@ -27,21 +27,21 @@
 각 부문별 세부 회로도, 수치 모델, 동시성 계약, 상태 전이, API 규격 및 유지보수 절차는 아래의 상세 전문 문서를 참조하십시오.
 
 ### 1. 사용자 가이드 (User Manual)
-* 📖 [**Smart Nature Wind v0200 종합 사용자 매뉴얼**](src/v0200/User_Manual_0200/UserManual_0201_001.md)
+* 📖 [**Smart Nature Wind v0202 종합 사용자 매뉴얼**](src/v0202/User_Manual_0202/UserManual_0202_001.md)
   * 기기 설치, 배선, Wi-Fi(SoftAP/STA) 연결, 6대 웹 화면 조작법, 10대 프리셋 상세 해설, REST API/WebSocket 규격, 고장 진단 및 유지보수 가이드 수록.
 
-### 2. 기술 사양 및 CBD v2.2 엔지니어링 계약서 (Engineering Contracts)
-* 📑 [**README_0200.md (계약 문서 세트 총괄 인덱스)**](src/v0200/contract_doc_0200/README_0200.md)
-* 📐 [**SPEC_0200.md (종합 기술 사양서)**](src/v0200/contract_doc_0200/SPEC_0200.md) : 하드웨어 핀맵, 25kHz PWM 타이밍, REST/WebSocket 인터페이스, Gzip Level 9 정적 에셋 파이프라인.
-* 🤝 [**CONTRACT_0200.md (동시성 계약서)**](src/v0200/contract_doc_0200/CONTRACT_0200.md) : FreeRTOS 5대 태스크 구조, 우선순위, Mutex 소유권 및 데드락 방지 계약.
-* 🔄 [**STATE_0200.md (상태 및 7-State FSM 명세서)**](src/v0200/contract_doc_0200/STATE_0200.md) : INIT / AP_CONFIG / STA_CONNECTING / RUNNING / SAFE_MODE / FIRMWARE_UPDATE / FACTORY_RESET 전이 표.
-* 🔀 [**FLOW_0200.md (실행 흐름도 및 시퀀스 다이어그램)**](src/v0200/contract_doc_0200/FLOW_0200.md) : 부팅 시퀀스, HTTP/WS 처리 루프, 센서 샘플링 및 물리 연산 파이프라인.
-* ⏱️ [**BUDGET_0200.md (자원 및 WCET 예산)**](src/v0200/contract_doc_0200/BUDGET_0200.md) : SRAM/PSRAM/Flash 메모리 버짓, 태스크별 최악 실행 시간(WCET), CPU 점유율 한도.
-* 🧪 [**TEST_PLAN_0200.md (회귀 테스트 및 검증 계획서)**](src/v0200/contract_doc_0200/TEST_PLAN_0200.md) : 단위/통합/스트레스 테스트 케이스 및 장기 안정성 검증 절차.
+### 2. 기술 사양 및 CBD v2.5 엔지니어링 계약서 (Engineering Contracts)
+* 📑 [**README_0202.md (계약 문서 세트 총괄 인덱스)**](src/v0202/contract_doc_0202/README_0202.md)
+* 📐 [**SPEC_0202.md (종합 기술 사양서)**](src/v0202/contract_doc_0202/SPEC_0202.md) : 하드웨어 핀맵, 25kHz PWM 타이밍, REST/WebSocket 인터페이스, Gzip Level 9 정적 에셋 파이프라인.
+* 🤝 [**CONTRACT_0202.md (동시성 계약서)**](src/v0202/contract_doc_0202/CONTRACT_0202.md) : FreeRTOS 5대 태스크 구조, 우선순위, Mutex 소유권 및 데드락 방지 계약.
+* 🔄 [**STATE_0202.md (상태 및 7-State FSM 명세서)**](src/v0202/contract_doc_0202/STATE_0202.md) : INIT / AP_CONFIG / STA_CONNECTING / RUNNING / SAFE_MODE / FIRMWARE_UPDATE / FACTORY_RESET 전이 표.
+* 🔀 [**FLOW_0202.md (실행 흐름도 및 시퀀스 다이어그램)**](src/v0202/contract_doc_0202/FLOW_0202.md) : 부팅 시퀀스, HTTP/WS 처리 루프, 센서 샘플링 및 물리 연산 파이프라인.
+* ⏱️ [**BUDGET_0202.md (자원 및 WCET 예산)**](src/v0202/contract_doc_0202/BUDGET_0202.md) : SRAM/PSRAM/Flash 메모리 버짓, 태스크별 최악 실행 시간(WCET), CPU 점유율 한도.
+* 🧪 [**TEST_PLAN_0202.md (회귀 테스트 및 검증 계획서)**](src/v0202/contract_doc_0202/TEST_PLAN_0202.md) : 단위/통합/스트레스 테스트 케이스 및 장기 안정성 검증 절차.
 
 ### 3. 개발 환경 및 AI 에이전트 협업 가이드 (Developer & Agent Setup)
 * 🤖 [**agent.md (개발 환경 및 에이전트 협업 가이드)**](agent.md)
-  * ESP32-S3 PlatformIO 빌드/플래시 설정, C++ `_0201` 모듈 아키텍처, CBD v2.2 계약 준수 및 에이전트 작업 원칙 안내.
+  * ESP32-S3 PlatformIO 빌드/플래시 설정, C++ `_0202` 모듈 아키텍처, CBD v2.5 계약 준수 및 에이전트 작업 원칙 안내.
 
 ---
 
@@ -69,7 +69,7 @@
 * **10종 자연 환경 프리셋 (10 Nature-Inspired Presets)**  
   시골 산들바람부터 알프스 산맥의 돌풍, 밤 사막의 정적까지 공간과 분위기에 맞춘 10종 고유 프로파일 기본 탑재.
 * **초경량 싱글 번들 Web UI 대시보드 (Gzip Level 9 사전 압축)**  
-  웹 에셋을 `P010_bundle_0201.js` 단일 번들로 패키징하고 플래시 빌드 시 사전 Gzip 압축(Level 9)하여, 모바일/PC 브라우저에서 200ms 이내의 즉각적인 로딩 속도와 부드러운 반응성을 보장합니다.
+  웹 에셋을 `P010_bundle_0202.js` 단일 번들로 패키징하고 플래시 빌드 시 사전 Gzip 압축(Level 9)하여, 모바일/PC 브라우저에서 200ms 이내의 즉각적인 로딩 속도와 부드러운 반응성을 보장합니다.
 * **지능형 센서 연동 (Sensor Integration)**  
   - **온습도 센서 (DHT22)**: 실내 온도/습도 추세에 따른 풍속 지능형 자동 제어.
   - **인체감지 센서 (PIR)**: 사람의 재실 여부를 감지하여 부재 시 자동 절전/정지.
@@ -87,12 +87,12 @@
 
 | 모드 | 영문명 | 설명 | 상세 참조 |
 |---|---|---|---|
-| **자연풍 모드** | Natural Wind | 난류, 열기포, 돌풍 알고리즘이 결합되어 실시간으로 변화하는 자연스러운 기류를 생성합니다. | [매뉴얼 §6.1](src/v0200/User_Manual_0200/UserManual_0201_001.md#61-자연풍-시뮬레이션-모드-natural-wind) |
-| **정속 모드** | Constant | 사용자가 지정한 고정 세기(0~100%)로 일정하게 팬을 구동합니다. | [매뉴얼 §6.2](src/v0200/User_Manual_0200/UserManual_0201_001.md#62-정속-모드-constant) |
-| **온도 감응 모드** | Temp-Auto | DHT22 센서의 실내 온도를 바탕으로 풍속을 지능적으로 자동 조정합니다. | [매뉴얼 §6.3](src/v0200/User_Manual_0200/UserManual_0201_001.md#63-온도-감응-자동-모드-temp-auto) |
-| **스케줄 모드** | Schedule | 요일 및 시간대별로 지정된 프리셋과 풍속 규칙에 따라 자동으로 동작합니다. | [매뉴얼 §6.4](src/v0200/User_Manual_0200/UserManual_0201_001.md#64-스케줄-모드-schedule) |
+| **자연풍 모드** | Natural Wind | 난류, 열기포, 돌풍 알고리즘이 결합되어 실시간으로 변화하는 자연스러운 기류를 생성합니다. | [매뉴얼 §6.1](src/v0202/User_Manual_0202/UserManual_0202_001.md#61-자연풍-시뮬레이션-모드-natural-wind) |
+| **정속 모드** | Constant | 사용자가 지정한 고정 세기(0~100%)로 일정하게 팬을 구동합니다. | [매뉴얼 §6.2](src/v0202/User_Manual_0202/UserManual_0202_001.md#62-정속-모드-constant) |
+| **온도 감응 모드** | Temp-Auto | DHT22 센서의 실내 온도를 바탕으로 풍속을 지능적으로 자동 조정합니다. | [매뉴얼 §6.3](src/v0202/User_Manual_0202/UserManual_0202_001.md#63-온도-감응-자동-모드-temp-auto) |
+| **스케줄 모드** | Schedule | 요일 및 시간대별로 지정된 프리셋과 풍속 규칙에 따라 자동으로 동작합니다. | [매뉴얼 §6.4](src/v0202/User_Manual_0202/UserManual_0202_001.md#64-스케줄-모드-schedule) |
 
-> 💡 상태 전이 규칙과 Fail-Safe 조건은 [STATE_0200.md](src/v0200/contract_doc_0200/STATE_0200.md) 문서를 참조하십시오.
+> 💡 상태 전이 규칙과 Fail-Safe 조건은 [STATE_0202.md](src/v0202/contract_doc_0202/STATE_0202.md) 문서를 참조하십시오.
 
 ---
 
@@ -113,7 +113,7 @@
 | **9** | **열대 소나기 바람 (Tropical Rain)** | 예측 불가능한 역동적 난류 / 불규칙 돌풍 | 레이싱 콕핏, 게이밍 |
 | **10**| **사막의 밤 바람 (Desert Night)** | 건조하고 고요한 지속 산들바람 | 심야 작업, 깊은 집중 |
 
-> 💡 프리셋별 기저 풍속, 난류 강도, 돌풍 주기 등 물리 파라미터 상세표는 [사용자 매뉴얼 §7](src/v0200/User_Manual_0200/UserManual_0201_001.md#7-10종-자연풍-환경-프리셋-상세-해설)을 참조하십시오.
+> 💡 프리셋별 기저 풍속, 난류 강도, 돌풍 주기 등 물리 파라미터 상세표는 [사용자 매뉴얼 §7](src/v0202/User_Manual_0202/UserManual_0202_001.md#7-10종-자연풍-환경-프리셋-상세-해설)을 참조하십시오.
 
 ---
 
@@ -133,7 +133,7 @@
 2. 실내 공유기의 Wi-Fi SSID와 비밀번호를 입력하고 **[저장 및 재부팅]**을 클릭합니다.
 3. 기기가 공유기에 연결되면 할당받은 IP(예: `http://192.168.0.x`)로 접속하여 사용합니다.
 
-> 💡 상세한 초기 설정 및 화면 가이드는 [사용자 매뉴얼 §4](src/v0200/User_Manual_0200/UserManual_0201_001.md#4-최초-설정-및-네트워크-연결-quick-start)를 참조하십시오.
+> 💡 상세한 초기 설정 및 화면 가이드는 [사용자 매뉴얼 §4](src/v0202/User_Manual_0202/UserManual_0202_001.md#4-최초-설정-및-네트워크-연결-quick-start)를 참조하십시오.
 
 ---
 
@@ -184,7 +184,7 @@
 +-------------------------------------------------------------+
 ```
 
-> 💡 핀 번호 변경 및 상세 전기적 인터페이스는 [사용자 매뉴얼 §3](src/v0200/User_Manual_0200/UserManual_0201_001.md#3-하드웨어-구성-및-배선-가이드) 및 [SPEC_0200.md §2](src/v0200/contract_doc_0200/SPEC_0200.md)를 참조하십시오.
+> 💡 핀 번호 변경 및 상세 전기적 인터페이스는 [사용자 매뉴얼 §3](src/v0202/User_Manual_0202/UserManual_0202_001.md#3-하드웨어-구성-및-배선-가이드) 및 [SPEC_0202.md §2](src/v0202/contract_doc_0202/SPEC_0202.md)를 참조하십시오.
 
 ---
 
@@ -209,7 +209,7 @@
    pio run --target uploadfs
    ```
    > [!IMPORTANT]
-   > `uploadfs` 실행 시 빌드 훅 스크립트([pio_gzip_0201.py](src/v0200/tools_0201/pio_gzip_0201.py))가 자동 동작하여 `data_v0201_src`의 HTML/JS/CSS 자원을 Level 9 Gzip으로 압축 후 `data_v0201` LittleFS 영역에 플래시합니다.
+   > `uploadfs` 실행 시 빌드 훅 스크립트([pio_gzip_0202.py](src/v0202/tools_0202/pio_gzip_0202.py))가 자동 동작하여 `data_v0202_src`의 HTML/JS/CSS 자원을 Level 9 Gzip으로 압축 후 `data_v0202` LittleFS 영역에 플래시합니다.
 
 ---
 
@@ -218,7 +218,7 @@
 ### 1. 웹 브라우저 주요 진입점 (SPA Routes)
 기기 IP로 접속 시 브라우저 헤더의 Gzip 지원 여부를 판별하여 초고속으로 SPA Shell을 렌더링하며, 해시 라우팅(#)을 통해 페이지 전환 지연 시간 0ms를 제공합니다.
 
-* **메인 SPA Shell 진입점**: `/` (자동 리다이렉트 `/P010_main_0201.html`)
+* **메인 SPA Shell 진입점**: `/` (자동 리다이렉트 `/P010_main_0202.html`)
 * **해시 뷰 라우팅 (Hash Views)**:
   - `#/dashboard`: 전원 제어, 프리셋 선택, 풍속 슬라이더
   - `#/chart`: WebSocket 기반 실시간 대기역학 물리 곡선 차트
@@ -240,7 +240,7 @@
 * `POST /api/v001/ai/gemini` : Gemini AI 프록시 통신
 * `/ws/state`, `/ws/chart`, `/ws/metrics`, `/ws/log`, `/ws/summary` : 실시간 5개 채널 WebSocket 스트리밍
 
-> 💡 웹 화면별 상세 기능은 [사용자 매뉴얼 §5](src/v0200/User_Manual_0200/UserManual_0201_001.md#5-웹-인터페이스-메뉴-가이드), API 명세는 [사용자 매뉴얼 §9](src/v0200/User_Manual_0200/UserManual_0201_001.md#9-rest-api--websocket-명세) 및 [SPEC_0200.md §4](src/v0200/contract_doc_0200/SPEC_0200.md)를 참조하십시오.
+> 💡 웹 화면별 상세 기능은 [사용자 매뉴얼 §5](src/v0202/User_Manual_0202/UserManual_0202_001.md#5-웹-인터페이스-메뉴-가이드), API 명세는 [사용자 매뉴얼 §9](src/v0202/User_Manual_0202/UserManual_0202_001.md#9-rest-api--websocket-명세) 및 [SPEC_0202.md §4](src/v0202/contract_doc_0202/SPEC_0202.md)를 참조하십시오.
 
 ---
 
@@ -265,7 +265,7 @@ Smart Nature Wind의 핵심은 단순 랜덤 함수 난수 생성이 아닌, **�
 3. **돌풍 모델 (Gust Envelope)**: 점진적으로 바람이 강해졌다가 완만하게 사그라드는 비대칭 포락선 형태의 돌풍을 생성합니다.
 4. **관성 완충 (Inertia Filter)**: 팬 날개 모터 및 공기 질량의 물리적 관성을 반영하여 급격한 속도 튐 없이 매끄러운 가감속을 유지합니다.
 
-> 💡 수치 연산 공식 및 프리셋별 상세 파라미터는 [사용자 매뉴얼 §7](src/v0200/User_Manual_0200/UserManual_0201_001.md#7-10종-자연풍-환경-프리셋-상세-해설)을 참조하십시오.
+> 💡 수치 연산 공식 및 프리셋별 상세 파라미터는 [사용자 매뉴얼 §7](src/v0202/User_Manual_0202/UserManual_0202_001.md#7-10종-자연풍-환경-프리셋-상세-해설)을 참조하십시오.
 
 ---
 
@@ -273,11 +273,11 @@ Smart Nature Wind의 핵심은 단순 랜덤 함수 난수 생성이 아닌, **�
 
 | 증상 | 원인 및 점검 사항 | 빠른 조치 방법 | 상세 가이드 |
 |---|---|---|---|
-| **팬이 전혀 돌지 않음** | 5V 전원 미공급 또는 PWM 핀 배선 불량 | 5V/GND 배선 및 설정 화면의 PWM GPIO(기본 GPIO 6) 점검 | [매뉴얼 §12.1](src/v0200/User_Manual_0200/UserManual_0201_001.md#121-자주-묻는-질문-faq) |
-| **웹 페이지 접속 불가** | LittleFS 파일 미업로드 또는 다른 Wi-Fi 접속 | `pio run --target uploadfs` 수행 및 `NatureWind` AP 연결 확인 | [매뉴얼 §12.2](src/v0200/User_Manual_0200/UserManual_0201_001.md#122-증상별-자가-진단-가이드) |
-| **팬이 최고속도로만 회전** | PWM 제어선 단선 또는 모터 최소 듀티 설정 | PWM 신호선(Blue) 결선 점검 및 최저 구동 속도 재설정 | [매뉴얼 §12.2](src/v0200/User_Manual_0200/UserManual_0201_001.md#122-증상별-자가-진단-가이드) |
-| **풍속 변화가 느껴지지 않음** | 현재 모드가 '정속(Constant)' 상태임 | 메인 화면에서 '자연풍(Natural Wind)' 모드로 변경 | [매뉴얼 §5.1](src/v0200/User_Manual_0200/UserManual_0201_001.md#51-메인-대시보드-화면-p010_main_0200html) |
-| **온도/습도 센서 값 표기 안 됨** | DHT22 풀업 저항 누락 또는 핀 번호 오류 | GPIO 17 설정 확인 및 VCC-Data 간 10kΩ 풀업 저항 장착 | [매뉴얼 §12.2](src/v0200/User_Manual_0200/UserManual_0201_001.md#122-증상별-자가-진단-가이드) |
+| **팬이 전혀 돌지 않음** | 5V 전원 미공급 또는 PWM 핀 배선 불량 | 5V/GND 배선 및 설정 화면의 PWM GPIO(기본 GPIO 6) 점검 | [매뉴얼 §12.1](src/v0202/User_Manual_0202/UserManual_0202_001.md#121-자주-묻는-질문-faq) |
+| **웹 페이지 접속 불가** | LittleFS 파일 미업로드 또는 다른 Wi-Fi 접속 | `pio run --target uploadfs` 수행 및 `NatureWind` AP 연결 확인 | [매뉴얼 §12.2](src/v0202/User_Manual_0202/UserManual_0202_001.md#122-증상별-자가-진단-가이드) |
+| **팬이 최고속도로만 회전** | PWM 제어선 단선 또는 모터 최소 듀티 설정 | PWM 신호선(Blue) 결선 점검 및 최저 구동 속도 재설정 | [매뉴얼 §12.2](src/v0202/User_Manual_0202/UserManual_0202_001.md#122-증상별-자가-진단-가이드) |
+| **풍속 변화가 느껴지지 않음** | 현재 모드가 '정속(Constant)' 상태임 | 메인 화면에서 '자연풍(Natural Wind)' 모드로 변경 | [매뉴얼 §5.1](src/v0202/User_Manual_0202/UserManual_0202_001.md#51-메인-대시보드-화면-p010_main_0200html) |
+| **온도/습도 센서 값 표기 안 됨** | DHT22 풀업 저항 누락 또는 핀 번호 오류 | GPIO 17 설정 확인 및 VCC-Data 간 10kΩ 풀업 저항 장착 | [매뉴얼 §12.2](src/v0202/User_Manual_0202/UserManual_0202_001.md#122-증상별-자가-진단-가이드) |
 
 ---
 

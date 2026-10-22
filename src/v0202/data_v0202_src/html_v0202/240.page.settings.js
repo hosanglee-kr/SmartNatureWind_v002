@@ -10,135 +10,151 @@
  *  - Reload 폴링 (오프라인 시 즉시 반환)
  * ------------------------------------------------------
  */
+/* ---- 240.page.settings.js ---- */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
 (function (SNW) {
     'use strict';
     SNW.Page.Settings = class Settings {
-        constructor(container) { 
-            this.el = container; 
-            this._active = true; 
-            this._timers = []; 
-            this._formLog = null; 
-            this._formApi = null;
-            this._formHw = null;
-        }
+        constructor(container) { this.el = container; this._active = true; }
+        
         async mount() {
             this.el.innerHTML = '';
             this.el.appendChild(SNW.Tpl.settings());
             SNW.I18n.applyTo(this.el);
             await this._loadSystem();
+
             SNW.DomUtil.delegate(this.el, '[data-action="save"]', 'click', () => this._onSave());
-            SNW.DomUtil.delegate(this.el, '[data-action="reload"]', 'click', () => this._onReload());
             SNW.DomUtil.delegate(this.el, '[data-action="factory-reset"]', 'click', () => this._onFactoryReset());
         }
-        unmount(){ this._active = false; this._timers.forEach(id => clearTimeout(id)); this._timers = []; }
+        unmount(){ this._active = false; }
 
         async _loadSystem() {
             try {
                 const data = await SNW.Api.getSystem();
-                if (!this._active) return;
                 const sys = (data && data.system) || {};
+                const hw = sys.hw || {};
                 const logCfg = (sys.system && sys.system.logging) || {};
                 const sec = sys.security || {};
-                const hw = sys.hw || {};
                 
-                this._formLog = SNW.UI.form({ root:this.el.querySelector('[data-slot="form-log"]'),
-                    schema:[
-                        { key:'level', labelKey:'system.logLevel', type:'select', options:[{value:'NONE',labelKey:'log.none'},{value:'ERROR',labelKey:'log.error'},{value:'WARN',labelKey:'log.warn'},{value:'INFO',labelKey:'log.info'},{value:'DEBUG',labelKey:'log.debug'}] },
-                        { key:'maxEntries', labelKey:'log.level', type:'number', min:50, max:500 }
-                    ], value:{ level:logCfg.level || 'INFO', maxEntries:logCfg.maxEntries || 300 } });
-                
-                this._formApi = SNW.UI.form({ root:this.el.querySelector('[data-slot="form-api"]'),
-                    schema:[{ key:'apiKey', labelKey:'system.apiKey', type:'password' }, { key:'geminiApiKey', labelKey:'system.geminiKey', type:'password' }],
-                    value:{ apiKey:sec.apiKey || '', geminiApiKey:sec.geminiApiKey || '' } });
+                // 1. 로그/보안
+                this.el.querySelector('[data-slot="form-log"]').innerHTML = `
+                    <div class="snw-form-row"><label>Log Level</label>
+                        <select id="log-level" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                            <option value="INFO" ${logCfg.level==='INFO'?'selected':''}>INFO</option>
+                            <option value="DEBUG" ${logCfg.level==='DEBUG'?'selected':''}>DEBUG</option>
+                            <option value="WARN" ${logCfg.level==='WARN'?'selected':''}>WARN</option>
+                            <option value="ERROR" ${logCfg.level==='ERROR'?'selected':''}>ERROR</option>
+                        </select>
+                    </div>
+                    <div class="snw-form-row"><label>API Key</label><input type="password" id="api-key" value="${sec.apiKey || ''}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Gemini API Key</label><input type="password" id="gemini-key" value="${sec.geminiApiKey || ''}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                `;
 
-                // [신규] 하드웨어(팬 PWM) 설정 폼
-                const fanPwm = hw.fanPwm || { pin: 6, channel: 0, freq: 25000, res: 10 };
-                const fanCfg = hw.fanConfig || { startPercentMin: 18, comfortPercentMin: 22, comfortPercentMax: 65, hardPercentMax: 90 };
-                this._formHw = SNW.UI.form({ root:this.el.querySelector('[data-slot="form-hw"]'),
-                    schema:[
-                        { key:'fanPin', labelKey:'Fan PWM Pin', type:'number' },
-                        { key:'fanFreq', labelKey:'Fan Frequency (Hz)', type:'number' },
-                        { key:'fanStart', labelKey:'Start % (시동)', type:'number' },
-                        { key:'fanComfortMin', labelKey:'Comfort Min % (편안)', type:'number' },
-                        { key:'fanComfortMax', labelKey:'Comfort Max % (편안)', type:'number' },
-                        { key:'fanHardMax', labelKey:'Hard Max % (최대)', type:'number' }
-                    ], value:{
-                        fanPin: fanPwm.pin, fanFreq: fanPwm.freq,
-                        fanStart: fanCfg.startPercentMin, fanComfortMin: fanCfg.comfortPercentMin,
-                        fanComfortMax: fanCfg.comfortPercentMax, fanHardMax: fanCfg.hardPercentMax
-                    } });
+                // 2. 하드웨어 (모든 세부 항목)
+                const pwm = hw.fanPwm || {};
+                const curve = hw.fanConfig || {};
+                const pir = hw.pir || {};
+                const dht = hw.tempHum || {};
+                const led = hw.led || {};
 
-                SNW.I18n.applyTo(this.el);
-            } catch (e) { SNW.ErrorHandler.handle(e, 'settings.loadSystem'); }
+                this.el.querySelector('[data-slot="form-hw"]').innerHTML = `
+                    <h3 style="margin-top:12px;border-bottom:1px solid var(--snw-border);padding-bottom:4px;">Fan PWM</h3>
+                    <div class="snw-form-row"><label>Pin</label><input type="number" id="hw-pwm-pin" value="${pwm.pin || 6}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Frequency (Hz)</label><input type="number" id="hw-pwm-freq" value="${pwm.freq || 25000}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    
+                    <h3 style="margin-top:12px;border-bottom:1px solid var(--snw-border);padding-bottom:4px;">Fan Curve (%)</h3>
+                    <div class="snw-form-row"><label>Start (시동)</label><input type="number" id="hw-fan-start" value="${curve.startPercentMin || 18}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Comfort Min (편안 시작)</label><input type="number" id="hw-fan-cmin" value="${curve.comfortPercentMin || 22}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Comfort Max (편안 끝)</label><input type="number" id="hw-fan-cmax" value="${curve.comfortPercentMax || 65}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Hard Max (최대)</label><input type="number" id="hw-fan-hmax" value="${curve.hardPercentMax || 90}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    
+                    <h3 style="margin-top:12px;border-bottom:1px solid var(--snw-border);padding-bottom:4px;">PIR Sensor</h3>
+                    <div class="snw-form-row"><label>Pin</label><input type="number" id="hw-pir-pin" value="${pir.pin || 13}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Hold (sec)</label><input type="number" id="hw-pir-hold" value="${pir.holdSec || 120}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+
+                    <h3 style="margin-top:12px;border-bottom:1px solid var(--snw-border);padding-bottom:4px;">DHT22 Sensor</h3>
+                    <div class="snw-form-row"><label>Pin</label><input type="number" id="hw-dht-pin" value="${dht.pin || 17}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Interval (sec)</label><input type="number" id="hw-dht-int" value="${dht.intervalSec || 30}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    
+                    <h3 style="margin-top:12px;border-bottom:1px solid var(--snw-border);padding-bottom:4px;">Status LED</h3>
+                    <div class="snw-form-row"><label>Pin</label><input type="number" id="hw-led-pin" value="${led.pin || 48}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Brightness (0~255)</label><input type="number" id="hw-led-bright" value="${led.defaultBrightness || 20}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                `;
+            } catch (e) { console.error(e); }
         }
-
+        
         async _onSave() {
-            if (!this._formLog || !this._formApi || !this._formHw) return;
-            const logVal = this._formLog.getValue(); 
-            const apiVal = this._formApi.getValue();
-            const hwVal = this._formHw.getValue();
-            
-            const patch = { 
-                system:{ logging:{ level:logVal.level, maxEntries:Number(logVal.maxEntries) } }, 
-                security:{ apiKey:apiVal.apiKey || '', geminiApiKey:apiVal.geminiApiKey || '' },
+            const patch = {
+                system: { logging: { level: this.el.querySelector('#log-level').value } },
+                security: {
+                    apiKey: this.el.querySelector('#api-key').value,
+                    geminiApiKey: this.el.querySelector('#gemini-key').value
+                },
                 hw: {
-                    fanPwm: { pin: Number(hwVal.fanPin), freq: Number(hwVal.fanFreq) },
+                    fanPwm: {
+                        pin: Number(this.el.querySelector('#hw-pwm-pin').value),
+                        freq: Number(this.el.querySelector('#hw-pwm-freq').value)
+                    },
                     fanConfig: {
-                        startPercentMin: Number(hwVal.fanStart),
-                        comfortPercentMin: Number(hwVal.fanComfortMin),
-                        comfortPercentMax: Number(hwVal.fanComfortMax),
-                        hardPercentMax: Number(hwVal.fanHardMax)
+                        startPercentMin: Number(this.el.querySelector('#hw-fan-start').value),
+                        comfortPercentMin: Number(this.el.querySelector('#hw-fan-cmin').value),
+                        comfortPercentMax: Number(this.el.querySelector('#hw-fan-cmax').value),
+                        hardPercentMax: Number(this.el.querySelector('#hw-fan-hmax').value)
+                    },
+                    pir: {
+                        pin: Number(this.el.querySelector('#hw-pir-pin').value),
+                        holdSec: Number(this.el.querySelector('#hw-pir-hold').value)
+                    },
+                    tempHum: {
+                        pin: Number(this.el.querySelector('#hw-dht-pin').value),
+                        intervalSec: Number(this.el.querySelector('#hw-dht-int').value)
+                    },
+                    led: {
+                        pin: Number(this.el.querySelector('#hw-led-pin').value),
+                        defaultBrightness: Number(this.el.querySelector('#hw-led-bright').value)
                     }
                 }
             };
             try {
                 await SNW.Api.patchSystem(patch);
                 await SNW.Api.saveConfig();
-                await SNW.Api.reload();
-                const ok = await this._waitReloadComplete();
-                if (ok) { SNW.ToastUtil.success(SNW.I18n.t('msg.reloadSuccess')); if (apiVal.apiKey) SNW.Api.setApiKey(apiVal.apiKey); }
+                await SNW.Api.reload(); // [복구] reload 추가
+                const ok = await this._waitReloadComplete(); // [복구] 대기
+                if (ok) SNW.ToastUtil.success(SNW.I18n.t('msg.reloadSuccess'));
                 else SNW.ToastUtil.warn(SNW.I18n.t('msg.reloadFail'));
             } catch (e) { SNW.ErrorHandler.handle(e, 'settings.save'); }
         }
-
-        async _onReload() {
-            try {
-                await SNW.Api.reload();
-                const ok = await this._waitReloadComplete();
-                if (ok) SNW.ToastUtil.success(SNW.I18n.t('msg.reloadSuccess')); else SNW.ToastUtil.warn(SNW.I18n.t('msg.reloadFail'));
-            } catch (e) { SNW.ErrorHandler.handle(e, 'settings.reload'); }
-        }
-
-        // [신규] 공장 초기화
-        async _onFactoryReset() {
-            const content = document.createElement('div');
-            content.textContent = '정말 공장 초기화 하시겠습니까? 모든 설정이 삭제되고 기기가 재시작됩니다.';
-            content.style.cssText = 'color:var(--snw-error);padding:12px 0;';
-            SNW.UI.modal('⚠️ 공장 초기화', content, async () => {
-                try {
-                    await SNW.Api.factoryReset();
-                    SNW.ToastUtil.success('기기가 재시작됩니다...');
-                    return true;
-                } catch(e) {
-                    SNW.ErrorHandler.handle(e, 'settings.factoryReset');
-                    return false;
-                }
-            });
-        }
-
+        
         async _waitReloadComplete() {
-            // [추가] 오프라인 모드에서는 대기 없이 즉시 완료 처리
-            if (window.SNW_OFFLINE) return true;
-
-            const start = Date.now(); const timeout = SNW.C.RELOAD.POLL_TIMEOUT_MS; const interval = SNW.C.RELOAD.POLL_INTERVAL_MS;
+            if (window.SNW_OFFLINE) return true; // 오프라인 즉시 완료
+            const start = Date.now();
+            const timeout = SNW.C.RELOAD.POLL_TIMEOUT_MS;
+            const interval = SNW.C.RELOAD.POLL_INTERVAL_MS;
             while (Date.now() - start < timeout) {
                 if (!this._active) return false;
-                try { const st = await SNW.Api.getState(); const ctl = st.control || {}; if (ctl.pendingReload === false) return ctl.lastReloadOk !== false; } catch {}
+                try {
+                    const st = await SNW.Api.getState();
+                    const ctl = st.control || {};
+                    if (ctl.pendingReload === false) return ctl.lastReloadOk !== false;
+                } catch {}
                 await new Promise(r => setTimeout(r, interval));
             }
             return false;
         }
+
+        async _onFactoryReset() {
+            const content = document.createElement('div');
+            content.textContent = '정말 공장 초기화 하시겠습니까? 모든 설정이 삭제됩니다.';
+            content.style.cssText = 'color:var(--snw-error);padding:12px 0;';
+            SNW.UI.modal('⚠️ 경고', content, async () => {
+                try {
+                    await SNW.Api.factoryReset();
+                    SNW.ToastUtil.success('기기가 재시작됩니다...');
+                    return true;
+                } catch(e) { return false; }
+            });
+        }
     };
 })(window.SNW);
+

@@ -18,6 +18,7 @@ window.SNW = window.SNW || {};
         '/schedule':    { page:'schedule',    level:'L2' },
         '/profiles':    { page:'profiles',    level:'L2' },
         '/sensors':     { page:'sensors',     level:'L2' }, // 추가됨
+        '/windprofile': { page:'windprofile', level:'L3' }, // [신규]
         '/settings':    { page:'settings',    level:'L3' },
         '/network':     { page:'network',     level:'L3' },
         '/logs':        { page:'logs',        level:'L3' },
@@ -88,6 +89,7 @@ window.SNW = window.SNW || {};
             { path:'/schedule',    labelKey:'nav.schedule',    icon:'📅', minLevel:'L2' },
             { path:'/profiles',    labelKey:'nav.profiles',    icon:'👤', minLevel:'L2' },
             { path:'/sensors',     labelKey:'nav.sensors',     icon:'🌡', minLevel:'L2' }, // 추가됨
+            { path:'/windprofile', labelKey:'nav.windprofile', icon:'🌬', minLevel:'L3' }, // [신규]
             { path:'/settings',    labelKey:'nav.settings',    icon:'⚙',  minLevel:'L3' },
             { path:'/network',     labelKey:'nav.network',     icon:'📶', minLevel:'L3' },
             { path:'/logs',        labelKey:'nav.logs',        icon:'📜', minLevel:'L3' },

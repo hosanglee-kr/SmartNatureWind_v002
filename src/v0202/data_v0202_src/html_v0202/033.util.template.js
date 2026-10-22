@@ -58,11 +58,17 @@ window.SNW = window.SNW || {};
             return tpl`
                 <section class="snw-card">
                     <h2 data-i18n="system.title">시스템 설정</h2>
+                    <h3>Logging & Security</h3>
                     <div data-slot="form-log"></div>
                     <div data-slot="form-api"></div>
-                    <div class="snw-form-actions">
-                        <button data-action="save"   class="snw-btn snw-btn-primary" data-i18n="system.save">저장</button>
-                        <button data-action="reload" class="snw-btn" data-i18n="system.reload">재로드</button>
+                    <h3>Hardware (PWM / Fan)</h3>
+                    <div data-slot="form-hw"></div>
+                    <div class="snw-form-actions" style="justify-content:space-between;align-items:center;display:flex;">
+                        <div>
+                            <button data-action="save"   class="snw-btn snw-btn-primary" data-i18n="system.save">저장</button>
+                            <button data-action="reload" class="snw-btn" data-i18n="system.reload">재로드</button>
+                        </div>
+                        <button data-action="factory-reset" class="snw-btn snw-btn-icon--danger" style="background:rgba(248,81,73,0.1);color:var(--snw-error);" data-i18n="system.factoryReset">공장 초기화</button>
                     </div>
                 </section>`;
         },
@@ -92,6 +98,10 @@ window.SNW = window.SNW || {};
         },
         info() {
             return tpl`<section class="snw-card"><h2 data-i18n="nav.info">정보</h2><div data-slot="panel"></div></section>`;
+        },
+        // [신규] WindProfile 템플릿
+        windprofile() {
+            return tpl`<section class="snw-card"><h2 data-i18n="nav.windprofile">바람 프리셋 관리</h2><div data-slot="list"></div></section>`;
         }
     };
 })(window.SNW);

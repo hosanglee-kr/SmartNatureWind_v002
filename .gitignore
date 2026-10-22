@@ -11,6 +11,7 @@ compile_commands.json
 
 src/v0200/data_v0201/html_v0201/
 src/v0202/data_v0202/html_v0202/
+dist/
 
 # --- Graphify Cache & Date Backups ---
 graphify-out/cache/

@@ -17,6 +17,7 @@ SNW.Page = SNW.Page || {};
             this._timers  = [];
             this.components = {};
             this._active = true;
+            this._autoOffModalShown = false;
         }
 
         // -------------------------------------------------
@@ -204,6 +205,22 @@ SNW.Page = SNW.Page || {};
                             humidity:     ctl.sensor.humidity,
                             motionActive: ctl.sensor.motionActive
                         });
+                    }
+
+                    // [신규] AutoOff 이벤트 팝업
+                    if (ctl.event && ctl.event.ackRequired && !this._autoOffModalShown) {
+                        this._autoOffModalShown = true;
+                        const msg = SNW.I18n.t('autoOff.recover') || '자동 꺼짐 상태입니다. 다시 켜시겠습니까?';
+                        const content = document.createElement('div');
+                        content.textContent = msg;
+                        content.style.cssText = 'padding:12px 0;color:var(--snw-text);font-size:14px;';
+                        SNW.UI.modal(SNW.I18n.t('autoOff.ack') || '알림', content, async () => {
+                            try { await SNW.Api.ackEvent(); } catch(e) {}
+                            this._autoOffModalShown = false;
+                            return true;
+                        });
+                    } else if (!ctl.event || !ctl.event.ackRequired) {
+                        this._autoOffModalShown = false;
                     }
                 })
             );

@@ -1,11 +1,4 @@
 
-/* =========================================================
- * P010_bundle_0202.js
- * Smart Nature Wind v0202 — 단일 JS 번들
- * 소스: 31 파일 (Layer 0~5 concat)
- * ========================================================= */
-
-
 /* ===== LAYER 0 ===== */
 
 /* ---- 000.const.js (7867 bytes) ---- */
@@ -340,7 +333,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 020.i18n.js (22182 bytes) ---- */
+/* ---- 020.i18n.js (22287 bytes) ---- */
 // =========================================================
 // 020.i18n.js — 다국어 사전 (ko/en)
 // Layer 0 (기반) — SNW.CFG 참조만
@@ -390,6 +383,7 @@ window.SNW = window.SNW || {};
             'nav.schedule': '스케줄',
             'nav.profiles': '프로필',
             'nav.sensors': '센서',
+            'nav.windprofile': '바람 프리셋 관리',
             'nav.settings': '설정',
             'nav.network': '네트워크',
             'nav.logs': '로그',
@@ -631,6 +625,7 @@ window.SNW = window.SNW || {};
             'nav.schedule': 'Schedule',
             'nav.profiles': 'Profiles',
             'nav.sensors': 'Sensors',
+            'nav.windprofile': 'Wind Presets',
             'nav.settings': 'Settings',
             'nav.network': 'Network',
             'nav.logs': 'Logs',
@@ -1070,7 +1065,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 033.util.template.js (5394 bytes) ---- */
+/* ---- 033.util.template.js (6129 bytes) ---- */
 // =========================================================
 // 033.util.template.js — SNW.Tpl (페이지 HTML 템플릿)
 // Layer 1 (유틸) — SNW.C, SNW.DomUtil 참조
@@ -1131,11 +1126,17 @@ window.SNW = window.SNW || {};
             return tpl`
                 <section class="snw-card">
                     <h2 data-i18n="system.title">시스템 설정</h2>
+                    <h3>Logging & Security</h3>
                     <div data-slot="form-log"></div>
                     <div data-slot="form-api"></div>
-                    <div class="snw-form-actions">
-                        <button data-action="save"   class="snw-btn snw-btn-primary" data-i18n="system.save">저장</button>
-                        <button data-action="reload" class="snw-btn" data-i18n="system.reload">재로드</button>
+                    <h3>Hardware (PWM / Fan)</h3>
+                    <div data-slot="form-hw"></div>
+                    <div class="snw-form-actions" style="justify-content:space-between;align-items:center;display:flex;">
+                        <div>
+                            <button data-action="save"   class="snw-btn snw-btn-primary" data-i18n="system.save">저장</button>
+                            <button data-action="reload" class="snw-btn" data-i18n="system.reload">재로드</button>
+                        </div>
+                        <button data-action="factory-reset" class="snw-btn snw-btn-icon--danger" style="background:rgba(248,81,73,0.1);color:var(--snw-error);" data-i18n="system.factoryReset">공장 초기화</button>
                     </div>
                 </section>`;
         },
@@ -1165,6 +1166,10 @@ window.SNW = window.SNW || {};
         },
         info() {
             return tpl`<section class="snw-card"><h2 data-i18n="nav.info">정보</h2><div data-slot="panel"></div></section>`;
+        },
+        // [신규] WindProfile 템플릿
+        windprofile() {
+            return tpl`<section class="snw-card"><h2 data-i18n="nav.windprofile">바람 프리셋 관리</h2><div data-slot="list"></div></section>`;
         }
     };
 })(window.SNW);
@@ -1893,7 +1898,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 070.router.js (6630 bytes) ---- */
+/* ---- 070.router.js (6807 bytes) ---- */
 // =========================================================
 // 070.router.js — SNW.Router (해시 기반 SPA 라우터)
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -1914,6 +1919,7 @@ window.SNW = window.SNW || {};
         '/schedule': { page: 'schedule', level: 'L2' },
         '/profiles': { page: 'profiles', level: 'L2' },
         '/sensors': { page: 'sensors', level: 'L2' }, // 추가됨
+        '/windprofile': { page: 'windprofile', level: 'L3' }, // [신규]
         '/settings': { page: 'settings', level: 'L3' },
         '/network': { page: 'network', level: 'L3' },
         '/logs': { page: 'logs', level: 'L3' },
@@ -1984,6 +1990,7 @@ window.SNW = window.SNW || {};
             { path: '/schedule', labelKey: 'nav.schedule', icon: '📅', minLevel: 'L2' },
             { path: '/profiles', labelKey: 'nav.profiles', icon: '👤', minLevel: 'L2' },
             { path: '/sensors', labelKey: 'nav.sensors', icon: '🌡', minLevel: 'L2' }, // 추가됨
+            { path: '/windprofile', labelKey: 'nav.windprofile', icon: '🌬', minLevel: 'L3' }, // [신규]
             { path: '/settings', labelKey: 'nav.settings', icon: '⚙', minLevel: 'L3' },
             { path: '/network', labelKey: 'nav.network', icon: '📶', minLevel: 'L3' },
             { path: '/logs', labelKey: 'nav.logs', icon: '📜', minLevel: 'L3' },
@@ -2792,7 +2799,7 @@ window.SNW = window.SNW || {};
 
 /* ===== LAYER 2 ===== */
 
-/* ---- 200.page.dashboard.js (11751 bytes) ---- */
+/* ---- 200.page.dashboard.js (12809 bytes) ---- */
 // =========================================================
 // 200.page.dashboard.js — SNW.Page.Dashboard (L1 MVP)
 // Layer 4 (페이지 로직) — Layer 0~3 참조
@@ -2812,6 +2819,7 @@ SNW.Page = SNW.Page || {};
             this._timers = [];
             this.components = {};
             this._active = true;
+            this._autoOffModalShown = false;
         }
 
         // -------------------------------------------------
@@ -2999,6 +3007,22 @@ SNW.Page = SNW.Page || {};
                             humidity: ctl.sensor.humidity,
                             motionActive: ctl.sensor.motionActive
                         });
+                    }
+
+                    // [신규] AutoOff 이벤트 팝업
+                    if (ctl.event && ctl.event.ackRequired && !this._autoOffModalShown) {
+                        this._autoOffModalShown = true;
+                        const msg = SNW.I18n.t('autoOff.recover') || '자동 꺼짐 상태입니다. 다시 켜시겠습니까?';
+                        const content = document.createElement('div');
+                        content.textContent = msg;
+                        content.style.cssText = 'padding:12px 0;color:var(--snw-text);font-size:14px;';
+                        SNW.UI.modal(SNW.I18n.t('autoOff.ack') || '알림', content, async () => {
+                            try { await SNW.Api.ackEvent(); } catch (e) { }
+                            this._autoOffModalShown = false;
+                            return true;
+                        });
+                    } else if (!ctl.event || !ctl.event.ackRequired) {
+                        this._autoOffModalShown = false;
                     }
                 })
             );
@@ -3817,24 +3841,23 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 240.page.settings.js (4833 bytes) ---- */
+/* ---- 240.page.settings.js (7602 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : 240.page.settings.js
  * 모듈     : SNW.Page.Settings
  * 레이어   : Layer 4 (페이지 로직)
  * 기능 요약:
- *  - 로그 레벨 / API Key 편집 (스키마 폼)
- *  - Save → Reload 순서 강제 (SNW.CfgFlow.patchAndApply 사용)
- *  - Reload 폴링 (pendingReload → false)
- * 의존성   : SNW.UI.form, SNW.Api, SNW.ConfigFlow(v0202 예정)
+ *  - 로그 레벨 / API Key / 하드웨어 팬 PWM 편집 (스키마 폼)
+ *  - Save → Reload 순서 강제
+ *  - 공장 초기화 (POST /control/factoryReset)
+ *  - Reload 폴링 (오프라인 시 즉시 반환)
  * ------------------------------------------------------
  */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
 (function (SNW) {
     'use strict';
-
     SNW.Page.Settings = class Settings {
         constructor(container) {
             this.el = container;
@@ -3842,154 +3865,132 @@ SNW.Page = SNW.Page || {};
             this._timers = [];
             this._formLog = null;
             this._formApi = null;
+            this._formHw = null;
         }
-
         async mount() {
             this.el.innerHTML = '';
             this.el.appendChild(SNW.Tpl.settings());
             SNW.I18n.applyTo(this.el);
-
             await this._loadSystem();
-
-            // Save 버튼
             SNW.DomUtil.delegate(this.el, '[data-action="save"]', 'click', () => this._onSave());
-            // Reload 버튼
             SNW.DomUtil.delegate(this.el, '[data-action="reload"]', 'click', () => this._onReload());
-
-            SNW.LogUtil.info('[Settings] mount 완료');
+            SNW.DomUtil.delegate(this.el, '[data-action="factory-reset"]', 'click', () => this._onFactoryReset());
         }
-
-        unmount() {
-            this._active = false;
-            this._timers.forEach(id => clearTimeout(id));
-            this._timers = [];
-        }
+        unmount() { this._active = false; this._timers.forEach(id => clearTimeout(id)); this._timers = []; }
 
         async _loadSystem() {
             try {
                 const data = await SNW.Api.getSystem();
                 if (!this._active) return;
-
                 const sys = (data && data.system) || {};
                 const logCfg = (sys.system && sys.system.logging) || {};
                 const sec = sys.security || {};
+                const hw = sys.hw || {};
 
                 this._formLog = SNW.UI.form({
                     root: this.el.querySelector('[data-slot="form-log"]'),
                     schema: [
-                        {
-                            key: 'level',
-                            labelKey: 'system.logLevel',
-                            type: 'select',
-                            options: [
-                                { value: 'NONE', labelKey: 'log.none' },
-                                { value: 'ERROR', labelKey: 'log.error' },
-                                { value: 'WARN', labelKey: 'log.warn' },
-                                { value: 'INFO', labelKey: 'log.info' },
-                                { value: 'DEBUG', labelKey: 'log.debug' }
-                            ]
-                        },
+                        { key: 'level', labelKey: 'system.logLevel', type: 'select', options: [{ value: 'NONE', labelKey: 'log.none' }, { value: 'ERROR', labelKey: 'log.error' }, { value: 'WARN', labelKey: 'log.warn' }, { value: 'INFO', labelKey: 'log.info' }, { value: 'DEBUG', labelKey: 'log.debug' }] },
                         { key: 'maxEntries', labelKey: 'log.level', type: 'number', min: 50, max: 500 }
-                    ],
-                    value: {
-                        level: logCfg.level || 'INFO',
-                        maxEntries: logCfg.maxEntries || 300
-                    }
+                    ], value: { level: logCfg.level || 'INFO', maxEntries: logCfg.maxEntries || 300 }
                 });
 
                 this._formApi = SNW.UI.form({
                     root: this.el.querySelector('[data-slot="form-api"]'),
+                    schema: [{ key: 'apiKey', labelKey: 'system.apiKey', type: 'password' }, { key: 'geminiApiKey', labelKey: 'system.geminiKey', type: 'password' }],
+                    value: { apiKey: sec.apiKey || '', geminiApiKey: sec.geminiApiKey || '' }
+                });
+
+                // [신규] 하드웨어(팬 PWM) 설정 폼
+                const fanPwm = hw.fanPwm || { pin: 6, channel: 0, freq: 25000, res: 10 };
+                const fanCfg = hw.fanConfig || { startPercentMin: 18, comfortPercentMin: 22, comfortPercentMax: 65, hardPercentMax: 90 };
+                this._formHw = SNW.UI.form({
+                    root: this.el.querySelector('[data-slot="form-hw"]'),
                     schema: [
-                        { key: 'apiKey', labelKey: 'system.apiKey', type: 'password' },
-                        { key: 'geminiApiKey', labelKey: 'system.geminiKey', type: 'password' }
-                    ],
-                    value: {
-                        apiKey: sec.apiKey || '',
-                        geminiApiKey: sec.geminiApiKey || ''
+                        { key: 'fanPin', labelKey: 'Fan PWM Pin', type: 'number' },
+                        { key: 'fanFreq', labelKey: 'Fan Frequency (Hz)', type: 'number' },
+                        { key: 'fanStart', labelKey: 'Start % (시동)', type: 'number' },
+                        { key: 'fanComfortMin', labelKey: 'Comfort Min % (편안)', type: 'number' },
+                        { key: 'fanComfortMax', labelKey: 'Comfort Max % (편안)', type: 'number' },
+                        { key: 'fanHardMax', labelKey: 'Hard Max % (최대)', type: 'number' }
+                    ], value: {
+                        fanPin: fanPwm.pin, fanFreq: fanPwm.freq,
+                        fanStart: fanCfg.startPercentMin, fanComfortMin: fanCfg.comfortPercentMin,
+                        fanComfortMax: fanCfg.comfortPercentMax, fanHardMax: fanCfg.hardPercentMax
                     }
                 });
 
                 SNW.I18n.applyTo(this.el);
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'settings.loadSystem');
-            }
+            } catch (e) { SNW.ErrorHandler.handle(e, 'settings.loadSystem'); }
         }
 
-        // -------------------------------------------------
-        // Save → Reload 순서 (Settings은 명시적 저장)
-        // -------------------------------------------------
         async _onSave() {
-            if (!this._formLog || !this._formApi) return;
-
+            if (!this._formLog || !this._formApi || !this._formHw) return;
             const logVal = this._formLog.getValue();
             const apiVal = this._formApi.getValue();
+            const hwVal = this._formHw.getValue();
 
             const patch = {
-                system: {
-                    logging: {
-                        level: logVal.level,
-                        maxEntries: Number(logVal.maxEntries)
+                system: { logging: { level: logVal.level, maxEntries: Number(logVal.maxEntries) } },
+                security: { apiKey: apiVal.apiKey || '', geminiApiKey: apiVal.geminiApiKey || '' },
+                hw: {
+                    fanPwm: { pin: Number(hwVal.fanPin), freq: Number(hwVal.fanFreq) },
+                    fanConfig: {
+                        startPercentMin: Number(hwVal.fanStart),
+                        comfortPercentMin: Number(hwVal.fanComfortMin),
+                        comfortPercentMax: Number(hwVal.fanComfortMax),
+                        hardPercentMax: Number(hwVal.fanHardMax)
                     }
-                },
-                security: {
-                    apiKey: apiVal.apiKey || '',
-                    geminiApiKey: apiVal.geminiApiKey || ''
                 }
             };
-
             try {
-                // 1) patch (메모리만)
                 await SNW.Api.patchSystem(patch);
-                // 2) save (디스크)
                 await SNW.Api.saveConfig();
-                // 3) reload (런타임 재적용)
                 await SNW.Api.reload();
-
-                // 4) reload 완료 폴링
                 const ok = await this._waitReloadComplete();
-                if (ok) {
-                    SNW.ToastUtil.success(SNW.I18n.t('msg.reloadSuccess'));
-                    // API Key가 변경되었으면 localStorage도 갱신
-                    if (apiVal.apiKey) SNW.Api.setApiKey(apiVal.apiKey);
-                } else {
-                    SNW.ToastUtil.warn(SNW.I18n.t('msg.reloadFail'));
-                }
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'settings.save');
-            }
+                if (ok) { SNW.ToastUtil.success(SNW.I18n.t('msg.reloadSuccess')); if (apiVal.apiKey) SNW.Api.setApiKey(apiVal.apiKey); }
+                else SNW.ToastUtil.warn(SNW.I18n.t('msg.reloadFail'));
+            } catch (e) { SNW.ErrorHandler.handle(e, 'settings.save'); }
         }
 
         async _onReload() {
             try {
                 await SNW.Api.reload();
                 const ok = await this._waitReloadComplete();
-                if (ok) SNW.ToastUtil.success(SNW.I18n.t('msg.reloadSuccess'));
-                else SNW.ToastUtil.warn(SNW.I18n.t('msg.reloadFail'));
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'settings.reload');
-            }
+                if (ok) SNW.ToastUtil.success(SNW.I18n.t('msg.reloadSuccess')); else SNW.ToastUtil.warn(SNW.I18n.t('msg.reloadFail'));
+            } catch (e) { SNW.ErrorHandler.handle(e, 'settings.reload'); }
+        }
+
+        // [신규] 공장 초기화
+        async _onFactoryReset() {
+            const content = document.createElement('div');
+            content.textContent = '정말 공장 초기화 하시겠습니까? 모든 설정이 삭제되고 기기가 재시작됩니다.';
+            content.style.cssText = 'color:var(--snw-error);padding:12px 0;';
+            SNW.UI.modal('⚠️ 공장 초기화', content, async () => {
+                try {
+                    await SNW.Api.factoryReset();
+                    SNW.ToastUtil.success('기기가 재시작됩니다...');
+                    return true;
+                } catch (e) {
+                    SNW.ErrorHandler.handle(e, 'settings.factoryReset');
+                    return false;
+                }
+            });
         }
 
         async _waitReloadComplete() {
-            const start = Date.now();
-            const timeout = SNW.C.RELOAD.POLL_TIMEOUT_MS;
-            const interval = SNW.C.RELOAD.POLL_INTERVAL_MS;
+            // [추가] 오프라인 모드에서는 대기 없이 즉시 완료 처리
+            if (window.SNW_OFFLINE) return true;
 
+            const start = Date.now(); const timeout = SNW.C.RELOAD.POLL_TIMEOUT_MS; const interval = SNW.C.RELOAD.POLL_INTERVAL_MS;
             while (Date.now() - start < timeout) {
                 if (!this._active) return false;
-                try {
-                    const st = await SNW.Api.getState();
-                    const ctl = st.control || {};
-                    if (ctl.pendingReload === false) {
-                        return ctl.lastReloadOk !== false;
-                    }
-                } catch { }
+                try { const st = await SNW.Api.getState(); const ctl = st.control || {}; if (ctl.pendingReload === false) return ctl.lastReloadOk !== false; } catch { }
                 await new Promise(r => setTimeout(r, interval));
             }
             return false;
         }
     };
-
 })(window.SNW);
 
 
@@ -4239,92 +4240,49 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 270.page.network.js (6073 bytes) ---- */
+/* ---- 270.page.network.js (7956 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : 270.page.network.js
  * 모듈     : SNW.Page.Network
  * 레이어   : Layer 4 (페이지 로직)
  * 기능 요약:
- *  - Wi-Fi 상태 조회 (mode/ssid/ip/rssi)
- *  - Wi-Fi 스캔 (주변 AP 목록)
+ *  - Wi-Fi 상태 조회 (모드/SSID/IP/RSSI/MAC/Hostname/Connected)
+ *  - Wi-Fi 스캔 및 접속 모달
  *  - NTP 설정 (서버/시간대/주기)
- *  - Save → Reload 순서 강제
  * ------------------------------------------------------
  */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
 (function (SNW) {
     'use strict';
-
     SNW.Page.Network = class Network {
-        constructor(container) {
-            this.el = container;
-            this._active = true;
-            this._timers = [];
-            this._formTime = null;
-        }
-
+        constructor(container) { this.el = container; this._active = true; this._formTime = null; }
         async mount() {
-            this.el.innerHTML = '';
-            this.el.appendChild(SNW.Tpl.network());
-            SNW.I18n.applyTo(this.el);
-
-            // 상태 + 스캔 병렬 로드 (스캔은 실패 허용)
-            await Promise.all([
-                this._loadState(),
-                this._loadSystemTime()
-            ]);
-
+            this.el.innerHTML = ''; this.el.appendChild(SNW.Tpl.network()); SNW.I18n.applyTo(this.el);
+            await Promise.all([this._loadState(), this._loadSystemTime()]);
             SNW.DomUtil.delegate(this.el, '[data-action="scan"]', 'click', () => this._onScan());
             SNW.DomUtil.delegate(this.el, '[data-action="time-save"]', 'click', () => this._onSaveTime());
-
-            SNW.LogUtil.info('[Network] mount 완료');
         }
-
-        unmount() {
-            this._active = false;
-            this._timers.forEach(id => clearTimeout(id));
-            this._timers = [];
-        }
+        unmount() { this._active = false; }
 
         async _loadState() {
-            const slot = this.el.querySelector('[data-slot="form"]');
-            if (!slot) return;
-
+            const slot = this.el.querySelector('[data-slot="form"]'); if (!slot) return;
             let state = {};
-            try {
-                const data = await SNW.Api.getWifiState();
-                state = (data && data.wifi && data.wifi.state) || {};
-            } catch (e) {
-                SNW.LogUtil.warn('[Network] wifi state 로드 실패', e);
-            }
-
+            try { const data = await SNW.Api.getWifiState(); state = (data && data.wifi && data.wifi.state) || {}; } catch { }
             if (!this._active) return;
-
             slot.innerHTML = '';
             slot.appendChild(SNW.DomUtil.html`
                 <div class="snw-network-state">
-                    <div class="snw-kv">
-                        <span data-i18n="network.wifiMode">Wi-Fi 모드</span>
-                        <b>${state.mode_name || '-'}</b>
-                    </div>
-                    <div class="snw-kv">
-                        <span data-i18n="network.ssid">SSID</span>
-                        <b>${state.ssid || '-'}</b>
-                    </div>
-                    <div class="snw-kv">
-                        <span data-i18n="network.ip">IP</span>
-                        <b>${state.ip || '-'}</b>
-                    </div>
-                    <div class="snw-kv">
-                        <span data-i18n="network.rssi">RSSI</span>
-                        <b>${state.rssi != null ? state.rssi + ' dBm' : '-'}</b>
-                    </div>
-                    <div class="snw-toolbar">
-                        <button type="button" class="snw-btn" data-action="scan"
-                                data-i18n="network.scan">Wi-Fi 스캔</button>
-                    </div>
+                    <div class="snw-kv"><span data-i18n="network.wifiMode">Wi-Fi 모드</span><b>${state.mode_name || '-'}</b></div>
+                    <div class="snw-kv"><span data-i18n="network.ssid">SSID</span><b>${state.ssid || '-'}</b></div>
+                    <div class="snw-kv"><span data-i18n="network.ip">IP</span><b>${state.ip || '-'}</b></div>
+                    <div class="snw-kv"><span data-i18n="network.rssi">RSSI</span><b>${state.rssi != null ? state.rssi + ' dBm' : '-'}</b></div>
+                    <!-- [신규] 세부 정보 -->
+                    <div class="snw-kv"><span>MAC</span><b>${state.mac || '-'}</b></div>
+                    <div class="snw-kv"><span>Hostname</span><b>${state.hostname || '-'}</b></div>
+                    <div class="snw-kv"><span>Connected</span><b>${state.connected ? 'YES' : 'NO'}</b></div>
+                    <div class="snw-toolbar"><button type="button" class="snw-btn" data-action="scan" data-i18n="network.scan">Wi-Fi 스캔</button></div>
                     <div data-slot="scan-result" class="snw-scan-result"></div>
                 </div>`);
             SNW.I18n.applyTo(slot);
@@ -4335,7 +4293,6 @@ SNW.Page = SNW.Page || {};
                 const data = await SNW.Api.getSystem();
                 if (!this._active) return;
                 const sys = (data && data.system && data.system.timeCfg) || {};
-
                 this._formTime = SNW.UI.form({
                     root: this.el.querySelector('[data-slot="form"]'),
                     schema: [
@@ -4343,83 +4300,76 @@ SNW.Page = SNW.Page || {};
                         { key: 'timezone', labelKey: 'network.timezone', type: 'text' },
                         { key: 'syncIntervalMin', labelKey: 'network.syncInterval', type: 'number', min: 5, max: 1440 }
                     ],
-                    value: {
-                        ntpServer: sys.ntpServer || 'pool.ntp.org',
-                        timezone: sys.timezone || 'Asia/Seoul',
-                        syncIntervalMin: sys.syncIntervalMin || 60
-                    }
+                    value: { ntpServer: sys.ntpServer || 'pool.ntp.org', timezone: sys.timezone || 'Asia/Seoul', syncIntervalMin: sys.syncIntervalMin || 60 }
                 });
-
-                // 저장 버튼 (form 내부에 별도)
-                this.el.querySelector('[data-slot="form"]').appendChild(SNW.DomUtil.html`
-                    <div class="snw-toolbar">
-                        <button type="button" class="snw-btn snw-btn-primary"
-                                data-action="time-save" data-i18n="system.save">저장</button>
-                    </div>`);
+                this.el.querySelector('[data-slot="form"]').appendChild(SNW.DomUtil.html`<div class="snw-toolbar"><button type="button" class="snw-btn snw-btn-primary" data-action="time-save" data-i18n="system.save">저장</button></div>`);
                 SNW.I18n.applyTo(this.el);
-            } catch (e) {
-                SNW.LogUtil.warn('[Network] time config 로드 실패', e);
-            }
+            } catch (e) { SNW.LogUtil.warn('[Network] time config 로드 실패', e); }
         }
 
         async _onScan() {
-            const resultSlot = this.el.querySelector('[data-slot="scan-result"]');
-            if (!resultSlot) return;
-            resultSlot.innerHTML = '';
-            resultSlot.appendChild(SNW.DomUtil.html`
-                <div class="snw-loading" data-i18n="common.loading">Loading...</div>`);
-
+            const resultSlot = this.el.querySelector('[data-slot="scan-result"]'); if (!resultSlot) return;
+            resultSlot.innerHTML = ''; resultSlot.appendChild(SNW.DomUtil.html`<div class="snw-loading" data-i18n="common.loading">Loading...</div>`);
             try {
-                const data = await SNW.Api.scanWifi();
-                if (!this._active) return;
+                const data = await SNW.Api.scanWifi(); if (!this._active) return;
                 const scan = (data && data.wifi && data.wifi.scan) || [];
-
                 resultSlot.innerHTML = '';
-                if (!scan.length) {
-                    resultSlot.appendChild(SNW.DomUtil.html`
-                        <div class="snw-empty" data-i18n="common.noData">데이터 없음</div>`);
-                } else {
-                    const list = document.createElement('div');
-                    list.className = 'snw-wifi-list';
+                if (!scan.length) resultSlot.appendChild(SNW.DomUtil.html`<div class="snw-empty" data-i18n="common.noData">데이터 없음</div>`);
+                else {
+                    const list = document.createElement('div'); list.className = 'snw-wifi-list';
                     scan.sort((a, b) => (b.rssi || -999) - (a.rssi || -999)).forEach(ap => {
-                        list.appendChild(SNW.DomUtil.html`
-                            <div class="snw-wifi-item">
-                                <span class="snw-wifi-ssid">${ap.ssid || '-'}</span>
-                                <span class="snw-wifi-enc">${ap.enc || ''}</span>
-                                <span class="snw-wifi-rssi">${ap.rssi != null ? ap.rssi + ' dBm' : ''}</span>
-                            </div>`);
+                        const item = SNW.DomUtil.html`<div class="snw-wifi-item" style="cursor:pointer;"><span class="snw-wifi-ssid">${ap.ssid || '-'}</span><span class="snw-wifi-enc">${ap.enc || ''}</span><span class="snw-wifi-rssi">${ap.rssi != null ? ap.rssi + ' dBm' : ''}</span></div>`;
+
+                        // [신규] Wi-Fi 클릭 시 설정 모달
+                        item.addEventListener('click', () => this._onWifiSelect(ap));
+                        list.appendChild(item);
                     });
                     resultSlot.appendChild(list);
                 }
                 SNW.I18n.applyTo(resultSlot);
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'network.scan');
-            }
+            } catch (e) { SNW.ErrorHandler.handle(e, 'network.scan'); }
+        }
+
+        // [신규] Wi-Fi 설정 모달
+        _onWifiSelect(ap) {
+            const inputDiv = document.createElement('div');
+            inputDiv.innerHTML = `
+                <label style="display:block;margin-bottom:8px;font-size:13px;color:var(--snw-text-dim);">SSID
+                    <input type="text" id="wifi-ssid" value="${SNW.DomUtil.escape(ap.ssid || '')}" style="width:100%;padding:8px;margin-top:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
+                </label>
+                <label style="display:block;margin-bottom:8px;font-size:13px;color:var(--snw-text-dim);">Password
+                    <input type="password" id="wifi-pass" value="" style="width:100%;padding:8px;margin-top:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
+                </label>
+            `;
+            SNW.UI.modal('Wi-Fi 연결', inputDiv, async () => {
+                const ssid = inputDiv.querySelector('#wifi-ssid').value;
+                const pass = inputDiv.querySelector('#wifi-pass').value;
+                if (!ssid) { SNW.ToastUtil.warn('SSID를 입력하세요.'); return false; }
+                try {
+                    const cfg = await SNW.Api.getWifiConfig();
+                    const wifi = cfg.wifi || {};
+                    if (!wifi.sta) wifi.sta = [];
+                    // 중복 제거
+                    wifi.sta = wifi.sta.filter(s => s.ssid !== ssid);
+                    wifi.sta.push({ ssid, pass });
+                    await SNW.Api.patchWifi({ wifi });
+                    SNW.ToastUtil.success('Wi-Fi 설정이 저장되었습니다.');
+                    return true;
+                } catch (e) {
+                    SNW.ErrorHandler.handle(e, 'network.wifiSave');
+                    return false;
+                }
+            });
         }
 
         async _onSaveTime() {
             if (!this._formTime) return;
             const v = this._formTime.getValue();
-
-            const patch = {
-                timeCfg: {
-                    ntpServer: v.ntpServer,
-                    timezone: v.timezone,
-                    syncIntervalMin: Number(v.syncIntervalMin)
-                }
-            };
-
-            try {
-                await SNW.Api.patchSystem(patch);
-                await SNW.Api.saveConfig();
-                await SNW.Api.reload();
-                SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'network.saveTime');
-            }
+            const patch = { timeCfg: { ntpServer: v.ntpServer, timezone: v.timezone, syncIntervalMin: Number(v.syncIntervalMin) } };
+            try { await SNW.Api.patchSystem(patch); await SNW.Api.saveConfig(); await SNW.Api.reload(); SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess')); }
+            catch (e) { SNW.ErrorHandler.handle(e, 'network.saveTime'); }
         }
     };
-
 })(window.SNW);
 
 
@@ -4751,6 +4701,187 @@ SNW.Page = SNW.Page || {};
         }
     };
 
+})(window.SNW);
+
+
+/* ---- 300.page.windprofile.js (9833 bytes) ---- */
+/*
+ * ------------------------------------------------------
+ * 소스명   : 300.page.windprofile.js
+ * 모듈     : SNW.Page.Windprofile
+ * 레이어   : Layer 4 (페이지 로직)
+ * 기능 요약:
+ *  - 바람 프리셋 관리 (WindProfile CRUD)
+ *  - 프리셋 목록 표시 / 추가 / 수정 / 삭제
+ * ------------------------------------------------------
+ */
+window.SNW = window.SNW || {};
+SNW.Page = SNW.Page || {};
+(function (SNW) {
+    'use strict';
+    SNW.Page.Windprofile = class Windprofile {
+        constructor(container) {
+            this.el = container;
+            this._active = true;
+            this._presets = [];
+        }
+
+        async mount() {
+            this.el.innerHTML = '';
+            this.el.appendChild(SNW.Tpl.windprofile());
+            SNW.I18n.applyTo(this.el);
+            await this._load();
+
+            SNW.DomUtil.delegate(this.el, '[data-action="add-preset"]', 'click', () => this._onAdd());
+            SNW.DomUtil.delegate(this.el, '[data-action="del-preset"]', 'click', (e, el) => {
+                const id = Number(el.getAttribute('data-id'));
+                if (!isNaN(id)) this._onDelete(id);
+            });
+            SNW.DomUtil.delegate(this.el, '[data-action="edit-preset"]', 'click', (e, el) => {
+                const id = Number(el.getAttribute('data-id'));
+                if (!isNaN(id)) this._onEdit(id);
+            });
+        }
+        unmount() { this._active = false; }
+
+        async _load() {
+            try {
+                const data = await SNW.Api.listWindProfiles();
+                if (!this._active) return;
+                this._presets = (data && data.windDict && data.windDict.presets) || [];
+                this._renderList();
+            } catch (e) { SNW.ErrorHandler.handle(e, 'windprofile.load'); }
+        }
+
+        _renderList() {
+            const listSlot = this.el.querySelector('[data-slot="list"]');
+            if (!listSlot) return;
+            listSlot.innerHTML = '';
+
+            listSlot.appendChild(SNW.DomUtil.html`
+                <div class="snw-toolbar">
+                    <button type="button" class="snw-btn snw-btn-primary" data-action="add-preset" data-i18n="common.add">프리셋 추가</button>
+                </div>`);
+
+            if (!this._presets.length) {
+                listSlot.appendChild(SNW.DomUtil.html`<div class="snw-empty" data-i18n="common.noData">데이터 없음</div>`);
+                SNW.I18n.applyTo(listSlot);
+                return;
+            }
+
+            const wrap = document.createElement('div');
+            wrap.className = 'snw-profile-list'; // CSS 재사용
+
+            this._presets.forEach((p, idx) => {
+                const f = p.factors || {};
+                wrap.appendChild(SNW.DomUtil.html`
+                    <div class="snw-profile-item" data-idx="${idx}">
+                        <div class="snw-profile-head">
+                            <span class="snw-profile-no">#${idx}</span>
+                            <span class="snw-profile-name">${p.name || p.code || ''}</span>
+                            <span style="font-size:11px;color:var(--snw-text-faint);">(${p.code || ''})</span>
+                            <button type="button" class="snw-btn-icon" data-action="edit-preset" data-id="${idx}" title="편집">✏️</button>
+                            <button type="button" class="snw-btn-icon snw-btn-icon--danger" data-action="del-preset" data-id="${idx}" title="삭제">🗑</button>
+                        </div>
+                        <div class="snw-schedule-meta" style="font-size:11px;color:var(--snw-text-dim);margin-top:6px;flex-wrap:wrap;display:flex;gap:8px;">
+                            <span>강도: ${f.windIntensity ?? '-'}%</span>
+                            <span>변동성: ${f.windVariability ?? '-'}%</span>
+                            <span>돌풍: ${f.gustFrequency ?? '-'}%</span>
+                            <span>팬한계: ${f.fanLimit ?? '-'}%</span>
+                            <span>최소팬: ${f.minFan ?? '-'}%</span>
+                        </div>
+                    </div>`);
+            });
+            listSlot.appendChild(wrap);
+            SNW.I18n.applyTo(listSlot);
+        }
+
+        // [신규] 프리셋 추가 모달
+        async _onAdd() {
+            const inputDiv = document.createElement('div');
+            inputDiv.innerHTML = `
+                <label style="display:block;margin-bottom:8px;font-size:13px;color:var(--snw-text-dim);">이름
+                    <input type="text" id="wp-name" value="New Preset" style="width:100%;padding:8px;margin-top:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
+                </label>
+                <label style="display:block;margin-bottom:8px;font-size:13px;color:var(--snw-text-dim);">코드 (영문 대문자)
+                    <input type="text" id="wp-code" value="CUSTOM" style="width:100%;padding:8px;margin-top:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
+                </label>
+                <label style="display:block;margin-bottom:8px;font-size:13px;color:var(--snw-text-dim);">강도 (0~100)
+                    <input type="number" id="wp-intensity" value="70" style="width:100%;padding:8px;margin-top:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
+                </label>
+                <label style="display:block;margin-bottom:8px;font-size:13px;color:var(--snw-text-dim);">변동성 (0~100)
+                    <input type="number" id="wp-variability" value="50" style="width:100%;padding:8px;margin-top:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
+                </label>
+            `;
+            SNW.UI.modal('프리셋 추가', inputDiv, async () => {
+                const name = inputDiv.querySelector('#wp-name').value;
+                const code = inputDiv.querySelector('#wp-code').value.toUpperCase();
+                const intensity = Number(inputDiv.querySelector('#wp-intensity').value);
+                const variability = Number(inputDiv.querySelector('#wp-variability').value);
+                if (!name || !code) { SNW.ToastUtil.warn('이름과 코드를 입력하세요.'); return false; }
+
+                const body = {
+                    preset: {
+                        name, code,
+                        factors: { windIntensity: intensity, windVariability: variability, gustFrequency: 45, fanLimit: 90, minFan: 10 }
+                    }
+                };
+                try {
+                    await SNW.Api.addWindProfile(body);
+                    SNW.ToastUtil.success('추가됨');
+                    await this._load();
+                    return true;
+                } catch (e) { SNW.ErrorHandler.handle(e, 'windprofile.add'); return false; }
+            });
+        }
+
+        // [신규] 프리셋 편집 모달
+        async _onEdit(id) {
+            const target = this._presets[id];
+            if (!target) return;
+            const f = target.factors || {};
+            const inputDiv = document.createElement('div');
+            inputDiv.innerHTML = `
+                <label style="display:block;margin-bottom:8px;font-size:13px;color:var(--snw-text-dim);">이름
+                    <input type="text" id="wp-name" value="${SNW.DomUtil.escape(target.name || '')}" style="width:100%;padding:8px;margin-top:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
+                </label>
+                <label style="display:block;margin-bottom:8px;font-size:13px;color:var(--snw-text-dim);">강도 (0~100)
+                    <input type="number" id="wp-intensity" value="${f.windIntensity ?? 70}" style="width:100%;padding:8px;margin-top:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
+                </label>
+                <label style="display:block;margin-bottom:8px;font-size:13px;color:var(--snw-text-dim);">변동성 (0~100)
+                    <input type="number" id="wp-variability" value="${f.windVariability ?? 50}" style="width:100%;padding:8px;margin-top:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
+                </label>
+            `;
+            SNW.UI.modal('프리셋 편집', inputDiv, async () => {
+                const name = inputDiv.querySelector('#wp-name').value;
+                const intensity = Number(inputDiv.querySelector('#wp-intensity').value);
+                const variability = Number(inputDiv.querySelector('#wp-variability').value);
+                if (!name) { SNW.ToastUtil.warn('이름을 입력하세요.'); return false; }
+
+                const body = {
+                    preset: {
+                        ...target, name,
+                        factors: { ...f, windIntensity: intensity, windVariability: variability }
+                    }
+                };
+                try {
+                    await SNW.Api.updateWindProfile(id, body);
+                    SNW.ToastUtil.success('수정됨');
+                    await this._load();
+                    return true;
+                } catch (e) { SNW.ErrorHandler.handle(e, 'windprofile.edit'); return false; }
+            });
+        }
+
+        async _onDelete(id) {
+            if (!confirm(SNW.I18n.t('common.delete') + '?')) return;
+            try {
+                await SNW.Api.deleteWindProfile(id);
+                SNW.ToastUtil.success('삭제됨');
+                await this._load();
+            } catch (e) { SNW.ErrorHandler.handle(e, 'windprofile.delete'); }
+        }
+    };
 })(window.SNW);
 
 

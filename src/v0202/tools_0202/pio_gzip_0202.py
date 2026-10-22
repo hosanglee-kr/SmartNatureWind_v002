@@ -84,6 +84,7 @@ FS_TARGETS_EXACT: Set[str] = {"buildfs", "uploadfs"}
 # 번들에서 제외할 JS (별도 로드)
 JS_BUNDLE_EXCLUDES: Set[str] = {
     "998.offline_0202.js",   # 오프라인 어댑터 (조건부 로드)
+    "P010_bundle_0202_old.js", # 백업 파일
 }
 
 

@@ -12,10 +12,9 @@ window.SNW = window.SNW || {};
         userProfiles:'cfg_userProfile_0202.json', windDict:'cfg_windDict_0202.json', webPage:'cfg_pages_0202.json'
     };
     
-    // [폴백 데이터] JSON 로드 실패 시 사용할 기본 UI 뼈대 데이터
     const cache = {
-        system: { system: { logging: { level: "INFO" } }, hw: { fanPwm: { pin: 6 }, fanConfig: { startPercentMin: 18 }, pir: { enabled: true, pin: 13, holdSec: 120 }, tempHum: { enabled: true, type: "DHT22", pin: 17, intervalSec: 30 } } },
-        wifi: { wifi: { wifiMode: 2, ap: { ssid: "NatureWind" }, sta: [] } },
+        system: { system: { logging: { level: "INFO" } }, hw: { fanPwm: { pin: 6, channel: 0, freq: 25000, res: 10 }, fanConfig: { startPercentMin: 18, comfortPercentMin: 22, comfortPercentMax: 65, hardPercentMax: 90 }, pir: { enabled: true, pin: 13, debounceSec: 5, holdSec: 120 }, tempHum: { enabled: true, type: "DHT22", pin: 17, intervalSec: 30 } } },
+        wifi: { wifi: { wifiMode: 2, ap: { ssid: "NatureWind", pass: "2540" }, sta: [{ ssid: "MyWiFi", pass: "12345678" }] } },
         motion: null, nvsSpec: null,
         schedules: { schedules: [
             { schId: 1, schNo: 10, name: "Morning Breeze", enabled: true, segCount: 2, period: { days: [1,1,1,1,1,0,0], startTime: "08:00", endTime: "12:00" } },
@@ -25,7 +24,12 @@ window.SNW = window.SNW || {};
             { profileId: 1, profileNo: 10, name: "수면 모드", enabled: true, segCount: 3 },
             { profileId: 2, profileNo: 20, name: "집중 모드", enabled: true, segCount: 1 }
         ]}},
-        windDict: { windDict: { presets: [{ code: "OCEAN", name: "Ocean" }, { code: "FOREST_CANOPY", name: "Forest" }] } },
+        windDict: { windDict: { presets: [
+            { idx: 0, code: "OCEAN", name: "Ocean Breeze", factors: { windIntensity: 70, gustFrequency: 50, windVariability: 55, fanLimit: 95, minFan: 12 } },
+            { idx: 1, code: "COUNTRY_BREEZE", name: "Country Breeze", factors: { windIntensity: 55, gustFrequency: 30, windVariability: 40, fanLimit: 90, minFan: 10 } },
+            { idx: 2, code: "MEDITERRANEAN", name: "Mediterranean", factors: { windIntensity: 65, gustFrequency: 38, windVariability: 50, fanLimit: 92, minFan: 10 } },
+            { idx: 3, code: "MOUNTAIN", name: "Mountain", factors: { windIntensity: 80, gustFrequency: 55, windVariability: 65, fanLimit: 96, minFan: 14 } }
+        ], styles: [] } },
         webPage: null
     };
 
@@ -34,6 +38,7 @@ window.SNW = window.SNW || {};
             active: true, state: 'SCHEDULE_RUN', stateCode: 3, reason: 'SCHEDULE_ACTIVE', reasonCode: 4,
             time: { valid: true, hour: 10, min: 30, wday: 2 },
             sensor: { tempC: 24.5, humidity: 55, motionActive: true },
+            event: { ackRequired: false, holdUntilMs: 0, holdRemainMs: 0 },
             system: { uptimeMs: 1000, epochNowMs: 0 },
             profile: { profileNo: 10 }, segment: {}, override: {}
         },
@@ -82,34 +87,57 @@ window.SNW = window.SNW || {};
         if (!SNW.Api) SNW.Api = { ApiError: class extends Error { constructor(status) { super('Error'); this.status = status; } } };
         const A = SNW.Api;
 
+        // GET 스텁
         A.getState = async () => ({ control: runtime.control, sim: runtime.sim, runtime: runtime.runtime });
         A.getSim = async () => ({ sim: runtime.sim });
+        A.getSimState = async () => ({ sim: runtime.sim, control: runtime.control });
         A.getSystem = async () => cache.system;
         A.listSchedules = async () => cache.schedules;
         A.listProfiles = async () => cache.userProfiles;
         A.listWindProfiles = async () => cache.windDict;
         A.getWifiConfig = async () => cache.wifi;
-        A.getLogs = async () => ({ logs: [{ ts:0, lv:3, msg:'[Offline] mode' }] });
+        A.getWifiState = async () => ({ wifi: { state: { mode: 2, mode_name:'AP+STA (Offline)', status:'CONNECTED', ssid:'(offline)', ip:'0.0.0.0', mac:'00:00:00:00:00:00', rssi:-50, hostname:'offline', connected:false, timeSynced:false, reconnectAttempts:0 } } });
+        A.getLogs = async () => ({ logs: [{ ts:0, lv:3, msg:'[Offline] mode active' }] });
         A.diag = async () => ({ heap:1024, fs_used:100, fs_total:200 });
-        A.version = async () => ({ fw:'FW_Ver_2.0.2', control:'CT10_Ctl_0202' });
-        A.getWifiState = async () => ({ wifi: { state: { mode_name:'OFFLINE', ssid:'(offline)', ip:'0.0.0.0', rssi:-50 } } });
-        A.checkFw = async () => ({ status:'latest', current_version:'FW_Ver_2.0.2' });
-        A.getConfigDirty = async () => ({ system:false, wifi:false, motion:false });
+        A.version = async () => ({ fw:'FW_Ver_2.0.2', control:'CT10_Ctl_0202', config:'C10_Config_0202', api:'W10_Web_0202', simul:'S10_Simul_0202' });
+        A.checkFw = async () => ({ status:'latest', current_version:'FW_Ver_2.0.2', latest_version:'FW_Ver_2.0.2' });
+        A.getConfigDirty = async () => ({ system:false, wifi:false, motion:false, schedules:false, userProfiles:false, windDict:false, nvsSpec:false, webPage:false });
         
-        A.overrideFixed = async () => ({ result:'ok' });
-        A.overrideClear = async () => ({ result:'ok' });
-        A.patchSim = async () => ({ updated:true });
-        A.patchSystem = async () => ({ updated:true });
-        A.patchWifi = async () => ({ updated:true });
+        // [신규] 누락된 스텁 보완
+        A.getMetrics = async () => ({ metrics: {} });
+        A.getSummary = async () => ({ summary: {} });
+        A.getConfigAll = async () => (cache);
+        A.getMotion = async () => cache.motion || { motion: {} };
+        
+        // 쓰기 스텁
+        A.overrideFixed = async () => { runtime.sim.active = true; runtime.control.active = true; return { result:'ok' }; };
+        A.overrideClear = async () => { runtime.sim.active = false; runtime.control.active = false; return { result:'ok' }; };
+        A.overridePreset = async (b) => { runtime.sim.presetCode = b.presetCode; runtime.sim.active = true; return { result:'ok' }; };
+        A.patchSim = async (p) => { Object.assign(runtime.sim, p); return { updated:true }; };
         A.patchMotion = async () => ({ updated:true });
+        A.patchSystem = async (b) => { 
+            if (b.hw && cache.system) Object.assign(cache.system.hw, b.hw);
+            if (b.system && cache.system) Object.assign(cache.system.system, b.system);
+            return { updated:true }; 
+        };
+        A.patchWifi = async (b) => { if (b.wifi && cache.wifi) Object.assign(cache.wifi.wifi, b.wifi); return { updated:true }; };
         A.saveConfig = async () => ({ result:'saved' });
         A.reload = async () => ({ result:'queued' });
-        A.ackEvent = async () => ({ result:'ok' });
-        A.selectProfile = async () => ({ result:'ok' });
-        A.stopProfile = async () => ({ result:'ok' });
-        A.scanWifi = async () => ({ wifi: { scan: [{ ssid: "TestWiFi1", rssi: -45, enc: "WPA2" }, { ssid: "TestWiFi2", rssi: -70, enc: "OPEN" }] } });
+        A.ackEvent = async () => { runtime.control.event.ackRequired = false; return { result:'ok' }; };
+        A.feedPir = async (fired) => { runtime.control.sensor.motionActive = !!fired; return { fed:true }; };
+        A.selectProfile = async (id) => { runtime.control.state = 'PROFILE_RUN'; runtime.sim.active = true; return { result:'ok' }; };
+        A.stopProfile = async () => { runtime.control.state = 'IDLE'; runtime.sim.active = false; return { result:'ok' }; };
+        A.scanWifi = async () => ({ wifi: { scan: [
+            { ssid: "TestWiFi1", rssi: -45, enc: "WPA2", chan: 6, bssid: "AA:BB:CC:DD:EE:01" },
+            { ssid: "TestWiFi2", rssi: -70, enc: "OPEN", chan: 11, bssid: "AA:BB:CC:DD:EE:02" }
+        ] } });
+        A.setTime = async () => ({ updated:true });
+        A.factoryReset = async () => ({ factory:true });
+        A.gemini = async () => { throw new SNW.Api.ApiError(503); };
+        A.uploadFile = async () => { throw new SNW.Api.ApiError(503); };
+        A.uploadFirmware = async () => { throw new SNW.Api.ApiError(503); };
         
-        // 가상 CRUD
+        // CRUD
         A.addSchedule = async (b) => {
             const list = cache.schedules.schedules || [];
             const id = list.length + 1;
@@ -141,9 +169,21 @@ window.SNW = window.SNW || {};
             if (idx >= 0) Object.assign(list[idx], b.profile || {});
             return { updated:true };
         };
-        A.gemini = async () => { throw new SNW.Api.ApiError(503); };
-        A.uploadFile = async () => { throw new SNW.Api.ApiError(503); };
-        A.uploadFirmware = async () => { throw new SNW.Api.ApiError(503); };
+        A.addWindProfile = async (b) => {
+            const list = cache.windDict.windDict.presets || [];
+            const id = list.length;
+            list.push(Object.assign({ idx:id }, b.preset || {}));
+            return { result:'created', id };
+        };
+        A.deleteWindProfile = async (id) => {
+            cache.windDict.windDict.presets = cache.windDict.windDict.presets.filter((p, i) => i !== id);
+            return { deleted:true };
+        };
+        A.updateWindProfile = async (id, b) => {
+            const list = cache.windDict.windDict.presets;
+            if (list[id]) Object.assign(list[id], b.preset || {});
+            return { updated:true };
+        };
     }
 
     function stubWs() {
@@ -170,7 +210,6 @@ window.SNW = window.SNW || {};
         stubWs();
         startSimulator();
         
-        // L4 권한 강제 부여
         let waitCount = 0;
         while (!SNW.LevelUtil && waitCount < 40) { await new Promise(r => setTimeout(r, 50)); waitCount++; }
         if (SNW.LevelUtil) {

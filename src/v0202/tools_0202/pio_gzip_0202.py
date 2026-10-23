@@ -1,25 +1,35 @@
 #!/usr/bin/env python3
 """
-Smart Nature Wind v0202 — SPA Web Staging + Offline Zip (통합)
+Smart Nature Wind v0202 — SPA Web Staging + Offline Zip (최종 완성본)
 
-경로 정책 (SPEC_0202 §5.4.2):
-  - HTML 원본 : src/v0202/data_v0202_src/html_v0202/
+[경로 정책]
+  - HTML/JS/CSS 원본 : src/v0202/data_v0202_src/html_v0202/ (하위 폴더 구조 지원)
+      ├── index.html
+      ├── css/ (개별 CSS)
+      └── js/
+          ├── core/ (기반/유틸/서비스)
+          ├── app/  (페이지/부트스트랩)
+          └── 998.offline_0202.js (오프라인 어댑터 - 로컬 검증용, 배포 제외)
   - JSON 원본 : src/v0202/data_v0202_src/json/
-  - 스테이징 : src/v0202/data_v0202/
-      ├── html_v0202/  (P010_main_0202.html, P000_common_0202.css, P010_bundle_0202.js, + .gz)
-      └── json/        (cfg_*_0202.json, 10_cfg_jsonFile.json)
-  - 오프라인 zip : <project>/dist/smart_nature_wind_offline_v0202_{gz|raw}_{ts}.zip
+  - 배포 스테이징 : src/v0202/data_v0202/
+  - 오프라인 zip : <project>/dist/
 
-파이프라인 (6단계):
-  [1/6] JS 번들       : html_v0202/*.js (넘버링 정렬) → P010_bundle_0202.js (+ .gz)
-  [2/6] CSS 번들      : html_v0202/_*.css            → P000_common_0202.css (+ .gz)
-  [3/6] HTML Shell    : index.html                   → P010_main_0202.html (+ .gz)
-  [4/6] 기타 자산     : GZ_EXTS/COPY_ONLY_EXTS 대상 복사 (+ gzip)
-  [5/6] JSON 복사     : data_v0202_src/json/*.json  → data_v0202/json/*.json (gzip 미적용)
-  [6/6] 오프라인 zip  : data_v0202/ 전체를 LittleFS와 동일 구조로 zip
+[파이프라인 (6단계)]
+  [1/6] JS 번들       : **/*.js (번호순 정렬, 번들 제외 파일 필터링) → P010_bundle_0202.js (+ .gz)
+  [2/6] CSS 번들      : **/_*.css (번호순 정렬) → P000_common_0202.css (+ .gz)
+  [3/6] HTML Shell    : index.html → index.html (+ .gz)
+  [4/6] 기타 자산     : 이미지/폰트 등 복사. (998.offline_0202.js는 배포 제외)
+  [5/6] JSON 복사     : data_v0202_src/json/*.json → data_v0202/json/*.json
+  [6/6] 오프라인 zip  : data_v0202/ 전체 압축
+
+[특이사항]
+  - 번들 결과물(JS, CSS)을 배포 폴더와 소스 폴더 양쪽에 모두 복사하여
+    소스 폴더에서 Live Server 등으로 즉시 UI 검증이 가능하도록 지원.
+  - HTML 파일명은 배포 환경에서도 index.html로 유지.
+  - 오프라인 어댑터(998.offline_0202.js)는 로컬 검증용으로만 소스에 두고 배포 폴더에는 복사하지 않음.
 
 실행:
-  # PlatformIO 훅 (platformio.ini extra_scripts에 pre:로 등록)
+  # PlatformIO 훅
   pio run --target buildfs      # 스테이징 + zip 생성
   pio run --target uploadfs     # 스테이징 + zip 생성 + 업로드
 
@@ -28,9 +38,6 @@ Smart Nature Wind v0202 — SPA Web Staging + Offline Zip (통합)
   python src/v0202/tools_0202/pio_gzip_0202.py --no-zip     # 스테이징만
   python src/v0202/tools_0202/pio_gzip_0202.py --no-gz      # zip에서 .gz 제외
   python src/v0202/tools_0202/pio_gzip_0202.py --zip-only   # 스테이징 스킵, zip만
-
-platformio.ini 옵션:
-  custom_offline_zip = true|false   # false면 buildfs 시 zip 생성 스킵
 """
 
 from __future__ import annotations
@@ -44,7 +51,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Set
 
-# Windows 콘솔 UTF-8
+# Windows 콘솔 UTF-8 강제 설정
 if sys.platform == "win32":
     try:
         if sys.stdout and hasattr(sys.stdout, "reconfigure"):
@@ -58,34 +65,27 @@ if sys.platform == "win32":
 # ============================================================
 # 상수 (v0202)
 # ============================================================
-JS_BUNDLE_PATTERN  = "*.js"
 JS_BUNDLE_OUTPUT   = "P010_bundle_0202.js"
-
-CSS_BUNDLE_PATTERN = "_*.css"
 CSS_BUNDLE_OUTPUT  = "P000_common_0202.css"
 
 HTML_SHELL_INPUT   = "index.html"
-HTML_SHELL_OUTPUT  = "P010_main_0202.html"
+HTML_SHELL_OUTPUT  = "index.html"  # 배포 시에도 index.html 유지
 
+# 번들에서 제외할 JS 파일 (배포 폴더 복사도 제외됨)
+JS_BUNDLE_EXCLUDES: Set[str] = {
+    "998.offline_0202.js",     # 오프라인 어댑터 (로컬 검증용, ESP32 배포 제외)
+    "P010_bundle_0202_old.js", # 백업 파일
+}
+
+# Gzip 압축 대상 확장자
 GZ_EXTS: Set[str] = {".html", ".css", ".js", ".svg"}
-COPY_ONLY_EXTS: Set[str] = {".png", ".jpg", ".webp", ".ico", ".txt",
-                            ".json", ".woff", ".woff2"}
+# 단순 복사 대상 확장자
+COPY_ONLY_EXTS: Set[str] = {".png", ".jpg", ".webp", ".ico", ".txt", ".json", ".woff", ".woff2"}
 
 JSON_SRC_SUBDIR = "json"
 JSON_DST_SUBDIR = "json"
 
 FS_TARGETS_EXACT: Set[str] = {"buildfs", "uploadfs"}
-
-
-
-# ============================================================
-# 상수 추가
-# ============================================================
-# 번들에서 제외할 JS (별도 로드)
-JS_BUNDLE_EXCLUDES: Set[str] = {
-    "998.offline_0202.js",   # 오프라인 어댑터 (조건부 로드)
-    "P010_bundle_0202_old.js", # 백업 파일
-}
 
 
 # ============================================================
@@ -99,27 +99,31 @@ def find_project_root() -> Path:
         cur = cur.parent
     return Path.cwd()
 
-
 def _log(msg: str, tag: str = "") -> None:
     prefix = f"[pio_gzip_0202{'/' + tag if tag else ''}]"
     print(f"{prefix} {msg}")
 
 
 # ============================================================
-# [1/6] JS 번들
+# [1/6] JS 번들링
 # ============================================================
 def build_js_bundle(src_dir: Path, dst_dir: Path) -> int:
-    files = sorted(src_dir.glob(JS_BUNDLE_PATTERN))
-    # 번들 결과물과 오프라인 어댑터 제외
-    files = [f for f in files
+    # 하위 폴더의 모든 .js 파일 검색
+    files = list(src_dir.glob("**/*.js"))
+    
+    # 번들 결과물과 제외 대상 필터링
+    files = [f for f in files 
              if f.name != JS_BUNDLE_OUTPUT and f.name not in JS_BUNDLE_EXCLUDES]
+    
+    # [핵심] 파일명(000~999) 기준 정렬로 로드 순서 보장
+    files = sorted(files, key=lambda f: f.name)
 
     if not files:
         print(f"[ERROR] JS 소스 없음: {src_dir}", file=sys.stderr)
         return 1
 
     _log(f"[1/6] JS 번들링 ({len(files)} 파일 → {JS_BUNDLE_OUTPUT})", tag="js")
-
+    
     parts: List[str] = []
     total_raw = 0
     prev_layer = None
@@ -148,6 +152,10 @@ def build_js_bundle(src_dir: Path, dst_dir: Path) -> int:
     with gzip.open(out_gz, "wb", compresslevel=9) as f_out:
         f_out.write(bundle.encode("utf-8"))
 
+    # [신규] 소스 폴더에도 복사 (로컬 UI 검증용)
+    shutil.copy2(out_raw, src_dir / JS_BUNDLE_OUTPUT)
+    shutil.copy2(out_gz,  src_dir / (JS_BUNDLE_OUTPUT + ".gz"))
+
     gz_size = out_gz.stat().st_size
     ratio = (1.0 - gz_size / total_raw) * 100.0 if total_raw > 0 else 0.0
     _log(f"  ==> bundle: {total_raw:,} B → {gz_size:,} B (gz {ratio:.1f}% 절감)", tag="js")
@@ -155,14 +163,18 @@ def build_js_bundle(src_dir: Path, dst_dir: Path) -> int:
 
 
 # ============================================================
-# [2/6] CSS 번들
+# [2/6] CSS 번들링
 # ============================================================
 def build_css_bundle(src_dir: Path, dst_dir: Path) -> int:
-    files = sorted(src_dir.glob(CSS_BUNDLE_PATTERN))
+    # 하위 폴더의 모든 _*.css 파일 검색
+    files = list(src_dir.glob("**/_*.css"))
+    
     if not files:
-        _log(f"[2/6] CSS 소스 없음 ({CSS_BUNDLE_PATTERN}) — 스킵", tag="css")
+        _log(f"[2/6] CSS 소스 없음 — 스킵", tag="css")
         return 0
-
+    
+    files = sorted(files, key=lambda f: f.name)
+    
     _log(f"[2/6] CSS 번들링 ({len(files)} 파일 → {CSS_BUNDLE_OUTPUT})", tag="css")
 
     parts: List[str] = []
@@ -185,6 +197,10 @@ def build_css_bundle(src_dir: Path, dst_dir: Path) -> int:
 
     with gzip.open(out_gz, "wb", compresslevel=9) as f_out:
         f_out.write(bundle.encode("utf-8"))
+
+    # [신규] 소스 폴더에도 복사 (로컬 UI 검증용)
+    shutil.copy2(out_raw, src_dir / CSS_BUNDLE_OUTPUT)
+    shutil.copy2(out_gz,  src_dir / (CSS_BUNDLE_OUTPUT + ".gz"))
 
     gz_size = out_gz.stat().st_size
     ratio = (1.0 - gz_size / total_raw) * 100.0 if total_raw > 0 else 0.0
@@ -211,6 +227,10 @@ def process_html_shell(src_dir: Path, dst_dir: Path) -> int:
     with gzip.open(out_gz, "wb", compresslevel=9) as f_out:
         f_out.write(content.encode("utf-8"))
 
+    # [신규] 소스 폴더에도 복사 (로컬 UI 검증용, 소스는 이미 존재하지만 일관성 유지)
+    shutil.copy2(out_raw, src_dir / HTML_SHELL_OUTPUT)
+    shutil.copy2(out_gz,  src_dir / (HTML_SHELL_OUTPUT + ".gz"))
+
     gz_size = out_gz.stat().st_size
     ratio = (1.0 - gz_size / raw_size) * 100.0 if raw_size > 0 else 0.0
     _log(f"[3/6] HTML Shell: {HTML_SHELL_INPUT} → {HTML_SHELL_OUTPUT} "
@@ -233,6 +253,13 @@ def process_other_assets(src_dir: Path, dst_dir: Path) -> int:
         rel = item.relative_to(src_dir)
 
         if rel.name in handled: continue
+        
+        # [핵심 수정] 번들 제외 파일(998.offline_0202.js 등)은 배포 폴더로 복사하지 않고 스킵
+        # (소스 폴더에는 원본이 있으므로 로컬 UI 검증에는 문제 없음)
+        if rel.name in JS_BUNDLE_EXCLUDES:
+            _log(f"  [SKIP] {str(rel):<32} (배포 제외 대상)", tag="assets")
+            continue
+
         if rel.suffix == ".js":  continue
         if rel.name.startswith("_") and rel.suffix == ".css": continue
 
@@ -295,6 +322,7 @@ def build_offline_zip(project_root: Path, include_gz: bool = True) -> int:
         print(f"[ERROR] 스테이징 없음: {stage_dir}", file=sys.stderr)
         return 1
 
+    # 필수 파일 검증 (index.html로 변경됨)
     required = [
         stage_dir / "html_v0202" / HTML_SHELL_OUTPUT,
         stage_dir / "html_v0202" / CSS_BUNDLE_OUTPUT,
@@ -433,3 +461,4 @@ elif __name__ == "__main__":
         include_gz = not args.no_gz,
         skip_stage = args.zip_only,
     ))
+    

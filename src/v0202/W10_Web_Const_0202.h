@@ -122,7 +122,7 @@ constexpr const char* PATH_STATIC_INDEX_HTML = "/P010_main_0202.html";
 constexpr const char* PATH_STATIC_JSON       = "/json";
 
 constexpr const char* PATH_STATIC_HTML_V0200       = "/html_v0202";
-constexpr const char* PATH_STATIC_INDEX_HTML_V0200 = "/P010_main_0202.html";
+constexpr const char* PATH_STATIC_INDEX_HTML_V0200 = "/index.html";
 constexpr const char* PATH_STATIC_JSON_V0200       = "/json";
 
 } // namespace W10_Const

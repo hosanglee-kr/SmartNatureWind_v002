@@ -4,41 +4,26 @@ Load this only when the user passed `--update` or `--cluster-only`. A first-time
 
 ## For --update (incremental re-extraction)
 
-Use when you've added or modified files since the last run. Only re-extracts changed files - saves tokens and time.
+### 🚀 FAST-PATH: Native 1-Step Update (Default & Recommended)
+Use when updating the graph on code/repo changes. Runs in ~5-10 seconds without any multi-step script overhead, AST extracts changed code in parallel, cleans deleted nodes, reclusters, and updates `graph.json`, `graph.html`, and `GRAPH_REPORT.md` atomically:
 
-```bash
-$(cat graphify-out/.graphify_python) -c "
-import sys, json
-from graphify.detect import detect_incremental, save_manifest
-from pathlib import Path
-
-from graphify.paths import out_path
-from graphify.watch import _read_build_excludes, _read_build_gitignore
-result = detect_incremental(Path('INPUT_PATH'), extra_excludes=_read_build_excludes(out_path()), gitignore=_read_build_gitignore(out_path()))
-new_total = result.get('new_total', 0)
-nf = result.get('new_files', {})
-print(json.dumps({
-    'new_total': new_total,
-    'deleted': len(result.get('deleted_files', [])),
-    'new_by_type': {t: len(v) for t, v in nf.items()},
-    'total_files': result.get('total_files'),
-    'total_words': result.get('total_words'),
-    'skipped_sensitive': result.get('skipped_sensitive', []),
-}, indent=2, ensure_ascii=False))
-print('Full result: graphify-out/.graphify_incremental.json')
-Path('graphify-out/.graphify_incremental.json').write_text(json.dumps(result, ensure_ascii=False), encoding=\"utf-8\")
-deleted = list(result.get('deleted_files', []))
-if new_total == 0 and not deleted:
-    print('No files changed since last run. Nothing to update.')
-    raise SystemExit(0)
-if deleted:
-    print(f'{len(deleted)} deleted file(s) to prune.')
-if new_total > 0:
-    print(f'{new_total} new/changed file(s) to re-extract.')
-"
+```powershell
+& (Get-Content graphify-out\.graphify_python) -m graphify update .
 ```
 
-Then populate `.graphify_detect.json` so Steps 3A–6 (which read it unconditionally) see the right state for an incremental run. `files` carries the changed subset (drives Step 3A AST + Step 3B0 cache check on only what changed); `all_files` carries the full corpus for any step that needs corpus-wide context:
+After the command completes:
+1. Read `graphify-out/GRAPH_REPORT.md` to extract:
+   - **God Nodes**
+   - **Surprising Connections**
+   - **Suggested Questions**
+2. Print the brief update summary and the 3 sections to the user.
+3. Pick the single most interesting question and ask:
+   > "The most interesting question this graph can answer: **[question]**. Want me to trace it?"
+
+---
+
+### Legacy / Full-Pipeline Manual Update (Only when --deep is specified)
+Only use the manual multi-step script flow below if `--deep` semantic LLM extraction was explicitly requested:
 
 ```bash
 $(cat graphify-out/.graphify_python) -c "

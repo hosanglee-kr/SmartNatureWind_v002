@@ -786,7 +786,9 @@ if (-not (Test-Path graphify-out\.graphify_python)) {
 
 ## For --update and --cluster-only
 
-Both are non-default subcommands. `--update` re-extracts only new or changed files; `--cluster-only` reruns clustering on the existing graph. See `references/update.md` for both flows.
+Both are non-default subcommands:
+- **`--update` (or `/graphify update`)**: Run the native 1-step command `& (Get-Content graphify-out\.graphify_python) -m graphify update .` (completes in ~5-10s without LLM or multi-step script overhead), then present God Nodes, Surprising Connections, and Suggested Questions from `GRAPH_REPORT.md`. See `references/update.md`.
+- **`--cluster-only`**: Reruns clustering on the existing graph. See `references/update.md`.
 
 ---
 

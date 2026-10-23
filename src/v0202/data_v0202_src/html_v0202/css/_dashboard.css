@@ -1,0 +1,101 @@
+/*
+ * ------------------------------------------------------
+ * 소스명   : _dashboard.css
+ * 레이어   : CSS (빌드 시 P000_common_0200.css로 concat)
+ * 기능 요약:
+ *  - Dashboard 페이지 전용 레이아웃
+ *  - 데스크톱 2열 / 태블릿 2열 / 모바일 1열 그리드
+ *  - 카드별 그리드 배치 (state/power/sensor/preset/slider)
+ * ------------------------------------------------------
+ */
+
+.snw-dashboard {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--snw-spacing-lg);
+}
+
+/* 데스크톱 (≥ 1024) */
+@media (min-width: 1024px) {
+    .snw-dashboard {
+        grid-template-columns: 2fr 1fr;
+        grid-template-areas:
+            "state  power"
+            "sensor sensor"
+            "preset preset"
+            "slider slider";
+    }
+    .snw-card--state { grid-area: state; }
+    .snw-card--power { grid-area: power; }
+    .snw-card--sensor { grid-area: sensor; }
+    .snw-card--preset { grid-area: preset; }
+    .snw-card--slider { grid-area: slider; }
+}
+
+/* 태블릿 (768~1023) */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .snw-dashboard {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+            "state  power"
+            "sensor sensor"
+            "preset preset"
+            "slider slider";
+    }
+    .snw-card--state { grid-area: state; }
+    .snw-card--power { grid-area: power; }
+    .snw-card--sensor { grid-area: sensor; }
+    .snw-card--preset { grid-area: preset; }
+    .snw-card--slider { grid-area: slider; }
+}
+
+/* Dashboard 카드별 최소 높이 */
+.snw-card--state { min-height: 220px; }
+
+.snw-card--power { 
+    display: flex;
+    flex-direction: column; 
+}
+
+.snw-card--power .snw-power-slot { 
+    flex: 1;
+    display: flex; 
+}
+
+.snw-card--sensor .snw-sensor-cards {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* 큰 숫자 강조 (풍속) */
+.snw-card--state .snw-kv b[data-slot="cur-wind"] {
+    font-size: 24px;
+    color: var(--snw-primary);
+}
+
+.snw-card--state .snw-kv b[data-slot="target-wind"] {
+    font-size: 16px;
+}
+
+/* Phase 표시 (컬러) */
+.snw-card--state .snw-kv b[data-slot="phase"] {
+    font-size: 14px;
+}
+
+/* 프리셋 그리드 데스크톱 5열 */
+@media (min-width: 1024px) {
+    .snw-card--preset .snw-preset-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+    .snw-card--preset .snw-preset-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 767px) {
+    .snw-card--preset .snw-preset-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

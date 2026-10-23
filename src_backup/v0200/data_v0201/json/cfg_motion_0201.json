@@ -1,0 +1,28 @@
+{
+  "motion": {
+    "jsonFile": "cfg_motion_0201.json",
+    "pir": {
+      "enabled": true,
+      "holdSec": 120
+    },
+    "timing": {
+      "simIntervalMs": 500,
+      "gustIntervalMs": 2000,
+      "thermalIntervalMs": 3000
+    },
+    "sim": {
+      "presetCode": "OCEAN",
+      "styleCode": "BALANCE",
+      "fanPowerEnabled": true,
+      "intensity": 70.0,
+      "variability": 50.0,
+      "gustFreq": 45.0,
+      "fanLimit": 90.0,
+      "minFan": 10.0,
+      "turbSigma": 0.5,
+      "turbLenScale": 40.0,
+      "thermalStrength": 2.0,
+      "thermalRadius": 18.0
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "wifi": {
+    "wifiMode": 2,
+    "wifiModeDesc": "0:AP, 1:STA, 2: AP+STA",
+    "ap": {
+      "ssid": "NatureWind",
+      "pass": "2540"
+    },
+    "sta": [
+      {
+        "ssid": "AP-12-1106",
+        "pass": "7743#49c"
+      },
+      {
+        "ssid": "U+Net3CA8",
+        "pass": "A8A5KCFD6#"
+      },
+      {
+        "ssid": "GalNote10-2540",
+        "pass": "91932542"
+      },
+      {
+        "ssid": "LSITC_WIFI_AP",
+        "pass": "1234554321"
+      }
+    ]
+  }
+}

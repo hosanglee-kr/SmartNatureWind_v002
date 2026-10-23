@@ -201,6 +201,79 @@ void CL_W10_WebAPI::routeControl() {
         sendJson(p_request, v_res);
     });
 
+    // [v0202] 작동 모드 조회 (GET /api/v001/control/mode)
+    s_server->on(W10_Const::HTTP_API_CTL_MODE, HTTP_GET, [](AsyncWebServerRequest* p_request) {
+        if (!checkApiKey(p_request)) {
+            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            return;
+        }
+        bool v_profMode = s_control ? s_control->useProfileMode : false;
+        JsonDocument v_res;
+        v_res["profileMode"] = v_profMode;
+        v_res["mode"]        = v_profMode ? "PROFILE" : "SCHEDULE";
+        sendJson(p_request, v_res);
+    });
+
+    // [v0202] 작동 모드 전환 (POST /api/v001/control/mode)
+    s_server->on(
+        W10_Const::HTTP_API_CTL_MODE,
+        HTTP_POST,
+        [](AsyncWebServerRequest* p_request) {},
+        nullptr,
+        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+            if (!checkApiKey(p_request)) {
+                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+                return;
+            }
+            if (p_index + p_len != p_total) return;
+
+            bool v_mode = false;
+            bool v_parsed = false;
+
+            if (p_len > 0) {
+                JsonDocument v_doc;
+                if (parseJsonBody(p_request, p_data, p_len, v_doc)) {
+                    if (v_doc["profileMode"].is<bool>()) {
+                        v_mode = v_doc["profileMode"].as<bool>();
+                        v_parsed = true;
+                    } else if (v_doc["mode"].is<const char*>()) {
+                        const char* m = v_doc["mode"];
+                        v_mode = (strcasecmp(m, "profile") == 0 || strcasecmp(m, "user_profile") == 0);
+                        v_parsed = true;
+                    }
+                }
+            }
+
+            if (!v_parsed && p_request->hasParam("profileMode", true)) {
+                String f = p_request->getParam("profileMode", true)->value();
+                f.toLowerCase();
+                v_mode = (f == "true" || f == "1");
+                v_parsed = true;
+            }
+
+            if (!v_parsed && p_request->hasParam("mode", true)) {
+                String m = p_request->getParam("mode", true)->value();
+                m.toLowerCase();
+                v_mode = (m == "profile" || m == "user_profile" || m == "true" || m == "1");
+                v_parsed = true;
+            }
+
+            if (!v_parsed) {
+                p_request->send(400, "application/json", "{\"error\":\"missing param: profileMode or mode\"}");
+                return;
+            }
+
+            if (s_control) {
+                CL_CT10_ControlManager::setMode(v_mode);
+                CL_N10_NvsManager::setRunMode(v_mode ? 2 : 1, 2); // 1=SCHEDULE, 2=USER_PROFILE, source=WEB
+            }
+
+            JsonDocument v_res;
+            v_res["result"]      = "ok";
+            v_res["profileMode"] = v_mode;
+            v_res["mode"]        = v_mode ? "PROFILE" : "SCHEDULE";
+            sendJson(p_request, v_res);
+        });
 }
 
 // --------------------------------------------------

@@ -423,6 +423,7 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     // 1) Core flags
     v_ctl["active"]      = active;
     v_ctl["profileMode"] = useProfileMode;
+    v_ctl["mode"]        = useProfileMode ? "PROFILE" : "SCHEDULE";
 
     // 2) State/Reason
     v_ctl["state"]      = CT10_stateToString(runCtx.state);
@@ -668,6 +669,7 @@ void CL_CT10_ControlManager::exportSummaryJson(JsonDocument& p_doc) {
     v_sum["pwmDuty"]    = pwm ? pwm->P10_getDutyPercent() : 0.0f;
     v_sum["override"]   = overrideState.active;
     v_sum["useProfile"] = useProfileMode;
+    v_sum["mode"]       = useProfileMode ? "PROFILE" : "SCHEDULE";
 
     v_sum["scheduleIdx"] = curScheduleIndex;
     v_sum["profileIdx"]  = curProfileIndex;

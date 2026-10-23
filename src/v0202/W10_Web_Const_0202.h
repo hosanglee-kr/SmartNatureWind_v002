@@ -81,6 +81,8 @@ constexpr const char* HTTP_API_CTL_OVR_PRESET = HTTP_API_BASE "/control/override
 constexpr const char* HTTP_API_CTL_OVR_CLEAR  = HTTP_API_BASE "/control/override/clear";
 // [v0202] AUTOOFF_STOPPED 이벤트 ACK (프론트 "확인" 버튼 전용)
 constexpr const char* HTTP_API_CTL_ACK        = HTTP_API_BASE "/control/ack";
+// [v0202] 작동 모드 전환 (Schedule ↔ Profile)
+constexpr const char* HTTP_API_CTL_MODE       = HTTP_API_BASE "/control/mode";
 
 // 6-1. AI 프록시
 constexpr const char* HTTP_API_GEMINI_PROXY = HTTP_API_BASE "/ai/gemini";

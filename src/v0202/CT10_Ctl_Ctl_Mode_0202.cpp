@@ -58,6 +58,7 @@ bool CL_CT10_ControlManager::startUserProfileByNo(uint16_t p_profileNo) {
         if (v_p.profileNo == p_profileNo) {
             _autoOffLatched = false;
 
+            useProfileMode             = true;   // [v0202] 프로필 시작 시 profile 모드로 자동 동기화
             runSource                  = EN_CT10_RUN_USER_PROFILE;
             curProfileIndex            = (int8_t)v_i;
 

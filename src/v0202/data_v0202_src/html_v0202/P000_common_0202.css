@@ -841,7 +841,6 @@
 }
 
 
-/* ---- _dashboard.css (2605 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : _dashboard.css
@@ -853,87 +852,95 @@
  * ------------------------------------------------------
  */
 
-.snw - dashboard {
-	display: grid;
-	grid - template - columns: 1 fr;
-	gap: var (--snw - spacing - lg);
+.snw-dashboard {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--snw-spacing-lg);
 }
 
 /* 데스크톱 (≥ 1024) */
-@media(min - width: 1024 px) {
-	.snw - dashboard {
-			grid - template - columns: 2 fr 1 fr;
-			grid - template - areas:
-				"state  power"
-			"sensor sensor"
-			"preset preset"
-			"slider slider";
-		}
-		.snw - card--state { grid - area: state; }
-		.snw - card--power { grid - area: power; }
-		.snw - card--sensor { grid - area: sensor; }
-		.snw - card--preset { grid - area: preset; }
-		.snw - card--slider { grid - area: slider; }
+@media (min-width: 1024px) {
+    .snw-dashboard {
+        grid-template-columns: 2fr 1fr;
+        grid-template-areas:
+            "state  power"
+            "sensor sensor"
+            "preset preset"
+            "slider slider";
+    }
+    .snw-card--state { grid-area: state; }
+    .snw-card--power { grid-area: power; }
+    .snw-card--sensor { grid-area: sensor; }
+    .snw-card--preset { grid-area: preset; }
+    .snw-card--slider { grid-area: slider; }
 }
 
 /* 태블릿 (768~1023) */
-@media(min - width: 768 px) and(max - width: 1023 px) {
-		.snw - dashboard {
-				grid - template - columns: 1 fr 1 fr;
-				grid - template - areas:
-					"state  power"
-				"sensor sensor"
-				"preset preset"
-				"slider slider";
-			}
-			.snw - card--state { grid - area: state; }
-			.snw - card--power { grid - area: power; }
-			.snw - card--sensor { grid - area: sensor; }
-			.snw - card--preset { grid - area: preset; }
-			.snw - card--slider { grid - area: slider; }
-	}
-	
-	/* Dashboard 카드별 최소 높이 */
-	.snw - card--state { min - height: 220 px; }
-	.snw - card--power { display: flex;flex - direction: column; }
-	.snw - card--power.snw - power - slot { flex: 1;display: flex; }
-	
-	.snw - card--sensor.snw - sensor - cards {
-		grid - template - columns: repeat(3, 1 fr);
-	}
-	
-	/* 큰 숫자 강조 (풍속) */
-	.snw - card--state.snw - kv b[data - slot = "cur-wind"] {
-		font - size: 24 px;
-		color: var (--snw - primary);
-	}
-	
-	.snw - card--state.snw - kv b[data - slot = "target-wind"] {
-		font - size: 16 px;
-	}
-	
-	/* Phase 표시 (컬러) */
-	.snw - card--state.snw - kv b[data - slot = "phase"] {
-		font - size: 14 px;
-	}
+@media (min-width: 768px) and (max-width: 1023px) {
+    .snw-dashboard {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+            "state  power"
+            "sensor sensor"
+            "preset preset"
+            "slider slider";
+    }
+    .snw-card--state { grid-area: state; }
+    .snw-card--power { grid-area: power; }
+    .snw-card--sensor { grid-area: sensor; }
+    .snw-card--preset { grid-area: preset; }
+    .snw-card--slider { grid-area: slider; }
+}
+
+/* Dashboard 카드별 최소 높이 */
+.snw-card--state { min-height: 220px; }
+
+.snw-card--power { 
+    display: flex;
+    flex-direction: column; 
+}
+
+.snw-card--power .snw-power-slot { 
+    flex: 1;
+    display: flex; 
+}
+
+.snw-card--sensor .snw-sensor-cards {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+/* 큰 숫자 강조 (풍속) */
+.snw-card--state .snw-kv b[data-slot="cur-wind"] {
+    font-size: 24px;
+    color: var(--snw-primary);
+}
+
+.snw-card--state .snw-kv b[data-slot="target-wind"] {
+    font-size: 16px;
+}
+
+/* Phase 표시 (컬러) */
+.snw-card--state .snw-kv b[data-slot="phase"] {
+    font-size: 14px;
+}
 
 /* 프리셋 그리드 데스크톱 5열 */
-@media(min - width: 1024 px) {
-	.snw - card--preset.snw - preset - grid {
-		grid - template - columns: repeat(5, 1 fr);
-	}
+@media (min-width: 1024px) {
+    .snw-card--preset .snw-preset-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
 }
 
-@media(min - width: 768 px) and(max - width: 1023 px) {
-	.snw - card--preset.snw - preset - grid {
-		grid - template - columns: repeat(4, 1 fr);
-	}
+@media (min-width: 768px) and (max-width: 1023px) {
+    .snw-card--preset .snw-preset-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
 }
 
-@media(max - width: 767 px) {
-	.snw - card--preset.snw - preset - grid {
-		grid - template - columns: repeat(2, 1 fr);
-	}
+@media (max-width: 767px) {
+    .snw-card--preset .snw-preset-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 
@@ -1193,42 +1200,109 @@ body {
 }
 
 
-/* ---- _profiles.css (806 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : _profiles.css
  * 레이어   : CSS (빌드 시 P000_common_0200.css로 concat)
  * 기능 요약:
- *  - Profiles 페이지 전용 스타일
+ *  - Profiles / WindProfile 페이지 전용 스타일
  *  - 프로필 카드 강조 (활성)
+ *  - 모달(팝업) 및 폼 스타일 일부 추가
  * ------------------------------------------------------
  */
 
-.snw - profile - list {
-		gap: var (--snw - spacing);
-	}
-	
-	.snw - profile - item.is - active.snw - profile - name {
-		color: var (--snw - primary);
-		font - weight: 600;
-	}
-	
-	.snw - profile - item.is - active.snw - profile - no {
-		color: var (--snw - primary);
-	}
-	
-	.snw - profile - actions.snw - btn {
-		min - width: 80 px;
-	}
-
-@media(max - width: 767 px) {
-	.snw - profile - actions {
-			flex - direction: column;
-		}
-		.snw - profile - actions.snw - btn {
-			width: 100 % ;
-		}
+.snw-profile-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--snw-spacing);
 }
+
+.snw-profile-item.is-active {
+    border-left: 3px solid var(--snw-primary);
+    background: rgba(74, 158, 255, 0.05);
+}
+
+.snw-profile-item.is-active .snw-profile-name {
+    color: var(--snw-primary);
+    font-weight: 600;
+}
+
+.snw-profile-item.is-active .snw-profile-no {
+    color: var(--snw-primary);
+}
+
+.snw-profile-actions .snw-btn {
+    min-width: 80px;
+}
+
+@media (max-width: 767px) {
+    .snw-profile-actions {
+        flex-direction: column;
+    }
+    .snw-profile-actions .snw-btn {
+        width: 100%;
+    }
+}
+
+/* =========================================================
+ * [신규 추가] 모달(팝업) 내부 폼 스타일 최적화
+ * ========================================================= */
+#snw-modal-overlay .snw-form {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 8px; /* 스크롤바 공간 */
+}
+
+#snw-modal-overlay .snw-form h3 {
+    font-size: 14px;
+    color: var(--snw-text);
+    margin-top: 16px;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--snw-border);
+}
+
+#snw-modal-overlay .snw-form-row label {
+    font-size: 12px;
+    color: var(--snw-text-dim);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#snw-modal-overlay .snw-form-row input[type="text"],
+#snw-modal-overlay .snw-form-row input[type="number"],
+#snw-modal-overlay .snw-form-row input[type="time"],
+#snw-modal-overlay .snw-form-row select {
+    width: 100%;
+    padding: 8px;
+    background: var(--snw-bg-2);
+    border: 1px solid var(--snw-border);
+    border-radius: var(--snw-radius-sm);
+    color: var(--snw-text);
+    font-size: 13px;
+}
+
+#snw-modal-overlay .snw-form-row input:focus,
+#snw-modal-overlay .snw-form-row select:focus {
+    outline: none;
+    border-color: var(--snw-primary);
+}
+
+/* 세그먼트 편집 박스 (모달 내부) */
+#snw-modal-overlay [id$="-segs"] > div {
+    background: var(--snw-bg-2) !important;
+    border-color: var(--snw-border) !important;
+}
+
+#snw-modal-overlay [id$="-segs"] input,
+#snw-modal-overlay [id$="-segs"] select {
+    padding: 6px !important;
+    background: var(--snw-surface) !important;
+    border: 1px solid var(--snw-border) !important;
+    color: var(--snw-text) !important;
+}
+
 
 
 /* ---- _reset.css (1547 bytes) ---- */
@@ -1480,7 +1554,6 @@ a {
 }
 
 
-/* ---- _schedule.css (739 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : _schedule.css
@@ -1492,21 +1565,56 @@ a {
  */
 
 .snw-schedule-list {
+    display: flex;
+    flex-direction: column;
     gap: var(--snw-spacing);
 }
 
 .snw-schedule-item {
     padding: var(--snw-spacing);
+    background: var(--snw-surface);
+    border: 1px solid var(--snw-border);
+    border-radius: var(--snw-radius);
 }
 
 .snw-schedule-head {
+    display: flex;
+    align-items: center;
+    gap: var(--snw-spacing-sm);
     padding-bottom: var(--snw-spacing-sm);
     border-bottom: 1px solid var(--snw-border);
+    margin-bottom: var(--snw-spacing-sm);
+}
+
+.snw-schedule-name {
+    flex: 1;
+    font-weight: 600;
+    font-size: 14px;
 }
 
 .snw-schedule-days {
-    letter-spacing: 2px;
+    letter-spacing: 1px;
     color: var(--snw-primary);
+    font-size: 12px;
+}
+
+.snw-schedule-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--snw-text-dim);
+    margin-bottom: 4px;
+}
+
+.snw-schedule-details {
+    background: var(--snw-bg-2);
+    padding: 8px;
+    border-radius: var(--snw-radius-sm);
+    margin-top: 8px;
+}
+
+.snw-schedule-details>div {
+    margin-bottom: 2px;
 }
 
 @media (max-width: 767px) {

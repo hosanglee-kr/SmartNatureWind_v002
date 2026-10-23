@@ -14,230 +14,223 @@
 /* ---- 230.page.profiles.js ---- */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
-(function (SNW) {
+(function(SNW) {
     'use strict';
     
     SNW.Page.Profiles = class Profiles {
-        constructor(container) { 
-            this.el = container; 
-            this._unsubs = []; 
-            this._active = true; 
-            this._profiles = []; 
+        constructor(container) {
+            this.el = container;
+            this._active = true;
+            this._profiles = [];
         }
-
+        
         async mount() {
             this.el.innerHTML = '';
             this.el.appendChild(SNW.Tpl.profiles());
-            SNW.I18n.applyTo(this.el);
             await this._load();
-
-            SNW.DomUtil.delegate(this.el, '[data-action="start-profile"]', 'click', (e, el) => { 
-                const no = Number(el.getAttribute('data-no')); 
-                if (no) this._onStart(no); 
-            });
-            SNW.DomUtil.delegate(this.el, '[data-action="stop-profile"]', 'click', () => this._onStop());
-            SNW.DomUtil.delegate(this.el, '[data-action="del-profile"]', 'click', (e, el) => { 
-                const id = Number(el.getAttribute('data-id')); 
-                if (id) this._onDelete(id); 
-            });
             SNW.DomUtil.delegate(this.el, '[data-action="add-profile"]', 'click', () => this._onAdd());
-            SNW.DomUtil.delegate(this.el, '[data-action="edit-profile"]', 'click', (e, el) => { 
-                const id = Number(el.getAttribute('data-id')); 
-                if (id) this._onEdit(id); 
-            });
-
-            const unsub = SNW.Store.watch('control', ctl => {
-                if (!this._active || !ctl) return;
-                const activeNo = ctl.profile && ctl.profile.profileNo;
-                this._highlightActive(activeNo);
-            });
-            this._unsubs.push(unsub);
+            SNW.DomUtil.delegate(this.el, '[data-action="edit-profile"]', 'click', (e, el) => { const id = Number(el.getAttribute('data-id')); if (id) this._onEdit(id); });
+            SNW.DomUtil.delegate(this.el, '[data-action="del-profile"]', 'click', (e, el) => { const id = Number(el.getAttribute('data-id')); if (id) this._onDelete(id); });
+            SNW.DomUtil.delegate(this.el, '[data-action="start-profile"]', 'click', (e, el) => { const no = Number(el.getAttribute('data-no')); if (no) this._onStart(no); });
         }
-
-        unmount() { 
-            this._active = false; 
-            this._unsubs.forEach(fn => { try { fn(); } catch {} }); 
-            this._unsubs = []; 
-        }
-
+        unmount() { this._active = false; }
+        
         async _load() {
-            try { 
-                const data = await SNW.Api.listProfiles(); 
-                if (!this._active) return; 
-                this._profiles = (data && data.userProfiles && data.userProfiles.profiles) || []; 
-                this._renderList(); 
-            } catch (e) { SNW.ErrorHandler.handle(e, 'profiles.load'); }
+            try {
+                const data = await SNW.Api.listProfiles();
+                if (!this._active) return;
+                this._profiles = (data && data.userProfiles && data.userProfiles.profiles) || [];
+                this._renderList();
+            } catch (e) {}
         }
-
+        
         _renderList() {
-            const listSlot = this.el.querySelector('[data-slot="list"]'); 
+            const listSlot = this.el.querySelector('[data-slot="list"]');
             if (!listSlot) return;
-            
-            listSlot.innerHTML = '';
-            listSlot.appendChild(SNW.DomUtil.html`
-                <div class="snw-toolbar">
-                    <button type="button" class="snw-btn" data-action="stop-profile" data-i18n="profile.stop">정지</button>
-                    <button type="button" class="snw-btn snw-btn-primary" data-action="add-profile" data-i18n="common.add">추가</button>
-                </div>`);
-
-            if (!this._profiles.length) { 
-                listSlot.appendChild(SNW.DomUtil.html`<div class="snw-empty" data-i18n="common.noData">데이터 없음</div>`); 
-                return; 
-            }
-
-            const wrap = document.createElement('div'); 
+            listSlot.innerHTML = '<div class="snw-toolbar"><button type="button" class="snw-btn snw-btn-primary" data-action="add-profile">프로필 추가</button></div>';
+            const wrap = document.createElement('div');
             wrap.className = 'snw-profile-list';
             
             this._profiles.forEach(p => {
-                const disabled = !p.enabled;
-                
-                let segStr = '-';
-                if (p.segments && p.segments.length) {
-                    segStr = p.segments.map(sg => `[${sg.mode}] On:${sg.onMinutes}m/Off:${sg.offMinutes}m`).join(' | ');
-                }
-                let aoStr = 'AutoOff: 없음';
-                if (p.autoOff) {
-                    const ao = p.autoOff; 
-                    const parts = [];
-                    if (ao.timer && ao.timer.enabled) parts.push(`타이머 ${ao.timer.minutes}분`);
-                    if (ao.offTime && ao.offTime.enabled) parts.push(`종료 ${ao.offTime.time}`);
-                    if (ao.offTemp && ao.offTemp.enabled) parts.push(`온도 ${ao.offTemp.temp}°C`);
-                    if (parts.length) aoStr = `AutoOff: ${parts.join(', ')}`;
-                }
-                let pirStr = 'PIR: 없음';
-                if (p.motion && p.motion.pir) {
-                    pirStr = `PIR: ${p.motion.pir.enabled ? '켜짐' : '꺼짐'} (Hold: ${p.motion.pir.holdSec || 0}s)`;
-                }
-
                 wrap.appendChild(SNW.DomUtil.html`
-                    <div class="snw-profile-item ${disabled ? 'is-disabled' : ''}" data-profile-no="${p.profileNo}">
+                    <div class="snw-profile-item ${p.enabled ? '' : 'is-disabled'}">
                         <div class="snw-profile-head">
                             <span class="snw-profile-no">#${p.profileNo}</span>
-                            <span class="snw-profile-name">${p.name || ''}</span>
-                            <button type="button" class="snw-btn-icon" data-action="edit-profile" data-id="${p.profileId}" title="편집">✏️</button>
-                            <button type="button" class="snw-btn-icon snw-btn-icon--danger" data-action="del-profile" data-id="${p.profileId}">🗑</button>
+                            <span class="snw-profile-name">${p.name}</span>
+                            <button class="snw-btn-icon" data-action="edit-profile" data-id="${p.profileId}">✏️</button>
+                            <button class="snw-btn-icon" data-action="del-profile" data-id="${p.profileId}">🗑</button>
                         </div>
-                        <div class="snw-profile-segcount">${p.segCount || 0} segments</div>
-                        <div class="snw-profile-details" style="font-size:11px;color:var(--snw-text-dim);margin-top:8px;border-top:1px solid var(--snw-border);padding-top:4px;">
-                            <div>세그먼트: ${segStr}</div>
-                            <div>${aoStr}</div>
-                            <div>${pirStr}</div>
-                        </div>
-                        <div class="snw-profile-actions">
-                            <button type="button" class="snw-btn snw-btn-primary" data-action="start-profile" data-no="${p.profileNo}" ${disabled ? 'disabled' : ''} data-i18n="profile.start">시작</button>
+                        <div class="snw-profile-actions" style="margin-top:8px;">
+                            <button class="snw-btn snw-btn-primary" data-action="start-profile" data-no="${p.profileNo}" ${!p.enabled ? 'disabled' : ''}>▶ 시작</button>
                         </div>
                     </div>`);
             });
-            
             listSlot.appendChild(wrap);
-            SNW.I18n.applyTo(listSlot);
-
-            const ctl = SNW.Store.get().control;
-            const activeNo = ctl && ctl.profile && ctl.profile.profileNo;
-            if (activeNo) this._highlightActive(activeNo);
         }
+        
+        _onAdd() { this._openEditor(null); }
+        _onEdit(id) { this._openEditor(this._profiles.find(p => p.profileId === id)); }
+        
+        async _openEditor(target) {
+            const isEdit = !!target;
+            const p = target || { profileId: 0, profileNo: this._profiles.length > 0 ? Math.max(...this._profiles.map(x => x.profileNo)) + 10 : 10, name: 'New Profile', enabled: true, repeatSegments: false, repeatCount: 0, segments: [{ segNo: 10, onMinutes: 20, offMinutes: 0, mode: 'PRESET', presetCode: 'OCEAN', styleCode: 'BALANCE', adjust: {}, fixedSpeed: 0 }], autoOff: { timer: { enabled: false, minutes: 0 }, offTime: { enabled: false, time: '00:00' }, offTemp: { enabled: false, temp: 0 } }, motion: { pir: { enabled: false, holdSec: 0 } } };
+            
+            const content = document.createElement('div');
+            content.innerHTML = `
+                <div class="snw-form">
+                    <div class="snw-form-row"><label>이름</label><input type="text" id="prof-name" value="${p.name}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row" style="display:flex;gap:8px;">
+                        <label style="flex:1;">번호 (No)<input type="number" id="prof-no" value="${p.profileNo}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                        <label style="flex:1;font-size:12px;">활성화 여부
+                            <input type="checkbox" id="prof-enabled" ${p.enabled ? 'checked' : ''}>
+                        </label>
+                    </div>
+                    <div class="snw-form-row" style="display:flex;gap:8px;margin-top:8px;">
+                        <label style="flex:1;font-size:12px;">세그먼트 반복
+                            <input type="checkbox" id="prof-repeat" ${p.repeatSegments ? 'checked' : ''}>
+                        </label>
+                        <label style="flex:1;font-size:12px;">반복 횟수 (0=무한)
+                            <input type="number" id="prof-repeat-count" value="${p.repeatCount}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        </label>
+                    </div>
+                    
+                    <h3 style="margin-top:12px;font-size:14px;">세그먼트 (구간별 제어)</h3>
+                    <div id="prof-segs" style="display:flex;flex-direction:column;gap:8px;"></div>
+                    <button type="button" class="snw-btn" id="btn-add-prof-seg" style="margin-top:8px;">+ 세그먼트 추가</button>
 
-        _highlightActive(activeNo) {
-            this.el.querySelectorAll('.snw-profile-item').forEach(el => {
-                const no = Number(el.getAttribute('data-profile-no'));
-                el.classList.toggle('is-active', no === activeNo);
+                    <h3 style="margin-top:12px;font-size:14px;">AutoOff & PIR</h3>
+                    <div class="snw-form-row" style="display:flex;gap:8px;">
+                        <label style="flex:1;">타이머(분)<input type="number" id="prof-ao-timer" value="${p.autoOff.timer.minutes}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                    </div>
+                    <div class="snw-form-row" style="display:flex;gap:8px;">
+                        <label style="flex:1;font-size:12px;">예약 종료
+                            <input type="checkbox" id="prof-ao-offtime-en" ${p.autoOff.offTime.enabled ? 'checked' : ''}>
+                        </label>
+                        <label style="flex:1;">종료 시각<input type="time" id="prof-ao-offtime" value="${p.autoOff.offTime.time || '00:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                    </div>
+                    <div class="snw-form-row" style="display:flex;gap:8px;">
+                        <label style="flex:1;font-size:12px;">온도 종료
+                            <input type="checkbox" id="prof-ao-offtemp-en" ${p.autoOff.offTemp.enabled ? 'checked' : ''}>
+                        </label>
+                        <label style="flex:1;">온도(°C)<input type="number" step="0.1" id="prof-ao-offtemp" value="${p.autoOff.offTemp.temp || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                    </div>
+                    <div class="snw-form-row" style="display:flex;gap:8px;">
+                        <label style="flex:1;font-size:12px;">PIR 사용
+                            <input type="checkbox" id="prof-pir-en" ${p.motion.pir.enabled ? 'checked' : ''}>
+                        </label>
+                        <label style="flex:1;">PIR Hold(초)<input type="number" id="prof-pir-hold" value="${p.motion.pir.holdSec}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                    </div>
+                </div>`;
+            
+            const segContainer = content.querySelector('#prof-segs');
+            const renderSegs = (segs) => {
+                segContainer.innerHTML = '';
+                segs.forEach((seg, idx) => {
+                    const segDiv = document.createElement('div');
+                    segDiv.style.cssText = 'padding:8px;border:1px solid var(--snw-border);border-radius:4px;';
+                    segDiv.innerHTML = `
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                            <b style="font-size:12px;">세그먼트 ${idx+1}</b>
+                            <button type="button" class="snw-btn-icon" data-remove-seg="${idx}">🗑</button>
+                        </div>
+                        <div style="display:flex;gap:4px;margin-bottom:4px;">
+                            <label style="flex:1;">On(분)<input type="number" class="seg-on" value="${seg.onMinutes}" style="width:100%;padding:4px;"></label>
+                            <label style="flex:1;">Off(분)<input type="number" class="seg-off" value="${seg.offMinutes}" style="width:100%;padding:4px;"></label>
+                        </div>
+                        <div style="display:flex;gap:4px;margin-bottom:4px;">
+                            <label style="flex:1;">모드
+                                <select class="seg-mode" style="width:100%;padding:4px;">
+                                    <option value="PRESET" ${seg.mode === 'PRESET' ? 'selected' : ''}>프리셋</option>
+                                    <option value="FIXED" ${seg.mode === 'FIXED' ? 'selected' : ''}>고정풍속</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="seg-preset-area" style="display:${seg.mode === 'PRESET' ? 'block' : 'none'};">
+                            <div style="display:flex;gap:4px;">
+                                <label style="flex:1;">프리셋<input type="text" class="seg-preset" value="${seg.presetCode}" style="width:100%;padding:4px;"></label>
+                                <label style="flex:1;">스타일<input type="text" class="seg-style" value="${seg.styleCode}" style="width:100%;padding:4px;"></label>
+                            </div>
+                        </div>
+                        <div class="seg-fixed-area" style="display:${seg.mode === 'FIXED' ? 'block' : 'none'};">
+                            <label>고정 풍속(%)<input type="number" class="seg-fixed" value="${seg.fixedSpeed}" style="width:100%;padding:4px;"></label>
+                        </div>
+                    `;
+                    segDiv.querySelector('.seg-mode').addEventListener('change', (e) => {
+                        segDiv.querySelector('.seg-preset-area').style.display = e.target.value === 'PRESET' ? 'block' : 'none';
+                        segDiv.querySelector('.seg-fixed-area').style.display = e.target.value === 'FIXED' ? 'block' : 'none';
+                    });
+                    segDiv.querySelector('[data-remove-seg]').addEventListener('click', () => {
+                        segs.splice(idx, 1);
+                        renderSegs(segs);
+                    });
+                    segContainer.appendChild(segDiv);
+                });
+            };
+            const currentSegs = JSON.parse(JSON.stringify(p.segments || []));
+            renderSegs(currentSegs);
+            
+            content.querySelector('#btn-add-prof-seg').addEventListener('click', () => {
+                currentSegs.push({ segNo: currentSegs.length * 10 + 10, onMinutes: 20, offMinutes: 0, mode: 'PRESET', presetCode: 'OCEAN', styleCode: 'BALANCE', adjust: {}, fixedSpeed: 0 });
+                renderSegs(currentSegs);
             });
-        }
-
-        async _onStart(profileNo) { 
-            try { await SNW.Api.selectProfile(profileNo); SNW.ToastUtil.success(SNW.I18n.t('profile.start')); } catch (e) {} 
-        }
-        async _onStop() { 
-            try { await SNW.Api.stopProfile(); SNW.ToastUtil.success(SNW.I18n.t('profile.stop')); } catch (e) {} 
-        }
-
-        async _onDelete(id) {
-            if (!confirm(SNW.I18n.t('common.delete') + '?')) return;
-            try { await SNW.Api.deleteProfile(id); await this._load(); } catch (e) {}
-        }
-
-        async _onAdd() {
-            const maxNo = this._profiles.reduce((m, p) => Math.max(m, p.profileNo || 0), 0);
-            const nextNo = maxNo + 10;
-
-            const inputDiv = document.createElement('div');
-            inputDiv.innerHTML = `
-                <label style="display:block;margin-bottom:8px;font-size:13px;color:var(--snw-text-dim);">프로필 이름
-                    <input type="text" id="prof-name" value="New Profile ${nextNo}" style="width:100%;padding:8px;margin-top:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
-                </label>
-                <label style="display:block;margin-bottom:8px;font-size:13px;color:var(--snw-text-dim);">프로필 번호 (No)
-                    <input type="number" id="prof-no" value="${nextNo}" style="width:100%;padding:8px;margin-top:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
-                </label>
-                <h3 style="margin-top:12px;font-size:14px;">세그먼트 (On/Off)</h3>
-                <div class="snw-form-row"><label>On (분)</label><input type="number" id="prof-on" value="30" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                <div class="snw-form-row"><label>Off (분)</label><input type="number" id="prof-off" value="10" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                <h3 style="margin-top:12px;font-size:14px;">AutoOff</h3>
-                <div class="snw-form-row"><label>타이머 (분, 0=비활성)</label><input type="number" id="prof-ao-timer" value="0" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                <div class="snw-form-row"><label>PIR Hold (초)</label><input type="number" id="prof-pir-hold" value="120" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-            `;
-
-            SNW.UI.modal('프로필 추가', inputDiv, async () => {
-                const name = inputDiv.querySelector('#prof-name').value;
-                const profileNo = Number(inputDiv.querySelector('#prof-no').value);
-                const onMin = Number(inputDiv.querySelector('#prof-on').value);
-                const offMin = Number(inputDiv.querySelector('#prof-off').value);
-                const aoTimer = Number(inputDiv.querySelector('#prof-ao-timer').value);
-                const pirHold = Number(inputDiv.querySelector('#prof-pir-hold').value);
-
-                const body = { 
-                    profile: { 
-                        profileNo, name, enabled: true, 
-                        segments: [{ segNo: 10, onMinutes: onMin, offMinutes: offMin, mode: 'PRESET', presetCode: 'OCEAN', styleCode: 'BALANCE', adjust: {} }],
-                        autoOff: { timer: { enabled: aoTimer > 0, minutes: aoTimer }, offTime: { enabled: false }, offTemp: { enabled: false } },
-                        motion: { pir: { enabled: true, holdSec: pirHold } } 
-                    } 
+            
+            SNW.UI.modal(isEdit ? '프로필 편집' : '프로필 추가', content, async () => {
+                const newSegs = [];
+                segContainer.querySelectorAll('.seg-mode').forEach((modeEl, idx) => {
+                    const on = Number(segContainer.querySelectorAll('.seg-on')[idx].value);
+                    const off = Number(segContainer.querySelectorAll('.seg-off')[idx].value);
+                    const mode = modeEl.value;
+                    const seg = { segNo: idx * 10 + 10, onMinutes: on, offMinutes: off, mode };
+                    if (mode === 'PRESET') {
+                        seg.presetCode = segContainer.querySelectorAll('.seg-preset')[idx].value;
+                        seg.styleCode = segContainer.querySelectorAll('.seg-style')[idx].value;
+                    } else {
+                        seg.fixedSpeed = Number(segContainer.querySelectorAll('.seg-fixed')[idx].value);
+                    }
+                    newSegs.push(seg);
+                });
+                
+                const body = {
+                    profile: {
+                        profileNo: Number(content.querySelector('#prof-no').value),
+                        name: content.querySelector('#prof-name').value,
+                        enabled: content.querySelector('#prof-enabled').checked,
+                        repeatSegments: content.querySelector('#prof-repeat').checked,
+                        repeatCount: Number(content.querySelector('#prof-repeat-count').value),
+                        segments: newSegs,
+                        autoOff: {
+                            timer: { enabled: Number(content.querySelector('#prof-ao-timer').value) > 0, minutes: Number(content.querySelector('#prof-ao-timer').value) },
+                            offTime: { enabled: content.querySelector('#prof-ao-offtime-en').checked, time: content.querySelector('#prof-ao-offtime').value },
+                            offTemp: { enabled: content.querySelector('#prof-ao-offtemp-en').checked, temp: Number(content.querySelector('#prof-ao-offtemp').value) }
+                        },
+                        motion: { pir: { enabled: content.querySelector('#prof-pir-en').checked, holdSec: Number(content.querySelector('#prof-pir-hold').value) } }
+                    }
                 };
-
-                try { await SNW.Api.addProfile(body); SNW.ToastUtil.success('추가됨'); await this._load(); return true; } catch (e) { return false; }
+                
+                try {
+                    if (isEdit) await SNW.Api.updateProfile(p.profileId, body);
+                    else await SNW.Api.addProfile(body);
+                    await SNW.Api.saveConfig();
+                    SNW.ToastUtil.success('저장되었습니다.');
+                    await this._load();
+                    return true;
+                } catch (e) { SNW.ErrorHandler.handle(e, 'profile.save'); return false; }
             });
         }
-
-        async _onEdit(id) {
-            const target = this._profiles.find(p => p.profileId === id);
-            if (!target) return;
-
-            const seg = (target.segments && target.segments[0]) || {};
-            const aoTimer = (target.autoOff && target.autoOff.timer && target.autoOff.timer.enabled) ? target.autoOff.timer.minutes : 0;
-            const pirHold = (target.motion && target.motion.pir) ? target.motion.pir.holdSec : 120;
-
-            const inputDiv = document.createElement('div');
-            inputDiv.innerHTML = `
-                <label style="display:block;margin-bottom:8px;font-size:13px;color:var(--snw-text-dim);">프로필 이름
-                    <input type="text" id="prof-name" value="${SNW.DomUtil.escape(target.name || '')}" style="width:100%;padding:8px;margin-top:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
-                </label>
-                <label style="display:block;margin-bottom:8px;font-size:13px;color:var(--snw-text-dim);">프로필 번호 (No)
-                    <input type="number" id="prof-no" value="${target.profileNo}" style="width:100%;padding:8px;margin-top:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
-                </label>
-                <h3 style="margin-top:12px;font-size:14px;">세그먼트 (On/Off)</h3>
-                <div class="snw-form-row"><label>On (분)</label><input type="number" id="prof-on" value="${seg.onMinutes || 30}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                <div class="snw-form-row"><label>Off (분)</label><input type="number" id="prof-off" value="${seg.offMinutes || 10}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                <h3 style="margin-top:12px;font-size:14px;">AutoOff / PIR</h3>
-                <div class="snw-form-row"><label>타이머 (분, 0=비활성)</label><input type="number" id="prof-ao-timer" value="${aoTimer}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                <div class="snw-form-row"><label>PIR Hold (초)</label><input type="number" id="prof-pir-hold" value="${pirHold}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-            `;
-
-            SNW.UI.modal('프로필 편집', inputDiv, async () => {
-                const name = inputDiv.querySelector('#prof-name').value;
-                const profileNo = Number(inputDiv.querySelector('#prof-no').value);
-                const onMin = Number(inputDiv.querySelector('#prof-on').value);
-                const offMin = Number(inputDiv.querySelector('#prof-off').value);
-                const aoTimer = Number(inputDiv.querySelector('#prof-ao-timer').value);
-                const pirHold = Number(inputDiv.querySelector('#prof-pir-hold').value);
-
-                const updatedData = JSON.parse(JSON.stringify(target));
-                updatedData.name = name;
-                updatedData.profileNo = profileNo;
-                updatedData.segments = [{ segNo: 10, onMinutes: onMin, offMinutes: offMin, mode: 'PRESET', presetCode: 'OCEAN', styleCode: 'BALANCE', adjust: {} }];
-                updatedData.autoOff = { timer: { enabled: aoTimer > 0, minutes: aoTimer }, offTime: { enabled: false }, offTemp: { enabled: false } };
-                updatedData.motion = { pir: { enabled: true, holdSec: pirHold } };
-
-                try { await SNW.Api.updateProfile(id, { profile: updatedData }); SNW.ToastUtil.success('수정됨'); await this._load(); return true; } catch (e) { return false; }
-            });
+        
+        async _onDelete(id) {
+            if (!confirm('삭제하시겠습니까?')) return;
+            try {
+                await SNW.Api.deleteProfile(id);
+                await SNW.Api.saveConfig();
+                await this._load();
+            } catch (e) {}
+        }
+        async _onStart(profileNo) {
+            try {
+                await SNW.Api.selectProfile(profileNo);
+                SNW.ToastUtil.success('프로필 모드 시작됨');
+            } catch (e) {}
         }
     };
 })(window.SNW);

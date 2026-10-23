@@ -56,25 +56,57 @@ window.SNW = window.SNW || {};
 	// =====================================================
 	async function _fetch(path, opts = {}) {
 	    // ======================================================
-	    // [OFFLINE 방어막] 오프라인일 때 무조건 가상 데이터 반환 (404 원천 차단)
+	    // [OFFLINE 방어막] 오프라인일 때 정확한 데이터 반환
 	    // ======================================================
 	    if (window.SNW_OFFLINE) {
 	        console.log('[Offline Fetch] 요청 가로채기:', path);
 	        const rt = (SNW.Offline && SNW.Offline._runtime) ? SNW.Offline._runtime : {};
 	        const cache = (SNW.Offline && SNW.Offline._cache) ? SNW.Offline._cache : {};
+	
+	        // Wi-Fi 상태
+	        if (path.includes('/wifi/state')) {
+	            return { wifi: { state: {
+	                mode: 2, mode_name: 'AP+STA (Offline)', status: 'CONNECTED',
+	                ssid: '(offline)', ip: '192.168.4.1', mac: 'AA:BB:CC:DD:EE:FF',
+	                rssi: -50, hostname: 'naturewind-offline', connected: false,
+	                timeSynced: false, reconnectAttempts: 0
+	            }}};
+	        }
+	        // Wi-Fi 설정 (cache 우선)
+	        if (path.includes('/wifi/config')) {
+	            return cache.wifi || { wifi: {
+	                wifiMode: 2, ap: { ssid: "NatureWind", pass: "2540" },
+	                sta: [{ ssid: "HomeWiFi_5G", pass: "12345678" }, { ssid: "Office_AP", pass: "admin1234" }]
+	            }};
+	        }
+	        if (path.includes('/wifi/scan')) {
+	            return { wifi: { scan: [
+	                { ssid: "TestWiFi1", rssi: -45, enc: "WPA2" },
+	                { ssid: "TestWiFi2", rssi: -70, enc: "OPEN" }
+	            ]}};
+	        }
+	        // 시스템 (cache 우선)
+	        if (path.includes('/system') && (opts.method || 'GET') === 'GET') {
+	            return cache.system || {};
+	        }
+	        // 상태
+	        if (path.includes('/state')) {
+	            return { control: rt.control || {}, sim: rt.sim || {}, runtime: rt.runtime || {} };
+	        }
+	        if (path.includes('/motion')) {
+	            return cache.motion || { motion: {} };
+	        }
+	        if (path.includes('/schedules')) return cache.schedules || { schedules: [] };
+	        if (path.includes('/user_profiles')) return cache.userProfiles || { userProfiles: { profiles: [] } };
+	        if (path.includes('/windProfile')) return cache.windDict || { windDict: { presets: [] } };
+	        if (path.includes('/logs')) return { logs: [{ ts:0, lv:3, msg:'[Offline]' }] };
+	        if (path.includes('/diag')) return { heap: 120000, fs_used: 160000, fs_total: 1000000 };
+	        if (path.includes('/version')) return { fw:'FW_Ver_2.0.2' };
+	        if (path.includes('/metrics')) return { metrics: {} };
+	        if (path.includes('/summary')) return { summary: {} };
+	        if (path.includes('/config')) return cache;
 	        
-	        if (path.includes('/state')) return { control: rt.control || {}, sim: rt.sim || {} };
-	        if (path.includes('/sim/state')) return { sim: rt.sim || {}, control: rt.control || {} };
-	        if (path.includes('/simulation')) return { sim: rt.sim || {} };
-	        if (path.includes('/system')) return { system: cache.system || {} };
-	        if (path.includes('/schedules')) return { schedules: (cache.schedules && cache.schedules.schedules) || [] };
-	        if (path.includes('/user_profiles')) return { userProfiles: cache.userProfiles || {} };
-	        if (path.includes('/windProfile')) return cache.windDict || {};
-	        if (path.includes('/logs')) return { logs: [{ ts:0, lv:3, msg:'[Offline Mode]' }] };
-	        if (path.includes('/diag')) return { heap: 0, fs_used: 0, fs_total: 0 };
-	        if (path.includes('/version')) return { fw:'FW_Ver_2.0.2', control:'CT10_Ctl_0202' };
-	        
-	        return { result: 'ok', updated: true }; // POST 등은 성공으로 위장
+	        return { result: 'ok', updated: true };
 	    }
 	
 		// GET 요청에 대해서만 in-flight dedupe

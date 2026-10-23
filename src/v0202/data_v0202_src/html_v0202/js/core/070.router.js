@@ -11,14 +11,14 @@ window.SNW = window.SNW || {};
 (function (SNW) {
     'use strict';
     
-    // [수정] 라우트 정의에 Sensors 추가
     const ROUTES = {
         '/dashboard':   { page:'dashboard',   level:'L1' },
         '/chart':       { page:'chart',       level:'L2' },
         '/schedule':    { page:'schedule',    level:'L2' },
         '/profiles':    { page:'profiles',    level:'L2' },
-        '/sensors':     { page:'sensors',     level:'L2' }, // 추가됨
-        '/windprofile': { page:'windprofile', level:'L3' }, // [신규]
+        '/sensors':     { page:'sensors',     level:'L2' },
+        '/simulation':  { page:'simulation',  level:'L2' },
+        '/windprofile': { page:'windprofile', level:'L3' },
         '/settings':    { page:'settings',    level:'L3' },
         '/network':     { page:'network',     level:'L3' },
         '/logs':        { page:'logs',        level:'L3' },
@@ -31,13 +31,21 @@ window.SNW = window.SNW || {};
     let currentPage = null;
     let currentPath = null;
 
-    function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+    // 페이지명 → 클래스명 매핑 (특수 케이스 처리)
+    function capitalize(s) {
+        // 특수 케이스: 'ai'는 모두 대문자 'AI'
+        if (s === 'ai') return 'AI';
+        // 특수 케이스: 'windprofile'은 첫 글자만 대문자
+        if (s === 'windprofile') return 'Windprofile';
+        // 기본: 첫 글자만 대문자
+        return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+
     function parseHash() { const raw = location.hash.replace(/^#/, '') || '/dashboard'; return ROUTES[raw] ? raw : '/dashboard'; }
     function _clearMain() { const main = document.getElementById('snw-main'); if (!main) return null; main.innerHTML = ''; return main; }
-    function _showLoading(main) { if (!main) return; main.appendChild(SNW.DomUtil.html`<div class="snw-loading" data-i18n="common.loading">Loading...</div>`); SNW.I18n.applyTo(main); }
+    function _showLoading(main) { if (!main) return; main.appendChild(SNW.DomUtil.html`<div class="snw-loading">Loading...</div>`); }
     function _showError(main, msg) { if (!main) return; main.innerHTML = ''; main.appendChild(SNW.DomUtil.html`<div class="snw-error">${msg}</div>`); }
 
-    // 사이드바 닫기 헬퍼 함수 (모바일)
     function _closeSidebarOnMobile() {
         if (window.innerWidth < 1024) {
             const sidebar = document.getElementById('snw-sidebar');
@@ -48,8 +56,6 @@ window.SNW = window.SNW || {};
     async function dispatch() {
         const path = parseHash();
         if (path === currentPath) return;
-        
-        // [수정] 페이지 이동 시 모바일 사이드바 자동 닫기
         _closeSidebarOnMobile();
 
         const route = ROUTES[path];
@@ -82,31 +88,27 @@ window.SNW = window.SNW || {};
         if (!nav) return;
         nav.innerHTML = '';
         
-        // [수정] Sensors 메뉴 추가
         const items = [
-            { path:'/dashboard',   labelKey:'nav.dashboard',   icon:'📊' },
-            { path:'/chart',       labelKey:'nav.chart',       icon:'📈', minLevel:'L2' },
-            { path:'/schedule',    labelKey:'nav.schedule',    icon:'📅', minLevel:'L2' },
-            { path:'/profiles',    labelKey:'nav.profiles',    icon:'👤', minLevel:'L2' },
-            { path:'/sensors',     labelKey:'nav.sensors',     icon:'🌡', minLevel:'L2' }, // 추가됨
-            { path:'/windprofile', labelKey:'nav.windprofile', icon:'🌬', minLevel:'L3' }, // [신규]
-            { path:'/settings',    labelKey:'nav.settings',    icon:'⚙',  minLevel:'L3' },
-            { path:'/network',     labelKey:'nav.network',     icon:'📶', minLevel:'L3' },
-            { path:'/logs',        labelKey:'nav.logs',        icon:'📜', minLevel:'L3' },
-            { path:'/diagnostics', labelKey:'nav.diagnostics', icon:'🔧', minLevel:'L4' },
-            { path:'/firmware',    labelKey:'nav.firmware',    icon:'💾', minLevel:'L4' },
-            { path:'/ai',          labelKey:'nav.ai',          icon:'🤖', minLevel:'L4' },
-            { path:'/info',        labelKey:'nav.info',        icon:'ℹ' }
+            { path:'/dashboard',   label:'대시보드',   icon:'📊' },
+            { path:'/chart',       label:'실시간 차트', icon:'📈', minLevel:'L2' },
+            { path:'/schedule',    label:'스케줄',     icon:'📅', minLevel:'L2' },
+            { path:'/profiles',    label:'프로필',     icon:'👤', minLevel:'L2' },
+            { path:'/sensors',     label:'센서',       icon:'🌡', minLevel:'L2' },
+            { path:'/simulation',  label:'시뮬레이션', icon:'🌊', minLevel:'L2' },
+            { path:'/windprofile', label:'바람 프리셋', icon:'🌬', minLevel:'L3' },
+            { path:'/settings',    label:'설정',       icon:'⚙',  minLevel:'L3' },
+            { path:'/network',     label:'네트워크',   icon:'📶', minLevel:'L3' },
+            { path:'/logs',        label:'로그',       icon:'📜', minLevel:'L3' },
+            { path:'/diagnostics', label:'진단',       icon:'🔧', minLevel:'L4' },
+            { path:'/firmware',    label:'펌웨어',     icon:'💾', minLevel:'L4' },
+            { path:'/ai',          label:'AI',         icon:'🤖', minLevel:'L4' },
+            { path:'/info',        label:'정보',       icon:'ℹ' }
         ];
         
         items.forEach(it => {
             if (it.minLevel && !SNW.LevelUtil.atLeast(it.minLevel)) return;
-            
-            const a = SNW.DomUtil.html`<a href="#${it.path}" data-route="${it.path}"><span class="snw-nav-icon">${it.icon}</span><span>${SNW.I18n.t(it.labelKey)}</span></a>`;
-            
-            // [수정] 메뉴 링크 클릭 시 (모바일이면) 사이드바 자동 닫기
+            const a = SNW.DomUtil.html`<a href="#${it.path}" data-route="${it.path}"><span class="snw-nav-icon">${it.icon}</span><span>${it.label}</span></a>`;
             a.addEventListener('click', _closeSidebarOnMobile);
-            
             nav.appendChild(a);
         });
     }
@@ -115,26 +117,14 @@ window.SNW = window.SNW || {};
         ROUTES,
         init() {
             window.addEventListener('hashchange', dispatch);
-            
             const btnMenu = document.getElementById('btn-menu');
             const sidebar = document.getElementById('snw-sidebar');
-            
             if (btnMenu && sidebar) {
                 btnMenu.addEventListener('click', () => { sidebar.hidden = !sidebar.hidden; });
-                
-                // [수정] 메인 영역 클릭 시 사이드바 닫기 (모바일)
                 const main = document.getElementById('snw-main');
-                if (main) {
-                    main.addEventListener('click', () => {
-                        if (!sidebar.hidden && window.innerWidth < 1024) {
-                            sidebar.hidden = true;
-                        }
-                    });
-                }
+                if (main) main.addEventListener('click', () => { if (!sidebar.hidden && window.innerWidth < 1024) sidebar.hidden = true; });
             }
-            
             renderNavMenu();
-            document.addEventListener('snw:langchange', renderNavMenu);
             dispatch();
         },
         navigate(path){ location.hash = path; },

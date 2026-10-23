@@ -7,16 +7,19 @@
 /* ---- 200.page.dashboard.js ---- */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
-(function (SNW) {
+(function(SNW) {
     'use strict';
     SNW.Page.Dashboard = class Dashboard {
         constructor(container) {
             this.el = container;
-            this._unsubs = []; this._wsUnsubs = []; this._timers = [];
+            this._unsubs = [];
+            this._wsUnsubs = [];
+            this._timers = [];
             this.components = {};
             this._active = true;
             this._autoOffModalShown = false;
         }
+        
         async mount() {
             this.el.innerHTML = '';
             this.el.appendChild(SNW.Tpl.dashboard());
@@ -27,42 +30,137 @@ SNW.Page = SNW.Page || {};
                 this._applyInitialState(stateData);
                 if (profileData) this._applyPresetList(profileData);
             } catch (e) { if (this._active) SNW.LogUtil.warn('[Dashboard] 초기 로드 실패', e); }
+            
             this._mountComponents();
             this._bindStore();
+            this._bindModeSwitch(); // [신규] 모드 스위치 바인딩
             this._startClock();
         }
+        
         unmount() {
             this._active = false;
             this._unsubs.forEach(fn => { try { fn(); } catch {} });
             this._wsUnsubs.forEach(fn => { try { fn(); } catch {} });
-            this._timers.forEach(id => { clearInterval(id); clearTimeout(id); });
-            this._unsubs = []; this._wsUnsubs = []; this._timers = [];
+            this._timers.forEach(id => { clearInterval(id);
+                clearTimeout(id); });
+            this._unsubs = [];
+            this._wsUnsubs = [];
+            this._timers = [];
         }
+        
         _applyInitialState(data) {
             if (!data) return;
-            const ctl = data.control || null, sim = data.sim || null;
-            SNW.Store.set({ control:ctl, sim, time:ctl && ctl.time, system:ctl && ctl.system,
-                fsmState:(ctl && ctl.stateCode != null) ? ctl.stateCode : 0,
-                fsmReason:(ctl && ctl.reasonCode != null) ? ctl.reasonCode : 0,
-                lastUpdateMs: Date.now() });
+            const ctl = data.control || null,
+                sim = data.sim || null;
+            SNW.Store.set({
+                control: ctl,
+                sim,
+                time: ctl && ctl.time,
+                system: ctl && ctl.system,
+                fsmState: (ctl && ctl.stateCode != null) ? ctl.stateCode : 0,
+                fsmReason: (ctl && ctl.reasonCode != null) ? ctl.reasonCode : 0,
+                lastUpdateMs: Date.now()
+            });
         }
+        
         _applyPresetList(profileData) {
             const presets = (profileData && profileData.windDict && profileData.windDict.presets) || [];
             const order = SNW.C.PRESET_DISPLAY_ORDER;
             const indexed = presets.map(p => ({ p, i: order.indexOf(p.code) }));
             indexed.sort((a, b) => { const ai = a.i < 0 ? 9999 : a.i; const bi = b.i < 0 ? 9999 : b.i; return ai - bi; });
-            const items = indexed.map(({ p }) => ({ code:p.code, name: SNW.I18n.t('preset.' + p.code) || p.name || p.code }));
+            const items = indexed.map(({ p }) => ({ code: p.code, name: SNW.I18n.t('preset.' + p.code) || p.name || p.code }));
             if (this.components.presets) this.components.presets.setItems(items);
         }
+        
         _mountComponents() {
             const q = sel => this.el.querySelector(sel);
-            this.components.badge   = SNW.UI.stateBadge(q('[data-slot="badge"]'));
-            this.components.gauge   = SNW.UI.gauge(q('[data-slot="gauge"]'));
+            this.components.badge = SNW.UI.stateBadge(q('[data-slot="badge"]'));
+            this.components.gauge = SNW.UI.gauge(q('[data-slot="gauge"]'));
             this.components.sensors = SNW.UI.sensorCards(q('[data-slot="sensors"]'));
-            this.components.toggle  = SNW.UI.toggle({ root:q('[data-slot="power"]'), on:false, onToggle: next => this._onPowerToggle(next) });
-            this.components.slider  = SNW.UI.slider({ root:q('[data-slot="intensity"]'), min:0, max:100, value: SNW.CFG.SIM_DEFAULT.intensity, label: SNW.I18n.t('dashboard.intensityLabel'), unit: SNW.I18n.t('unit.percent'), debounceMs: SNW.C.DEBOUNCE_MS.SLIDER, onChange: v => this._onIntensityChange(v) });
-            this.components.presets = SNW.UI.presetGrid({ root:q('[data-slot="presets"]'), items:[], selected:'', onSelect: code => this._onPresetSelect(code) });
+            this.components.toggle = SNW.UI.toggle({ root: q('[data-slot="power"]'), on: false, onToggle: next => this._onPowerToggle(next) });
+            this.components.slider = SNW.UI.slider({ root: q('[data-slot="intensity"]'), min: 0, max: 100, value: SNW.CFG.SIM_DEFAULT.intensity, label: '강도', unit: '%', debounceMs: SNW.C.DEBOUNCE_MS.SLIDER, onChange: v => this._onIntensityChange(v) });
+            this.components.presets = SNW.UI.presetGrid({ root: q('[data-slot="presets"]'), items: [], selected: '', onSelect: code => this._onPresetSelect(code) });
         }
+        
+        // [신규] 모드 전환 스위치 이벤트 바인딩
+        _bindModeSwitch() {
+            const switchEl = this.el.querySelector('#mode-switch');
+            if (!switchEl) return;
+            
+            switchEl.addEventListener('change', async (e) => {
+                const isProfileMode = e.target.checked;
+                const prevMode = !isProfileMode;
+                
+                // UI 낙관적 업데이트
+                const modeEl = this.el.querySelector('[data-slot="current-mode-text"]');
+                if (modeEl) modeEl.textContent = isProfileMode ? '프로필 모드 (수동)' : '스케줄 모드 (자동)';
+                switchEl.checked = isProfileMode;
+                
+                try {
+                    if (isProfileMode) {
+                        // 프로필 모드: 실행할 프로필 선택 모달 띄우기
+                        await this._promptProfileSelection();
+                    } else {
+                        // 스케줄 모드: 현재 프로필 정지
+                        await SNW.Api.stopProfile();
+                        SNW.ToastUtil.success('스케줄 자동 모드로 전환되었습니다.');
+                    }
+                } catch (err) {
+                    // 실패 시 롤백
+                    switchEl.checked = !isProfileMode;
+                    if (modeEl) modeEl.textContent = prevMode ? '프로필 모드 (수동)' : '스케줄 모드 (자동)';
+                    SNW.ErrorHandler.handle(err, 'dashboard.modeSwitch');
+                }
+            });
+        }
+        
+        // [신규] 프로필 모드 진입 시 프로필 선택 모달
+        async _promptProfileSelection() {
+            const data = await SNW.Api.listProfiles().catch(() => null);
+            const profiles = (data && data.userProfiles && data.userProfiles.profiles) || [];
+            
+            if (profiles.length === 0) {
+                SNW.ToastUtil.warn('등록된 프로필이 없습니다. 프로필 메뉴에서 추가해 주세요.');
+                throw new Error('No profiles');
+            }
+            
+            const content = document.createElement('div');
+            let html = `<div style="max-height:300px; overflow-y:auto;">`;
+            profiles.forEach(p => {
+                if (!p.enabled) return;
+                html += `
+                    <button type="button" class="snw-btn" style="width:100%; margin-bottom:8px; text-align:left; justify-content:space-between;" data-prof-no="${p.profileNo}">
+                        <span>${p.name || '#' + p.profileNo}</span>
+                        <span style="color:var(--snw-primary);">시작 ▶</span>
+                    </button>
+                `;
+            });
+            html += `</div>`;
+            content.innerHTML = html;
+            
+            return new Promise((resolve, reject) => {
+                const modal = SNW.UI.modal('실행할 프로필 선택', content, async () => {
+                    return false; // 기본 확인 버튼 비활성화 역할 (모달 닫힘 방지)
+                });
+                
+                content.querySelectorAll('[data-prof-no]').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const no = Number(btn.getAttribute('data-prof-no'));
+                        try {
+                            await SNW.Api.selectProfile(no);
+                            SNW.ToastUtil.success('프로필 모드로 전환되었습니다.');
+                            // 모달 닫기
+                            const overlay = document.getElementById('snw-modal-overlay');
+                            if (overlay) overlay.remove();
+                            resolve();
+                        } catch (e) {
+                            reject(e);
+                        }
+                    });
+                });
+            });
+        }
+        
         _bindStore() {
             const s = SNW.Store;
             this._unsubs.push(
@@ -75,7 +173,8 @@ SNW.Page = SNW.Page || {};
                     const tgtWind = this.el.querySelector('[data-slot="target-wind"]');
                     if (tgtWind) tgtWind.textContent = (sim.targetWind != null ? sim.targetWind.toFixed(1) : '-');
                     const phaseEl = this.el.querySelector('[data-slot="phase"]');
-                    if (phaseEl) { const meta = SNW.C.WIND_PHASE_META[sim.phase] || SNW.C.WIND_PHASE_META.NORMAL; phaseEl.textContent = SNW.I18n.t(meta.labelKey); }
+                    if (phaseEl) { const meta = SNW.C.WIND_PHASE_META[sim.phase] || SNW.C.WIND_PHASE_META.NORMAL;
+                        phaseEl.textContent = SNW.I18n.t(meta.labelKey); }
                     this.components.gauge.set(sim.pwmDuty != null ? sim.pwmDuty : 0);
                     if (sim.intensity != null) this.components.slider.set(sim.intensity);
                     if (sim.presetCode) this.components.presets.setSelected(sim.presetCode);
@@ -83,30 +182,43 @@ SNW.Page = SNW.Page || {};
                 s.watch('control', ctl => {
                     if (!this._active || !ctl) return;
                     this.components.toggle.set(!!ctl.active);
-                    if (ctl.sensor) this.components.sensors.set({ tempC:ctl.sensor.tempC, humidity:ctl.sensor.humidity, motionActive:ctl.sensor.motionActive });
+                    if (ctl.sensor) this.components.sensors.set({ tempC: ctl.sensor.tempC, humidity: ctl.sensor.humidity, motionActive: ctl.sensor.motionActive });
                     
-                    // [추가] 스케줄/프로필 이름 및 AutoOff 남은 시간 표시
+                    // 스케줄/프로필 이름 매핑
                     const schName = ctl.schedule && ctl.schedule.name ? ctl.schedule.name : '-';
                     const profName = ctl.profile && ctl.profile.name ? ctl.profile.name : '-';
-                    const schEl = this.el.querySelector('[data-slot="sch-name"]'); if (schEl) schEl.textContent = schName;
-                    const profEl = this.el.querySelector('[data-slot="prof-name"]'); if (profEl) profEl.textContent = profName;
+                    const schEl = this.el.querySelector('[data-slot="sch-name"]');
+                    if (schEl) schEl.textContent = schName;
+                    const profEl = this.el.querySelector('[data-slot="prof-name"]');
+                    if (profEl) profEl.textContent = profName;
                     
+                    // AutoOff 정보
                     let autoOffStr = '비활성';
                     if (ctl.autoOffRt) {
                         if (ctl.autoOffRt.timerArmed) autoOffStr = `타이머 (${ctl.autoOffRt.timerMinutes}분)`;
                         else if (ctl.autoOffRt.offTimeEnabled) autoOffStr = `예약 종료 (${ctl.autoOffRt.offTimeMinutes}분)`;
                         else if (ctl.autoOffRt.offTempEnabled) autoOffStr = `온도 (${ctl.autoOffRt.offTemp}°C)`;
                     }
-                    const aoEl = this.el.querySelector('[data-slot="autooff"]'); if (aoEl) aoEl.textContent = autoOffStr;
-
+                    const aoEl = this.el.querySelector('[data-slot="autooff"]');
+                    if (aoEl) aoEl.textContent = autoOffStr;
+                    
+                    // 모드 상태 텍스트 및 스위치 동기화
+                    const isProfMode = ctl.profileMode || (ctl.runSource === 2); // runSource 2 = USER_PROFILE
+                    const modeEl = this.el.querySelector('[data-slot="current-mode-text"]');
+                    if (modeEl) modeEl.textContent = isProfMode ? '프로필 모드 (수동)' : '스케줄 모드 (자동)';
+                    const switchEl = this.el.querySelector('#mode-switch');
+                    if (switchEl && switchEl.checked !== isProfMode) switchEl.checked = isProfMode;
+                    
                     // AutoOff 팝업
                     if (ctl.event && ctl.event.ackRequired && !this._autoOffModalShown) {
                         this._autoOffModalShown = true;
-                        const msg = SNW.I18n.t('autoOff.recover') || '자동 꺼짐 상태입니다. 다시 켜시겠습니까?';
-                        const content = document.createElement('div'); content.textContent = msg;
-                        SNW.UI.modal(SNW.I18n.t('autoOff.ack') || '알림', content, async () => {
-                            try { await SNW.Api.ackEvent(); } catch(e) {}
-                            this._autoOffModalShown = false; return true;
+                        const msg = '자동 꺼짐 상태입니다. 다시 켜시겠습니까?';
+                        const content = document.createElement('div');
+                        content.textContent = msg;
+                        SNW.UI.modal('알림', content, async () => {
+                            try { await SNW.Api.ackEvent(); } catch (e) {}
+                            this._autoOffModalShown = false;
+                            return true;
                         });
                     } else if (!ctl.event || !ctl.event.ackRequired) {
                         this._autoOffModalShown = false;
@@ -114,6 +226,7 @@ SNW.Page = SNW.Page || {};
                 })
             );
         }
+        
         _startClock() {
             const clockEl = document.getElementById('header-clock');
             if (!clockEl) return;
@@ -123,13 +236,14 @@ SNW.Page = SNW.Page || {};
             });
             this._timers.push(id);
         }
+        
         async _onPowerToggle(next) {
             const prevCtl = SNW.Store.get().control;
             const prevActive = prevCtl ? !!prevCtl.active : false;
             SNW.Store.set({ control: Object.assign({}, prevCtl || {}, { active: !!next }) });
             try {
                 if (next) {
-                    const intensity = SNW.Store.get().sim && SNW.Store.get().sim.intensity != null ? SNW.Store.get().sim.intensity : SNW.CFG.SIM_DEFAULT.intensity;
+                    const intensity = SNW.Store.get().sim && SNW.Store.get().sim.intensity != null ? SNW.Store.get().sim.intensity : 70;
                     await SNW.Api.overrideFixed(intensity, 0, true);
                 } else {
                     await SNW.Api.overrideClear();
@@ -140,26 +254,32 @@ SNW.Page = SNW.Page || {};
                 SNW.ErrorHandler.handle(e, 'dashboard.power');
             }
         }
+        
         async _onIntensityChange(v) {
-            const prevSim = SNW.Store.get().sim; const prevVal = prevSim ? prevSim.intensity : null;
+            const prevSim = SNW.Store.get().sim;
+            const prevVal = prevSim ? prevSim.intensity : null;
             SNW.Store.set({ sim: Object.assign({}, prevSim || {}, { intensity: v }) });
             try {
                 const res = await SNW.Api.patchSim({ intensity: v });
-                if (res && res.updated === false) SNW.ToastUtil.info(SNW.I18n.t('msg.noChange'));
+                if (res && res.updated === false) SNW.ToastUtil.info('변경 사항 없음');
             } catch (e) {
                 SNW.Store.set({ sim: Object.assign({}, SNW.Store.get().sim || {}, { intensity: prevVal }) });
-                this.components.slider.set(prevVal); SNW.ErrorHandler.handle(e, 'dashboard.intensity');
+                this.components.slider.set(prevVal);
+                SNW.ErrorHandler.handle(e, 'dashboard.intensity');
             }
         }
+        
         async _onPresetSelect(code) {
-            const prevSim = SNW.Store.get().sim; const prevCode = prevSim ? prevSim.presetCode : '';
+            const prevSim = SNW.Store.get().sim;
+            const prevCode = prevSim ? prevSim.presetCode : '';
             SNW.Store.set({ sim: Object.assign({}, prevSim || {}, { presetCode: code }) });
             try {
                 await SNW.Api.patchSim({ presetCode: code });
-                SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
+                SNW.ToastUtil.success('프리셋 적용 완료');
             } catch (e) {
                 SNW.Store.set({ sim: Object.assign({}, SNW.Store.get().sim || {}, { presetCode: prevCode }) });
-                this.components.presets.setSelected(prevCode); SNW.ErrorHandler.handle(e, 'dashboard.preset');
+                this.components.presets.setSelected(prevCode);
+                SNW.ErrorHandler.handle(e, 'dashboard.preset');
             }
         }
     };

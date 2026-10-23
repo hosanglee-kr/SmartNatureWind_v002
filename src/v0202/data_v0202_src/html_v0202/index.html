@@ -53,18 +53,22 @@
     <div class="snw-toast-host" id="toast-host"></div>
 </div>
 
+<!-- 1. 번들 먼저 로드 (SNW.Api 원본 생성) -->
+<script src="./P010_bundle_0202.js"></script>
+
+<!-- 2. 오프라인 어댑터는 번들 이후에 로드 (SNW.Api 스텁 덮어쓰기) -->
 <script>
-    // localhost, 127.0.0.1, file:// 이면 무조건 오프라인 모드로 작동
     window.SNW_OFFLINE = (location.protocol === 'file:') ||
         location.hostname === 'localhost' ||
         location.hostname === '127.0.0.1' ||
         new URLSearchParams(location.search).has('offline');
     
+    console.log('[Loader] SNW_OFFLINE =', window.SNW_OFFLINE);
+    
     if (window.SNW_OFFLINE) {
-        document.write('<script src="./998.offline_0202.js"><\/script>');
+        document.write('<script src="./js/998.offline_0202.js"><\/script>');
     }
 </script>
-<script src="./P010_bundle_0202.js"></script>
 
 
 </body>

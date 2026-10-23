@@ -1,4 +1,4 @@
-/* ---- 200.page.sensors.js ---- */
+/* ---- 225.page.sensors.js ---- */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
 (function (SNW) {
@@ -8,10 +8,8 @@ SNW.Page = SNW.Page || {};
         
         async mount() {
             this.el.innerHTML = '';
-            this.el.appendChild(SNW.Tpl.sensors()); 
-            SNW.I18n.applyTo(this.el);
+            this.el.appendChild(SNW.Tpl.sensors());
             
-            // 실시간 센서 값 감시
             const unsub = SNW.Store.watch('control', ctl => {
                 if (!this._active || !ctl || !ctl.sensor) return;
                 const s = ctl.sensor;
@@ -22,16 +20,14 @@ SNW.Page = SNW.Page || {};
             });
             this._unsubs.push(unsub);
 
-            // cfg_motion 데이터 로드 및 렌더링
             try {
                 const data = await SNW.Api.getMotion();
                 const m = (data && data.motion) || {};
                 const pir = m.pir || { enabled: true, holdSec: 120 };
                 const formSlot = this.el.querySelector('[data-slot="motion-config"]');
-                
                 if (formSlot) {
                     formSlot.innerHTML = `
-                        <div class="snw-form-row snw-form-row--bool" style="flex-direction:row;align-items:center;gap:8px;margin-bottom:8px;">
+                        <div class="snw-form-row" style="flex-direction:row;align-items:center;gap:8px;margin-bottom:8px;">
                             <input type="checkbox" id="m-pir-en" ${pir.enabled ? 'checked' : ''}>
                             <label for="m-pir-en" style="margin:0;">PIR 감지 활성화</label>
                         </div>
@@ -45,14 +41,14 @@ SNW.Page = SNW.Page || {};
             } catch(e) { console.error(e); }
 
             SNW.DomUtil.delegate(this.el, '[data-action="feed-pir"]', 'click', async () => {
-                try { await SNW.Api.feedPir(true); SNW.ToastUtil.success('PIR 신호 전송'); } catch(e) {}
+                try { await SNW.Api.feedPir(true); SNW.ToastUtil.success('PIR 신호 전송'); } catch(e) { SNW.ErrorHandler.handle(e, 'sensors.pir'); }
             });
-            
             SNW.DomUtil.delegate(this.el, '[data-action="save-motion"]', 'click', async () => {
                 const en = this.el.querySelector('#m-pir-en').checked;
                 const hold = Number(this.el.querySelector('#m-pir-hold').value);
                 try {
                     await SNW.Api.patchMotion({ motion: { pir: { enabled: en, holdSec: hold } } });
+                    await SNW.Api.saveConfig();
                     SNW.ToastUtil.success('모션 설정 저장됨');
                 } catch(e) { SNW.ErrorHandler.handle(e, 'sensors.motion'); }
             });

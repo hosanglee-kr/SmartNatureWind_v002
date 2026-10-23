@@ -157,6 +157,20 @@ window.SNW = window.SNW || {};
         
         A.overrideFixed = async () => { runtime.sim.active = true; return { result:'ok' }; };
         A.overrideClear = async () => { runtime.sim.active = false; return { result:'ok' }; };
+        A.setMode = async (isProfileMode) => {
+            runtime.control.profileMode = !!isProfileMode;
+            runtime.control.mode = isProfileMode ? 'PROFILE' : 'SCHEDULE';
+            if (isProfileMode) {
+                runtime.control.state = 'PROFILE_RUN';
+                runtime.control.reason = 'PROFILE_MODE';
+            } else {
+                runtime.control.state = 'SCHEDULE_RUN';
+                runtime.control.reason = 'SCHEDULE_ACTIVE';
+            }
+            return { result: 'ok', profileMode: !!isProfileMode, mode: runtime.control.mode };
+        };
+        A.setControlMode = A.setMode;
+        A.getMode = async () => ({ profileMode: !!runtime.control.profileMode, mode: runtime.control.mode || 'SCHEDULE' });
         A.patchSim = async (p) => { Object.assign(runtime.sim, p); return { updated:true }; };
         A.patchMotion = async (b) => { if (b.motion && cache.motion) Object.assign(cache.motion.motion, b.motion); return { updated:true }; };
         A.patchSystem = async (b) => { 

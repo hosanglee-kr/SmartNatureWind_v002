@@ -35,6 +35,7 @@ window.SNW = window.SNW || {};
 			overridePreset: '/api/v001/control/override/preset',
 			overrideClear: '/api/v001/control/override/clear',
 			ack: '/api/v001/control/ack',
+			controlMode: '/api/v001/control/mode',
 			simulation: '/api/v001/simulation',
 			simState: '/api/v001/sim/state',
 			windProfile: '/api/v001/windProfile',

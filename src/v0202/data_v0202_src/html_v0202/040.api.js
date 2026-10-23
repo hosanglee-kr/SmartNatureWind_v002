@@ -203,6 +203,15 @@ window.SNW = window.SNW || {};
 		ackEvent() {
 			return _fetch(SNW.CFG.API.ack, { method: 'POST' });
 		},
+		setMode(isProfileMode) {
+			return _fetch(SNW.CFG.API.controlMode, { method: 'POST', body: { profileMode: !!isProfileMode } });
+		},
+		setControlMode(isProfileMode) {
+			return this.setMode(isProfileMode);
+		},
+		getMode() {
+			return _fetch(SNW.CFG.API.controlMode);
+		},
 		
 		// --- 시뮬레이션 ---
 		patchSim(patch) {

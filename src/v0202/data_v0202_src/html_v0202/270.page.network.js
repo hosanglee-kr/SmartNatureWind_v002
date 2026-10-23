@@ -27,11 +27,9 @@ SNW.Page = SNW.Page || {};
             this.el.appendChild(SNW.Tpl.network());
             SNW.I18n.applyTo(this.el);
             
-            await Promise.all([
-                this._loadWifiState(),
-                this._loadWifiConfig(),
-                this._loadSystemTime()
-            ]);
+            try { await this._loadWifiState(); } catch(e) { console.error(e); }
+            try { await this._loadWifiConfig(); } catch(e) { console.error(e); }
+            try { await this._loadSystemTime(); } catch(e) { console.error(e); }
             
             SNW.DomUtil.delegate(this.el, '[data-action="scan"]', 'click', () => this._onScan());
             SNW.DomUtil.delegate(this.el, '[data-action="time-save"]', 'click', () => this._onSaveTime());

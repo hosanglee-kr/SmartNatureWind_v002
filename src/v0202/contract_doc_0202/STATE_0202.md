@@ -203,7 +203,7 @@ CT10_WS_tick (T-loop)
 
 `_autoOffLatched = false` 설정 위치 (모두 `s_stateMutex` 하):
 1. `ackEventState()` — 사용자 ACK (`POST /api/v001/control/ack`, UI 모달 확인 버튼)
-2. `setProfileMode()` — 모드 변경
+2. `setProfileMode()` — 모드 변경 (`POST /api/v001/control/mode`)
 3. `startOverrideFixed()` / `applyManualResolved()` — 수동 개입
 
 ### 7.2 AutoOff offTime 재트리거 방지

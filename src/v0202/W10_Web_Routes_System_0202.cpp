@@ -125,6 +125,41 @@ void CL_W10_WebAPI::routeSystem() {
                  [](AsyncWebServerRequest*) {}, nullptr, _routeSystemPatchBody);
 }
 
+// ======================================================
+// [B-6] routeMotion POST/PATCH 공통 헬퍼
+// ======================================================
+static void _routeMotionPatchBody(AsyncWebServerRequest* p_request,
+                                  uint8_t* p_data, size_t p_len,
+                                  size_t p_index, size_t p_total) {
+    if (!CL_W10_WebAPI::checkApiKey(p_request)) {
+        p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+        return;
+    }
+    if (p_index + p_len != p_total) return;
+
+    JsonDocument v_doc;
+    if (!CL_W10_WebAPI::parseJsonBody(p_request, p_data, p_len, v_doc)) {
+        p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
+        return;
+    }
+
+    // [B-2] async_tcp → 스냅샷 필수
+    ST_A20_ConfigRoot_t v_snap;
+    CL_C10_ConfigManager::getRootSnapshot(v_snap);
+
+    bool v_changed = false;
+    if (v_snap.motion) {
+        v_changed = CL_C10_ConfigManager::patchMotionFromJson(*v_snap.motion, v_doc);
+        if (v_changed) {
+            CL_CT10_ControlManager::instance().requestMotionSimApply();
+        }
+    }
+
+    JsonDocument v_res;
+    v_res["updated"] = v_changed;
+    CL_W10_WebAPI::sendJson(p_request, v_res);
+}
+
 // --------------------------------------------------
 // 4. /api/v001/motion (GET/POST/PATCH)
 // --------------------------------------------------
@@ -145,71 +180,13 @@ void CL_W10_WebAPI::routeMotion() {
         sendJson(p_request, v_doc);
     });
 
-    // POST
-    s_server->on(
-        W10_Const::HTTP_API_MOTION,
-        HTTP_POST,
-        [](AsyncWebServerRequest* p_request) {},
-        nullptr,
-        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                return;
-            }
-            if (p_index + p_len != p_total) return;
-
-            JsonDocument v_doc;
-            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-                p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
-                return;
-            }
-
-            bool v_changed = false;
-            if (g_A20_config_root.motion) {
-                v_changed = CL_C10_ConfigManager::patchMotionFromJson(*g_A20_config_root.motion, v_doc);
-                if (v_changed && s_control) {
-                    // [F-06] Deferred: async_tcp → loopTask 위임
-                    s_control->requestMotionSimApply();
-                }
-            }
-
-            JsonDocument v_res;
-            v_res["updated"] = v_changed;
-            sendJson(p_request, v_res);
-        });
-
-    // PATCH (POST와 동일)
-    s_server->on(
-        W10_Const::HTTP_API_MOTION,
-        HTTP_PATCH,
-        [](AsyncWebServerRequest* p_request) {},
-        nullptr,
-        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                return;
-            }
-            if (p_index + p_len != p_total) return;
-
-            JsonDocument v_doc;
-            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-                p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
-                return;
-            }
-
-            bool v_changed = false;
-            if (g_A20_config_root.motion) {
-                v_changed = CL_C10_ConfigManager::patchMotionFromJson(*g_A20_config_root.motion, v_doc);
-                if (v_changed && s_control) {
-                    s_control->requestMotionSimApply();
-                }
-            }
-
-            JsonDocument v_res;
-            v_res["updated"] = v_changed;
-            sendJson(p_request, v_res);
-        });
+    // [B-6] POST + PATCH 공통 헬퍼 (60→1)
+    s_server->on(W10_Const::HTTP_API_MOTION, HTTP_POST,
+                 [](AsyncWebServerRequest*) {}, nullptr, _routeMotionPatchBody);
+    s_server->on(W10_Const::HTTP_API_MOTION, HTTP_PATCH,
+                 [](AsyncWebServerRequest*) {}, nullptr, _routeMotionPatchBody);
 }
+
 
 // --------------------------------------------------
 // 5. /api/diag

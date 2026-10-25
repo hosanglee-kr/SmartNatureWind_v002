@@ -30,7 +30,8 @@ window.SNW = window.SNW || {};
     
     let currentPage = null;
     let currentPath = null;
-
+    let _dispatching = false;   // [C-5] 재진입 가드
+    
     // 페이지명 → 클래스명 매핑 (특수 케이스 처리)
     function capitalize(s) {
         // 특수 케이스: 'ai'는 모두 대문자 'AI'
@@ -54,23 +55,31 @@ window.SNW = window.SNW || {};
     }
 
     async function dispatch() {
+        // [C-5] 이전 dispatch가 mount() await 중이면 재진입 차단
+        //  - 이전: 빠른 페이지 전환 시 unmount()가 정리 못하는 고아 watcher/timer 잔존
+        //  - 이후: 직렬화 + 종료 후 해시 재확인
+        if (_dispatching) return;
+    
         const path = parseHash();
         if (path === currentPath) return;
-        _closeSidebarOnMobile();
-
-        const route = ROUTES[path];
-        if (!SNW.LevelUtil.atLeast(route.level)) {
-            SNW.ToastUtil.warn(SNW.I18n.t('msg.accessDenied'));
-            location.hash = '/dashboard';
-            return;
-        }
-        if (currentPage && typeof currentPage.unmount === 'function') { try { currentPage.unmount(); } catch {} }
-        currentPage = null; currentPath = null;
-        const main = _clearMain();
-        _showLoading(main);
-        const PageClass = (SNW.Page && SNW.Page[capitalize(route.page)]) || null;
-        if (!PageClass) { _showError(main, `Page not implemented: ${route.page}`); return; }
+    
+        _dispatching = true;
         try {
+            _closeSidebarOnMobile();
+    
+            const route = ROUTES[path];
+            if (!SNW.LevelUtil.atLeast(route.level)) {
+                SNW.ToastUtil.warn(SNW.I18n.t('msg.accessDenied'));
+                location.hash = '/dashboard';
+                return;
+            }
+            if (currentPage && typeof currentPage.unmount === 'function') { try { currentPage.unmount(); } catch {} }
+            currentPage = null; currentPath = null;
+            const main = _clearMain();
+            _showLoading(main);
+            const PageClass = (SNW.Page && SNW.Page[capitalize(route.page)]) || null;
+            if (!PageClass) { _showError(main, `Page not implemented: ${route.page}`); return; }
+    
             currentPage = new PageClass(main);
             currentPath = path;
             await currentPage.mount();
@@ -78,11 +87,15 @@ window.SNW = window.SNW || {};
                 a.classList.toggle('is-active', a.getAttribute('data-route') === path);
             });
         } catch (e) {
-            SNW.ErrorHandler.handle(e, `page.${route.page}`);
-            _showError(main, SNW.I18n.t('msg.unknown'));
+            SNW.ErrorHandler.handle(e, `page.${ROUTES[parseHash()]?.page || 'unknown'}`);
+            _showError(document.getElementById('snw-main'), SNW.I18n.t('msg.unknown'));
+        } finally {
+            _dispatching = false;
+            // [C-5] await 중 해시가 바뀌었으면 재디스패치
+            if (parseHash() !== currentPath) setTimeout(dispatch, 0);
         }
     }
-
+    
     function renderNavMenu() {
         const nav = document.getElementById('nav-menu');
         if (!nav) return;

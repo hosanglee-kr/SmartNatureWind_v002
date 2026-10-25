@@ -651,21 +651,36 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
 
     // security.apiKey
     if (!j_sec.isNull()) {
-        const char* v_key = A40_ComFunc::Json_getStr(j_sec, "apiKey", "");
-        if (v_key && v_key[0] && strcmp(v_key, p_config.security.apiKey) != 0) {
-            strlcpy(p_config.security.apiKey, v_key, sizeof(p_config.security.apiKey));
-            v_changed = true;
+        // [B-4] "clearApiKey": true → 명시적 삭제, 그 외 유효 문자열은 set
+        //  - 이전: 빈 문자열 "" 무시 → 사용자가 키 삭제 불가
+        //  - 이후: 명시적 clear 플래그 지원
+        if (A40_ComFunc::Json_getBool(j_sec, "clearApiKey", false)) {
+            if (p_config.security.apiKey[0] != '\0') {
+                memset(p_config.security.apiKey, 0, sizeof(p_config.security.apiKey));
+                v_changed = true;
+            }
+        } else {
+            const char* v_key = A40_ComFunc::Json_getStr(j_sec, "apiKey", nullptr);
+            if (v_key && strcmp(v_key, p_config.security.apiKey) != 0) {
+                strlcpy(p_config.security.apiKey, v_key, sizeof(p_config.security.apiKey));
+                v_changed = true;
+            }
         }
-        
-        const char* v_gemini = A40_ComFunc::Json_getStr(j_sec, "geminiApiKey", "");
-        if (v_gemini && v_gemini[0] && strcmp(v_gemini, p_config.security.geminiApiKey) != 0) {
-            strlcpy(p_config.security.geminiApiKey, v_gemini, sizeof(p_config.security.geminiApiKey));
-            v_changed = true;
+    
+        // [B-4] geminiApiKey 동일 정책
+        if (A40_ComFunc::Json_getBool(j_sec, "clearGeminiApiKey", false)) {
+            if (p_config.security.geminiApiKey[0] != '\0') {
+                memset(p_config.security.geminiApiKey, 0, sizeof(p_config.security.geminiApiKey));
+                v_changed = true;
+            }
+        } else {
+            const char* v_gemini = A40_ComFunc::Json_getStr(j_sec, "geminiApiKey", nullptr);
+            if (v_gemini && strcmp(v_gemini, p_config.security.geminiApiKey) != 0) {
+                strlcpy(p_config.security.geminiApiKey, v_gemini, sizeof(p_config.security.geminiApiKey));
+                v_changed = true;
+            }
         }
     }
-    
-     
-  
 
     // hw
     if (!j_hw.isNull()) {

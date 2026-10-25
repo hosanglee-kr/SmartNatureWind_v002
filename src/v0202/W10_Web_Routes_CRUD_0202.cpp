@@ -371,9 +371,13 @@ void CL_W10_WebAPI::routeUserProfilesPatch() {
                 return;
             }
 
+            // [B-2] async_tcp → getRootSnapshot 필수 (CONTRACT §3.1)
+            ST_A20_ConfigRoot_t v_snap;
+            CL_C10_ConfigManager::getRootSnapshot(v_snap);
+            
             bool v_changed = false;
-            if (g_A20_config_root.userProfiles) {
-                v_changed = CL_C10_ConfigManager::patchUserProfilesFromJson(*g_A20_config_root.userProfiles, v_doc);
+            if (v_snap.userProfiles) {
+                v_changed = CL_C10_ConfigManager::patchUserProfilesFromJson(*v_snap.userProfiles, v_doc);
             }
 
             if (v_changed) {

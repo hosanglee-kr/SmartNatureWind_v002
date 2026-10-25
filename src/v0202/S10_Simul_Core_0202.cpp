@@ -177,13 +177,20 @@ void CL_S10_Simulation::resetDefaults() {
 // 메인 tick
 // ==================================================
 void CL_S10_Simulation::tick() {
+    // [B-10] 브로드캐스트용 임시 변수 정리 (dead code)
+    //  - 이전: JsonDocument 생성 + 채우기 → 미사용 (WS는 dirty 플래그만 통지)
+    //  - 이후: 플래그만 유지
+    bool v_needBroadcast = false;
+    
+    /*
     bool               v_needBroadcast = false;
     float              v_bc_avgWind    = 0.0f;
     float              v_bc_target     = 0.0f;
     uint8_t            v_bc_samples    = 0;
     float              v_bc_delta      = 0.0f;
     EN_A20_WindPhase_t v_bc_phase      = EN_A20_WIND_PHASE_NORMAL;
-
+    */
+    
     CL_A40_MutexGuard_Semaphore v_MutxGuard(_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
 
     if (!v_MutxGuard.isAcquired()) {
@@ -260,11 +267,6 @@ void CL_S10_Simulation::tick() {
     const float v_delta = fabsf(currentWindSpeed - v_prevWind);
     if (phase != v_prevPhase || v_delta > 2.0f) {
         v_needBroadcast = true;
-        v_bc_avgWind    = _getAvgWindFast();
-        v_bc_target     = targetWindSpeed;
-        v_bc_samples    = historyCount;
-        v_bc_delta      = v_delta;
-        v_bc_phase      = phase;
     }
 
     // 차트 샘플링
@@ -294,7 +296,14 @@ void CL_S10_Simulation::tick() {
             if (s_chartCount < CHART_CAPACITY) s_chartCount++;
         }
     }
-
+    
+    if (v_needBroadcast) {
+        // 실제 브로드캐스트는 CT10_WS_tick이 dirty 소비 후 담당
+        CT10_markDirtyFromSim("chart");
+        CT10_markDirtyFromSim("metrics");
+    }
+    
+    /*
     if (v_needBroadcast) {
         JsonDocument v_doc;
         JsonObject   v_sim = v_doc["sim"].to<JsonObject>();
@@ -313,6 +322,7 @@ void CL_S10_Simulation::tick() {
         CT10_markDirtyFromSim("chart");
         CT10_markDirtyFromSim("metrics");
     }
+    */
 }
 
 // ==================================================

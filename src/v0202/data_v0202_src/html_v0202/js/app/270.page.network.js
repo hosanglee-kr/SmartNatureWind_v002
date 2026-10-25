@@ -42,14 +42,17 @@ SNW.Page = SNW.Page || {};
             try { const data = await SNW.Api.getWifiState(); state = (data && data.wifi && data.wifi.state) || {}; } catch {}
             const slot = this.el.querySelector('[data-slot="wifi-state"]');
             if (!slot) return;
+            
+            // [B-3] XSS 방어: SSID/hostname은 사용자 제어 가능
+            const esc = SNW.DomUtil.escape;
             slot.innerHTML = `
-                <div class="snw-kv"><span>Wi-Fi 모드</span><b>${state.mode_name || '-'}</b></div>
-                <div class="snw-kv"><span>연결 상태</span><b>${state.status || '-'}</b></div>
-                <div class="snw-kv"><span>SSID</span><b>${state.ssid || '-'}</b></div>
-                <div class="snw-kv"><span>IP 주소</span><b>${state.ip || '-'}</b></div>
+                <div class="snw-kv"><span>Wi-Fi 모드</span><b>${esc(state.mode_name || '-')}</b></div>
+                <div class="snw-kv"><span>연결 상태</span><b>${esc(state.status || '-')}</b></div>
+                <div class="snw-kv"><span>SSID</span><b>${esc(state.ssid || '-')}</b></div>
+                <div class="snw-kv"><span>IP 주소</span><b>${esc(state.ip || '-')}</b></div>
                 <div class="snw-kv"><span>RSSI</span><b>${state.rssi != null ? state.rssi + ' dBm' : '-'}</b></div>
-                <div class="snw-kv"><span>MAC 주소</span><b>${state.mac || '-'}</b></div>
-                <div class="snw-kv"><span>Hostname</span><b>${state.hostname || '-'}</b></div>
+                <div class="snw-kv"><span>MAC 주소</span><b>${esc(state.mac || '-')}</b></div>
+                <div class="snw-kv"><span>Hostname</span><b>${esc(state.hostname || '-')}</b></div>
                 <div class="snw-kv"><span>시간 동기화</span><b>${state.timeSynced ? '완료' : '미완료'}</b></div>
                 <div class="snw-kv"><span>재연결 시도</span><b>${state.reconnectAttempts ?? 0}</b></div>
             `;

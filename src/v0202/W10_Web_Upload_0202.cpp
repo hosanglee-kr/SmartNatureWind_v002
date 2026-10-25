@@ -146,15 +146,18 @@ void CL_W10_WebAPI::routeUpload() {
                 }
                 s_uploadError = true;
             };
-
+            
             // ─── 첫 청크: 파일 열기 ───
             if (p_index == 0) {
-                // 동시 업로드 방지
-                if (s_upFile && s_upFile.available()) {
-                    safeAbort("concurrent upload");
-                    return;
+                // [C-4] 이전 세션 잔여 핸들 정리
+                //  - 이전: write-mode 파일은 available()==0이라 유출 핸들 감지 불가
+                //  - 이후: 핸들이 열려있으면 무조건 close → 새 파일 open
+                if (s_upFile) {
+                    CL_D10_Logger::log(EN_L10_LOG_WARN, "[W10] stale upload handle closed before new upload");
+                    s_upFile.close();
+                    s_upFile = File();
                 }
-
+            
                 // 크기 제한 확인
                 if (p_request->contentLength() > G_W10_MAX_UPLOAD_SIZE) {
                     safeAbort("size exceeds limit");

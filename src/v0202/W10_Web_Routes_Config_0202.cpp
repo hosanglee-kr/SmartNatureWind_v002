@@ -23,12 +23,16 @@
 void CL_W10_WebAPI::routeConfigDirtySave() {
     // GET /api/v001/config (전체 설정 조회)
     s_server->on(W10_Const::HTTP_API_CONFIG, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!checkApiKey(p_request)) { ... }
+    
+        // [B-2] async_tcp → getRootSnapshot 필수 (CONTRACT §3.1)
+        //  - 이전: reloadAll swap 중 torn read (system=old, wifi=new) 위험
+        //  - 이후: 원자 스냅샷 후 사용
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+    
         JsonDocument v_doc;
-        CL_C10_ConfigManager::toJson_All(g_A20_config_root, v_doc);
+        CL_C10_ConfigManager::toJson_All(v_snap, v_doc);
         sendJson(p_request, v_doc);
     });
 

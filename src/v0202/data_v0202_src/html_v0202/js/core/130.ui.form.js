@@ -277,13 +277,15 @@ window.SNW = window.SNW || {};
             clear() { body.innerHTML = ''; },
             setFilter(lv) {
                 filterLevel = Number(lv) || 0;
-                // 기존 행 필터링 (단순화: 재구성 없이 hide)
                 Array.from(body.children).forEach(ch => {
                     if (filterLevel === 0) {
                         ch.style.display = '';
                     } else {
+                        // [B-8] 이전: textContent.includes() → 메시지 본문 "ERROR" 문자열 오매칭
+                        //  이후: 레벨 셀(.snw-log-lv) 정확 비교
+                        const lvEl = ch.querySelector('.snw-log-lv');
                         const lvStr = (SNW.C.LOG_LEVEL_META[filterLevel] || {}).code || '';
-                        ch.style.display = ch.textContent.includes(lvStr) ? '' : 'none';
+                        ch.style.display = (lvEl && lvEl.textContent.trim() === lvStr) ? '' : 'none';
                     }
                 });
             }

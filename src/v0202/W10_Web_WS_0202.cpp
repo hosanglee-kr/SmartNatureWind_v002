@@ -46,10 +46,19 @@
 static bool _wsHandshakeAuth(AsyncWebServerRequest* p_request) {
     if (!p_request) return false;
 
+    // [B-2] async_tcp → getRootSnapshot 필수 (CONTRACT §3.1)
+    //  - 이전: reloadAll 중 system 포인터 swap 시 dangling 참조 위험
+    //  - 이후: 원자 스냅샷 + 즉시 키 문자열 로컬 복사
+    ST_A20_ConfigRoot_t v_snap;
+    CL_C10_ConfigManager::getRootSnapshot(v_snap);
+
     // 1) API Key 미설정 → 개방 모드
+    char v_keyBuf[64];
+    memset(v_keyBuf, 0, sizeof(v_keyBuf));
     const char* v_key = nullptr;
-    if (g_A20_config_root.system && g_A20_config_root.system->security.apiKey[0] != '\0') {
-        v_key = g_A20_config_root.system->security.apiKey;
+    if (v_snap.system && v_snap.system->security.apiKey[0] != '\0') {
+        strlcpy(v_keyBuf, v_snap.system->security.apiKey, sizeof(v_keyBuf));
+        v_key = v_keyBuf;
     }
     if (!v_key || v_key[0] == '\0') return true;
 

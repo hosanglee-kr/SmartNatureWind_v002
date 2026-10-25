@@ -40,9 +40,10 @@ SNW.Page = SNW.Page || {};
                 const sec = sys.security || {};
                 const meta = sys.meta || {};
                 
-                // 1. Meta + Logging + Security
+                // [B-3] XSS 방어: 사용자 입력값은 반드시 escape 경유
+                const esc = SNW.DomUtil.escape;
                 this.el.querySelector('[data-slot="form-log"]').innerHTML = `
-                    <div class="snw-form-row"><label>Device Name</label><input type="text" id="meta-deviceName" value="${meta.deviceName || 'SmartNatureWind'}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Device Name</label><input type="text" id="meta-deviceName" value="${esc(meta.deviceName || 'SmartNatureWind')}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     <div class="snw-form-row"><label>Log Level</label>
                         <select id="log-level" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                             <option value="INFO" ${logCfg.level==='INFO'?'selected':''}>INFO</option>
@@ -52,8 +53,8 @@ SNW.Page = SNW.Page || {};
                         </select>
                     </div>
                     <div class="snw-form-row"><label>Log Max Entries</label><input type="number" id="log-maxEntries" value="${logCfg.maxEntries || 300}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>API Key</label><input type="password" id="api-key" value="${sec.apiKey || ''}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>Gemini API Key</label><input type="password" id="gemini-key" value="${sec.geminiApiKey || ''}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>API Key</label><input type="password" id="api-key" value="${esc(sec.apiKey || '')}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Gemini API Key</label><input type="password" id="gemini-key" value="${esc(sec.geminiApiKey || '')}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     <div class="snw-toolbar"><button type="button" class="snw-btn" data-action="test-api">API Key 테스트</button></div>
                 `;
 

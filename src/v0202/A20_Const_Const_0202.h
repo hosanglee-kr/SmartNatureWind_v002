@@ -60,6 +60,7 @@ namespace A20_Const {
 	// ======================================================
 	constexpr uint32_t G_A00_SERIAL_INIT_DELAY_MS	= 1500;	// [ms] Serial.begin 후 대기
 	constexpr uint32_t G_A00_USB_CDC_POLL_MS		= 100;	// [ms] USB CDC 연결 폴링
+	constexpr uint32_t G_A00_USB_CDC_TIMEOUT_MS	= 3000;	// [C-1] CDC 동기화 타임아웃 (미연결 시 부팅 계속)
 
 	// 문자열 및 배열 길이 정의
 	constexpr uint8_t LEN_NAME   				= 64;

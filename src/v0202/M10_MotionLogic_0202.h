@@ -206,20 +206,13 @@ class CL_M10_MotionLogic {
 	// --------------------------------------------------
 	bool isActive() const {
 	    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-		if (!v_guard.isAcquired()) return false;
-
-		unsigned long v_now	 = millis();
-		// holdSec 로직은 외부 config 사용 (예: g_A20_config_root.motion)
-		uint16_t	  v_hold = 0;
-		if (g_A20_config_root.motion) {
-			v_hold = (uint16_t)g_A20_config_root.motion->pir.holdSec;
-		}
-		if (_state.pirActive)
+	    if (!v_guard.isAcquired()) return false;
 	
-			return true;
-		if (v_hold > 0 && (v_now - _state.lastChange_ms) < (v_hold * 1000UL))
-			return true;
-		return false;
+	    // [C-3] 수정: holdSec는 tick()에서 _state.pirActive로 이미 반영됨
+	    //  - 이전: pirActive=false 만료 후 lastChange_ms 기준 holdSec를 재적용 → 실효 2×hold
+	    //    (t=0 감지 → t=holdSec 만료(pirActive=false,lastChange=holdSec) → t=2*holdSec까지 true)
+	    //  - 이후: pirActive 단일 판정 (tick()이 holdSec 경과 시 false로 전환)
+	    return _state.pirActive;
 	}
 
 	// --------------------------------------------------

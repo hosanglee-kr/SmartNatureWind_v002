@@ -46,10 +46,16 @@ void setup() {
     Serial.begin(115200);
     delay(A20_Const::G_A00_SERIAL_INIT_DELAY_MS);
 
-    // ESP32-S3 Native USB CDC: PC와 동기화될 때까지 대기
-    while (!Serial) {
-        delay(A20_Const::G_A00_USB_CDC_POLL_MS);
+    // ESP32-S3 Native USB CDC: PC와 동기화 대기 (타임아웃 적용)
+    // - 스탠드얼론 배포(USB 미연결) 시 setup() 무한 정지 방지
+    // - 3초 내 미연결이면 부팅 계속 진행
+    {
+        uint32_t v_waitStartMs = millis();
+        while (!Serial && (millis() - v_waitStartMs < A20_Const::G_A00_USB_CDC_TIMEOUT_MS)) {
+            delay(A20_Const::G_A00_USB_CDC_POLL_MS);
+        }
     }
+
 
     Serial.println();
     Serial.println("=====================================");

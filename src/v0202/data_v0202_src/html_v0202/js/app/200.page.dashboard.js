@@ -24,19 +24,24 @@ SNW.Page = SNW.Page || {};
             this.el.innerHTML = '';
             this.el.appendChild(SNW.Tpl.dashboard());
             SNW.I18n.applyTo(this.el);
+            
+            // [C-2] 컴포넌트를 먼저 마운트 → 데이터 주입 순서 보장
+            //  - 이전: _applyPresetList가 빈 그리드에 setItems 시도 → 무효화 → 프리셋 영구 비어있음
+            //  - 이후: _mountComponents 후 데이터 적용
+            this._mountComponents();
+            
             try {
                 const [stateData, profileData] = await Promise.all([SNW.Api.getState(), SNW.Api.listWindProfiles().catch(() => null)]);
                 if (!this._active) return;
                 this._applyInitialState(stateData);
-                if (profileData) this._applyPresetList(profileData);
+                if (profileData) this._applyPresetList(profileData); // 컴포넌트 존재 → 반영됨
             } catch (e) { if (this._active) SNW.LogUtil.warn('[Dashboard] 초기 로드 실패', e); }
             
-            this._mountComponents();
             this._bindStore();
-            this._bindModeSwitch(); // [신규] 모드 스위치 바인딩
+            this._bindModeSwitch();
             this._startClock();
         }
-        
+
         unmount() {
             this._active = false;
             this._unsubs.forEach(fn => { try { fn(); } catch {} });

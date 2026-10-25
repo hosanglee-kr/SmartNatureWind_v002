@@ -2021,7 +2021,8 @@ window.SNW = window.SNW || {};
     
     let currentPage = null;
     let currentPath = null;
-
+    let _dispatching = false;   // [C-5] 재진입 가드
+    
     // 페이지명 → 클래스명 매핑 (특수 케이스 처리)
     function capitalize(s) {
         // 특수 케이스: 'ai'는 모두 대문자 'AI'
@@ -2045,23 +2046,31 @@ window.SNW = window.SNW || {};
     }
 
     async function dispatch() {
+        // [C-5] 이전 dispatch가 mount() await 중이면 재진입 차단
+        //  - 이전: 빠른 페이지 전환 시 unmount()가 정리 못하는 고아 watcher/timer 잔존
+        //  - 이후: 직렬화 + 종료 후 해시 재확인
+        if (_dispatching) return;
+    
         const path = parseHash();
         if (path === currentPath) return;
-        _closeSidebarOnMobile();
-
-        const route = ROUTES[path];
-        if (!SNW.LevelUtil.atLeast(route.level)) {
-            SNW.ToastUtil.warn(SNW.I18n.t('msg.accessDenied'));
-            location.hash = '/dashboard';
-            return;
-        }
-        if (currentPage && typeof currentPage.unmount === 'function') { try { currentPage.unmount(); } catch {} }
-        currentPage = null; currentPath = null;
-        const main = _clearMain();
-        _showLoading(main);
-        const PageClass = (SNW.Page && SNW.Page[capitalize(route.page)]) || null;
-        if (!PageClass) { _showError(main, `Page not implemented: ${route.page}`); return; }
+    
+        _dispatching = true;
         try {
+            _closeSidebarOnMobile();
+    
+            const route = ROUTES[path];
+            if (!SNW.LevelUtil.atLeast(route.level)) {
+                SNW.ToastUtil.warn(SNW.I18n.t('msg.accessDenied'));
+                location.hash = '/dashboard';
+                return;
+            }
+            if (currentPage && typeof currentPage.unmount === 'function') { try { currentPage.unmount(); } catch {} }
+            currentPage = null; currentPath = null;
+            const main = _clearMain();
+            _showLoading(main);
+            const PageClass = (SNW.Page && SNW.Page[capitalize(route.page)]) || null;
+            if (!PageClass) { _showError(main, `Page not implemented: ${route.page}`); return; }
+    
             currentPage = new PageClass(main);
             currentPath = path;
             await currentPage.mount();
@@ -2069,11 +2078,15 @@ window.SNW = window.SNW || {};
                 a.classList.toggle('is-active', a.getAttribute('data-route') === path);
             });
         } catch (e) {
-            SNW.ErrorHandler.handle(e, `page.${route.page}`);
-            _showError(main, SNW.I18n.t('msg.unknown'));
+            SNW.ErrorHandler.handle(e, `page.${ROUTES[parseHash()]?.page || 'unknown'}`);
+            _showError(document.getElementById('snw-main'), SNW.I18n.t('msg.unknown'));
+        } finally {
+            _dispatching = false;
+            // [C-5] await 중 해시가 바뀌었으면 재디스패치
+            if (parseHash() !== currentPath) setTimeout(dispatch, 0);
         }
     }
-
+    
     function renderNavMenu() {
         const nav = document.getElementById('nav-menu');
         if (!nav) return;
@@ -2588,38 +2601,38 @@ window.SNW = window.SNW || {};
 // Layer 3 (UI 컴포넌트) — Layer 0~2 참조
 // =========================================================
 window.SNW = window.SNW || {};
-(function (SNW) {
+(function(SNW) {
     'use strict';
-
+    
     SNW.UI = SNW.UI || {};
-
+    
     // =====================================================
     // 1) SNW.UI.form (스키마 기반 폼)
     //  - schema: [{ key, labelKey, type, min?, max?, options?, placeholder? }]
     //  - type: 'text' | 'number' | 'bool' | 'select' | 'password'
     // =====================================================
-    SNW.UI.form = function (opts) {
+    SNW.UI.form = function(opts) {
         const {
             root,
             schema = [],
             value = {},
             onSave
         } = opts || {};
-
-        if (!root) return { getValue: () => ({}), setValue: () => { }, setError: () => { } };
-
+        
+        if (!root) return { getValue: () => ({}), setValue: () => {}, setError: () => {} };
+        
         const state = Object.assign({}, value);
         const inputs = {};
-
+        
         function render() {
             root.innerHTML = '';
             const wrap = document.createElement('div');
             wrap.className = 'snw-form';
-
+            
             schema.forEach(f => {
                 const label = SNW.I18n.t(f.labelKey);
                 const cur = state[f.key];
-
+                
                 let inputEl;
                 if (f.type === 'bool') {
                     inputEl = SNW.DomUtil.html`
@@ -2652,7 +2665,7 @@ window.SNW = window.SNW || {};
                         </div>`;
                 }
                 wrap.appendChild(inputEl);
-
+                
                 // input 참조
                 const inputNode = inputEl.matches('[data-key]') ? inputEl : inputEl.querySelector('[data-key]');
                 if (inputNode) {
@@ -2669,7 +2682,7 @@ window.SNW = window.SNW || {};
                     }
                 }
             });
-
+            
             // Save 버튼 (선택)
             if (typeof onSave === 'function') {
                 const btn = SNW.DomUtil.html`
@@ -2682,12 +2695,12 @@ window.SNW = window.SNW || {};
                 });
                 wrap.appendChild(btn);
             }
-
+            
             root.appendChild(wrap);
         }
-
+        
         render();
-
+        
         return {
             getValue() { return Object.assign({}, state); },
             setValue(patch) {
@@ -2708,28 +2721,28 @@ window.SNW = window.SNW || {};
             refresh() { render(); }
         };
     };
-
+    
     // =====================================================
     // 2) SNW.UI.presetGrid (10 프리셋 카드 그리드)
     // =====================================================
-    SNW.UI.presetGrid = function (opts) {
+    SNW.UI.presetGrid = function(opts) {
         const {
             root,
             items = [],
             selected = '',
             onSelect
         } = opts || {};
-
-        if (!root) return { setItems: () => { }, setSelected: () => { } };
-
+        
+        if (!root) return { setItems: () => {}, setSelected: () => {} };
+        
         let curSelected = selected;
         let curItems = items.slice();
-
+        
         function render() {
             root.innerHTML = '';
             const grid = document.createElement('div');
             grid.className = 'snw-preset-grid';
-
+            
             curItems.forEach((it, i) => {
                 const name = it.name || SNW.I18n.t('preset.' + it.code) || it.code;
                 const card = SNW.DomUtil.html`
@@ -2741,12 +2754,12 @@ window.SNW = window.SNW || {};
                     </button>`;
                 grid.appendChild(card);
             });
-
+            
             root.appendChild(grid);
         }
-
+        
         render();
-
+        
         // 이벤트 위임
         SNW.DomUtil.delegate(root, '.snw-preset-card', 'click', (e, el) => {
             const code = el.getAttribute('data-code');
@@ -2758,9 +2771,10 @@ window.SNW = window.SNW || {};
                 catch (e) { SNW.ErrorHandler.handle(e, 'presetGrid.onSelect'); }
             }
         });
-
+        
         return {
-            setItems(list) { curItems = list.slice(); render(); },
+            setItems(list) { curItems = list.slice();
+                render(); },
             setSelected(code) {
                 if (code === curSelected) return;
                 curSelected = code || '';
@@ -2768,13 +2782,13 @@ window.SNW = window.SNW || {};
             }
         };
     };
-
+    
     // =====================================================
     // 3) SNW.UI.sensorCards (온도/습도/PIR)
     // =====================================================
-    SNW.UI.sensorCards = function (root) {
-        if (!root) return { set: () => { } };
-
+    SNW.UI.sensorCards = function(root) {
+        if (!root) return { set: () => {} };
+        
         root.innerHTML = '';
         root.appendChild(SNW.DomUtil.html`
             <div class="snw-sensor-cards">
@@ -2794,11 +2808,11 @@ window.SNW = window.SNW || {};
                     <span class="snw-sensor-card__val" data-motion>--</span>
                 </div>
             </div>`);
-
+        
         const tempEl = root.querySelector('[data-temp]');
         const humEl = root.querySelector('[data-hum]');
         const motEl = root.querySelector('[data-motion]');
-
+        
         return {
             set({ tempC, humidity, motionActive } = {}) {
                 if (tempC != null && Number.isFinite(tempC))
@@ -2806,44 +2820,44 @@ window.SNW = window.SNW || {};
                 if (humidity != null && Number.isFinite(humidity))
                     humEl.textContent = `${humidity.toFixed(0)}${SNW.I18n.t('unit.humidity')}`;
                 if (motionActive != null) {
-                    motEl.textContent = motionActive
-                        ? SNW.I18n.t('dashboard.motionDetected')
-                        : SNW.I18n.t('dashboard.motionAbsent');
+                    motEl.textContent = motionActive ?
+                        SNW.I18n.t('dashboard.motionDetected') :
+                        SNW.I18n.t('dashboard.motionAbsent');
                     motEl.classList.toggle('is-on', !!motionActive);
                     motEl.classList.toggle('is-off', !motionActive);
                 }
             }
         };
     };
-
+    
     // =====================================================
     // 4) SNW.UI.logViewer (로그 목록)
     // =====================================================
-    SNW.UI.logViewer = function (opts) {
+    SNW.UI.logViewer = function(opts) {
         const {
             root,
             maxLines = SNW.CFG.UI.LOG_MAX_LINES
         } = opts || {};
-
-        if (!root) return { append: () => { }, clear: () => { }, setFilter: () => { } };
-
+        
+        if (!root) return { append: () => {}, clear: () => {}, setFilter: () => {} };
+        
         root.innerHTML = '';
         root.appendChild(SNW.DomUtil.html`<div class="snw-log-viewer" data-body></div>`);
         const body = root.querySelector('[data-body]');
-
-        let filterLevel = 0;   // 0 = 전체
-
+        
+        let filterLevel = 0; // 0 = 전체
+        
         function _levelClass(lv) {
             const meta = SNW.C.LOG_LEVEL_META[lv] || SNW.C.LOG_LEVEL_META[3];
             return 'snw-log-' + meta.color;
         }
-
+        
         function _trim() {
             while (body.children.length > maxLines) {
                 body.removeChild(body.firstElementChild);
             }
         }
-
+        
         return {
             append(entry) {
                 // { ts, lv, msg }
@@ -2862,19 +2876,21 @@ window.SNW = window.SNW || {};
             clear() { body.innerHTML = ''; },
             setFilter(lv) {
                 filterLevel = Number(lv) || 0;
-                // 기존 행 필터링 (단순화: 재구성 없이 hide)
                 Array.from(body.children).forEach(ch => {
                     if (filterLevel === 0) {
                         ch.style.display = '';
                     } else {
+                        // [B-8] 이전: textContent.includes() → 메시지 본문 "ERROR" 문자열 오매칭
+                        //  이후: 레벨 셀(.snw-log-lv) 정확 비교
+                        const lvEl = ch.querySelector('.snw-log-lv');
                         const lvStr = (SNW.C.LOG_LEVEL_META[filterLevel] || {}).code || '';
-                        ch.style.display = ch.textContent.includes(lvStr) ? '' : 'none';
+                        ch.style.display = (lvEl && lvEl.textContent.trim() === lvStr) ? '' : 'none';
                     }
                 });
             }
         };
     };
-
+    
 })(window.SNW);
 
 
@@ -2900,16 +2916,21 @@ SNW.Page = SNW.Page || {};
             this.el.innerHTML = '';
             this.el.appendChild(SNW.Tpl.dashboard());
             SNW.I18n.applyTo(this.el);
+            
+            // [C-2] 컴포넌트를 먼저 마운트 → 데이터 주입 순서 보장
+            //  - 이전: _applyPresetList가 빈 그리드에 setItems 시도 → 무효화 → 프리셋 영구 비어있음
+            //  - 이후: _mountComponents 후 데이터 적용
+            this._mountComponents();
+            
             try {
                 const [stateData, profileData] = await Promise.all([SNW.Api.getState(), SNW.Api.listWindProfiles().catch(() => null)]);
                 if (!this._active) return;
                 this._applyInitialState(stateData);
-                if (profileData) this._applyPresetList(profileData);
+                if (profileData) this._applyPresetList(profileData); // 컴포넌트 존재 → 반영됨
             } catch (e) { if (this._active) SNW.LogUtil.warn('[Dashboard] 초기 로드 실패', e); }
             
-            this._mountComponents();
             this._bindStore();
-            this._bindModeSwitch(); // [신규] 모드 스위치 바인딩
+            this._bindModeSwitch();
             this._startClock();
         }
         
@@ -3876,19 +3897,6 @@ SNW.Page = SNW.Page || {};
 
 
 
-/* ---- 240.page.settings.js (10725 bytes) ---- */
-/*
- * ------------------------------------------------------
- * 소스명   : 240.page.settings.js
- * 모듈     : SNW.Page.Settings
- * 레이어   : Layer 4 (페이지 로직)
- * 기능 요약:
- *  - 로그 레벨 / API Key / 하드웨어 팬 PWM 편집 (스키마 폼)
- *  - Save → Reload 순서 강제
- *  - 공장 초기화 (POST /control/factoryReset)
- *  - Reload 폴링 (오프라인 시 즉시 반환)
- * ------------------------------------------------------
- */
 /* ---- 240.page.settings.js ---- */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
@@ -3900,11 +3908,12 @@ SNW.Page = SNW.Page || {};
         async mount() {
             this.el.innerHTML = '';
             this.el.appendChild(SNW.Tpl.settings());
+            SNW.I18n.applyTo(this.el);
             await this._loadSystem();
 
             SNW.DomUtil.delegate(this.el, '[data-action="save"]', 'click', () => this._onSave());
-            SNW.DomUtil.delegate(this.el, '[data-action="reload"]', 'click', () => this._onReload());
             SNW.DomUtil.delegate(this.el, '[data-action="factory-reset"]', 'click', () => this._onFactoryReset());
+            SNW.DomUtil.delegate(this.el, '[data-action="test-api"]', 'click', () => this._onTestApi());
         }
         unmount(){ this._active = false; }
 
@@ -3917,13 +3926,11 @@ SNW.Page = SNW.Page || {};
                 const ws = (sys.system && sys.system.webSocket) || {};
                 const sec = sys.security || {};
                 const meta = sys.meta || {};
-                const timeCfg = sys.timeCfg || {};
                 
-                // ============================================
-                // 1. Meta / Logging / Security / Time
-                // ============================================
+                // [B-3] XSS 방어: 사용자 입력값은 반드시 escape 경유
+                const esc = SNW.DomUtil.escape;
                 this.el.querySelector('[data-slot="form-log"]').innerHTML = `
-                    <div class="snw-form-row"><label>Device Name</label><input type="text" id="meta-deviceName" value="${SNW.DomUtil.escape(meta.deviceName || 'SmartNatureWind')}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Device Name</label><input type="text" id="meta-deviceName" value="${esc(meta.deviceName || 'SmartNatureWind')}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     <div class="snw-form-row"><label>Log Level</label>
                         <select id="log-level" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                             <option value="INFO" ${logCfg.level==='INFO'?'selected':''}>INFO</option>
@@ -3933,25 +3940,21 @@ SNW.Page = SNW.Page || {};
                         </select>
                     </div>
                     <div class="snw-form-row"><label>Log Max Entries</label><input type="number" id="log-maxEntries" value="${logCfg.maxEntries || 300}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>API Key</label><input type="password" id="api-key" value="${SNW.DomUtil.escape(sec.apiKey || '')}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>Gemini API Key</label><input type="password" id="gemini-key" value="${SNW.DomUtil.escape(sec.geminiApiKey || '')}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>NTP Server</label><input type="text" id="time-ntp" value="${SNW.DomUtil.escape(timeCfg.ntpServer || 'pool.ntp.org')}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>Timezone</label><input type="text" id="time-tz" value="${SNW.DomUtil.escape(timeCfg.timezone || 'Asia/Seoul')}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>Sync Interval (min)</label><input type="number" id="time-sync" value="${timeCfg.syncIntervalMin || 60}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>API Key</label><input type="password" id="api-key" value="${esc(sec.apiKey || '')}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Gemini API Key</label><input type="password" id="gemini-key" value="${esc(sec.geminiApiKey || '')}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-toolbar"><button type="button" class="snw-btn" data-action="test-api">API Key 테스트</button></div>
                 `;
 
-                // ============================================
                 // 2. WebSocket 채널 설정
-                // ============================================
                 const wsCh = ws.wsChConfig || [];
                 const wsEtc = ws.wsEtcConfig || {};
-                let wsHtml = '';
+                let wsHtml = `<h3 style="margin-top:12px;border-bottom:1px solid var(--snw-border);padding-bottom:4px;">WebSocket 채널 설정</h3>`;
                 wsCh.forEach((ch, idx) => {
                     wsHtml += `
                         <div style="display:flex;gap:8px;margin-bottom:4px;align-items:center;font-size:12px;">
                             <span style="width:70px;color:var(--snw-text-dim);">${ch.chName || 'ch'+idx}</span>
-                            <input type="number" value="${ch.chIntervalMs || 800}" placeholder="Interval(ms)" style="flex:1;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);" data-ws-itv="${idx}">
-                            <input type="number" value="${ch.priority ?? idx}" placeholder="Priority" style="flex:1;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);" data-ws-prio="${idx}">
+                            <input type="number" value="${ch.chIntervalMs}" placeholder="Interval(ms)" style="flex:1;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);" data-ws-itv="${idx}">
+                            <input type="number" value="${ch.priority}" placeholder="Priority" style="flex:1;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);" data-ws-prio="${idx}">
                         </div>
                     `;
                 });
@@ -3962,9 +3965,7 @@ SNW.Page = SNW.Page || {};
                 `;
                 this.el.querySelector('[data-slot="form-ws"]').innerHTML = wsHtml;
 
-                // ============================================
                 // 3. 하드웨어 (모든 필드)
-                // ============================================
                 const pwm = hw.fanPwm || {};
                 const curve = hw.fanConfig || {};
                 const pir = hw.pir || {};
@@ -3972,40 +3973,40 @@ SNW.Page = SNW.Page || {};
                 const led = hw.led || {};
 
                 this.el.querySelector('[data-slot="form-hw"]').innerHTML = `
-                    <h4 style="margin-top:8px;color:var(--snw-text-dim);">Fan PWM</h4>
-                    <div class="snw-form-row"><label>Pin</label><input type="number" id="hw-pwm-pin" value="${pwm.pin ?? 6}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <h3 style="margin-top:12px;border-bottom:1px solid var(--snw-border);padding-bottom:4px;">Fan PWM</h3>
+                    <div class="snw-form-row"><label>Pin</label><input type="number" id="hw-pwm-pin" value="${pwm.pin || 6}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     <div class="snw-form-row"><label>Channel</label><input type="number" id="hw-pwm-ch" value="${pwm.channel ?? 0}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>Frequency (Hz)</label><input type="number" id="hw-pwm-freq" value="${pwm.freq ?? 25000}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Frequency (Hz)</label><input type="number" id="hw-pwm-freq" value="${pwm.freq || 25000}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     <div class="snw-form-row"><label>Resolution (bits)</label><input type="number" id="hw-pwm-res" value="${pwm.res ?? 10}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     
-                    <h4 style="margin-top:12px;color:var(--snw-text-dim);">Fan Curve (%)</h4>
-                    <div class="snw-form-row"><label>Start (시동)</label><input type="number" id="hw-fan-start" value="${curve.startPercentMin ?? 18}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>Comfort Min (편안 시작)</label><input type="number" id="hw-fan-cmin" value="${curve.comfortPercentMin ?? 22}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>Comfort Max (편안 끝)</label><input type="number" id="hw-fan-cmax" value="${curve.comfortPercentMax ?? 65}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>Hard Max (최대)</label><input type="number" id="hw-fan-hmax" value="${curve.hardPercentMax ?? 90}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <h3 style="margin-top:12px;border-bottom:1px solid var(--snw-border);padding-bottom:4px;">Fan Curve (%)</h3>
+                    <div class="snw-form-row"><label>Start</label><input type="number" id="hw-fan-start" value="${curve.startPercentMin || 18}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Comfort Min</label><input type="number" id="hw-fan-cmin" value="${curve.comfortPercentMin || 22}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Comfort Max</label><input type="number" id="hw-fan-cmax" value="${curve.comfortPercentMax || 65}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Hard Max</label><input type="number" id="hw-fan-hmax" value="${curve.hardPercentMax || 90}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     
-                    <h4 style="margin-top:12px;color:var(--snw-text-dim);">PIR Sensor</h4>
+                    <h3 style="margin-top:12px;border-bottom:1px solid var(--snw-border);padding-bottom:4px;">PIR Sensor</h3>
                     <div class="snw-form-row" style="flex-direction:row;gap:8px;align-items:center;">
                         <input type="checkbox" id="hw-pir-enabled" ${pir.enabled?'checked':''}> <label for="hw-pir-enabled" style="margin:0;">Enabled</label>
                     </div>
-                    <div class="snw-form-row"><label>Pin</label><input type="number" id="hw-pir-pin" value="${pir.pin ?? 13}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>Debounce (sec)</label><input type="number" id="hw-pir-debounce" value="${pir.debounceSec ?? 5}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>Hold (sec)</label><input type="number" id="hw-pir-hold" value="${pir.holdSec ?? 120}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Pin</label><input type="number" id="hw-pir-pin" value="${pir.pin || 13}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Debounce (sec)</label><input type="number" id="hw-pir-debounce" value="${pir.debounceSec || 5}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Hold (sec)</label><input type="number" id="hw-pir-hold" value="${pir.holdSec || 120}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
 
-                    <h4 style="margin-top:12px;color:var(--snw-text-dim);">DHT Sensor</h4>
+                    <h3 style="margin-top:12px;border-bottom:1px solid var(--snw-border);padding-bottom:4px;">DHT22 Sensor</h3>
                     <div class="snw-form-row" style="flex-direction:row;gap:8px;align-items:center;">
                         <input type="checkbox" id="hw-dht-enabled" ${dht.enabled?'checked':''}> <label for="hw-dht-enabled" style="margin:0;">Enabled</label>
                     </div>
-                    <div class="snw-form-row"><label>Type</label><input type="text" id="hw-dht-type" value="${SNW.DomUtil.escape(dht.type || 'DHT22')}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>Pin</label><input type="number" id="hw-dht-pin" value="${dht.pin ?? 17}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>Interval (sec)</label><input type="number" id="hw-dht-int" value="${dht.intervalSec ?? 30}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Type</label><input type="text" id="hw-dht-type" value="${dht.type || 'DHT22'}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Pin</label><input type="number" id="hw-dht-pin" value="${dht.pin || 17}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Interval (sec)</label><input type="number" id="hw-dht-int" value="${dht.intervalSec || 30}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     
-                    <h4 style="margin-top:12px;color:var(--snw-text-dim);">Status LED</h4>
-                    <div class="snw-form-row"><label>Pin</label><input type="number" id="hw-led-pin" value="${led.pin ?? 48}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>Num Pixels</label><input type="number" id="hw-led-num" value="${led.numPixels ?? 1}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>Brightness (0~255)</label><input type="number" id="hw-led-bright" value="${led.defaultBrightness ?? 20}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <h3 style="margin-top:12px;border-bottom:1px solid var(--snw-border);padding-bottom:4px;">Status LED</h3>
+                    <div class="snw-form-row"><label>Pin</label><input type="number" id="hw-led-pin" value="${led.pin || 48}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Num Pixels</label><input type="number" id="hw-led-num" value="${led.numPixels || 1}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>Brightness (0~255)</label><input type="number" id="hw-led-bright" value="${led.defaultBrightness || 20}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                 `;
-            } catch (e) { console.error('[Settings] loadSystem error', e); }
+            } catch (e) { console.error(e); }
         }
 
         async _onSave() {
@@ -4013,9 +4014,8 @@ SNW.Page = SNW.Page || {};
             const wsChArr = [];
             this.el.querySelectorAll('[data-ws-itv]').forEach(el => {
                 const idx = Number(el.getAttribute('data-ws-itv'));
-                const prioEl = q(`[data-ws-prio="${idx}"]`);
-                const chNames = ['state','metrics','chart','summary'];
-                wsChArr.push({ chIdx: idx, chName: chNames[idx], chIntervalMs: Number(el.value), priority: Number(prioEl.value) });
+                const prio = Number(q(`[data-ws-prio="${idx}"]`).value);
+                wsChArr.push({ chIdx: idx, chIntervalMs: Number(el.value), priority: prio });
             });
 
             const patch = {
@@ -4032,7 +4032,6 @@ SNW.Page = SNW.Page || {};
                     }
                 },
                 security: { apiKey: q('#api-key').value, geminiApiKey: q('#gemini-key').value },
-                timeCfg: { ntpServer: q('#time-ntp').value, timezone: q('#time-tz').value, syncIntervalMin: Number(q('#time-sync').value) },
                 hw: {
                     fanPwm: { pin: Number(q('#hw-pwm-pin').value), channel: Number(q('#hw-pwm-ch').value), freq: Number(q('#hw-pwm-freq').value), res: Number(q('#hw-pwm-res').value) },
                     fanConfig: {
@@ -4054,12 +4053,11 @@ SNW.Page = SNW.Page || {};
             } catch(e) { SNW.ErrorHandler.handle(e, 'settings.save'); }
         }
 
-        async _onReload() {
+        async _onTestApi() {
             try {
-                await SNW.Api.reload();
-                SNW.ToastUtil.success(SNW.I18n.t('msg.reloadSuccess'));
-                await this._loadSystem();
-            } catch(e) { SNW.ErrorHandler.handle(e, 'settings.reload'); }
+                const res = await SNW.Api.getState();
+                SNW.ToastUtil.success('API Key 검증 성공');
+            } catch(e) { SNW.ToastUtil.error('API Key 검증 실패: ' + (e.message || 'HTTP 401')); }
         }
 
         async _onFactoryReset() {
@@ -4072,6 +4070,8 @@ SNW.Page = SNW.Page || {};
         }
     };
 })(window.SNW);
+
+
 
 /* ---- 245.page.simulation.js ---- */
 window.SNW = window.SNW || {};
@@ -4425,20 +4425,24 @@ SNW.Page = SNW.Page || {};
 
         async _loadWifiState() {
             let state = {};
-            try { const data = await SNW.Api.getWifiState(); state = (data && data.wifi && data.wifi.state) || {}; } catch {}
+            try { const data = await SNW.Api.getWifiState();
+                state = (data && data.wifi && data.wifi.state) || {}; } catch {}
             const slot = this.el.querySelector('[data-slot="wifi-state"]');
             if (!slot) return;
+            
+            // [B-3] XSS 방어: SSID/hostname은 사용자 제어 가능
+            const esc = SNW.DomUtil.escape;
             slot.innerHTML = `
-                <div class="snw-kv"><span>Wi-Fi 모드</span><b>${state.mode_name || '-'}</b></div>
-                <div class="snw-kv"><span>연결 상태</span><b>${state.status || '-'}</b></div>
-                <div class="snw-kv"><span>SSID</span><b>${state.ssid || '-'}</b></div>
-                <div class="snw-kv"><span>IP 주소</span><b>${state.ip || '-'}</b></div>
-                <div class="snw-kv"><span>RSSI</span><b>${state.rssi != null ? state.rssi + ' dBm' : '-'}</b></div>
-                <div class="snw-kv"><span>MAC 주소</span><b>${state.mac || '-'}</b></div>
-                <div class="snw-kv"><span>Hostname</span><b>${state.hostname || '-'}</b></div>
-                <div class="snw-kv"><span>시간 동기화</span><b>${state.timeSynced ? '완료' : '미완료'}</b></div>
-                <div class="snw-kv"><span>재연결 시도</span><b>${state.reconnectAttempts ?? 0}</b></div>
-            `;
+                        <div class="snw-kv"><span>Wi-Fi 모드</span><b>${esc(state.mode_name || '-')}</b></div>
+                        <div class="snw-kv"><span>연결 상태</span><b>${esc(state.status || '-')}</b></div>
+                        <div class="snw-kv"><span>SSID</span><b>${esc(state.ssid || '-')}</b></div>
+                        <div class="snw-kv"><span>IP 주소</span><b>${esc(state.ip || '-')}</b></div>
+                        <div class="snw-kv"><span>RSSI</span><b>${state.rssi != null ? state.rssi + ' dBm' : '-'}</b></div>
+                        <div class="snw-kv"><span>MAC 주소</span><b>${esc(state.mac || '-')}</b></div>
+                        <div class="snw-kv"><span>Hostname</span><b>${esc(state.hostname || '-')}</b></div>
+                        <div class="snw-kv"><span>시간 동기화</span><b>${state.timeSynced ? '완료' : '미완료'}</b></div>
+                        <div class="snw-kv"><span>재연결 시도</span><b>${state.reconnectAttempts ?? 0}</b></div>
+                    `;
         }
 
         async _loadWifiConfig() {

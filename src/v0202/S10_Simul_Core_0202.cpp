@@ -182,15 +182,6 @@ void CL_S10_Simulation::tick() {
     //  - 이후: 플래그만 유지
     bool v_needBroadcast = false;
     
-    /*
-    bool               v_needBroadcast = false;
-    float              v_bc_avgWind    = 0.0f;
-    float              v_bc_target     = 0.0f;
-    uint8_t            v_bc_samples    = 0;
-    float              v_bc_delta      = 0.0f;
-    EN_A20_WindPhase_t v_bc_phase      = EN_A20_WIND_PHASE_NORMAL;
-    */
-    
     CL_A40_MutexGuard_Semaphore v_MutxGuard(_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
 
     if (!v_MutxGuard.isAcquired()) {
@@ -302,27 +293,6 @@ void CL_S10_Simulation::tick() {
         CT10_markDirtyFromSim("chart");
         CT10_markDirtyFromSim("metrics");
     }
-    
-    /*
-    if (v_needBroadcast) {
-        JsonDocument v_doc;
-        JsonObject   v_sim = v_doc["sim"].to<JsonObject>();
-
-        uint8_t v_phaseIdx = static_cast<uint8_t>(v_bc_phase);
-        if (v_phaseIdx >= EN_A20_WIND_PHASE_COUNT) {
-            v_phaseIdx = static_cast<uint8_t>(EN_A20_WIND_PHASE_CALM);
-        }
-        v_sim["phase"] = G_A20_WindPhase_Arr[v_phaseIdx].code;
-
-        v_sim["avgWind"] = v_bc_avgWind;
-        v_sim["target"]  = v_bc_target;
-        v_sim["samples"] = v_bc_samples;
-        v_sim["delta"]   = v_bc_delta;
-
-        CT10_markDirtyFromSim("chart");
-        CT10_markDirtyFromSim("metrics");
-    }
-    */
 }
 
 // ==================================================

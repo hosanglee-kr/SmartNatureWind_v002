@@ -57,18 +57,18 @@ SNW.Page = SNW.Page || {};
                         <div class="snw-kv"><span>Status</span><b>${ck.status || '-'}</b></div>
                         <div class="snw-kv"><span>Latest</span><b>${ck.latest_version || '-'}</b></div>
 
-                        <h3>OTA 업데이트</h3>
+                        <h3 data-i18n="firmware.otaUpdate">${SNW.I18n.t('firmware.otaUpdate')}</h3>
                         <input type="file" accept=".bin" data-slot="fw-file" />
                         <button type="button" class="snw-btn snw-btn-primary"
-                                data-action="upload-fw">업로드</button>
+                                data-action="upload-fw" data-i18n="firmware.uploadBtn">${SNW.I18n.t('firmware.uploadBtn')}</button>
                         <div class="snw-progress" data-slot="fw-progress" style="display:none">
                             <div class="snw-progress__bar"><div class="snw-progress__fill" data-fw-fill></div></div>
                             <span data-fw-label>0%</span>
                         </div>
 
-                        <h3>파일 업로드 (LittleFS)</h3>
+                        <h3 data-i18n="firmware.fileUpload">${SNW.I18n.t('firmware.fileUpload')}</h3>
                         <input type="file" data-slot="file-file" />
-                        <button type="button" class="snw-btn" data-action="upload-file">업로드</button>
+                        <button type="button" class="snw-btn" data-action="upload-file" data-i18n="firmware.uploadBtn">${SNW.I18n.t('firmware.uploadBtn')}</button>
                         <div class="snw-progress" data-slot="file-progress" style="display:none">
                             <div class="snw-progress__bar"><div class="snw-progress__fill" data-file-fill></div></div>
                             <span data-file-label>0%</span>
@@ -98,7 +98,7 @@ SNW.Page = SNW.Page || {};
 					if (fill) fill.style.width = (pct * 100).toFixed(0) + '%';
 					if (label) label.textContent = (pct * 100).toFixed(0) + '%';
 				});
-				SNW.ToastUtil.success('OTA OK (재시작)');
+				SNW.ToastUtil.success(SNW.I18n.t('firmware.otaSuccess'));
 				// 서버가 자동 재시작
 			} catch (e) {
 				SNW.ErrorHandler.handle(e, 'firmware.upload');

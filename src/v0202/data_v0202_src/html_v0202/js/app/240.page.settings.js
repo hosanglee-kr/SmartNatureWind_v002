@@ -104,32 +104,32 @@ SNW.Page = SNW.Page || {};
 
                     <div class="snw-form-row">
                         <label>API Key ${apiKeySet
-                            ? '<span style="color:var(--snw-success);font-size:11px;">(설정됨)</span>'
-                            : '<span style="color:var(--snw-text-dim);font-size:11px;">(미설정)</span>'}</label>
+                            ? `<span style="color:var(--snw-success);font-size:11px;">${SNW.I18n.t('settings.configured')}</span>`
+                            : `<span style="color:var(--snw-text-dim);font-size:11px;">${SNW.I18n.t('settings.notConfigured')}</span>`}</label>
                         <input type="password" id="api-key" value="" autocomplete="new-password"
-                               placeholder="${apiKeySet ? '변경하려면 새 키 입력 (빈칸=유지)' : '키 입력'}"
+                               placeholder="${apiKeySet ? SNW.I18n.t('settings.keyPlaceholderChange') : SNW.I18n.t('settings.keyPlaceholderInput')}"
                                style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                         <label style="font-size:11px;margin-top:4px;">
                             <input type="checkbox" id="clear-api-key">
-                            <span style="color:var(--snw-error);">API Key 삭제</span>
+                            <span style="color:var(--snw-error);">${SNW.I18n.t('settings.deleteApiKey')}</span>
                         </label>
                     </div>
 
                     <div class="snw-form-row">
                         <label>Gemini API Key ${geminiKeySet
-                            ? '<span style="color:var(--snw-success);font-size:11px;">(설정됨)</span>'
-                            : '<span style="color:var(--snw-text-dim);font-size:11px;">(미설정)</span>'}</label>
+                            ? `<span style="color:var(--snw-success);font-size:11px;">${SNW.I18n.t('settings.configured')}</span>`
+                            : `<span style="color:var(--snw-text-dim);font-size:11px;">${SNW.I18n.t('settings.notConfigured')}</span>`}</label>
                         <input type="password" id="gemini-key" value="" autocomplete="new-password"
-                               placeholder="${geminiKeySet ? '변경하려면 새 키 입력 (빈칸=유지)' : '키 입력'}"
+                               placeholder="${geminiKeySet ? SNW.I18n.t('settings.keyPlaceholderChange') : SNW.I18n.t('settings.keyPlaceholderInput')}"
                                style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                         <label style="font-size:11px;margin-top:4px;">
                             <input type="checkbox" id="clear-gemini-key">
-                            <span style="color:var(--snw-error);">Gemini 키 삭제</span>
+                            <span style="color:var(--snw-error);">${SNW.I18n.t('settings.deleteGeminiKey')}</span>
                         </label>
                     </div>
 
                     <div class="snw-toolbar">
-                        <button type="button" class="snw-btn" data-action="test-api">API Key 테스트</button>
+                        <button type="button" class="snw-btn" data-action="test-api">${SNW.I18n.t('settings.testApiKey')}</button>
                     </div>
                 `;
 
@@ -150,7 +150,7 @@ SNW.Page = SNW.Page || {};
                 }));
 
                 const wsEtc = ws.wsEtcConfig || {};
-                let wsHtml = `<h3 style="margin-top:12px;border-bottom:1px solid var(--snw-border);padding-bottom:4px;">WebSocket 채널 설정</h3>`;
+                let wsHtml = `<h3 style="margin-top:12px;border-bottom:1px solid var(--snw-border);padding-bottom:4px;">${SNW.I18n.t('settings.wsChannelConfig')}</h3>`;
                 wsCh.forEach((ch, idx) => {
                     wsHtml += `
                         <div style="display:flex;gap:8px;margin-bottom:4px;align-items:center;font-size:12px;">
@@ -386,11 +386,11 @@ SNW.Page = SNW.Page || {};
         async _onReload() {
             try {
                 if (window.SNW_OFFLINE) {
-                    SNW.ToastUtil.info('오프라인 모드에서는 reload가 즉시 반환됩니다.');
+                    SNW.ToastUtil.info(SNW.I18n.t('settings.offlineReloadNotice'));
                     return;
                 }
                 const res = await SNW.Api.reload();
-                SNW.ToastUtil.success('재로드 요청됨: ' + ((res && res.result) || 'queued'));
+                SNW.ToastUtil.success(SNW.I18n.t('settings.reloadRequested', { status: (res && res.result) || 'queued' }));
 
                 // F-05: pendingReload 폴링 → lastReloadOk 확인
                 setTimeout(async () => {
@@ -398,11 +398,11 @@ SNW.Page = SNW.Page || {};
                         const st = await SNW.Api.getState();
                         const ctl = (st && st.control) || {};
                         if (ctl.pendingReload === true) {
-                            SNW.ToastUtil.info('재로드 진행 중...');
+                            SNW.ToastUtil.info(SNW.I18n.t('settings.reloadInProgress'));
                         } else if (ctl.lastReloadOk === false) {
-                            SNW.ToastUtil.error('재로드 실패 (lastReloadOk=false)');
+                            SNW.ToastUtil.error(SNW.I18n.t('settings.reloadFailed'));
                         } else {
-                            SNW.ToastUtil.success('재로드 완료');
+                            SNW.ToastUtil.success(SNW.I18n.t('settings.reloadComplete'));
                         }
                     } catch { /* 폴링 실패 무시 */ }
                 }, 2000);
@@ -417,9 +417,9 @@ SNW.Page = SNW.Page || {};
         async _onTestApi() {
             try {
                 await SNW.Api.getState();
-                SNW.ToastUtil.success('API Key 검증 성공');
+                SNW.ToastUtil.success(SNW.I18n.t('settings.testApiSuccess'));
             } catch (e) {
-                SNW.ToastUtil.error('API Key 검증 실패: ' + (e.message || 'HTTP 401'));
+                SNW.ToastUtil.error(SNW.I18n.t('settings.testApiFail', { msg: e.message || 'HTTP 401' }));
             }
         }
 
@@ -428,13 +428,13 @@ SNW.Page = SNW.Page || {};
         // =====================================================
         async _onFactoryReset() {
             const content = document.createElement('div');
-            content.textContent = '정말 공장 초기화 하시겠습니까? 모든 설정이 삭제됩니다.';
+            content.textContent = SNW.I18n.t('settings.factoryResetConfirm');
             content.style.cssText = 'color:var(--snw-error);padding:12px 0;';
 
-            SNW.UI.modal('⚠️ 경고', content, async () => {
+            SNW.UI.modal(SNW.I18n.t('settings.factoryResetWarning'), content, async () => {
                 try {
                     await SNW.Api.factoryReset();
-                    SNW.ToastUtil.success('기기가 재시작됩니다...');
+                    SNW.ToastUtil.success(SNW.I18n.t('settings.deviceRestarting'));
                     return true;
                 } catch (e) {
                     return false;

@@ -45,16 +45,17 @@ SNW.Page = SNW.Page || {};
             
             // [B-3] XSS 방어: SSID/hostname은 사용자 제어 가능
             const esc = SNW.DomUtil.escape;
+            const t = (k, fb) => SNW.I18n ? SNW.I18n.t(k) : fb;
             slot.innerHTML = `
-                <div class="snw-kv"><span>Wi-Fi 모드</span><b>${esc(state.mode_name || '-')}</b></div>
-                <div class="snw-kv"><span>연결 상태</span><b>${esc(state.status || '-')}</b></div>
+                <div class="snw-kv"><span data-i18n="network.wifiMode">${t('network.wifiMode', 'Wi-Fi 모드')}</span><b>${esc(state.mode_name || '-')}</b></div>
+                <div class="snw-kv"><span data-i18n="network.status">${t('network.status', '연결 상태')}</span><b>${esc(state.status || '-')}</b></div>
                 <div class="snw-kv"><span>SSID</span><b>${esc(state.ssid || '-')}</b></div>
-                <div class="snw-kv"><span>IP 주소</span><b>${esc(state.ip || '-')}</b></div>
+                <div class="snw-kv"><span data-i18n="network.ip">${t('network.ip', 'IP 주소')}</span><b>${esc(state.ip || '-')}</b></div>
                 <div class="snw-kv"><span>RSSI</span><b>${state.rssi != null ? state.rssi + ' dBm' : '-'}</b></div>
-                <div class="snw-kv"><span>MAC 주소</span><b>${esc(state.mac || '-')}</b></div>
+                <div class="snw-kv"><span data-i18n="network.mac">${t('network.mac', 'MAC 주소')}</span><b>${esc(state.mac || '-')}</b></div>
                 <div class="snw-kv"><span>Hostname</span><b>${esc(state.hostname || '-')}</b></div>
-                <div class="snw-kv"><span>시간 동기화</span><b>${state.timeSynced ? '완료' : '미완료'}</b></div>
-                <div class="snw-kv"><span>재연결 시도</span><b>${state.reconnectAttempts ?? 0}</b></div>
+                <div class="snw-kv"><span data-i18n="network.timeSynced">${t('network.timeSynced', '시간 동기화')}</span><b>${state.timeSynced ? t('network.synced', '완료') : t('network.notSynced', '미완료')}</b></div>
+                <div class="snw-kv"><span>Re-connect</span><b>${state.reconnectAttempts ?? 0}</b></div>
             `;
         }
 
@@ -78,26 +79,26 @@ SNW.Page = SNW.Page || {};
 
             let html = `
                 <div class="snw-form-row">
-                    <label>Wi-Fi 모드</label>
+                    <label>${SNW.I18n.t('network.wifiMode')}</label>
                     <select id="wifi-mode" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                         <option value="0" ${mode===0?'selected':''}>AP Only</option>
                         <option value="1" ${mode===1?'selected':''}>STA Only</option>
                         <option value="2" ${mode===2?'selected':''}>AP + STA</option>
                     </select>
                 </div>
-                <h4 style="margin-top:12px;color:var(--snw-text-dim);">AP 설정</h4>
+                <h4 style="margin-top:12px;color:var(--snw-text-dim);">${SNW.I18n.t('network.apSettings')}</h4>
                 <div class="snw-form-row"><label>AP SSID</label><input type="text" id="ap-ssid" value="${SNW.DomUtil.escape(ap.ssid)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                 <div class="snw-form-row"><label>AP Password</label><input type="password" id="ap-pass" value="${SNW.DomUtil.escape(ap.pass)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                 
                 <h4 style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;color:var(--snw-text-dim);">
-                    <span>STA 목록 (${sta.length}개)</span>
-                    <button type="button" class="snw-btn" data-action="add-sta" style="padding:4px 8px;font-size:11px;">+ 추가</button>
+                    <span>${SNW.I18n.t('network.staSettings')} (${sta.length})</span>
+                    <button type="button" class="snw-btn" data-action="add-sta" style="padding:4px 8px;font-size:11px;">+ ${SNW.I18n.t('common.add')}</button>
                 </h4>
                 <div id="sta-list">
             `;
 
             if (sta.length === 0) {
-                html += `<div style="font-size:12px;color:var(--snw-text-dim);padding:8px;">저장된 Wi-Fi가 없습니다.</div>`;
+                html += `<div style="font-size:12px;color:var(--snw-text-dim);padding:8px;">${SNW.I18n.t('network.noStaNotice')}</div>`;
             } else {
                 sta.forEach((s, idx) => {
                     html += `
@@ -112,8 +113,8 @@ SNW.Page = SNW.Page || {};
             
             html += `</div>
                 <div class="snw-toolbar" style="margin-top:12px;">
-                    <button type="button" class="snw-btn snw-btn-primary" data-action="wifi-save">Wi-Fi 설정 저장</button>
-                    <button type="button" class="snw-btn" data-action="scan">Wi-Fi 스캔</button>
+                    <button type="button" class="snw-btn snw-btn-primary" data-action="wifi-save">${SNW.I18n.t('network.saveWifi')}</button>
+                    <button type="button" class="snw-btn" data-action="scan">${SNW.I18n.t('network.scanWifi')}</button>
                 </div>
                 <div data-slot="scan-result" class="snw-scan-result" style="margin-top:12px;"></div>
             `;
@@ -149,7 +150,7 @@ SNW.Page = SNW.Page || {};
             try {
                 await SNW.Api.patchWifi(patch);
                 await SNW.Api.saveConfig();
-                SNW.ToastUtil.success('Wi-Fi 설정이 저장되었습니다.');
+                SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
             } catch(e) { SNW.ErrorHandler.handle(e, 'network.saveWifi'); }
         }
 
@@ -163,7 +164,7 @@ SNW.Page = SNW.Page || {};
                     <div class="snw-form-row"><label>NTP Server</label><input type="text" id="ntp-server" value="${SNW.DomUtil.escape(sys.ntpServer || 'pool.ntp.org')}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     <div class="snw-form-row"><label>Timezone</label><input type="text" id="timezone" value="${SNW.DomUtil.escape(sys.timezone || 'Asia/Seoul')}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     <div class="snw-form-row"><label>Sync Interval (min)</label><input type="number" id="sync-interval" value="${sys.syncIntervalMin || 60}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-toolbar"><button type="button" class="snw-btn snw-btn-primary" data-action="time-save">시간 설정 저장</button></div>
+                    <div class="snw-toolbar"><button type="button" class="snw-btn snw-btn-primary" data-action="time-save">${SNW.I18n.t('network.saveTime')}</button></div>
                 `;
             } catch (e) {}
         }
@@ -175,20 +176,20 @@ SNW.Page = SNW.Page || {};
             try {
                 await SNW.Api.patchSystem({ timeCfg: { ntpServer: ntp, timezone: tz, syncIntervalMin: sync } });
                 await SNW.Api.saveConfig();
-                SNW.ToastUtil.success('시간 설정 저장됨');
+                SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
             } catch(e) { SNW.ErrorHandler.handle(e, 'network.saveTime'); }
         }
 
         async _onScan() {
             const resultSlot = this.el.querySelector('[data-slot="scan-result"]'); 
             if (!resultSlot) return;
-            resultSlot.innerHTML = '<div style="font-size:12px;padding:8px;">스캔 중...</div>';
+            resultSlot.innerHTML = `<div style="font-size:12px;padding:8px;">${SNW.I18n.t('common.loading')}</div>`;
             try {
                 const data = await SNW.Api.scanWifi();
                 const scan = (data && data.wifi && data.wifi.scan) || [];
                 resultSlot.innerHTML = '';
                 if (!scan.length) {
-                    resultSlot.innerHTML = '<div style="font-size:12px;color:var(--snw-text-dim);padding:8px;">검색된 Wi-Fi 없음</div>';
+                    resultSlot.innerHTML = `<div style="font-size:12px;color:var(--snw-text-dim);padding:8px;">${SNW.I18n.t('common.noData')}</div>`;
                 } else {
                     scan.forEach(ap => {
                         const item = document.createElement('div');
@@ -201,12 +202,12 @@ SNW.Page = SNW.Page || {};
                                 this._wifiConfig.sta.push({ ssid: ap.ssid, pass: '' });
                             }
                             this._renderWifiConfigForm();
-                            SNW.ToastUtil.success('STA 목록에 추가되었습니다.');
+                            SNW.ToastUtil.success(SNW.I18n.t('common.success'));
                         };
                         resultSlot.appendChild(item);
                     });
                 }
-            } catch(e) { resultSlot.innerHTML = '스캔 실패'; }
+            } catch(e) { resultSlot.innerHTML = SNW.I18n.t('common.error'); }
         }
     };
 })(window.SNW);

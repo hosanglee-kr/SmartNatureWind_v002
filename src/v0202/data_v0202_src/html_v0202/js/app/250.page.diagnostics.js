@@ -27,7 +27,7 @@ SNW.Page = SNW.Page || {};
             this._timers.push(id);
             SNW.DomUtil.delegate(this.el, '[data-action="show-config"]', 'click', () => this._showConfig());
             SNW.DomUtil.delegate(this.el, '[data-action="save-dirty"]', 'click', async () => {
-                try { await SNW.Api.saveConfig(); SNW.ToastUtil.success('Dirty 저장 완료'); this._refresh(); } catch(e) { SNW.ErrorHandler.handle(e, 'diag.save'); }
+                try { await SNW.Api.saveConfig(); SNW.ToastUtil.success(SNW.I18n.t('diagnostics.saveDirtySuccess')); this._refresh(); } catch(e) { SNW.ErrorHandler.handle(e, 'diag.save'); }
             });
         }
         unmount(){ this._active = false; this._timers.forEach(id => clearInterval(id)); }
@@ -57,7 +57,7 @@ SNW.Page = SNW.Page || {};
                     <div class="snw-kv"><span>runSource</span><b>${ctl.runSource ?? '-'}</b></div>
                     <div class="snw-kv"><span>profileMode</span><b>${ctl.profileMode ? 'ON' : 'OFF'}</b></div>
                     
-                    <h3>Metrics (실시간)</h3>
+                    <h3>${SNW.I18n.t('diagnostics.metricsRealtime')}</h3>
                     <div class="snw-kv"><span>active</span><b>${mt.active ? 'Y' : 'N'}</b></div>
                     <div class="snw-kv"><span>overrideActive</span><b>${mt.overrideActive ? 'Y' : 'N'}</b></div>
                     <div class="snw-kv"><span>overrideRemain(sec)</span><b>${mt.overrideRemain ?? '-'}</b></div>
@@ -101,8 +101,8 @@ SNW.Page = SNW.Page || {};
                 pre.textContent = JSON.stringify(cfg, null, 2);
                 pre.style.cssText = 'max-height:400px;overflow:auto;background:var(--snw-bg-2);padding:12px;border-radius:4px;font-size:11px;color:var(--snw-text);';
                 content.appendChild(pre);
-                SNW.UI.modal('전체 설정 JSON', content, async () => true);
-            } catch(e) { SNW.ToastUtil.error('설정 조회 실패'); }
+                SNW.UI.modal(SNW.I18n.t('diagnostics.allJson'), content, async () => true);
+            } catch(e) { SNW.ToastUtil.error(SNW.I18n.t('diagnostics.fetchFail')); }
         }
     };
 })(window.SNW);

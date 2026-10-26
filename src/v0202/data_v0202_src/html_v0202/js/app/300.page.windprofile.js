@@ -38,7 +38,8 @@ SNW.Page = SNW.Page || {};
         _renderList() {
             const listSlot = this.el.querySelector('[data-slot="list"]');
             if (!listSlot) return;
-            listSlot.innerHTML = '<div class="snw-toolbar"><button type="button" class="snw-btn snw-btn-primary" data-action="add-preset">프리셋 추가</button></div>';
+            const t = (k, fb) => SNW.I18n ? SNW.I18n.t(k) : fb;
+            listSlot.innerHTML = `<div class="snw-toolbar"><button type="button" class="snw-btn snw-btn-primary" data-action="add-preset">${t('windprofile.add', '프리셋 추가')}</button></div>`;
             const wrap = document.createElement('div');
             wrap.className = 'snw-profile-list';
             
@@ -53,11 +54,11 @@ SNW.Page = SNW.Page || {};
                             <button class="snw-btn-icon" data-action="del-preset" data-id="${idx}">🗑</button>
                         </div>
                         <div class="snw-schedule-meta" style="font-size:11px;color:var(--snw-text-dim);flex-wrap:wrap;display:flex;gap:8px;margin-top:4px;">
-                            <span>강도: ${f.windIntensity ?? '-'}%</span>
-                            <span>변동성: ${f.windVariability ?? '-'}%</span>
-                            <span>돌풍: ${f.gustFrequency ?? '-'}%</span>
-                            <span>팬한계: ${f.fanLimit ?? '-'}%</span>
-                            <span>최소팬: ${f.minFan ?? '-'}%</span>
+                            <span>${t('windprofile.intensity', '강도')}: ${f.windIntensity ?? '-'}%</span>
+                            <span>${t('windprofile.variability', '변동성')}: ${f.windVariability ?? '-'}%</span>
+                            <span>${t('windprofile.gust', '돌풍')}: ${f.gustFrequency ?? '-'}%</span>
+                            <span>${t('windprofile.fanLimit', '팬한계')}: ${f.fanLimit ?? '-'}%</span>
+                            <span>Min Fan: ${f.minFan ?? '-'}%</span>
                         </div>
                     </div>`);
             });
@@ -72,19 +73,20 @@ SNW.Page = SNW.Page || {};
             const p = target || { name: 'New Preset', code: 'CUSTOM', factors: { windIntensity: 70, gustFrequency: 50, windVariability: 55, fanLimit: 95, minFan: 10, turbulenceLengthScale: 40, turbulenceIntensitySigma: 0.5, thermalBubbleStrength: 2.0, thermalBubbleRadius: 18, baseMinWind: 1.8, baseMaxWind: 5.5 } };
             const f = p.factors || {};
             
+            const t = (k, fb) => SNW.I18n ? SNW.I18n.t(k) : fb;
             const content = document.createElement('div');
             content.innerHTML = `
                 <div class="snw-form">
-                    <div class="snw-form-row"><label>이름</label><input type="text" id="wp-name" value="${p.name}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>코드 (영문)</label><input type="text" id="wp-code" value="${p.code}" ${isEdit ? 'disabled' : ''} style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>${t('schedule.name', '이름')}</label><input type="text" id="wp-name" value="${p.name}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>${t('windprofile.code', '코드 (영문)')}</label><input type="text" id="wp-code" value="${p.code}" ${isEdit ? 'disabled' : ''} style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     
-                    <h3 style="margin-top:12px;font-size:14px;">기본 강도 및 범위</h3>
-                    <div class="snw-form-row"><label>강도 (0~100%)</label><input type="number" id="wp-intensity" value="${f.windIntensity ?? 70}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>변동성 (0~100%)</label><input type="number" id="wp-variability" value="${f.windVariability ?? 50}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row"><label>돌풍 빈도 (0~100%)</label><input type="number" id="wp-gust" value="${f.gustFrequency ?? 45}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <h3 style="margin-top:12px;font-size:14px;">${t('windprofile.factorsTitle', '기본 바람 파라미터')}</h3>
+                    <div class="snw-form-row"><label>${t('windprofile.intensity', '강도')} (0~100%)</label><input type="number" id="wp-intensity" value="${f.windIntensity ?? 70}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>${t('windprofile.variability', '변동성')} (0~100%)</label><input type="number" id="wp-variability" value="${f.windVariability ?? 50}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>${t('windprofile.gust', '돌풍')} (0~100%)</label><input type="number" id="wp-gust" value="${f.gustFrequency ?? 45}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     
                     <h3 style="margin-top:12px;font-size:14px;">팬 제어</h3>
-                    <div class="snw-form-row"><label>팬 한계 (%)</label><input type="number" id="wp-fanlimit" value="${f.fanLimit ?? 90}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>${t('windprofile.fanLimit', '팬 한계')} (%)</label><input type="number" id="wp-fanlimit" value="${f.fanLimit ?? 90}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     <div class="snw-form-row"><label>최소 팬 (%)</label><input type="number" id="wp-minfan" value="${f.minFan ?? 10}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     
                     <h3 style="margin-top:12px;font-size:14px;">난류 및 열기포 (물리 시뮬레이션)</h3>
@@ -98,7 +100,7 @@ SNW.Page = SNW.Page || {};
                     <div class="snw-form-row"><label>기본 최대 풍속 (m/s)</label><input type="number" step="0.1" id="wp-basemax" value="${f.baseMaxWind ?? 5.5}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                 </div>`;
             
-            SNW.UI.modal(isEdit ? '프리셋 편집' : '프리셋 추가', content, async () => {
+            SNW.UI.modal(isEdit ? t('common.edit', '프리셋 편집') : t('windprofile.add', '프리셋 추가'), content, async () => {
                 const newFactors = {
                     windIntensity: Number(content.querySelector('#wp-intensity').value),
                     windVariability: Number(content.querySelector('#wp-variability').value),
@@ -119,7 +121,7 @@ SNW.Page = SNW.Page || {};
                     if (isEdit) await SNW.Api.updateWindProfile(this._presets.indexOf(target), body);
                     else await SNW.Api.addWindProfile(body);
                     await SNW.Api.saveConfig();
-                    SNW.ToastUtil.success('저장되었습니다.');
+                    SNW.ToastUtil.success(t('msg.saveSuccess', '저장되었습니다.'));
                     await this._load();
                     return true;
                 } catch (e) { SNW.ErrorHandler.handle(e, 'preset.save'); return false; }
@@ -127,7 +129,7 @@ SNW.Page = SNW.Page || {};
         }
         
         async _onDelete(id) {
-            if (!confirm('삭제하시겠습니까?')) return;
+            if (!confirm(SNW.I18n ? SNW.I18n.t('msg.deleteConfirm') : '삭제하시겠습니까?')) return;
             try { await SNW.Api.deleteWindProfile(id);
                 await SNW.Api.saveConfig();
                 await this._load(); } catch (e) {}

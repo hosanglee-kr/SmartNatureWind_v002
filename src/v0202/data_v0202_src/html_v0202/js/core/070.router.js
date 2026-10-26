@@ -102,25 +102,26 @@ window.SNW = window.SNW || {};
         nav.innerHTML = '';
         
         const items = [
-            { path:'/dashboard',   label:'대시보드',   icon:'📊' },
-            { path:'/chart',       label:'실시간 차트', icon:'📈', minLevel:'L2' },
-            { path:'/schedule',    label:'스케줄',     icon:'📅', minLevel:'L2' },
-            { path:'/profiles',    label:'프로필',     icon:'👤', minLevel:'L2' },
-            { path:'/sensors',     label:'센서',       icon:'🌡', minLevel:'L2' },
-            { path:'/simulation',  label:'시뮬레이션', icon:'🌊', minLevel:'L2' },
-            { path:'/windprofile', label:'바람 프리셋', icon:'🌬', minLevel:'L3' },
-            { path:'/settings',    label:'설정',       icon:'⚙',  minLevel:'L3' },
-            { path:'/network',     label:'네트워크',   icon:'📶', minLevel:'L3' },
-            { path:'/logs',        label:'로그',       icon:'📜', minLevel:'L3' },
-            { path:'/diagnostics', label:'진단',       icon:'🔧', minLevel:'L4' },
-            { path:'/firmware',    label:'펌웨어',     icon:'💾', minLevel:'L4' },
-            { path:'/ai',          label:'AI',         icon:'🤖', minLevel:'L4' },
-            { path:'/info',        label:'정보',       icon:'ℹ' }
+            { path:'/dashboard',   key:'nav.dashboard',   label:'대시보드',   icon:'📊' },
+            { path:'/chart',       key:'nav.chart',       label:'실시간 차트', icon:'📈', minLevel:'L2' },
+            { path:'/schedule',    key:'nav.schedule',    label:'스케줄',     icon:'📅', minLevel:'L2' },
+            { path:'/profiles',    key:'nav.profiles',    label:'프로필',     icon:'👤', minLevel:'L2' },
+            { path:'/sensors',     key:'nav.sensors',     label:'센서',       icon:'🌡', minLevel:'L2' },
+            { path:'/simulation',  key:'nav.simulation',  label:'시뮬레이션', icon:'🌊', minLevel:'L2' },
+            { path:'/windprofile', key:'nav.windprofile', label:'바람 프리셋', icon:'🌬', minLevel:'L3' },
+            { path:'/settings',    key:'nav.settings',    label:'설정',       icon:'⚙',  minLevel:'L3' },
+            { path:'/network',     key:'nav.network',     label:'네트워크',   icon:'📶', minLevel:'L3' },
+            { path:'/logs',        key:'nav.logs',        label:'로그',       icon:'📜', minLevel:'L3' },
+            { path:'/diagnostics', key:'nav.diagnostics', label:'진단',       icon:'🔧', minLevel:'L4' },
+            { path:'/firmware',    key:'nav.firmware',    label:'펌웨어',     icon:'💾', minLevel:'L4' },
+            { path:'/ai',          key:'nav.ai',          label:'AI',         icon:'🤖', minLevel:'L4' },
+            { path:'/info',        key:'nav.info',        label:'정보',       icon:'ℹ' }
         ];
         
         items.forEach(it => {
             if (it.minLevel && !SNW.LevelUtil.atLeast(it.minLevel)) return;
-            const a = SNW.DomUtil.html`<a href="#${it.path}" data-route="${it.path}"><span class="snw-nav-icon">${it.icon}</span><span>${it.label}</span></a>`;
+            const label = SNW.I18n ? SNW.I18n.t(it.key) : it.label;
+            const a = SNW.DomUtil.html`<a href="#${it.path}" data-route="${it.path}"><span class="snw-nav-icon">${it.icon}</span><span data-i18n="${it.key}">${label}</span></a>`;
             a.addEventListener('click', _closeSidebarOnMobile);
             nav.appendChild(a);
         });
@@ -130,6 +131,7 @@ window.SNW = window.SNW || {};
         ROUTES,
         init() {
             window.addEventListener('hashchange', dispatch);
+            document.addEventListener('snw:langchange', renderNavMenu);
             const btnMenu = document.getElementById('btn-menu');
             const sidebar = document.getElementById('snw-sidebar');
             if (btnMenu && sidebar) {

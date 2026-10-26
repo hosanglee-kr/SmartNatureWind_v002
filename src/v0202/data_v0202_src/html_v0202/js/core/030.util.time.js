@@ -27,10 +27,11 @@ window.SNW = window.SNW || {};
 			return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
 		},
 		
-		/** durationMs → "N.N초" */
+		/** durationMs → "N.N초" or "N.Ns" */
 		msToSecLabel(ms) {
-			if (!Number.isFinite(ms) || ms < 0) return "0.0초";
-			return (ms / 1000).toFixed(1) + "초";
+			const unit = (SNW.I18n ? SNW.I18n.t('unit.seconds') : '초');
+			if (!Number.isFinite(ms) || ms < 0) return `0.0${unit}`;
+			return (ms / 1000).toFixed(1) + unit;
 		},
 		
 		/** epochms → "HH:MM:SS" */

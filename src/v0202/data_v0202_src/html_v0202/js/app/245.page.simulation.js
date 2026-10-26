@@ -48,7 +48,7 @@ SNW.Page = SNW.Page || {};
                     <div class="snw-form-row"><label>Thermal Radius</label><input type="number" step="0.1" id="sim-thermalrad" value="${s.thermalRadius ?? 18}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     
                     <div class="snw-toolbar" style="margin-top:16px;">
-                        <button type="button" class="snw-btn snw-btn-primary" data-action="save-sim">시뮬레이션 설정 저장</button>
+                        <button type="button" class="snw-btn snw-btn-primary" data-action="save-sim">${SNW.I18n.t('simulation.saveBtn')}</button>
                     </div>
                 `;
             } catch(e) { console.error('[Simulation] load error', e); }
@@ -81,7 +81,7 @@ SNW.Page = SNW.Page || {};
                 await SNW.Api.patchMotion(motionPatch);
                 await SNW.Api.patchSim(motionPatch.motion.sim);
                 await SNW.Api.saveConfig();
-                SNW.ToastUtil.success('시뮬레이션 설정 저장됨');
+                SNW.ToastUtil.success(SNW.I18n.t('simulation.saveSuccess'));
             } catch(e) { SNW.ErrorHandler.handle(e, 'sim.save'); }
         }
     };

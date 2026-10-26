@@ -42,12 +42,16 @@ SNW.Page = SNW.Page || {};
         _renderList() {
             const listSlot = this.el.querySelector('[data-slot="list"]');
             if (!listSlot) return;
-            listSlot.innerHTML = '<div class="snw-toolbar"><button type="button" class="snw-btn snw-btn-primary" data-action="add-schedule">스케줄 추가</button></div>';
+            const tAdd = SNW.I18n ? SNW.I18n.t('schedule.add') : '스케줄 추가';
+            const tSegment = SNW.I18n ? SNW.I18n.t('scheduler.segment') : '세그먼트';
+            const dayLabels = ['days.mon', 'days.tue', 'days.wed', 'days.thu', 'days.fri', 'days.sat', 'days.sun'].map(k => SNW.I18n ? SNW.I18n.t(k) : k);
+
+            listSlot.innerHTML = `<div class="snw-toolbar"><button type="button" class="snw-btn snw-btn-primary" data-action="add-schedule">${tAdd}</button></div>`;
             const wrap = document.createElement('div');
             wrap.className = 'snw-schedule-list';
             
             this._schedules.forEach(s => {
-                const daysStr = s.period.days.map((on, i) => on ? ['월', '화', '수', '목', '금', '토', '일'][i] : '·').join('');
+                const daysStr = s.period.days.map((on, i) => on ? dayLabels[i] : '·').join('');
                 const segStr = (s.segments || []).map(sg => `[${sg.mode}] ${sg.onMinutes}m/${sg.offMinutes}m`).join(' | ');
                 wrap.appendChild(SNW.DomUtil.html`
                     <div class="snw-schedule-item ${s.enabled ? 'is-enabled' : 'is-disabled'}">
@@ -58,7 +62,7 @@ SNW.Page = SNW.Page || {};
                             <button class="snw-btn-icon" data-action="del-schedule" data-id="${s.schId}">🗑</button>
                         </div>
                         <div class="snw-schedule-meta">${daysStr} ${s.period.startTime}~${s.period.endTime} (Repeat: ${s.repeatSegments ? s.repeatCount : 'Off'})</div>
-                        <div class="snw-schedule-details" style="font-size:11px;color:var(--snw-text-dim);margin-top:4px;">세그먼트: ${segStr}</div>
+                        <div class="snw-schedule-details" style="font-size:11px;color:var(--snw-text-dim);margin-top:4px;">${tSegment}: ${segStr}</div>
                     </div>`);
             });
             listSlot.appendChild(wrap);
@@ -72,66 +76,60 @@ SNW.Page = SNW.Page || {};
             const s = target || { schId: 0, schNo: (this._schedules.reduce((m, s) => Math.max(m, s.schNo || 0), 0) + 10), name: 'New Schedule', enabled: true, repeatSegments: true, repeatCount: 1, period: { enabled: true, days: [1, 1, 1, 1, 1, 1, 1], startTime: '08:00', endTime: '20:00' }, segments: [{ segNo: 10, onMinutes: 20, offMinutes: 10, mode: 'PRESET', presetCode: 'OCEAN', styleCode: 'BALANCE', adjust: {}, fixedSpeed: 0 }], autoOff: { timer: { enabled: false, minutes: 0 }, offTime: { enabled: false, time: '00:00' }, offTemp: { enabled: false, temp: 0 } }, motion: { pir: { enabled: false, holdSec: 0 } } };
             
             const content = document.createElement('div');
-            content.innerHTML = `
-                <div class="snw-form">
-                    <div class="snw-form-row"><label>이름</label><input type="text" id="sch-name" value="${s.name}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;">시작<input type="time" id="sch-start" value="${s.period.startTime}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
-                        <label style="flex:1;">종료<input type="time" id="sch-end" value="${s.period.endTime}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
-                    </div>
-                    <div class="snw-form-row"><label>요일</label><div id="sch-days" style="display:flex;gap:4px;">`;
-            ['월', '화', '수', '목', '금', '토', '일'].forEach((d, i) => {
-                content.querySelector; // (placeholder)
-            });
-            // 동적 생성이 복잡하므로 위 코드를 아래 문자열로 대체합니다.
-            let daysHtml = `<div class="snw-form-row"><label>요일</label><div id="sch-days" style="display:flex;gap:4px;">`;
-            ['월', '화', '수', '목', '금', '토', '일'].forEach((d, i) => {
+            const tName = SNW.I18n ? SNW.I18n.t('schedule.name') : '이름';
+            const tStart = SNW.I18n ? SNW.I18n.t('schedule.startTime') : '시작';
+            const tEnd = SNW.I18n ? SNW.I18n.t('schedule.endTime') : '종료';
+            const tDay = SNW.I18n ? SNW.I18n.t('scheduler.day') : '요일';
+            const dayLabels = ['days.mon', 'days.tue', 'days.wed', 'days.thu', 'days.fri', 'days.sat', 'days.sun'].map(k => SNW.I18n ? SNW.I18n.t(k) : k);
+
+            let daysHtml = `<div class="snw-form-row"><label>${tDay}</label><div id="sch-days" style="display:flex;gap:4px;">`;
+            dayLabels.forEach((d, i) => {
                 daysHtml += `<label style="font-size:12px;"><input type="checkbox" data-day="${i}" ${s.period.days[i] ? 'checked' : ''}> ${d}</label>`;
             });
             daysHtml += `</div></div>`;
-            
+
             content.innerHTML = `
                 <div class="snw-form">
-                    <div class="snw-form-row"><label>이름</label><input type="text" id="sch-name" value="${s.name}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>${tName}</label><input type="text" id="sch-name" value="${s.name}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;">시작<input type="time" id="sch-start" value="${s.period.startTime}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
-                        <label style="flex:1;">종료<input type="time" id="sch-end" value="${s.period.endTime}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                        <label style="flex:1;">${tStart}<input type="time" id="sch-start" value="${s.period.startTime}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                        <label style="flex:1;">${tEnd}<input type="time" id="sch-end" value="${s.period.endTime}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
                     </div>
                     ${daysHtml}
                     <div class="snw-form-row" style="display:flex;gap:8px;margin-top:8px;">
-                        <label style="flex:1;font-size:12px;">세그먼트 반복
+                        <label style="flex:1;font-size:12px;">${SNW.I18n ? SNW.I18n.t('schedule.segmentRepeat') : '세그먼트 반복'}
                             <input type="checkbox" id="sch-repeat" ${s.repeatSegments ? 'checked' : ''}>
                         </label>
-                        <label style="flex:1;font-size:12px;">반복 횟수 (0=무한)
+                        <label style="flex:1;font-size:12px;">${SNW.I18n ? SNW.I18n.t('schedule.repeatCount') : '반복 횟수 (0=무한)'}
                             <input type="number" id="sch-repeat-count" value="${s.repeatCount}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                         </label>
                     </div>
                     
-                    <h3 style="margin-top:12px;font-size:14px;">세그먼트 (구간별 제어)</h3>
+                    <h3 style="margin-top:12px;font-size:14px;">${SNW.I18n ? SNW.I18n.t('schedule.segmentsTitle') : '세그먼트 (구간별 제어)'}</h3>
                     <div id="sch-segs" style="display:flex;flex-direction:column;gap:8px;"></div>
-                    <button type="button" class="snw-btn" id="btn-add-seg" style="margin-top:8px;">+ 세그먼트 추가</button>
+                    <button type="button" class="snw-btn" id="btn-add-seg" style="margin-top:8px;">${SNW.I18n ? SNW.I18n.t('schedule.addSegmentBtn') : '+ 세그먼트 추가'}</button>
                     
                     <h3 style="margin-top:12px;font-size:14px;">AutoOff & PIR</h3>
                     <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;">타이머(분)<input type="number" id="sch-ao-timer" value="${s.autoOff.timer.minutes}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                        <label style="flex:1;">${SNW.I18n ? SNW.I18n.t('profiles.autoOffTimer') : '타이머(분)'}<input type="number" id="sch-ao-timer" value="${s.autoOff.timer.minutes}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
                     </div>
                     <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">예약 종료
+                        <label style="flex:1;font-size:12px;">${SNW.I18n ? SNW.I18n.t('scheduler.scheduledOff') : '예약 종료'}
                             <input type="checkbox" id="sch-ao-offtime-en" ${s.autoOff.offTime.enabled ? 'checked' : ''}>
                         </label>
-                        <label style="flex:1;">종료 시각<input type="time" id="sch-ao-offtime" value="${s.autoOff.offTime.time || '00:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                        <label style="flex:1;">${tEnd}<input type="time" id="sch-ao-offtime" value="${s.autoOff.offTime.time || '00:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
                     </div>
                     <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">온도 종료
+                        <label style="flex:1;font-size:12px;">${SNW.I18n ? SNW.I18n.t('scheduler.tempOff') : '온도 종료'}
                             <input type="checkbox" id="sch-ao-offtemp-en" ${s.autoOff.offTemp.enabled ? 'checked' : ''}>
                         </label>
-                        <label style="flex:1;">온도(°C)<input type="number" step="0.1" id="sch-ao-offtemp" value="${s.autoOff.offTemp.temp || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                        <label style="flex:1;">${SNW.I18n ? SNW.I18n.t('dashboard.temp') : '온도'}(°C)<input type="number" step="0.1" id="sch-ao-offtemp" value="${s.autoOff.offTemp.temp || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
                     </div>
                     <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">PIR 사용
+                        <label style="flex:1;font-size:12px;">${SNW.I18n ? SNW.I18n.t('sensors.pirEnabled') : 'PIR 사용'}
                             <input type="checkbox" id="sch-pir-en" ${s.motion.pir.enabled ? 'checked' : ''}>
                         </label>
-                        <label style="flex:1;">PIR Hold(초)<input type="number" id="sch-pir-hold" value="${s.motion.pir.holdSec}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                        <label style="flex:1;">${SNW.I18n ? SNW.I18n.t('sensors.pirHoldSec') : 'PIR Hold(초)'}<input type="number" id="sch-pir-hold" value="${s.motion.pir.holdSec}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
                     </div>
                 </div>`;
             
@@ -185,7 +183,7 @@ SNW.Page = SNW.Page || {};
                 renderSegs(currentSegs);
             });
             
-            SNW.UI.modal(isEdit ? '스케줄 편집' : '스케줄 추가', content, async () => {
+            SNW.UI.modal(isEdit ? (SNW.I18n ? SNW.I18n.t('common.edit') : '스케줄 편집') : (SNW.I18n ? SNW.I18n.t('schedule.add') : '스케줄 추가'), content, async () => {
                 const days = Array.from(content.querySelectorAll('[data-day]')).map(cb => cb.checked ? 1 : 0);
                 const newSegs = [];
                 segContainer.querySelectorAll('.seg-mode').forEach((modeEl, idx) => {
@@ -224,7 +222,7 @@ SNW.Page = SNW.Page || {};
                     if (isEdit) await SNW.Api.updateSchedule(s.schId, body);
                     else await SNW.Api.addSchedule(body);
                     await SNW.Api.saveConfig();
-                    SNW.ToastUtil.success('저장되었습니다.');
+                    SNW.ToastUtil.success(SNW.I18n ? SNW.I18n.t('msg.saveSuccess') : '저장되었습니다.');
                     await this._load();
                     return true;
                 } catch (e) { SNW.ErrorHandler.handle(e, 'schedule.save'); return false; }
@@ -232,7 +230,7 @@ SNW.Page = SNW.Page || {};
         }
         
         async _onDelete(id) {
-            if (!confirm('삭제하시겠습니까?')) return;
+            if (!confirm(SNW.I18n ? SNW.I18n.t('msg.deleteConfirm') : '삭제하시겠습니까?')) return;
             try { await SNW.Api.deleteSchedule(id);
                 await SNW.Api.saveConfig();
                 await this._load(); } catch (e) {}

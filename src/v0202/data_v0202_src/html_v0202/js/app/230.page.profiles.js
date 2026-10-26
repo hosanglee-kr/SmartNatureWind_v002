@@ -47,7 +47,10 @@ SNW.Page = SNW.Page || {};
         _renderList() {
             const listSlot = this.el.querySelector('[data-slot="list"]');
             if (!listSlot) return;
-            listSlot.innerHTML = '<div class="snw-toolbar"><button type="button" class="snw-btn snw-btn-primary" data-action="add-profile">프로필 추가</button></div>';
+            const tAdd = SNW.I18n ? SNW.I18n.t('profiles.add') : '프로필 추가';
+            const tStart = SNW.I18n ? SNW.I18n.t('common.start') : '시작';
+
+            listSlot.innerHTML = `<div class="snw-toolbar"><button type="button" class="snw-btn snw-btn-primary" data-action="add-profile">${tAdd}</button></div>`;
             const wrap = document.createElement('div');
             wrap.className = 'snw-profile-list';
             
@@ -61,7 +64,7 @@ SNW.Page = SNW.Page || {};
                             <button class="snw-btn-icon" data-action="del-profile" data-id="${p.profileId}">🗑</button>
                         </div>
                         <div class="snw-profile-actions" style="margin-top:8px;">
-                            <button class="snw-btn snw-btn-primary" data-action="start-profile" data-no="${p.profileNo}" ${!p.enabled ? 'disabled' : ''}>▶ 시작</button>
+                            <button class="snw-btn snw-btn-primary" data-action="start-profile" data-no="${p.profileNo}" ${!p.enabled ? 'disabled' : ''}>▶ ${tStart}</button>
                         </div>
                     </div>`);
             });
@@ -76,49 +79,53 @@ SNW.Page = SNW.Page || {};
             const p = target || { profileId: 0, profileNo: this._profiles.length > 0 ? Math.max(...this._profiles.map(x => x.profileNo)) + 10 : 10, name: 'New Profile', enabled: true, repeatSegments: false, repeatCount: 0, segments: [{ segNo: 10, onMinutes: 20, offMinutes: 0, mode: 'PRESET', presetCode: 'OCEAN', styleCode: 'BALANCE', adjust: {}, fixedSpeed: 0 }], autoOff: { timer: { enabled: false, minutes: 0 }, offTime: { enabled: false, time: '00:00' }, offTemp: { enabled: false, temp: 0 } }, motion: { pir: { enabled: false, holdSec: 0 } } };
             
             const content = document.createElement('div');
+            const tName = SNW.I18n ? SNW.I18n.t('profiles.name') : '이름';
+            const tNo = SNW.I18n ? SNW.I18n.t('profiles.no') : '번호 (No)';
+            const tEnabled = SNW.I18n ? SNW.I18n.t('profiles.enabled') : '활성화 여부';
+
             content.innerHTML = `
                 <div class="snw-form">
-                    <div class="snw-form-row"><label>이름</label><input type="text" id="prof-name" value="${p.name}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
+                    <div class="snw-form-row"><label>${tName}</label><input type="text" id="prof-name" value="${p.name}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></div>
                     <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;">번호 (No)<input type="number" id="prof-no" value="${p.profileNo}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
-                        <label style="flex:1;font-size:12px;">활성화 여부
+                        <label style="flex:1;">${tNo}<input type="number" id="prof-no" value="${p.profileNo}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                        <label style="flex:1;font-size:12px;">${tEnabled}
                             <input type="checkbox" id="prof-enabled" ${p.enabled ? 'checked' : ''}>
                         </label>
                     </div>
                     <div class="snw-form-row" style="display:flex;gap:8px;margin-top:8px;">
-                        <label style="flex:1;font-size:12px;">세그먼트 반복
+                        <label style="flex:1;font-size:12px;">${SNW.I18n ? SNW.I18n.t('schedule.segmentRepeat') : '세그먼트 반복'}
                             <input type="checkbox" id="prof-repeat" ${p.repeatSegments ? 'checked' : ''}>
                         </label>
-                        <label style="flex:1;font-size:12px;">반복 횟수 (0=무한)
+                        <label style="flex:1;font-size:12px;">${SNW.I18n ? SNW.I18n.t('schedule.repeatCount') : '반복 횟수 (0=무한)'}
                             <input type="number" id="prof-repeat-count" value="${p.repeatCount}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                         </label>
                     </div>
                     
-                    <h3 style="margin-top:12px;font-size:14px;">세그먼트 (구간별 제어)</h3>
+                    <h3 style="margin-top:12px;font-size:14px;">${SNW.I18n ? SNW.I18n.t('profiles.segmentsTitle') : '세그먼트 (구간별 제어)'}</h3>
                     <div id="prof-segs" style="display:flex;flex-direction:column;gap:8px;"></div>
-                    <button type="button" class="snw-btn" id="btn-add-prof-seg" style="margin-top:8px;">+ 세그먼트 추가</button>
+                    <button type="button" class="snw-btn" id="btn-add-prof-seg" style="margin-top:8px;">${SNW.I18n ? SNW.I18n.t('profiles.addSegmentBtn') : '+ 세그먼트 추가'}</button>
 
                     <h3 style="margin-top:12px;font-size:14px;">AutoOff & PIR</h3>
                     <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;">타이머(분)<input type="number" id="prof-ao-timer" value="${p.autoOff.timer.minutes}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                        <label style="flex:1;">${SNW.I18n ? SNW.I18n.t('profiles.autoOffTimer') : '타이머(분)'}<input type="number" id="prof-ao-timer" value="${p.autoOff.timer.minutes}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
                     </div>
                     <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">예약 종료
+                        <label style="flex:1;font-size:12px;">${SNW.I18n ? SNW.I18n.t('scheduler.scheduledOff') : '예약 종료'}
                             <input type="checkbox" id="prof-ao-offtime-en" ${p.autoOff.offTime.enabled ? 'checked' : ''}>
                         </label>
-                        <label style="flex:1;">종료 시각<input type="time" id="prof-ao-offtime" value="${p.autoOff.offTime.time || '00:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                        <label style="flex:1;">${SNW.I18n ? SNW.I18n.t('schedule.endTime') : '종료 시각'}<input type="time" id="prof-ao-offtime" value="${p.autoOff.offTime.time || '00:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
                     </div>
                     <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">온도 종료
+                        <label style="flex:1;font-size:12px;">${SNW.I18n ? SNW.I18n.t('scheduler.tempOff') : '온도 종료'}
                             <input type="checkbox" id="prof-ao-offtemp-en" ${p.autoOff.offTemp.enabled ? 'checked' : ''}>
                         </label>
-                        <label style="flex:1;">온도(°C)<input type="number" step="0.1" id="prof-ao-offtemp" value="${p.autoOff.offTemp.temp || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                        <label style="flex:1;">${SNW.I18n ? SNW.I18n.t('dashboard.temp') : '온도'}(°C)<input type="number" step="0.1" id="prof-ao-offtemp" value="${p.autoOff.offTemp.temp || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
                     </div>
                     <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">PIR 사용
+                        <label style="flex:1;font-size:12px;">${SNW.I18n ? SNW.I18n.t('sensors.pirEnabled') : 'PIR 사용'}
                             <input type="checkbox" id="prof-pir-en" ${p.motion.pir.enabled ? 'checked' : ''}>
                         </label>
-                        <label style="flex:1;">PIR Hold(초)<input type="number" id="prof-pir-hold" value="${p.motion.pir.holdSec}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
+                        <label style="flex:1;">${SNW.I18n ? SNW.I18n.t('sensors.pirHoldSec') : 'PIR Hold(초)'}<input type="number" id="prof-pir-hold" value="${p.motion.pir.holdSec}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"></label>
                     </div>
                 </div>`;
             
@@ -130,7 +137,7 @@ SNW.Page = SNW.Page || {};
                     segDiv.style.cssText = 'padding:8px;border:1px solid var(--snw-border);border-radius:4px;';
                     segDiv.innerHTML = `
                         <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-                            <b style="font-size:12px;">세그먼트 ${idx+1}</b>
+                            <b style="font-size:12px;">${SNW.I18n ? SNW.I18n.t('scheduler.segment') : '세그먼트'} ${idx+1}</b>
                             <button type="button" class="snw-btn-icon" data-remove-seg="${idx}">🗑</button>
                         </div>
                         <div style="display:flex;gap:4px;margin-bottom:4px;">
@@ -174,7 +181,7 @@ SNW.Page = SNW.Page || {};
                 renderSegs(currentSegs);
             });
             
-            SNW.UI.modal(isEdit ? '프로필 편집' : '프로필 추가', content, async () => {
+            SNW.UI.modal(isEdit ? (SNW.I18n ? SNW.I18n.t('common.edit') : '프로필 편집') : (SNW.I18n ? SNW.I18n.t('profiles.add') : '프로필 추가'), content, async () => {
                 const newSegs = [];
                 segContainer.querySelectorAll('.seg-mode').forEach((modeEl, idx) => {
                     const on = Number(segContainer.querySelectorAll('.seg-on')[idx].value);
@@ -211,7 +218,7 @@ SNW.Page = SNW.Page || {};
                     if (isEdit) await SNW.Api.updateProfile(p.profileId, body);
                     else await SNW.Api.addProfile(body);
                     await SNW.Api.saveConfig();
-                    SNW.ToastUtil.success('저장되었습니다.');
+                    SNW.ToastUtil.success(SNW.I18n ? SNW.I18n.t('msg.saveSuccess') : '저장되었습니다.');
                     await this._load();
                     return true;
                 } catch (e) { SNW.ErrorHandler.handle(e, 'profile.save'); return false; }
@@ -219,7 +226,7 @@ SNW.Page = SNW.Page || {};
         }
         
         async _onDelete(id) {
-            if (!confirm('삭제하시겠습니까?')) return;
+            if (!confirm(SNW.I18n ? SNW.I18n.t('msg.deleteConfirm') : '삭제하시겠습니까?')) return;
             try {
                 await SNW.Api.deleteProfile(id);
                 await SNW.Api.saveConfig();
@@ -229,7 +236,7 @@ SNW.Page = SNW.Page || {};
         async _onStart(profileNo) {
             try {
                 await SNW.Api.selectProfile(profileNo);
-                SNW.ToastUtil.success('프로필 모드 시작됨');
+                SNW.ToastUtil.success(SNW.I18n ? SNW.I18n.t('dashboard.modeSwitchedProfile') : '프로필 모드 시작됨');
             } catch (e) {}
         }
     };

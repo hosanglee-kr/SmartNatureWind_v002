@@ -83,7 +83,7 @@ SNW.Page = SNW.Page || {};
             this.components.gauge = SNW.UI.gauge(q('[data-slot="gauge"]'));
             this.components.sensors = SNW.UI.sensorCards(q('[data-slot="sensors"]'));
             this.components.toggle = SNW.UI.toggle({ root: q('[data-slot="power"]'), on: false, onToggle: next => this._onPowerToggle(next) });
-            this.components.slider = SNW.UI.slider({ root: q('[data-slot="intensity"]'), min: 0, max: 100, value: SNW.CFG.SIM_DEFAULT.intensity, label: '강도', unit: '%', debounceMs: SNW.C.DEBOUNCE_MS.SLIDER, onChange: v => this._onIntensityChange(v) });
+            this.components.slider = SNW.UI.slider({ root: q('[data-slot="intensity"]'), min: 0, max: 100, value: SNW.CFG.SIM_DEFAULT.intensity, label: SNW.I18n ? SNW.I18n.t('dashboard.intensityLabel') : '강도', unit: '%', debounceMs: SNW.C.DEBOUNCE_MS.SLIDER, onChange: v => this._onIntensityChange(v) });
             this.components.presets = SNW.UI.presetGrid({ root: q('[data-slot="presets"]'), items: [], selected: '', onSelect: code => this._onPresetSelect(code) });
         }
         
@@ -98,7 +98,9 @@ SNW.Page = SNW.Page || {};
                 
                 // UI 낙관적 업데이트
                 const modeEl = this.el.querySelector('[data-slot="current-mode-text"]');
-                if (modeEl) modeEl.textContent = isProfileMode ? '프로필 모드 (수동)' : '스케줄 모드 (자동)';
+                const tSchedule = SNW.I18n ? SNW.I18n.t('dashboard.modeScheduleShort') : '스케줄 모드 (자동)';
+                const tProfile = SNW.I18n ? SNW.I18n.t('dashboard.modeProfileShort') : '프로필 모드 (수동)';
+                if (modeEl) modeEl.textContent = isProfileMode ? tProfile : tSchedule;
                 switchEl.checked = isProfileMode;
                 
                 try {
@@ -108,12 +110,12 @@ SNW.Page = SNW.Page || {};
                     } else {
                         // 스케줄 모드: 현재 프로필 정지
                         await SNW.Api.stopProfile();
-                        SNW.ToastUtil.success('스케줄 자동 모드로 전환되었습니다.');
+                        SNW.ToastUtil.success(SNW.I18n ? SNW.I18n.t('dashboard.modeSwitchedSchedule') : '스케줄 자동 모드로 전환되었습니다.');
                     }
                 } catch (err) {
                     // 실패 시 롤백
                     switchEl.checked = !isProfileMode;
-                    if (modeEl) modeEl.textContent = prevMode ? '프로필 모드 (수동)' : '스케줄 모드 (자동)';
+                    if (modeEl) modeEl.textContent = prevMode ? tProfile : tSchedule;
                     SNW.ErrorHandler.handle(err, 'dashboard.modeSwitch');
                 }
             });
@@ -125,18 +127,19 @@ SNW.Page = SNW.Page || {};
             const profiles = (data && data.userProfiles && data.userProfiles.profiles) || [];
             
             if (profiles.length === 0) {
-                SNW.ToastUtil.warn('등록된 프로필이 없습니다. 프로필 메뉴에서 추가해 주세요.');
+                SNW.ToastUtil.warn(SNW.I18n ? SNW.I18n.t('msg.noProfilesWarn') : '등록된 프로필이 없습니다. 프로필 메뉴에서 추가해 주세요.');
                 throw new Error('No profiles');
             }
             
             const content = document.createElement('div');
             let html = `<div style="max-height:300px; overflow-y:auto;">`;
+            const tStart = SNW.I18n ? SNW.I18n.t('common.start') : '시작';
             profiles.forEach(p => {
                 if (!p.enabled) return;
                 html += `
                     <button type="button" class="snw-btn" style="width:100%; margin-bottom:8px; text-align:left; justify-content:space-between;" data-prof-no="${p.profileNo}">
                         <span>${p.name || '#' + p.profileNo}</span>
-                        <span style="color:var(--snw-primary);">시작 ▶</span>
+                        <span style="color:var(--snw-primary);">${tStart} ▶</span>
                     </button>
                 `;
             });
@@ -144,7 +147,7 @@ SNW.Page = SNW.Page || {};
             content.innerHTML = html;
             
             return new Promise((resolve, reject) => {
-                const modal = SNW.UI.modal('실행할 프로필 선택', content, async () => {
+                const modal = SNW.UI.modal(SNW.I18n ? SNW.I18n.t('dashboard.selectProfileModal') : '실행할 프로필 선택', content, async () => {
                     return false; // 기본 확인 버튼 비활성화 역할 (모달 닫힘 방지)
                 });
                 
@@ -153,7 +156,7 @@ SNW.Page = SNW.Page || {};
                         const no = Number(btn.getAttribute('data-prof-no'));
                         try {
                             await SNW.Api.selectProfile(no);
-                            SNW.ToastUtil.success('프로필 모드로 전환되었습니다.');
+                            SNW.ToastUtil.success(SNW.I18n ? SNW.I18n.t('dashboard.modeSwitchedProfile') : '프로필 모드로 전환되었습니다.');
                             // 모달 닫기
                             const overlay = document.getElementById('snw-modal-overlay');
                             if (overlay) overlay.remove();

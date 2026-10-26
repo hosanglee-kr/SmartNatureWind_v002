@@ -30,18 +30,18 @@ void CL_W10_WebAPI::routeWindProfile() {
             return;
         }
 
-        // [P0-1] async_tcp 스택 보호: WindDict(~1.5KB) static 승격
-        static ST_A20_WindDict_t s_dict;
-        memset(&s_dict, 0, sizeof(s_dict));
+        // [B-9] FS 재로드 → getRootSnapshot (메모리 캐시) 사용
+        //  - 이전: static 공유 버퍼 + 매 요청 LittleFS read(~50-100ms)
+        //         + 동시 요청 race + 다른 GET 라우트와 불일치
+        //  - 이후: 원자 스냅샷 + O(1) 메모리 접근
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
 
         JsonDocument v_doc;
-
-        if (CL_C10_ConfigManager::loadWindDict(s_dict)) {
-            CL_C10_ConfigManager::toJson_WindDict(s_dict, v_doc);
-            sendJson(p_request, v_doc);
-        } else {
-            p_request->send(500, "application/json", "{\"error\":\"load failed\"}");
+        if (v_snap.windDict) {
+            CL_C10_ConfigManager::toJson_WindDict(*v_snap.windDict, v_doc);
         }
+        sendJson(p_request, v_doc);
     });
 
     // POST: 신규 생성

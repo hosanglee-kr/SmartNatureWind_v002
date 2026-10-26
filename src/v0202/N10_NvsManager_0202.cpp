@@ -10,6 +10,8 @@
 
 #include "N10_NvsManager_0202.h"
 #include "A25_Com_Utils_0202.h"
+#include <nvs.h>
+#include <nvs_flash.h>
 
 // ------------------------------------------------------
 // 정적 멤버 정의
@@ -305,20 +307,45 @@ void CL_N10_NvsManager::flush(bool p_force) {
 	if (!s_initialized) return;
 	if (!p_force && !s_dirty.runtime) return;
 
-	s_prefs.putUChar(G_N10_KEY_RUN_MODE,         s_state.runMode);
-	s_prefs.putUChar(G_N10_KEY_RUN_SOURCE,       s_state.runSource);
-	s_prefs.putShort(G_N10_KEY_LAST_SCHEDULE,    s_state.lastScheduleNo);
-	s_prefs.putShort(G_N10_KEY_LAST_PROFILE,     s_state.lastUserProfileNo);
-	s_prefs.putUChar(G_N10_KEY_AUTOOFF_ENABLED,  s_state.autoOffEnabled ? 1 : 0);
-	s_prefs.putULong(G_N10_KEY_AUTOOFF_MINUTES,  s_state.autoOffMinutes);
-	s_prefs.putUChar(G_N10_KEY_OVERRIDE_ENABLED, s_state.overrideEnabled ? 1 : 0);
-	s_prefs.putUChar(G_N10_KEY_OVERRIDE_MODE,    s_state.overrideMode);
-	s_prefs.putFloat(G_N10_KEY_OVERRIDE_FIXED,   s_state.overrideFixedPercent);
-	s_prefs.putString(G_N10_KEY_OVERRIDE_PRESET, s_state.overridePresetCode);
-	s_prefs.putString(G_N10_KEY_OVERRIDE_STYLE,  s_state.overrideStyleCode);
+    // ======================================================
+    // [B-1] 단일 nvs_commit: 11회 → 1회 (100ms → ~10ms)
+    //  - 이전: s_prefs.putXxx() × 11 = 개별 commit 11회
+    //  - 이후: nvs_set_* × 11 + nvs_commit × 1
+    //  - 근거: BUDGET §2 N10::tick < 100μs (flush 시 200~500μs) 목표 준수
+    // [B-7] nvs_set_* / nvs_commit 반환값 검사 → 실패 시 dirty 유지 재시도
+    // ======================================================
+    nvs_handle_t v_handle;
+    esp_err_t    v_openErr = nvs_open(G_N10_NS_RUNTIME, NVS_READWRITE, &v_handle);
+    if (v_openErr != ESP_OK) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[N10] nvs_open failed: %d", (int)v_openErr);
+        return;   // dirty 유지 → 다음 tick 재시도
+    }
+
+    bool v_setFail = false;
+    if (nvs_set_u8  (v_handle, G_N10_KEY_RUN_MODE,         s_state.runMode)                                 != ESP_OK) v_setFail = true;
+    if (nvs_set_u8  (v_handle, G_N10_KEY_RUN_SOURCE,       s_state.runSource)                               != ESP_OK) v_setFail = true;
+    if (nvs_set_i16 (v_handle, G_N10_KEY_LAST_SCHEDULE,    s_state.lastScheduleNo)                          != ESP_OK) v_setFail = true;
+    if (nvs_set_i16 (v_handle, G_N10_KEY_LAST_PROFILE,     s_state.lastUserProfileNo)                       != ESP_OK) v_setFail = true;
+    if (nvs_set_u8  (v_handle, G_N10_KEY_AUTOOFF_ENABLED,  s_state.autoOffEnabled ? 1 : 0)                  != ESP_OK) v_setFail = true;
+    if (nvs_set_u32 (v_handle, G_N10_KEY_AUTOOFF_MINUTES,  s_state.autoOffMinutes)                          != ESP_OK) v_setFail = true;
+    if (nvs_set_u8  (v_handle, G_N10_KEY_OVERRIDE_ENABLED, s_state.overrideEnabled ? 1 : 0)                 != ESP_OK) v_setFail = true;
+    if (nvs_set_u8  (v_handle, G_N10_KEY_OVERRIDE_MODE,    s_state.overrideMode)                            != ESP_OK) v_setFail = true;
+    if (nvs_set_blob(v_handle, G_N10_KEY_OVERRIDE_FIXED,   &s_state.overrideFixedPercent, sizeof(float))    != ESP_OK) v_setFail = true;
+    if (nvs_set_str (v_handle, G_N10_KEY_OVERRIDE_PRESET,  s_state.overridePresetCode)                      != ESP_OK) v_setFail = true;
+    if (nvs_set_str (v_handle, G_N10_KEY_OVERRIDE_STYLE,   s_state.overrideStyleCode)                       != ESP_OK) v_setFail = true;
+
+    esp_err_t v_commitErr = nvs_commit(v_handle);
+    nvs_close(v_handle);
+
+    if (v_setFail || v_commitErr != ESP_OK) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                           "[N10] NVS flush failed (set=%d commit=%d)",
+                           v_setFail ? 1 : 0, (int)v_commitErr);
+        return;   // dirty 유지 → 다음 tick 재시도
+    }
 
 	s_dirty.runtime = false;
 	s_lastSaveMs	= millis();
 
-	CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[N10] Runtime flushed to NVS");
+	CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[N10] Runtime flushed (single commit)");
 }

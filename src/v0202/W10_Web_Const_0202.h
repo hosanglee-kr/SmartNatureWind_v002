@@ -117,13 +117,9 @@ constexpr const char* WS_API_SUMMARY = WS_API_BASE "/summary";
 // --------------------------------------------------
 // 10. 파일 시스템 경로 (LittleFS Path)
 // --------------------------------------------------
-constexpr const char* PATH_STATIC_HTML       = "/html_v3";
-constexpr const char* PATH_STATIC_INDEX_HTML = "/P010_main_0202.html";
+constexpr const char* PATH_STATIC_HTML       = "/html_v0202";
+constexpr const char* PATH_STATIC_INDEX_HTML = "/index.html";
 constexpr const char* PATH_STATIC_JSON       = "/json";
-
-constexpr const char* PATH_STATIC_HTML_V0200       = "/html_v0202";
-constexpr const char* PATH_STATIC_INDEX_HTML_V0200 = "/index.html";
-constexpr const char* PATH_STATIC_JSON_V0200       = "/json";
 
 } // namespace W10_Const
 

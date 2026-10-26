@@ -74,15 +74,10 @@ String CL_W10_WebAPI::getUploadPath(const String& p_filename) {
         v_ext.toLowerCase();
 
         if (v_ext == "json") {
-            v_folderPath = W10_Const::PATH_STATIC_JSON_V0200; // "/json"
+            v_folderPath = W10_Const::PATH_STATIC_JSON; // "/json"
         } else if (v_ext == "html" || v_ext == "js" || v_ext == "css" ||
                    v_ext == "svg"  || v_ext == "png" || v_ext == "ico" || v_ext == "woff2") {
-            // 로직 구분 가능 시(파일명/경로에 v3 포함) 각각 적용, 불가 시는 V0200 적용
-            if (v_safeName.indexOf("v3") >= 0) {
-                v_folderPath = W10_Const::PATH_STATIC_HTML;       // "/html_v3"
-            } else {
-                v_folderPath = W10_Const::PATH_STATIC_HTML_V0200; // "/html_v0202"
-            }
+            v_folderPath = W10_Const::PATH_STATIC_HTML; // "/html_v0202"
         } else {
             v_folderPath = ""; // 기타 확장자는 루트
         }
@@ -223,12 +218,17 @@ void CL_W10_WebAPI::routeUpdate() {
     s_server->on(
         W10_Const::HTTP_API_FW_UPDATE, // "/update",
         HTTP_POST,
+        // ─── 완료 핸들러 ───
         [](AsyncWebServerRequest* p_request) {
             if (!checkApiKey(p_request)) {
+                // [B-12] 인증 실패 → 잔존 세션 abort
+                if (Update.isRunning()) Update.abort();
                 p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
                 return;
             }
             if (Update.hasError()) {
+                // [B-12] 실패한 세션 정리
+                Update.abort();
                 String v_errMsg = "{\"ota\":\"fail\", \"error\":\"" + String(Update.errorString()) + "\"}";
                 CL_W10_WebAPI::sendText(p_request, v_errMsg, 500);
             } else {
@@ -237,24 +237,54 @@ void CL_W10_WebAPI::routeUpdate() {
                 ESP.restart();
             }
         },
+        // ─── 청크 핸들러 ───
         [](AsyncWebServerRequest* p_request, const String&, size_t p_index, uint8_t* p_data, size_t p_len, bool p_final) {
-            if (!checkApiKey(p_request)) return;
+            if (!checkApiKey(p_request)) {
+                // [B-12] 인증 실패 → 세션 abort
+                if (Update.isRunning()) Update.abort();
+                return;
+            }
 
+            // ─── 첫 청크: 세션 시작 ───
             if (p_index == 0) {
+                // [B-12] 이전 세션 잔존 시 abort 후 재시작
+                //  - 이전: Update.begin() 실패 시 이후 write 무시 → 반쪽 파티션 리스크
+                if (Update.isRunning()) {
+                    CL_D10_Logger::log(EN_L10_LOG_WARN, "[W10] OTA: aborting stale session before new upload");
+                    Update.abort();
+                }
                 if (!Update.begin(UPDATE_SIZE_UNKNOWN)) {
                     CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] OTA begin failed: %s", Update.errorString());
+                    return;
                 }
             }
 
-            if (p_len > 0) {
-                Update.write(p_data, p_len);
+            // [B-12] 세션이 이미 오류 상태면 즉시 abort
+            if (Update.hasError()) {
+                Update.abort();
+                return;
             }
 
+            // ─── 쓰기 ───
+            if (p_len > 0) {
+                // [B-12] write 반환값 검사
+                size_t v_written = Update.write(p_data, p_len);
+                if (v_written != p_len) {
+                    CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                                       "[W10] OTA write failed (%u/%u): %s",
+                                       (unsigned)v_written, (unsigned)p_len, Update.errorString());
+                    Update.abort();
+                    return;
+                }
+            }
+
+            // ─── 마지막 청크 ───
             if (p_final) {
                 if (Update.end(true)) {
                     CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] OTA finished successfully");
                 } else {
                     CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] OTA end failed: %s", Update.errorString());
+                    Update.abort();
                 }
             }
         });

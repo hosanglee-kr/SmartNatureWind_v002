@@ -98,6 +98,45 @@ bool CL_W10_WebAPI::W10_loadPagesJson(JsonDocument& p_doc, uint16_t& p_page_coun
 }
 
 // ======================================================
+// [B-5] Accept-Encoding 파서 (RFC 7231 q-value 지원)
+//  - 이전: indexOf("gzip") → "gzip;q=0" 오탐지
+//  - 이후: 토큰별 파싱 + q 값 검사 (q=0은 거부, 없으면 1.0)
+// ======================================================
+static bool W10_acceptsGzip(AsyncWebServerRequest* r) {
+    if (!r || !r->hasHeader("Accept-Encoding")) return false;
+
+    String v_ae = r->getHeader("Accept-Encoding")->value();
+    v_ae.toLowerCase();
+
+    int v_start = 0;
+    while (v_start < (int)v_ae.length()) {
+        int v_end = v_ae.indexOf(',', v_start);
+        if (v_end < 0) v_end = v_ae.length();
+
+        String v_token = v_ae.substring(v_start, v_end);
+        v_token.trim();
+
+        // 토큰은 "<coding>" 또는 "<coding>;q=<float>"
+        String v_coding = v_token;
+        int    v_semi   = v_token.indexOf(';');
+        if (v_semi >= 0) v_coding = v_token.substring(0, v_semi);
+        v_coding.trim();
+
+        // gzip 또는 * 매칭
+        if (v_coding == "gzip" || v_coding == "*") {
+            // q 값 확인
+            int v_qpos = v_token.indexOf("q=");
+            if (v_qpos < 0) return true;   // q 없으면 기본 1.0 → 허용
+            float v_qval = v_token.substring(v_qpos + 2).toFloat();
+            return v_qval > 0.0f;          // q=0 → 거부
+        }
+
+        v_start = v_end + 1;
+    }
+    return false;
+}
+
+// ======================================================
 // [D-2] W10_registerStaticRoute: .gz 경로 등록 시 사전 계산
 // ======================================================
 void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_file, const char* p_mime) {
@@ -117,13 +156,11 @@ void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_fil
     }
 
     s_server->on(v_uri.get(), HTTP_GET, [v_file, v_gz_file, v_mime](AsyncWebServerRequest* r) {
-        // [G-1] Accept-Encoding 헤더 검사
-        bool v_acceptsGzip =
-            r->hasHeader("Accept-Encoding") && r->getHeader("Accept-Encoding")->value().indexOf("gzip") >= 0;
-
-        if (v_acceptsGzip && LittleFS.exists(v_gz_file.get())) {
+        // [B-5] RFC 7231 준수 gzip 판정
+        if (W10_acceptsGzip(r) && LittleFS.exists(v_gz_file.get())) {
             auto* v_resp = r->beginResponse(LittleFS, v_gz_file.get(), v_mime.get());
             v_resp->addHeader("Content-Encoding", "gzip");
+            v_resp->addHeader("Vary", "Accept-Encoding");
             CL_W10_WebAPI::_applyHeaders(v_resp, false);
             r->send(v_resp);
             return;
@@ -131,6 +168,7 @@ void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_fil
 
         if (LittleFS.exists(v_file.get())) {
             auto* v_resp = r->beginResponse(LittleFS, v_file.get(), v_mime.get());
+            v_resp->addHeader("Vary", "Accept-Encoding");
             CL_W10_WebAPI::_applyHeaders(v_resp, false);
             r->send(v_resp);
             return;
@@ -150,8 +188,6 @@ void CL_W10_WebAPI::W10_registerGzipServe() {
     // v0201 대응
     s_server->on("^\\/(html_v0202)\\/.+", HTTP_GET, [](AsyncWebServerRequest* r) {
         String v_url = r->url();
-        bool   v_acceptsGzip =
-            r->hasHeader("Accept-Encoding") && r->getHeader("Accept-Encoding")->value().indexOf("gzip") >= 0;
         char v_gzPath[192];
         int  v_n = snprintf(v_gzPath, sizeof(v_gzPath), "%s.gz", v_url.c_str());
         if (v_n < 0 || v_n >= (int)sizeof(v_gzPath)) {
@@ -159,48 +195,19 @@ void CL_W10_WebAPI::W10_registerGzipServe() {
             return;
         }
         const char* v_mime = W10_guessMime(v_url.c_str());
-        if (v_acceptsGzip && LittleFS.exists(v_gzPath)) {
+
+        // [B-5] RFC 7231 준수
+        if (W10_acceptsGzip(r) && LittleFS.exists(v_gzPath)) {
             auto* v_resp = r->beginResponse(LittleFS, v_gzPath, v_mime);
             v_resp->addHeader("Content-Encoding", "gzip");
+            v_resp->addHeader("Vary", "Accept-Encoding");
             _applyHeaders(v_resp, false);
             r->send(v_resp);
             return;
         }
         if (LittleFS.exists(v_url)) {
             auto* v_resp = r->beginResponse(LittleFS, v_url, v_mime);
-            _applyHeaders(v_resp, false);
-            r->send(v_resp);
-            return;
-        }
-        r->send(404, "text/plain; charset=utf-8", "not found: " + v_url);
-    });
-
-    s_server->on("^\\/html_v3\\/.+", HTTP_GET, [](AsyncWebServerRequest* r) {
-        // url() 참조 (copy 없음)
-        const String& v_url = r->url();
-
-        bool v_acceptsGzip =
-            r->hasHeader("Accept-Encoding") && r->getHeader("Accept-Encoding")->value().indexOf("gzip") >= 0;
-
-        // 스택 버퍼 (힙 할당 0회)
-        char v_gzPath[128];
-        int  v_n = snprintf(v_gzPath, sizeof(v_gzPath), "%s.gz", v_url.c_str());
-        if (v_n < 0 || v_n >= (int)sizeof(v_gzPath)) {
-            r->send(414, "text/plain; charset=utf-8", "URI too long");
-            return;
-        }
-
-        const char* v_mime = W10_guessMime(v_url.c_str());
-
-        if (v_acceptsGzip && LittleFS.exists(v_gzPath)) {
-            auto* v_resp = r->beginResponse(LittleFS, v_gzPath, v_mime);
-            v_resp->addHeader("Content-Encoding", "gzip");
-            _applyHeaders(v_resp, false);
-            r->send(v_resp);
-            return;
-        }
-        if (LittleFS.exists(v_url)) {
-            auto* v_resp = r->beginResponse(LittleFS, v_url, v_mime);
+            v_resp->addHeader("Vary", "Accept-Encoding");
             _applyHeaders(v_resp, false);
             r->send(v_resp);
             return;
@@ -209,8 +216,7 @@ void CL_W10_WebAPI::W10_registerGzipServe() {
     });
 
     CL_D10_Logger::log(EN_L10_LOG_INFO,
-                       "[W10] Gzip static serve registered (%s/*, %s/*)",
-                       W10_Const::PATH_STATIC_HTML_V0200,
+                       "[W10] Gzip static serve registered (%s/*)",
                        W10_Const::PATH_STATIC_HTML);
 }
 
@@ -360,7 +366,7 @@ void CL_W10_WebAPI::routeStaticAssets() {
         String v_root_path = s_menu_state.main_path;
 
         s_server->on("/", HTTP_GET, [v_root_path](AsyncWebServerRequest* r) {
-            String v_default_html = String(W10_Const::PATH_STATIC_HTML_V0200) + W10_Const::PATH_STATIC_INDEX_HTML_V0200;
+            String v_default_html = String(W10_Const::PATH_STATIC_HTML) + W10_Const::PATH_STATIC_INDEX_HTML;
 
             if (!v_root_path.isEmpty()) {
                 v_default_html = v_root_path.c_str();
@@ -369,15 +375,9 @@ void CL_W10_WebAPI::routeStaticAssets() {
             if (LittleFS.exists(v_default_html) || LittleFS.exists(v_default_html + ".gz")) {
                 r->redirect(v_default_html);
             } else {
-                // v3 폴백 시도
-                String v_fallback_v3 = String(W10_Const::PATH_STATIC_HTML) + "/P010_main_0200.html";
-                if (LittleFS.exists(v_fallback_v3) || LittleFS.exists(v_fallback_v3 + ".gz")) {
-                    r->redirect(v_fallback_v3);
-                } else {
-                    String v_msg = "main page not found: " + v_default_html + "\nCheck cfg_pages JSON and "
-                                 + String(W10_Const::PATH_STATIC_HTML_V0200) + " or " + String(W10_Const::PATH_STATIC_HTML) + " files.";
-                    r->send(404, "text/plain; charset=utf-8", v_msg);
-                }
+                String v_msg = "main page not found: " + v_default_html + "\nCheck cfg_pages JSON and "
+                             + String(W10_Const::PATH_STATIC_HTML) + " files.";
+                r->send(404, "text/plain; charset=utf-8", v_msg);
             }
         });
     }

@@ -35,9 +35,10 @@
 // ─────────────────────────────────────────────
 #include <LittleFS.h>
 #include <WiFi.h>
-// [E-1] <WiFiMulti.h> 제거 (WF10_WiFiMgr_0202.h가 transitive 포함, A00 자체 사용 없음)
+#include <new>
 #include <esp_task_wdt.h>
 
+#include "A23_Com_ResetCfg_0202.h"
 #include "C10_Config_0202.h"
 #include "D10_Logger_0202.h"
 #include "M10_MotionLogic_0202.h"
@@ -95,23 +96,81 @@ void A00_init() {
     CL_N10_NvsManager::begin();
 
     // ------------------------------------------------------
-    // 3. 필수 섹션 null 방어
-    //  - [E-2] commented factory reset 블록 제거
-    //  - 정책: A00은 부팅 실패만 보고. factoryReset은 사용자 명시 호출
-    //         (POST /api/v001/control/factoryReset 또는 /config/init)
+    // 3. [B-11] 필수 섹션 null 방어 + 부팅 복구 정책
+    //  - 이전: return → 기기 접속 불가 (원격 복구 경로 전무)
+    //  - 이후: in-memory 기본값 할당 → 부팅 계속 → 웹 UI로 사용자 복구 가능
+    //  - 실패 시(할당 불가): recovery AP만 기동 (최후 안전망)
     // ------------------------------------------------------
     if (!g_A20_config_root.system || !g_A20_config_root.wifi) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A00] Config root invalid (system or wifi is null).");
-        return;
+        CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                           "[A00] Config root invalid (system=%p, wifi=%p). Attempting in-memory defaults.",
+                           (void*)g_A20_config_root.system,
+                           (void*)g_A20_config_root.wifi);
+
+        // In-memory 기본값 (파일 쓰기 없음 → 손상 파일 보존 → 사용자 복구 가능)
+        if (!g_A20_config_root.system) {
+            g_A20_config_root.system = new (std::nothrow) ST_A20_SystemConfig_t();
+            if (g_A20_config_root.system) {
+                A20_resetSystemDefault(*g_A20_config_root.system);
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[A00] In-memory system defaults applied.");
+            }
+        }
+        if (!g_A20_config_root.wifi) {
+            g_A20_config_root.wifi = new (std::nothrow) ST_A20_WifiConfig_t();
+            if (g_A20_config_root.wifi) {
+                A20_resetWifiDefault(*g_A20_config_root.wifi);
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[A00] In-memory wifi defaults applied.");
+            }
+        }
+
+        // 할당조차 실패 (심각한 OOM) → recovery AP만 기동
+        if (!g_A20_config_root.system || !g_A20_config_root.wifi) {
+            CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                               "[A00] Recovery defaults allocation failed. Booting recovery AP only.");
+            WiFi.mode(WIFI_AP);
+            WiFi.softAP("NatureWind_Recovery", "2540");
+            return;
+        }
+
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[A00] Boot continuing with in-memory defaults. "
+                           "User can fix via web UI (POST /api/v001/config/init or /system).");
     }
 
     const ST_A20_WifiConfig_t&   v_wifi = *g_A20_config_root.wifi;
     const ST_A20_SystemConfig_t& v_sys  = g_A20_config_root.system ? *g_A20_config_root.system : ST_A20_SystemConfig_t{};
 
-    // LED 객체 생성 (pin, numPixels 전달)
-    static CL_A30_LED s_led(v_sys.hw.led.pin, v_sys.hw.led.numPixels);
+    // ------------------------------------------------------
+    // [B-13] LED 파라미터 유효성 검증
+    //  - 이전: int16_t → uint8_t 암묵적 캐스팅 → 음수 설정 시 GPIO 255
+    //         → Adafruit_NeoPixel 내부 rmtSetupPin 크래시 또는 UB
+    //  - 이후: 유효 범위 검증 + 안전한 기본값
+    // ------------------------------------------------------
+    int16_t v_ledPin = v_sys.hw.led.pin;
+    if (v_ledPin < 0 || v_ledPin > 48) {   // ESP32-S3 GPIO 유효 범위: 0~48
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[A00] Invalid LED pin=%d (range 0~48). Using default 48.",
+                           (int)v_ledPin);
+        v_ledPin = 48;
+    }
+
+    uint16_t v_ledNum = v_sys.hw.led.numPixels;
+    if (v_ledNum == 0) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A00] LED numPixels=0, forcing to 1.");
+        v_ledNum = 1;
+    } else if (v_ledNum > 16) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[A00] LED numPixels=%u too large, clamping to 16.",
+                           (unsigned)v_ledNum);
+        v_ledNum = 16;
+    }
+
+    uint8_t v_ledBright = v_sys.hw.led.defaultBrightness;
+    if (v_ledBright > 255) v_ledBright = 255;   // uint8_t이나 명시 (방어)
+
+    static CL_A30_LED s_led((uint8_t)v_ledPin, v_ledNum);
     g_A00_ledController = &s_led;
-    g_A00_ledController->begin(v_sys.hw.led.defaultBrightness);
+    g_A00_ledController->begin(v_ledBright);
 
     // ------------------------------------------------------
     // 4. Wi-Fi 초기화

@@ -13,7 +13,7 @@
 
 #include "CT10_Ctl_0202.h"
 
-#include "A25_Com_Utils_0202.h"
+#include "A40_Com_Utils_0202.h"
 
 // --------------------------------------------------
 // runCtx snapshot helper (이 파일 전용)

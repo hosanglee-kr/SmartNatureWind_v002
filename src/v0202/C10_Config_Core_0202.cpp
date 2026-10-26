@@ -30,7 +30,7 @@
 
 #include "C10_Config_0202.h"
 
-#include "A25_Com_Utils_0202.h"     // A40_ComFunc / A40_IO / CL_A40_MutexGuard_Semaphore
+#include "A40_Com_Utils_0202.h"     // A40_ComFunc / A40_IO / CL_A40_MutexGuard_Semaphore
 #include "A23_Com_ResetCfg_0202.h"  // A20_resetXxxDefault
 #include "N10_NvsManager_0202.h"    // [F-1] factory reset 시 NVS 런타임 초기화
 

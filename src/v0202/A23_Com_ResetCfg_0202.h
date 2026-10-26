@@ -32,7 +32,7 @@
 #include "A20_Const_Motion_0202.h"
 #include "A20_Const_Sch_0202.h"
 #include "A20_Const_Sys_0202.h"
-#include "A25_Com_Utils_0202.h"
+#include "A40_Com_Utils_0202.h"
 
 // ======================================================
 // 3) 하위 구조체 단위 Reset

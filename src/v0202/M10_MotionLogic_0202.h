@@ -43,7 +43,7 @@
 #include <string.h>
 
 #include "A20_Const_0202.h"
-#include "A25_Com_Utils_0202.h"   // [P1-3] CL_A40_MutexGuard_Semaphore
+#include "A40_Com_Utils_0202.h"   // [P1-3] CL_A40_MutexGuard_Semaphore
 #include "D10_Logger_0202.h"
 
 // ------------------------------------------------------

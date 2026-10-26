@@ -23,7 +23,7 @@
 // [D-5] <vector> 제거 (toChartJson 고정 배열 전환)
 
 #include "A20_Const_0202.h"
-#include "A25_Com_Utils_0202.h"
+#include "A40_Com_Utils_0202.h"
 #include "A22_Com_Lookup_0202.h"
 #include "C10_Config_0202.h"
 #include "D10_Logger_0202.h"

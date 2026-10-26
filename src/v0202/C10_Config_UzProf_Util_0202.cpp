@@ -10,7 +10,7 @@
 
 #include "C10_Config_UzProf_Internal_0202.h"
 
-#include "A25_Com_Utils_0202.h"
+#include "A40_Com_Utils_0202.h"
 #include "A22_Com_Lookup_0202.h"
 #include "A23_Com_ResetCfg_0202.h"
 

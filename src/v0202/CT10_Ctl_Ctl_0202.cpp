@@ -23,7 +23,7 @@
 
 #include "CT10_Ctl_0202.h"
 
-#include "A25_Com_Utils_0202.h"     // A40_ComFunc / CL_A40_MutexGuard_Semaphore
+#include "A40_Com_Utils_0202.h"     // A40_ComFunc / CL_A40_MutexGuard_Semaphore
 #include "N10_NvsManager_0202.h"
 
 // 외부 전역(프로젝트 기존 전역 PWM)

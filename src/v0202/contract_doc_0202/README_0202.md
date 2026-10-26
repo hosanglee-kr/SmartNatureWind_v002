@@ -17,7 +17,7 @@ src/v0202/
 │   ├── STATE_0202.md              # 상태 소유권, FSM, 위임 플래그
 │   ├── FLOW_0202.md               # 부팅/제어/위임 시퀀스
 │   ├── BUDGET_0202.md             # WCET, 스택, 블로킹, 관측성
-│   ├── TEST_PLAN_0202.md          # 회귀 절차 (T-1~T-28)
+│   ├── TEST_PLAN_0202.md          # 회귀 절차 (T-1~T-67, 총 67건)
 │   └── Ref/
 │       └── UI_TERMINOLOGY_0170.md # 웹 UI 한/영 용어집 (참조)
 │
@@ -31,7 +31,7 @@ src/v0202/
 ├── data_src_v0202/                # [레거시 백업] v0202 원본 리소스
 ├── data_v0202/                    # [레거시 백업] v0202 배포 리소스
 │
-└── [C++ 소스군, 0201 접미사]
+└── [C++ 소스군, v0202 접미사]
     ├── main.cpp, A00_Main_0202.* (엔트리)
     ├── A20_Const_*_0202.h (상수/구조체)
     ├── A22_Com_Lookup_0202.h, A23_Com_ResetCfg_0202.h
@@ -69,7 +69,7 @@ src/v0202/
 | `STATE_0202.md` | 상태 변수 단일 Writer, FSM, 위임 플래그 라이프사이클, E-2 분할 상태 소유권 | CONTRACT 준수 |
 | `FLOW_0202.md` | 부팅/제어/Reload/WiFi/시간/PIR/A-2 위임/F-2 헬퍼 시퀀스 | CONTRACT/STATE 준수 |
 | `BUDGET_0202.md` | 태스크 WCET, 스택, 블로킹, 관측성, RAM/Flash 실측, Batch 예산 영향 | SPEC 준수 |
-| `TEST_PLAN_0202.md` | 회귀 절차 (T-1~T-28), 트러블슈팅 매트릭스 | 최신 감사 반영 |
+| `TEST_PLAN_0202.md` | 회귀 절차 (T-1~T-67, 총 67건), 트러블슈팅 매트릭스 | 최신 감사 반영 |
 | `Ref/UI_TERMINOLOGY_0170.md` | 웹 한/영 UI 용어집 (참조) | UI/i18n |
 | `README_0202.md` | 본 문서 (CBD 총괄, 감사 이력, 워크플로, 커밋 도구) | 기준점 |
 
@@ -131,6 +131,37 @@ src/v0202/
 | F | F-5 | 🟡 Mid | profile fall-through | ✅ 명시 IDLE 반환 |
 | F | F-8/F-9 | 🟢 Low | 0.01f/0.33f 하드코딩 | ✅ 상수화 |
 | F | F-10 | 🟢 Low | 분할 시 매크로 파일 스코프 | ✅ Internal 헤더 승격 |
+
+### 3.4 Batch G — 코드 재검토 (P0/P1 이슈)
+
+| ID | 심각도 | 위치 | 요약 | 상태 |
+|---|---|---|---|---|
+| **C-1** | 🔴 Blocker | `main.cpp` | `while(!Serial)` 무한 루프 (USB 미연결 시 setup 정지) | ✅ 3s 타임아웃 |
+| **C-2** | 🔴 Blocker | `200.page.dashboard.js` | 프리셋 그리드 영구 비어있음 (mount 순서) | ✅ `_mountComponents` 선행 |
+| **C-3** | 🔴 High | `M10_MotionLogic_0202.h` | `isActive()` holdSec 이중 적용 (2×연장) | ✅ `_state.pirActive` 단일 판정 |
+| **C-4** | 🔴 High | `W10_Web_Upload_0202.cpp` | 업로드 핸들 누수 (`available()==0` write-only) | ✅ stale close |
+| **C-5** | 🔴 High | `070.router.js` | dispatch 재진입 → watcher/timer 누수 | ✅ `_dispatching` 가드 |
+| **NEW-C1** | 🔴 High | `240.page.settings.js` | `\|\|`로 0값 손실 (pin=0, brightness=0, holdSec=0) | ✅ `nz()` 헬퍼 |
+| **NEW-C2** | 🔴 High | `240.page.settings.js` | `dht.type` XSS (사용자 PATCH 가능) | ✅ `esc()` 적용 |
+| **NEW-U1** | 🟡 Mid | `240.page.settings.js` | API Key 프리필 → DOM 평문 노출 | ✅ placeholder 패턴 |
+| **NEW-U2** | 🟡 Mid | `240.page.settings.js` | API Key 삭제 UI 부재 | ✅ 체크박스 |
+| **NEW-U3** | 🟡 Mid | `240.page.settings.js` | wsChConfig 손상 시 복구 불가 | ✅ 기본 4채널 + baseline |
+| **NEW-U4** | 🟡 Mid | `240.page.settings.js` | 문자열 `"false"` 오판 | ✅ `asBool()` |
+| **B-1** | 🟠 High | `N10_NvsManager_0202.cpp` | flush 11회 commit (100ms 블로킹) | ✅ 단일 `nvs_commit` (10ms) |
+| **B-2** | 🟠 High | `W10_Web_Routes_Config/CRUD/WS_0202.cpp` | async_tcp root 직접 참조 3곳 | ✅ `getRootSnapshot` |
+| **B-3** | 🟠 High | `240.page.settings.js`, `270.page.network.js` | XSS (deviceName/SSID/hostname) | ✅ `esc()` |
+| **B-4** | 🟠 High | `C10_Config_Sys_0202.cpp` | API Key 삭제 불가 (빈 문자열 무시) | ✅ `clearApiKey` 플래그 |
+| **B-5** | 🟠 High | `W10_Web_Static_0202.cpp` | `gzip;q=0` 오탐지 (RFC 7231 위반) | ✅ `W10_acceptsGzip` 파서 |
+| **B-6** | 🟡 Mid | `W10_Web_Routes_System_0202.cpp` | routeMotion POST/PATCH 60줄 중복 | ✅ `_routeMotionPatchBody` |
+| **B-7** | 🟡 Mid | `N10_NvsManager_0202.cpp` | NVS 쓰기 반환값 무시 (조용한 실패) | ✅ 반환값 검사 + 재시도 |
+| **B-8** | 🟡 Mid | `130.ui.form.js` | 로그 필터 `textContent` 오매칭 | ✅ `.snw-log-lv` 정확 비교 |
+| **B-9** | 🟡 Mid | `W10_Web_Routes_CRUD_0202.cpp` | WindProfile GET FS 재로드(100ms) + race | ✅ `getRootSnapshot` |
+| **B-10** | 🟢 Low | `S10_Simul_Core_0202.cpp` | 브로드캐스트용 JsonDocument dead code | ✅ 제거 |
+| **B-11** | 🟠 High | `A00_Main_0202.cpp` | config 손상 시 부팅 중단 → 웹 복구 불가 | ✅ in-memory defaults + Recovery AP |
+| **B-12** | 🟠 High | `W10_Web_Upload_0202.cpp` | OTA 세션 잔존 + write 반환값 무시 | ✅ `Update.abort()` + 반환 검사 |
+| **B-13** | 🟠 High | `A00_Main_0202.cpp` | 음수 LED pin → GPIO 255 크래시 | ✅ 유효성 검증 + 기본값 |
+
+**수정 파일 (17개)**: `main.cpp`, `A20_Const_Const_0202.h`, `M10_MotionLogic_0202.h`, `W10_Web_Upload_0202.cpp`, `070.router.js`, `200.page.dashboard.js`, `W10_Web_Routes_Config_0202.cpp`, `W10_Web_Routes_CRUD_0202.cpp`, `W10_Web_WS_0202.cpp`, `C10_Config_Sys_0202.cpp`, `240.page.settings.js`, `270.page.network.js`, `W10_Web_Routes_System_0202.cpp`, `N10_NvsManager_0202.cpp`, `130.ui.form.js`, `S10_Simul_Core_0202.cpp`, `A00_Main_0202.cpp`, `W10_Web_Static_0202.cpp`
 
 ---
 
@@ -212,7 +243,7 @@ pio run --target uploadfs
 ```bash
 curl -I -H "Accept-Encoding: gzip" http://<IP>/html_v0202/P010_bundle_0202.js
 # → Content-Encoding: gzip 헤더 포함
-curl -I http://<IP>/P010_main_0202.html
+curl -I http://<IP>/index.html
 # → raw 파일 (Accept-Encoding 미보유 시)
 ```
 
@@ -236,7 +267,7 @@ git add -A && git commit -m "refactor(v0202): E-2 - 파일 분할 (29파일)"
 git add -A && git commit -m "refactor(v0202): F - 로직 정합성 (NVS reset, PATCH 헬퍼)"
 
 # 3. 문서 최종 커밋
-python src/v0202/tools_0202/commit_contracts_0202.py -m "docs(contracts): v0202 계약 문서 동기화 (A~F 반영)"
+python src/v0202/tools_0202/commit_contracts_0202.py -m "docs(contracts): v0202 계약 문서 동기화 (Batch G 반영)"
 # (또는 v0202 스크립트: python src/v0202/tools_0202/commit_contracts_0202.py)
 ```
 
@@ -259,25 +290,25 @@ grep -rn "_0202\." src/v0202/*.h src/v0202/*.cpp | grep -v "\.md\|data_v0202\|da
 grep -rn "g_A20_config_root\." src/v0202/W10_Web_Routes_*_0202.cpp
 # 위반 시 리뷰 반려
 
-# 5. 회귀 (T-1~T-28)
-# 필수: T-1, T-3, T-5, T-14, T-16, T-20, T-27
+# 5. 회귀 (T-1~T-67)
+# 릴리스 차단 필수 26건 (TEST_PLAN §7 참조)
 ```
 
 ### 6.3 릴리스 태그
 
 ```bash
-git tag -a v0202-release-2026-10-20 -m "v0202 릴리스 (A~F 리팩토링 완료)"
-git push origin v0202-release-2026-10-20
+git tag -a v0202-release-2026-10-26 -m "v0202 Release (Batch G 완료)"
+git push origin v0202-release-2026-10-26
 ```
 
 ---
 
-## 7. 실측 자원 사용량 (2026-10-20 빌드 결과)
+## 7. 실측 자원 사용량 (2026-10-26 빌드 결과)
 
 | 자원 | 사용 | 총량 | 여유 | 판정 |
 |---|---|---|---|---|
-| **RAM** | 111,596 B (34.1%) | 327,680 B | 216,084 B (65.9%) | ✅ BUDGET §6 >100KB |
-| **Flash** | 1,528,153 B (23.3%) | 6,553,600 B | 5,025,447 B (76.7%) | ✅ 여유 충분 |
+| **RAM** | 110,100 B (33.6%) | 327,680 B | 217,580 B (66.4%) | ✅ BUDGET §6 >100KB |
+| **Flash** | 1,532,741 B (23.4%) | 6,553,600 B | 5,020,859 B (76.6%) | ✅ 여유 충분 |
 | **littlefs.bin** | 114.4 KB | - | - | ✅ 73% 절감 |
 
 ---
@@ -286,6 +317,7 @@ git push origin v0202-release-2026-10-20
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-10-26** | **v2.4** | **Batch G — P0/P1 코드 재검토**: C-1~C-5 (크리티컬), NEW-C1/C2/U1~U4 (프론트), B-1~B-13 (백엔드/프론트 혼합). §3.4 신규 27건 테이블. 17개 파일 수정 | Antigravity AI |
 | 2026-10-21 | v2.3 | `tools_0202`, `data_v0202`, `_0202` 자산 및 curl 검증 경로 일괄 현행화 | Antigravity AI |
 | 2026-10-20 | v2.2 | Batch A~F 반영: §1 디렉토리 트리 0201 접미사, §3 감사 이력 A~F 통합, §4.3 E-2 분할 원칙, §5.2 도구 4종, §6 Batch G 커밋 전략, §7 실측 자원 사용량 | Antigravity AI |
 | 2026-10-19 | v2.1 | N-1~N-4, G-1~G-3 반영 | Antigravity AI |

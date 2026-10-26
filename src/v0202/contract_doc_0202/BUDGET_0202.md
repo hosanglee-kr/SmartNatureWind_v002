@@ -1,7 +1,7 @@
 # BUDGET_0202.md — 시간 및 시스템 자원 예산
 
-> **기준**: v0202 정적 감사 + 런타임 실측 반영.  
-> **핵심 성과**: F-05(reload 위임)/F-06(motion sim 위임)으로 `async_tcp` 블로킹 제거, D-1(WS mutex 배치)/D-4(atomic)/D-5(고정 배열)로 loopTask 지터 감소.  
+> **기준**: v0202 정적 감사 + 런타임 실측 반영 (Batch A~G 완료).  
+> **핵심 성과**: F-05(reload 위임)/F-06(motion sim 위임)으로 `async_tcp` 블로킹 제거, D-1(WS mutex 배치)/D-4(atomic)/D-5(고정 배열)로 loopTask 지터 감소, B-1(NVS 단일 commit 10ms)/B-9(스냅샷 캐시 2ms) 성능 최적화.  
 > **파일명 정책**: 계약 문서 `_0202.md` 유지, 코드 참조 `_0202` 접미사.
 
 ---
@@ -31,7 +31,8 @@
 | **[F-03] `g_M10_motionLogic->tick()`** | **< 100 μs** | PIR holdSec 감쇠 |
 | `TM10::tick()` | < 100 μs | 1초 게이트, 평상 조기 반환 |
 | `C10::processPendingFree()` | < 100 μs | 3초 grace 미도달 즉시 반환 |
-| **[F-04] `N10::tick()`** | **< 100 μs** | 10초 게이트, flush 시 200~500 μs |
+| **[F-04] `N10::tick()`** | **< 100 μs** (게이트 미도달) | 10초 게이트, 평상 조기 반환 |
+| **`N10::tick()` flush** | **~10 ms** (**[B-1] 단일 commit 전환 후 실측**) | 이전 11회 commit(~100 ms) 대비 **10배 개선** |
 | `g_A00_ledController->run()` | < 100 μs | NeoPixel 1-pixel |
 | `delay(G_A00_LOOP_DELAY_MS=10)` | 10 ms | **[C-5]** 상수 참조 |
 
@@ -59,9 +60,14 @@
 | **`GET /api/v001/wifi/state`** | WiFi 상태 JSON 반환 | **< 1 ms** | atomic load 기반 |
 | `GET /api/v001/wifi/scan` | `WiFi.scanNetworks()` | 1 ~ 2 초 | 의도된 블로킹 |
 | `POST /api/v001/ai/gemini` | SSL | ≤ 15 초 | rate limit 3초 |
-| `POST /api/v001/fwUpdate` | OTA 스트리밍 | 수십 초 | OTA 세션 |
-| **`POST /api/v001/fileUpload`** | `routeUpload` + safeAbort | **5 ~ 20 ms / 청크** | **N-4** 즉시 close |
-| **`GET /(html_v0202\|html_v3)/*`** | `W10_registerGzipServe` | **1 ~ 3 ms** | **D-3** 스택 버퍼 (힙 0), 듀얼 폴백 |
+| **`POST /api/v001/fileUpload`** | `routeUpload` + safeAbort | **5 ~ 20 ms / 청크** | **N-4** 즉시 close + **[C-4] stale close** |
+| **`POST /api/v001/fwUpdate`** | `routeUpdate` + abort 방어 | **수십 초** | **[B-12]** 세션 abort + write 반환 검사 |
+| **`GET /html_v0202/*`** | `W10_registerGzipServe` | **1 ~ 3 ms** | **D-3** 스택 버퍼 (힙 0) + **[B-5]** RFC 7231 q-value + `Vary` |
+| **`GET /api/v001/windProfile`** | **`routeWindProfile` (B-9)** | **< 2 ms** | 이전 FS read(100ms) → `getRootSnapshot` |
+| **`GET /api/v001/config`** | **`routeConfigDirtySave` GET (B-2)** | **< 2 ms** | `getRootSnapshot` (직접 참조 → 스냅샷) |
+| **`POST /api/v001/user_profiles/patch`** | **`routeUserProfilesPatch` (B-2)** | **< 5 ms** | 스냅샷 경유 |
+| **WS handshake** | **`_wsHandshakeAuth` (B-2)** | **< 1 ms** | `getRootSnapshot` + strlcpy |
+| **`POST/PATCH /api/v001/motion`** | **`_routeMotionPatchBody` (B-6)** | **< 5 ms** | F-2/F-3 헬퍼 일관성 |
 
 ---
 
@@ -128,7 +134,7 @@
 |---|---:|---:|---:|---:|
 | `P010_bundle_0202.js` | **31 JS** | 165,923 B | **37,490 B** | **-77.4%** |
 | `P000_common_0202.css` | **10 CSS** | 40,035 B | **7,585 B** | **-81.1%** |
-| `P010_main_0202.html` | 1 HTML | 2,486 B | **976 B** | **-60.7%** |
+| `index.html` | 1 HTML | 2,486 B | **976 B** | **-60.7%** |
 | **합계** | **42 파일** | **208,444 B** | **46,051 B** | **-77.9%** |
 
 **JSON 10개 (gzip 미적용)**: ~50 KB (설정 데이터, 런타임 재사용)
@@ -231,8 +237,8 @@
 
 | 자원 | 사용 | 총량 | 여유 | 판정 |
 |---|---|---|---|---|
-| **RAM** | 111,596 B (34.1%) | 327,680 B | 216,084 B (65.9%) | ✅ BUDGET §6 >100KB 충족 |
-| **Flash** | 1,528,153 B (23.3%) | 6,553,600 B | 5,025,447 B (76.7%) | ✅ 여유 충분 |
+| **RAM** | 110,100 B (33.6%) | 327,680 B | 217,580 B (66.4%) | ✅ BUDGET §6 >100KB 충족 |
+| **Flash** | 1,532,741 B (23.4%) | 6,553,600 B | 5,020,859 B (76.6%) | ✅ 여유 충분 |
 | **.bss 증가 (D-5)** | +4.8 KB (`s_snapshot`) | - | - | heap 회피, RAM 여유 흡수 |
 | **littlefs.bin** | 114.4 KB | - | - | 73% 절감 확인 |
 
@@ -258,12 +264,40 @@
 | **F-5** (fall-through) | FSM 결정성 향상 |
 | **F-8/F-9** (상수) | 런타임 0 |
 
+### 10.1 Batch G 영향 (코드 재검토)
+
+| Batch | 예산 영향 |
+|---|---|
+| **C-1** (CDC 타임아웃) | 부팅 시간 상한 +3s (미연결 시), 배포 필수 |
+| **C-3** (holdSec 2× → 1×) | PIR 감지 후 팬 가동 시간 정확화 (사용자 체감 개선) |
+| **B-1** (NVS 단일 commit) | loopTask 블로킹 **100 ms → 10 ms** (-90%) |
+| **B-5** (RFC 7231) | 런타임 0 (문자열 파싱 ~5μs/요청), `Vary` 헤더 +18B/응답 |
+| **B-7** (NVS 반환값 검사) | 런타임 +1~2 μs (실패 시 dirty 유지 재시도) |
+| **B-9** (WindProfile 캐시) | GET 응답시간 **100 ms → 2 ms** (-98%) |
+| **B-11** (in-memory defaults) | 부팅 시간 +10 ms (OOM 복구), 복구성 대폭 향상 |
+| **B-12** (OTA abort) | 세션 실패 시 +50 ms (abort 호출), 다음 OTA 정상화 |
+| **B-13** (LED 검증) | 부팅 시간 무변화, 크래시 방지 |
+
+### 10.2 B-1 상세 — loopTask flush 세부
+
+| 항목 | Before (개별 commit) | After (단일 commit) |
+|---|---:|---:|
+| `nvs_open` | 1회 (~200 μs) | 1회 (~200 μs) |
+| `nvs_set_*` × 11 | 11회 (~1 ms) | 11회 (~1 ms) |
+| `nvs_commit` | **11회 (~100 ms)** | **1회 (~10 ms)** |
+| `nvs_close` | 1회 (~50 μs) | 1회 (~50 μs) |
+| **총 블로킹** | **~100 ms** | **~10 ms** |
+| BUDGET §2 목표 (200~500 μs) | 200배 초과 | 20배 초과 |
+
+**개선 후 남은 격차**: WDT 10초 대비 0.1% (안전), A00_run 15~25ms 평균 대비 스파이크 허용 (10초당 1회).
+
 ---
 
 ## 11. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-10-26** | **v2.5** | **Batch G — §2 N10 flush 실측(10ms), §3 B-2/B-9/B-12/C-4/B-5 WCET 보정, §10.1/§10.2 신규 (Batch G 영향 + B-1 상세)** | Antigravity AI |
 | 2026-10-21 | v2.4 | `_0202` 자산 실측명 반영, `/control/ack` 및 `/wifi/state` WCET 추가, 듀얼 서빙 폴백 반영 | Antigravity AI |
 | 2026-10-21 | v2.3 | §8 신규 — 프론트엔드 자산 예산 (v0202 SPA). 배포 자산 실측 (JS 37.5 KB / CSS 7.6 KB / HTML 1.0 KB = 46.1 KB gzip), HTTP 요청 예산 (세션 3건), 예산 여유 분석, 확장 우선순위 | Antigravity AI |
 | 2026-10-20 | v2.2 | Batch A~F 반영: §2 D-1 반영, §3 A-2/F-2/F-3 반영, §6 ws_mutex/sta_connected 메트릭, §8 RAM/Flash 실측, §9 Batch 예산 영향 신규 | Antigravity AI |

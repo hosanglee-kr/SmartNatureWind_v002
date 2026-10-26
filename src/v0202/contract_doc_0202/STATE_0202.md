@@ -1,7 +1,7 @@
 # STATE_0202.md — 상태 소유권 및 FSM 명세
 
 > **단일 기록자 원칙**: 각 런타임 상태 변수는 원칙적으로 단 하나의 태스크만 쓰기 권한을 가진다. 다중 태스크 쓰기 시 전용 뮤텍스 또는 `std::atomic`으로 격리.  
-> F-01~F-10, I-1~I-6, N-1~N-4, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10 반영.  
+> F-01~F-10, I-1~I-6, N-1~N-4, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10, Batch G 반영.  
 > **파일명 정책**: 계약 문서 `_0202.md` 유지, 코드 참조 `_0202` 접미사.
 
 ---
@@ -20,7 +20,7 @@
 | `s_pendingReload` | T-async (`requestReload` CAS) | T-loop (`consumePendingReload`), 모든 태스크 (`isReloadPending`) | `std::atomic<bool>` | **F-05, I-1** |
 | `s_lastReloadOk` | T-loop (`reloadAll`) | T-async, 모든 태스크 | `std::atomic<bool>` | **N-1** 성공/실패 |
 | `sim.*` | T-loop (`tickLoop`), T-loop (`patchSimFromJson` 경유) | T-async (`exportSimJson` 경유) | `S10::_recursiveMutex` (100ms) | **A-2** 위임 필수 |
-| `_pir`, `_state` (M10) | T-async (`notifyPIRDetected`), T-loop (`tick`) | T-loop (`isActive`, `toJson`) | `M10::s_stateMutex` (100ms) | **A-2** 위임 필수 |
+| `_pir`, `_state` (M10) | T-async (`notifyPIRDetected`), T-loop (`tick`) | T-loop (`isActive`, `toJson`) | `M10::s_stateMutex` (100ms) | **A-2** 위임 필수. **[C-3]** `isActive()` 판정은 `_state.pirActive` 단일 — `lastChange_ms` 재계산 금지 (2×hold 버그) |
 | `s_state` (N10) | T-loop (CT10 setter / `tick` flush) | T-async (`getState`, `toJson`) | `N10::s_mutex` (100ms) | NVS 런타임 |
 | `s_dirty.runtime` (N10) | T-loop (setter 호출 시 `true`) | T-loop (`tick` flush 시 `false`) | `N10::s_mutex` | **F-04** 게이트 |
 | `s_staConnected` (WF10) | T-sys_evt (이벤트), T-wf (`startSTA`) | T-loop (LED), T-async | `std::atomic<bool>` (**D-4**) | Wi-Fi 연결 |
@@ -110,6 +110,36 @@
 - `currentWindSpeed ∈ [G_S10_WIND_MIN_MS, G_S10_WIND_MAX_MS]` = `[0.2, 11.0]` m/s (**Batch C 상수**)
 - `s_chartCount ≤ CHART_CAPACITY (= 120)`
 - **Batch D-5**: `toChartJson` static `s_snapshot[120]`은 `_recursiveMutex` 보유 중 채우고, 락 해제 후 읽음
+
+---
+
+## 3.1 M10 모션 감지 상태 (C-3 반영)
+
+| 필드 | Writer | 판정 규약 |
+|---|---|---|
+| `_pir.lastDetected_ms` | `notifyPIRDetected()` (감지 시점) | - |
+| `_pir.active` | `notifyPIRDetected()` (true), `tick()` (holdSec 경과 시 false) | - |
+| `_state.pirActive` | `tick()` (상태 변경 시) | - |
+| `_state.lastChange_ms` | `tick()` (상태 변경 시) | - |
+
+**`isActive()` 판정 규약 (C-3)**:
+- **단일 조건**: `return _state.pirActive;`
+- **금지**: `_state.lastChange_ms` 기준 `holdSec` 재계산 (2×hold 버그)
+- **근거**: `tick()`이 이미 `holdSec` 경과 시 `pirActive=false` 전환. `isActive()`는 상태 조회만.
+
+**타임라인 (holdSec=120, 정상)**:
+```
+t=0     : PIR 감지 → pirActive=true,  lastDetected=0
+t=120s  : tick() → pirActive=false,   lastChange=120s
+t=120s+ : isActive()==false (단일 판정) ✓
+```
+
+**타임라인 (이전 버그)**:
+```
+t=120s  : pirActive=false, lastChange=120s
+t=120s+ : isActive()==true (lastChange 기준 120s 미경과) ← 2×버그
+t=240s  : isActive()==false
+```
 
 ---
 
@@ -245,6 +275,7 @@ CT10_WS_tick (T-loop)
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-10-26** | **v2.4** | **Batch G — §1 M10 `_state.pirActive` 판정 규약 명시, §3.1 신규 (C-3 타임라인)** | Antigravity AI |
 | 2026-10-21 | v2.3 | AutoOff 래치 해제 엔드포인트 `/control/ack` (`HTTP_API_CTL_ACK`) 명시 및 현행화 | Antigravity AI |
 | 2026-10-20 | v2.2 | Batch A~F 반영: §1 `_dirty*`/`s_staConnected` atomic 명시, §2.4 F-5 profile fall-through, §3 S10 상수, §4 WF10 C-7/C-8/D-4, §6.3 D-1 배치, §7 AutoOff, §8 E-2 분할 상태 소유권 신규 | Antigravity AI |
 | 2026-10-19 | v2.1 | N-1, G-2/G-4, N-3 현행화 | Antigravity AI |

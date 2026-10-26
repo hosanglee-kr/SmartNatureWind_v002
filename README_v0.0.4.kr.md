@@ -30,7 +30,7 @@
 * 📖 [**Smart Nature Wind v0202 종합 사용자 매뉴얼**](src/v0202/User_Manual_0202/UserManual_0202_001.md)
   * 기기 설치, 배선, Wi-Fi(SoftAP/STA) 연결, 6대 웹 화면 조작법, 10대 프리셋 상세 해설, REST API/WebSocket 규격, 고장 진단 및 유지보수 가이드 수록.
 
-### 2. 기술 사양 및 CBD v2.5 엔지니어링 계약서 (Engineering Contracts)
+### 2. 기술 사양 및 CBD 엔지니어링 계약서 (Engineering Contracts — Batch G 완료)
 * 📑 [**README_0202.md (계약 문서 세트 총괄 인덱스)**](src/v0202/contract_doc_0202/README_0202.md)
 * 📐 [**SPEC_0202.md (종합 기술 사양서)**](src/v0202/contract_doc_0202/SPEC_0202.md) : 하드웨어 핀맵, 25kHz PWM 타이밍, REST/WebSocket 인터페이스, Gzip Level 9 정적 에셋 파이프라인.
 * 🤝 [**CONTRACT_0202.md (동시성 계약서)**](src/v0202/contract_doc_0202/CONTRACT_0202.md) : FreeRTOS 5대 태스크 구조, 우선순위, Mutex 소유권 및 데드락 방지 계약.
@@ -218,7 +218,7 @@
 ### 1. 웹 브라우저 주요 진입점 (SPA Routes)
 기기 IP로 접속 시 브라우저 헤더의 Gzip 지원 여부를 판별하여 초고속으로 SPA Shell을 렌더링하며, 해시 라우팅(#)을 통해 페이지 전환 지연 시간 0ms를 제공합니다.
 
-* **메인 SPA Shell 진입점**: `/` (자동 리다이렉트 `/P010_main_0202.html`)
+* **메인 SPA Shell 진입점**: `/` (자동 리다이렉트 `/index.html`)
 * **해시 뷰 라우팅 (Hash Views)**:
   - `#/dashboard`: 전원 제어, 프리셋 선택, 풍속 슬라이더
   - `#/chart`: WebSocket 기반 실시간 대기역학 물리 곡선 차트
@@ -229,7 +229,6 @@
   - `#/diagnostics`: 하드웨어 및 LittleFS 진단
   - `#/logs`: 실시간 링버퍼 시스템 로그 뷰어
   - `#/ai`: Gemini AI 대화형 비서 연동
-* **레거시 URL 호환**: `/P010_main_0200.html`, `/P050_chart_t3_0200.html` 등 이전 버전의 개별 HTML 요청 시 SPA Shell의 각 해시 경로로 자동 302 리다이렉트됩니다.
 
 ### 2. REST API & WebSocket 인터페이스 요약
 * `GET /api/v001/state`, `POST /api/v001/state` : 전원 상태, 모드, 목표 풍속 조회 및 제어
@@ -276,7 +275,7 @@ Smart Nature Wind의 핵심은 단순 랜덤 함수 난수 생성이 아닌, **�
 | **팬이 전혀 돌지 않음** | 5V 전원 미공급 또는 PWM 핀 배선 불량 | 5V/GND 배선 및 설정 화면의 PWM GPIO(기본 GPIO 6) 점검 | [매뉴얼 §12.1](src/v0202/User_Manual_0202/UserManual_0202_001.md#121-자주-묻는-질문-faq) |
 | **웹 페이지 접속 불가** | LittleFS 파일 미업로드 또는 다른 Wi-Fi 접속 | `pio run --target uploadfs` 수행 및 `NatureWind` AP 연결 확인 | [매뉴얼 §12.2](src/v0202/User_Manual_0202/UserManual_0202_001.md#122-증상별-자가-진단-가이드) |
 | **팬이 최고속도로만 회전** | PWM 제어선 단선 또는 모터 최소 듀티 설정 | PWM 신호선(Blue) 결선 점검 및 최저 구동 속도 재설정 | [매뉴얼 §12.2](src/v0202/User_Manual_0202/UserManual_0202_001.md#122-증상별-자가-진단-가이드) |
-| **풍속 변화가 느껴지지 않음** | 현재 모드가 '정속(Constant)' 상태임 | 메인 화면에서 '자연풍(Natural Wind)' 모드로 변경 | [매뉴얼 §5.1](src/v0202/User_Manual_0202/UserManual_0202_001.md#51-메인-대시보드-화면-p010_main_0200html) |
+| **풍속 변화가 느껴지지 않음** | 현재 모드가 '정속(Constant)' 상태임 | 메인 화면에서 '자연풍(Natural Wind)' 모드로 변경 | [매뉴얼 §4](src/v0202/User_Manual_0202/UserManual_0202_001.md#4-메인-대시보드-조작-가이드--) |
 | **온도/습도 센서 값 표기 안 됨** | DHT22 풀업 저항 누락 또는 핀 번호 오류 | GPIO 17 설정 확인 및 VCC-Data 간 10kΩ 풀업 저항 장착 | [매뉴얼 §12.2](src/v0202/User_Manual_0202/UserManual_0202_001.md#122-증상별-자가-진단-가이드) |
 
 ---

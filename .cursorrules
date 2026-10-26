@@ -19,4 +19,4 @@
    - [1단계] `graphify query` / `path` / `explain` 선행 질의 → [2단계] 타겟 라인 최소 범위 Pinpoint View
    - 소스/설계 변경 후 `graphify update .` 실행
 
-> 💡 상세한 라이브러리 ID, 빌드 플래그, 엔드포인트 목록 및 CBD v2.5 계약 규격은 **[agent.md](agent.md)**를 참조하십시오.
+> 💡 상세한 라이브러리 ID, 빌드 플래그, 엔드포인트 목록 및 CBD (Batch G 완료) 계약 규격은 **[agent.md](agent.md)**를 참조하십시오.

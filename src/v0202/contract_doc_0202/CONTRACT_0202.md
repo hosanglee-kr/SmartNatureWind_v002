@@ -1,6 +1,6 @@
 # CONTRACT_0202.md — 동시성 경계 및 API 계약
 
-> **기준**: v0202 정적 감사 + 런타임 동시성 검증 완료 (F-01~F-10, I-1~I-6, N-1~N-4, G-1~G-3, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10 전면 반영).  
+> **기준**: v0202 정적 감사 + 런타임 동시성 검증 완료 (F-01~F-10, I-1~I-6, N-1~N-4, G-1~G-3, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10, Batch G 전면 반영).  
 > **목적**: 멀티태스킹 환경에서 태스크 경계, 뮤텍스 획득 순서, 공유 자원 접근 규약 및 위임 패턴을 정의하여 데이터 레이스, 교착 상태(Deadlock), UAF를 원천 차단.  
 > **파일명 정책**: 계약 문서 `_0202.md` 유지, 코드 참조 `_0202` 접미사.
 
@@ -94,17 +94,22 @@
 | `C10::saveDirtyConfigs()` | ❌ | ✅ | ❌ | ❌ | `/config/save` |
 | `C10::factoryResetFromDefault()` | ❌ | ✅ | ❌ | ❌ | **F-1** N10::resetRuntime 호출 |
 | `CT10::ackEventState()` | ❌ | ✅ | ❌ | ❌ | `/control/ack` s_stateMutex 경유 |
-| `W10::W10_registerGzipServe()` | ❌ | ✅ | ❌ | ❌ | **C-G-2** 정규식 `^/(html_v3\|html_v0202)/.+` |
+| `W10::W10_registerGzipServe()` | ❌ | ✅ | ❌ | ❌ | **C-G-2** 정규식 `^/html_v0202/.+` |
 | `W10::_routeSystemPatchBody()` | ❌ | ✅ | ❌ | ❌ | **F-2** POST/PATCH 헬퍼 |
 | `W10::_routeWifiConfigPatchBody()` | ❌ | ✅ | ❌ | ❌ | **F-3** POST/PATCH 헬퍼 |
+| `W10::_routeMotionPatchBody()` | ❌ | ✅ | ❌ | ❌ | **[B-6]** POST/PATCH 헬퍼 + getRootSnapshot |
+| `W10::_wsHandshakeAuth()` | ❌ | ✅ | ❌ | ❌ | **[B-2]** getRootSnapshot + strlcpy 로컬 복사 |
+| `C10::getRootSnapshot()` | ✅ | ✅ | ✅ | ✅ | **[B-2/B-9]** async_tcp 필수 경유 |
+| `CT10::requestMotionSimApply()` | ❌ | ✅ | ❌ | ❌ | **F-06** (참조) |
+| `N10::flush()` | ✅ | ❌ | ❌ | ❌ | **[B-1]** nvs_commit 1회 (10ms), **[B-7]** 반환값 검사 |
 
 ### 4.1 W10 정적 웹 에셋 서빙 계약
 
 1. **Gzip 우선**: `Accept-Encoding` gzip + `.gz` 존재 시만 `Content-Encoding: gzip`. 미지원 시 raw 폴백.
-2. **정규식 라우트**: `^/(html_v3|html_v0202)/.+` (`W10_registerGzipServe`) 서빙. Long path도 `.gz` 우선.
-3. **듀얼 폴백 서빙**: 기본 `PATH_STATIC_HTML_V0200` (`/html_v0202`) 우선 서빙 후, 부재 시 `PATH_STATIC_HTML` (`/html_v3`) 레거시 호환 폴백.
+2. **정규식 라우트**: `^/html_v0202/.+` (`W10_registerGzipServe`) 서빙. Long path도 `.gz` 우선.
+3. **단일 정적 서빙**: `PATH_STATIC_HTML` (`/html_v0202`) 단일 서빙 (레거시 `/html_v3` 호환 제거).
 4. **MIME 자동 판별**: `W10_guessMime` 확장자별 MIME + UTF-8.
-5. **Root fallback 안전**: 메인 HTML(`P010_main_0202.html`) 부재 시 404 + 진단 메시지. `exists(x)` || `exists(x+".gz")`.
+5. **Root fallback 안전**: 메인 HTML(`index.html`) 부재 시 404 + 진단 메시지. `exists(x)` || `exists(x+".gz")`.
 6. **번들링**: `P010_bundle_0202.js` 단일 파일, 동시 HTTP 11→4건.
 
 ### 4.2 CT10 캡슐화 위임 계약 (A-2)
@@ -235,12 +240,52 @@
 | F-9 | 🟢 | `applyFanConfigCurve` | 0.33/0.66/0.34 | `G_P10_CURVE_SPLIT*` | ✅ |
 | F-10 | 🟢 | A25/Sch/UzProf | 매크로 파일 스코프 | Internal 헤더 승격 | ✅ |
 
+### 7.4 Batch G — 코드 재검토 (C, NEW, B)
+
+| ID | 심각도 | 위치 | 내용 | 해결 | 상태 |
+|---|---|---|---|---|---|
+| **C-1** | 🔴 | `main.cpp` setup | `while(!Serial)` 무한 대기 (USB 미연결 시 부팅 정지) | 3s 타임아웃 (`G_A00_USB_CDC_TIMEOUT_MS`) | ✅ |
+| **C-2** | 🔴 | `200.page.dashboard.js` | 프리셋 그리드 mount 순서 (빈 items) | `_mountComponents` 선행 | ✅ |
+| **C-3** | 🔴 | `M10::isActive()` | `_state.pirActive` + lastChange 재계산 이중 적용 | `_state.pirActive` 단일 판정 | ✅ |
+| **C-4** | 🔴 | `W10_Web_Upload_0202.cpp` | write-only 파일 `available()==0` → 핸들 유출 | `if (s_upFile)` 무조건 close | ✅ |
+| **C-5** | 🔴 | `070.router.js` | dispatch 재진입 → 고아 watcher 누수 | `_dispatching` 가드 + 재확인 | ✅ |
+| **NEW-C1** | 🔴 | `240.page.settings.js` | `\|\|` falsy 오류 (0값 손실) | `nz()` 헬퍼 (nullish) | ✅ |
+| **NEW-C2** | 🔴 | `240.page.settings.js` | `dht.type` 미이스케이프 XSS | `esc()` 적용 | ✅ |
+| **NEW-U1** | 🟡 | `240.page.settings.js` | API Key DOM 평문 노출 | `value=""` + placeholder + `(설정됨)` 배지 | ✅ |
+| **NEW-U2** | 🟡 | `240.page.settings.js` | API Key 삭제 UI 부재 | `clear-api-key` 체크박스 | ✅ |
+| **NEW-U3** | 🟡 | `240.page.settings.js` | wsChConfig 손상 시 UI 미복구 | 4채널 baseline + chName 복원 | ✅ |
+| **NEW-U4** | 🟡 | `240.page.settings.js` | 문자열 `"false"` truthy 오판 | `asBool()` 명시 판정 | ✅ |
+| **B-1** | 🟠 | `N10::flush` | NVS put × 11 = commit × 11 (100ms 블로킹) | `nvs_set_*` × N + `nvs_commit` 1회 (10ms) | ✅ |
+| **B-2** | 🟠 | `W10_Web_Routes_Config/CRUD/WS` | async_tcp `g_A20_config_root` 직접 참조 3곳 | `getRootSnapshot` + strlcpy 로컬 복사 | ✅ |
+| **B-3** | 🟠 | `settings/network` JS | deviceName/SSID/hostname XSS | `esc()` 적용 | ✅ |
+| **B-4** | 🟠 | `C10::patchSystemFromJson` | `apiKey[0]` 체크로 빈 문자열 무시 (삭제 불가) | `clearApiKey`/`clearGeminiApiKey` 플래그 | ✅ |
+| **B-5** | 🟠 | `W10_Web_Static_0202.cpp` | `indexOf("gzip")` → `gzip;q=0` 오탐지 | `W10_acceptsGzip()` RFC 7231 파서 + `Vary` | ✅ |
+| **B-6** | 🟡 | `W10_Web_Routes_System_0202.cpp` | routeMotion POST/PATCH 60줄 중복 | `_routeMotionPatchBody` 헬퍼 | ✅ |
+| **B-7** | 🟡 | `N10::flush` | `nvs_set_*`/`nvs_commit` 반환값 무시 | 반환값 검사 + dirty 유지 재시도 | ✅ |
+| **B-8** | 🟡 | `130.ui.form.js` | 로그 필터 `textContent.includes()` 오매칭 | `.snw-log-lv` 정확 비교 | ✅ |
+| **B-9** | 🟡 | `W10_Web_Routes_CRUD_0202.cpp` | WindProfile GET 매 요청 FS read(100ms) + static race | `getRootSnapshot` (2ms) | ✅ |
+| **B-10** | 🟢 | `S10_Simul_Core_0202.cpp` | `tick()` 내 브로드캐스트용 JsonDocument dead code | 제거 (dirty 플래그만) | ✅ |
+| **B-11** | 🟠 | `A00_Main_0202.cpp` | config 손상 시 부팅 중단 → 웹 복구 불가 | in-memory defaults + Recovery AP (최후) | ✅ |
+| **B-12** | 🟠 | `W10_Web_Upload_0202.cpp` | OTA 세션 잔존 + write 반환값 무시 | `Update.abort()` + 반환 검사 | ✅ |
+| **B-13** | 🟠 | `A00_Main_0202.cpp` | 음수 LED pin → uint8 캐스팅 → GPIO 255 크래시 | 유효 범위 검증 + 기본값 | ✅ |
+
+### 7.5 B-2 위반 → 수정 후 화이트리스트 최신화
+
+**수정 완료 위치** (async_tcp 컨텍스트):
+- `W10_Web_Routes_Config_0202.cpp::routeConfigDirtySave` GET → `getRootSnapshot`
+- `W10_Web_Routes_CRUD_0202.cpp::routeUserProfilesPatch` → `getRootSnapshot`
+- `W10_Web_Routes_CRUD_0202.cpp::routeWindProfile` GET → `getRootSnapshot` (B-9)
+- `W10_Web_WS_0202.cpp::_wsHandshakeAuth` → `getRootSnapshot` + strlcpy
+
+**계약 준수 확정**: §3.1 화이트리스트 예외 없이 async_tcp는 반드시 `getRootSnapshot` 경유.
+
 ---
 
 ## 8. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-10-26** | **v2.4** | **Batch G — §4 3행 추가, §7.4 27건 감사 신규, §7.5 B-2 위반 수정 화이트리스트 확정, index.html 통일 및 레거시 호환 제거** | Antigravity AI |
 | 2026-10-21 | v2.3 | 정규식 라우트(`html_v0202|html_v3`), 듀얼 폴백 서빙, `P010_bundle_0202.js`, `CT10::ackEventState` 일괄 현행화 | Antigravity AI |
 | 2026-10-20 | v2.2 | Batch A~F 반영: §2.1 D-4 atomic, §4 A-2/F-2/F-3/D-1 매트릭스, §4.2~§4.4 신규, §7.3 A-1~F-10 통합 | Antigravity AI |
 | 2026-10-19 | v2.1 | N-1~N-4, G-1~G-3 현행화 | Antigravity AI |

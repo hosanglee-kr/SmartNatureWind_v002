@@ -35,8 +35,8 @@ src/v0202/
     ├── main.cpp, A00_Main_0202.* (엔트리)
     ├── A20_Const_*_0202.h (상수/구조체)
     ├── A22_Com_Lookup_0202.h, A23_Com_ResetCfg_0202.h
-    ├── A25_Com_Utils_0202.h, A25_Com_Utils_IO_0202.cpp (E-2.5 분리)
     ├── A30_LED_0202.h
+    ├── A40_Com_Utils_0202.h, A40_Com_Utils_IO_0202.cpp (E-2.5 분리)
     ├── C10_Config_0202.h, C10_Config_Core/Extras/Sys_0202.cpp
     ├── C10_Config_Sch_*_0202.* (E-2.3 5분할)
     ├── C10_Config_UzProf_*_0202.* (E-2.6 5분할)

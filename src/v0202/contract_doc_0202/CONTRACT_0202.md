@@ -131,7 +131,7 @@
 1. **매크로 승격**: 다중 .cpp 참조 매크로 → `*_Internal_0202.h`. 파일 스코프 정의 금지 (예: `G_C10_SCH_ID_START`, `G_C10_PROFILE_ID_START`).
 2. **자체 include**: 각 .cpp가 참조 심볼의 헤더 직접 include (예: `A22_Com_Lookup_0202.h`).
 3. **정적 멤버 정의 유일성**: `CL_W10_WebAPI::s_server` 등 원본(Core) .cpp에만 정의.
-4. **A25 자립성**: `A20_Const_Sch_0202.h` 자체 include (순환 없음).
+4. **A40 자립성**: `A20_Const_Sch_0202.h` 자체 include (순환 없음).
 
 ---
 
@@ -238,7 +238,7 @@
 | F-7 | 🟢 | `tickOverride` | resolved.valid | 조기 반환 확인 | ✅ |
 | F-8 | 🟢 | `S10::applyFan` | 0.01f 임계 | `G_S10_FAN_ZERO_THRESHOLD` | ✅ |
 | F-9 | 🟢 | `applyFanConfigCurve` | 0.33/0.66/0.34 | `G_P10_CURVE_SPLIT*` | ✅ |
-| F-10 | 🟢 | A25/Sch/UzProf | 매크로 파일 스코프 | Internal 헤더 승격 | ✅ |
+| F-10 | 🟢 | A40/Sch/UzProf | 매크로 파일 스코프 | Internal 헤더 승격 | ✅ |
 
 ### 7.4 Batch G — 코드 재검토 (C, NEW, B)
 

@@ -34,8 +34,9 @@
   - **C++ 소스군 (`_0202` 접미사)**:
     - `A00_Main_0202.cpp/h`: 부팅 초기화 시퀀스 및 FreeRTOS 메인 루프 위임.
     - `A20_Const_*_0202.h`: 시스템 전역 상수(`A20_Const_0202.h`, `A20_Const_Const_0202.h`, `_Sys_`, `_Sch_`, `_Wifi_`, `_Motion_`, `_WS_`).
-    - `A22~A29`: 공통 룩업테이블(`A22_Com_Lookup_0202.h`), 팩토리 리셋 헬퍼(`A23_Com_ResetCfg_0202.h`), 유틸리티(`A25_Com_Utils_0202.h`, `A25_Com_Utils_IO_0202.cpp`).
+    - `A22~A23`: 공통 룩업테이블(`A22_Com_Lookup_0202.h`), 팩토리 리셋 헬퍼(`A23_Com_ResetCfg_0202.h`).
     - `A30_LED_0202.h`: WS2812B NeoPixel RGB LED 상태 표시기 (7-State FSM 시각화).
+    - `A40`: 공통 유틸리티, LittleFS IO 안전 처리, 동기화 가드(`A40_Com_Utils_0202.h`, `A40_Com_Utils_IO_0202.cpp`).
     - `C10_Config_0202.h`: 환경설정(JSON) 관리자 (`C10_Config_Core/Extras/Sys_0202.cpp`, `_Sch_*` 5분할, `_UzProf_*` 5분할, `_WindDc_*` 5분할).
     - `CT10_Ctl_0202.h`: 팬 제어, 센서 연동, 시스템 상태 관리 및 WebSocket 브로커 (`CT10_Ctl_Basic/Ctl/StMG/IOWS_0202.cpp`, `_Ctl_Seg/Ovr/Mode_0202.cpp`).
     - `D10_Logger_0202.h`: 통합 링버퍼 로거 (`CL_D10_Logger`).
@@ -99,8 +100,9 @@ build_src_filter =
 | :--- | :--- | :--- |
 | **A00** | 메인 부팅 시퀀스 및 주기 루프 위임 | `A00_Main_0202.cpp`, `A00_Main_0202.h` |
 | **A20** | 전역 상수, 설정 테이블, 공통 매크로 | `A20_Const_0202.h`, `A20_Const_Sys_0202.h` |
-| **A22~A29** | 공통 유틸리티, 룩업테이블, 파서/리셋 | `A22_Com_Lookup_0202.h`, `A25_Com_Utils_0202.h` |
+| **A22~A23** | 공통 룩업테이블, 팩토리 리셋 헬퍼 | `A22_Com_Lookup_0202.h`, `A23_Com_ResetCfg_0202.h` |
 | **A30** | 상태 표시 LED / NeoPixel 제어 | `A30_LED_0202.h` |
+| **A40** | 공통 유틸리티, LittleFS IO 안전 처리, 동기화 가드 | `A40_Com_Utils_0202.h`, `A40_Com_Utils_IO_0202.cpp` |
 | **C10** | 환경설정(Config) 로드/저장/검증 | `C10_Config_0202.h`, `C10_Config_Core_0202.cpp` |
 | **CT10** | 장치 제어(Control), 상태 관리, WS 브로커 | `CT10_Ctl_0202.h`, `CT10_Ctl_Ctl_0202.cpp` |
 | **D10** | 시스템 로거 (로그 레벨 필터링 및 출력) | `D10_Logger_0202.h` |

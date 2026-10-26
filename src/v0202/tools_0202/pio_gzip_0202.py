@@ -23,9 +23,9 @@ Smart Nature Wind v0202 — SPA Web Staging + Offline Zip (최종 완성본)
   [6/6] 오프라인 zip  : data_v0202/ 전체 압축
 
 [특이사항]
-  - 번들 결과물(JS, CSS)을 배포 폴더와 소스 폴더 양쪽에 모두 복사하여
-    소스 폴더에서 Live Server 등으로 즉시 UI 검증이 가능하도록 지원.
-  - HTML 파일명은 배포 환경에서도 index.html로 유지.
+  - 번들 결과물(JS, CSS raw)을 소스 폴더에도 동기화하여 Live Server 등으로 로컬 UI 즉시 검증 지원.
+  - .gz 압축 파일은 실제 ESP32 LittleFS 배포 대상인 배포 스테이징 폴더(data_v0202/)에만 생성.
+  - HTML 파일명은 index.html로 단일 통일.
   - 오프라인 어댑터(998.offline_0202.js)는 로컬 검증용으로만 소스에 두고 배포 폴더에는 복사하지 않음.
 
 실행:
@@ -152,9 +152,8 @@ def build_js_bundle(src_dir: Path, dst_dir: Path) -> int:
     with gzip.open(out_gz, "wb", compresslevel=9) as f_out:
         f_out.write(bundle.encode("utf-8"))
 
-    # [신규] 소스 폴더에도 복사 (로컬 UI 검증용)
+    # [로컬 UI 검증용] 번들 raw 파일만 소스 폴더에 동기화
     shutil.copy2(out_raw, src_dir / JS_BUNDLE_OUTPUT)
-    shutil.copy2(out_gz,  src_dir / (JS_BUNDLE_OUTPUT + ".gz"))
 
     gz_size = out_gz.stat().st_size
     ratio = (1.0 - gz_size / total_raw) * 100.0 if total_raw > 0 else 0.0
@@ -198,9 +197,8 @@ def build_css_bundle(src_dir: Path, dst_dir: Path) -> int:
     with gzip.open(out_gz, "wb", compresslevel=9) as f_out:
         f_out.write(bundle.encode("utf-8"))
 
-    # [신규] 소스 폴더에도 복사 (로컬 UI 검증용)
+    # [로컬 UI 검증용] 번들 raw 파일만 소스 폴더에 동기화
     shutil.copy2(out_raw, src_dir / CSS_BUNDLE_OUTPUT)
-    shutil.copy2(out_gz,  src_dir / (CSS_BUNDLE_OUTPUT + ".gz"))
 
     gz_size = out_gz.stat().st_size
     ratio = (1.0 - gz_size / total_raw) * 100.0 if total_raw > 0 else 0.0
@@ -226,10 +224,6 @@ def process_html_shell(src_dir: Path, dst_dir: Path) -> int:
 
     with gzip.open(out_gz, "wb", compresslevel=9) as f_out:
         f_out.write(content.encode("utf-8"))
-
-    # [신규] 소스 폴더에도 복사 (로컬 UI 검증용, 소스는 이미 존재하지만 일관성 유지)
-    shutil.copy2(out_raw, src_dir / HTML_SHELL_OUTPUT)
-    shutil.copy2(out_gz,  src_dir / (HTML_SHELL_OUTPUT + ".gz"))
 
     gz_size = out_gz.stat().st_size
     ratio = (1.0 - gz_size / raw_size) * 100.0 if raw_size > 0 else 0.0

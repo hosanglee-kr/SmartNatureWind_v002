@@ -27,13 +27,13 @@ window.SNW = window.SNW || {};
             MOTION_BLOCKED: 4, AUTOOFF_STOPPED: 5, TIME_INVALID: 6
         },
         FSM_STATE_META: {
-            0: { code: 'IDLE', icon: '⏸', color: 'gray', labelKey: 'fsm.idle', l1: true },
-            1: { code: 'OVERRIDE', icon: '✋', color: 'blue', labelKey: 'fsm.override', l1: true },
-            2: { code: 'PROFILE_RUN', icon: '👤', color: 'green', labelKey: 'fsm.profileRun', l1: false },
-            3: { code: 'SCHEDULE_RUN', icon: '📅', color: 'cyan', labelKey: 'fsm.scheduleRun', l1: false },
-            4: { code: 'MOTION_BLOCKED', icon: '🚫', color: 'yellow', labelKey: 'fsm.motionBlocked', l1: true },
-            5: { code: 'AUTOOFF_STOPPED', icon: '⏹', color: 'orange', labelKey: 'fsm.autoOffStopped', l1: true },
-            6: { code: 'TIME_INVALID', icon: '🕐', color: 'red', labelKey: 'fsm.timeInvalid', l1: false }
+            0: { code: 'IDLE',            icon: '⏸', color: 'gray',   labelKey: 'fsm.idle',           l1: true  },
+            1: { code: 'OVERRIDE',        icon: '✋', color: 'blue',   labelKey: 'fsm.override',       l1: true  },
+            2: { code: 'PROFILE_RUN',     icon: '👤', color: 'green',  labelKey: 'fsm.profileRun',     l1: false },
+            3: { code: 'SCHEDULE_RUN',    icon: '📅', color: 'cyan',   labelKey: 'fsm.scheduleRun',    l1: false },
+            4: { code: 'MOTION_BLOCKED',  icon: '🚫', color: 'yellow', labelKey: 'fsm.motionBlocked',  l1: true  },
+            5: { code: 'AUTOOFF_STOPPED', icon: '⏹', color: 'orange', labelKey: 'fsm.autoOffStopped', l1: true  },
+            6: { code: 'TIME_INVALID',    icon: '🕐', color: 'red',    labelKey: 'fsm.timeInvalid',    l1: false }
         },
 
         // =====================================================
@@ -46,18 +46,18 @@ window.SNW = window.SNW || {};
             AUTOOFF_TIMER: 9, AUTOOFF_TIME: 10, AUTOOFF_TEMP: 11
         },
         FSM_REASON_META: {
-            0: { code: 'NONE', labelKey: 'reason.none' },
-            1: { code: 'OVERRIDE_ACTIVE', labelKey: 'reason.overrideActive' },
-            2: { code: 'PROFILE_MODE', labelKey: 'reason.profileMode' },
-            3: { code: 'USER_PROFILE_ACTIVE', labelKey: 'reason.userProfileActive' },
-            4: { code: 'SCHEDULE_ACTIVE', labelKey: 'reason.scheduleActive' },
-            5: { code: 'NO_ACTIVE_SCHEDULE', labelKey: 'reason.noActiveSchedule' },
-            6: { code: 'NO_SCHEDULES', labelKey: 'reason.noSchedules' },
-            7: { code: 'TIME_NOT_VALID', labelKey: 'reason.timeNotValid' },
-            8: { code: 'MOTION_NO_PRESENCE', labelKey: 'reason.motionNoPresence' },
-            9: { code: 'AUTOOFF_TIMER', labelKey: 'reason.autoOffTimer' },
-            10: { code: 'AUTOOFF_TIME', labelKey: 'reason.autoOffTime' },
-            11: { code: 'AUTOOFF_TEMP', labelKey: 'reason.autoOffTemp' }
+            0:  { code: 'NONE',                labelKey: 'reason.none'             },
+            1:  { code: 'OVERRIDE_ACTIVE',     labelKey: 'reason.overrideActive'   },
+            2:  { code: 'PROFILE_MODE',        labelKey: 'reason.profileMode'      },
+            3:  { code: 'USER_PROFILE_ACTIVE', labelKey: 'reason.userProfileActive'},
+            4:  { code: 'SCHEDULE_ACTIVE',     labelKey: 'reason.scheduleActive'   },
+            5:  { code: 'NO_ACTIVE_SCHEDULE',  labelKey: 'reason.noActiveSchedule' },
+            6:  { code: 'NO_SCHEDULES',        labelKey: 'reason.noSchedules'      },
+            7:  { code: 'TIME_NOT_VALID',      labelKey: 'reason.timeNotValid'     },
+            8:  { code: 'MOTION_NO_PRESENCE',  labelKey: 'reason.motionNoPresence' },
+            9:  { code: 'AUTOOFF_TIMER',       labelKey: 'reason.autoOffTimer'     },
+            10: { code: 'AUTOOFF_TIME',        labelKey: 'reason.autoOffTime'      },
+            11: { code: 'AUTOOFF_TEMP',        labelKey: 'reason.autoOffTemp'      }
         },
 
         // =====================================================
@@ -65,8 +65,8 @@ window.SNW = window.SNW || {};
         // =====================================================
         WIND_PHASE: { CALM: 'CALM', NORMAL: 'NORMAL', STRONG: 'STRONG' },
         WIND_PHASE_META: {
-            CALM: { icon: '🍃', color: 'gray', labelKey: 'phase.calm' },
-            NORMAL: { icon: '🟢', color: 'green', labelKey: 'phase.normal' },
+            CALM:   { icon: '🍃', color: 'gray',   labelKey: 'phase.calm'   },
+            NORMAL: { icon: '🟢', color: 'green',  labelKey: 'phase.normal' },
             STRONG: { icon: '🌪', color: 'orange', labelKey: 'phase.strong' }
         },
 
@@ -105,11 +105,11 @@ window.SNW = window.SNW || {};
         // =====================================================
         LOG_LEVEL: { NONE: 0, ERROR: 1, WARN: 2, INFO: 3, DEBUG: 4 },
         LOG_LEVEL_META: {
-            0: { code: 'NONE', color: 'gray', labelKey: 'log.none' },
-            1: { code: 'ERROR', color: 'red', labelKey: 'log.error' },
-            2: { code: 'WARN', color: 'yellow', labelKey: 'log.warn' },
-            3: { code: 'INFO', color: 'green', labelKey: 'log.info' },
-            4: { code: 'DEBUG', color: 'cyan', labelKey: 'log.debug' }
+            0: { code: 'NONE',  color: 'gray',   labelKey: 'log.none'  },
+            1: { code: 'ERROR', color: 'red',    labelKey: 'log.error' },
+            2: { code: 'WARN',  color: 'yellow', labelKey: 'log.warn'  },
+            3: { code: 'INFO',  color: 'green',  labelKey: 'log.info'  },
+            4: { code: 'DEBUG', color: 'cyan',   labelKey: 'log.debug' }
         },
 
         // =====================================================
@@ -133,7 +133,7 @@ window.SNW = window.SNW || {};
         // =====================================================
         RELOAD: {
             POLL_INTERVAL_MS: 300,
-            POLL_TIMEOUT_MS: 5000
+            POLL_TIMEOUT_MS:  5000
         },
 
         // =====================================================
@@ -157,7 +157,7 @@ window.SNW = window.SNW || {};
         // AutoOff reason 라벨 매핑
         // =====================================================
         AUTOOFF_REASON_MAP: {
-            9: 'autoOff.timer',
+            9:  'autoOff.timer',
             10: 'autoOff.time',
             11: 'autoOff.temp'
         }
@@ -172,164 +172,164 @@ window.SNW = window.SNW || {};
 // Layer 0 (기반) — SNW.C 참조만 허용
 // =========================================================
 window.SNW = window.SNW || {};
-(function (SNW) {
-    'use strict';
-
-    const LS_PREFIX = 'snw.';
-
-    SNW.CFG = {
-        // =====================================================
-        // localStorage 키 (중앙 관리)
-        // =====================================================
-        LS_PREFIX: LS_PREFIX,
-        LS_KEY: {
-            API_KEY: LS_PREFIX + 'apiKey',
-            LEVEL: LS_PREFIX + 'level',
-            LANG: LS_PREFIX + 'lang',
-            DEBUG: LS_PREFIX + 'debug',
-            LAST_PRESET: LS_PREFIX + 'lastPreset',
-            UI_THEME: LS_PREFIX + 'theme'
-        },
-
-        // =====================================================
-        // API 경로 (버전 prefix 중앙 관리)
-        // =====================================================
-        API_BASE: '/api/v001',
-        API: {
-            version: '/api/v001/version',
-            state: '/api/v001/state',
-            metrics: '/api/v001/metrics',
-            controlSummary: '/api/v001/control/summary',
-            overrideFixed: '/api/v001/control/override/fixed',
-            overridePreset: '/api/v001/control/override/preset',
-            overrideClear: '/api/v001/control/override/clear',
-            ack: '/api/v001/control/ack',
-            controlMode: '/api/v001/control/mode',
-            simulation: '/api/v001/simulation',
-            simState: '/api/v001/sim/state',
-            windProfile: '/api/v001/windProfile',
-            schedules: '/api/v001/schedules',
-            userProfiles: '/api/v001/user_profiles',
-            userProfilesPatch: '/api/v001/user_profiles/patch',
-            profileSelect: '/api/v001/control/profile/select',
-            profileStop: '/api/v001/control/profile/stop',
-            motion: '/api/v001/motion',
-            motionPirFeed: '/api/v001/motion/pir/feed',
-            system: '/api/v001/system',
-            config: '/api/v001/config',
-            configSave: '/api/v001/config/save',
-            configDirty: '/api/v001/config/dirty',
-            configInit: '/api/v001/config/init',
-            reload: '/api/v001/reload',
-            wifiState: '/api/v001/wifi/state',
-            wifiConfig: '/api/v001/wifi/config',
-            wifiScan: '/api/v001/wifi/scan',
-            timeSet: '/api/v001/system/time/set',
-            logs: '/api/v001/logs',
-            diag: '/api/v001/diag',
-            firmwareCheck: '/api/v001/system/firmware/check',
-            fwUpdate: '/api/v001/fwUpdate',
-            fileUpload: '/api/v001/fileUpload',
-            gemini: '/api/v001/ai/gemini',
-            menu: '/api/v001/menu'
-        },
-
-        // =====================================================
-        // WS 경로
-        // =====================================================
-        WS_BASE_PATH: '/ws',
-        WS_PATH: {
-            state: '/ws/state',
-            metrics: '/ws/metrics',
-            chart: '/ws/chart',
-            summary: '/ws/summary',
-            log: '/ws/log'
-        },
-
-        // =====================================================
-        // HTTP 타임아웃 (ms)
-        // =====================================================
-        TIMEOUT_MS: {
-            DEFAULT: 8000,
-            GEMINI: 20000,
-            UPLOAD: 60000,
-            SCAN: 15000
-        },
-
-        // =====================================================
-        // WS 재연결 (exponential backoff)
-        // =====================================================
-        WS_RECONNECT: {
-            BACKOFF_MS: [1000, 2000, 4000, 8000, 16000, 30000],
-            FAIL_THRESHOLD: 3,
-            FALLBACK_POLL_MS: 2000
-        },
-
-        // =====================================================
-        // 시뮬레이션 기본값 (서버 미응답 시)
-        // =====================================================
-        SIM_DEFAULT: {
-            intensity: 70,
-            variability: 50,
-            gustFreq: 45,
-            fanLimit: 90,
-            minFan: 10,
-            fanPowerEnabled: true
-        },
-
-        // =====================================================
-        // 사용자 레벨 기본값
-        // =====================================================
-        DEFAULT_LEVEL: 'L4',
-
-        // =====================================================
-        // UI 상수 (컴포넌트 공용)
-        // =====================================================
-        UI: {
-            TOAST_DEFAULT_MS: 3000,
-            TOAST_SUCCESS_MS: 2000,
-            TOAST_ERROR_MS: 4000,
-            PRESET_GRID_MIN_COL: 2,
-            PRESET_GRID_MAX_COL: 5,
-            MINI_CHART_POINTS: 120,
-            MINI_CHART_SERIES: [
-                { key: 'windSpeed', color: '#4a9eff', labelKey: 'chart.wind' },
-                { key: 'targetWind', color: '#9aa5b1', labelKey: 'chart.target' },
-                { key: 'pwmDuty', color: '#f5a623', labelKey: 'chart.pwm' }
-            ],
-            LOG_MAX_LINES: 256
-        },
-
-        // =====================================================
-        // 개발 모드
-        // =====================================================
-        IS_DEV: (location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
-
-        // =====================================================
-        // localStorage 오버라이드 헬퍼
-        // =====================================================
-        get(path) {
-            const lsKey = LS_PREFIX + 'cfg.' + path;
-            const lsVal = localStorage.getItem(lsKey);
-            if (lsVal != null) {
-                try { return JSON.parse(lsVal); } catch { return lsVal; }
-            }
-            const segs = path.split('.');
-            let v = SNW.CFG;
-            for (const s of segs) {
-                if (v == null) return undefined;
-                v = v[s];
-            }
-            return v;
-        },
-        setOverride(path, value) {
-            localStorage.setItem(LS_PREFIX + 'cfg.' + path, JSON.stringify(value));
-        },
-        clearOverride(path) {
-            localStorage.removeItem(LS_PREFIX + 'cfg.' + path);
-        }
-    };
-
+(function(SNW) {
+	'use strict';
+	
+	const LS_PREFIX = 'snw.';
+	
+	SNW.CFG = {
+		// =====================================================
+		// localStorage 키 (중앙 관리)
+		// =====================================================
+		LS_PREFIX: LS_PREFIX,
+		LS_KEY: {
+			API_KEY: LS_PREFIX + 'apiKey',
+			LEVEL: LS_PREFIX + 'level',
+			LANG: LS_PREFIX + 'lang',
+			DEBUG: LS_PREFIX + 'debug',
+			LAST_PRESET: LS_PREFIX + 'lastPreset',
+			UI_THEME: LS_PREFIX + 'theme'
+		},
+		
+		// =====================================================
+		// API 경로 (버전 prefix 중앙 관리)
+		// =====================================================
+		API_BASE: '/api/v001',
+		API: {
+			version: '/api/v001/version',
+			state: '/api/v001/state',
+			metrics: '/api/v001/metrics',
+			controlSummary: '/api/v001/control/summary',
+			overrideFixed: '/api/v001/control/override/fixed',
+			overridePreset: '/api/v001/control/override/preset',
+			overrideClear: '/api/v001/control/override/clear',
+			ack: '/api/v001/control/ack',
+			controlMode: '/api/v001/control/mode',
+			simulation: '/api/v001/simulation',
+			simState: '/api/v001/sim/state',
+			windProfile: '/api/v001/windProfile',
+			schedules: '/api/v001/schedules',
+			userProfiles: '/api/v001/user_profiles',
+			userProfilesPatch: '/api/v001/user_profiles/patch',
+			profileSelect: '/api/v001/control/profile/select',
+			profileStop: '/api/v001/control/profile/stop',
+			motion: '/api/v001/motion',
+			motionPirFeed: '/api/v001/motion/pir/feed',
+			system: '/api/v001/system',
+			config: '/api/v001/config',
+			configSave: '/api/v001/config/save',
+			configDirty: '/api/v001/config/dirty',
+			configInit: '/api/v001/config/init',
+			reload: '/api/v001/reload',
+			wifiState: '/api/v001/wifi/state',
+			wifiConfig: '/api/v001/wifi/config',
+			wifiScan: '/api/v001/wifi/scan',
+			timeSet: '/api/v001/system/time/set',
+			logs: '/api/v001/logs',
+			diag: '/api/v001/diag',
+			firmwareCheck: '/api/v001/system/firmware/check',
+			fwUpdate: '/api/v001/fwUpdate',
+			fileUpload: '/api/v001/fileUpload',
+			gemini: '/api/v001/ai/gemini',
+			menu: '/api/v001/menu'
+		},
+		
+		// =====================================================
+		// WS 경로
+		// =====================================================
+		WS_BASE_PATH: '/ws',
+		WS_PATH: {
+			state: '/ws/state',
+			metrics: '/ws/metrics',
+			chart: '/ws/chart',
+			summary: '/ws/summary',
+			log: '/ws/log'
+		},
+		
+		// =====================================================
+		// HTTP 타임아웃 (ms)
+		// =====================================================
+		TIMEOUT_MS: {
+			DEFAULT: 8000,
+			GEMINI: 20000,
+			UPLOAD: 60000,
+			SCAN: 15000
+		},
+		
+		// =====================================================
+		// WS 재연결 (exponential backoff)
+		// =====================================================
+		WS_RECONNECT: {
+			BACKOFF_MS: [1000, 2000, 4000, 8000, 16000, 30000],
+			FAIL_THRESHOLD: 3,
+			FALLBACK_POLL_MS: 2000
+		},
+		
+		// =====================================================
+		// 시뮬레이션 기본값 (서버 미응답 시)
+		// =====================================================
+		SIM_DEFAULT: {
+			intensity: 70,
+			variability: 50,
+			gustFreq: 45,
+			fanLimit: 90,
+			minFan: 10,
+			fanPowerEnabled: true
+		},
+		
+		// =====================================================
+		// 사용자 레벨 기본값
+		// =====================================================
+		DEFAULT_LEVEL: 'L4',
+		
+		// =====================================================
+		// UI 상수 (컴포넌트 공용)
+		// =====================================================
+		UI: {
+			TOAST_DEFAULT_MS: 3000,
+			TOAST_SUCCESS_MS: 2000,
+			TOAST_ERROR_MS: 4000,
+			PRESET_GRID_MIN_COL: 2,
+			PRESET_GRID_MAX_COL: 5,
+			MINI_CHART_POINTS: 120,
+			MINI_CHART_SERIES: [
+				{ key: 'windSpeed', color: '#4a9eff', labelKey: 'chart.wind' },
+				{ key: 'targetWind', color: '#9aa5b1', labelKey: 'chart.target' },
+				{ key: 'pwmDuty', color: '#f5a623', labelKey: 'chart.pwm' }
+			],
+			LOG_MAX_LINES: 256
+		},
+		
+		// =====================================================
+		// 개발 모드
+		// =====================================================
+		IS_DEV: (location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
+		
+		// =====================================================
+		// localStorage 오버라이드 헬퍼
+		// =====================================================
+		get(path) {
+			const lsKey = LS_PREFIX + 'cfg.' + path;
+			const lsVal = localStorage.getItem(lsKey);
+			if (lsVal != null) {
+				try { return JSON.parse(lsVal); } catch { return lsVal; }
+			}
+			const segs = path.split('.');
+			let v = SNW.CFG;
+			for (const s of segs) {
+				if (v == null) return undefined;
+				v = v[s];
+			}
+			return v;
+		},
+		setOverride(path, value) {
+			localStorage.setItem(LS_PREFIX + 'cfg.' + path, JSON.stringify(value));
+		},
+		clearOverride(path) {
+			localStorage.removeItem(LS_PREFIX + 'cfg.' + path);
+		}
+	};
+	
 })(window.SNW);
 
 
@@ -349,467 +349,467 @@ window.SNW = window.SNW || {};
         // =====================================================
         ko: {
             // --- 공통 ---
-            'app.title': 'Smart Nature Wind',
-            'common.ok': '확인',
-            'common.cancel': '취소',
-            'common.save': '저장',
-            'common.apply': '적용',
-            'common.reset': '초기화',
-            'common.close': '닫기',
-            'common.delete': '삭제',
-            'common.edit': '편집',
-            'common.add': '추가',
-            'common.loading': '로딩 중...',
-            'common.noData': '데이터 없음',
-            'common.error': '오류',
-            'common.warning': '경고',
-            'common.success': '완료',
-            'common.unknown': '알 수 없음',
-            'common.offline': '오프라인',
-            'common.online': '온라인',
+            'app.title':        'Smart Nature Wind',
+            'common.ok':        '확인',
+            'common.cancel':    '취소',
+            'common.save':      '저장',
+            'common.apply':     '적용',
+            'common.reset':     '초기화',
+            'common.close':     '닫기',
+            'common.delete':    '삭제',
+            'common.edit':      '편집',
+            'common.add':       '추가',
+            'common.loading':   '로딩 중...',
+            'common.noData':    '데이터 없음',
+            'common.error':     '오류',
+            'common.warning':   '경고',
+            'common.success':   '완료',
+            'common.unknown':   '알 수 없음',
+            'common.offline':   '오프라인',
+            'common.online':    '온라인',
 
             // --- Header/Footer ---
-            'header.clock': '시계',
-            'header.wifi': 'Wi-Fi 상태',
-            'header.menu': '메뉴',
-            'footer.lastUpdate': '마지막 업데이트',
-            'footer.refresh': '강제 새로고침',
-            'footer.online': '🟢 실시간 연결',
-            'footer.offline': '🔴 연결 끊김 (재시도 중)',
-            'footer.polling': '🟡 REST 폴링 모드',
+            'header.clock':       '시계',
+            'header.wifi':        'Wi-Fi 상태',
+            'header.menu':        '메뉴',
+            'footer.lastUpdate':  '마지막 업데이트',
+            'footer.refresh':     '강제 새로고침',
+            'footer.online':      '🟢 실시간 연결',
+            'footer.offline':     '🔴 연결 끊김 (재시도 중)',
+            'footer.polling':     '🟡 REST 폴링 모드',
 
             // --- 네비게이션 ---
-            'nav.dashboard': '대시보드',
-            'nav.chart': '실시간 차트',
-            'nav.schedule': '스케줄',
-            'nav.profiles': '프로필',
-            'nav.sensors': '센서',
+            'nav.dashboard':   '대시보드',
+            'nav.chart':       '실시간 차트',
+            'nav.schedule':    '스케줄',
+            'nav.profiles':    '프로필',
+            'nav.sensors':     '센서',
             'nav.windprofile': '바람 프리셋 관리',
-            'nav.settings': '설정',
-            'nav.network': '네트워크',
-            'nav.logs': '로그',
+            'nav.settings':    '설정',
+            'nav.network':     '네트워크',
+            'nav.logs':        '로그',
             'nav.diagnostics': '진단',
-            'nav.firmware': '펌웨어',
-            'nav.ai': 'AI',
-            'nav.info': '정보',
+            'nav.firmware':    '펌웨어',
+            'nav.ai':          'AI',
+            'nav.info':        '정보',
 
             // --- Dashboard ---
-            'dashboard.title': '대시보드',
-            'dashboard.realtimeState': '실시간 상태',
-            'dashboard.currentWind': '현재 풍속',
-            'dashboard.targetWind': '목표 풍속',
-            'dashboard.pwmOutput': 'PWM 출력',
-            'dashboard.state': '상태',
-            'dashboard.phase': 'Phase',
-            'dashboard.sensorTitle': '센서',
-            'dashboard.powerTitle': '전원 제어',
-            'dashboard.powerOn': '켜기',
-            'dashboard.powerOff': '끄기',
-            'dashboard.presetTitle': '프리셋 선택',
-            'dashboard.presetCurrent': '현재 선택',
+            'dashboard.title':          '대시보드',
+            'dashboard.realtimeState':  '실시간 상태',
+            'dashboard.currentWind':    '현재 풍속',
+            'dashboard.targetWind':     '목표 풍속',
+            'dashboard.pwmOutput':      'PWM 출력',
+            'dashboard.state':          '상태',
+            'dashboard.phase':          'Phase',
+            'dashboard.sensorTitle':    '센서',
+            'dashboard.powerTitle':     '전원 제어',
+            'dashboard.powerOn':        '켜기',
+            'dashboard.powerOff':       '끄기',
+            'dashboard.presetTitle':    '프리셋 선택',
+            'dashboard.presetCurrent':  '현재 선택',
             'dashboard.intensityTitle': '강도 조절',
             'dashboard.intensityLabel': '강도',
-            'dashboard.temp': '온도',
-            'dashboard.humidity': '습도',
-            'dashboard.motion': '인체감지',
+            'dashboard.temp':           '온도',
+            'dashboard.humidity':       '습도',
+            'dashboard.motion':         '인체감지',
             'dashboard.motionDetected': '감지',
-            'dashboard.motionAbsent': '부재',
+            'dashboard.motionAbsent':   '부재',
 
             // --- FSM ---
-            'fsm.idle': '대기 중',
-            'fsm.override': '수동 제어 중',
-            'fsm.profileRun': '프로필 실행 중',
-            'fsm.scheduleRun': '스케줄 실행 중',
-            'fsm.motionBlocked': '인체 미감지',
+            'fsm.idle':           '대기 중',
+            'fsm.override':       '수동 제어 중',
+            'fsm.profileRun':     '프로필 실행 중',
+            'fsm.scheduleRun':    '스케줄 실행 중',
+            'fsm.motionBlocked':  '인체 미감지',
             'fsm.autoOffStopped': '자동 꺼짐',
-            'fsm.timeInvalid': '시간 미동기',
+            'fsm.timeInvalid':    '시간 미동기',
 
             // --- Reason ---
-            'reason.none': '없음',
-            'reason.overrideActive': '수동 제어 활성',
-            'reason.profileMode': '프로필 모드',
+            'reason.none':              '없음',
+            'reason.overrideActive':    '수동 제어 활성',
+            'reason.profileMode':       '프로필 모드',
             'reason.userProfileActive': '사용자 프로필 활성',
-            'reason.scheduleActive': '스케줄 활성',
-            'reason.noActiveSchedule': '활성 스케줄 없음',
-            'reason.noSchedules': '스케줄 없음',
-            'reason.timeNotValid': '시간 미동기',
-            'reason.motionNoPresence': '인체 미감지',
-            'reason.autoOffTimer': '설정 시간 완료',
-            'reason.autoOffTime': '예약 종료 시각',
-            'reason.autoOffTemp': '온도 조건 도달',
+            'reason.scheduleActive':    '스케줄 활성',
+            'reason.noActiveSchedule':  '활성 스케줄 없음',
+            'reason.noSchedules':       '스케줄 없음',
+            'reason.timeNotValid':      '시간 미동기',
+            'reason.motionNoPresence':  '인체 미감지',
+            'reason.autoOffTimer':      '설정 시간 완료',
+            'reason.autoOffTime':       '예약 종료 시각',
+            'reason.autoOffTemp':       '온도 조건 도달',
 
             // --- Phase ---
-            'phase.calm': '잔잔함',
+            'phase.calm':   '잔잔함',
             'phase.normal': '보통',
             'phase.strong': '강함',
 
             // --- AutoOff ---
-            'autoOff.timer': '설정 시간 완료',
-            'autoOff.time': '예약 종료 시각',
-            'autoOff.temp': '온도 조건 도달',
+            'autoOff.timer':   '설정 시간 완료',
+            'autoOff.time':    '예약 종료 시각',
+            'autoOff.temp':    '온도 조건 도달',
             'autoOff.recover': '자동 꺼짐 상태입니다. 다시 켜시겠습니까?',
-            'autoOff.ack': '확인',
+            'autoOff.ack':     '확인',
             'autoOff.restart': '다시 켜기',
             'autoOff.profile': '프로필 시작',
 
             // --- 프리셋 ---
-            'preset.OCEAN': '해변 바람',
+            'preset.OCEAN':          '해변 바람',
             'preset.COUNTRY_BREEZE': '시골 바람',
-            'preset.MEDITERRANEAN': '지중해 바람',
-            'preset.MOUNTAIN': '산 바람',
-            'preset.PLAINS': '대평원 바람',
-            'preset.HARBOR_BREEZE': '항구 바람',
-            'preset.FOREST_CANOPY': '숲 그늘 바람',
-            'preset.URBAN_SUNSET': '도시 석양 바람',
-            'preset.TROPICAL_RAIN': '열대 소나기 바람',
-            'preset.DESERT_NIGHT': '사막의 밤 바람',
+            'preset.MEDITERRANEAN':  '지중해 바람',
+            'preset.MOUNTAIN':       '산 바람',
+            'preset.PLAINS':         '대평원 바람',
+            'preset.HARBOR_BREEZE':  '항구 바람',
+            'preset.FOREST_CANOPY':  '숲 그늘 바람',
+            'preset.URBAN_SUNSET':   '도시 석양 바람',
+            'preset.TROPICAL_RAIN':  '열대 소나기 바람',
+            'preset.DESERT_NIGHT':   '사막의 밤 바람',
 
             // --- 스타일 ---
             'style.BALANCE': '균형',
-            'style.ACTIVE': '활동적',
-            'style.FOCUS': '집중',
-            'style.RELAX': '휴식',
-            'style.SLEEP': '수면',
+            'style.ACTIVE':  '활동적',
+            'style.FOCUS':   '집중',
+            'style.RELAX':   '휴식',
+            'style.SLEEP':   '수면',
 
             // --- 차트 ---
-            'chart.title': '실시간 물리 차트',
-            'chart.wind': '풍속',
-            'chart.target': '목표',
-            'chart.pwm': 'PWM',
-            'chart.time': '시간',
-            'chart.export': 'CSV 내보내기',
-            'chart.range5': '5초',
-            'chart.range30': '30초',
+            'chart.title':    '실시간 물리 차트',
+            'chart.wind':     '풍속',
+            'chart.target':   '목표',
+            'chart.pwm':      'PWM',
+            'chart.time':     '시간',
+            'chart.export':   'CSV 내보내기',
+            'chart.range5':   '5초',
+            'chart.range30':  '30초',
             'chart.range120': '120초',
 
             // --- 로그 ---
-            'log.title': '시스템 로그',
-            'log.level': '레벨',
-            'log.none': 'NONE',
-            'log.error': 'ERROR',
-            'log.warn': 'WARN',
-            'log.info': 'INFO',
-            'log.debug': 'DEBUG',
+            'log.title':  '시스템 로그',
+            'log.level':  '레벨',
+            'log.none':   'NONE',
+            'log.error':  'ERROR',
+            'log.warn':   'WARN',
+            'log.info':   'INFO',
+            'log.debug':  'DEBUG',
             'log.filter': '필터',
-            'log.clear': '지우기',
+            'log.clear':  '지우기',
             'log.export': '내보내기',
 
             // --- 센서 ---
-            'sensor.title': '센서 및 모션',
+            'sensor.title':       '센서 및 모션',
             'sensor.temperature': '온도',
-            'sensor.humidity': '습도',
-            'sensor.motion': '인체감지',
-            'sensor.holdSec': '유지 시간',
-            'sensor.pirFeed': 'PIR 피드 테스트',
-            'sensor.dht22': 'DHT22 설정',
-            'sensor.pir': 'PIR 설정',
+            'sensor.humidity':    '습도',
+            'sensor.motion':      '인체감지',
+            'sensor.holdSec':     '유지 시간',
+            'sensor.pirFeed':     'PIR 피드 테스트',
+            'sensor.dht22':       'DHT22 설정',
+            'sensor.pir':         'PIR 설정',
 
             // --- 스케줄러 ---
-            'scheduler.title': '스케줄 예약',
-            'scheduler.enabled': '활성',
-            'scheduler.day': '요일',
-            'scheduler.start': '시작',
-            'scheduler.end': '종료',
-            'scheduler.segment': '세그먼트',
-            'scheduler.on': '작동',
-            'scheduler.off': '정지',
-            'scheduler.overlapWarn': '시간대 겹침이 있습니다',
+            'scheduler.title':      '스케줄 예약',
+            'scheduler.enabled':    '활성',
+            'scheduler.day':        '요일',
+            'scheduler.start':      '시작',
+            'scheduler.end':        '종료',
+            'scheduler.segment':    '세그먼트',
+            'scheduler.on':         '작동',
+            'scheduler.off':        '정지',
+            'scheduler.overlapWarn':'시간대 겹침이 있습니다',
 
             // --- 프로필 ---
-            'profile.title': '사용자 프로필',
-            'profile.start': '시작',
-            'profile.stop': '정지',
+            'profile.title':  '사용자 프로필',
+            'profile.start':  '시작',
+            'profile.stop':   '정지',
             'profile.active': '활성 프로필',
 
             // --- 시스템 ---
-            'system.title': '시스템 설정',
-            'system.logLevel': '로그 레벨',
-            'system.apiKey': 'API 키',
-            'system.geminiKey': 'Gemini API 키',
-            'system.save': '설정 저장',
-            'system.reload': '재로드',
+            'system.title':        '시스템 설정',
+            'system.logLevel':     '로그 레벨',
+            'system.apiKey':       'API 키',
+            'system.geminiKey':    'Gemini API 키',
+            'system.save':         '설정 저장',
+            'system.reload':       '재로드',
             'system.factoryReset': '공장 초기화',
-            'system.reboot': '재시작',
-            'system.hwPinmap': '하드웨어 핀맵',
-            'system.fanCurve': '팬 커브',
+            'system.reboot':       '재시작',
+            'system.hwPinmap':     '하드웨어 핀맵',
+            'system.fanCurve':     '팬 커브',
 
             // --- 네트워크 ---
-            'network.title': '네트워크 및 시간',
-            'network.wifiMode': 'Wi-Fi 모드',
-            'network.ssid': 'SSID',
-            'network.ip': 'IP',
-            'network.rssi': 'RSSI',
-            'network.scan': 'Wi-Fi 스캔',
-            'network.connect': '연결',
-            'network.ntpServer': 'NTP 서버',
-            'network.timezone': '시간대',
+            'network.title':        '네트워크 및 시간',
+            'network.wifiMode':     'Wi-Fi 모드',
+            'network.ssid':         'SSID',
+            'network.ip':           'IP',
+            'network.rssi':         'RSSI',
+            'network.scan':         'Wi-Fi 스캔',
+            'network.connect':      '연결',
+            'network.ntpServer':    'NTP 서버',
+            'network.timezone':     '시간대',
             'network.syncInterval': '동기화 주기',
 
             // --- 진단 ---
-            'diag.title': '시스템 진단',
-            'diag.heap': 'Heap 사용',
-            'diag.fs': '파일시스템',
-            'diag.uptime': '업타임',
-            'diag.dirty': 'Dirty Flags',
+            'diag.title':    '시스템 진단',
+            'diag.heap':     'Heap 사용',
+            'diag.fs':       '파일시스템',
+            'diag.uptime':   '업타임',
+            'diag.dirty':    'Dirty Flags',
             'diag.reloadOk': 'Reload 결과',
 
             // --- 펌웨어 ---
-            'firmware.title': '펌웨어 관리',
-            'firmware.version': '현재 버전',
-            'firmware.ota': 'OTA 업데이트',
-            'firmware.upload': '파일 업로드',
-            'firmware.progress': '진행률',
+            'firmware.title':       '펌웨어 관리',
+            'firmware.version':     '현재 버전',
+            'firmware.ota':         'OTA 업데이트',
+            'firmware.upload':      '파일 업로드',
+            'firmware.progress':    '진행률',
             'firmware.checkUpdate': '업데이트 확인',
 
             // --- AI ---
-            'ai.title': 'AI 어시스턴트',
-            'ai.send': '전송',
-            'ai.thinking': '생각 중...',
+            'ai.title':       'AI 어시스턴트',
+            'ai.send':        '전송',
+            'ai.thinking':    '생각 중...',
             'ai.placeholder': '예: "10분 후 꺼줘" 또는 "지금 상태 진단해줘"',
 
             // --- 에러/성공 메시지 ---
             'msg.apiKeyRequired': 'API 키가 필요합니다',
-            'msg.reloadPending': '재로드 진행 중입니다',
-            'msg.noChange': '변경 사항 없음',
-            'msg.saveSuccess': '저장되었습니다',
-            'msg.reloadSuccess': '설정이 적용되었습니다',
-            'msg.reloadFail': '설정 적용 실패',
-            'msg.networkError': '네트워크 오류',
-            'msg.timeout': '요청 시간 초과',
-            'msg.unknown': '알 수 없는 오류가 발생했습니다',
-            'msg.accessDenied': '이 페이지에 접근할 수 없습니다 (레벨 제한)',
+            'msg.reloadPending':  '재로드 진행 중입니다',
+            'msg.noChange':       '변경 사항 없음',
+            'msg.saveSuccess':    '저장되었습니다',
+            'msg.reloadSuccess':  '설정이 적용되었습니다',
+            'msg.reloadFail':     '설정 적용 실패',
+            'msg.networkError':   '네트워크 오류',
+            'msg.timeout':        '요청 시간 초과',
+            'msg.unknown':        '알 수 없는 오류가 발생했습니다',
+            'msg.accessDenied':   '이 페이지에 접근할 수 없습니다 (레벨 제한)',
 
             // --- 단위 ---
-            'unit.celsius': '°C',
-            'unit.humidity': '%',
+            'unit.celsius':   '°C',
+            'unit.humidity':  '%',
             'unit.windSpeed': 'm/s',
-            'unit.percent': '%',
-            'unit.seconds': '초',
-            'unit.minutes': '분',
-            'unit.ms': 'ms'
+            'unit.percent':   '%',
+            'unit.seconds':   '초',
+            'unit.minutes':   '분',
+            'unit.ms':        'ms'
         },
 
         // =====================================================
         // English
         // =====================================================
         en: {
-            'app.title': 'Smart Nature Wind',
-            'common.ok': 'OK',
-            'common.cancel': 'Cancel',
-            'common.save': 'Save',
-            'common.apply': 'Apply',
-            'common.reset': 'Reset',
-            'common.close': 'Close',
-            'common.delete': 'Delete',
-            'common.edit': 'Edit',
-            'common.add': 'Add',
-            'common.loading': 'Loading...',
-            'common.noData': 'No data',
-            'common.error': 'Error',
-            'common.warning': 'Warning',
-            'common.success': 'Success',
-            'common.unknown': 'Unknown',
-            'common.offline': 'Offline',
-            'common.online': 'Online',
+            'app.title':        'Smart Nature Wind',
+            'common.ok':        'OK',
+            'common.cancel':    'Cancel',
+            'common.save':      'Save',
+            'common.apply':     'Apply',
+            'common.reset':     'Reset',
+            'common.close':     'Close',
+            'common.delete':    'Delete',
+            'common.edit':      'Edit',
+            'common.add':       'Add',
+            'common.loading':   'Loading...',
+            'common.noData':    'No data',
+            'common.error':     'Error',
+            'common.warning':   'Warning',
+            'common.success':   'Success',
+            'common.unknown':   'Unknown',
+            'common.offline':   'Offline',
+            'common.online':    'Online',
 
-            'header.clock': 'Clock',
-            'header.wifi': 'Wi-Fi',
-            'header.menu': 'Menu',
-            'footer.lastUpdate': 'Last update',
-            'footer.refresh': 'Force refresh',
-            'footer.online': '🟢 Live',
-            'footer.offline': '🔴 Disconnected (retrying)',
-            'footer.polling': '🟡 REST polling mode',
+            'header.clock':       'Clock',
+            'header.wifi':        'Wi-Fi',
+            'header.menu':        'Menu',
+            'footer.lastUpdate':  'Last update',
+            'footer.refresh':     'Force refresh',
+            'footer.online':      '🟢 Live',
+            'footer.offline':     '🔴 Disconnected (retrying)',
+            'footer.polling':     '🟡 REST polling mode',
 
-            'nav.dashboard': 'Dashboard',
-            'nav.chart': 'Chart',
-            'nav.schedule': 'Schedule',
-            'nav.profiles': 'Profiles',
-            'nav.sensors': 'Sensors',
+            'nav.dashboard':   'Dashboard',
+            'nav.chart':       'Chart',
+            'nav.schedule':    'Schedule',
+            'nav.profiles':    'Profiles',
+            'nav.sensors':     'Sensors',
             'nav.windprofile': 'Wind Presets',
-            'nav.settings': 'Settings',
-            'nav.network': 'Network',
-            'nav.logs': 'Logs',
+            'nav.settings':    'Settings',
+            'nav.network':     'Network',
+            'nav.logs':        'Logs',
             'nav.diagnostics': 'Diagnostics',
-            'nav.firmware': 'Firmware',
-            'nav.ai': 'AI',
-            'nav.info': 'Info',
+            'nav.firmware':    'Firmware',
+            'nav.ai':          'AI',
+            'nav.info':        'Info',
 
-            'dashboard.title': 'Dashboard',
-            'dashboard.realtimeState': 'Real-time Status',
-            'dashboard.currentWind': 'Current Wind',
-            'dashboard.targetWind': 'Target Wind',
-            'dashboard.pwmOutput': 'PWM Output',
-            'dashboard.state': 'State',
-            'dashboard.phase': 'Phase',
-            'dashboard.sensorTitle': 'Sensors',
-            'dashboard.powerTitle': 'Power',
-            'dashboard.powerOn': 'On',
-            'dashboard.powerOff': 'Off',
-            'dashboard.presetTitle': 'Preset',
-            'dashboard.presetCurrent': 'Current',
+            'dashboard.title':          'Dashboard',
+            'dashboard.realtimeState':  'Real-time Status',
+            'dashboard.currentWind':    'Current Wind',
+            'dashboard.targetWind':     'Target Wind',
+            'dashboard.pwmOutput':      'PWM Output',
+            'dashboard.state':          'State',
+            'dashboard.phase':          'Phase',
+            'dashboard.sensorTitle':    'Sensors',
+            'dashboard.powerTitle':     'Power',
+            'dashboard.powerOn':        'On',
+            'dashboard.powerOff':       'Off',
+            'dashboard.presetTitle':    'Preset',
+            'dashboard.presetCurrent':  'Current',
             'dashboard.intensityTitle': 'Intensity',
             'dashboard.intensityLabel': 'Intensity',
-            'dashboard.temp': 'Temp',
-            'dashboard.humidity': 'Humidity',
-            'dashboard.motion': 'Motion',
+            'dashboard.temp':           'Temp',
+            'dashboard.humidity':       'Humidity',
+            'dashboard.motion':         'Motion',
             'dashboard.motionDetected': 'Detected',
-            'dashboard.motionAbsent': 'Absent',
+            'dashboard.motionAbsent':   'Absent',
 
-            'fsm.idle': 'Idle',
-            'fsm.override': 'Override',
-            'fsm.profileRun': 'Profile Running',
-            'fsm.scheduleRun': 'Schedule Running',
-            'fsm.motionBlocked': 'Motion Blocked',
+            'fsm.idle':           'Idle',
+            'fsm.override':       'Override',
+            'fsm.profileRun':     'Profile Running',
+            'fsm.scheduleRun':    'Schedule Running',
+            'fsm.motionBlocked':  'Motion Blocked',
             'fsm.autoOffStopped': 'Auto Off',
-            'fsm.timeInvalid': 'Time Invalid',
+            'fsm.timeInvalid':    'Time Invalid',
 
-            'reason.none': 'None',
-            'reason.overrideActive': 'Override Active',
-            'reason.profileMode': 'Profile Mode',
+            'reason.none':              'None',
+            'reason.overrideActive':    'Override Active',
+            'reason.profileMode':       'Profile Mode',
             'reason.userProfileActive': 'User Profile Active',
-            'reason.scheduleActive': 'Schedule Active',
-            'reason.noActiveSchedule': 'No Active Schedule',
-            'reason.noSchedules': 'No Schedules',
-            'reason.timeNotValid': 'Time Not Valid',
-            'reason.motionNoPresence': 'No Presence',
-            'reason.autoOffTimer': 'Timer Expired',
-            'reason.autoOffTime': 'Scheduled End Time',
-            'reason.autoOffTemp': 'Temperature Triggered',
+            'reason.scheduleActive':    'Schedule Active',
+            'reason.noActiveSchedule':  'No Active Schedule',
+            'reason.noSchedules':       'No Schedules',
+            'reason.timeNotValid':      'Time Not Valid',
+            'reason.motionNoPresence':  'No Presence',
+            'reason.autoOffTimer':      'Timer Expired',
+            'reason.autoOffTime':       'Scheduled End Time',
+            'reason.autoOffTemp':       'Temperature Triggered',
 
-            'phase.calm': 'Calm',
+            'phase.calm':   'Calm',
             'phase.normal': 'Normal',
             'phase.strong': 'Strong',
 
-            'autoOff.timer': 'Timer expired',
-            'autoOff.time': 'Scheduled end time',
-            'autoOff.temp': 'Temperature threshold',
+            'autoOff.timer':   'Timer expired',
+            'autoOff.time':    'Scheduled end time',
+            'autoOff.temp':    'Temperature threshold',
             'autoOff.recover': 'Auto Off triggered. Turn on again?',
-            'autoOff.ack': 'Acknowledge',
+            'autoOff.ack':     'Acknowledge',
             'autoOff.restart': 'Turn On Again',
             'autoOff.profile': 'Start Profile',
 
-            'preset.OCEAN': 'Ocean Breeze',
+            'preset.OCEAN':          'Ocean Breeze',
             'preset.COUNTRY_BREEZE': 'Country Breeze',
-            'preset.MEDITERRANEAN': 'Mediterranean',
-            'preset.MOUNTAIN': 'Mountain',
-            'preset.PLAINS': 'Plains',
-            'preset.HARBOR_BREEZE': 'Harbor Breeze',
-            'preset.FOREST_CANOPY': 'Forest Canopy',
-            'preset.URBAN_SUNSET': 'Urban Sunset',
-            'preset.TROPICAL_RAIN': 'Tropical Rain',
-            'preset.DESERT_NIGHT': 'Desert Night',
+            'preset.MEDITERRANEAN':  'Mediterranean',
+            'preset.MOUNTAIN':       'Mountain',
+            'preset.PLAINS':         'Plains',
+            'preset.HARBOR_BREEZE':  'Harbor Breeze',
+            'preset.FOREST_CANOPY':  'Forest Canopy',
+            'preset.URBAN_SUNSET':   'Urban Sunset',
+            'preset.TROPICAL_RAIN':  'Tropical Rain',
+            'preset.DESERT_NIGHT':   'Desert Night',
 
             'style.BALANCE': 'Balance',
-            'style.ACTIVE': 'Active',
-            'style.FOCUS': 'Focus',
-            'style.RELAX': 'Relax',
-            'style.SLEEP': 'Sleep',
+            'style.ACTIVE':  'Active',
+            'style.FOCUS':   'Focus',
+            'style.RELAX':   'Relax',
+            'style.SLEEP':   'Sleep',
 
-            'chart.title': 'Live Chart',
-            'chart.wind': 'Wind',
-            'chart.target': 'Target',
-            'chart.pwm': 'PWM',
-            'chart.time': 'Time',
-            'chart.export': 'Export CSV',
-            'chart.range5': '5s',
-            'chart.range30': '30s',
+            'chart.title':    'Live Chart',
+            'chart.wind':     'Wind',
+            'chart.target':   'Target',
+            'chart.pwm':      'PWM',
+            'chart.time':     'Time',
+            'chart.export':   'Export CSV',
+            'chart.range5':   '5s',
+            'chart.range30':  '30s',
             'chart.range120': '120s',
 
-            'log.title': 'System Logs',
-            'log.level': 'Level',
-            'log.none': 'NONE',
-            'log.error': 'ERROR',
-            'log.warn': 'WARN',
-            'log.info': 'INFO',
-            'log.debug': 'DEBUG',
+            'log.title':  'System Logs',
+            'log.level':  'Level',
+            'log.none':   'NONE',
+            'log.error':  'ERROR',
+            'log.warn':   'WARN',
+            'log.info':   'INFO',
+            'log.debug':  'DEBUG',
             'log.filter': 'Filter',
-            'log.clear': 'Clear',
+            'log.clear':  'Clear',
             'log.export': 'Export',
 
-            'sensor.title': 'Sensors & Motion',
+            'sensor.title':       'Sensors & Motion',
             'sensor.temperature': 'Temperature',
-            'sensor.humidity': 'Humidity',
-            'sensor.motion': 'Motion',
-            'sensor.holdSec': 'Hold time',
-            'sensor.pirFeed': 'PIR Feed Test',
-            'sensor.dht22': 'DHT22 Config',
-            'sensor.pir': 'PIR Config',
+            'sensor.humidity':    'Humidity',
+            'sensor.motion':      'Motion',
+            'sensor.holdSec':     'Hold time',
+            'sensor.pirFeed':     'PIR Feed Test',
+            'sensor.dht22':       'DHT22 Config',
+            'sensor.pir':         'PIR Config',
 
-            'scheduler.title': 'Scheduler',
-            'scheduler.enabled': 'Enabled',
-            'scheduler.day': 'Day',
-            'scheduler.start': 'Start',
-            'scheduler.end': 'End',
-            'scheduler.segment': 'Segment',
-            'scheduler.on': 'On',
-            'scheduler.off': 'Off',
-            'scheduler.overlapWarn': 'Time overlap detected',
+            'scheduler.title':      'Scheduler',
+            'scheduler.enabled':    'Enabled',
+            'scheduler.day':        'Day',
+            'scheduler.start':      'Start',
+            'scheduler.end':        'End',
+            'scheduler.segment':    'Segment',
+            'scheduler.on':         'On',
+            'scheduler.off':        'Off',
+            'scheduler.overlapWarn':'Time overlap detected',
 
-            'profile.title': 'User Profiles',
-            'profile.start': 'Start',
-            'profile.stop': 'Stop',
+            'profile.title':  'User Profiles',
+            'profile.start':  'Start',
+            'profile.stop':   'Stop',
             'profile.active': 'Active Profile',
 
-            'system.title': 'System Settings',
-            'system.logLevel': 'Log Level',
-            'system.apiKey': 'API Key',
-            'system.geminiKey': 'Gemini API Key',
-            'system.save': 'Save Settings',
-            'system.reload': 'Reload',
+            'system.title':        'System Settings',
+            'system.logLevel':     'Log Level',
+            'system.apiKey':       'API Key',
+            'system.geminiKey':    'Gemini API Key',
+            'system.save':         'Save Settings',
+            'system.reload':       'Reload',
             'system.factoryReset': 'Factory Reset',
-            'system.reboot': 'Reboot',
-            'system.hwPinmap': 'HW Pinmap',
-            'system.fanCurve': 'Fan Curve',
+            'system.reboot':       'Reboot',
+            'system.hwPinmap':     'HW Pinmap',
+            'system.fanCurve':     'Fan Curve',
 
-            'network.title': 'Network & Time',
-            'network.wifiMode': 'Wi-Fi Mode',
-            'network.ssid': 'SSID',
-            'network.ip': 'IP',
-            'network.rssi': 'RSSI',
-            'network.scan': 'Scan Wi-Fi',
-            'network.connect': 'Connect',
-            'network.ntpServer': 'NTP Server',
-            'network.timezone': 'Timezone',
+            'network.title':        'Network & Time',
+            'network.wifiMode':     'Wi-Fi Mode',
+            'network.ssid':         'SSID',
+            'network.ip':           'IP',
+            'network.rssi':         'RSSI',
+            'network.scan':         'Scan Wi-Fi',
+            'network.connect':      'Connect',
+            'network.ntpServer':    'NTP Server',
+            'network.timezone':     'Timezone',
             'network.syncInterval': 'Sync Interval',
 
-            'diag.title': 'Diagnostics',
-            'diag.heap': 'Heap',
-            'diag.fs': 'File System',
-            'diag.uptime': 'Uptime',
-            'diag.dirty': 'Dirty Flags',
+            'diag.title':    'Diagnostics',
+            'diag.heap':     'Heap',
+            'diag.fs':       'File System',
+            'diag.uptime':   'Uptime',
+            'diag.dirty':    'Dirty Flags',
             'diag.reloadOk': 'Reload Result',
 
-            'firmware.title': 'Firmware',
-            'firmware.version': 'Current Version',
-            'firmware.ota': 'OTA Update',
-            'firmware.upload': 'Upload File',
-            'firmware.progress': 'Progress',
+            'firmware.title':       'Firmware',
+            'firmware.version':     'Current Version',
+            'firmware.ota':         'OTA Update',
+            'firmware.upload':      'Upload File',
+            'firmware.progress':    'Progress',
             'firmware.checkUpdate': 'Check Update',
 
-            'ai.title': 'AI Assistant',
-            'ai.send': 'Send',
-            'ai.thinking': 'Thinking...',
+            'ai.title':       'AI Assistant',
+            'ai.send':        'Send',
+            'ai.thinking':    'Thinking...',
             'ai.placeholder': 'e.g., "Turn off in 10 minutes" or "Diagnose now"',
 
             'msg.apiKeyRequired': 'API Key required',
-            'msg.reloadPending': 'Reload in progress',
-            'msg.noChange': 'No changes',
-            'msg.saveSuccess': 'Saved',
-            'msg.reloadSuccess': 'Settings applied',
-            'msg.reloadFail': 'Failed to apply settings',
-            'msg.networkError': 'Network error',
-            'msg.timeout': 'Timeout',
-            'msg.unknown': 'Unknown error',
-            'msg.accessDenied': 'Access denied (level restricted)',
+            'msg.reloadPending':  'Reload in progress',
+            'msg.noChange':       'No changes',
+            'msg.saveSuccess':    'Saved',
+            'msg.reloadSuccess':  'Settings applied',
+            'msg.reloadFail':     'Failed to apply settings',
+            'msg.networkError':   'Network error',
+            'msg.timeout':        'Timeout',
+            'msg.unknown':        'Unknown error',
+            'msg.accessDenied':   'Access denied (level restricted)',
 
-            'unit.celsius': '°C',
-            'unit.humidity': '%',
+            'unit.celsius':   '°C',
+            'unit.humidity':  '%',
             'unit.windSpeed': 'm/s',
-            'unit.percent': '%',
-            'unit.seconds': 's',
-            'unit.minutes': 'm',
-            'unit.ms': 'ms'
+            'unit.percent':   '%',
+            'unit.seconds':   's',
+            'unit.minutes':   'm',
+            'unit.ms':        'ms'
         }
     };
 
@@ -873,42 +873,42 @@ window.SNW = window.SNW || {};
  * ------------------------------------------------------
  */
 window.SNW = window.SNW || {};
-(function (SNW) {
-    'use strict';
-
-    SNW.LevelUtil = {
-        LEVELS: SNW.C.LEVEL.ORDER,
-
-        current() {
-            try {
-                const v = localStorage.getItem(SNW.CFG.LS_KEY.LEVEL);
-                return this.LEVELS.includes(v) ? v : SNW.CFG.DEFAULT_LEVEL;
-            } catch { return SNW.CFG.DEFAULT_LEVEL; }
-        },
-
-        set(level) {
-            if (!this.LEVELS.includes(level)) return;
-            try { localStorage.setItem(SNW.CFG.LS_KEY.LEVEL, level); } catch { }
-            // 페이지 재로드 (레벨별 라우트 재검증)
-            location.reload();
-        },
-
-        atLeast(minLevel) {
-            const cur = this.current();
-            return this.LEVELS.indexOf(cur) >= this.LEVELS.indexOf(minLevel);
-        },
-
-        /** data-min-level 요소 자동 표시/숨김 */
-        applyTo(root) {
-            const cur = this.current();
-            (root || document).querySelectorAll('[data-min-level]').forEach(el => {
-                const min = el.getAttribute('data-min-level');
-                const show = this.LEVELS.indexOf(cur) >= this.LEVELS.indexOf(min);
-                el.style.display = show ? '' : 'none';
-            });
-        }
-    };
-
+(function(SNW) {
+	'use strict';
+	
+	SNW.LevelUtil = {
+		LEVELS: SNW.C.LEVEL.ORDER,
+		
+		current() {
+			try {
+				const v = localStorage.getItem(SNW.CFG.LS_KEY.LEVEL);
+				return this.LEVELS.includes(v) ? v : SNW.CFG.DEFAULT_LEVEL;
+			} catch { return SNW.CFG.DEFAULT_LEVEL; }
+		},
+		
+		set(level) {
+			if (!this.LEVELS.includes(level)) return;
+			try { localStorage.setItem(SNW.CFG.LS_KEY.LEVEL, level); } catch {}
+			// 페이지 재로드 (레벨별 라우트 재검증)
+			location.reload();
+		},
+		
+		atLeast(minLevel) {
+			const cur = this.current();
+			return this.LEVELS.indexOf(cur) >= this.LEVELS.indexOf(minLevel);
+		},
+		
+		/** data-min-level 요소 자동 표시/숨김 */
+		applyTo(root) {
+			const cur = this.current();
+			(root || document).querySelectorAll('[data-min-level]').forEach(el => {
+				const min = el.getAttribute('data-min-level');
+				const show = this.LEVELS.indexOf(cur) >= this.LEVELS.indexOf(min);
+				el.style.display = show ? '' : 'none';
+			});
+		}
+	};
+	
 })(window.SNW);
 
 
@@ -918,62 +918,62 @@ window.SNW = window.SNW || {};
 // Layer 1 (유틸) — SNW.C 참조
 // =========================================================
 window.SNW = window.SNW || {};
-(function (SNW) {
-    'use strict';
-
-    SNW.TimeUtil = {
-        /**
-         * uptimeMs → 절대 시각 (Date)
-         * @param {number} fieldMs  uptimeMs 필드 값
-         * @param {object} system   { uptimeMs, epochNowMs } (control.system)
-         * @returns {Date|null}     epochNowMs=0이면 null
-         */
-        uptimeToDate(fieldMs, system) {
-            if (!system || !system.epochNowMs || system.epochNowMs === 0) return null;
-            const serverBootMs = system.epochNowMs - system.uptimeMs;
-            return new Date(serverBootMs + fieldMs);
-        },
-
-        /** durationSec → "mm:ss" */
-        secToMmss(sec) {
-            if (!Number.isFinite(sec) || sec < 0) return "00:00";
-            const m = Math.floor(sec / 60);
-            const s = Math.floor(sec % 60);
-            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        },
-
-        /** durationMs → "N.N초" */
-        msToSecLabel(ms) {
-            if (!Number.isFinite(ms) || ms < 0) return "0.0초";
-            return (ms / 1000).toFixed(1) + "초";
-        },
-
-        /** epochms → "HH:MM:SS" */
-        epochToTimeStr(epochMs) {
-            if (!Number.isFinite(epochMs)) return "--:--:--";
-            const d = new Date(epochMs);
-            return `${String(d.getHours()).padStart(2, '0')}:` +
-                `${String(d.getMinutes()).padStart(2, '0')}:` +
-                `${String(d.getSeconds()).padStart(2, '0')}`;
-        },
-
-        /** control.time.{hour,min} → "HH:MM" or "--:--" */
-        clockStr(hour, min) {
-            if (hour < 0 || min < 0) return "--:--";
-            return `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-        },
-
-        /** 1초 주기 시계 (WS 무관 UI 시계) */
-        startClock(el, getHmFn) {
-            const tick = () => {
-                const hm = getHmFn();
-                el.textContent = SNW.TimeUtil.clockStr(hm.hour ?? -1, hm.min ?? -1);
-            };
-            tick();
-            return setInterval(tick, 1000);
-        }
-    };
-
+(function(SNW) {
+	'use strict';
+	
+	SNW.TimeUtil = {
+		/**
+		 * uptimeMs → 절대 시각 (Date)
+		 * @param {number} fieldMs  uptimeMs 필드 값
+		 * @param {object} system   { uptimeMs, epochNowMs } (control.system)
+		 * @returns {Date|null}     epochNowMs=0이면 null
+		 */
+		uptimeToDate(fieldMs, system) {
+			if (!system || !system.epochNowMs || system.epochNowMs === 0) return null;
+			const serverBootMs = system.epochNowMs - system.uptimeMs;
+			return new Date(serverBootMs + fieldMs);
+		},
+		
+		/** durationSec → "mm:ss" */
+		secToMmss(sec) {
+			if (!Number.isFinite(sec) || sec < 0) return "00:00";
+			const m = Math.floor(sec / 60);
+			const s = Math.floor(sec % 60);
+			return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+		},
+		
+		/** durationMs → "N.N초" */
+		msToSecLabel(ms) {
+			if (!Number.isFinite(ms) || ms < 0) return "0.0초";
+			return (ms / 1000).toFixed(1) + "초";
+		},
+		
+		/** epochms → "HH:MM:SS" */
+		epochToTimeStr(epochMs) {
+			if (!Number.isFinite(epochMs)) return "--:--:--";
+			const d = new Date(epochMs);
+			return `${String(d.getHours()).padStart(2,'0')}:` +
+				`${String(d.getMinutes()).padStart(2,'0')}:` +
+				`${String(d.getSeconds()).padStart(2,'0')}`;
+		},
+		
+		/** control.time.{hour,min} → "HH:MM" or "--:--" */
+		clockStr(hour, min) {
+			if (hour < 0 || min < 0) return "--:--";
+			return `${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
+		},
+		
+		/** 1초 주기 시계 (WS 무관 UI 시계) */
+		startClock(el, getHmFn) {
+			const tick = () => {
+				const hm = getHmFn();
+				el.textContent = SNW.TimeUtil.clockStr(hm.hour ?? -1, hm.min ?? -1);
+			};
+			tick();
+			return setInterval(tick, 1000);
+		}
+	};
+	
 })(window.SNW);
 
 
@@ -983,59 +983,59 @@ window.SNW = window.SNW || {};
 // Layer 1 (유틸) — SNW.C 참조
 // =========================================================
 window.SNW = window.SNW || {};
-(function (SNW) {
-    'use strict';
-
-    SNW.DomUtil = {
-        /** 안전 textContent */
-        text(el, v) {
-            if (el) el.textContent = (v == null) ? '' : String(v);
-        },
-
-        /** 안전 class 토글 */
-        toggleClass(el, cls, on) {
-            if (el) el.classList.toggle(cls, !!on);
-        },
-
-        /** data-* 기반 이벤트 위임 */
-        delegate(root, selector, event, handler) {
-            root.addEventListener(event, (e) => {
-                const t = e.target.closest(selector);
-                if (t && root.contains(t)) handler(e, t);
-            });
-        },
-
-        /** HTML escape */
-        escape(s) {
-            return String(s).replace(/[&<>"']/g,
-                c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-        },
-
-        /** HTML 템플릿 → Element (값은 escape) */
-        html(strings, ...vals) {
-            const div = document.createElement('div');
-            div.innerHTML = strings.reduce((acc, s, i) => {
-                const v = vals[i];
-                const safe = (v == null) ? '' :
-                    (typeof v === 'string' ? SNW.DomUtil.escape(v) : v);
-                return acc + s + (i < vals.length ? safe : '');
-            }, '').trim();
-            return div.firstElementChild;
-        },
-
-        /** 반응형 뷰포트 클래스 */
-        applyResponsiveClass(el) {
-            const apply = () => {
-                const w = window.innerWidth;
-                el.classList.toggle('snw-mobile', w < 768);
-                el.classList.toggle('snw-tablet', w >= 768 && w < 1024);
-                el.classList.toggle('snw-desktop', w >= 1024);
-            };
-            apply();
-            window.addEventListener('resize', apply);
-        }
-    };
-
+(function(SNW) {
+	'use strict';
+	
+	SNW.DomUtil = {
+		/** 안전 textContent */
+		text(el, v) {
+			if (el) el.textContent = (v == null) ? '' : String(v);
+		},
+		
+		/** 안전 class 토글 */
+		toggleClass(el, cls, on) {
+			if (el) el.classList.toggle(cls, !!on);
+		},
+		
+		/** data-* 기반 이벤트 위임 */
+		delegate(root, selector, event, handler) {
+			root.addEventListener(event, (e) => {
+				const t = e.target.closest(selector);
+				if (t && root.contains(t)) handler(e, t);
+			});
+		},
+		
+		/** HTML escape */
+		escape(s) {
+			return String(s).replace(/[&<>"']/g,
+				c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } [c]));
+		},
+		
+		/** HTML 템플릿 → Element (값은 escape) */
+		html(strings, ...vals) {
+			const div = document.createElement('div');
+			div.innerHTML = strings.reduce((acc, s, i) => {
+				const v = vals[i];
+				const safe = (v == null) ? '' :
+					(typeof v === 'string' ? SNW.DomUtil.escape(v) : v);
+				return acc + s + (i < vals.length ? safe : '');
+			}, '').trim();
+			return div.firstElementChild;
+		},
+		
+		/** 반응형 뷰포트 클래스 */
+		applyResponsiveClass(el) {
+			const apply = () => {
+				const w = window.innerWidth;
+				el.classList.toggle('snw-mobile', w < 768);
+				el.classList.toggle('snw-tablet', w >= 768 && w < 1024);
+				el.classList.toggle('snw-desktop', w >= 1024);
+			};
+			apply();
+			window.addEventListener('resize', apply);
+		}
+	};
+	
 })(window.SNW);
 
 
@@ -1045,32 +1045,36 @@ window.SNW = window.SNW || {};
 // Layer 1 (유틸) — SNW.CFG 참조 (디버그 플래그)
 // =========================================================
 window.SNW = window.SNW || {};
-(function (SNW) {
-    'use strict';
-
-    const PREFIX = '[SNW]';
-
-    function isDebug() {
-        try {
-            return localStorage.getItem(SNW.CFG.LS_KEY.DEBUG) === '1';
-        } catch { return false; }
-    }
-
-    SNW.LogUtil = {
-        debug(...a) { if (isDebug()) console.debug(PREFIX, ...a); },
-        info(...a) { console.info(PREFIX, ...a); },
-        warn(...a) { console.warn(PREFIX, ...a); },
-        error(...a) { console.error(PREFIX, ...a); }
-    };
-
+(function(SNW) {
+	'use strict';
+	
+	const PREFIX = '[SNW]';
+	
+	function isDebug() {
+		try {
+			return localStorage.getItem(SNW.CFG.LS_KEY.DEBUG) === '1';
+		} catch { return false; }
+	}
+	
+	SNW.LogUtil = {
+		debug(...a) { if (isDebug()) console.debug(PREFIX, ...a); },
+		info(...a) { console.info(PREFIX, ...a); },
+		warn(...a) { console.warn(PREFIX, ...a); },
+		error(...a) { console.error(PREFIX, ...a); }
+	};
+	
 })(window.SNW);
 
 
+/* ---- 033.util.template.js (9584 bytes) ---- */
+// =========================================================
+// 033.util.template.js — SNW.Tpl (페이지 HTML 템플릿)
+// Layer 1 (유틸) — SNW.C, SNW.DomUtil 참조
+// =========================================================
 /* ---- 033.util.template.js ---- */
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
-    
     function tpl(strings, ...vals) { return SNW.DomUtil.html(strings, ...vals); }
     
     SNW.Tpl = {
@@ -1281,9 +1285,9 @@ window.SNW = window.SNW || {};
         },
 
         success(m, t = SNW.CFG.UI.TOAST_SUCCESS_MS) { this.show(m, 'success', t); },
-        warn(m, t = SNW.CFG.UI.TOAST_DEFAULT_MS) { this.show(m, 'warn', t); },
-        error(m, t = SNW.CFG.UI.TOAST_ERROR_MS) { this.show(m, 'error', t); },
-        info(m, t = SNW.CFG.UI.TOAST_DEFAULT_MS) { this.show(m, 'info', t); }
+        warn(m, t = SNW.CFG.UI.TOAST_DEFAULT_MS)     { this.show(m, 'warn',    t); },
+        error(m, t = SNW.CFG.UI.TOAST_ERROR_MS)      { this.show(m, 'error',   t); },
+        info(m, t = SNW.CFG.UI.TOAST_DEFAULT_MS)     { this.show(m, 'info',    t); }
     };
 
     // =====================================================
@@ -1373,6 +1377,14 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
+/* ---- 040.api.js (12502 bytes) ---- */
+// =========================================================
+// 040.api.js — SNW.Api (REST 클라이언트)
+// Layer 2 (서비스) — Layer 0~1 참조
+//  - 모든 REST 호출은 이 모듈 경유 (fetch 직접 호출 금지)
+//  - 타임아웃 / 401 처리 / 에러 파싱 / in-flight dedupe
+//  - 업로드 진행률 (XHR)
+// =========================================================
 window.SNW = window.SNW || {};
 (function(SNW) {
 	'use strict';
@@ -1694,7 +1706,6 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-
 /* ---- 050.ws.js (5071 bytes) ---- */
 // =========================================================
 // 050.ws.js — SNW.WsManager (WebSocket 5채널)
@@ -1704,165 +1715,165 @@ window.SNW = window.SNW || {};
 //  - 채널별 onMessage/onOpen/onClose 구독
 // =========================================================
 window.SNW = window.SNW || {};
-(function (SNW) {
-    'use strict';
-
-    // =====================================================
-    // WsClient (채널별 1개)
-    // =====================================================
-    class WsClient {
-        constructor(channel) {
-            this.channel = channel;
-            this.ws = null;
-            this.attempt = 0;
-            this.failCount = 0;
-            this._closed = false;
-
-            this._subs = new Set();
-            this._openHandlers = new Set();
-            this._closeHandlers = new Set();
-            this._fallbackTimer = null;
-        }
-
-        url() {
-            const key = SNW.Api.getApiKey();
-            const q = key ? `?apiKey=${encodeURIComponent(key)}` : '';
-            const proto = (location.protocol === 'https:') ? 'wss' : 'ws';
-            return `${proto}://${location.host}${SNW.CFG.WS_PATH[this.channel]}${q}`;
-        }
-
-        connect() {
-            // ======================================================
-            // [OFFLINE] 오프라인일 때는 WS 연결 시도하지 않음
-            // ======================================================
-            if (window.SNW_OFFLINE) {
-                this._openHandlers.forEach(h => { try { h(); } catch { } }); // 연결된 것처럼 처리
-                return;
-            }
-
-            if (this._closed) return;
-
-            try {
-                this.ws = new WebSocket(this.url());
-            } catch (e) {
-                SNW.LogUtil.warn(`WS[${this.channel}] 생성 실패`, e);
-                return this._scheduleReconnect();
-            }
-
-            this.ws.onopen = () => {
-                SNW.LogUtil.info(`WS[${this.channel}] 연결`);
-                this.attempt = 0;
-                this.failCount = 0;
-                this._stopFallback();
-                this._openHandlers.forEach(h => { try { h(); } catch { } });
-            };
-
-            this.ws.onmessage = (ev) => {
-                let data;
-                try { data = JSON.parse(ev.data); }
-                catch { return; }
-                this._subs.forEach(fn => { try { fn(data); } catch (e) { SNW.LogUtil.error(e); } });
-            };
-
-            this.ws.onerror = () => {
-                SNW.LogUtil.warn(`WS[${this.channel}] 에러`);
-            };
-
-            this.ws.onclose = () => {
-                if (this._closed) return;
-                SNW.LogUtil.warn(`WS[${this.channel}] 종료`);
-
-                this._closeHandlers.forEach(h => { try { h(); } catch { } });
-
-                this.failCount++;
-                if (this.failCount >= SNW.CFG.WS_RECONNECT.FAIL_THRESHOLD) {
-                    this._startFallback();
-                }
-                this._scheduleReconnect();
-            };
-        }
-
-        _scheduleReconnect() {
-            if (this._closed) return;
-            const arr = SNW.CFG.WS_RECONNECT.BACKOFF_MS;
-            const wait = arr[Math.min(this.attempt, arr.length - 1)];
-            this.attempt++;
-            SNW.LogUtil.debug(`WS[${this.channel}] ${wait}ms 후 재연결`);
-            setTimeout(() => this.connect(), wait);
-        }
-
-        // -------------------------------------------------
-        // REST 폴백 (state 채널만, 2초 주기)
-        // -------------------------------------------------
-        _startFallback() {
-            if (this.channel !== 'state') return;
-            if (this._fallbackTimer) return;
-
-            SNW.LogUtil.warn(`WS[${this.channel}] REST 폴백 시작 (${SNW.CFG.WS_RECONNECT.FALLBACK_POLL_MS}ms)`);
-            this._fallbackTimer = setInterval(async () => {
-                try {
-                    const data = await SNW.Api.getState();
-                    this._subs.forEach(fn => { try { fn(data); } catch { } });
-                } catch (e) { SNW.LogUtil.warn('폴링 실패', e); }
-            }, SNW.CFG.WS_RECONNECT.FALLBACK_POLL_MS);
-        }
-
-        _stopFallback() {
-            if (this._fallbackTimer) {
-                clearInterval(this._fallbackTimer);
-                this._fallbackTimer = null;
-                SNW.LogUtil.info(`WS[${this.channel}] REST 폴백 중단`);
-            }
-        }
-
-        onMessage(fn) { this._subs.add(fn); return () => this._subs.delete(fn); }
-        onOpen(fn) { this._openHandlers.add(fn); return () => this._openHandlers.delete(fn); }
-        onClose(fn) { this._closeHandlers.add(fn); return () => this._closeHandlers.delete(fn); }
-
-        close() {
-            this._closed = true;
-            this._stopFallback();
-            if (this.ws) {
-                try { this.ws.close(); } catch { }
-                this.ws = null;
-            }
-        }
-    }
-
-    // =====================================================
-    // WsManager (채널별 싱글톤)
-    // =====================================================
-    SNW.WsManager = {
-        _clients: {},
-
-        get(channel) {
-            if (!SNW.C.WS_CHANNEL.includes(channel)) {
-                SNW.LogUtil.warn(`WsManager.get: 알 수 없는 채널 "${channel}"`);
-                return null;
-            }
-            if (!this._clients[channel]) {
-                const c = new WsClient(channel);
-                this._clients[channel] = c;
-                c.connect();
-            }
-            return this._clients[channel];
-        },
-
-        /** 사용자 레벨에 따른 초기 채널 세트 연결 */
-        initByLevel() {
-            this.get('state');
-            this.get('summary');
-            this.get('metrics');
-            if (SNW.LevelUtil && SNW.LevelUtil.atLeast('L2')) this.get('chart');
-            if (SNW.LevelUtil && SNW.LevelUtil.atLeast('L3')) this.get('log');
-        },
-
-        closeAll() {
-            Object.values(this._clients).forEach(c => c.close());
-            this._clients = {};
-        }
-    };
-
+(function(SNW) {
+	'use strict';
+	
+	// =====================================================
+	// WsClient (채널별 1개)
+	// =====================================================
+	class WsClient {
+		constructor(channel) {
+			this.channel = channel;
+			this.ws = null;
+			this.attempt = 0;
+			this.failCount = 0;
+			this._closed = false;
+			
+			this._subs = new Set();
+			this._openHandlers = new Set();
+			this._closeHandlers = new Set();
+			this._fallbackTimer = null;
+		}
+		
+		url() {
+			const key = SNW.Api.getApiKey();
+			const q = key ? `?apiKey=${encodeURIComponent(key)}` : '';
+			const proto = (location.protocol === 'https:') ? 'wss' : 'ws';
+			return `${proto}://${location.host}${SNW.CFG.WS_PATH[this.channel]}${q}`;
+		}
+		
+		connect() {
+			// ======================================================
+			// [OFFLINE] 오프라인일 때는 WS 연결 시도하지 않음
+			// ======================================================
+			if (window.SNW_OFFLINE) {
+				this._openHandlers.forEach(h => { try { h(); } catch {} }); // 연결된 것처럼 처리
+				return;
+			}
+			
+			if (this._closed) return;
+			
+			try {
+				this.ws = new WebSocket(this.url());
+			} catch (e) {
+				SNW.LogUtil.warn(`WS[${this.channel}] 생성 실패`, e);
+				return this._scheduleReconnect();
+			}
+			
+			this.ws.onopen = () => {
+				SNW.LogUtil.info(`WS[${this.channel}] 연결`);
+				this.attempt = 0;
+				this.failCount = 0;
+				this._stopFallback();
+				this._openHandlers.forEach(h => { try { h(); } catch {} });
+			};
+			
+			this.ws.onmessage = (ev) => {
+				let data;
+				try { data = JSON.parse(ev.data); }
+				catch { return; }
+				this._subs.forEach(fn => { try { fn(data); } catch (e) { SNW.LogUtil.error(e); } });
+			};
+			
+			this.ws.onerror = () => {
+				SNW.LogUtil.warn(`WS[${this.channel}] 에러`);
+			};
+			
+			this.ws.onclose = () => {
+				if (this._closed) return;
+				SNW.LogUtil.warn(`WS[${this.channel}] 종료`);
+				
+				this._closeHandlers.forEach(h => { try { h(); } catch {} });
+				
+				this.failCount++;
+				if (this.failCount >= SNW.CFG.WS_RECONNECT.FAIL_THRESHOLD) {
+					this._startFallback();
+				}
+				this._scheduleReconnect();
+			};
+		}
+		
+		_scheduleReconnect() {
+			if (this._closed) return;
+			const arr = SNW.CFG.WS_RECONNECT.BACKOFF_MS;
+			const wait = arr[Math.min(this.attempt, arr.length - 1)];
+			this.attempt++;
+			SNW.LogUtil.debug(`WS[${this.channel}] ${wait}ms 후 재연결`);
+			setTimeout(() => this.connect(), wait);
+		}
+		
+		// -------------------------------------------------
+		// REST 폴백 (state 채널만, 2초 주기)
+		// -------------------------------------------------
+		_startFallback() {
+			if (this.channel !== 'state') return;
+			if (this._fallbackTimer) return;
+			
+			SNW.LogUtil.warn(`WS[${this.channel}] REST 폴백 시작 (${SNW.CFG.WS_RECONNECT.FALLBACK_POLL_MS}ms)`);
+			this._fallbackTimer = setInterval(async () => {
+				try {
+					const data = await SNW.Api.getState();
+					this._subs.forEach(fn => { try { fn(data); } catch {} });
+				} catch (e) { SNW.LogUtil.warn('폴링 실패', e); }
+			}, SNW.CFG.WS_RECONNECT.FALLBACK_POLL_MS);
+		}
+		
+		_stopFallback() {
+			if (this._fallbackTimer) {
+				clearInterval(this._fallbackTimer);
+				this._fallbackTimer = null;
+				SNW.LogUtil.info(`WS[${this.channel}] REST 폴백 중단`);
+			}
+		}
+		
+		onMessage(fn) { this._subs.add(fn); return () => this._subs.delete(fn); }
+		onOpen(fn) { this._openHandlers.add(fn); return () => this._openHandlers.delete(fn); }
+		onClose(fn) { this._closeHandlers.add(fn); return () => this._closeHandlers.delete(fn); }
+		
+		close() {
+			this._closed = true;
+			this._stopFallback();
+			if (this.ws) {
+				try { this.ws.close(); } catch {}
+				this.ws = null;
+			}
+		}
+	}
+	
+	// =====================================================
+	// WsManager (채널별 싱글톤)
+	// =====================================================
+	SNW.WsManager = {
+		_clients: {},
+		
+		get(channel) {
+			if (!SNW.C.WS_CHANNEL.includes(channel)) {
+				SNW.LogUtil.warn(`WsManager.get: 알 수 없는 채널 "${channel}"`);
+				return null;
+			}
+			if (!this._clients[channel]) {
+				const c = new WsClient(channel);
+				this._clients[channel] = c;
+				c.connect();
+			}
+			return this._clients[channel];
+		},
+		
+		/** 사용자 레벨에 따른 초기 채널 세트 연결 */
+		initByLevel() {
+			this.get('state');
+			this.get('summary');
+			this.get('metrics');
+			if (SNW.LevelUtil && SNW.LevelUtil.atLeast('L2')) this.get('chart');
+			if (SNW.LevelUtil && SNW.LevelUtil.atLeast('L3')) this.get('log');
+		},
+		
+		closeAll() {
+			Object.values(this._clients).forEach(c => c.close());
+			this._clients = {};
+		}
+	};
+	
 })(window.SNW);
 
 
@@ -1874,129 +1885,138 @@ window.SNW = window.SNW || {};
 //  - WS state 채널 → Store 자동 브리지
 // =========================================================
 window.SNW = window.SNW || {};
-(function (SNW) {
-    'use strict';
-
-    // =====================================================
-    // Store (Observable)
-    // =====================================================
-    class Store {
-        constructor(initial) {
-            this._state = Object.assign({}, initial);
-            this._subs = new Set();
-        }
-
-        get() { return this._state; }
-
-        subscribe(fn) {
-            this._subs.add(fn);
-            return () => this._subs.delete(fn);
-        }
-
-        /** patch(얕은 병합) 후 구독자 알림 */
-        set(patch) {
-            const prev = this._state;
-            this._state = Object.assign({}, prev, patch);
-            this._subs.forEach(fn => {
-                try { fn(this._state, prev); }
-                catch (e) { SNW.LogUtil.error('[Store]', e); }
-            });
-        }
-
-        /** 특정 키만 관찰 */
-        watch(key, fn) {
-            let last = this._state[key];
-            return this.subscribe((s) => {
-                if (s[key] !== last) {
-                    const prev = last;
-                    last = s[key];
-                    fn(s[key], prev);
-                }
-            });
-        }
-    }
-
-    // =====================================================
-    // 전역 싱글톤 Store
-    // =====================================================
-    SNW.Store = new Store({
-        // 서버 상태
-        control: null, // /state.control
-        sim: null, // /state.sim
-        time: null, // control.time
-        system: null, // control.system (uptimeMs/epochNowMs)
-
-        // 파생 상태
-        lastUpdateMs: 0,
-        connection: 'offline', // 'online' | 'offline' | 'polling'
-        fsmState: 0,
-        fsmReason: 0,
-
-        // 사용자 컨텍스트
-        level: (SNW.LevelUtil && SNW.LevelUtil.current) ? SNW.LevelUtil.current() : 'L1'
-    });
-
-    // =====================================================
-    // StoreBridge (WS → Store)
-    // =====================================================
-    SNW.StoreBridge = {
-        _started: false,
-        _unsubs: [],
-
-        start() {
-            if (this._started) return;
-            this._started = true;
-
-            const wsState = SNW.WsManager.get('state');
-            if (!wsState) {
-                SNW.LogUtil.warn('[StoreBridge] state 채널 없음');
-                return;
-            }
-
-            const unsubMsg = wsState.onMessage((data) => {
-                const ctl = (data && data.control) || null;
-                const sim = (data && data.sim) || null;
-
-                const patch = {
-                    lastUpdateMs: Date.now(),
-                    connection: 'online'
-                };
-
-                if (ctl) {
-                    patch.control = ctl;
-                    patch.time = ctl.time || null;
-                    patch.system = ctl.system || null;
-                    patch.fsmState = (ctl.stateCode != null) ? ctl.stateCode : 0;
-                    patch.fsmReason = (ctl.reasonCode != null) ? ctl.reasonCode : 0;
-                }
-                if (sim) {
-                    patch.sim = sim;
-                }
-
-                SNW.Store.set(patch);
-            });
-
-            wsState.onOpen(() => {
-                SNW.Store.set({ connection: 'online' });
-            });
-
-            wsState.onClose(() => {
-                SNW.Store.set({ connection: 'offline' });
-            });
-
-            this._unsubs.push(unsubMsg);
-        },
-
-        stop() {
-            this._unsubs.forEach(fn => fn());
-            this._unsubs = [];
-            this._started = false;
-        }
-    };
-
+(function(SNW) {
+	'use strict';
+	
+	// =====================================================
+	// Store (Observable)
+	// =====================================================
+	class Store {
+		constructor(initial) {
+			this._state = Object.assign({}, initial);
+			this._subs = new Set();
+		}
+		
+		get() { return this._state; }
+		
+		subscribe(fn) {
+			this._subs.add(fn);
+			return () => this._subs.delete(fn);
+		}
+		
+		/** patch(얕은 병합) 후 구독자 알림 */
+		set(patch) {
+			const prev = this._state;
+			this._state = Object.assign({}, prev, patch);
+			this._subs.forEach(fn => {
+				try { fn(this._state, prev); }
+				catch (e) { SNW.LogUtil.error('[Store]', e); }
+			});
+		}
+		
+		/** 특정 키만 관찰 */
+		watch(key, fn) {
+			let last = this._state[key];
+			return this.subscribe((s) => {
+				if (s[key] !== last) {
+					const prev = last;
+					last = s[key];
+					fn(s[key], prev);
+				}
+			});
+		}
+	}
+	
+	// =====================================================
+	// 전역 싱글톤 Store
+	// =====================================================
+	SNW.Store = new Store({
+		// 서버 상태
+		control: null, // /state.control
+		sim: null, // /state.sim
+		time: null, // control.time
+		system: null, // control.system (uptimeMs/epochNowMs)
+		
+		// 파생 상태
+		lastUpdateMs: 0,
+		connection: 'offline', // 'online' | 'offline' | 'polling'
+		fsmState: 0,
+		fsmReason: 0,
+		
+		// 사용자 컨텍스트
+		level: (SNW.LevelUtil && SNW.LevelUtil.current) ? SNW.LevelUtil.current() : 'L1'
+	});
+	
+	// =====================================================
+	// StoreBridge (WS → Store)
+	// =====================================================
+	SNW.StoreBridge = {
+		_started: false,
+		_unsubs: [],
+		
+		start() {
+			if (this._started) return;
+			this._started = true;
+			
+			const wsState = SNW.WsManager.get('state');
+			if (!wsState) {
+				SNW.LogUtil.warn('[StoreBridge] state 채널 없음');
+				return;
+			}
+			
+			const unsubMsg = wsState.onMessage((data) => {
+				const ctl = (data && data.control) || null;
+				const sim = (data && data.sim) || null;
+				
+				const patch = {
+					lastUpdateMs: Date.now(),
+					connection: 'online'
+				};
+				
+				if (ctl) {
+					patch.control = ctl;
+					patch.time = ctl.time || null;
+					patch.system = ctl.system || null;
+					patch.fsmState = (ctl.stateCode != null) ? ctl.stateCode : 0;
+					patch.fsmReason = (ctl.reasonCode != null) ? ctl.reasonCode : 0;
+				}
+				if (sim) {
+					patch.sim = sim;
+				}
+				
+				SNW.Store.set(patch);
+			});
+			
+			wsState.onOpen(() => {
+				SNW.Store.set({ connection: 'online' });
+			});
+			
+			wsState.onClose(() => {
+				SNW.Store.set({ connection: 'offline' });
+			});
+			
+			this._unsubs.push(unsubMsg);
+		},
+		
+		stop() {
+			this._unsubs.forEach(fn => fn());
+			this._unsubs = [];
+			this._started = false;
+		}
+	};
+	
 })(window.SNW);
 
 
+/* ---- 070.router.js (7107 bytes) ---- */
+// =========================================================
+// 070.router.js — SNW.Router (해시 기반 SPA 라우터)
+// Layer 2 (서비스) — Layer 0~1 참조
+//  - ROUTES 정의 (12 페이지)
+//  - hashchange 감지 → dispatch
+//  - 이전 페이지 unmount → 새 페이지 mount
+//  - 사용자 레벨 필터
+// =========================================================
 /* ---- 070.router.js ---- */
 window.SNW = window.SNW || {};
 (function (SNW) {
@@ -2137,7 +2157,6 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-
 /* ===== LAYER 1 ===== */
 
 /* ---- 100.ui.badge.js (2046 bytes) ---- */
@@ -2148,73 +2167,73 @@ window.SNW = window.SNW || {};
 //  - set(code, reason) 인터페이스
 // =========================================================
 window.SNW = window.SNW || {};
-(function (SNW) {
-    'use strict';
-
-    SNW.UI = SNW.UI || {};
-
-    // =====================================================
-    // FSM 메타 조회 (SNW.C + SNW.I18n 조합)
-    // =====================================================
-    function getStateMeta(code) {
-        const meta = SNW.C.FSM_STATE_META[code] || SNW.C.FSM_STATE_META[0];
-        return {
-            code: meta.code,
-            icon: meta.icon,
-            color: meta.color,
-            label: SNW.I18n.t(meta.labelKey),
-            l1: meta.l1
-        };
-    }
-
-    function getReasonMeta(code) {
-        const meta = SNW.C.FSM_REASON_META[code] || SNW.C.FSM_REASON_META[0];
-        return {
-            code: meta.code,
-            label: SNW.I18n.t(meta.labelKey)
-        };
-    }
-
-    /**
-     * 상태 배지 마운트
-     * @param {HTMLElement} container
-     * @returns {{set: function(number, number)}}
-     */
-    SNW.UI.stateBadge = function (container) {
-        if (!container) return { set: () => { } };
-
-        let curState = 0;
-        let curReason = 0;
-
-        const render = () => {
-            const st = getStateMeta(curState);
-            const rs = getReasonMeta(curReason);
-
-            container.innerHTML = '';
-            container.appendChild(SNW.DomUtil.html`
+(function(SNW) {
+	'use strict';
+	
+	SNW.UI = SNW.UI || {};
+	
+	// =====================================================
+	// FSM 메타 조회 (SNW.C + SNW.I18n 조합)
+	// =====================================================
+	function getStateMeta(code) {
+		const meta = SNW.C.FSM_STATE_META[code] || SNW.C.FSM_STATE_META[0];
+		return {
+			code: meta.code,
+			icon: meta.icon,
+			color: meta.color,
+			label: SNW.I18n.t(meta.labelKey),
+			l1: meta.l1
+		};
+	}
+	
+	function getReasonMeta(code) {
+		const meta = SNW.C.FSM_REASON_META[code] || SNW.C.FSM_REASON_META[0];
+		return {
+			code: meta.code,
+			label: SNW.I18n.t(meta.labelKey)
+		};
+	}
+	
+	/**
+	 * 상태 배지 마운트
+	 * @param {HTMLElement} container
+	 * @returns {{set: function(number, number)}}
+	 */
+	SNW.UI.stateBadge = function(container) {
+		if (!container) return { set: () => {} };
+		
+		let curState = 0;
+		let curReason = 0;
+		
+		const render = () => {
+			const st = getStateMeta(curState);
+			const rs = getReasonMeta(curReason);
+			
+			container.innerHTML = '';
+			container.appendChild(SNW.DomUtil.html`
                 <span class="snw-badge snw-badge--${st.color}" title="${rs.label}" data-state="${st.code}">
                     <span class="snw-badge__icon">${st.icon}</span>
                     <span class="snw-badge__label">${st.label}</span>
                 </span>`);
-        };
-
-        render();
-
-        return {
-            set(code, reason) {
-                curState = (code != null) ? code : 0;
-                curReason = (reason != null) ? reason : 0;
-                render();
-            }
-        };
-    };
-
-    // 참고: FsmUtil 별도 네임스페이스가 필요한 경우 이 파일에서 함께 노출
-    SNW.FsmUtil = {
-        getState: getStateMeta,
-        getReason: getReasonMeta
-    };
-
+		};
+		
+		render();
+		
+		return {
+			set(code, reason) {
+				curState = (code != null) ? code : 0;
+				curReason = (reason != null) ? reason : 0;
+				render();
+			}
+		};
+	};
+	
+	// 참고: FsmUtil 별도 네임스페이스가 필요한 경우 이 파일에서 함께 노출
+	SNW.FsmUtil = {
+		getState: getStateMeta,
+		getReason: getReasonMeta
+	};
+	
 })(window.SNW);
 
 
@@ -2225,66 +2244,66 @@ window.SNW = window.SNW || {};
 //  - 낙관적 UI 지원 (set()으로 외부 동기화)
 // =========================================================
 window.SNW = window.SNW || {};
-(function (SNW) {
-    'use strict';
-
-    SNW.UI = SNW.UI || {};
-
-    /**
-     * On/Off 토글
-     * @param {object} opts
-     *   root     : HTMLElement
-     *   on       : boolean (초기 상태)
-     *   onToggle : (next:boolean) => void
-     *   onLabel  : string (기본 = I18n 'dashboard.powerOn')
-     *   offLabel : string (기본 = I18n 'dashboard.powerOff')
-     * @returns {{set: function(boolean)}}
-     */
-    SNW.UI.toggle = function (opts) {
-        const {
-            root,
-            on = false,
-            onToggle,
-            onLabel = SNW.I18n.t('dashboard.powerOn'),
-            offLabel = SNW.I18n.t('dashboard.powerOff')
-        } = opts || {};
-
-        if (!root) return { set: () => { } };
-
-        let state = !!on;
-
-        const render = () => {
-            root.innerHTML = '';
-            const btn = SNW.DomUtil.html`
+(function(SNW) {
+	'use strict';
+	
+	SNW.UI = SNW.UI || {};
+	
+	/**
+	 * On/Off 토글
+	 * @param {object} opts
+	 *   root     : HTMLElement
+	 *   on       : boolean (초기 상태)
+	 *   onToggle : (next:boolean) => void
+	 *   onLabel  : string (기본 = I18n 'dashboard.powerOn')
+	 *   offLabel : string (기본 = I18n 'dashboard.powerOff')
+	 * @returns {{set: function(boolean)}}
+	 */
+	SNW.UI.toggle = function(opts) {
+		const {
+			root,
+			on = false,
+			onToggle,
+			onLabel = SNW.I18n.t('dashboard.powerOn'),
+			offLabel = SNW.I18n.t('dashboard.powerOff')
+		} = opts || {};
+		
+		if (!root) return { set: () => {} };
+		
+		let state = !!on;
+		
+		const render = () => {
+			root.innerHTML = '';
+			const btn = SNW.DomUtil.html`
                 <button class="snw-toggle ${state ? 'is-on' : 'is-off'}" type="button"
                         aria-pressed="${state ? 'true' : 'false'}">
                     <span class="snw-toggle__icon">${state ? '⏹' : '▶'}</span>
                     <span class="snw-toggle__label">${state ? offLabel : onLabel}</span>
                 </button>`;
-            btn.addEventListener('click', () => {
-                const next = !state;
-                state = next;
-                render();
-                if (typeof onToggle === 'function') {
-                    try { onToggle(next); }
-                    catch (e) { SNW.LogUtil.error('[toggle] onToggle 실패', e); }
-                }
-            });
-            root.appendChild(btn);
-        };
-
-        render();
-
-        return {
-            set(next) {
-                const v = !!next;
-                if (v === state) return;
-                state = v;
-                render();
-            }
-        };
-    };
-
+			btn.addEventListener('click', () => {
+				const next = !state;
+				state = next;
+				render();
+				if (typeof onToggle === 'function') {
+					try { onToggle(next); }
+					catch (e) { SNW.LogUtil.error('[toggle] onToggle 실패', e); }
+				}
+			});
+			root.appendChild(btn);
+		};
+		
+		render();
+		
+		return {
+			set(next) {
+				const v = !!next;
+				if (v === state) return;
+				state = v;
+				render();
+			}
+		};
+	};
+	
 })(window.SNW);
 
 
@@ -2294,43 +2313,43 @@ window.SNW = window.SNW || {};
 // Layer 3 (UI 컴포넌트) — Layer 0~2 참조
 // =========================================================
 window.SNW = window.SNW || {};
-(function (SNW) {
-    'use strict';
-
-    SNW.UI = SNW.UI || {};
-
-    /**
-     * PWM 게이지
-     * @param {HTMLElement} root
-     * @returns {{set: function(number), get: function():number}}
-     */
-    SNW.UI.gauge = function (root) {
-        if (!root) return { set: () => { }, get: () => 0 };
-
-        root.innerHTML = '';
-        root.appendChild(SNW.DomUtil.html`
+(function(SNW) {
+	'use strict';
+	
+	SNW.UI = SNW.UI || {};
+	
+	/**
+	 * PWM 게이지
+	 * @param {HTMLElement} root
+	 * @returns {{set: function(number), get: function():number}}
+	 */
+	SNW.UI.gauge = function(root) {
+		if (!root) return { set: () => {}, get: () => 0 };
+		
+		root.innerHTML = '';
+		root.appendChild(SNW.DomUtil.html`
             <div class="snw-gauge">
                 <div class="snw-gauge__bar">
                     <div class="snw-gauge__fill" data-fill style="width:0%"></div>
                 </div>
                 <span class="snw-gauge__label" data-label>0%</span>
             </div>`);
-
-        const fill = root.querySelector('[data-fill]');
-        const label = root.querySelector('[data-label]');
-        let cur = 0;
-
-        return {
-            set(pct) {
-                const p = Math.max(0, Math.min(100, Number(pct) || 0));
-                cur = p;
-                if (fill) fill.style.width = p.toFixed(1) + '%';
-                if (label) label.textContent = p.toFixed(0) + '%';
-            },
-            get() { return cur; }
-        };
-    };
-
+		
+		const fill = root.querySelector('[data-fill]');
+		const label = root.querySelector('[data-label]');
+		let cur = 0;
+		
+		return {
+			set(pct) {
+				const p = Math.max(0, Math.min(100, Number(pct) || 0));
+				cur = p;
+				if (fill) fill.style.width = p.toFixed(1) + '%';
+				if (label) label.textContent = p.toFixed(0) + '%';
+			},
+			get() { return cur; }
+		};
+	};
+	
 })(window.SNW);
 
 
@@ -2369,7 +2388,7 @@ window.SNW = window.SNW || {};
             debounceMs = SNW.C.DEBOUNCE_MS.SLIDER
         } = opts || {};
 
-        if (!root) return { set: () => { }, get: () => value };
+        if (!root) return { set: () => {}, get: () => value };
 
         const debounced = SNW.DebounceUtil.debounce((v) => {
             if (typeof onChange === 'function') {
@@ -2407,8 +2426,8 @@ window.SNW = window.SNW || {};
         });
 
         // 터치/포인터 종료 감지
-        input.addEventListener('pointerup', () => { dragging = false; });
-        input.addEventListener('pointercancel', () => { dragging = false; });
+        input.addEventListener('pointerup',    () => { dragging = false; });
+        input.addEventListener('pointercancel',() => { dragging = false; });
 
         return {
             set(v) {
@@ -2457,7 +2476,7 @@ window.SNW = window.SNW || {};
             yMax = null
         } = opts || {};
 
-        if (!root) return { push: () => { }, clear: () => { }, setMaxPoints: () => { }, destroy: () => { } };
+        if (!root) return { push: () => {}, clear: () => {}, setMaxPoints: () => {}, destroy: () => {} };
 
         root.innerHTML = '';
         const canvas = document.createElement('canvas');
@@ -2467,7 +2486,7 @@ window.SNW = window.SNW || {};
 
         // DPR 대응
         let dpr = window.devicePixelRatio || 1;
-        let cw = 0, ch = 0;
+        let cw  = 0, ch = 0;
 
         const buffers = {};
         series.forEach(s => { buffers[s.key] = []; });
@@ -2476,11 +2495,11 @@ window.SNW = window.SNW || {};
 
         function resize() {
             const rect = root.getBoundingClientRect();
-            cw = Math.max(200, Math.floor(rect.width || root.clientWidth || 800));
-            ch = Math.max(80, Math.floor(rect.height || root.clientHeight || 200));
-            canvas.width = Math.floor(cw * dpr);
+            cw = Math.max(200, Math.floor(rect.width  || root.clientWidth  || 800));
+            ch = Math.max(80,  Math.floor(rect.height || root.clientHeight || 200));
+            canvas.width  = Math.floor(cw * dpr);
             canvas.height = Math.floor(ch * dpr);
-            canvas.style.width = cw + 'px';
+            canvas.style.width  = cw + 'px';
             canvas.style.height = ch + 'px';
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             draw();
@@ -2489,7 +2508,7 @@ window.SNW = window.SNW || {};
         function push(point) {
             series.forEach(s => {
                 const arr = buffers[s.key];
-                const v = (point && point[s.key]);
+                const v   = (point && point[s.key]);
                 arr.push({ x: (point && point.t) || Date.now(), y: v });
                 if (arr.length > curMaxPoints) arr.shift();
             });
@@ -2504,15 +2523,15 @@ window.SNW = window.SNW || {};
         function _drawSeries(arr, color) {
             if (arr.length < 2) return;
             ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
-            ctx.lineJoin = 'round';
+            ctx.lineWidth   = 2;
+            ctx.lineJoin    = 'round';
             ctx.beginPath();
             for (let i = 0; i < arr.length; i++) {
                 const p = arr[i];
                 const x = (i / (curMaxPoints - 1)) * cw;
                 const y = ch - p.py;
                 if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
+                else         ctx.lineTo(x, y);
             }
             ctx.stroke();
         }
@@ -2595,44 +2614,44 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 130.ui.form.js (12161 bytes) ---- */
+/* ---- 130.ui.form.js (12356 bytes) ---- */
 // =========================================================
 // 130.ui.form.js — SNW.UI.form + presetGrid + sensorCards + logViewer
 // Layer 3 (UI 컴포넌트) — Layer 0~2 참조
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
-    
+
     SNW.UI = SNW.UI || {};
-    
+
     // =====================================================
     // 1) SNW.UI.form (스키마 기반 폼)
     //  - schema: [{ key, labelKey, type, min?, max?, options?, placeholder? }]
     //  - type: 'text' | 'number' | 'bool' | 'select' | 'password'
     // =====================================================
-    SNW.UI.form = function(opts) {
+    SNW.UI.form = function (opts) {
         const {
             root,
             schema = [],
-            value = {},
+            value  = {},
             onSave
         } = opts || {};
-        
+
         if (!root) return { getValue: () => ({}), setValue: () => {}, setError: () => {} };
-        
+
         const state = Object.assign({}, value);
         const inputs = {};
-        
+
         function render() {
             root.innerHTML = '';
             const wrap = document.createElement('div');
             wrap.className = 'snw-form';
-            
+
             schema.forEach(f => {
                 const label = SNW.I18n.t(f.labelKey);
-                const cur = state[f.key];
-                
+                const cur   = state[f.key];
+
                 let inputEl;
                 if (f.type === 'bool') {
                     inputEl = SNW.DomUtil.html`
@@ -2665,7 +2684,7 @@ window.SNW = window.SNW || {};
                         </div>`;
                 }
                 wrap.appendChild(inputEl);
-                
+
                 // input 참조
                 const inputNode = inputEl.matches('[data-key]') ? inputEl : inputEl.querySelector('[data-key]');
                 if (inputNode) {
@@ -2682,7 +2701,7 @@ window.SNW = window.SNW || {};
                     }
                 }
             });
-            
+
             // Save 버튼 (선택)
             if (typeof onSave === 'function') {
                 const btn = SNW.DomUtil.html`
@@ -2695,12 +2714,12 @@ window.SNW = window.SNW || {};
                 });
                 wrap.appendChild(btn);
             }
-            
+
             root.appendChild(wrap);
         }
-        
+
         render();
-        
+
         return {
             getValue() { return Object.assign({}, state); },
             setValue(patch) {
@@ -2721,28 +2740,28 @@ window.SNW = window.SNW || {};
             refresh() { render(); }
         };
     };
-    
+
     // =====================================================
     // 2) SNW.UI.presetGrid (10 프리셋 카드 그리드)
     // =====================================================
-    SNW.UI.presetGrid = function(opts) {
+    SNW.UI.presetGrid = function (opts) {
         const {
             root,
             items = [],
             selected = '',
             onSelect
         } = opts || {};
-        
+
         if (!root) return { setItems: () => {}, setSelected: () => {} };
-        
+
         let curSelected = selected;
-        let curItems = items.slice();
-        
+        let curItems    = items.slice();
+
         function render() {
             root.innerHTML = '';
             const grid = document.createElement('div');
             grid.className = 'snw-preset-grid';
-            
+
             curItems.forEach((it, i) => {
                 const name = it.name || SNW.I18n.t('preset.' + it.code) || it.code;
                 const card = SNW.DomUtil.html`
@@ -2754,12 +2773,12 @@ window.SNW = window.SNW || {};
                     </button>`;
                 grid.appendChild(card);
             });
-            
+
             root.appendChild(grid);
         }
-        
+
         render();
-        
+
         // 이벤트 위임
         SNW.DomUtil.delegate(root, '.snw-preset-card', 'click', (e, el) => {
             const code = el.getAttribute('data-code');
@@ -2771,10 +2790,9 @@ window.SNW = window.SNW || {};
                 catch (e) { SNW.ErrorHandler.handle(e, 'presetGrid.onSelect'); }
             }
         });
-        
+
         return {
-            setItems(list) { curItems = list.slice();
-                render(); },
+            setItems(list) { curItems = list.slice(); render(); },
             setSelected(code) {
                 if (code === curSelected) return;
                 curSelected = code || '';
@@ -2782,13 +2800,13 @@ window.SNW = window.SNW || {};
             }
         };
     };
-    
+
     // =====================================================
     // 3) SNW.UI.sensorCards (온도/습도/PIR)
     // =====================================================
-    SNW.UI.sensorCards = function(root) {
+    SNW.UI.sensorCards = function (root) {
         if (!root) return { set: () => {} };
-        
+
         root.innerHTML = '';
         root.appendChild(SNW.DomUtil.html`
             <div class="snw-sensor-cards">
@@ -2808,11 +2826,11 @@ window.SNW = window.SNW || {};
                     <span class="snw-sensor-card__val" data-motion>--</span>
                 </div>
             </div>`);
-        
+
         const tempEl = root.querySelector('[data-temp]');
-        const humEl = root.querySelector('[data-hum]');
-        const motEl = root.querySelector('[data-motion]');
-        
+        const humEl  = root.querySelector('[data-hum]');
+        const motEl  = root.querySelector('[data-motion]');
+
         return {
             set({ tempC, humidity, motionActive } = {}) {
                 if (tempC != null && Number.isFinite(tempC))
@@ -2820,44 +2838,44 @@ window.SNW = window.SNW || {};
                 if (humidity != null && Number.isFinite(humidity))
                     humEl.textContent = `${humidity.toFixed(0)}${SNW.I18n.t('unit.humidity')}`;
                 if (motionActive != null) {
-                    motEl.textContent = motionActive ?
-                        SNW.I18n.t('dashboard.motionDetected') :
-                        SNW.I18n.t('dashboard.motionAbsent');
-                    motEl.classList.toggle('is-on', !!motionActive);
+                    motEl.textContent = motionActive
+                        ? SNW.I18n.t('dashboard.motionDetected')
+                        : SNW.I18n.t('dashboard.motionAbsent');
+                    motEl.classList.toggle('is-on',  !!motionActive);
                     motEl.classList.toggle('is-off', !motionActive);
                 }
             }
         };
     };
-    
+
     // =====================================================
     // 4) SNW.UI.logViewer (로그 목록)
     // =====================================================
-    SNW.UI.logViewer = function(opts) {
+    SNW.UI.logViewer = function (opts) {
         const {
             root,
             maxLines = SNW.CFG.UI.LOG_MAX_LINES
         } = opts || {};
-        
+
         if (!root) return { append: () => {}, clear: () => {}, setFilter: () => {} };
-        
+
         root.innerHTML = '';
         root.appendChild(SNW.DomUtil.html`<div class="snw-log-viewer" data-body></div>`);
         const body = root.querySelector('[data-body]');
-        
-        let filterLevel = 0; // 0 = 전체
-        
+
+        let filterLevel = 0;   // 0 = 전체
+
         function _levelClass(lv) {
             const meta = SNW.C.LOG_LEVEL_META[lv] || SNW.C.LOG_LEVEL_META[3];
             return 'snw-log-' + meta.color;
         }
-        
+
         function _trim() {
             while (body.children.length > maxLines) {
                 body.removeChild(body.firstElementChild);
             }
         }
-        
+
         return {
             append(entry) {
                 // { ts, lv, msg }
@@ -2890,12 +2908,19 @@ window.SNW = window.SNW || {};
             }
         };
     };
-    
+
 })(window.SNW);
 
 
 /* ===== LAYER 2 ===== */
 
+/* ---- 200.page.dashboard.js (15473 bytes) ---- */
+// =========================================================
+// 200.page.dashboard.js — SNW.Page.Dashboard (L1 MVP)
+// Layer 4 (페이지 로직) — Layer 0~3 참조
+//  - mount(): 템플릿 삽입, 컴포넌트 마운트, Store 구독
+//  - unmount(): 구독/타이머 정리
+// =========================================================
 /* ---- 200.page.dashboard.js ---- */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
@@ -2933,7 +2958,7 @@ SNW.Page = SNW.Page || {};
             this._bindModeSwitch();
             this._startClock();
         }
-        
+
         unmount() {
             this._active = false;
             this._unsubs.forEach(fn => { try { fn(); } catch {} });
@@ -3182,67 +3207,6 @@ SNW.Page = SNW.Page || {};
     };
 })(window.SNW);
 
-
-/* ---- 225.page.sensors.js ---- */
-window.SNW = window.SNW || {};
-SNW.Page = SNW.Page || {};
-(function (SNW) {
-    'use strict';
-    SNW.Page.Sensors = class Sensors {
-        constructor(container) { this.el = container; this._active = true; this._unsubs = []; }
-        
-        async mount() {
-            this.el.innerHTML = '';
-            this.el.appendChild(SNW.Tpl.sensors());
-            
-            const unsub = SNW.Store.watch('control', ctl => {
-                if (!this._active || !ctl || !ctl.sensor) return;
-                const s = ctl.sensor;
-                const set = (sel, val) => { const el = this.el.querySelector(sel); if (el) el.textContent = val; };
-                set('[data-slot="sensor-temp"]', s.tempC != null ? s.tempC.toFixed(1) + '°C' : '-');
-                set('[data-slot="sensor-hum"]', s.humidity != null ? s.humidity.toFixed(0) + '%' : '-');
-                set('[data-slot="sensor-motion"]', s.motionActive ? '감지됨' : '없음');
-            });
-            this._unsubs.push(unsub);
-
-            try {
-                const data = await SNW.Api.getMotion();
-                const m = (data && data.motion) || {};
-                const pir = m.pir || { enabled: true, holdSec: 120 };
-                const formSlot = this.el.querySelector('[data-slot="motion-config"]');
-                if (formSlot) {
-                    formSlot.innerHTML = `
-                        <div class="snw-form-row" style="flex-direction:row;align-items:center;gap:8px;margin-bottom:8px;">
-                            <input type="checkbox" id="m-pir-en" ${pir.enabled ? 'checked' : ''}>
-                            <label for="m-pir-en" style="margin:0;">PIR 감지 활성화</label>
-                        </div>
-                        <div class="snw-form-row" style="margin-bottom:8px;">
-                            <label>PIR Hold (초)</label>
-                            <input type="number" id="m-pir-hold" value="${pir.holdSec}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </div>
-                        <div class="snw-toolbar"><button type="button" class="snw-btn snw-btn-primary" data-action="save-motion">모션 설정 저장</button></div>
-                    `;
-                }
-            } catch(e) { console.error(e); }
-
-            SNW.DomUtil.delegate(this.el, '[data-action="feed-pir"]', 'click', async () => {
-                try { await SNW.Api.feedPir(true); SNW.ToastUtil.success('PIR 신호 전송'); } catch(e) { SNW.ErrorHandler.handle(e, 'sensors.pir'); }
-            });
-            SNW.DomUtil.delegate(this.el, '[data-action="save-motion"]', 'click', async () => {
-                const en = this.el.querySelector('#m-pir-en').checked;
-                const hold = Number(this.el.querySelector('#m-pir-hold').value);
-                try {
-                    await SNW.Api.patchMotion({ motion: { pir: { enabled: en, holdSec: hold } } });
-                    await SNW.Api.saveConfig();
-                    SNW.ToastUtil.success('모션 설정 저장됨');
-                } catch(e) { SNW.ErrorHandler.handle(e, 'sensors.motion'); }
-            });
-        }
-        unmount(){ this._active = false; this._unsubs.forEach(fn => fn()); }
-    };
-})(window.SNW);
-
-
 /* ---- 210.page.chart.js (5630 bytes) ---- */
 /*
  * ------------------------------------------------------
@@ -3260,180 +3224,194 @@ SNW.Page = SNW.Page || {};
  */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
-(function (SNW) {
-    'use strict';
-
-    SNW.Page.Chart = class Chart {
-        constructor(container) {
-            this.el = container;
-            this._unsubs = [];
-            this._wsUnsubs = [];
-            this._timers = [];
-            this._active = true;
-            this._rangeSec = 120;
-            this._buffer = []; // CSV/재렌더용 원본 버퍼 (최대 120)
-            this.chart = null;
-        }
-
-        async mount() {
-            this.el.innerHTML = '';
-            this.el.appendChild(SNW.Tpl.chart());
-            SNW.I18n.applyTo(this.el);
-
-            // 차트 초기화
-            const chartSlot = this.el.querySelector('[data-slot="chart"]');
-            this.chart = SNW.UI.chart({
-                root: chartSlot,
-                maxPoints: 120,
-                series: SNW.CFG.UI.MINI_CHART_SERIES
-            });
-
-            // 초기 데이터 (풀 덤프)
-            try {
-                const simState = await SNW.Api.getSimState();
-                if (this._active) this._applyInitial(simState);
-            } catch (e) {
-                SNW.LogUtil.warn('[Chart] 초기 sim state 실패', e);
-            }
-
-            // WS chart 구독
-            const wsChart = SNW.WsManager.get('chart');
-            if (wsChart) {
-                const unsub = wsChart.onMessage((data) => {
-                    if (!this._active) return;
-                    this._onWsChart(data);
-                });
-                this._wsUnsubs.push(unsub);
-            }
-
-            // 범위 선택
-            const rangeSel = this.el.querySelector('[data-slot="range"]');
-            if (rangeSel) {
-                rangeSel.value = String(this._rangeSec);
-                rangeSel.addEventListener('change', () => {
-                    this._rangeSec = Number(rangeSel.value) || 120;
-                    this._redrawRange();
-                });
-            }
-
-            // CSV 내보내기
-            SNW.DomUtil.delegate(this.el, '[data-action="export"]', 'click', () => {
-                this._exportCsv();
-            });
-
-            SNW.LogUtil.info('[Chart] mount 완료');
-        }
-
-        unmount() {
-            this._active = false;
-            this._unsubs.forEach(fn => { try { fn(); } catch { } });
-            this._wsUnsubs.forEach(fn => { try { fn(); } catch { } });
-            this._timers.forEach(id => clearInterval(id));
-            if (this.chart && this.chart.destroy) {
-                try { this.chart.destroy(); } catch { }
-            }
-            this._unsubs = [];
-            this._wsUnsubs = [];
-            this._timers = [];
-        }
-
-        // -------------------------------------------------
-        // 초기 데이터 (S10 → sim state)
-        // -------------------------------------------------
-        _applyInitial(simState) {
-            if (!simState || !simState.sim) return;
-            const sim = simState.sim;
-            // 초기 1포인트 push (풍속/목표/PWM)
-            this._pushPoint({
-                t: Date.now(),
-                windSpeed: sim.windSpeed != null ? sim.windSpeed : 0,
-                targetWind: sim.targetWind != null ? sim.targetWind : 0,
-                pwmDuty: sim.pwmDuty != null ? sim.pwmDuty : 0
-            });
-        }
-
-        // -------------------------------------------------
-        // WS chart 수신
-        //  - diffOnly: { sim: { windSpeed, targetWind, pwmDuty, ... } }
-        //  - full dump: { chart: [...], sim: {...} }
-        // -------------------------------------------------
-        _onWsChart(data) {
-            if (!data) return;
-            const sim = data.sim || {};
-
-            // full dump (배열)
-            if (Array.isArray(data.chart)) {
-                this._buffer = data.chart.map(e => ({
-                    t: e.t != null ? e.t : Date.now(),
-                    windSpeed: e.wind != null ? e.wind : 0,
-                    targetWind: e.targetWind != null ? e.targetWind : 0,
-                    pwmDuty: e.pwm != null ? e.pwm : 0
-                }));
-                this._redrawRange();
-                return;
-            }
-
-            // diffOnly (최신 1개)
-            this._pushPoint({
-                t: Date.now(),
-                windSpeed: sim.windSpeed != null ? sim.windSpeed : 0,
-                targetWind: sim.targetWind != null ? sim.targetWind : 0,
-                pwmDuty: sim.pwmDuty != null ? sim.pwmDuty : 0
-            });
-        }
-
-        _pushPoint(pt) {
-            this._buffer.push(pt);
-            if (this._buffer.length > 120) this._buffer.shift();
-            if (this.chart) this.chart.push(pt);
-        }
-
-        // -------------------------------------------------
-        // 범위 변경 시 재렌더 (버퍼에서 잘라냄)
-        // -------------------------------------------------
-        _redrawRange() {
-            if (!this.chart) return;
-            this.chart.clear();
-            this.chart.setMaxPoints(this._rangeSec);
-            const start = Math.max(0, this._buffer.length - this._rangeSec);
-            for (let i = start; i < this._buffer.length; i++) {
-                this.chart.push(this._buffer[i]);
-            }
-        }
-
-        // -------------------------------------------------
-        // CSV 내보내기 (현재 buffer)
-        // -------------------------------------------------
-        _exportCsv() {
-            if (!this._buffer.length) {
-                SNW.ToastUtil.info(SNW.I18n.t('common.noData'));
-                return;
-            }
-            const header = 'timestamp,windSpeed,targetWind,pwmDuty\n';
-            const rows = this._buffer.map(r => [
-                SNW.TimeUtil.epochToTimeStr(r.t),
-                r.windSpeed.toFixed(3),
-                r.targetWind.toFixed(3),
-                r.pwmDuty.toFixed(1)
-            ].join(',')).join('\n');
-
-            const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `snw_chart_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
-
-            SNW.ToastUtil.success(SNW.I18n.t('common.success'));
-        }
-    };
-
+(function(SNW) {
+	'use strict';
+	
+	SNW.Page.Chart = class Chart {
+		constructor(container) {
+			this.el = container;
+			this._unsubs = [];
+			this._wsUnsubs = [];
+			this._timers = [];
+			this._active = true;
+			this._rangeSec = 120;
+			this._buffer = []; // CSV/재렌더용 원본 버퍼 (최대 120)
+			this.chart = null;
+		}
+		
+		async mount() {
+			this.el.innerHTML = '';
+			this.el.appendChild(SNW.Tpl.chart());
+			SNW.I18n.applyTo(this.el);
+			
+			// 차트 초기화
+			const chartSlot = this.el.querySelector('[data-slot="chart"]');
+			this.chart = SNW.UI.chart({
+				root: chartSlot,
+				maxPoints: 120,
+				series: SNW.CFG.UI.MINI_CHART_SERIES
+			});
+			
+			// 초기 데이터 (풀 덤프)
+			try {
+				const simState = await SNW.Api.getSimState();
+				if (this._active) this._applyInitial(simState);
+			} catch (e) {
+				SNW.LogUtil.warn('[Chart] 초기 sim state 실패', e);
+			}
+			
+			// WS chart 구독
+			const wsChart = SNW.WsManager.get('chart');
+			if (wsChart) {
+				const unsub = wsChart.onMessage((data) => {
+					if (!this._active) return;
+					this._onWsChart(data);
+				});
+				this._wsUnsubs.push(unsub);
+			}
+			
+			// 범위 선택
+			const rangeSel = this.el.querySelector('[data-slot="range"]');
+			if (rangeSel) {
+				rangeSel.value = String(this._rangeSec);
+				rangeSel.addEventListener('change', () => {
+					this._rangeSec = Number(rangeSel.value) || 120;
+					this._redrawRange();
+				});
+			}
+			
+			// CSV 내보내기
+			SNW.DomUtil.delegate(this.el, '[data-action="export"]', 'click', () => {
+				this._exportCsv();
+			});
+			
+			SNW.LogUtil.info('[Chart] mount 완료');
+		}
+		
+		unmount() {
+			this._active = false;
+			this._unsubs.forEach(fn => { try { fn(); } catch {} });
+			this._wsUnsubs.forEach(fn => { try { fn(); } catch {} });
+			this._timers.forEach(id => clearInterval(id));
+			if (this.chart && this.chart.destroy) {
+				try { this.chart.destroy(); } catch {}
+			}
+			this._unsubs = [];
+			this._wsUnsubs = [];
+			this._timers = [];
+		}
+		
+		// -------------------------------------------------
+		// 초기 데이터 (S10 → sim state)
+		// -------------------------------------------------
+		_applyInitial(simState) {
+			if (!simState || !simState.sim) return;
+			const sim = simState.sim;
+			// 초기 1포인트 push (풍속/목표/PWM)
+			this._pushPoint({
+				t: Date.now(),
+				windSpeed: sim.windSpeed != null ? sim.windSpeed : 0,
+				targetWind: sim.targetWind != null ? sim.targetWind : 0,
+				pwmDuty: sim.pwmDuty != null ? sim.pwmDuty : 0
+			});
+		}
+		
+		// -------------------------------------------------
+		// WS chart 수신
+		//  - diffOnly: { sim: { windSpeed, targetWind, pwmDuty, ... } }
+		//  - full dump: { chart: [...], sim: {...} }
+		// -------------------------------------------------
+		_onWsChart(data) {
+			if (!data) return;
+			const sim = data.sim || {};
+			
+			// full dump (배열)
+			if (Array.isArray(data.chart)) {
+				this._buffer = data.chart.map(e => ({
+					t: e.t != null ? e.t : Date.now(),
+					windSpeed: e.wind != null ? e.wind : 0,
+					targetWind: e.targetWind != null ? e.targetWind : 0,
+					pwmDuty: e.pwm != null ? e.pwm : 0
+				}));
+				this._redrawRange();
+				return;
+			}
+			
+			// diffOnly (최신 1개)
+			this._pushPoint({
+				t: Date.now(),
+				windSpeed: sim.windSpeed != null ? sim.windSpeed : 0,
+				targetWind: sim.targetWind != null ? sim.targetWind : 0,
+				pwmDuty: sim.pwmDuty != null ? sim.pwmDuty : 0
+			});
+		}
+		
+		_pushPoint(pt) {
+			this._buffer.push(pt);
+			if (this._buffer.length > 120) this._buffer.shift();
+			if (this.chart) this.chart.push(pt);
+		}
+		
+		// -------------------------------------------------
+		// 범위 변경 시 재렌더 (버퍼에서 잘라냄)
+		// -------------------------------------------------
+		_redrawRange() {
+			if (!this.chart) return;
+			this.chart.clear();
+			this.chart.setMaxPoints(this._rangeSec);
+			const start = Math.max(0, this._buffer.length - this._rangeSec);
+			for (let i = start; i < this._buffer.length; i++) {
+				this.chart.push(this._buffer[i]);
+			}
+		}
+		
+		// -------------------------------------------------
+		// CSV 내보내기 (현재 buffer)
+		// -------------------------------------------------
+		_exportCsv() {
+			if (!this._buffer.length) {
+				SNW.ToastUtil.info(SNW.I18n.t('common.noData'));
+				return;
+			}
+			const header = 'timestamp,windSpeed,targetWind,pwmDuty\n';
+			const rows = this._buffer.map(r => [
+				SNW.TimeUtil.epochToTimeStr(r.t),
+				r.windSpeed.toFixed(3),
+				r.targetWind.toFixed(3),
+				r.pwmDuty.toFixed(1)
+			].join(',')).join('\n');
+			
+			const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8' });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `snw_chart_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			URL.revokeObjectURL(url);
+			
+			SNW.ToastUtil.success(SNW.I18n.t('common.success'));
+		}
+	};
+	
 })(window.SNW);
 
 
+/* ---- 220.page.schedule.js (18074 bytes) ---- */
+/*
+ * ------------------------------------------------------
+ * 소스명   : 220.page.schedule.js
+ * 모듈     : SNW.Page.Schedule
+ * 레이어   : Layer 4 (페이지 로직)
+ * 기능 요약:
+ *  - 8 스케줄 목록 조회 / 활성 토글 / 삭제
+ *  - 신규 추가 (기본값) → POST /schedules
+ *  - 세그먼트 편집은 v0202 MVP 범위 외 (Phase 5-b 확장)
+ * 제약     : schId/segId 서버 발급 (요청 무시)
+ *            schNo/segNo 사용자 지정 가능
+ * ------------------------------------------------------
+ */
 /* ---- 220.page.schedule.js ---- */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
@@ -3670,7 +3648,81 @@ SNW.Page = SNW.Page || {};
     };
 })(window.SNW);
 
+/* ---- 225.page.sensors.js (3318 bytes) ---- */
+/* ---- 225.page.sensors.js ---- */
+window.SNW = window.SNW || {};
+SNW.Page = SNW.Page || {};
+(function (SNW) {
+    'use strict';
+    SNW.Page.Sensors = class Sensors {
+        constructor(container) { this.el = container; this._active = true; this._unsubs = []; }
+        
+        async mount() {
+            this.el.innerHTML = '';
+            this.el.appendChild(SNW.Tpl.sensors());
+            
+            const unsub = SNW.Store.watch('control', ctl => {
+                if (!this._active || !ctl || !ctl.sensor) return;
+                const s = ctl.sensor;
+                const set = (sel, val) => { const el = this.el.querySelector(sel); if (el) el.textContent = val; };
+                set('[data-slot="sensor-temp"]', s.tempC != null ? s.tempC.toFixed(1) + '°C' : '-');
+                set('[data-slot="sensor-hum"]', s.humidity != null ? s.humidity.toFixed(0) + '%' : '-');
+                set('[data-slot="sensor-motion"]', s.motionActive ? '감지됨' : '없음');
+            });
+            this._unsubs.push(unsub);
 
+            try {
+                const data = await SNW.Api.getMotion();
+                const m = (data && data.motion) || {};
+                const pir = m.pir || { enabled: true, holdSec: 120 };
+                const formSlot = this.el.querySelector('[data-slot="motion-config"]');
+                if (formSlot) {
+                    formSlot.innerHTML = `
+                        <div class="snw-form-row" style="flex-direction:row;align-items:center;gap:8px;margin-bottom:8px;">
+                            <input type="checkbox" id="m-pir-en" ${pir.enabled ? 'checked' : ''}>
+                            <label for="m-pir-en" style="margin:0;">PIR 감지 활성화</label>
+                        </div>
+                        <div class="snw-form-row" style="margin-bottom:8px;">
+                            <label>PIR Hold (초)</label>
+                            <input type="number" id="m-pir-hold" value="${pir.holdSec}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        </div>
+                        <div class="snw-toolbar"><button type="button" class="snw-btn snw-btn-primary" data-action="save-motion">모션 설정 저장</button></div>
+                    `;
+                }
+            } catch(e) { console.error(e); }
+
+            SNW.DomUtil.delegate(this.el, '[data-action="feed-pir"]', 'click', async () => {
+                try { await SNW.Api.feedPir(true); SNW.ToastUtil.success('PIR 신호 전송'); } catch(e) { SNW.ErrorHandler.handle(e, 'sensors.pir'); }
+            });
+            SNW.DomUtil.delegate(this.el, '[data-action="save-motion"]', 'click', async () => {
+                const en = this.el.querySelector('#m-pir-en').checked;
+                const hold = Number(this.el.querySelector('#m-pir-hold').value);
+                try {
+                    await SNW.Api.patchMotion({ motion: { pir: { enabled: en, holdSec: hold } } });
+                    await SNW.Api.saveConfig();
+                    SNW.ToastUtil.success('모션 설정 저장됨');
+                } catch(e) { SNW.ErrorHandler.handle(e, 'sensors.motion'); }
+            });
+        }
+        unmount(){ this._active = false; this._unsubs.forEach(fn => fn()); }
+    };
+})(window.SNW);
+
+
+/* ---- 230.page.profiles.js (15581 bytes) ---- */
+/*
+ * ------------------------------------------------------
+ * 소스명   : 230.page.profiles.js
+ * 모듈     : SNW.Page.Profiles
+ * 레이어   : Layer 4 (페이지 로직)
+ * 기능 요약:
+ *  - 6 프로필 목록 조회
+ *  - 원클릭 시작 (/control/profile/select)
+ *  - 정지 (/control/profile/stop)
+ *  - 삭제
+ *  - 활성 프로필 강조 (control.profile.profileNo 참조)
+ * ------------------------------------------------------
+ */
 /* ---- 230.page.profiles.js ---- */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
@@ -3895,9 +3947,28 @@ SNW.Page = SNW.Page || {};
     };
 })(window.SNW);
 
-
-
-/* ---- 240.page.settings.js ---- */
+/* ---- 240.page.settings.js (26263 bytes) ---- */
+/*
+ * ------------------------------------------------------
+ * 소스명   : 240.page.settings.js
+ * 모듈     : SNW.Page.Settings
+ * 레이어   : Layer 4 (페이지 로직)
+ * 기능 요약:
+ *  - 로그 레벨 / API Key / 하드웨어 팬 PWM 편집 (스키마 폼)
+ *  - Save → Reload 순서 강제
+ *  - 공장 초기화 (POST /control/factoryReset)
+ *  - Reload 폴링 (오프라인 시 즉시 반환)
+ *
+ * [Batch B-3] XSS 방어 (모든 사용자 제어 문자열 escape)
+ * [NEW-C1]   `||` → `nz` (0값 보존: pin=0, brightness=0, holdSec=0)
+ * [NEW-C2]   dht.type 이스케이프 (XSS)
+ * [NEW-U1]   API Key 프리필 제거 (DOM 노출 차단, placeholder 안내)
+ * [NEW-U2]   API Key 삭제 체크박스 (clearApiKey/clearGeminiApiKey)
+ * [NEW-U3]   wsChConfig 빈 배열 시 기본 4채널 복원 + chName 베이스라인 유지
+ * [NEW-U4]   문자열 "false" 방어 (asBool)
+ * [FIX]      `data-action="reload"` dead 버튼 활성화
+ * ------------------------------------------------------
+ */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
 (function (SNW) {
@@ -4324,6 +4395,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
+/* ---- 245.page.simulation.js (7224 bytes) ---- */
 /* ---- 245.page.simulation.js ---- */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
@@ -4413,7 +4485,20 @@ SNW.Page = SNW.Page || {};
     };
 })(window.SNW);
 
-
+/* ---- 250.page.diagnostics.js (6291 bytes) ---- */
+/*
+ * ------------------------------------------------------
+ * 소스명   : 250.page.diagnostics.js
+ * 모듈     : SNW.Page.Diagnostics
+ * 레이어   : Layer 4 (페이지 로직)
+ * 기능 요약:
+ *  - FSM 상세 상태 / Reason
+ *  - Heap / FS / Dirty Flags
+ *  - NVS 런타임 상태 (control.system, runtime)
+ *  - API 버전 4종
+ *  - 5초 자동 새로고침
+ * ------------------------------------------------------
+ */
 /* ---- 250.page.diagnostics.js ---- */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
@@ -4526,46 +4611,46 @@ SNW.Page = SNW.Page || {};
  */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
-(function (SNW) {
-    'use strict';
-
-    SNW.Page.Firmware = class Firmware {
-        constructor(container) {
-            this.el = container;
-            this._active = true;
-        }
-
-        async mount() {
-            this.el.innerHTML = '';
-            this.el.appendChild(SNW.Tpl.firmware());
-            SNW.I18n.applyTo(this.el);
-
-            await this._loadVersion();
-
-            SNW.DomUtil.delegate(this.el, '[data-action="upload-fw"]', 'click', () => this._onUploadFw());
-            SNW.DomUtil.delegate(this.el, '[data-action="upload-file"]', 'click', () => this._onUploadFile());
-
-            SNW.LogUtil.info('[Firmware] mount 완료');
-        }
-
-        unmount() { this._active = false; }
-
-        async _loadVersion() {
-            const slot = this.el.querySelector('[data-slot="form"]');
-            if (!slot) return;
-
-            try {
-                const [v, chk] = await Promise.all([
-                    SNW.Api.version().catch(() => null),
-                    SNW.Api.checkFw().catch(() => null)
-                ]);
-                if (!this._active) return;
-
-                const ver = v || {};
-                const ck = chk || {};
-
-                slot.innerHTML = '';
-                slot.appendChild(SNW.DomUtil.html`
+(function(SNW) {
+	'use strict';
+	
+	SNW.Page.Firmware = class Firmware {
+		constructor(container) {
+			this.el = container;
+			this._active = true;
+		}
+		
+		async mount() {
+			this.el.innerHTML = '';
+			this.el.appendChild(SNW.Tpl.firmware());
+			SNW.I18n.applyTo(this.el);
+			
+			await this._loadVersion();
+			
+			SNW.DomUtil.delegate(this.el, '[data-action="upload-fw"]', 'click', () => this._onUploadFw());
+			SNW.DomUtil.delegate(this.el, '[data-action="upload-file"]', 'click', () => this._onUploadFile());
+			
+			SNW.LogUtil.info('[Firmware] mount 완료');
+		}
+		
+		unmount() { this._active = false; }
+		
+		async _loadVersion() {
+			const slot = this.el.querySelector('[data-slot="form"]');
+			if (!slot) return;
+			
+			try {
+				const [v, chk] = await Promise.all([
+					SNW.Api.version().catch(() => null),
+					SNW.Api.checkFw().catch(() => null)
+				]);
+				if (!this._active) return;
+				
+				const ver = v || {};
+				const ck = chk || {};
+				
+				slot.innerHTML = '';
+				slot.appendChild(SNW.DomUtil.html`
                     <div class="snw-firmware-panel">
                         <div class="snw-kv"><span>Current</span><b>${ver.fw || '-'}</b></div>
                         <div class="snw-kv"><span>Status</span><b>${ck.status || '-'}</b></div>
@@ -4588,65 +4673,78 @@ SNW.Page = SNW.Page || {};
                             <span data-file-label>0%</span>
                         </div>
                     </div>`);
-                SNW.I18n.applyTo(slot);
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'firmware.version');
-            }
-        }
-
-        async _onUploadFw() {
-            const inp = this.el.querySelector('[data-slot="fw-file"]');
-            if (!inp || !inp.files || !inp.files[0]) {
-                SNW.ToastUtil.warn(SNW.I18n.t('common.noData'));
-                return;
-            }
-            const file = inp.files[0];
-
-            const progBox = this.el.querySelector('[data-slot="fw-progress"]');
-            const fill = this.el.querySelector('[data-fw-fill]');
-            const label = this.el.querySelector('[data-fw-label]');
-            if (progBox) progBox.style.display = '';
-
-            try {
-                await SNW.Api.uploadFirmware(file, (pct) => {
-                    if (fill) fill.style.width = (pct * 100).toFixed(0) + '%';
-                    if (label) label.textContent = (pct * 100).toFixed(0) + '%';
-                });
-                SNW.ToastUtil.success('OTA OK (재시작)');
-                // 서버가 자동 재시작
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'firmware.upload');
-            }
-        }
-
-        async _onUploadFile() {
-            const inp = this.el.querySelector('[data-slot="file-file"]');
-            if (!inp || !inp.files || !inp.files[0]) {
-                SNW.ToastUtil.warn(SNW.I18n.t('common.noData'));
-                return;
-            }
-            const file = inp.files[0];
-
-            const progBox = this.el.querySelector('[data-slot="file-progress"]');
-            const fill = this.el.querySelector('[data-file-fill]');
-            const label = this.el.querySelector('[data-file-label]');
-            if (progBox) progBox.style.display = '';
-
-            try {
-                await SNW.Api.uploadFile(file, (pct) => {
-                    if (fill) fill.style.width = (pct * 100).toFixed(0) + '%';
-                    if (label) label.textContent = (pct * 100).toFixed(0) + '%';
-                });
-                SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'firmware.file');
-            }
-        }
-    };
-
+				SNW.I18n.applyTo(slot);
+			} catch (e) {
+				SNW.ErrorHandler.handle(e, 'firmware.version');
+			}
+		}
+		
+		async _onUploadFw() {
+			const inp = this.el.querySelector('[data-slot="fw-file"]');
+			if (!inp || !inp.files || !inp.files[0]) {
+				SNW.ToastUtil.warn(SNW.I18n.t('common.noData'));
+				return;
+			}
+			const file = inp.files[0];
+			
+			const progBox = this.el.querySelector('[data-slot="fw-progress"]');
+			const fill = this.el.querySelector('[data-fw-fill]');
+			const label = this.el.querySelector('[data-fw-label]');
+			if (progBox) progBox.style.display = '';
+			
+			try {
+				await SNW.Api.uploadFirmware(file, (pct) => {
+					if (fill) fill.style.width = (pct * 100).toFixed(0) + '%';
+					if (label) label.textContent = (pct * 100).toFixed(0) + '%';
+				});
+				SNW.ToastUtil.success('OTA OK (재시작)');
+				// 서버가 자동 재시작
+			} catch (e) {
+				SNW.ErrorHandler.handle(e, 'firmware.upload');
+			}
+		}
+		
+		async _onUploadFile() {
+			const inp = this.el.querySelector('[data-slot="file-file"]');
+			if (!inp || !inp.files || !inp.files[0]) {
+				SNW.ToastUtil.warn(SNW.I18n.t('common.noData'));
+				return;
+			}
+			const file = inp.files[0];
+			
+			const progBox = this.el.querySelector('[data-slot="file-progress"]');
+			const fill = this.el.querySelector('[data-file-fill]');
+			const label = this.el.querySelector('[data-file-label]');
+			if (progBox) progBox.style.display = '';
+			
+			try {
+				await SNW.Api.uploadFile(file, (pct) => {
+					if (fill) fill.style.width = (pct * 100).toFixed(0) + '%';
+					if (label) label.textContent = (pct * 100).toFixed(0) + '%';
+				});
+				SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
+			} catch (e) {
+				SNW.ErrorHandler.handle(e, 'firmware.file');
+			}
+		}
+	};
+	
 })(window.SNW);
 
 
+/* ---- 270.page.network.js (12321 bytes) ---- */
+/*
+ * ------------------------------------------------------
+ * 소스명   : 270.page.network.js
+ * 모듈     : SNW.Page.Network
+ * 레이어   : Layer 4 (페이지 로직)
+ * 기능 요약:
+ *  - Wi-Fi 상태 조회 (모드/SSID/IP/RSSI/MAC/Hostname/Connected)
+ *  - Wi-Fi 스캔 및 접속 모달
+ *  - NTP 설정 (서버/시간대/주기)
+ * ------------------------------------------------------
+ */
+ 
 /* ---- 270.page.network.js ---- */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
@@ -4676,24 +4774,23 @@ SNW.Page = SNW.Page || {};
 
         async _loadWifiState() {
             let state = {};
-            try { const data = await SNW.Api.getWifiState();
-                state = (data && data.wifi && data.wifi.state) || {}; } catch {}
+            try { const data = await SNW.Api.getWifiState(); state = (data && data.wifi && data.wifi.state) || {}; } catch {}
             const slot = this.el.querySelector('[data-slot="wifi-state"]');
             if (!slot) return;
             
             // [B-3] XSS 방어: SSID/hostname은 사용자 제어 가능
             const esc = SNW.DomUtil.escape;
             slot.innerHTML = `
-                        <div class="snw-kv"><span>Wi-Fi 모드</span><b>${esc(state.mode_name || '-')}</b></div>
-                        <div class="snw-kv"><span>연결 상태</span><b>${esc(state.status || '-')}</b></div>
-                        <div class="snw-kv"><span>SSID</span><b>${esc(state.ssid || '-')}</b></div>
-                        <div class="snw-kv"><span>IP 주소</span><b>${esc(state.ip || '-')}</b></div>
-                        <div class="snw-kv"><span>RSSI</span><b>${state.rssi != null ? state.rssi + ' dBm' : '-'}</b></div>
-                        <div class="snw-kv"><span>MAC 주소</span><b>${esc(state.mac || '-')}</b></div>
-                        <div class="snw-kv"><span>Hostname</span><b>${esc(state.hostname || '-')}</b></div>
-                        <div class="snw-kv"><span>시간 동기화</span><b>${state.timeSynced ? '완료' : '미완료'}</b></div>
-                        <div class="snw-kv"><span>재연결 시도</span><b>${state.reconnectAttempts ?? 0}</b></div>
-                    `;
+                <div class="snw-kv"><span>Wi-Fi 모드</span><b>${esc(state.mode_name || '-')}</b></div>
+                <div class="snw-kv"><span>연결 상태</span><b>${esc(state.status || '-')}</b></div>
+                <div class="snw-kv"><span>SSID</span><b>${esc(state.ssid || '-')}</b></div>
+                <div class="snw-kv"><span>IP 주소</span><b>${esc(state.ip || '-')}</b></div>
+                <div class="snw-kv"><span>RSSI</span><b>${state.rssi != null ? state.rssi + ' dBm' : '-'}</b></div>
+                <div class="snw-kv"><span>MAC 주소</span><b>${esc(state.mac || '-')}</b></div>
+                <div class="snw-kv"><span>Hostname</span><b>${esc(state.hostname || '-')}</b></div>
+                <div class="snw-kv"><span>시간 동기화</span><b>${state.timeSynced ? '완료' : '미완료'}</b></div>
+                <div class="snw-kv"><span>재연결 시도</span><b>${state.reconnectAttempts ?? 0}</b></div>
+            `;
         }
 
         async _loadWifiConfig() {
@@ -4865,45 +4962,45 @@ SNW.Page = SNW.Page || {};
  */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
-(function (SNW) {
-    'use strict';
-
-    SNW.Page.Logs = class Logs {
-        constructor(container) {
-            this.el = container;
-            this._active = true;
-            this._unsubs = [];
-            this._wsUnsubs = [];
-            this._viewer = null;
-        }
-
-        async mount() {
-            this.el.innerHTML = '';
-            this.el.appendChild(SNW.Tpl.logs());
-            SNW.I18n.applyTo(this.el);
-
-            // 로그 뷰어 마운트
-            this._viewer = SNW.UI.logViewer({
-                root: this.el.querySelector('[data-slot="log"]')
-            });
-
-            // 초기 로드
-            await this._loadInitial();
-
-            // WS log 구독
-            const wsLog = SNW.WsManager.get('log');
-            if (wsLog) {
-                const unsub = wsLog.onMessage((entry) => {
-                    if (!this._active || !this._viewer) return;
-                    this._viewer.append(entry);
-                });
-                this._wsUnsubs.push(unsub);
-            }
-
-            // 필터 select (스키마 없이 직접)
-            const filterEl = this.el.querySelector('[data-slot="log"]');
-            if (filterEl) {
-                filterEl.insertAdjacentElement('beforebegin', SNW.DomUtil.html`
+(function(SNW) {
+	'use strict';
+	
+	SNW.Page.Logs = class Logs {
+		constructor(container) {
+			this.el = container;
+			this._active = true;
+			this._unsubs = [];
+			this._wsUnsubs = [];
+			this._viewer = null;
+		}
+		
+		async mount() {
+			this.el.innerHTML = '';
+			this.el.appendChild(SNW.Tpl.logs());
+			SNW.I18n.applyTo(this.el);
+			
+			// 로그 뷰어 마운트
+			this._viewer = SNW.UI.logViewer({
+				root: this.el.querySelector('[data-slot="log"]')
+			});
+			
+			// 초기 로드
+			await this._loadInitial();
+			
+			// WS log 구독
+			const wsLog = SNW.WsManager.get('log');
+			if (wsLog) {
+				const unsub = wsLog.onMessage((entry) => {
+					if (!this._active || !this._viewer) return;
+					this._viewer.append(entry);
+				});
+				this._wsUnsubs.push(unsub);
+			}
+			
+			// 필터 select (스키마 없이 직접)
+			const filterEl = this.el.querySelector('[data-slot="log"]');
+			if (filterEl) {
+				filterEl.insertAdjacentElement('beforebegin', SNW.DomUtil.html`
                     <div class="snw-toolbar">
                         <select data-slot="log-filter">
                             <option value="0" data-i18n="log.filter">전체</option>
@@ -4917,65 +5014,65 @@ SNW.Page = SNW.Page || {};
                         <button type="button" data-action="log-export" class="snw-btn"
                                 data-i18n="log.export">내보내기</button>
                     </div>`);
-                SNW.I18n.applyTo(this.el);
-
-                const sel = this.el.querySelector('[data-slot="log-filter"]');
-                if (sel) {
-                    sel.addEventListener('change', () => {
-                        this._viewer && this._viewer.setFilter(Number(sel.value) || 0);
-                    });
-                }
-            }
-
-            SNW.DomUtil.delegate(this.el, '[data-action="log-clear"]', 'click', () => {
-                this._viewer && this._viewer.clear();
-            });
-            SNW.DomUtil.delegate(this.el, '[data-action="log-export"]', 'click', () => this._exportJson());
-
-            SNW.LogUtil.info('[Logs] mount 완료');
-        }
-
-        unmount() {
-            this._active = false;
-            this._unsubs.forEach(fn => { try { fn(); } catch { } });
-            this._wsUnsubs.forEach(fn => { try { fn(); } catch { } });
-            this._unsubs = [];
-            this._wsUnsubs = [];
-            this._viewer = null;
-        }
-
-        async _loadInitial() {
-            try {
-                const data = await SNW.Api.getLogs();
-                if (!this._active) return;
-                const list = (data && data.logs) || [];
-                list.forEach(entry => this._viewer && this._viewer.append(entry));
-            } catch (e) {
-                SNW.LogUtil.warn('[Logs] 초기 로드 실패', e);
-            }
-        }
-
-        _exportJson() {
-            try {
-                const body = this.el.querySelector('.snw-log-viewer');
-                if (!body) return;
-                const rows = Array.from(body.children).map(r => r.textContent);
-                const blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `snw_logs_${Date.now()}.json`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                URL.revokeObjectURL(url);
-                SNW.ToastUtil.success(SNW.I18n.t('common.success'));
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'logs.export');
-            }
-        }
-    };
-
+				SNW.I18n.applyTo(this.el);
+				
+				const sel = this.el.querySelector('[data-slot="log-filter"]');
+				if (sel) {
+					sel.addEventListener('change', () => {
+						this._viewer && this._viewer.setFilter(Number(sel.value) || 0);
+					});
+				}
+			}
+			
+			SNW.DomUtil.delegate(this.el, '[data-action="log-clear"]', 'click', () => {
+				this._viewer && this._viewer.clear();
+			});
+			SNW.DomUtil.delegate(this.el, '[data-action="log-export"]', 'click', () => this._exportJson());
+			
+			SNW.LogUtil.info('[Logs] mount 완료');
+		}
+		
+		unmount() {
+			this._active = false;
+			this._unsubs.forEach(fn => { try { fn(); } catch {} });
+			this._wsUnsubs.forEach(fn => { try { fn(); } catch {} });
+			this._unsubs = [];
+			this._wsUnsubs = [];
+			this._viewer = null;
+		}
+		
+		async _loadInitial() {
+			try {
+				const data = await SNW.Api.getLogs();
+				if (!this._active) return;
+				const list = (data && data.logs) || [];
+				list.forEach(entry => this._viewer && this._viewer.append(entry));
+			} catch (e) {
+				SNW.LogUtil.warn('[Logs] 초기 로드 실패', e);
+			}
+		}
+		
+		_exportJson() {
+			try {
+				const body = this.el.querySelector('.snw-log-viewer');
+				if (!body) return;
+				const rows = Array.from(body.children).map(r => r.textContent);
+				const blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' });
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = `snw_logs_${Date.now()}.json`;
+				document.body.appendChild(a);
+				a.click();
+				a.remove();
+				URL.revokeObjectURL(url);
+				SNW.ToastUtil.success(SNW.I18n.t('common.success'));
+			} catch (e) {
+				SNW.ErrorHandler.handle(e, 'logs.export');
+			}
+		}
+	};
+	
 })(window.SNW);
 
 
@@ -4993,26 +5090,26 @@ SNW.Page = SNW.Page || {};
  */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
-(function (SNW) {
-    'use strict';
-
-    const MAX_MSG_LEN = 4000;
-
-    SNW.Page.AI = class AI {
-        constructor(container) {
-            this.el = container;
-            this._active = true;
-            this._history = []; // [{role, text}]
-        }
-
-        async mount() {
-            this.el.innerHTML = '';
-            this.el.appendChild(SNW.Tpl.ai());
-            SNW.I18n.applyTo(this.el);
-
-            const slot = this.el.querySelector('[data-slot="chat"]');
-            slot.innerHTML = '';
-            slot.appendChild(SNW.DomUtil.html`
+(function(SNW) {
+	'use strict';
+	
+	const MAX_MSG_LEN = 4000;
+	
+	SNW.Page.AI = class AI {
+		constructor(container) {
+			this.el = container;
+			this._active = true;
+			this._history = []; // [{role, text}]
+		}
+		
+		async mount() {
+			this.el.innerHTML = '';
+			this.el.appendChild(SNW.Tpl.ai());
+			SNW.I18n.applyTo(this.el);
+			
+			const slot = this.el.querySelector('[data-slot="chat"]');
+			slot.innerHTML = '';
+			slot.appendChild(SNW.DomUtil.html`
                 <div class="snw-ai-chat">
                     <div class="snw-ai-messages" data-slot="messages"></div>
                     <div class="snw-ai-input">
@@ -5023,89 +5120,89 @@ SNW.Page = SNW.Page || {};
                                 data-action="send" data-i18n="ai.send">전송</button>
                     </div>
                 </div>`);
-            SNW.I18n.applyTo(slot);
-
-            SNW.DomUtil.delegate(this.el, '[data-action="send"]', 'click', () => this._onSend());
-            const inp = this.el.querySelector('[data-slot="input"]');
-            if (inp) {
-                inp.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        this._onSend();
-                    }
-                });
-            }
-
-            SNW.LogUtil.info('[AI] mount 완료');
-        }
-
-        unmount() { this._active = false; }
-
-        async _onSend() {
-            const inp = this.el.querySelector('[data-slot="input"]');
-            const msg = (inp && inp.value || '').trim();
-            if (!msg) return;
-            inp.value = '';
-
-            this._appendMessage('user', msg);
-            this._appendMessage('assistant', SNW.I18n.t('ai.thinking'));
-
-            try {
-                // Gemini API 요청 형식 (contents 배열)
-                const body = {
-                    contents: [{
-                        parts: [{ text: msg }]
-                    }]
-                };
-                const res = await SNW.Api.gemini(body);
-                if (!this._active) return;
-
-                // 응답 파싱 (Gemini 표준)
-                let text = '';
-                try {
-                    const candidates = res && res.candidates;
-                    if (candidates && candidates[0] && candidates[0].content &&
-                        candidates[0].content.parts && candidates[0].content.parts[0]) {
-                        text = candidates[0].content.parts[0].text || '';
-                    } else if (typeof res === 'string') {
-                        text = res;
-                    } else if (res && res.text) {
-                        text = res.text;
-                    }
-                } catch { }
-
-                if (!text) text = '(no response)';
-                this._replaceLastAssistant(text);
-            } catch (e) {
-                this._replaceLastAssistant('[ERROR] ' + (e.message || 'failed'));
-                SNW.ErrorHandler.handle(e, 'ai.send');
-            }
-        }
-
-        _appendMessage(role, text) {
-            const wrap = this.el.querySelector('[data-slot="messages"]');
-            if (!wrap) return;
-            const cls = role === 'user' ? 'is-user' : 'is-assistant';
-            wrap.appendChild(SNW.DomUtil.html`
+			SNW.I18n.applyTo(slot);
+			
+			SNW.DomUtil.delegate(this.el, '[data-action="send"]', 'click', () => this._onSend());
+			const inp = this.el.querySelector('[data-slot="input"]');
+			if (inp) {
+				inp.addEventListener('keydown', (e) => {
+					if (e.key === 'Enter' && !e.shiftKey) {
+						e.preventDefault();
+						this._onSend();
+					}
+				});
+			}
+			
+			SNW.LogUtil.info('[AI] mount 완료');
+		}
+		
+		unmount() { this._active = false; }
+		
+		async _onSend() {
+			const inp = this.el.querySelector('[data-slot="input"]');
+			const msg = (inp && inp.value || '').trim();
+			if (!msg) return;
+			inp.value = '';
+			
+			this._appendMessage('user', msg);
+			this._appendMessage('assistant', SNW.I18n.t('ai.thinking'));
+			
+			try {
+				// Gemini API 요청 형식 (contents 배열)
+				const body = {
+					contents: [{
+						parts: [{ text: msg }]
+					}]
+				};
+				const res = await SNW.Api.gemini(body);
+				if (!this._active) return;
+				
+				// 응답 파싱 (Gemini 표준)
+				let text = '';
+				try {
+					const candidates = res && res.candidates;
+					if (candidates && candidates[0] && candidates[0].content &&
+						candidates[0].content.parts && candidates[0].content.parts[0]) {
+						text = candidates[0].content.parts[0].text || '';
+					} else if (typeof res === 'string') {
+						text = res;
+					} else if (res && res.text) {
+						text = res.text;
+					}
+				} catch {}
+				
+				if (!text) text = '(no response)';
+				this._replaceLastAssistant(text);
+			} catch (e) {
+				this._replaceLastAssistant('[ERROR] ' + (e.message || 'failed'));
+				SNW.ErrorHandler.handle(e, 'ai.send');
+			}
+		}
+		
+		_appendMessage(role, text) {
+			const wrap = this.el.querySelector('[data-slot="messages"]');
+			if (!wrap) return;
+			const cls = role === 'user' ? 'is-user' : 'is-assistant';
+			wrap.appendChild(SNW.DomUtil.html`
                 <div class="snw-ai-msg ${cls}">
                     <div class="snw-ai-bubble">${text}</div>
                 </div>`);
-            wrap.scrollTop = wrap.scrollHeight;
-        }
-
-        _replaceLastAssistant(text) {
-            const wrap = this.el.querySelector('[data-slot="messages"]');
-            if (!wrap) return;
-            const list = wrap.querySelectorAll('.snw-ai-msg.is-assistant');
-            const last = list[list.length - 1];
-            if (last) {
-                const bubble = last.querySelector('.snw-ai-bubble');
-                if (bubble) bubble.textContent = text;
-            }
-            wrap.scrollTop = wrap.scrollHeight;
-        }
-    };
-
+			wrap.scrollTop = wrap.scrollHeight;
+		}
+		
+		_replaceLastAssistant(text) {
+			const wrap = this.el.querySelector('[data-slot="messages"]');
+			if (!wrap) return;
+			const list = wrap.querySelectorAll('.snw-ai-msg.is-assistant');
+			const last = list[list.length - 1];
+			if (last) {
+				const bubble = last.querySelector('.snw-ai-bubble');
+				if (bubble) bubble.textContent = text;
+			}
+			wrap.scrollTop = wrap.scrollHeight;
+		}
+	};
+	
 })(window.SNW);
 
 
@@ -5125,34 +5222,34 @@ SNW.Page = SNW.Page || {};
  */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
-(function (SNW) {
-    'use strict';
-
-    SNW.Page.Info = class Info {
-        constructor(container) {
-            this.el = container;
-            this._active = true;
-        }
-
-        async mount() {
-            this.el.innerHTML = '';
-            this.el.appendChild(SNW.Tpl.info());
-            SNW.I18n.applyTo(this.el);
-
-            const slot = this.el.querySelector('[data-slot="panel"]');
-
-            try {
-                const [v, d] = await Promise.all([
-                    SNW.Api.version().catch(() => null),
-                    SNW.Api.diag().catch(() => null)
-                ]);
-                if (!this._active) return;
-
-                const ver = v || {};
-                const diag = d || {};
-
-                slot.innerHTML = '';
-                slot.appendChild(SNW.DomUtil.html`
+(function(SNW) {
+	'use strict';
+	
+	SNW.Page.Info = class Info {
+		constructor(container) {
+			this.el = container;
+			this._active = true;
+		}
+		
+		async mount() {
+			this.el.innerHTML = '';
+			this.el.appendChild(SNW.Tpl.info());
+			SNW.I18n.applyTo(this.el);
+			
+			const slot = this.el.querySelector('[data-slot="panel"]');
+			
+			try {
+				const [v, d] = await Promise.all([
+					SNW.Api.version().catch(() => null),
+					SNW.Api.diag().catch(() => null)
+				]);
+				if (!this._active) return;
+				
+				const ver = v || {};
+				const diag = d || {};
+				
+				slot.innerHTML = '';
+				slot.appendChild(SNW.DomUtil.html`
                     <div class="snw-info-panel">
                         <h3>Version</h3>
                         <div class="snw-kv"><span>fw</span><b>${ver.fw || '-'}</b></div>
@@ -5165,22 +5262,33 @@ SNW.Page = SNW.Page || {};
                         <div class="snw-kv"><span>FS Used</span><b>${diag.fs_used != null ? diag.fs_used + ' B' : '-'}</b></div>
                         <div class="snw-kv"><span>FS Total</span><b>${diag.fs_total != null ? diag.fs_total + ' B' : '-'}</b></div>
                     </div>`);
-            } catch (e) {
-                slot.innerHTML = '';
-                slot.appendChild(SNW.DomUtil.html`<div class="snw-error">${SNW.I18n.t('msg.unknown')}</div>`);
-            }
-
-            SNW.LogUtil.info('[Info] mount 완료');
-        }
-
-        unmount() {
-            this._active = false;
-        }
-    };
-
+			} catch (e) {
+				slot.innerHTML = '';
+				slot.appendChild(SNW.DomUtil.html`<div class="snw-error">${SNW.I18n.t('msg.unknown')}</div>`);
+			}
+			
+			SNW.LogUtil.info('[Info] mount 완료');
+		}
+		
+		unmount() {
+			this._active = false;
+		}
+	};
+	
 })(window.SNW);
 
 
+/* ---- 300.page.windprofile.js (10232 bytes) ---- */
+/*
+ * ------------------------------------------------------
+ * 소스명   : 300.page.windprofile.js
+ * 모듈     : SNW.Page.Windprofile
+ * 레이어   : Layer 4 (페이지 로직)
+ * 기능 요약:
+ *  - 바람 프리셋 관리 (WindProfile CRUD)
+ *  - 프리셋 목록 표시 / 추가 / 수정 / 삭제
+ * ------------------------------------------------------
+ */
 /* ---- 300.page.windprofile.js ---- */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
@@ -5308,8 +5416,6 @@ SNW.Page = SNW.Page || {};
     };
 })(window.SNW);
 
-
-
 /* ===== LAYER 9 ===== */
 
 /* ---- 999.app.js (4518 bytes) ---- */
@@ -5321,7 +5427,7 @@ SNW.Page = SNW.Page || {};
 // =========================================================
 
 window.SNW = window.SNW || {};
-(function (SNW) {
+(function(SNW) {
     'use strict';
 
     // [추가] 전역 팝업(모달) 컴포넌트
@@ -5342,7 +5448,7 @@ window.SNW = window.SNW || {};
         h.style.marginTop = '0';
         box.appendChild(h);
         box.appendChild(contentEl);
-
+        
         const actions = document.createElement('div');
         actions.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;margin-top:20px;';
         const btnCancel = document.createElement('button');
@@ -5371,7 +5477,7 @@ window.SNW = window.SNW || {};
         SNW.Store.watch('connection', render);
         render(SNW.Store.get().connection);
     }
-
+    
     function _bindLastUpdate() {
         const el = document.getElementById('footer-lastUpdate');
         if (!el) return;
@@ -5383,7 +5489,7 @@ window.SNW = window.SNW || {};
         SNW.Store.watch('lastUpdateMs', render);
         setInterval(() => render(SNW.Store.get().lastUpdateMs), 1000);
     }
-
+    
     function _bindLangToggle() {
         const btn = document.getElementById('btn-lang');
         if (!btn) return;
@@ -5394,18 +5500,18 @@ window.SNW = window.SNW || {};
         });
     }
 
-    window.SNW_BOOT = async function () {
+    window.SNW_BOOT = async function() {
         if (window.SNW_BOOT_CALLED) return;
         window.SNW_BOOT_CALLED = true;
-
+        
         try {
             if (window.SNW_OFFLINE && SNW.Offline && SNW.Offline.ready) {
                 await SNW.Offline.ready;
             }
-
+            
             SNW.I18n.applyTo(document);
             if (typeof SNW.LevelUtil !== 'undefined' && SNW.LevelUtil.applyTo) SNW.LevelUtil.applyTo(document.body);
-
+            
             _bindConnectionStatus();
             _bindLastUpdate();
             SNW.WsManager.initByLevel();
@@ -5417,7 +5523,7 @@ window.SNW = window.SNW || {};
             SNW.LogUtil.error('bootstrap failed', e);
         }
     };
-
+    
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => { window.SNW_BOOT(); });
     } else {

@@ -1,46 +1,35 @@
 // =========================================================
-// 110.ui.slider.js — SNW.UI.slider (디바운스 슬라이더)
-// Layer 3 (UI 컴포넌트) — Layer 0~2 참조
-//  - 드래그 중 값 표시, 종료 시 디바운스 후 onChange
-//  - 외부 set() 호출 시 (사용자 조작 중 아닐 때) 동기화
+// 110.ui.slider.js — SNW.UI.slider
+// Layer 3 (UI 컴포넌트)
+// [O-2] 낙관적 잠금 (dragging + pending 보호)
 // =========================================================
 window.SNW = window.SNW || {};
-(function (SNW) {
+(function(SNW) {
     'use strict';
-
+    
     SNW.UI = SNW.UI || {};
-
-    /**
-     * 슬라이더
-     * @param {object} opts
-     *   root       : HTMLElement
-     *   min        : number (기본 0)
-     *   max        : number (기본 100)
-     *   value      : number (기본 50)
-     *   label      : string
-     *   unit       : string
-     *   onChange   : (value:number) => void (디바운스 후)
-     *   debounceMs : number (기본 SNW.C.DEBOUNCE_MS.SLIDER)
-     * @returns {{set: function(number), get: function():number}}
-     */
-    SNW.UI.slider = function (opts) {
+    
+    SNW.UI.slider = function(opts) {
         const {
             root,
-            min = 0, max = 100, value = 50,
-            label = '', unit = '',
+            min = 0,
+            max = 100,
+            value = 50,
+            label = '',
+            unit = '',
             onChange,
             debounceMs = SNW.C.DEBOUNCE_MS.SLIDER
         } = opts || {};
-
+        
         if (!root) return { set: () => {}, get: () => value };
-
+        
         const debounced = SNW.DebounceUtil.debounce((v) => {
             if (typeof onChange === 'function') {
                 try { onChange(v); }
                 catch (e) { SNW.LogUtil.error('[slider] onChange 실패', e); }
             }
         }, debounceMs);
-
+        
         root.innerHTML = '';
         root.appendChild(SNW.DomUtil.html`
             <div class="snw-slider">
@@ -53,35 +42,37 @@ window.SNW = window.SNW || {};
                 <input type="range" class="snw-slider__input"
                        min="${min}" max="${max}" value="${value}" data-input />
             </div>`);
-
+        
         const input = root.querySelector('[data-input]');
         const valEl = root.querySelector('[data-val]');
-
+        
         let dragging = false;
-
+        
         input.addEventListener('input', () => {
             dragging = true;
             if (valEl) valEl.textContent = input.value;
         });
-
+        
         input.addEventListener('change', () => {
             dragging = false;
             debounced(Number(input.value));
         });
-
-        // 터치/포인터 종료 감지
-        input.addEventListener('pointerup',    () => { dragging = false; });
-        input.addEventListener('pointercancel',() => { dragging = false; });
-
+        
+        input.addEventListener('pointerup', () => { dragging = false; });
+        input.addEventListener('pointercancel', () => { dragging = false; });
+        
         return {
             set(v) {
-                if (dragging) return;    // 사용자 조작 중에는 무시
+                // [O-2] 사용자 조작 중 무시
+                if (dragging) return;
                 const n = Math.max(min, Math.min(max, Number(v) || 0));
+                // 현재 표시 값과 같으면 스킵 (불필요한 재렌더 방지)
+                if (Number(input.value) === n) return;
                 input.value = String(n);
                 if (valEl) valEl.textContent = String(n);
             },
             get() { return Number(input.value); }
         };
     };
-
+    
 })(window.SNW);

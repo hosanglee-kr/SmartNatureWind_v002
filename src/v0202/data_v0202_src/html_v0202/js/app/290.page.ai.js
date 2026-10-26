@@ -1,14 +1,8 @@
-/*
- * ------------------------------------------------------
- * 소스명   : 290.page.ai.js
- * 모듈     : SNW.Page.AI
- * 레이어   : Layer 4 (페이지 로직)
- * 기능 요약:
- *  - Gemini 자연어 채팅 (POST /ai/gemini)
- *  - Rate limit 3초 (서버 + 클라이언트)
- *  - 요청 최대 8KB / 응답 최대 4KB
- * ------------------------------------------------------
- */
+// =========================================================
+// 290.page.ai.js — SNW.Page.AI
+// Layer 4 (페이지 로직)
+// [P1-14] 예시 텍스트 i18n 이관
+// =========================================================
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
 (function(SNW) {
@@ -20,7 +14,7 @@ SNW.Page = SNW.Page || {};
 		constructor(container) {
 			this.el = container;
 			this._active = true;
-			this._history = []; // [{role, text}]
+			this._history = [];
 		}
 		
 		async mount() {
@@ -29,21 +23,37 @@ SNW.Page = SNW.Page || {};
 			SNW.I18n.applyTo(this.el);
 			
 			const slot = this.el.querySelector('[data-slot="chat"]');
-			slot.innerHTML = '';
-			slot.appendChild(SNW.DomUtil.html`
+			const examplePlaceholder = SNW.I18n.t('ai.placeholder');
+			
+			slot.innerHTML = `
                 <div class="snw-ai-chat">
                     <div class="snw-ai-messages" data-slot="messages"></div>
+                    <div class="snw-ai-examples" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+                        <button type="button" class="snw-btn snw-btn--sm" data-example="${SNW.I18n.t('ai.example1')}">${SNW.I18n.t('ai.example1')}</button>
+                        <button type="button" class="snw-btn snw-btn--sm" data-example="${SNW.I18n.t('ai.example2')}">${SNW.I18n.t('ai.example2')}</button>
+                        <button type="button" class="snw-btn snw-btn--sm" data-example="${SNW.I18n.t('ai.example3')}">${SNW.I18n.t('ai.example3')}</button>
+                    </div>
                     <div class="snw-ai-input">
                         <textarea data-slot="input" rows="3"
-                                  placeholder="${SNW.I18n.t('ai.placeholder')}"
+                                  placeholder="${SNW.DomUtil.escape(examplePlaceholder)}"
                                   maxlength="${MAX_MSG_LEN}"></textarea>
-                        <button type="button" class="snw-btn snw-btn-primary"
-                                data-action="send" data-i18n="ai.send">전송</button>
+                        <button type="button" class="snw-btn snw-btn-primary" data-action="send">
+                            ${SNW.I18n.t('ai.send')}
+                        </button>
                     </div>
-                </div>`);
-			SNW.I18n.applyTo(slot);
+                </div>`;
 			
 			SNW.DomUtil.delegate(this.el, '[data-action="send"]', 'click', () => this._onSend());
+			
+			// [P1-14] 예시 버튼 클릭 → textarea에 채움
+			SNW.DomUtil.delegate(this.el, '[data-example]', 'click', (e, btn) => {
+				const inp = this.el.querySelector('[data-slot="input"]');
+				if (inp) {
+					inp.value = btn.getAttribute('data-example');
+					inp.focus();
+				}
+			});
+			
 			const inp = this.el.querySelector('[data-slot="input"]');
 			if (inp) {
 				inp.addEventListener('keydown', (e) => {
@@ -69,16 +79,12 @@ SNW.Page = SNW.Page || {};
 			this._appendMessage('assistant', SNW.I18n.t('ai.thinking'));
 			
 			try {
-				// Gemini API 요청 형식 (contents 배열)
 				const body = {
-					contents: [{
-						parts: [{ text: msg }]
-					}]
+					contents: [{ parts: [{ text: msg }] }]
 				};
 				const res = await SNW.Api.gemini(body);
 				if (!this._active) return;
 				
-				// 응답 파싱 (Gemini 표준)
 				let text = '';
 				try {
 					const candidates = res && res.candidates;
@@ -123,5 +129,4 @@ SNW.Page = SNW.Page || {};
 			wrap.scrollTop = wrap.scrollHeight;
 		}
 	};
-	
 })(window.SNW);

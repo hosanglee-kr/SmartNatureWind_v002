@@ -1,15 +1,8 @@
-/*
- * ------------------------------------------------------
- * 소스명   : 260.page.firmware.js
- * 모듈     : SNW.Page.Firmware
- * 레이어   : Layer 4 (페이지 로직)
- * 기능 요약:
- *  - 현재 버전 조회 (GET /version)
- *  - OTA 확인 (GET /system/firmware/check)
- *  - OTA 업로드 (POST /fwUpdate, XHR 진행률)
- *  - LittleFS 파일 업로드 (POST /fileUpload)
- * ------------------------------------------------------
- */
+// =========================================================
+// 260.page.firmware.js — SNW.Page.Firmware
+// Layer 4 (페이지 로직)
+// [O-10] UploadManager 위임 — 페이지 이탈에도 진행률 유지
+// =========================================================
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
 (function(SNW) {
@@ -19,6 +12,7 @@ SNW.Page = SNW.Page || {};
 		constructor(container) {
 			this.el = container;
 			this._active = true;
+			this._uploading = false;
 		}
 		
 		async mount() {
@@ -34,7 +28,15 @@ SNW.Page = SNW.Page || {};
 			SNW.LogUtil.info('[Firmware] mount 완료');
 		}
 		
-		unmount() { this._active = false; }
+		// [O-10] 페이지 이탈 방지
+		unmount() {
+			if (this._uploading) {
+				const ok = confirm('업로드가 진행 중입니다. 페이지를 떠나시겠습니까?\n(진행률은 백그라운드로 계속 표시됩니다)');
+				if (!ok) return false;
+			}
+			this._active = false;
+			return true;
+		}
 		
 		async _loadVersion() {
 			const slot = this.el.querySelector('[data-slot="form"]');
@@ -53,36 +55,38 @@ SNW.Page = SNW.Page || {};
 				slot.innerHTML = '';
 				slot.appendChild(SNW.DomUtil.html`
                     <div class="snw-firmware-panel">
-                        <div class="snw-kv"><span>Current</span><b>${ver.fw || '-'}</b></div>
-                        <div class="snw-kv"><span>Status</span><b>${ck.status || '-'}</b></div>
-                        <div class="snw-kv"><span>Latest</span><b>${ck.latest_version || '-'}</b></div>
+                        <div class="snw-kv"><span>Current</span><b>${SNW.DomUtil.escape(ver.fw || '-')}</b></div>
+                        <div class="snw-kv"><span>Status</span><b>${SNW.DomUtil.escape(ck.status || '-')}</b></div>
+                        <div class="snw-kv"><span>Latest</span><b>${SNW.DomUtil.escape(ck.latest_version || '-')}</b></div>
 
-                        <h3 data-i18n="firmware.otaUpdate">${SNW.I18n.t('firmware.otaUpdate')}</h3>
-                        <input type="file" accept=".bin" data-slot="fw-file" />
+                        <h3>${SNW.I18n.t('firmware.otaUpdate')}</h3>
+                        <input type="file" accept=".bin" data-slot="fw-file">
                         <button type="button" class="snw-btn snw-btn-primary"
-                                data-action="upload-fw" data-i18n="firmware.uploadBtn">${SNW.I18n.t('firmware.uploadBtn')}</button>
+                                data-action="upload-fw">${SNW.I18n.t('firmware.uploadBtn')}</button>
                         <div class="snw-progress" data-slot="fw-progress" style="display:none">
                             <div class="snw-progress__bar"><div class="snw-progress__fill" data-fw-fill></div></div>
                             <span data-fw-label>0%</span>
                         </div>
 
-                        <h3 data-i18n="firmware.fileUpload">${SNW.I18n.t('firmware.fileUpload')}</h3>
-                        <input type="file" data-slot="file-file" />
-                        <button type="button" class="snw-btn" data-action="upload-file" data-i18n="firmware.uploadBtn">${SNW.I18n.t('firmware.uploadBtn')}</button>
+                        <h3>${SNW.I18n.t('firmware.fileUpload')}</h3>
+                        <input type="file" data-slot="file-file">
+                        <button type="button" class="snw-btn"
+                                data-action="upload-file">${SNW.I18n.t('firmware.uploadBtn')}</button>
                         <div class="snw-progress" data-slot="file-progress" style="display:none">
                             <div class="snw-progress__bar"><div class="snw-progress__fill" data-file-fill></div></div>
                             <span data-file-label>0%</span>
                         </div>
-                    </div>`);
-				SNW.I18n.applyTo(slot);
+                    </div>
+                `);
 			} catch (e) {
 				SNW.ErrorHandler.handle(e, 'firmware.version');
 			}
 		}
 		
+		// [O-10] UploadManager 위임
 		async _onUploadFw() {
 			const inp = this.el.querySelector('[data-slot="fw-file"]');
-			if (!inp || !inp.files || !inp.files[0]) {
+			if (!inp?.files?.[0]) {
 				SNW.ToastUtil.warn(SNW.I18n.t('common.noData'));
 				return;
 			}
@@ -93,21 +97,24 @@ SNW.Page = SNW.Page || {};
 			const label = this.el.querySelector('[data-fw-label]');
 			if (progBox) progBox.style.display = '';
 			
+			this._uploading = true;
 			try {
-				await SNW.Api.uploadFirmware(file, (pct) => {
+				await SNW.UploadManager.start(`firmware-${Date.now()}`, 'firmware', file, (pct) => {
 					if (fill) fill.style.width = (pct * 100).toFixed(0) + '%';
 					if (label) label.textContent = (pct * 100).toFixed(0) + '%';
 				});
-				SNW.ToastUtil.success(SNW.I18n.t('firmware.otaSuccess'));
-				// 서버가 자동 재시작
+				// UploadManager가 toast 처리
 			} catch (e) {
-				SNW.ErrorHandler.handle(e, 'firmware.upload');
+				// UploadManager가 ErrorHandler 처리
+			} finally {
+				this._uploading = false;
+				if (progBox) setTimeout(() => { progBox.style.display = 'none'; }, 2000);
 			}
 		}
 		
 		async _onUploadFile() {
 			const inp = this.el.querySelector('[data-slot="file-file"]');
-			if (!inp || !inp.files || !inp.files[0]) {
+			if (!inp?.files?.[0]) {
 				SNW.ToastUtil.warn(SNW.I18n.t('common.noData'));
 				return;
 			}
@@ -118,16 +125,18 @@ SNW.Page = SNW.Page || {};
 			const label = this.el.querySelector('[data-file-label]');
 			if (progBox) progBox.style.display = '';
 			
+			this._uploading = true;
 			try {
-				await SNW.Api.uploadFile(file, (pct) => {
+				await SNW.UploadManager.start(`file-${Date.now()}`, 'file', file, (pct) => {
 					if (fill) fill.style.width = (pct * 100).toFixed(0) + '%';
 					if (label) label.textContent = (pct * 100).toFixed(0) + '%';
 				});
-				SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
 			} catch (e) {
-				SNW.ErrorHandler.handle(e, 'firmware.file');
+				// UploadManager가 처리
+			} finally {
+				this._uploading = false;
+				if (progBox) setTimeout(() => { progBox.style.display = 'none'; }, 2000);
 			}
 		}
 	};
-	
 })(window.SNW);

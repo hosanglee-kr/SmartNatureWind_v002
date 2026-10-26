@@ -12,12 +12,8 @@
 
 <div id="app" class="snw-app">
 
-    <!-- ============================================================
-         Header (모든 페이지 공통)
-         ============================================================ -->
     <header class="snw-header" id="snw-header">
-        <button class="snw-btn-icon" id="btn-menu" aria-label="Menu"
-                data-i18n-attr="aria-label:header.menu">☰</button>
+        <button class="snw-btn-icon" id="btn-menu" aria-label="Menu">☰</button>
         <span class="snw-brand" data-i18n="app.title">Smart Nature Wind</span>
         <div class="snw-header-right">
             <span class="snw-status-dot" id="conn-status" title=""></span>
@@ -26,37 +22,29 @@
         </div>
     </header>
 
-    <!-- ============================================================
-         사이드 네비게이션 (L2+ 표시, JS가 hidden 토글)
-         ============================================================ -->
-    <aside class="snw-sidebar" id="snw-sidebar" hidden>
+    <!-- Sidebar (hidden 없음) -->
+    <aside class="snw-sidebar" id="snw-sidebar">
         <nav id="nav-menu"></nav>
     </aside>
 
-    <!-- ============================================================
-         메인 컨텐츠 (라우터가 동적 렌더)
-         ============================================================ -->
+    <!-- 👇 오버레이 명시적으로 HTML에 넣음 -->
+    <div class="snw-sidebar-overlay" id="snw-sidebar-overlay"></div>
+
     <main class="snw-main" id="snw-main">
         <div class="snw-loading" data-i18n="common.loading">Loading...</div>
     </main>
 
-    <!-- ============================================================
-         Footer
-         ============================================================ -->
     <footer class="snw-footer">
         <span id="footer-status" data-i18n="footer.online">🟢</span>
         <span class="snw-footer-spacer"></span>
         <span id="footer-lastUpdate">-</span>
     </footer>
 
-    <!-- 토스트 호스트 -->
     <div class="snw-toast-host" id="toast-host"></div>
 </div>
 
-<!-- 1. 번들 먼저 로드 (SNW.Api 원본 생성) -->
 <script src="./P010_bundle_0202.js"></script>
 
-<!-- 2. 오프라인 어댑터는 번들 이후에 로드 (SNW.Api 스텁 덮어쓰기) -->
 <script>
     window.SNW_OFFLINE = (location.protocol === 'file:') ||
         location.hostname === 'localhost' ||
@@ -66,11 +54,11 @@
     console.log('[Loader] SNW_OFFLINE =', window.SNW_OFFLINE);
     
     if (window.SNW_OFFLINE) {
-        document.write('<script src="./js/998.offline_0202.js"><\/script>');
+        var script = document.createElement('script');
+        script.src = './js/998.offline_0202.js';
+        document.head.appendChild(script);
     }
 </script>
 
-
 </body>
 </html>
-

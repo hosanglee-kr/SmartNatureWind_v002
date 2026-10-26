@@ -1,15 +1,8 @@
-/*
- * ------------------------------------------------------
- * 소스명   : 280.page.logs.js
- * 모듈     : SNW.Page.Logs
- * 레이어   : Layer 4 (페이지 로직)
- * 기능 요약:
- *  - /api/v001/logs 초기 256개 로드
- *  - WS /ws/log 실시간 스트림 구독
- *  - 레벨 필터 (NONE/ERROR/WARN/INFO/DEBUG)
- *  - 지우기 / 내보내기
- * ------------------------------------------------------
- */
+// =========================================================
+// 280.page.logs.js — SNW.Page.Logs
+// Layer 4 (페이지 로직)
+// [P1-12] 필터 UI를 Tpl로 통합 (mount마다 중복 생성 방지)
+// =========================================================
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
 (function(SNW) {
@@ -29,10 +22,40 @@ SNW.Page = SNW.Page || {};
 			this.el.appendChild(SNW.Tpl.logs());
 			SNW.I18n.applyTo(this.el);
 			
-			// 로그 뷰어 마운트
+			// 뷰어 마운트
 			this._viewer = SNW.UI.logViewer({
 				root: this.el.querySelector('[data-slot="log"]')
 			});
+			
+			// 필터/툴바를 Tpl 삽입 (beforebegin → Tpl 사용으로 변경)
+			const logSlot = this.el.querySelector('[data-slot="log"]');
+			if (logSlot) {
+				// 이미 존재하는지 확인 후 삽입
+				let toolbar = this.el.querySelector('.snw-logs-toolbar');
+				if (!toolbar) {
+					toolbar = document.createElement('div');
+					toolbar.className = 'snw-toolbar snw-logs-toolbar';
+					toolbar.innerHTML = `
+                        <select data-slot="log-filter">
+                            <option value="0">${SNW.I18n.t('log.filterAll')}</option>
+                            <option value="1">ERROR</option>
+                            <option value="2">WARN</option>
+                            <option value="3">INFO</option>
+                            <option value="4">DEBUG</option>
+                        </select>
+                        <button type="button" data-action="log-clear" class="snw-btn">${SNW.I18n.t('log.clear')}</button>
+                        <button type="button" data-action="log-export" class="snw-btn">${SNW.I18n.t('log.export')}</button>
+                    `;
+					logSlot.parentElement.insertBefore(toolbar, logSlot);
+				}
+				
+				const sel = toolbar.querySelector('[data-slot="log-filter"]');
+				if (sel) {
+					sel.addEventListener('change', () => {
+						if (this._viewer) this._viewer.setFilter(Number(sel.value) || 0);
+					});
+				}
+			}
 			
 			// 초기 로드
 			await this._loadInitial();
@@ -47,35 +70,8 @@ SNW.Page = SNW.Page || {};
 				this._wsUnsubs.push(unsub);
 			}
 			
-			// 필터 select (스키마 없이 직접)
-			const filterEl = this.el.querySelector('[data-slot="log"]');
-			if (filterEl) {
-				filterEl.insertAdjacentElement('beforebegin', SNW.DomUtil.html`
-                    <div class="snw-toolbar">
-                        <select data-slot="log-filter">
-                            <option value="0" data-i18n="log.filter">전체</option>
-                            <option value="1">ERROR</option>
-                            <option value="2">WARN</option>
-                            <option value="3">INFO</option>
-                            <option value="4">DEBUG</option>
-                        </select>
-                        <button type="button" data-action="log-clear" class="snw-btn"
-                                data-i18n="log.clear">지우기</button>
-                        <button type="button" data-action="log-export" class="snw-btn"
-                                data-i18n="log.export">내보내기</button>
-                    </div>`);
-				SNW.I18n.applyTo(this.el);
-				
-				const sel = this.el.querySelector('[data-slot="log-filter"]');
-				if (sel) {
-					sel.addEventListener('change', () => {
-						this._viewer && this._viewer.setFilter(Number(sel.value) || 0);
-					});
-				}
-			}
-			
 			SNW.DomUtil.delegate(this.el, '[data-action="log-clear"]', 'click', () => {
-				this._viewer && this._viewer.clear();
+				if (this._viewer) this._viewer.clear();
 			});
 			SNW.DomUtil.delegate(this.el, '[data-action="log-export"]', 'click', () => this._exportJson());
 			
@@ -122,5 +118,4 @@ SNW.Page = SNW.Page || {};
 			}
 		}
 	};
-	
 })(window.SNW);

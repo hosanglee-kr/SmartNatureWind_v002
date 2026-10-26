@@ -1,41 +1,35 @@
 // =========================================================
 // 130.ui.form.js — SNW.UI.form + presetGrid + sensorCards + logViewer
-// Layer 3 (UI 컴포넌트) — Layer 0~2 참조
+// Layer 3 (UI 컴포넌트)
+// [O-12] logViewer 스마트 스크롤 (사용자 스크롤 보호)
+// [B-8] 로그 필터 정확 매칭 (기존 유지)
 // =========================================================
 window.SNW = window.SNW || {};
-(function (SNW) {
+(function(SNW) {
     'use strict';
-
+    
     SNW.UI = SNW.UI || {};
-
-    // =====================================================
+    
+    // =========================================================
     // 1) SNW.UI.form (스키마 기반 폼)
-    //  - schema: [{ key, labelKey, type, min?, max?, options?, placeholder? }]
-    //  - type: 'text' | 'number' | 'bool' | 'select' | 'password'
-    // =====================================================
-    SNW.UI.form = function (opts) {
-        const {
-            root,
-            schema = [],
-            value  = {},
-            onSave
-        } = opts || {};
-
+    // =========================================================
+    SNW.UI.form = function(opts) {
+        const { root, schema = [], value = {}, onSave } = opts || {};
         if (!root) return { getValue: () => ({}), setValue: () => {}, setError: () => {} };
-
+        
         const state = Object.assign({}, value);
         const inputs = {};
-
+        
         function render() {
             root.innerHTML = '';
             const wrap = document.createElement('div');
             wrap.className = 'snw-form';
-
+            
             schema.forEach(f => {
                 const label = SNW.I18n.t(f.labelKey);
-                const cur   = state[f.key];
-
+                const cur = state[f.key];
                 let inputEl;
+                
                 if (f.type === 'bool') {
                     inputEl = SNW.DomUtil.html`
                         <label class="snw-form-row snw-form-row--bool">
@@ -58,7 +52,9 @@ window.SNW = window.SNW || {};
                     const extra = [
                         f.min != null ? `min="${f.min}"` : '',
                         f.max != null ? `max="${f.max}"` : '',
-                        f.placeholder ? `placeholder="${SNW.DomUtil.escape(f.placeholder)}"` : ''
+                        f.step != null ? `step="${f.step}"` : '',
+                        f.placeholder ? `placeholder="${SNW.DomUtil.escape(f.placeholder)}"` : '',
+                        f.type === 'password' ? 'autocomplete="off" data-lpignore="true" data-1p-ignore="true"' : ''
                     ].join(' ');
                     inputEl = SNW.DomUtil.html`
                         <div class="snw-form-row">
@@ -67,8 +63,7 @@ window.SNW = window.SNW || {};
                         </div>`;
                 }
                 wrap.appendChild(inputEl);
-
-                // input 참조
+                
                 const inputNode = inputEl.matches('[data-key]') ? inputEl : inputEl.querySelector('[data-key]');
                 if (inputNode) {
                     inputs[f.key] = { el: inputNode, type: f.type };
@@ -84,8 +79,7 @@ window.SNW = window.SNW || {};
                     }
                 }
             });
-
-            // Save 버튼 (선택)
+            
             if (typeof onSave === 'function') {
                 const btn = SNW.DomUtil.html`
                     <button type="button" class="snw-btn snw-btn-primary" data-action="form-save">
@@ -97,12 +91,12 @@ window.SNW = window.SNW || {};
                 });
                 wrap.appendChild(btn);
             }
-
+            
             root.appendChild(wrap);
         }
-
+        
         render();
-
+        
         return {
             getValue() { return Object.assign({}, state); },
             setValue(patch) {
@@ -123,28 +117,22 @@ window.SNW = window.SNW || {};
             refresh() { render(); }
         };
     };
-
-    // =====================================================
-    // 2) SNW.UI.presetGrid (10 프리셋 카드 그리드)
-    // =====================================================
-    SNW.UI.presetGrid = function (opts) {
-        const {
-            root,
-            items = [],
-            selected = '',
-            onSelect
-        } = opts || {};
-
+    
+    // =========================================================
+    // 2) SNW.UI.presetGrid
+    // =========================================================
+    SNW.UI.presetGrid = function(opts) {
+        const { root, items = [], selected = '', onSelect } = opts || {};
         if (!root) return { setItems: () => {}, setSelected: () => {} };
-
+        
         let curSelected = selected;
-        let curItems    = items.slice();
-
+        let curItems = items.slice();
+        
         function render() {
             root.innerHTML = '';
             const grid = document.createElement('div');
             grid.className = 'snw-preset-grid';
-
+            
             curItems.forEach((it, i) => {
                 const name = it.name || SNW.I18n.t('preset.' + it.code) || it.code;
                 const card = SNW.DomUtil.html`
@@ -156,13 +144,12 @@ window.SNW = window.SNW || {};
                     </button>`;
                 grid.appendChild(card);
             });
-
+            
             root.appendChild(grid);
         }
-
+        
         render();
-
-        // 이벤트 위임
+        
         SNW.DomUtil.delegate(root, '.snw-preset-card', 'click', (e, el) => {
             const code = el.getAttribute('data-code');
             if (!code || code === curSelected) return;
@@ -173,9 +160,10 @@ window.SNW = window.SNW || {};
                 catch (e) { SNW.ErrorHandler.handle(e, 'presetGrid.onSelect'); }
             }
         });
-
+        
         return {
-            setItems(list) { curItems = list.slice(); render(); },
+            setItems(list) { curItems = list.slice();
+                render(); },
             setSelected(code) {
                 if (code === curSelected) return;
                 curSelected = code || '';
@@ -183,13 +171,13 @@ window.SNW = window.SNW || {};
             }
         };
     };
-
-    // =====================================================
-    // 3) SNW.UI.sensorCards (온도/습도/PIR)
-    // =====================================================
-    SNW.UI.sensorCards = function (root) {
+    
+    // =========================================================
+    // 3) SNW.UI.sensorCards
+    // =========================================================
+    SNW.UI.sensorCards = function(root) {
         if (!root) return { set: () => {} };
-
+        
         root.innerHTML = '';
         root.appendChild(SNW.DomUtil.html`
             <div class="snw-sensor-cards">
@@ -209,11 +197,11 @@ window.SNW = window.SNW || {};
                     <span class="snw-sensor-card__val" data-motion>--</span>
                 </div>
             </div>`);
-
+        
         const tempEl = root.querySelector('[data-temp]');
-        const humEl  = root.querySelector('[data-hum]');
-        const motEl  = root.querySelector('[data-motion]');
-
+        const humEl = root.querySelector('[data-hum]');
+        const motEl = root.querySelector('[data-motion]');
+        
         return {
             set({ tempC, humidity, motionActive } = {}) {
                 if (tempC != null && Number.isFinite(tempC))
@@ -221,49 +209,70 @@ window.SNW = window.SNW || {};
                 if (humidity != null && Number.isFinite(humidity))
                     humEl.textContent = `${humidity.toFixed(0)}${SNW.I18n.t('unit.humidity')}`;
                 if (motionActive != null) {
-                    motEl.textContent = motionActive
-                        ? SNW.I18n.t('dashboard.motionDetected')
-                        : SNW.I18n.t('dashboard.motionAbsent');
-                    motEl.classList.toggle('is-on',  !!motionActive);
+                    motEl.textContent = motionActive ?
+                        SNW.I18n.t('dashboard.motionDetected') :
+                        SNW.I18n.t('dashboard.motionAbsent');
+                    motEl.classList.toggle('is-on', !!motionActive);
                     motEl.classList.toggle('is-off', !motionActive);
                 }
             }
         };
     };
-
-    // =====================================================
-    // 4) SNW.UI.logViewer (로그 목록)
-    // =====================================================
-    SNW.UI.logViewer = function (opts) {
-        const {
-            root,
-            maxLines = SNW.CFG.UI.LOG_MAX_LINES
-        } = opts || {};
-
+    
+    // =========================================================
+    // 4) [O-12] SNW.UI.logViewer — 스마트 스크롤
+    // =========================================================
+    SNW.UI.logViewer = function(opts) {
+        const { root, maxLines = SNW.CFG.UI.LOG_MAX_LINES } = opts || {};
         if (!root) return { append: () => {}, clear: () => {}, setFilter: () => {} };
-
+        
         root.innerHTML = '';
         root.appendChild(SNW.DomUtil.html`<div class="snw-log-viewer" data-body></div>`);
         const body = root.querySelector('[data-body]');
-
-        let filterLevel = 0;   // 0 = 전체
-
+        
+        let filterLevel = 0;
+        let _jumpBtn = null;
+        
+        const _isAtBottom = () => (body.scrollHeight - body.scrollTop - body.clientHeight) < 30;
+        
+        const _showJumpButton = () => {
+            if (_jumpBtn) return;
+            _jumpBtn = document.createElement('button');
+            _jumpBtn.className = 'snw-log-jump-bottom';
+            _jumpBtn.textContent = '▼ 최신';
+            _jumpBtn.onclick = () => {
+                body.scrollTop = body.scrollHeight;
+                _hideJumpButton();
+            };
+            root.appendChild(_jumpBtn);
+        };
+        const _hideJumpButton = () => {
+            if (_jumpBtn) { _jumpBtn.remove();
+                _jumpBtn = null; }
+        };
+        
+        body.addEventListener('scroll', () => {
+            if (_isAtBottom()) _hideJumpButton();
+        });
+        
         function _levelClass(lv) {
             const meta = SNW.C.LOG_LEVEL_META[lv] || SNW.C.LOG_LEVEL_META[3];
             return 'snw-log-' + meta.color;
         }
-
+        
         function _trim() {
             while (body.children.length > maxLines) {
                 body.removeChild(body.firstElementChild);
             }
         }
-
+        
         return {
             append(entry) {
-                // { ts, lv, msg }
                 if (!entry) return;
                 if (filterLevel !== 0 && entry.lv !== filterLevel) return;
+                
+                const wasAtBottom = _isAtBottom();
+                
                 const row = SNW.DomUtil.html`
                     <div class="snw-log-row ${_levelClass(entry.lv)}">
                         <span class="snw-log-ts">${SNW.TimeUtil.msToSecLabel(entry.ts || 0)}</span>
@@ -272,17 +281,22 @@ window.SNW = window.SNW || {};
                     </div>`;
                 body.appendChild(row);
                 _trim();
-                body.scrollTop = body.scrollHeight;
+                
+                // [O-12] 스마트 스크롤
+                if (wasAtBottom) {
+                    body.scrollTop = body.scrollHeight;
+                } else {
+                    _showJumpButton();
+                }
             },
-            clear() { body.innerHTML = ''; },
+            clear() { body.innerHTML = '';
+                _hideJumpButton(); },
             setFilter(lv) {
                 filterLevel = Number(lv) || 0;
                 Array.from(body.children).forEach(ch => {
                     if (filterLevel === 0) {
                         ch.style.display = '';
                     } else {
-                        // [B-8] 이전: textContent.includes() → 메시지 본문 "ERROR" 문자열 오매칭
-                        //  이후: 레벨 셀(.snw-log-lv) 정확 비교
                         const lvEl = ch.querySelector('.snw-log-lv');
                         const lvStr = (SNW.C.LOG_LEVEL_META[filterLevel] || {}).code || '';
                         ch.style.display = (lvEl && lvEl.textContent.trim() === lvStr) ? '' : 'none';
@@ -291,5 +305,5 @@ window.SNW = window.SNW || {};
             }
         };
     };
-
+    
 })(window.SNW);

@@ -158,3 +158,36 @@
         transition-duration: 0.01ms !important;
     }
 }
+
+
+
+/* ============================================================
+ * [P1-7] 모바일 헤더 시계 숨김 (320px 대응)
+ * ============================================================ */
+@media (max-width: 480px) {
+    .snw-clock { display: none; }
+    .snw-brand { font-size: 13px; }
+}
+
+/* ============================================================
+ * [P1-12] 로그 모바일 1컬럼
+ * ============================================================ */
+@media (max-width: 480px) {
+    .snw-log-row {
+        grid-template-columns: 1fr;
+        gap: 2px;
+        padding: 4px 0;
+    }
+    .snw-log-ts { font-size: 10px; }
+    .snw-log-lv { display: inline; margin-right: 6px; }
+}
+
+/* ============================================================
+ * [P1-15] Footer 터치 확대
+ * ============================================================ */
+@media (max-width: 767px) {
+    :root { --snw-footer-h: 48px; }
+    .snw-footer { font-size: 12px; }
+    .snw-footer #footer-status { cursor: pointer; }
+}
+

@@ -22,7 +22,7 @@
     /* 텍스트 */
     --snw-text: #e6edf3;
     --snw-text-dim: #8b949e;
-    --snw-text-faint: #59636e;
+    --snw-text-faint: #6e7a87;
     
     /* 액션 컬러 */
     --snw-primary: #4a9eff;
@@ -100,3 +100,4 @@
         --snw-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
     }
 }
+

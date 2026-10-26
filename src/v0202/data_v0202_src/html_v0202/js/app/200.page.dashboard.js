@@ -1,14 +1,17 @@
 // =========================================================
-// 200.page.dashboard.js — SNW.Page.Dashboard (L1 MVP)
-// Layer 4 (페이지 로직) — Layer 0~3 참조
-//  - mount(): 템플릿 삽입, 컴포넌트 마운트, Store 구독
-//  - unmount(): 구독/타이머 정리
+// 200.page.dashboard.js — SNW.Page.Dashboard
+// Layer 4 (페이지 로직)
+// [O-1] 전원 켜기 3중 함정 진단
+// [O-2] 슬라이더 WS 덮어쓰기 방지 (낙관적 잠금)
+// [O-3] 프로필 모달 취소 시 롤백
+// [O-6] 프리셋 적용 WS 확인
+// [O-15] 배너로 AutoOff/모션 표시
 // =========================================================
-/* ---- 200.page.dashboard.js ---- */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
 (function(SNW) {
     'use strict';
+
     SNW.Page.Dashboard = class Dashboard {
         constructor(container) {
             this.el = container;
@@ -17,7 +20,9 @@ SNW.Page = SNW.Page || {};
             this._timers = [];
             this.components = {};
             this._active = true;
-            this._autoOffModalShown = false;
+            this._pendingIntensity = null;
+            this._pendingPreset = null;
+            this._pendingPowerToggle = false;
         }
         
         async mount() {
@@ -26,16 +31,19 @@ SNW.Page = SNW.Page || {};
             SNW.I18n.applyTo(this.el);
             
             // [C-2] 컴포넌트를 먼저 마운트 → 데이터 주입 순서 보장
-            //  - 이전: _applyPresetList가 빈 그리드에 setItems 시도 → 무효화 → 프리셋 영구 비어있음
-            //  - 이후: _mountComponents 후 데이터 적용
             this._mountComponents();
             
             try {
-                const [stateData, profileData] = await Promise.all([SNW.Api.getState(), SNW.Api.listWindProfiles().catch(() => null)]);
+                const [stateData, profileData] = await Promise.all([
+                    SNW.Api.getState(),
+                    SNW.Api.listWindProfiles().catch(() => null)
+                ]);
                 if (!this._active) return;
                 this._applyInitialState(stateData);
-                if (profileData) this._applyPresetList(profileData); // 컴포넌트 존재 → 반영됨
-            } catch (e) { if (this._active) SNW.LogUtil.warn('[Dashboard] 초기 로드 실패', e); }
+                if (profileData) this._applyPresetList(profileData);
+            } catch (e) {
+                if (this._active) SNW.LogUtil.warn('[Dashboard] 초기 로드 실패', e);
+            }
             
             this._bindStore();
             this._bindModeSwitch();
@@ -46,17 +54,18 @@ SNW.Page = SNW.Page || {};
             this._active = false;
             this._unsubs.forEach(fn => { try { fn(); } catch {} });
             this._wsUnsubs.forEach(fn => { try { fn(); } catch {} });
-            this._timers.forEach(id => { clearInterval(id);
-                clearTimeout(id); });
+            this._timers.forEach(id => { clearInterval(id); clearTimeout(id); });
             this._unsubs = [];
             this._wsUnsubs = [];
             this._timers = [];
+            // [O-15] 페이지 이탈 시 배너 정리
+            if (SNW.Banner) SNW.Banner.hide();
         }
         
         _applyInitialState(data) {
             if (!data) return;
-            const ctl = data.control || null,
-                sim = data.sim || null;
+            const ctl = data.control || null;
+            const sim = data.sim || null;
             SNW.Store.set({
                 control: ctl,
                 sim,
@@ -72,8 +81,15 @@ SNW.Page = SNW.Page || {};
             const presets = (profileData && profileData.windDict && profileData.windDict.presets) || [];
             const order = SNW.C.PRESET_DISPLAY_ORDER;
             const indexed = presets.map(p => ({ p, i: order.indexOf(p.code) }));
-            indexed.sort((a, b) => { const ai = a.i < 0 ? 9999 : a.i; const bi = b.i < 0 ? 9999 : b.i; return ai - bi; });
-            const items = indexed.map(({ p }) => ({ code: p.code, name: SNW.I18n.t('preset.' + p.code) || p.name || p.code }));
+            indexed.sort((a, b) => {
+                const ai = a.i < 0 ? 9999 : a.i;
+                const bi = b.i < 0 ? 9999 : b.i;
+                return ai - bi;
+            });
+            const items = indexed.map(({ p }) => ({
+                code: p.code,
+                name: SNW.I18n.t('preset.' + p.code) || p.name || p.code
+            }));
             if (this.components.presets) this.components.presets.setItems(items);
         }
         
@@ -82,12 +98,30 @@ SNW.Page = SNW.Page || {};
             this.components.badge = SNW.UI.stateBadge(q('[data-slot="badge"]'));
             this.components.gauge = SNW.UI.gauge(q('[data-slot="gauge"]'));
             this.components.sensors = SNW.UI.sensorCards(q('[data-slot="sensors"]'));
-            this.components.toggle = SNW.UI.toggle({ root: q('[data-slot="power"]'), on: false, onToggle: next => this._onPowerToggle(next) });
-            this.components.slider = SNW.UI.slider({ root: q('[data-slot="intensity"]'), min: 0, max: 100, value: SNW.CFG.SIM_DEFAULT.intensity, label: SNW.I18n ? SNW.I18n.t('dashboard.intensityLabel') : '강도', unit: '%', debounceMs: SNW.C.DEBOUNCE_MS.SLIDER, onChange: v => this._onIntensityChange(v) });
-            this.components.presets = SNW.UI.presetGrid({ root: q('[data-slot="presets"]'), items: [], selected: '', onSelect: code => this._onPresetSelect(code) });
+            this.components.toggle = SNW.UI.toggle({
+                root: q('[data-slot="power"]'),
+                on: false,
+                onToggle: next => this._onPowerToggle(next)
+            });
+            this.components.slider = SNW.UI.slider({
+                root: q('[data-slot="intensity"]'),
+                min: 0, max: 100,
+                value: SNW.CFG.SIM_DEFAULT.intensity,
+                label: SNW.I18n.t('dashboard.intensityLabel'),
+                unit: '%',
+                debounceMs: SNW.C.DEBOUNCE_MS.SLIDER,
+                onChange: v => this._onIntensityChange(v)
+            });
+            this.components.presets = SNW.UI.presetGrid({
+                root: q('[data-slot="presets"]'),
+                items: [], selected: '',
+                onSelect: code => this._onPresetSelect(code)
+            });
         }
         
-        // [신규] 모드 전환 스위치 이벤트 바인딩
+        // =========================================================
+        // [O-3] 모드 스위치 — 취소 시 롤백
+        // =========================================================
         _bindModeSwitch() {
             const switchEl = this.el.querySelector('#mode-switch');
             if (!switchEl) return;
@@ -95,104 +129,143 @@ SNW.Page = SNW.Page || {};
             switchEl.addEventListener('change', async (e) => {
                 const isProfileMode = e.target.checked;
                 const prevMode = !isProfileMode;
-                
-                // UI 낙관적 업데이트
                 const modeEl = this.el.querySelector('[data-slot="current-mode-text"]');
-                const tSchedule = SNW.I18n ? SNW.I18n.t('dashboard.modeScheduleShort') : '스케줄 모드 (자동)';
-                const tProfile = SNW.I18n ? SNW.I18n.t('dashboard.modeProfileShort') : '프로필 모드 (수동)';
-                if (modeEl) modeEl.textContent = isProfileMode ? tProfile : tSchedule;
-                switchEl.checked = isProfileMode;
+                
+                const updateModeText = (profileMode) => {
+                    if (modeEl) modeEl.textContent = profileMode
+                        ? SNW.I18n.t('dashboard.modeProfileShort')
+                        : SNW.I18n.t('dashboard.modeScheduleShort');
+                };
+                updateModeText(isProfileMode);
                 
                 try {
                     if (isProfileMode) {
-                        // 프로필 모드: 실행할 프로필 선택 모달 띄우기
                         await this._promptProfileSelection();
                     } else {
-                        // 스케줄 모드: 현재 프로필 정지
                         await SNW.Api.stopProfile();
-                        SNW.ToastUtil.success(SNW.I18n ? SNW.I18n.t('dashboard.modeSwitchedSchedule') : '스케줄 자동 모드로 전환되었습니다.');
+                        SNW.ToastUtil.success(SNW.I18n.t('dashboard.modeSwitchedSchedule'));
                     }
                 } catch (err) {
-                    // 실패 시 롤백
-                    switchEl.checked = !isProfileMode;
-                    if (modeEl) modeEl.textContent = prevMode ? tProfile : tSchedule;
+                    switchEl.checked = prevMode;
+                    updateModeText(prevMode);
+                    
+                    if (err.message === 'CANCELLED') return;
+                    if (err.message === 'NO_PROFILES') {
+                        SNW.ToastUtil.warn(SNW.I18n.t('msg.noProfilesWarn'));
+                        return;
+                    }
                     SNW.ErrorHandler.handle(err, 'dashboard.modeSwitch');
                 }
             });
         }
         
-        // [신규] 프로필 모드 진입 시 프로필 선택 모달
+        // [O-3] 프로필 선택 모달 — 취소 시 reject
         async _promptProfileSelection() {
             const data = await SNW.Api.listProfiles().catch(() => null);
-            const profiles = (data && data.userProfiles && data.userProfiles.profiles) || [];
+            const profiles = (data?.userProfiles?.profiles || []).filter(p => p.enabled);
             
-            if (profiles.length === 0) {
-                SNW.ToastUtil.warn(SNW.I18n ? SNW.I18n.t('msg.noProfilesWarn') : '등록된 프로필이 없습니다. 프로필 메뉴에서 추가해 주세요.');
-                throw new Error('No profiles');
-            }
+            if (profiles.length === 0) throw new Error('NO_PROFILES');
             
             const content = document.createElement('div');
-            let html = `<div style="max-height:300px; overflow-y:auto;">`;
-            const tStart = SNW.I18n ? SNW.I18n.t('common.start') : '시작';
-            profiles.forEach(p => {
-                if (!p.enabled) return;
-                html += `
-                    <button type="button" class="snw-btn" style="width:100%; margin-bottom:8px; text-align:left; justify-content:space-between;" data-prof-no="${p.profileNo}">
-                        <span>${p.name || '#' + p.profileNo}</span>
-                        <span style="color:var(--snw-primary);">${tStart} ▶</span>
-                    </button>
-                `;
-            });
-            html += `</div>`;
-            content.innerHTML = html;
+            content.className = 'snw-profile-picker';
             
-            return new Promise((resolve, reject) => {
-                const modal = SNW.UI.modal(SNW.I18n ? SNW.I18n.t('dashboard.selectProfileModal') : '실행할 프로필 선택', content, async () => {
-                    return false; // 기본 확인 버튼 비활성화 역할 (모달 닫힘 방지)
-                });
-                
-                content.querySelectorAll('[data-prof-no]').forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        const no = Number(btn.getAttribute('data-prof-no'));
-                        try {
-                            await SNW.Api.selectProfile(no);
-                            SNW.ToastUtil.success(SNW.I18n ? SNW.I18n.t('dashboard.modeSwitchedProfile') : '프로필 모드로 전환되었습니다.');
-                            // 모달 닫기
-                            const overlay = document.getElementById('snw-modal-overlay');
-                            if (overlay) overlay.remove();
-                            resolve();
-                        } catch (e) {
-                            reject(e);
-                        }
-                    });
-                });
+            profiles.forEach(p => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'snw-btn snw-profile-picker__item';
+                btn.innerHTML = `
+                    <span>${SNW.DomUtil.escape(p.name || '#' + p.profileNo)}</span>
+                    <span style="color:var(--snw-primary);">${SNW.I18n.t('common.start')} ▶</span>
+                `;
+                btn.onclick = async () => {
+                    try {
+                        await SNW.Api.selectProfile(p.profileNo);
+                        SNW.ToastUtil.success(SNW.I18n.t('dashboard.modeSwitchedProfile'));
+                        modalRef.close();
+                        resolve();
+                    } catch (e) {
+                        reject(e);
+                    }
+                };
+                content.appendChild(btn);
             });
+            
+            let resolve, reject;
+            const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
+            
+            const modalRef = SNW.UI.modal(
+                SNW.I18n.t('dashboard.selectProfileModal'),
+                content,
+                null,
+                () => reject(new Error('CANCELLED')),
+                { hideOk: true }
+            );
+            
+            return promise;
         }
         
+        // =========================================================
+        // Store 구독 — [O-1][O-2][O-6][O-15] 반영
+        // =========================================================
         _bindStore() {
             const s = SNW.Store;
+            
             this._unsubs.push(
-                s.watch('fsmState', code => { if (this._active) this.components.badge.set(code, s.get().fsmReason); }),
-                s.watch('fsmReason', reason => { if (this._active) this.components.badge.set(s.get().fsmState, reason); }),
+                s.watch('fsmState', code => {
+                    if (this._active) this.components.badge.set(code, s.get().fsmReason);
+                }),
+                s.watch('fsmReason', reason => {
+                    if (this._active) this.components.badge.set(s.get().fsmState, reason);
+                }),
+                
+                // [O-2][O-6] sim 구독 — 잠금 해제/프리셋 확정
                 s.watch('sim', sim => {
                     if (!this._active || !sim) return;
+                    
+                    // [O-2] 강도 잠금
+                    if (this._pendingIntensity !== null) {
+                        if (Math.abs(sim.intensity - this._pendingIntensity) <= 1) {
+                            this._pendingIntensity = null;
+                        } else {
+                            return; // 확정 전 → UI 덮어쓰기 방지
+                        }
+                    }
+                    
+                    // [O-6] 프리셋 확정
+                    if (this._pendingPreset && sim.presetCode === this._pendingPreset) {
+                        const card = this.el.querySelector(`[data-code="${sim.presetCode}"]`);
+                        if (card) card.classList.remove('is-applying');
+                        SNW.ToastUtil.success(SNW.I18n.t('preset.applied'));
+                        this._pendingPreset = null;
+                    }
+                    
+                    // UI 갱신
                     const curWind = this.el.querySelector('[data-slot="cur-wind"]');
                     if (curWind) curWind.textContent = (sim.windSpeed != null ? sim.windSpeed.toFixed(1) : '-');
                     const tgtWind = this.el.querySelector('[data-slot="target-wind"]');
                     if (tgtWind) tgtWind.textContent = (sim.targetWind != null ? sim.targetWind.toFixed(1) : '-');
                     const phaseEl = this.el.querySelector('[data-slot="phase"]');
-                    if (phaseEl) { const meta = SNW.C.WIND_PHASE_META[sim.phase] || SNW.C.WIND_PHASE_META.NORMAL;
-                        phaseEl.textContent = SNW.I18n.t(meta.labelKey); }
+                    if (phaseEl) {
+                        const meta = SNW.C.WIND_PHASE_META[sim.phase] || SNW.C.WIND_PHASE_META.NORMAL;
+                        phaseEl.textContent = SNW.I18n.t(meta.labelKey);
+                    }
                     this.components.gauge.set(sim.pwmDuty != null ? sim.pwmDuty : 0);
                     if (sim.intensity != null) this.components.slider.set(sim.intensity);
                     if (sim.presetCode) this.components.presets.setSelected(sim.presetCode);
                 }),
+                
+                // [O-1][O-15] control 구독 — 배너 갱신
                 s.watch('control', ctl => {
                     if (!this._active || !ctl) return;
                     this.components.toggle.set(!!ctl.active);
-                    if (ctl.sensor) this.components.sensors.set({ tempC: ctl.sensor.tempC, humidity: ctl.sensor.humidity, motionActive: ctl.sensor.motionActive });
+                    if (ctl.sensor) {
+                        this.components.sensors.set({
+                            tempC: ctl.sensor.tempC,
+                            humidity: ctl.sensor.humidity,
+                            motionActive: ctl.sensor.motionActive
+                        });
+                    }
                     
-                    // 스케줄/프로필 이름 매핑
                     const schName = ctl.schedule && ctl.schedule.name ? ctl.schedule.name : '-';
                     const profName = ctl.profile && ctl.profile.name ? ctl.profile.name : '-';
                     const schEl = this.el.querySelector('[data-slot="sch-name"]');
@@ -200,7 +273,6 @@ SNW.Page = SNW.Page || {};
                     const profEl = this.el.querySelector('[data-slot="prof-name"]');
                     if (profEl) profEl.textContent = profName;
                     
-                    // AutoOff 정보
                     let autoOffStr = '비활성';
                     if (ctl.autoOffRt) {
                         if (ctl.autoOffRt.timerArmed) autoOffStr = `타이머 (${ctl.autoOffRt.timerMinutes}분)`;
@@ -210,29 +282,63 @@ SNW.Page = SNW.Page || {};
                     const aoEl = this.el.querySelector('[data-slot="autooff"]');
                     if (aoEl) aoEl.textContent = autoOffStr;
                     
-                    // 모드 상태 텍스트 및 스위치 동기화
-                    const isProfMode = ctl.profileMode || (ctl.runSource === 2); // runSource 2 = USER_PROFILE
+                    const isProfMode = ctl.profileMode || (ctl.runSource === 2);
                     const modeEl = this.el.querySelector('[data-slot="current-mode-text"]');
-                    if (modeEl) modeEl.textContent = isProfMode ? '프로필 모드 (수동)' : '스케줄 모드 (자동)';
+                    if (modeEl) modeEl.textContent = isProfMode
+                        ? SNW.I18n.t('dashboard.modeProfileShort')
+                        : SNW.I18n.t('dashboard.modeScheduleShort');
                     const switchEl = this.el.querySelector('#mode-switch');
                     if (switchEl && switchEl.checked !== isProfMode) switchEl.checked = isProfMode;
                     
-                    // AutoOff 팝업
-                    if (ctl.event && ctl.event.ackRequired && !this._autoOffModalShown) {
-                        this._autoOffModalShown = true;
-                        const msg = '자동 꺼짐 상태입니다. 다시 켜시겠습니까?';
-                        const content = document.createElement('div');
-                        content.textContent = msg;
-                        SNW.UI.modal('알림', content, async () => {
-                            try { await SNW.Api.ackEvent(); } catch (e) {}
-                            this._autoOffModalShown = false;
-                            return true;
-                        });
-                    } else if (!ctl.event || !ctl.event.ackRequired) {
-                        this._autoOffModalShown = false;
-                    }
+                    // [O-15] AutoOff/모션 배너
+                    this._updateBanner(ctl);
                 })
             );
+        }
+        
+        // [O-15] AutoOff/모션 배너 처리
+        _updateBanner(ctl) {
+            if (!SNW.Banner) return;
+            
+            if (ctl.stateCode === 5 /* AUTOOFF_STOPPED */) {
+                SNW.Banner.update('autooff', {
+                    id: 'autooff',
+                    level: 'warn',
+                    text: SNW.I18n.t('banner.autoOff', { reason: ctl.reason || '-' }),
+                    actions: [
+                        {
+                            label: SNW.I18n.t('power.ackAndRestart'),
+                            onClick: async () => {
+                                try {
+                                    await SNW.Api.ackEvent();
+                                    await this._onPowerToggle(true);
+                                } catch (e) { SNW.ErrorHandler.handle(e, 'dashboard.ackRestart'); }
+                            }
+                        },
+                        {
+                            label: SNW.I18n.t('power.ackOnly'),
+                            onClick: async () => {
+                                try {
+                                    await SNW.Api.ackEvent();
+                                    SNW.Banner.hide();
+                                } catch (e) { SNW.ErrorHandler.handle(e, 'dashboard.ack'); }
+                            }
+                        }
+                    ]
+                });
+            } else if (ctl.stateCode === 4 /* MOTION_BLOCKED */) {
+                SNW.Banner.update('motion', {
+                    id: 'motion',
+                    level: 'warn',
+                    text: SNW.I18n.t('banner.motionBlocked'),
+                    actions: [{
+                        label: SNW.I18n.t('power.forceOn'),
+                        onClick: () => this._onPowerToggle(true)
+                    }]
+                });
+            } else {
+                SNW.Banner.hide();
+            }
         }
         
         _startClock() {
@@ -240,52 +346,126 @@ SNW.Page = SNW.Page || {};
             if (!clockEl) return;
             const id = SNW.TimeUtil.startClock(clockEl, () => {
                 const t = SNW.Store.get().time || {};
-                return { hour: t.hour != null ? t.hour : -1, min: t.min != null ? t.min : -1 };
+                return {
+                    hour: t.hour != null ? t.hour : -1,
+                    min: t.min != null ? t.min : -1
+                };
             });
             this._timers.push(id);
         }
         
+        // =========================================================
+        // [O-1] 전원 토글 — 진단 후 안전 실행
+        // =========================================================
         async _onPowerToggle(next) {
-            const prevCtl = SNW.Store.get().control;
-            const prevActive = prevCtl ? !!prevCtl.active : false;
-            SNW.Store.set({ control: Object.assign({}, prevCtl || {}, { active: !!next }) });
+            if (this._pendingPowerToggle) return;
+            this._pendingPowerToggle = true;
+            
+            const prevCtl = SNW.Store.get().control || {};
+            const prevActive = !!prevCtl.active;
+            
             try {
-                if (next) {
-                    const intensity = SNW.Store.get().sim && SNW.Store.get().sim.intensity != null ? SNW.Store.get().sim.intensity : 70;
-                    await SNW.Api.overrideFixed(intensity, 0, true);
-                } else {
+                if (!next) {
                     await SNW.Api.overrideClear();
+                    return;
+                }
+                
+                // ON: 진단
+                const st = await SNW.Api.getState();
+                const ctl = st.control || {};
+                
+                // Case 1: AutoOff 래치
+                if (ctl.stateCode === 5) {
+                    SNW.ToastUtil.info(SNW.I18n.t('power.autoOffLatched'));
+                    await SNW.Api.ackEvent();
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                
+                // Case 2: 모션 블록
+                if (ctl.stateCode === 4 || ctl.sensor?.motionActive === false) {
+                    SNW.ToastUtil.warn(SNW.I18n.t('power.motionBlocked'));
+                    this.components.toggle.set(prevActive);
+                    this._pendingPowerToggle = false;
+                    return;
+                }
+                
+                // 낙관적 UI
+                SNW.Store.set({ control: Object.assign({}, ctl, { active: true }) });
+                
+                const intensity = SNW.Store.get().sim?.intensity ?? 70;
+                await SNW.Api.overrideFixed(intensity, 0, true);
+                
+                // 서버 실제 반영 검증
+                const after = await SNW.Api.getState();
+                if (after.control?.stateCode !== 1 /* OVERRIDE */) {
+                    SNW.ToastUtil.error(SNW.I18n.t('power.failed', {
+                        reason: after.control?.reason || 'unknown'
+                    }));
+                    this.components.toggle.set(prevActive);
+                    SNW.Store.set({
+                        control: Object.assign({}, after.control, { active: prevActive })
+                    });
                 }
             } catch (e) {
-                SNW.Store.set({ control: Object.assign({}, SNW.Store.get().control || {}, { active: prevActive }) });
                 this.components.toggle.set(prevActive);
                 SNW.ErrorHandler.handle(e, 'dashboard.power');
+            } finally {
+                this._pendingPowerToggle = false;
             }
         }
         
+        // =========================================================
+        // [O-2] 강도 변경 — 낙관적 잠금
+        // =========================================================
         async _onIntensityChange(v) {
             const prevSim = SNW.Store.get().sim;
-            const prevVal = prevSim ? prevSim.intensity : null;
+            const prevVal = prevSim?.intensity;
+            
+            this._pendingIntensity = v;
             SNW.Store.set({ sim: Object.assign({}, prevSim || {}, { intensity: v }) });
+            
             try {
-                const res = await SNW.Api.patchSim({ intensity: v });
-                if (res && res.updated === false) SNW.ToastUtil.info('변경 사항 없음');
+                await SNW.Api.patchSim({ intensity: v });
+                // 1초 후에도 WS가 반영 안 하면 잠금 해제 (안전망)
+                this._timers.push(setTimeout(() => {
+                    if (this._pendingIntensity === v) this._pendingIntensity = null;
+                }, 1000));
             } catch (e) {
-                SNW.Store.set({ sim: Object.assign({}, SNW.Store.get().sim || {}, { intensity: prevVal }) });
+                this._pendingIntensity = null;
+                SNW.Store.set({ sim: Object.assign({}, prevSim, { intensity: prevVal }) });
                 this.components.slider.set(prevVal);
                 SNW.ErrorHandler.handle(e, 'dashboard.intensity');
             }
         }
         
+        // =========================================================
+        // [O-6] 프리셋 적용 — WS 확인
+        // =========================================================
         async _onPresetSelect(code) {
             const prevSim = SNW.Store.get().sim;
-            const prevCode = prevSim ? prevSim.presetCode : '';
+            const prevCode = prevSim?.presetCode;
+            
+            this._pendingPreset = code;
             SNW.Store.set({ sim: Object.assign({}, prevSim || {}, { presetCode: code }) });
+            
+            const card = this.el.querySelector(`[data-code="${code}"]`);
+            if (card) card.classList.add('is-applying');
+            
             try {
                 await SNW.Api.patchSim({ presetCode: code });
-                SNW.ToastUtil.success('프리셋 적용 완료');
+                
+                // 3초 타임아웃
+                this._timers.push(setTimeout(() => {
+                    if (this._pendingPreset === code) {
+                        SNW.ToastUtil.warn(SNW.I18n.t('preset.delayed'));
+                        this._pendingPreset = null;
+                        if (card) card.classList.remove('is-applying');
+                    }
+                }, 3000));
             } catch (e) {
-                SNW.Store.set({ sim: Object.assign({}, SNW.Store.get().sim || {}, { presetCode: prevCode }) });
+                this._pendingPreset = null;
+                if (card) card.classList.remove('is-applying');
+                SNW.Store.set({ sim: Object.assign({}, prevSim, { presetCode: prevCode }) });
                 this.components.presets.setSelected(prevCode);
                 SNW.ErrorHandler.handle(e, 'dashboard.preset');
             }

@@ -85,22 +85,14 @@ window.SNW = window.SNW || {};
                 <section class="snw-card">
                     <h2 data-i18n="settings.title">시스템 설정</h2>
                     
-                    <h3>Meta / Logging / Security</h3>
                     <div data-slot="form-log"></div>
                     
-                    <h3 style="margin-top:12px;border-bottom:1px solid var(--snw-border);padding-bottom:4px;" data-i18n="settings.wsChannel">WebSocket 채널</h3>
                     <div data-slot="form-ws"></div>
                     
-                    <h3 style="margin-top:12px;border-bottom:1px solid var(--snw-border);padding-bottom:4px;" data-i18n="settings.hardware">Hardware (PWM / Fan / PIR / DHT / LED)</h3>
                     <div data-slot="form-hw"></div>
                     
-                    <div class="snw-form-actions" style="justify-content:space-between;align-items:center;display:flex;margin-top:16px;">
-                        <div>
-                            <button data-action="save"   class="snw-btn snw-btn-primary" data-i18n="settings.save">저장</button>
-                            <button data-action="reload" class="snw-btn" data-i18n="settings.reload">재로드</button>
-                        </div>
-                        <button data-action="factory-reset" class="snw-btn" style="background:rgba(248,81,73,0.1);color:var(--snw-error);" data-i18n="settings.factoryReset">공장 초기화</button>
-                    </div>
+                    <!-- [P0-3] Sticky 액션 바는 _loadSystem에서 채움 -->
+                    <div data-slot="action-bar"></div>
                 </section>`;
         },
         simulation() {

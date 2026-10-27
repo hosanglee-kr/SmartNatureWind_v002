@@ -5,7 +5,7 @@
 [![Firmware Version](https://img.shields.io/badge/Firmware-v0202%20(FW__2.0.2)-blue.svg)](src/v0202/contract_doc_0202/SPEC_0202.md)
 [![Target MCU](https://img.shields.io/badge/MCU-ESP32--S3--N16R8-orange.svg)](src/v0202/contract_doc_0202/BUDGET_0202.md)
 [![PlatformIO](https://img.shields.io/badge/Framework-PlatformIO%20%7C%20C%2B%2B17-green.svg)](platformio.ini)
-[![Architecture](https://img.shields.io/badge/Arch-FreeRTOS%20CBD%20v2.5-purple.svg)](src/v0202/contract_doc_0202/CONTRACT_0202.md)
+[![Architecture](https://img.shields.io/badge/Arch-FreeRTOS%20CBD%20v2.5--v2.7-purple.svg)](src/v0202/contract_doc_0202/CONTRACT_0202.md)
 
 * **원작 오픈소스 프로젝트**: [WindScape by Tilman Griesel](https://github.com/TilmanGriesel/WindScape.git)
 * **현재 펌웨어 사양**: **v0202 (FW_Ver_2.0.2)** (ESP32-S3 / C++17 / FreeRTOS / PlatformIO 기반 단독 실행 임베디드 어플라이언스, C++ 소스 `_0202` 접미사)
@@ -30,18 +30,18 @@
 * 📖 [**Smart Nature Wind v0202 종합 사용자 매뉴얼**](src/v0202/User_Manual_0202/UserManual_0202_001.md)
   * 기기 설치, 배선, Wi-Fi(SoftAP/STA) 연결, 6대 웹 화면 조작법, 10대 프리셋 상세 해설, REST API/WebSocket 규격, 고장 진단 및 유지보수 가이드 수록.
 
-### 2. 기술 사양 및 CBD 엔지니어링 계약서 (Engineering Contracts — Batch G 완료)
-* 📑 [**README_0202.md (계약 문서 세트 총괄 인덱스)**](src/v0202/contract_doc_0202/README_0202.md)
-* 📐 [**SPEC_0202.md (종합 기술 사양서)**](src/v0202/contract_doc_0202/SPEC_0202.md) : 하드웨어 핀맵, 25kHz PWM 타이밍, REST/WebSocket 인터페이스, Gzip Level 9 정적 에셋 파이프라인.
-* 🤝 [**CONTRACT_0202.md (동시성 계약서)**](src/v0202/contract_doc_0202/CONTRACT_0202.md) : FreeRTOS 5대 태스크 구조, 우선순위, Mutex 소유권 및 데드락 방지 계약.
-* 🔄 [**STATE_0202.md (상태 및 7-State FSM 명세서)**](src/v0202/contract_doc_0202/STATE_0202.md) : INIT / AP_CONFIG / STA_CONNECTING / RUNNING / SAFE_MODE / FIRMWARE_UPDATE / FACTORY_RESET 전이 표.
-* 🔀 [**FLOW_0202.md (실행 흐름도 및 시퀀스 다이어그램)**](src/v0202/contract_doc_0202/FLOW_0202.md) : 부팅 시퀀스, HTTP/WS 처리 루프, 센서 샘플링 및 물리 연산 파이프라인.
-* ⏱️ [**BUDGET_0202.md (자원 및 WCET 예산)**](src/v0202/contract_doc_0202/BUDGET_0202.md) : SRAM/PSRAM/Flash 메모리 버짓, 태스크별 최악 실행 시간(WCET), CPU 점유율 한도.
-* 🧪 [**TEST_PLAN_0202.md (회귀 테스트 및 검증 계획서)**](src/v0202/contract_doc_0202/TEST_PLAN_0202.md) : 단위/통합/스트레스 테스트 케이스 및 장기 안정성 검증 절차.
+### 2. 기술 사양 및 CBD 엔지니어링 계약서 (Engineering Contracts — Batch G & Batch H 완료)
+* 📑 [**README_0202.md (계약 문서 세트 총괄 인덱스 v2.5)**](src/v0202/contract_doc_0202/README_0202.md)
+* 📐 [**SPEC_0202.md (종합 기술 사양서 v2.7)**](src/v0202/contract_doc_0202/SPEC_0202.md) : 하드웨어 핀맵, 25kHz PWM 타이밍, REST/WebSocket 인터페이스, Gzip Level 9 정적 에셋 파이프라인 (총 76.2 KB).
+* 🤝 [**CONTRACT_0202.md (동시성 계약서 v2.5)**](src/v0202/contract_doc_0202/CONTRACT_0202.md) : FreeRTOS 5대 태스크 구조, 우선순위, Mutex 소유권 및 데드락 방지 계약.
+* 🔄 [**STATE_0202.md (상태 및 7-State FSM 명세서 v2.5)**](src/v0202/contract_doc_0202/STATE_0202.md) : INIT / AP_CONFIG / STA_CONNECTING / RUNNING / SAFE_MODE / FIRMWARE_UPDATE / FACTORY_RESET 전이 표 및 모달 상태.
+* 🔀 [**FLOW_0202.md (실행 흐름도 및 시퀀스 다이어그램 v2.6)**](src/v0202/contract_doc_0202/FLOW_0202.md) : 부팅 시퀀스, HTTP/WS 처리 루프, 센서 샘플링 및 물리 연산 파이프라인, 오프라인 개발 어댑터 흐름.
+* ⏱️ [**BUDGET_0202.md (자원 및 WCET 예산 v2.6)**](src/v0202/contract_doc_0202/BUDGET_0202.md) : SRAM/PSRAM/Flash 메모리 버짓, 태스크별 최악 실행 시간(WCET), 프론트엔드 Gzip 예산 (76.2 KB / 100 KB 한도).
+* 🧪 [**TEST_PLAN_0202.md (회귀 테스트 및 검증 계획서 v2.6)**](src/v0202/contract_doc_0202/TEST_PLAN_0202.md) : 단위/통합/스트레스 테스트 케이스(T-68 모달 레이아웃, T-69 오프라인 어댑터 회귀 검증 포함) 및 장기 안정성 검증 절차.
 
 ### 3. 개발 환경 및 AI 에이전트 협업 가이드 (Developer & Agent Setup)
 * 🤖 [**agent.md (개발 환경 및 에이전트 협업 가이드)**](agent.md)
-  * ESP32-S3 PlatformIO 빌드/플래시 설정, C++ `_0202` 모듈 아키텍처, CBD v2.5 계약 준수 및 에이전트 작업 원칙 안내.
+  * ESP32-S3 PlatformIO 빌드/플래시 설정, C++ `_0202` 모듈 아키텍처, CBD v2.5~v2.7 계약 준수 및 에이전트 작업 원칙 안내.
 
 ---
 
@@ -68,8 +68,8 @@
   미기상학 대기 경계층 이론을 적용하여 난류 스펙트럼(Turbulence), 열기포 상승(Thermal Bubble), 돌풍(Gust), 하드웨어 관성 필터(Inertia Filter)를 실시간 수치 연산합니다.
 * **10종 자연 환경 프리셋 (10 Nature-Inspired Presets)**  
   시골 산들바람부터 알프스 산맥의 돌풍, 밤 사막의 정적까지 공간과 분위기에 맞춘 10종 고유 프로파일 기본 탑재.
-* **초경량 싱글 번들 Web UI 대시보드 (Gzip Level 9 사전 압축)**  
-  웹 에셋을 `P010_bundle_0202.js` 단일 번들로 패키징하고 플래시 빌드 시 사전 Gzip 압축(Level 9)하여, 모바일/PC 브라우저에서 200ms 이내의 즉각적인 로딩 속도와 부드러운 반응성을 보장합니다.
+* **초경량 싱글 번들 Web UI 대시보드 (Gzip Level 9 사전 압축, 총 76.2 KB)**  
+  웹 에셋(34개 JS 모듈, 10개 CSS)을 단일 번들(`P010_bundle_0202.js`, `P000_common_0202.css`, `index.html`)로 패키징하고 플래시 빌드 시 사전 Gzip 압축(Level 9)하여 총 76.2 KB(100 KB 버짓 대비 76.2%)의 극초경량 용량을 달성했습니다. 모바일 반응형 2열 세그먼트 카드 그리드, 고정 헤더/푸터 스크롤 모달, 세그먼트 삭제 즉시 복원(Undo Toast) 및 오프라인 로컬 개발 어댑터(`998.offline_0202.js`)를 탑재하여 브라우저 로딩 속도 <200ms와 부드러운 반응성을 보장합니다.
 * **지능형 센서 연동 (Sensor Integration)**  
   - **온습도 센서 (DHT22)**: 실내 온도/습도 추세에 따른 풍속 지능형 자동 제어.
   - **인체감지 센서 (PIR)**: 사람의 재실 여부를 감지하여 부재 시 자동 절전/정지.

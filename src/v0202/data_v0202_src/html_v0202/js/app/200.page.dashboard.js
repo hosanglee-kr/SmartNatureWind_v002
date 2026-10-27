@@ -117,6 +117,40 @@ SNW.Page = SNW.Page || {};
                 items: [], selected: '',
                 onSelect: code => this._onPresetSelect(code)
             });
+            
+            // 스타일 선택 이벤트 바인딩 추가
+            this._bindStyleSelector();
+        }
+
+        _bindStyleSelector() {
+            const selector = this.el.querySelector('#style-selector');
+            if (!selector) return;
+            
+            selector.addEventListener('click', async (e) => {
+                const btn = e.target.closest('.snw-style-btn');
+                if (!btn) return;
+                
+                const newStyle = btn.getAttribute('data-style');
+                const currentSim = SNW.Store.get().sim || {};
+                if (currentSim.styleCode === newStyle) return;
+                
+                // UI 즉시 반영
+                this._updateStyleUI(newStyle);
+                
+                try {
+                    await SNW.Api.patchSim({ styleCode: newStyle });
+                } catch (err) {
+                    SNW.ErrorHandler.handle(err, 'dashboard.style');
+                    // 실패 시 원복
+                    this._updateStyleUI(currentSim.styleCode);
+                }
+            });
+        }
+        
+        _updateStyleUI(styleCode) {
+            this.el.querySelectorAll('.snw-style-btn').forEach(btn => {
+                btn.classList.toggle('is-active', btn.getAttribute('data-style') === styleCode);
+            });
         }
         
         // =========================================================
@@ -252,6 +286,8 @@ SNW.Page = SNW.Page || {};
                     this.components.gauge.set(sim.pwmDuty != null ? sim.pwmDuty : 0);
                     if (sim.intensity != null) this.components.slider.set(sim.intensity);
                     if (sim.presetCode) this.components.presets.setSelected(sim.presetCode);
+                    
+                    if (sim.styleCode) this._updateStyleUI(sim.styleCode);
                 }),
                 
                 // [O-1][O-15] control 구독 — 배너 갱신
@@ -472,3 +508,4 @@ SNW.Page = SNW.Page || {};
         }
     };
 })(window.SNW);
+

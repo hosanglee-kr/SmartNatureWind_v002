@@ -1,6 +1,7 @@
 // =========================================================
 // 240.page.settings.js — SNW.Page.Settings
 // Layer 4 (페이지 로직)
+// [1순위 개선] 서브 탭 (일반/보안, 하드웨어, 통신/WS) 도입
 // [P0-2] 섹션 헤더 i18n, [P0-3] Sticky 저장 바
 // [O-4] 자동 재적용, [O-9] 공장 초기화 강화, [O-11] API Key 보안
 // [O-18] 범위 힌트 + 클라이언트 검증
@@ -10,10 +11,12 @@ SNW.Page = SNW.Page || {};
 (function (SNW) {
     'use strict';
 
+    // [NEW-C1] null/undefined만 폴백 (0, '', false는 보존)
     function nz(v, fallback) {
         return (v === null || v === undefined) ? fallback : v;
     }
 
+    // [NEW-U4] 명시적 bool 판정 ("false" 문자열 방어)
     function asBool(v) {
         return v === true || v === 1 || v === '1' || v === 'true';
     }
@@ -23,6 +26,7 @@ SNW.Page = SNW.Page || {};
             this.el = container;
             this._active = true;
             this._wsChBaseline = [];
+            this._currentTab = 'general';
         }
 
         async mount() {
@@ -33,16 +37,42 @@ SNW.Page = SNW.Page || {};
             await this._loadSystem();
             if (!this._active) return;
 
-            SNW.DomUtil.delegate(this.el, '[data-action="save"]',          'click', () => this._onSave());
-            SNW.DomUtil.delegate(this.el, '[data-action="reload"]',        'click', () => this._onReload());
-            SNW.DomUtil.delegate(this.el, '[data-action="test-api"]',      'click', () => this._onTestApi());
+            // 액션 이벤트 바인딩 (저장, 재적용, 테스트, 초기화)
+            SNW.DomUtil.delegate(this.el, '[data-action="save"]', 'click', () => this._onSave());
+            SNW.DomUtil.delegate(this.el, '[data-action="reload"]', 'click', () => this._onReload());
+            SNW.DomUtil.delegate(this.el, '[data-action="test-api"]', 'click', () => this._onTestApi());
             SNW.DomUtil.delegate(this.el, '[data-action="factory-reset"]', 'click', () => this._onFactoryReset());
         }
 
         unmount() { this._active = false; }
 
         // =========================================================
-        // _loadSystem : 폼 렌더
+        // 탭 제어 로직
+        // =========================================================
+        _bindTabs() {
+            const tabsContainer = this.el.querySelector('.snw-tabs');
+            if (!tabsContainer) return;
+
+            // 기존 이벤트 리스너 제거를 위해 cloneNode 사용 (중복 방지)
+            const newTabs = tabsContainer.cloneNode(true);
+            tabsContainer.parentNode.replaceChild(newTabs, tabsContainer);
+
+            newTabs.addEventListener('click', (e) => {
+                const btn = e.target.closest('.snw-tab-btn');
+                if (!btn) return;
+
+                const target = btn.getAttribute('data-tab');
+                this._currentTab = target;
+
+                // 버튼 활성화
+                this.el.querySelectorAll('.snw-tab-btn').forEach(b => b.classList.toggle('is-active', b === btn));
+                // 콘텐츠 활성화
+                this.el.querySelectorAll('.snw-tab-content').forEach(c => c.classList.toggle('is-active', c.getAttribute('data-tab-content') === target));
+            });
+        }
+
+        // =========================================================
+        // _loadSystem : 데이터 로드 및 탭 UI 렌더링
         // =========================================================
         async _loadSystem() {
             try {
@@ -62,9 +92,37 @@ SNW.Page = SNW.Page || {};
                 const apiKeySet    = typeof sec.apiKey       === 'string' && sec.apiKey.length       > 0;
                 const geminiKeySet = typeof sec.geminiApiKey === 'string' && sec.geminiApiKey.length > 0;
 
-                // ---------- 1. Meta + Logging + Security ----------
-                const logSlot = this.el.querySelector('[data-slot="form-log"]');
-                if (!logSlot) return;
+                // 탭 컨테이너 렌더링
+                const formContainer = this.el.querySelector('[data-slot="form-container"]');
+                if (!formContainer) return;
+
+                formContainer.innerHTML = `
+                    <div class="snw-tabs">
+                        <button type="button" class="snw-tab-btn is-active" data-tab="general">${T('settings.tabGeneral')}</button>
+                        <button type="button" class="snw-tab-btn" data-tab="hardware">${T('settings.tabHardware')}</button>
+                        <button type="button" class="snw-tab-btn" data-tab="comm">${T('settings.tabComm')}</button>
+                    </div>
+
+                    <!-- 탭 1: 일반/보안 -->
+                    <div class="snw-tab-content is-active" data-tab-content="general">
+                        <div data-slot="form-log"></div>
+                    </div>
+
+                    <!-- 탭 2: 하드웨어 -->
+                    <div class="snw-tab-content" data-tab-content="hardware">
+                        <div data-slot="form-hw"></div>
+                    </div>
+
+                    <!-- 탭 3: 통신/WS -->
+                    <div class="snw-tab-content" data-tab-content="comm">
+                        <div data-slot="form-ws"></div>
+                    </div>
+                `;
+
+                this._bindTabs();
+
+                // ---------- 1. 일반 / 보안 탭 ----------
+                const logSlot = formContainer.querySelector('[data-slot="form-log"]');
                 logSlot.innerHTML = `
                     <h3 class="snw-form-section">${T('settings.secMeta')}</h3>
                     <div class="snw-form-row">
@@ -88,16 +146,11 @@ SNW.Page = SNW.Page || {};
                                style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                         <small class="snw-form-row__hint">${T('settings.fieldRange', {min:10, max:1000})}</small>
                     </div>
-
                     <div class="snw-form-row">
                         <label>API Key ${apiKeySet
                             ? `<span style="color:var(--snw-success);font-size:11px;">${T('settings.configured')}</span>`
                             : `<span style="color:var(--snw-text-dim);font-size:11px;">${T('settings.notConfigured')}</span>`}</label>
-                        <input type="password" id="api-key" value=""
-                               autocomplete="off"
-                               data-lpignore="true"
-                               data-1p-ignore="true"
-                               spellcheck="false"
+                        <input type="password" id="api-key" value="" autocomplete="off" data-lpignore="true" data-1p-ignore="true" spellcheck="false"
                                placeholder="${apiKeySet ? T('settings.keyPlaceholderChange') : T('settings.keyPlaceholderInput')}"
                                style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                         <label style="font-size:11px;margin-top:4px;">
@@ -105,16 +158,11 @@ SNW.Page = SNW.Page || {};
                             <span style="color:var(--snw-error);">${T('settings.deleteApiKey')}</span>
                         </label>
                     </div>
-
                     <div class="snw-form-row">
                         <label>Gemini API Key ${geminiKeySet
                             ? `<span style="color:var(--snw-success);font-size:11px;">${T('settings.configured')}</span>`
                             : `<span style="color:var(--snw-text-dim);font-size:11px;">${T('settings.notConfigured')}</span>`}</label>
-                        <input type="password" id="gemini-key" value=""
-                               autocomplete="off"
-                               data-lpignore="true"
-                               data-1p-ignore="true"
-                               spellcheck="false"
+                        <input type="password" id="gemini-key" value="" autocomplete="off" data-lpignore="true" data-1p-ignore="true" spellcheck="false"
                                placeholder="${geminiKeySet ? T('settings.keyPlaceholderChange') : T('settings.keyPlaceholderInput')}"
                                style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                         <label style="font-size:11px;margin-top:4px;">
@@ -122,13 +170,131 @@ SNW.Page = SNW.Page || {};
                             <span style="color:var(--snw-error);">${T('settings.deleteGeminiKey')}</span>
                         </label>
                     </div>
-
                     <div class="snw-toolbar">
                         <button type="button" class="snw-btn" data-action="test-api">${T('settings.testApiKey')}</button>
                     </div>
                 `;
 
-                // ---------- 2. WebSocket 채널 ----------
+                // ---------- 2. 하드웨어 탭 ----------
+                const pwm   = hw.fanPwm    || {};
+                const curve = hw.fanConfig || {};
+                const pir   = hw.pir       || {};
+                const dht   = hw.tempHum   || {};
+                const led   = hw.led       || {};
+
+                const _rangeHint = (min, max, rec) => {
+                    const range = T('settings.fieldRange', { min, max });
+                    return rec
+                        ? `<small class="snw-form-row__hint">${range} · ${T('settings.fieldRecommended', { range: rec })}</small>`
+                        : `<small class="snw-form-row__hint">${range}</small>`;
+                };
+
+                const hwSlot = formContainer.querySelector('[data-slot="form-hw"]');
+                hwSlot.innerHTML = `
+                    <h3 class="snw-form-section">${T('settings.secFanPwm')}</h3>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldPinPwm')}</label>
+                        <input type="number" id="hw-pwm-pin" min="0" max="48" value="${nz(pwm.pin, 6)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 48)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldChannel')}</label>
+                        <input type="number" id="hw-pwm-ch" min="0" max="15" value="${nz(pwm.channel, 0)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 15)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldFreq')}</label>
+                        <input type="number" id="hw-pwm-freq" min="1000" max="80000" value="${nz(pwm.freq, 25000)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(1000, 80000, '20000~30000')}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldRes')}</label>
+                        <input type="number" id="hw-pwm-res" min="1" max="16" value="${nz(pwm.res, 10)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(1, 16, '8~12')}
+                    </div>
+
+                    <h3 class="snw-form-section">${T('settings.secFanCurve')}</h3>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldStart')}</label>
+                        <input type="number" id="hw-fan-start" min="0" max="100" value="${nz(curve.startPercentMin, 18)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 100, '15~25')}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldComfortMin')}</label>
+                        <input type="number" id="hw-fan-cmin" min="0" max="100" value="${nz(curve.comfortPercentMin, 22)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 100)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldComfortMax')}</label>
+                        <input type="number" id="hw-fan-cmax" min="0" max="100" value="${nz(curve.comfortPercentMax, 65)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 100)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldHardMax')}</label>
+                        <input type="number" id="hw-fan-hmax" min="0" max="100" value="${nz(curve.hardPercentMax, 90)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 100)}
+                    </div>
+
+                    <h3 class="snw-form-section">${T('settings.secPir')}</h3>
+                    <div class="snw-form-row" style="flex-direction:row;gap:8px;align-items:center;">
+                        <input type="checkbox" id="hw-pir-enabled" ${asBool(pir.enabled) ? 'checked' : ''}>
+                        <label for="hw-pir-enabled" style="margin:0;">${T('settings.fieldEnabled')}</label>
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldPinPir')}</label>
+                        <input type="number" id="hw-pir-pin" min="0" max="48" value="${nz(pir.pin, 13)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 48)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldDebounce')}</label>
+                        <input type="number" id="hw-pir-debounce" min="0" max="60" value="${nz(pir.debounceSec, 5)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 60)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldHold')}</label>
+                        <input type="number" id="hw-pir-hold" min="0" max="3600" value="${nz(pir.holdSec, 120)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 3600, '60~300')}
+                    </div>
+
+                    <h3 class="snw-form-section">${T('settings.secDht')}</h3>
+                    <div class="snw-form-row" style="flex-direction:row;gap:8px;align-items:center;">
+                        <input type="checkbox" id="hw-dht-enabled" ${asBool(dht.enabled) ? 'checked' : ''}>
+                        <label for="hw-dht-enabled" style="margin:0;">${T('settings.fieldEnabled')}</label>
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldType')}</label>
+                        <input type="text" id="hw-dht-type" value="${esc(nz(dht.type, 'DHT22'))}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldPinDht')}</label>
+                        <input type="number" id="hw-dht-pin" min="0" max="48" value="${nz(dht.pin, 17)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 48)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldInterval')}</label>
+                        <input type="number" id="hw-dht-int" min="1" max="3600" value="${nz(dht.intervalSec, 30)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(1, 3600, '10~60')}
+                    </div>
+
+                    <h3 class="snw-form-section">${T('settings.secLed')}</h3>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldPinLed')}</label>
+                        <input type="number" id="hw-led-pin" min="0" max="48" value="${nz(led.pin, 48)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 48)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldNumPixels')}</label>
+                        <input type="number" id="hw-led-num" min="1" max="16" value="${nz(led.numPixels, 1)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(1, 16)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldBrightness')}</label>
+                        <input type="number" id="hw-led-bright" min="0" max="255" value="${nz(led.defaultBrightness, 20)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 255, '20~80')}
+                    </div>
+                `;
+
+                // ---------- 3. 통신/WS 탭 ----------
                 const wsCh = (Array.isArray(ws.wsChConfig) && ws.wsChConfig.length > 0)
                     ? ws.wsChConfig
                     : [
@@ -149,174 +315,28 @@ SNW.Page = SNW.Page || {};
                     wsHtml += `
                         <div style="display:flex;gap:8px;margin-bottom:4px;align-items:center;font-size:12px;">
                             <span style="width:70px;color:var(--snw-text-dim);">${esc(ch.chName || ('ch' + idx))}</span>
-                            <input type="number" value="${nz(ch.chIntervalMs, 1000)}" placeholder="Interval(ms)"
-                                   style="flex:1;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"
-                                   data-ws-itv="${idx}">
-                            <input type="number" value="${nz(ch.priority, 0)}" placeholder="Priority"
-                                   style="flex:1;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"
-                                   data-ws-prio="${idx}">
+                            <input type="number" value="${nz(ch.chIntervalMs, 1000)}" placeholder="Interval(ms)" style="flex:1;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);" data-ws-itv="${idx}">
+                            <input type="number" value="${nz(ch.priority, 0)}" placeholder="Priority" style="flex:1;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);" data-ws-prio="${idx}">
                         </div>
                     `;
                 });
                 wsHtml += `
-                    <div class="snw-form-row">
+                    <div class="snw-form-row" style="margin-top:12px;">
                         <label>Chart Large Bytes</label>
-                        <input type="number" id="ws-chartLarge" value="${nz(wsEtc.chartLargeBytes, 3500)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        <input type="number" id="ws-chartLarge" value="${nz(wsEtc.chartLargeBytes, 3500)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                     </div>
                     <div class="snw-form-row">
                         <label>Chart Throttle Mul</label>
-                        <input type="number" id="ws-chartThrottle" value="${nz(wsEtc.chartThrottleMul, 2)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        <input type="number" id="ws-chartThrottle" value="${nz(wsEtc.chartThrottleMul, 2)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                     </div>
                     <div class="snw-form-row">
                         <label>WS Cleanup (ms)</label>
-                        <input type="number" id="ws-cleanup" value="${nz(wsEtc.wsCleanupMs, 10000)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        <input type="number" id="ws-cleanup" value="${nz(wsEtc.wsCleanupMs, 10000)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                     </div>
                 `;
-                const wsSlot = this.el.querySelector('[data-slot="form-ws"]');
-                if (wsSlot) wsSlot.innerHTML = wsHtml;
+                formContainer.querySelector('[data-slot="form-ws"]').innerHTML = wsHtml;
 
-                // ---------- 3. 하드웨어 (P0-2 + O-18) ----------
-                const pwm   = hw.fanPwm    || {};
-                const curve = hw.fanConfig || {};
-                const pir   = hw.pir       || {};
-                const dht   = hw.tempHum   || {};
-                const led   = hw.led       || {};
-
-                const hwSlot = this.el.querySelector('[data-slot="form-hw"]');
-                if (!hwSlot) return;
-
-                const _rangeHint = (min, max, rec) => {
-                    const range = T('settings.fieldRange', { min, max });
-                    return rec
-                        ? `<small class="snw-form-row__hint">${range} · ${T('settings.fieldRecommended', { range: rec })}</small>`
-                        : `<small class="snw-form-row__hint">${range}</small>`;
-                };
-
-                hwSlot.innerHTML = `
-                    <h3 class="snw-form-section">${T('settings.secFanPwm')}</h3>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldPinPwm')}</label>
-                        <input type="number" id="hw-pwm-pin" min="0" max="48" value="${nz(pwm.pin, 6)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 48)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldChannel')}</label>
-                        <input type="number" id="hw-pwm-ch" min="0" max="15" value="${nz(pwm.channel, 0)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 15)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldFreq')}</label>
-                        <input type="number" id="hw-pwm-freq" min="1000" max="80000" value="${nz(pwm.freq, 25000)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(1000, 80000, '20000~30000')}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldRes')}</label>
-                        <input type="number" id="hw-pwm-res" min="1" max="16" value="${nz(pwm.res, 10)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(1, 16, '8~12')}
-                    </div>
-
-                    <h3 class="snw-form-section">${T('settings.secFanCurve')}</h3>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldStart')}</label>
-                        <input type="number" id="hw-fan-start" min="0" max="100" value="${nz(curve.startPercentMin, 18)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 100, '15~25')}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldComfortMin')}</label>
-                        <input type="number" id="hw-fan-cmin" min="0" max="100" value="${nz(curve.comfortPercentMin, 22)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 100)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldComfortMax')}</label>
-                        <input type="number" id="hw-fan-cmax" min="0" max="100" value="${nz(curve.comfortPercentMax, 65)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 100)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldHardMax')}</label>
-                        <input type="number" id="hw-fan-hmax" min="0" max="100" value="${nz(curve.hardPercentMax, 90)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 100)}
-                    </div>
-
-                    <h3 class="snw-form-section">${T('settings.secPir')}</h3>
-                    <div class="snw-form-row" style="flex-direction:row;gap:8px;align-items:center;">
-                        <input type="checkbox" id="hw-pir-enabled" ${asBool(pir.enabled) ? 'checked' : ''}>
-                        <label for="hw-pir-enabled" style="margin:0;">${T('settings.fieldEnabled')}</label>
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldPinPir')}</label>
-                        <input type="number" id="hw-pir-pin" min="0" max="48" value="${nz(pir.pin, 13)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 48)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldDebounce')}</label>
-                        <input type="number" id="hw-pir-debounce" min="0" max="60" value="${nz(pir.debounceSec, 5)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 60)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldHold')}</label>
-                        <input type="number" id="hw-pir-hold" min="0" max="3600" value="${nz(pir.holdSec, 120)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 3600, '60~300')}
-                    </div>
-
-                    <h3 class="snw-form-section">${T('settings.secDht')}</h3>
-                    <div class="snw-form-row" style="flex-direction:row;gap:8px;align-items:center;">
-                        <input type="checkbox" id="hw-dht-enabled" ${asBool(dht.enabled) ? 'checked' : ''}>
-                        <label for="hw-dht-enabled" style="margin:0;">${T('settings.fieldEnabled')}</label>
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldType')}</label>
-                        <input type="text" id="hw-dht-type" value="${esc(nz(dht.type, 'DHT22'))}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldPinDht')}</label>
-                        <input type="number" id="hw-dht-pin" min="0" max="48" value="${nz(dht.pin, 17)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 48)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldInterval')}</label>
-                        <input type="number" id="hw-dht-int" min="1" max="3600" value="${nz(dht.intervalSec, 30)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(1, 3600, '10~60')}
-                    </div>
-
-                    <h3 class="snw-form-section">${T('settings.secLed')}</h3>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldPinLed')}</label>
-                        <input type="number" id="hw-led-pin" min="0" max="48" value="${nz(led.pin, 48)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 48)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldNumPixels')}</label>
-                        <input type="number" id="hw-led-num" min="1" max="16" value="${nz(led.numPixels, 1)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(1, 16)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldBrightness')}</label>
-                        <input type="number" id="hw-led-bright" min="0" max="255" value="${nz(led.defaultBrightness, 20)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 255, '20~80')}
-                    </div>
-                `;
-
-                // [P0-3] Sticky action bar
+                // ---------- 하단 Sticky 액션 바 ----------
                 const actionBar = this.el.querySelector('[data-slot="action-bar"]');
                 if (actionBar) {
                     actionBar.innerHTML = `
@@ -337,7 +357,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [O-4][O-18] 저장 — 클라이언트 검증 + 자동 재적용
+        // _onSave : 저장 (탭에 상관없이 모든 input 값을 수집)
         // =========================================================
         async _onSave() {
             const q = sel => this.el.querySelector(sel);
@@ -372,7 +392,7 @@ SNW.Page = SNW.Page || {};
                 return;
             }
 
-            // API Key 처리
+            // 보안 (API Key) 처리
             const apiKeyVal      = q('#api-key')         ? q('#api-key').value.trim()      : '';
             const geminiKeyVal   = q('#gemini-key')      ? q('#gemini-key').value.trim()   : '';
             const clearApiKey    = q('#clear-api-key')   ? q('#clear-api-key').checked     : false;
@@ -384,7 +404,7 @@ SNW.Page = SNW.Page || {};
             if (clearGeminiKey)           securityPatch.clearGeminiApiKey = true;
             else if (geminiKeyVal.length) securityPatch.geminiApiKey = geminiKeyVal;
 
-            // WS 채널 수집
+            // WS 채널 처리
             const wsChArr = [];
             const seenIdx = new Set();
             this.el.querySelectorAll('[data-ws-itv]').forEach(el => {
@@ -401,14 +421,12 @@ SNW.Page = SNW.Page || {};
             });
             this._wsChBaseline.forEach(b => {
                 if (!seenIdx.has(b.chIdx)) {
-                    wsChArr.push({
-                        chIdx: b.chIdx, chName: b.chName,
-                        chIntervalMs: 1000, priority: 0
-                    });
+                    wsChArr.push({ chIdx: b.chIdx, chName: b.chName, chIntervalMs: 1000, priority: 0 });
                 }
             });
             wsChArr.sort((a, b) => a.chIdx - b.chIdx);
 
+            // 페이로드 구성
             const patch = {
                 meta: { deviceName: q('#meta-deviceName').value },
                 system: {
@@ -463,7 +481,6 @@ SNW.Page = SNW.Page || {};
                 await SNW.Api.patchSystem(patch);
                 await SNW.Api.saveConfig();
 
-                // [O-4] 자동 재적용
                 const autoReload = q('#save-and-reload') ? q('#save-and-reload').checked : false;
                 if (autoReload && !window.SNW_OFFLINE) {
                     await SNW.Api.reload();
@@ -479,7 +496,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [O-4] 재적용 — dirty 경고
+        // _onReload : 재적용 (dirty 경고 포함)
         // =========================================================
         async _onReload() {
             try {
@@ -529,6 +546,9 @@ SNW.Page = SNW.Page || {};
             }
         }
 
+        // =========================================================
+        // _onTestApi : 저장된 API Key로 테스트
+        // =========================================================
         async _onTestApi() {
             try {
                 await SNW.Api.getState();
@@ -539,7 +559,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [O-9] 공장 초기화 강화
+        // _onFactoryReset : 공장 초기화 (확인 단어 입력)
         // =========================================================
         async _onFactoryReset() {
             const content = document.createElement('div');

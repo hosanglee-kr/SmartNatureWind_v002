@@ -266,7 +266,16 @@ window.SNW = window.SNW || {};
             runtime.control.active = false; return { result: 'ok' }; };
         A.overridePreset = async (b) => { runtime.sim.presetCode = b.presetCode;
             runtime.sim.active = true; return { result: 'ok' }; };
-        A.patchSim = async (p) => { Object.assign(runtime.sim, p); return { updated: true }; };
+
+        A.patchSim = async (p) => {
+            // 👇 styleCode 업데이트 로직 추가
+            if (p.styleCode) {
+                runtime.sim.styleCode = p.styleCode;
+            }
+            Object.assign(runtime.sim, p);
+            return { updated: true };
+        };
+
         A.patchMotion = async (b) => {
             if (b.motion) {
                 if (b.motion.pir) Object.assign(cache.motion.motion.pir, b.motion.pir);

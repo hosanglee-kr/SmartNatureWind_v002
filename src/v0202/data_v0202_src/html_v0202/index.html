@@ -22,17 +22,41 @@
         </div>
     </header>
 
-    <!-- Sidebar (hidden 없음) -->
     <aside class="snw-sidebar" id="snw-sidebar">
         <nav id="nav-menu"></nav>
     </aside>
 
-    <!-- 👇 오버레이 명시적으로 HTML에 넣음 -->
     <div class="snw-sidebar-overlay" id="snw-sidebar-overlay"></div>
 
     <main class="snw-main" id="snw-main">
         <div class="snw-loading" data-i18n="common.loading">Loading...</div>
     </main>
+
+    <!-- 👇 모바일 하단 탭 바 추가 -->
+    <nav class="snw-bottom-nav" id="mobile-bottom-nav">
+        <a href="#/dashboard" data-route="/dashboard" class="snw-bottom-nav__item">
+            <span class="snw-bottom-nav__icon">📊</span>
+            <span class="snw-bottom-nav__label" data-i18n="nav.dashboard">대시보드</span>
+        </a>
+        <a href="#/chart" data-route="/chart" class="snw-bottom-nav__item">
+            <span class="snw-bottom-nav__icon">📈</span>
+            <span class="snw-bottom-nav__label" data-i18n="nav.chart">차트</span>
+        </a>
+        <a href="#/schedule" data-route="/schedule" class="snw-bottom-nav__item">
+            <span class="snw-bottom-nav__icon">📅</span>
+            <span class="snw-bottom-nav__label" data-i18n="nav.schedule">스케줄</span>
+        </a>
+        <a href="#/settings" data-route="/settings" class="snw-bottom-nav__item">
+            <span class="snw-bottom-nav__icon">⚙</span>
+            <span class="snw-bottom-nav__label" data-i18n="nav.settings">설정</span>
+        </a>
+        <!-- '더보기' 탭 추가 (클릭 시 사이드바 열림) -->
+        <a href="javascript:void(0)" onclick="document.getElementById('btn-menu').click()" class="snw-bottom-nav__item">
+            <span class="snw-bottom-nav__icon">···</span>
+            <span class="snw-bottom-nav__label">더보기</span>
+        </a>
+    
+    </nav>
 
     <footer class="snw-footer">
         <span id="footer-status" data-i18n="footer.online">🟢</span>
@@ -62,3 +86,4 @@
 
 </body>
 </html>
+

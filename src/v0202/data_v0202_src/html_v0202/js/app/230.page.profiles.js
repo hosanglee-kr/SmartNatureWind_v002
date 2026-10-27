@@ -142,74 +142,81 @@ SNW.Page = SNW.Page || {};
             };
 
             const content = document.createElement('div');
+
             content.innerHTML = `
                 <div class="snw-form">
-                    <div class="snw-form-row">
-                        <label>${SNW.I18n.t('profiles.name')}</label>
-                        <input type="text" id="prof-name" value="${SNW.DomUtil.escape(p.name)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;">${SNW.I18n.t('profiles.no')}
-                            <input type="number" id="prof-no" value="${p.profileNo}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                        <label style="flex:1;font-size:12px;">${SNW.I18n.t('profiles.enabled')}
-                            <input type="checkbox" id="prof-enabled" ${p.enabled ? 'checked' : ''}>
-                        </label>
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;margin-top:8px;">
-                        <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.segmentRepeat')}
-                            <input type="checkbox" id="prof-repeat" ${p.repeatSegments ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.repeatCount')}
-                            <input type="number" id="prof-repeat-count" min="0" value="${p.repeatCount}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-
-                    <h3 style="margin-top:12px;font-size:14px;">${SNW.I18n.t('profiles.segmentsTitle')}</h3>
-                    <div id="prof-segs" style="display:flex;flex-direction:column;gap:8px;"></div>
-                    <button type="button" class="snw-btn" id="btn-add-prof-seg" style="margin-top:8px;">
-                        ${SNW.I18n.t('profiles.addSegmentBtn')}
-                    </button>
-
-                    <h3 style="margin-top:12px;font-size:14px;">AutoOff & PIR</h3>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;">${SNW.I18n.t('profiles.autoOffTimer')}
-                            <input type="number" id="prof-ao-timer" min="0" value="${p.autoOff?.timer?.minutes || 0}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.scheduledOff')}
-                            <input type="checkbox" id="prof-ao-offtime-en" ${p.autoOff?.offTime?.enabled ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;">${SNW.I18n.t('schedule.endTime')}
-                            <input type="time" id="prof-ao-offtime" value="${p.autoOff?.offTime?.time || '00:00'}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.tempOff')}
-                            <input type="checkbox" id="prof-ao-offtemp-en" ${p.autoOff?.offTemp?.enabled ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;">${SNW.I18n.t('dashboard.temp')}(°C)
-                            <input type="number" step="0.1" id="prof-ao-offtemp" value="${p.autoOff?.offTemp?.temp || 0}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">${SNW.I18n.t('sensors.pirEnabled')}
-                            <input type="checkbox" id="prof-pir-en" ${p.motion?.pir?.enabled ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;">${SNW.I18n.t('sensors.pirHoldSec')}
-                            <input type="number" id="prof-pir-hold" min="0" value="${p.motion?.pir?.holdSec || 0}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
+                    <details class="snw-accordion" open>
+                        <summary>${SNW.I18n.t('schedule.secBasic')}</summary>
+                        <div class="snw-accordion__content">
+                            <div class="snw-form-row">
+                                <label>${SNW.I18n.t('profiles.name')}</label>
+                                <input type="text" id="prof-name" value="${SNW.DomUtil.escape(p.name)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;">${SNW.I18n.t('profiles.no')}
+                                    <input type="number" id="prof-no" value="${p.profileNo}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('profiles.enabled')}
+                                    <input type="checkbox" id="prof-enabled" ${p.enabled ? 'checked' : ''}>
+                                </label>
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;margin-top:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.segmentRepeat')}
+                                    <input type="checkbox" id="prof-repeat" ${p.repeatSegments ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.repeatCount')}
+                                    <input type="number" id="prof-repeat-count" min="0" value="${p.repeatCount}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                        </div>
+                    </details>
+            
+                    <details class="snw-accordion" open>
+                        <summary>${SNW.I18n.t('schedule.secSegments')}</summary>
+                        <div class="snw-accordion__content">
+                            <div id="prof-segs" style="display:flex;flex-direction:column;gap:8px;"></div>
+                            <button type="button" class="snw-btn" id="btn-add-prof-seg" style="margin-top:8px;">
+                                ${SNW.I18n.t('profiles.addSegmentBtn')}
+                            </button>
+                        </div>
+                    </details>
+            
+                    <details class="snw-accordion">
+                        <summary>${SNW.I18n.t('schedule.secSmart')}</summary>
+                        <div class="snw-accordion__content">
+                            <div class="snw-form-row" style="display:flex;gap:8px; margin-top:8px;">
+                                <label style="flex:1;">${SNW.I18n.t('profiles.autoOffTimer')}
+                                    <input type="number" id="prof-ao-timer" min="0" value="${p.autoOff?.timer?.minutes || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.scheduledOff')}
+                                    <input type="checkbox" id="prof-ao-offtime-en" ${p.autoOff?.offTime?.enabled ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;">${SNW.I18n.t('schedule.endTime')}
+                                    <input type="time" id="prof-ao-offtime" value="${p.autoOff?.offTime?.time || '00:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.tempOff')}
+                                    <input type="checkbox" id="prof-ao-offtemp-en" ${p.autoOff?.offTemp?.enabled ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;">${SNW.I18n.t('dashboard.temp')}(°C)
+                                    <input type="number" step="0.1" id="prof-ao-offtemp" value="${p.autoOff?.offTemp?.temp || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('sensors.pirEnabled')}
+                                    <input type="checkbox" id="prof-pir-en" ${p.motion?.pir?.enabled ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;">${SNW.I18n.t('sensors.pirHoldSec')}
+                                    <input type="number" id="prof-pir-hold" min="0" value="${p.motion?.pir?.holdSec || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                        </div>
+                    </details>
                 </div>`;
-
+    
             const segContainer = content.querySelector('#prof-segs');
             const currentSegs = JSON.parse(JSON.stringify(p.segments || []));
 

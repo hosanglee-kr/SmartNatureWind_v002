@@ -2,10 +2,10 @@
 // 033.util.template.js — SNW.Tpl (페이지 HTML 템플릿)
 // Layer 1 (유틸) — SNW.C, SNW.DomUtil 참조
 // =========================================================
-/* ---- 033.util.template.js ---- */
 window.SNW = window.SNW || {};
-(function (SNW) {
+(function(SNW) {
     'use strict';
+    
     function tpl(strings, ...vals) {
         const el = SNW.DomUtil.html(strings, ...vals);
         if (SNW.I18n && SNW.I18n.applyTo) {
@@ -17,6 +17,9 @@ window.SNW = window.SNW || {};
     SNW.Tpl = {
         tpl,
         
+        // =========================================================
+        // 1. Dashboard (바람 스타일 선택 UI 추가됨)
+        // =========================================================
         dashboard() {
             return tpl`
                 <div class="snw-dashboard">
@@ -47,24 +50,43 @@ window.SNW = window.SNW || {};
                         <div class="snw-kv"><span data-i18n="dashboard.prof">프로필</span><b data-slot="prof-name">-</b></div>
                         <div class="snw-kv"><span>AutoOff</span><b data-slot="autooff">-</b></div>
                     </section>
+                    
                     <section class="snw-card snw-card--power">
                         <h2 data-i18n="dashboard.powerTitle">전원 제어</h2>
                         <div data-slot="power" class="snw-power-slot"></div>
                     </section>
+                    
                     <section class="snw-card snw-card--sensor">
                         <h2 data-i18n="dashboard.sensorTitle">센서</h2>
                         <div data-slot="sensors"></div>
                     </section>
+                    
                     <section class="snw-card snw-card--preset">
                         <h2 data-i18n="dashboard.presetTitle">프리셋 선택</h2>
                         <div data-slot="presets"></div>
+                        
+                        <!-- [신규] 바람 스타일 선택 UI (백엔드 Enum 매핑) -->
+                        <div style="margin-top:16px;">
+                            <h3 style="margin-bottom:8px; font-size:12px; color:var(--snw-text-dim);" data-i18n="dashboard.styleTitle">바람 스타일</h3>
+                            <div class="snw-style-selector" id="style-selector">
+                                <button type="button" class="snw-style-btn" data-style="BALANCE">자연풍</button>
+                                <button type="button" class="snw-style-btn" data-style="ACTIVE">돌풍</button>
+                                <button type="button" class="snw-style-btn" data-style="RELAX">산들바람</button>
+                                <button type="button" class="snw-style-btn" data-style="FOCUS">주기풍</button>
+                            </div>
+                        </div>
                     </section>
+                    
                     <section class="snw-card snw-card--slider">
                         <h2 data-i18n="dashboard.intensityTitle">강도 조절</h2>
                         <div data-slot="intensity"></div>
                     </section>
                 </div>`;
         },
+        
+        // =========================================================
+        // 2. Chart
+        // =========================================================
         chart() {
             return tpl`
                 <section class="snw-card">
@@ -80,21 +102,26 @@ window.SNW = window.SNW || {};
                     <div data-slot="chart" class="snw-chart-area"></div>
                 </section>`;
         },
+        
+        // =========================================================
+        // 3. Settings (form-container 슬롯 추가됨)
+        // =========================================================
         settings() {
             return tpl`
                 <section class="snw-card">
                     <h2 data-i18n="settings.title">시스템 설정</h2>
                     
-                    <div data-slot="form-log"></div>
+                    <!-- 탭 및 폼 콘텐츠가 이곳에 동적 삽입됨 -->
+                    <div data-slot="form-container"></div>
                     
-                    <div data-slot="form-ws"></div>
-                    
-                    <div data-slot="form-hw"></div>
-                    
-                    <!-- [P0-3] Sticky 액션 바는 _loadSystem에서 채움 -->
+                    <!-- 하단 Sticky 저장 바 (240.page.settings.js에서 채움) -->
                     <div data-slot="action-bar"></div>
                 </section>`;
         },
+        
+        // =========================================================
+        // 4. Simulation
+        // =========================================================
         simulation() {
             return tpl`
                 <section class="snw-card">
@@ -102,12 +129,32 @@ window.SNW = window.SNW || {};
                     <div data-slot="form" class="snw-form" data-i18n="common.loading">로딩 중...</div>
                 </section>`;
         },
+        
+        // =========================================================
+        // 5. Schedule
+        // =========================================================
         schedule() {
-            return tpl`<section class="snw-card"><h2 data-i18n="scheduler.title">스케줄 예약</h2><div data-slot="list"></div></section>`;
+            return tpl`
+                <section class="snw-card">
+                    <h2 data-i18n="scheduler.title">스케줄 예약</h2>
+                    <div data-slot="list"></div>
+                </section>`;
         },
+        
+        // =========================================================
+        // 6. Profiles
+        // =========================================================
         profiles() {
-            return tpl`<section class="snw-card"><h2 data-i18n="profile.title">사용자 프로필</h2><div data-slot="list"></div></section>`;
+            return tpl`
+                <section class="snw-card">
+                    <h2 data-i18n="profile.title">사용자 프로필</h2>
+                    <div data-slot="list"></div>
+                </section>`;
         },
+        
+        // =========================================================
+        // 7. Network
+        // =========================================================
         network() {
             return tpl`
             <div style="display:flex;flex-direction:column;gap:16px;">
@@ -125,6 +172,10 @@ window.SNW = window.SNW || {};
                 </section>
             </div>`;
         },
+        
+        // =========================================================
+        // 8. Sensors
+        // =========================================================
         sensors() {
             return tpl`
             <div style="display:flex;flex-direction:column;gap:16px;">
@@ -143,6 +194,10 @@ window.SNW = window.SNW || {};
                 </section>
             </div>`;
         },
+        
+        // =========================================================
+        // 9. Diagnostics
+        // =========================================================
         diagnostics() {
             return tpl`
                 <section class="snw-card">
@@ -154,20 +209,60 @@ window.SNW = window.SNW || {};
                     </div>
                 </section>`;
         },
+        
+        // =========================================================
+        // 10. Logs
+        // =========================================================
         logs() {
-            return tpl`<section class="snw-card"><h2 data-i18n="nav.logs">시스템 로그</h2><div data-slot="log"></div></section>`;
+            return tpl`
+                <section class="snw-card">
+                    <h2 data-i18n="nav.logs">시스템 로그</h2>
+                    <div data-slot="log"></div>
+                </section>`;
         },
+        
+        // =========================================================
+        // 11. Firmware
+        // =========================================================
         firmware() {
-            return tpl`<section class="snw-card"><h2 data-i18n="firmware.title">펌웨어 관리</h2><div data-slot="form"></div></section>`;
+            return tpl`
+                <section class="snw-card">
+                    <h2 data-i18n="firmware.title">펌웨어 관리</h2>
+                    <div data-slot="form"></div>
+                </section>`;
         },
+        
+        // =========================================================
+        // 12. AI
+        // =========================================================
         ai() {
-            return tpl`<section class="snw-card"><h2 data-i18n="ai.title">AI 어시스턴트</h2><div data-slot="chat"></div></section>`;
+            return tpl`
+                <section class="snw-card">
+                    <h2 data-i18n="ai.title">AI 어시스턴트</h2>
+                    <div data-slot="chat"></div>
+                </section>`;
         },
+        
+        // =========================================================
+        // 13. Info
+        // =========================================================
         info() {
-            return tpl`<section class="snw-card"><h2 data-i18n="nav.info">정보</h2><div data-slot="panel"></div></section>`;
+            return tpl`
+                <section class="snw-card">
+                    <h2 data-i18n="nav.info">정보</h2>
+                    <div data-slot="panel"></div>
+                </section>`;
         },
+        
+        // =========================================================
+        // 14. WindProfile
+        // =========================================================
         windprofile() {
-            return tpl`<section class="snw-card"><h2 data-i18n="windprofile.title">바람 프리셋 관리</h2><div data-slot="list"></div></section>`;
+            return tpl`
+                <section class="snw-card">
+                    <h2 data-i18n="windprofile.title">바람 프리셋 관리</h2>
+                    <div data-slot="list"></div>
+                </section>`;
         }
     };
 })(window.SNW);

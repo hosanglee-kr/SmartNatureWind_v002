@@ -796,7 +796,19 @@ window.SNW = window.SNW || {};
             'chart.exportCsv':              'CSV',
 
             'days.mon': '월', 'days.tue': '화', 'days.wed': '수', 'days.thu': '목',
-            'days.fri': '금', 'days.sat': '토', 'days.sun': '일'
+            'days.fri': '금', 'days.sat': '토', 'days.sun': '일',
+            
+            'style.NATURAL': '자연풍',
+            'style.GUSTY': '돌풍',
+            'style.GENTLE': '산들바람',
+            'style.CYCLIC': '주기풍',
+            'settings.tabGeneral': '일반 / 보안',
+            'settings.tabHardware': '하드웨어 / 핀맵',
+            'settings.tabComm': '통신 / WS',
+            'schedule.secBasic': '기본 일정',
+            'schedule.secSegments': '바람 세그먼트',
+            'schedule.secSmart': '스마트 안심 종료 (AutoOff & PIR)'
+
         },
 
         // =====================================================
@@ -1217,7 +1229,18 @@ window.SNW = window.SNW || {};
             'chart.exportCsv':              'CSV',
 
             'days.mon': 'Mon', 'days.tue': 'Tue', 'days.wed': 'Wed', 'days.thu': 'Thu',
-            'days.fri': 'Fri', 'days.sat': 'Sat', 'days.sun': 'Sun'
+            'days.fri': 'Fri', 'days.sat': 'Sat', 'days.sun': 'Sun',
+            
+            'style.NATURAL': 'Natural',
+            'style.GUSTY': 'Gusty',
+            'style.GENTLE': 'Gentle',
+            'style.CYCLIC': 'Cyclic',
+            'settings.tabGeneral': 'General / Security',
+            'settings.tabHardware': 'Hardware / Pinmap',
+            'settings.tabComm': 'Comm / WS',
+            'schedule.secBasic': 'Basic Schedule',
+            'schedule.secSegments': 'Wind Segments',
+            'schedule.secSmart': 'Smart Auto Off (AutoOff & PIR)'
         }
     };
 
@@ -1266,7 +1289,6 @@ window.SNW = window.SNW || {};
     document.documentElement.lang = currentLang;
 
 })(window.SNW);
-
 
 
 /* ---- 030.util.level.js (1458 bytes) ---- */
@@ -1481,7 +1503,6 @@ window.SNW = window.SNW || {};
 // 033.util.template.js — SNW.Tpl (페이지 HTML 템플릿)
 // Layer 1 (유틸) — SNW.C, SNW.DomUtil 참조
 // =========================================================
-/* ---- 033.util.template.js ---- */
 window.SNW = window.SNW || {};
 (function(SNW) {
     'use strict';
@@ -1497,6 +1518,9 @@ window.SNW = window.SNW || {};
     SNW.Tpl = {
         tpl,
         
+        // =========================================================
+        // 1. Dashboard (바람 스타일 선택 UI 추가됨)
+        // =========================================================
         dashboard() {
             return tpl`
                 <div class="snw-dashboard">
@@ -1527,24 +1551,43 @@ window.SNW = window.SNW || {};
                         <div class="snw-kv"><span data-i18n="dashboard.prof">프로필</span><b data-slot="prof-name">-</b></div>
                         <div class="snw-kv"><span>AutoOff</span><b data-slot="autooff">-</b></div>
                     </section>
+                    
                     <section class="snw-card snw-card--power">
                         <h2 data-i18n="dashboard.powerTitle">전원 제어</h2>
                         <div data-slot="power" class="snw-power-slot"></div>
                     </section>
+                    
                     <section class="snw-card snw-card--sensor">
                         <h2 data-i18n="dashboard.sensorTitle">센서</h2>
                         <div data-slot="sensors"></div>
                     </section>
+                    
                     <section class="snw-card snw-card--preset">
                         <h2 data-i18n="dashboard.presetTitle">프리셋 선택</h2>
                         <div data-slot="presets"></div>
+                        
+                        <!-- [신규] 바람 스타일 선택 UI (백엔드 Enum 매핑) -->
+                        <div style="margin-top:16px;">
+                            <h3 style="margin-bottom:8px; font-size:12px; color:var(--snw-text-dim);" data-i18n="dashboard.styleTitle">바람 스타일</h3>
+                            <div class="snw-style-selector" id="style-selector">
+                                <button type="button" class="snw-style-btn" data-style="BALANCE">자연풍</button>
+                                <button type="button" class="snw-style-btn" data-style="ACTIVE">돌풍</button>
+                                <button type="button" class="snw-style-btn" data-style="RELAX">산들바람</button>
+                                <button type="button" class="snw-style-btn" data-style="FOCUS">주기풍</button>
+                            </div>
+                        </div>
                     </section>
+                    
                     <section class="snw-card snw-card--slider">
                         <h2 data-i18n="dashboard.intensityTitle">강도 조절</h2>
                         <div data-slot="intensity"></div>
                     </section>
                 </div>`;
         },
+        
+        // =========================================================
+        // 2. Chart
+        // =========================================================
         chart() {
             return tpl`
                 <section class="snw-card">
@@ -1560,21 +1603,26 @@ window.SNW = window.SNW || {};
                     <div data-slot="chart" class="snw-chart-area"></div>
                 </section>`;
         },
+        
+        // =========================================================
+        // 3. Settings (form-container 슬롯 추가됨)
+        // =========================================================
         settings() {
             return tpl`
                 <section class="snw-card">
                     <h2 data-i18n="settings.title">시스템 설정</h2>
                     
-                    <div data-slot="form-log"></div>
+                    <!-- 탭 및 폼 콘텐츠가 이곳에 동적 삽입됨 -->
+                    <div data-slot="form-container"></div>
                     
-                    <div data-slot="form-ws"></div>
-                    
-                    <div data-slot="form-hw"></div>
-                    
-                    <!-- [P0-3] Sticky 액션 바는 _loadSystem에서 채움 -->
+                    <!-- 하단 Sticky 저장 바 (240.page.settings.js에서 채움) -->
                     <div data-slot="action-bar"></div>
                 </section>`;
         },
+        
+        // =========================================================
+        // 4. Simulation
+        // =========================================================
         simulation() {
             return tpl`
                 <section class="snw-card">
@@ -1582,12 +1630,32 @@ window.SNW = window.SNW || {};
                     <div data-slot="form" class="snw-form" data-i18n="common.loading">로딩 중...</div>
                 </section>`;
         },
+        
+        // =========================================================
+        // 5. Schedule
+        // =========================================================
         schedule() {
-            return tpl`<section class="snw-card"><h2 data-i18n="scheduler.title">스케줄 예약</h2><div data-slot="list"></div></section>`;
+            return tpl`
+                <section class="snw-card">
+                    <h2 data-i18n="scheduler.title">스케줄 예약</h2>
+                    <div data-slot="list"></div>
+                </section>`;
         },
+        
+        // =========================================================
+        // 6. Profiles
+        // =========================================================
         profiles() {
-            return tpl`<section class="snw-card"><h2 data-i18n="profile.title">사용자 프로필</h2><div data-slot="list"></div></section>`;
+            return tpl`
+                <section class="snw-card">
+                    <h2 data-i18n="profile.title">사용자 프로필</h2>
+                    <div data-slot="list"></div>
+                </section>`;
         },
+        
+        // =========================================================
+        // 7. Network
+        // =========================================================
         network() {
             return tpl`
             <div style="display:flex;flex-direction:column;gap:16px;">
@@ -1605,6 +1673,10 @@ window.SNW = window.SNW || {};
                 </section>
             </div>`;
         },
+        
+        // =========================================================
+        // 8. Sensors
+        // =========================================================
         sensors() {
             return tpl`
             <div style="display:flex;flex-direction:column;gap:16px;">
@@ -1623,6 +1695,10 @@ window.SNW = window.SNW || {};
                 </section>
             </div>`;
         },
+        
+        // =========================================================
+        // 9. Diagnostics
+        // =========================================================
         diagnostics() {
             return tpl`
                 <section class="snw-card">
@@ -1634,20 +1710,60 @@ window.SNW = window.SNW || {};
                     </div>
                 </section>`;
         },
+        
+        // =========================================================
+        // 10. Logs
+        // =========================================================
         logs() {
-            return tpl`<section class="snw-card"><h2 data-i18n="nav.logs">시스템 로그</h2><div data-slot="log"></div></section>`;
+            return tpl`
+                <section class="snw-card">
+                    <h2 data-i18n="nav.logs">시스템 로그</h2>
+                    <div data-slot="log"></div>
+                </section>`;
         },
+        
+        // =========================================================
+        // 11. Firmware
+        // =========================================================
         firmware() {
-            return tpl`<section class="snw-card"><h2 data-i18n="firmware.title">펌웨어 관리</h2><div data-slot="form"></div></section>`;
+            return tpl`
+                <section class="snw-card">
+                    <h2 data-i18n="firmware.title">펌웨어 관리</h2>
+                    <div data-slot="form"></div>
+                </section>`;
         },
+        
+        // =========================================================
+        // 12. AI
+        // =========================================================
         ai() {
-            return tpl`<section class="snw-card"><h2 data-i18n="ai.title">AI 어시스턴트</h2><div data-slot="chat"></div></section>`;
+            return tpl`
+                <section class="snw-card">
+                    <h2 data-i18n="ai.title">AI 어시스턴트</h2>
+                    <div data-slot="chat"></div>
+                </section>`;
         },
+        
+        // =========================================================
+        // 13. Info
+        // =========================================================
         info() {
-            return tpl`<section class="snw-card"><h2 data-i18n="nav.info">정보</h2><div data-slot="panel"></div></section>`;
+            return tpl`
+                <section class="snw-card">
+                    <h2 data-i18n="nav.info">정보</h2>
+                    <div data-slot="panel"></div>
+                </section>`;
         },
+        
+        // =========================================================
+        // 14. WindProfile
+        // =========================================================
         windprofile() {
-            return tpl`<section class="snw-card"><h2 data-i18n="windprofile.title">바람 프리셋 관리</h2><div data-slot="list"></div></section>`;
+            return tpl`
+                <section class="snw-card">
+                    <h2 data-i18n="windprofile.title">바람 프리셋 관리</h2>
+                    <div data-slot="list"></div>
+                </section>`;
         }
     };
 })(window.SNW);
@@ -2557,6 +2673,12 @@ window.SNW = window.SNW || {};
             document.querySelectorAll('#nav-menu a[data-route]').forEach(a => {
                 a.classList.toggle('is-active', a.getAttribute('data-route') === path);
             });
+            
+            // 하단 탭 바 active 동기화 추가
+            document.querySelectorAll('.snw-bottom-nav__item').forEach(a => {
+                a.classList.toggle('is-active', a.getAttribute('data-route') === path);
+            });
+
         } catch (e) {
             SNW.ErrorHandler.handle(e, `page.${ROUTES[parseHash()]?.page || 'unknown'}`);
             _showError(document.getElementById('snw-main'), SNW.I18n.t('msg.unknown'));
@@ -3497,6 +3619,40 @@ SNW.Page = SNW.Page || {};
                 items: [], selected: '',
                 onSelect: code => this._onPresetSelect(code)
             });
+            
+            // 스타일 선택 이벤트 바인딩 추가
+            this._bindStyleSelector();
+        }
+
+        _bindStyleSelector() {
+            const selector = this.el.querySelector('#style-selector');
+            if (!selector) return;
+            
+            selector.addEventListener('click', async (e) => {
+                const btn = e.target.closest('.snw-style-btn');
+                if (!btn) return;
+                
+                const newStyle = btn.getAttribute('data-style');
+                const currentSim = SNW.Store.get().sim || {};
+                if (currentSim.styleCode === newStyle) return;
+                
+                // UI 즉시 반영
+                this._updateStyleUI(newStyle);
+                
+                try {
+                    await SNW.Api.patchSim({ styleCode: newStyle });
+                } catch (err) {
+                    SNW.ErrorHandler.handle(err, 'dashboard.style');
+                    // 실패 시 원복
+                    this._updateStyleUI(currentSim.styleCode);
+                }
+            });
+        }
+        
+        _updateStyleUI(styleCode) {
+            this.el.querySelectorAll('.snw-style-btn').forEach(btn => {
+                btn.classList.toggle('is-active', btn.getAttribute('data-style') === styleCode);
+            });
         }
         
         // =========================================================
@@ -3632,6 +3788,8 @@ SNW.Page = SNW.Page || {};
                     this.components.gauge.set(sim.pwmDuty != null ? sim.pwmDuty : 0);
                     if (sim.intensity != null) this.components.slider.set(sim.intensity);
                     if (sim.presetCode) this.components.presets.setSelected(sim.presetCode);
+                    
+                    if (sim.styleCode) this._updateStyleUI(sim.styleCode);
                 }),
                 
                 // [O-1][O-15] control 구독 — 배너 갱신
@@ -3852,6 +4010,7 @@ SNW.Page = SNW.Page || {};
         }
     };
 })(window.SNW);
+
 
 
 
@@ -4178,75 +4337,80 @@ SNW.Page = SNW.Page || {};
                 </label>`;
             });
             daysHtml += `</div></div>`;
-
+            
             content.innerHTML = `
                 <div class="snw-form">
-                    <div class="snw-form-row">
-                        <label>${t('schedule.name', '이름')}</label>
-                        <input type="text" id="sch-name" value="${SNW.DomUtil.escape(s.name)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;">${t('schedule.startTime', '시작')}
-                            <input type="time" id="sch-start" value="${s.period?.startTime || '08:00'}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                        <label style="flex:1;">${t('schedule.endTime', '종료')}
-                            <input type="time" id="sch-end" value="${s.period?.endTime || '20:00'}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-                    ${daysHtml}
-                    <div class="snw-form-row" style="display:flex;gap:8px;margin-top:8px;">
-                        <label style="flex:1;font-size:12px;">${t('schedule.segmentRepeat', '세그먼트 반복')}
-                            <input type="checkbox" id="sch-repeat" ${s.repeatSegments ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;font-size:12px;">${t('schedule.repeatCount', '반복 횟수 (0=무한)')}
-                            <input type="number" id="sch-repeat-count" min="0" value="${s.repeatCount}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
+                    <details class="snw-accordion" open>
+                        <summary>${SNW.I18n.t('schedule.secBasic')}</summary>
+                        <div class="snw-accordion__content">
+                            <div class="snw-form-row">
+                                <label>${SNW.I18n.t('schedule.name')}</label>
+                                <input type="text" id="sch-name" value="${SNW.DomUtil.escape(s.name)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;">${SNW.I18n.t('schedule.startTime')}
+                                    <input type="time" id="sch-start" value="${s.period?.startTime || '08:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                                <label style="flex:1;">${SNW.I18n.t('schedule.endTime')}
+                                    <input type="time" id="sch-end" value="${s.period?.endTime || '20:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                            ${daysHtml}
+                            <div class="snw-form-row" style="display:flex;gap:8px;margin-top:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.segmentRepeat')}
+                                    <input type="checkbox" id="sch-repeat" ${s.repeatSegments ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.repeatCount')}
+                                    <input type="number" id="sch-repeat-count" min="0" value="${s.repeatCount}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                        </div>
+                    </details>
 
-                    <h3 style="margin-top:12px;font-size:14px;">${t('schedule.segmentsTitle', '세그먼트')}</h3>
-                    <div id="sch-segs" style="display:flex;flex-direction:column;gap:8px;"></div>
-                    <button type="button" class="snw-btn" id="btn-add-seg" style="margin-top:8px;">
-                        ${t('schedule.addSegmentBtn', '+ 세그먼트 추가')}
-                    </button>
+                    <details class="snw-accordion" open>
+                        <summary>${SNW.I18n.t('schedule.secSegments')}</summary>
+                        <div class="snw-accordion__content">
+                            <div id="sch-segs" style="display:flex;flex-direction:column;gap:8px;"></div>
+                            <button type="button" class="snw-btn" id="btn-add-seg" style="margin-top:8px;">
+                                ${SNW.I18n.t('schedule.addSegmentBtn')}
+                            </button>
+                        </div>
+                    </details>
 
-                    <h3 style="margin-top:12px;font-size:14px;">AutoOff & PIR</h3>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;">${t('profiles.autoOffTimer', '타이머(분)')}
-                            <input type="number" id="sch-ao-timer" min="0" value="${s.autoOff?.timer?.minutes || 0}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">${t('scheduler.scheduledOff', '예약 종료')}
-                            <input type="checkbox" id="sch-ao-offtime-en" ${s.autoOff?.offTime?.enabled ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;">${t('schedule.endTime', '종료 시각')}
-                            <input type="time" id="sch-ao-offtime" value="${s.autoOff?.offTime?.time || '00:00'}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">${t('scheduler.tempOff', '온도 종료')}
-                            <input type="checkbox" id="sch-ao-offtemp-en" ${s.autoOff?.offTemp?.enabled ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;">${t('dashboard.temp', '온도')}(°C)
-                            <input type="number" step="0.1" id="sch-ao-offtemp" value="${s.autoOff?.offTemp?.temp || 0}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">${t('sensors.pirEnabled', 'PIR 사용')}
-                            <input type="checkbox" id="sch-pir-en" ${s.motion?.pir?.enabled ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;">${t('sensors.pirHoldSec', 'PIR Hold(초)')}
-                            <input type="number" id="sch-pir-hold" min="0" value="${s.motion?.pir?.holdSec || 0}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
+                    <details class="snw-accordion">
+                        <summary>${SNW.I18n.t('schedule.secSmart')}</summary>
+                        <div class="snw-accordion__content">
+                            <div class="snw-form-row" style="display:flex;gap:8px; margin-top:8px;">
+                                <label style="flex:1;">${SNW.I18n.t('profiles.autoOffTimer')}
+                                    <input type="number" id="sch-ao-timer" min="0" value="${s.autoOff?.timer?.minutes || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.scheduledOff')}
+                                    <input type="checkbox" id="sch-ao-offtime-en" ${s.autoOff?.offTime?.enabled ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;">${SNW.I18n.t('schedule.endTime')}
+                                    <input type="time" id="sch-ao-offtime" value="${s.autoOff?.offTime?.time || '00:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.tempOff')}
+                                    <input type="checkbox" id="sch-ao-offtemp-en" ${s.autoOff?.offTemp?.enabled ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;">${SNW.I18n.t('dashboard.temp')}(°C)
+                                    <input type="number" step="0.1" id="sch-ao-offtemp" value="${s.autoOff?.offTemp?.temp || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('sensors.pirEnabled')}
+                                    <input type="checkbox" id="sch-pir-en" ${s.motion?.pir?.enabled ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;">${SNW.I18n.t('sensors.pirHoldSec')}
+                                    <input type="number" id="sch-pir-hold" min="0" value="${s.motion?.pir?.holdSec || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                        </div>
+                    </details>
                 </div>`;
 
             const segContainer = content.querySelector('#sch-segs');
@@ -4776,74 +4940,81 @@ SNW.Page = SNW.Page || {};
             };
 
             const content = document.createElement('div');
+
             content.innerHTML = `
                 <div class="snw-form">
-                    <div class="snw-form-row">
-                        <label>${SNW.I18n.t('profiles.name')}</label>
-                        <input type="text" id="prof-name" value="${SNW.DomUtil.escape(p.name)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;">${SNW.I18n.t('profiles.no')}
-                            <input type="number" id="prof-no" value="${p.profileNo}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                        <label style="flex:1;font-size:12px;">${SNW.I18n.t('profiles.enabled')}
-                            <input type="checkbox" id="prof-enabled" ${p.enabled ? 'checked' : ''}>
-                        </label>
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;margin-top:8px;">
-                        <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.segmentRepeat')}
-                            <input type="checkbox" id="prof-repeat" ${p.repeatSegments ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.repeatCount')}
-                            <input type="number" id="prof-repeat-count" min="0" value="${p.repeatCount}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-
-                    <h3 style="margin-top:12px;font-size:14px;">${SNW.I18n.t('profiles.segmentsTitle')}</h3>
-                    <div id="prof-segs" style="display:flex;flex-direction:column;gap:8px;"></div>
-                    <button type="button" class="snw-btn" id="btn-add-prof-seg" style="margin-top:8px;">
-                        ${SNW.I18n.t('profiles.addSegmentBtn')}
-                    </button>
-
-                    <h3 style="margin-top:12px;font-size:14px;">AutoOff & PIR</h3>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;">${SNW.I18n.t('profiles.autoOffTimer')}
-                            <input type="number" id="prof-ao-timer" min="0" value="${p.autoOff?.timer?.minutes || 0}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.scheduledOff')}
-                            <input type="checkbox" id="prof-ao-offtime-en" ${p.autoOff?.offTime?.enabled ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;">${SNW.I18n.t('schedule.endTime')}
-                            <input type="time" id="prof-ao-offtime" value="${p.autoOff?.offTime?.time || '00:00'}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.tempOff')}
-                            <input type="checkbox" id="prof-ao-offtemp-en" ${p.autoOff?.offTemp?.enabled ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;">${SNW.I18n.t('dashboard.temp')}(°C)
-                            <input type="number" step="0.1" id="prof-ao-offtemp" value="${p.autoOff?.offTemp?.temp || 0}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">${SNW.I18n.t('sensors.pirEnabled')}
-                            <input type="checkbox" id="prof-pir-en" ${p.motion?.pir?.enabled ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;">${SNW.I18n.t('sensors.pirHoldSec')}
-                            <input type="number" id="prof-pir-hold" min="0" value="${p.motion?.pir?.holdSec || 0}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
+                    <details class="snw-accordion" open>
+                        <summary>${SNW.I18n.t('schedule.secBasic')}</summary>
+                        <div class="snw-accordion__content">
+                            <div class="snw-form-row">
+                                <label>${SNW.I18n.t('profiles.name')}</label>
+                                <input type="text" id="prof-name" value="${SNW.DomUtil.escape(p.name)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;">${SNW.I18n.t('profiles.no')}
+                                    <input type="number" id="prof-no" value="${p.profileNo}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('profiles.enabled')}
+                                    <input type="checkbox" id="prof-enabled" ${p.enabled ? 'checked' : ''}>
+                                </label>
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;margin-top:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.segmentRepeat')}
+                                    <input type="checkbox" id="prof-repeat" ${p.repeatSegments ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.repeatCount')}
+                                    <input type="number" id="prof-repeat-count" min="0" value="${p.repeatCount}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                        </div>
+                    </details>
+            
+                    <details class="snw-accordion" open>
+                        <summary>${SNW.I18n.t('schedule.secSegments')}</summary>
+                        <div class="snw-accordion__content">
+                            <div id="prof-segs" style="display:flex;flex-direction:column;gap:8px;"></div>
+                            <button type="button" class="snw-btn" id="btn-add-prof-seg" style="margin-top:8px;">
+                                ${SNW.I18n.t('profiles.addSegmentBtn')}
+                            </button>
+                        </div>
+                    </details>
+            
+                    <details class="snw-accordion">
+                        <summary>${SNW.I18n.t('schedule.secSmart')}</summary>
+                        <div class="snw-accordion__content">
+                            <div class="snw-form-row" style="display:flex;gap:8px; margin-top:8px;">
+                                <label style="flex:1;">${SNW.I18n.t('profiles.autoOffTimer')}
+                                    <input type="number" id="prof-ao-timer" min="0" value="${p.autoOff?.timer?.minutes || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.scheduledOff')}
+                                    <input type="checkbox" id="prof-ao-offtime-en" ${p.autoOff?.offTime?.enabled ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;">${SNW.I18n.t('schedule.endTime')}
+                                    <input type="time" id="prof-ao-offtime" value="${p.autoOff?.offTime?.time || '00:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.tempOff')}
+                                    <input type="checkbox" id="prof-ao-offtemp-en" ${p.autoOff?.offTemp?.enabled ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;">${SNW.I18n.t('dashboard.temp')}(°C)
+                                    <input type="number" step="0.1" id="prof-ao-offtemp" value="${p.autoOff?.offTemp?.temp || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('sensors.pirEnabled')}
+                                    <input type="checkbox" id="prof-pir-en" ${p.motion?.pir?.enabled ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;">${SNW.I18n.t('sensors.pirHoldSec')}
+                                    <input type="number" id="prof-pir-hold" min="0" value="${p.motion?.pir?.holdSec || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                        </div>
+                    </details>
                 </div>`;
-
+    
             const segContainer = content.querySelector('#prof-segs');
             const currentSegs = JSON.parse(JSON.stringify(p.segments || []));
 
@@ -5034,6 +5205,7 @@ SNW.Page = SNW.Page || {};
 // =========================================================
 // 240.page.settings.js — SNW.Page.Settings
 // Layer 4 (페이지 로직)
+// [1순위 개선] 서브 탭 (일반/보안, 하드웨어, 통신/WS) 도입
 // [P0-2] 섹션 헤더 i18n, [P0-3] Sticky 저장 바
 // [O-4] 자동 재적용, [O-9] 공장 초기화 강화, [O-11] API Key 보안
 // [O-18] 범위 힌트 + 클라이언트 검증
@@ -5043,10 +5215,12 @@ SNW.Page = SNW.Page || {};
 (function (SNW) {
     'use strict';
 
+    // [NEW-C1] null/undefined만 폴백 (0, '', false는 보존)
     function nz(v, fallback) {
         return (v === null || v === undefined) ? fallback : v;
     }
 
+    // [NEW-U4] 명시적 bool 판정 ("false" 문자열 방어)
     function asBool(v) {
         return v === true || v === 1 || v === '1' || v === 'true';
     }
@@ -5056,6 +5230,7 @@ SNW.Page = SNW.Page || {};
             this.el = container;
             this._active = true;
             this._wsChBaseline = [];
+            this._currentTab = 'general';
         }
 
         async mount() {
@@ -5066,16 +5241,42 @@ SNW.Page = SNW.Page || {};
             await this._loadSystem();
             if (!this._active) return;
 
-            SNW.DomUtil.delegate(this.el, '[data-action="save"]',          'click', () => this._onSave());
-            SNW.DomUtil.delegate(this.el, '[data-action="reload"]',        'click', () => this._onReload());
-            SNW.DomUtil.delegate(this.el, '[data-action="test-api"]',      'click', () => this._onTestApi());
+            // 액션 이벤트 바인딩 (저장, 재적용, 테스트, 초기화)
+            SNW.DomUtil.delegate(this.el, '[data-action="save"]', 'click', () => this._onSave());
+            SNW.DomUtil.delegate(this.el, '[data-action="reload"]', 'click', () => this._onReload());
+            SNW.DomUtil.delegate(this.el, '[data-action="test-api"]', 'click', () => this._onTestApi());
             SNW.DomUtil.delegate(this.el, '[data-action="factory-reset"]', 'click', () => this._onFactoryReset());
         }
 
         unmount() { this._active = false; }
 
         // =========================================================
-        // _loadSystem : 폼 렌더
+        // 탭 제어 로직
+        // =========================================================
+        _bindTabs() {
+            const tabsContainer = this.el.querySelector('.snw-tabs');
+            if (!tabsContainer) return;
+
+            // 기존 이벤트 리스너 제거를 위해 cloneNode 사용 (중복 방지)
+            const newTabs = tabsContainer.cloneNode(true);
+            tabsContainer.parentNode.replaceChild(newTabs, tabsContainer);
+
+            newTabs.addEventListener('click', (e) => {
+                const btn = e.target.closest('.snw-tab-btn');
+                if (!btn) return;
+
+                const target = btn.getAttribute('data-tab');
+                this._currentTab = target;
+
+                // 버튼 활성화
+                this.el.querySelectorAll('.snw-tab-btn').forEach(b => b.classList.toggle('is-active', b === btn));
+                // 콘텐츠 활성화
+                this.el.querySelectorAll('.snw-tab-content').forEach(c => c.classList.toggle('is-active', c.getAttribute('data-tab-content') === target));
+            });
+        }
+
+        // =========================================================
+        // _loadSystem : 데이터 로드 및 탭 UI 렌더링
         // =========================================================
         async _loadSystem() {
             try {
@@ -5095,9 +5296,37 @@ SNW.Page = SNW.Page || {};
                 const apiKeySet    = typeof sec.apiKey       === 'string' && sec.apiKey.length       > 0;
                 const geminiKeySet = typeof sec.geminiApiKey === 'string' && sec.geminiApiKey.length > 0;
 
-                // ---------- 1. Meta + Logging + Security ----------
-                const logSlot = this.el.querySelector('[data-slot="form-log"]');
-                if (!logSlot) return;
+                // 탭 컨테이너 렌더링
+                const formContainer = this.el.querySelector('[data-slot="form-container"]');
+                if (!formContainer) return;
+
+                formContainer.innerHTML = `
+                    <div class="snw-tabs">
+                        <button type="button" class="snw-tab-btn is-active" data-tab="general">${T('settings.tabGeneral')}</button>
+                        <button type="button" class="snw-tab-btn" data-tab="hardware">${T('settings.tabHardware')}</button>
+                        <button type="button" class="snw-tab-btn" data-tab="comm">${T('settings.tabComm')}</button>
+                    </div>
+
+                    <!-- 탭 1: 일반/보안 -->
+                    <div class="snw-tab-content is-active" data-tab-content="general">
+                        <div data-slot="form-log"></div>
+                    </div>
+
+                    <!-- 탭 2: 하드웨어 -->
+                    <div class="snw-tab-content" data-tab-content="hardware">
+                        <div data-slot="form-hw"></div>
+                    </div>
+
+                    <!-- 탭 3: 통신/WS -->
+                    <div class="snw-tab-content" data-tab-content="comm">
+                        <div data-slot="form-ws"></div>
+                    </div>
+                `;
+
+                this._bindTabs();
+
+                // ---------- 1. 일반 / 보안 탭 ----------
+                const logSlot = formContainer.querySelector('[data-slot="form-log"]');
                 logSlot.innerHTML = `
                     <h3 class="snw-form-section">${T('settings.secMeta')}</h3>
                     <div class="snw-form-row">
@@ -5121,16 +5350,11 @@ SNW.Page = SNW.Page || {};
                                style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                         <small class="snw-form-row__hint">${T('settings.fieldRange', {min:10, max:1000})}</small>
                     </div>
-
                     <div class="snw-form-row">
                         <label>API Key ${apiKeySet
                             ? `<span style="color:var(--snw-success);font-size:11px;">${T('settings.configured')}</span>`
                             : `<span style="color:var(--snw-text-dim);font-size:11px;">${T('settings.notConfigured')}</span>`}</label>
-                        <input type="password" id="api-key" value=""
-                               autocomplete="off"
-                               data-lpignore="true"
-                               data-1p-ignore="true"
-                               spellcheck="false"
+                        <input type="password" id="api-key" value="" autocomplete="off" data-lpignore="true" data-1p-ignore="true" spellcheck="false"
                                placeholder="${apiKeySet ? T('settings.keyPlaceholderChange') : T('settings.keyPlaceholderInput')}"
                                style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                         <label style="font-size:11px;margin-top:4px;">
@@ -5138,16 +5362,11 @@ SNW.Page = SNW.Page || {};
                             <span style="color:var(--snw-error);">${T('settings.deleteApiKey')}</span>
                         </label>
                     </div>
-
                     <div class="snw-form-row">
                         <label>Gemini API Key ${geminiKeySet
                             ? `<span style="color:var(--snw-success);font-size:11px;">${T('settings.configured')}</span>`
                             : `<span style="color:var(--snw-text-dim);font-size:11px;">${T('settings.notConfigured')}</span>`}</label>
-                        <input type="password" id="gemini-key" value=""
-                               autocomplete="off"
-                               data-lpignore="true"
-                               data-1p-ignore="true"
-                               spellcheck="false"
+                        <input type="password" id="gemini-key" value="" autocomplete="off" data-lpignore="true" data-1p-ignore="true" spellcheck="false"
                                placeholder="${geminiKeySet ? T('settings.keyPlaceholderChange') : T('settings.keyPlaceholderInput')}"
                                style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                         <label style="font-size:11px;margin-top:4px;">
@@ -5155,13 +5374,131 @@ SNW.Page = SNW.Page || {};
                             <span style="color:var(--snw-error);">${T('settings.deleteGeminiKey')}</span>
                         </label>
                     </div>
-
                     <div class="snw-toolbar">
                         <button type="button" class="snw-btn" data-action="test-api">${T('settings.testApiKey')}</button>
                     </div>
                 `;
 
-                // ---------- 2. WebSocket 채널 ----------
+                // ---------- 2. 하드웨어 탭 ----------
+                const pwm   = hw.fanPwm    || {};
+                const curve = hw.fanConfig || {};
+                const pir   = hw.pir       || {};
+                const dht   = hw.tempHum   || {};
+                const led   = hw.led       || {};
+
+                const _rangeHint = (min, max, rec) => {
+                    const range = T('settings.fieldRange', { min, max });
+                    return rec
+                        ? `<small class="snw-form-row__hint">${range} · ${T('settings.fieldRecommended', { range: rec })}</small>`
+                        : `<small class="snw-form-row__hint">${range}</small>`;
+                };
+
+                const hwSlot = formContainer.querySelector('[data-slot="form-hw"]');
+                hwSlot.innerHTML = `
+                    <h3 class="snw-form-section">${T('settings.secFanPwm')}</h3>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldPinPwm')}</label>
+                        <input type="number" id="hw-pwm-pin" min="0" max="48" value="${nz(pwm.pin, 6)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 48)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldChannel')}</label>
+                        <input type="number" id="hw-pwm-ch" min="0" max="15" value="${nz(pwm.channel, 0)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 15)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldFreq')}</label>
+                        <input type="number" id="hw-pwm-freq" min="1000" max="80000" value="${nz(pwm.freq, 25000)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(1000, 80000, '20000~30000')}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldRes')}</label>
+                        <input type="number" id="hw-pwm-res" min="1" max="16" value="${nz(pwm.res, 10)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(1, 16, '8~12')}
+                    </div>
+
+                    <h3 class="snw-form-section">${T('settings.secFanCurve')}</h3>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldStart')}</label>
+                        <input type="number" id="hw-fan-start" min="0" max="100" value="${nz(curve.startPercentMin, 18)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 100, '15~25')}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldComfortMin')}</label>
+                        <input type="number" id="hw-fan-cmin" min="0" max="100" value="${nz(curve.comfortPercentMin, 22)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 100)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldComfortMax')}</label>
+                        <input type="number" id="hw-fan-cmax" min="0" max="100" value="${nz(curve.comfortPercentMax, 65)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 100)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldHardMax')}</label>
+                        <input type="number" id="hw-fan-hmax" min="0" max="100" value="${nz(curve.hardPercentMax, 90)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 100)}
+                    </div>
+
+                    <h3 class="snw-form-section">${T('settings.secPir')}</h3>
+                    <div class="snw-form-row" style="flex-direction:row;gap:8px;align-items:center;">
+                        <input type="checkbox" id="hw-pir-enabled" ${asBool(pir.enabled) ? 'checked' : ''}>
+                        <label for="hw-pir-enabled" style="margin:0;">${T('settings.fieldEnabled')}</label>
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldPinPir')}</label>
+                        <input type="number" id="hw-pir-pin" min="0" max="48" value="${nz(pir.pin, 13)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 48)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldDebounce')}</label>
+                        <input type="number" id="hw-pir-debounce" min="0" max="60" value="${nz(pir.debounceSec, 5)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 60)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldHold')}</label>
+                        <input type="number" id="hw-pir-hold" min="0" max="3600" value="${nz(pir.holdSec, 120)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 3600, '60~300')}
+                    </div>
+
+                    <h3 class="snw-form-section">${T('settings.secDht')}</h3>
+                    <div class="snw-form-row" style="flex-direction:row;gap:8px;align-items:center;">
+                        <input type="checkbox" id="hw-dht-enabled" ${asBool(dht.enabled) ? 'checked' : ''}>
+                        <label for="hw-dht-enabled" style="margin:0;">${T('settings.fieldEnabled')}</label>
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldType')}</label>
+                        <input type="text" id="hw-dht-type" value="${esc(nz(dht.type, 'DHT22'))}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldPinDht')}</label>
+                        <input type="number" id="hw-dht-pin" min="0" max="48" value="${nz(dht.pin, 17)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 48)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldInterval')}</label>
+                        <input type="number" id="hw-dht-int" min="1" max="3600" value="${nz(dht.intervalSec, 30)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(1, 3600, '10~60')}
+                    </div>
+
+                    <h3 class="snw-form-section">${T('settings.secLed')}</h3>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldPinLed')}</label>
+                        <input type="number" id="hw-led-pin" min="0" max="48" value="${nz(led.pin, 48)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 48)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldNumPixels')}</label>
+                        <input type="number" id="hw-led-num" min="1" max="16" value="${nz(led.numPixels, 1)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(1, 16)}
+                    </div>
+                    <div class="snw-form-row">
+                        <label>${T('settings.fieldBrightness')}</label>
+                        <input type="number" id="hw-led-bright" min="0" max="255" value="${nz(led.defaultBrightness, 20)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        ${_rangeHint(0, 255, '20~80')}
+                    </div>
+                `;
+
+                // ---------- 3. 통신/WS 탭 ----------
                 const wsCh = (Array.isArray(ws.wsChConfig) && ws.wsChConfig.length > 0)
                     ? ws.wsChConfig
                     : [
@@ -5182,174 +5519,28 @@ SNW.Page = SNW.Page || {};
                     wsHtml += `
                         <div style="display:flex;gap:8px;margin-bottom:4px;align-items:center;font-size:12px;">
                             <span style="width:70px;color:var(--snw-text-dim);">${esc(ch.chName || ('ch' + idx))}</span>
-                            <input type="number" value="${nz(ch.chIntervalMs, 1000)}" placeholder="Interval(ms)"
-                                   style="flex:1;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"
-                                   data-ws-itv="${idx}">
-                            <input type="number" value="${nz(ch.priority, 0)}" placeholder="Priority"
-                                   style="flex:1;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);"
-                                   data-ws-prio="${idx}">
+                            <input type="number" value="${nz(ch.chIntervalMs, 1000)}" placeholder="Interval(ms)" style="flex:1;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);" data-ws-itv="${idx}">
+                            <input type="number" value="${nz(ch.priority, 0)}" placeholder="Priority" style="flex:1;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);" data-ws-prio="${idx}">
                         </div>
                     `;
                 });
                 wsHtml += `
-                    <div class="snw-form-row">
+                    <div class="snw-form-row" style="margin-top:12px;">
                         <label>Chart Large Bytes</label>
-                        <input type="number" id="ws-chartLarge" value="${nz(wsEtc.chartLargeBytes, 3500)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        <input type="number" id="ws-chartLarge" value="${nz(wsEtc.chartLargeBytes, 3500)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                     </div>
                     <div class="snw-form-row">
                         <label>Chart Throttle Mul</label>
-                        <input type="number" id="ws-chartThrottle" value="${nz(wsEtc.chartThrottleMul, 2)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        <input type="number" id="ws-chartThrottle" value="${nz(wsEtc.chartThrottleMul, 2)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                     </div>
                     <div class="snw-form-row">
                         <label>WS Cleanup (ms)</label>
-                        <input type="number" id="ws-cleanup" value="${nz(wsEtc.wsCleanupMs, 10000)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        <input type="number" id="ws-cleanup" value="${nz(wsEtc.wsCleanupMs, 10000)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                     </div>
                 `;
-                const wsSlot = this.el.querySelector('[data-slot="form-ws"]');
-                if (wsSlot) wsSlot.innerHTML = wsHtml;
+                formContainer.querySelector('[data-slot="form-ws"]').innerHTML = wsHtml;
 
-                // ---------- 3. 하드웨어 (P0-2 + O-18) ----------
-                const pwm   = hw.fanPwm    || {};
-                const curve = hw.fanConfig || {};
-                const pir   = hw.pir       || {};
-                const dht   = hw.tempHum   || {};
-                const led   = hw.led       || {};
-
-                const hwSlot = this.el.querySelector('[data-slot="form-hw"]');
-                if (!hwSlot) return;
-
-                const _rangeHint = (min, max, rec) => {
-                    const range = T('settings.fieldRange', { min, max });
-                    return rec
-                        ? `<small class="snw-form-row__hint">${range} · ${T('settings.fieldRecommended', { range: rec })}</small>`
-                        : `<small class="snw-form-row__hint">${range}</small>`;
-                };
-
-                hwSlot.innerHTML = `
-                    <h3 class="snw-form-section">${T('settings.secFanPwm')}</h3>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldPinPwm')}</label>
-                        <input type="number" id="hw-pwm-pin" min="0" max="48" value="${nz(pwm.pin, 6)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 48)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldChannel')}</label>
-                        <input type="number" id="hw-pwm-ch" min="0" max="15" value="${nz(pwm.channel, 0)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 15)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldFreq')}</label>
-                        <input type="number" id="hw-pwm-freq" min="1000" max="80000" value="${nz(pwm.freq, 25000)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(1000, 80000, '20000~30000')}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldRes')}</label>
-                        <input type="number" id="hw-pwm-res" min="1" max="16" value="${nz(pwm.res, 10)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(1, 16, '8~12')}
-                    </div>
-
-                    <h3 class="snw-form-section">${T('settings.secFanCurve')}</h3>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldStart')}</label>
-                        <input type="number" id="hw-fan-start" min="0" max="100" value="${nz(curve.startPercentMin, 18)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 100, '15~25')}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldComfortMin')}</label>
-                        <input type="number" id="hw-fan-cmin" min="0" max="100" value="${nz(curve.comfortPercentMin, 22)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 100)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldComfortMax')}</label>
-                        <input type="number" id="hw-fan-cmax" min="0" max="100" value="${nz(curve.comfortPercentMax, 65)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 100)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldHardMax')}</label>
-                        <input type="number" id="hw-fan-hmax" min="0" max="100" value="${nz(curve.hardPercentMax, 90)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 100)}
-                    </div>
-
-                    <h3 class="snw-form-section">${T('settings.secPir')}</h3>
-                    <div class="snw-form-row" style="flex-direction:row;gap:8px;align-items:center;">
-                        <input type="checkbox" id="hw-pir-enabled" ${asBool(pir.enabled) ? 'checked' : ''}>
-                        <label for="hw-pir-enabled" style="margin:0;">${T('settings.fieldEnabled')}</label>
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldPinPir')}</label>
-                        <input type="number" id="hw-pir-pin" min="0" max="48" value="${nz(pir.pin, 13)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 48)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldDebounce')}</label>
-                        <input type="number" id="hw-pir-debounce" min="0" max="60" value="${nz(pir.debounceSec, 5)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 60)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldHold')}</label>
-                        <input type="number" id="hw-pir-hold" min="0" max="3600" value="${nz(pir.holdSec, 120)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 3600, '60~300')}
-                    </div>
-
-                    <h3 class="snw-form-section">${T('settings.secDht')}</h3>
-                    <div class="snw-form-row" style="flex-direction:row;gap:8px;align-items:center;">
-                        <input type="checkbox" id="hw-dht-enabled" ${asBool(dht.enabled) ? 'checked' : ''}>
-                        <label for="hw-dht-enabled" style="margin:0;">${T('settings.fieldEnabled')}</label>
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldType')}</label>
-                        <input type="text" id="hw-dht-type" value="${esc(nz(dht.type, 'DHT22'))}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldPinDht')}</label>
-                        <input type="number" id="hw-dht-pin" min="0" max="48" value="${nz(dht.pin, 17)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 48)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldInterval')}</label>
-                        <input type="number" id="hw-dht-int" min="1" max="3600" value="${nz(dht.intervalSec, 30)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(1, 3600, '10~60')}
-                    </div>
-
-                    <h3 class="snw-form-section">${T('settings.secLed')}</h3>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldPinLed')}</label>
-                        <input type="number" id="hw-led-pin" min="0" max="48" value="${nz(led.pin, 48)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 48)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldNumPixels')}</label>
-                        <input type="number" id="hw-led-num" min="1" max="16" value="${nz(led.numPixels, 1)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(1, 16)}
-                    </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldBrightness')}</label>
-                        <input type="number" id="hw-led-bright" min="0" max="255" value="${nz(led.defaultBrightness, 20)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 255, '20~80')}
-                    </div>
-                `;
-
-                // [P0-3] Sticky action bar
+                // ---------- 하단 Sticky 액션 바 ----------
                 const actionBar = this.el.querySelector('[data-slot="action-bar"]');
                 if (actionBar) {
                     actionBar.innerHTML = `
@@ -5370,7 +5561,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [O-4][O-18] 저장 — 클라이언트 검증 + 자동 재적용
+        // _onSave : 저장 (탭에 상관없이 모든 input 값을 수집)
         // =========================================================
         async _onSave() {
             const q = sel => this.el.querySelector(sel);
@@ -5405,7 +5596,7 @@ SNW.Page = SNW.Page || {};
                 return;
             }
 
-            // API Key 처리
+            // 보안 (API Key) 처리
             const apiKeyVal      = q('#api-key')         ? q('#api-key').value.trim()      : '';
             const geminiKeyVal   = q('#gemini-key')      ? q('#gemini-key').value.trim()   : '';
             const clearApiKey    = q('#clear-api-key')   ? q('#clear-api-key').checked     : false;
@@ -5417,7 +5608,7 @@ SNW.Page = SNW.Page || {};
             if (clearGeminiKey)           securityPatch.clearGeminiApiKey = true;
             else if (geminiKeyVal.length) securityPatch.geminiApiKey = geminiKeyVal;
 
-            // WS 채널 수집
+            // WS 채널 처리
             const wsChArr = [];
             const seenIdx = new Set();
             this.el.querySelectorAll('[data-ws-itv]').forEach(el => {
@@ -5434,14 +5625,12 @@ SNW.Page = SNW.Page || {};
             });
             this._wsChBaseline.forEach(b => {
                 if (!seenIdx.has(b.chIdx)) {
-                    wsChArr.push({
-                        chIdx: b.chIdx, chName: b.chName,
-                        chIntervalMs: 1000, priority: 0
-                    });
+                    wsChArr.push({ chIdx: b.chIdx, chName: b.chName, chIntervalMs: 1000, priority: 0 });
                 }
             });
             wsChArr.sort((a, b) => a.chIdx - b.chIdx);
 
+            // 페이로드 구성
             const patch = {
                 meta: { deviceName: q('#meta-deviceName').value },
                 system: {
@@ -5496,7 +5685,6 @@ SNW.Page = SNW.Page || {};
                 await SNW.Api.patchSystem(patch);
                 await SNW.Api.saveConfig();
 
-                // [O-4] 자동 재적용
                 const autoReload = q('#save-and-reload') ? q('#save-and-reload').checked : false;
                 if (autoReload && !window.SNW_OFFLINE) {
                     await SNW.Api.reload();
@@ -5512,7 +5700,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [O-4] 재적용 — dirty 경고
+        // _onReload : 재적용 (dirty 경고 포함)
         // =========================================================
         async _onReload() {
             try {
@@ -5562,6 +5750,9 @@ SNW.Page = SNW.Page || {};
             }
         }
 
+        // =========================================================
+        // _onTestApi : 저장된 API Key로 테스트
+        // =========================================================
         async _onTestApi() {
             try {
                 await SNW.Api.getState();
@@ -5572,7 +5763,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [O-9] 공장 초기화 강화
+        // _onFactoryReset : 공장 초기화 (확인 단어 입력)
         // =========================================================
         async _onFactoryReset() {
             const content = document.createElement('div');
@@ -5616,7 +5807,6 @@ SNW.Page = SNW.Page || {};
         }
     };
 })(window.SNW);
-
 
 
 /* ---- 245.page.simulation.js (7232 bytes) ---- */

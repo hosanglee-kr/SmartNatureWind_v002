@@ -401,3 +401,99 @@
     display: flex; justify-content: space-between; align-items: center;
     width: 100%; text-align: left; padding: 12px 16px;
 }
+
+
+/* =====================================================
+ * 1. 대시보드 바람 스타일 선택 세그먼트 버튼
+ * ===================================================== */
+.snw-style-selector {
+    display: flex;
+    gap: 4px;
+    margin-top: 12px;
+    background: var(--snw-surface-2);
+    padding: 4px;
+    border-radius: var(--snw-radius);
+}
+.snw-style-btn {
+    flex: 1;
+    padding: 8px 4px;
+    font-size: 11px;
+    text-align: center;
+    background: transparent;
+    border: none;
+    border-radius: var(--snw-radius-sm);
+    color: var(--snw-text-dim);
+    cursor: pointer;
+    transition: all var(--snw-transition);
+}
+.snw-style-btn.is-active {
+    background: var(--snw-surface);
+    color: var(--snw-primary);
+    font-weight: 600;
+    box-shadow: var(--snw-shadow-sm);
+}
+.snw-style-btn:active { transform: scale(0.95); }
+
+/* =====================================================
+ * 2. 설정 페이지 서브 탭
+ * ===================================================== */
+.snw-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--snw-border);
+    margin-bottom: var(--snw-spacing-lg);
+    overflow-x: auto;
+    white-space: nowrap;
+}
+.snw-tabs::-webkit-scrollbar { display: none; }
+.snw-tab-btn {
+    padding: 10px 16px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--snw-text-dim);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+}
+.snw-tab-btn.is-active {
+    color: var(--snw-primary);
+    border-bottom-color: var(--snw-primary);
+}
+.snw-tab-content { display: none; }
+.snw-tab-content.is-active { display: block; }
+
+/* =====================================================
+ * 3. 모달 아코디언 (details/summary)
+ * ===================================================== */
+.snw-accordion {
+    border: 1px solid var(--snw-border);
+    border-radius: var(--snw-radius);
+    margin-bottom: 8px;
+    background: var(--snw-surface-2);
+    overflow: hidden;
+}
+.snw-accordion > summary {
+    padding: 12px;
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--snw-text);
+    cursor: pointer;
+    list-style: none; /* 기본 화살표 제거 */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.snw-accordion > summary::-webkit-details-marker { display: none; }
+.snw-accordion > summary::after {
+    content: "▼";
+    font-size: 10px;
+    color: var(--snw-text-faint);
+    transition: transform 0.2s;
+}
+.snw-accordion[open] > summary::after {
+    transform: rotate(180deg);
+}
+.snw-accordion__content {
+    padding: 0 12px 12px;
+    border-top: 1px solid var(--snw-border);
+}

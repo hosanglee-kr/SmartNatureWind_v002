@@ -1,7 +1,11 @@
 /*
  * ------------------------------------------------------
  * 소스명   : _layout.css
- * 기능 요약: 앱 Shell, 반응형, 사이드바 + 오버레이(display 제어)
+ * 레이어   : CSS
+ * 기능 요약:
+ *  - 앱 Shell 레이아웃 (Header/Sidebar/Main/Footer)
+ *  - 모바일 하단 탭 바 (Bottom Navigation) 및 반응형 대응
+ *  - 사이드바 오버레이(Dim) 및 데스크톱/모바일 레이아웃 분기
  * ------------------------------------------------------
  */
 
@@ -20,7 +24,9 @@ body {
     min-height: 100dvh;
 }
 
-/* Header */
+/* =====================================================
+ * Header
+ * ===================================================== */
 .snw-header {
     grid-row: 1;
     display: flex;
@@ -56,7 +62,8 @@ body {
 .snw-btn-icon:hover { background: var(--snw-surface-2); }
 
 /* =====================================================
- * Sidebar (display: none/block 으로 확실하게 제어)
+ * Sidebar & Overlay
+ * (JS와의 충돌을 막기 위해 display: none/block 으로 확실하게 제어)
  * ===================================================== */
 .snw-sidebar {
     position: fixed;
@@ -68,17 +75,15 @@ body {
     border-right: 1px solid var(--snw-border);
     overflow-y: auto;
     z-index: 1050;
-    display: none; /* 기본: 완전히 숨김 */
+    display: none; /* 기본: 숨김 */
 }
 
-/* body에 snw-sidebar-open 클래스가 붙으면 보임 */
+/* 사이드바 열림 상태 */
 body.snw-sidebar-open .snw-sidebar {
     display: block !important;
 }
 
-/* =====================================================
- * 오버레이 (어두운 배경)
- * ===================================================== */
+/* 오버레이 (배경 어둡게) */
 .snw-sidebar-overlay {
     position: fixed;
     top: var(--snw-header-h);
@@ -86,8 +91,8 @@ body.snw-sidebar-open .snw-sidebar {
     right: 0;
     bottom: var(--snw-footer-h);
     background: rgba(0, 0, 0, 0.6);
-    z-index: 1040;
-    display: none; /* 기본: 완전히 숨김 */
+    z-index: 1040; /* 사이드바(1050)보다 낮게 */
+    display: none;
 }
 
 body.snw-sidebar-open .snw-sidebar-overlay {
@@ -108,7 +113,9 @@ body.snw-sidebar-open .snw-sidebar-overlay {
 .snw-nav-group { margin-bottom: 12px; }
 .snw-nav-group__title { padding: 8px 20px 4px; font-size: 11px; text-transform: uppercase; color: var(--snw-text-faint); font-weight: 600; }
 
-/* Main / Footer */
+/* =====================================================
+ * Main / Footer
+ * ===================================================== */
 .snw-main { grid-row: 2; padding: var(--snw-spacing-lg); overflow-x: hidden; min-width: 0; }
 .snw-footer {
     grid-row: 3; display: flex; align-items: center; gap: var(--snw-spacing);
@@ -124,16 +131,83 @@ body.snw-sidebar-open .snw-sidebar-overlay {
 .snw-error { padding: var(--snw-spacing-lg); color: var(--snw-error); text-align: center; }
 .snw-empty { padding: var(--snw-spacing-lg); color: var(--snw-text-dim); text-align: center; font-size: 13px; }
 
-/* 모바일/태블릿 */
-@media (max-width: 1023px) {
-    body.snw-sidebar-open { overflow: hidden; }
+/* =====================================================
+ * 모바일 하단 탭 바 (Bottom Navigation)
+ * ===================================================== */
+.snw-bottom-nav {
+    display: none; /* 데스크톱에서는 숨김 */
 }
 
-/* 데스크톱 (1024+) */
+/* =====================================================
+ * 모바일 / 태블릿 반응형 (767px 이하)
+ * ===================================================== */
+@media (max-width: 767px) {
+    :root {
+        --snw-footer-h: 0px; /* 하단 탭 바가 푸터 역할을 대신함 */
+    }
+    
+    .snw-footer { display: none; }
+
+    /* 모바일에서도 햄버거 메뉴(더보기) 유지 */
+    #btn-menu {
+        display: inline-flex !important;
+    }
+
+    .snw-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        height: 60px;
+        background: var(--snw-surface);
+        border-top: 1px solid var(--snw-border);
+        z-index: 1000;
+        justify-content: space-around;
+        align-items: center;
+        padding-bottom: env(safe-area-inset-bottom); /* iOS 노치 대응 */
+    }
+
+    .snw-bottom-nav__item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: var(--snw-text-dim);
+        font-size: 10px;
+        gap: 4px;
+        flex: 1;
+        height: 100%;
+    }
+
+    .snw-bottom-nav__item.is-active {
+        color: var(--snw-primary);
+    }
+
+    .snw-bottom-nav__icon {
+        font-size: 20px;
+    }
+
+    /* 설정 페이지 저장 바가 하단 탭 바(60px) 위로 오도록 조정 */
+    .snw-form-sticky {
+        bottom: 60px !important; 
+        z-index: 1001 !important; 
+    }
+
+    /* 메인 컨텐츠가 하단 탭 바에 가려지지 않도록 패딩 추가 */
+    .snw-main {
+        padding-bottom: 80px; 
+    }
+}
+
+/* =====================================================
+ * 데스크톱 반응형 (1024px 이상)
+ * ===================================================== */
 @media (min-width: 1024px) {
+    /* 데스크톱에서는 오버레이 및 스크롤 방지 해제 */
     .snw-sidebar-overlay { display: none !important; }
     body.snw-sidebar-open { overflow: auto; }
     
+    /* 사이드바가 열리면 화면을 밀어내는 레이아웃 */
     body.snw-sidebar-open .snw-app { grid-template-columns: var(--snw-sidebar-w) 1fr; }
     body.snw-sidebar-open .snw-header { grid-column: 1 / -1; }
     body.snw-sidebar-open .snw-sidebar {

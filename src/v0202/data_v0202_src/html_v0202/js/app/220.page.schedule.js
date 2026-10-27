@@ -130,75 +130,80 @@ SNW.Page = SNW.Page || {};
                 </label>`;
             });
             daysHtml += `</div></div>`;
-
+            
             content.innerHTML = `
                 <div class="snw-form">
-                    <div class="snw-form-row">
-                        <label>${t('schedule.name', '이름')}</label>
-                        <input type="text" id="sch-name" value="${SNW.DomUtil.escape(s.name)}"
-                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;">${t('schedule.startTime', '시작')}
-                            <input type="time" id="sch-start" value="${s.period?.startTime || '08:00'}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                        <label style="flex:1;">${t('schedule.endTime', '종료')}
-                            <input type="time" id="sch-end" value="${s.period?.endTime || '20:00'}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-                    ${daysHtml}
-                    <div class="snw-form-row" style="display:flex;gap:8px;margin-top:8px;">
-                        <label style="flex:1;font-size:12px;">${t('schedule.segmentRepeat', '세그먼트 반복')}
-                            <input type="checkbox" id="sch-repeat" ${s.repeatSegments ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;font-size:12px;">${t('schedule.repeatCount', '반복 횟수 (0=무한)')}
-                            <input type="number" id="sch-repeat-count" min="0" value="${s.repeatCount}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
+                    <details class="snw-accordion" open>
+                        <summary>${SNW.I18n.t('schedule.secBasic')}</summary>
+                        <div class="snw-accordion__content">
+                            <div class="snw-form-row">
+                                <label>${SNW.I18n.t('schedule.name')}</label>
+                                <input type="text" id="sch-name" value="${SNW.DomUtil.escape(s.name)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;">${SNW.I18n.t('schedule.startTime')}
+                                    <input type="time" id="sch-start" value="${s.period?.startTime || '08:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                                <label style="flex:1;">${SNW.I18n.t('schedule.endTime')}
+                                    <input type="time" id="sch-end" value="${s.period?.endTime || '20:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                            ${daysHtml}
+                            <div class="snw-form-row" style="display:flex;gap:8px;margin-top:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.segmentRepeat')}
+                                    <input type="checkbox" id="sch-repeat" ${s.repeatSegments ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.repeatCount')}
+                                    <input type="number" id="sch-repeat-count" min="0" value="${s.repeatCount}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                        </div>
+                    </details>
 
-                    <h3 style="margin-top:12px;font-size:14px;">${t('schedule.segmentsTitle', '세그먼트')}</h3>
-                    <div id="sch-segs" style="display:flex;flex-direction:column;gap:8px;"></div>
-                    <button type="button" class="snw-btn" id="btn-add-seg" style="margin-top:8px;">
-                        ${t('schedule.addSegmentBtn', '+ 세그먼트 추가')}
-                    </button>
+                    <details class="snw-accordion" open>
+                        <summary>${SNW.I18n.t('schedule.secSegments')}</summary>
+                        <div class="snw-accordion__content">
+                            <div id="sch-segs" style="display:flex;flex-direction:column;gap:8px;"></div>
+                            <button type="button" class="snw-btn" id="btn-add-seg" style="margin-top:8px;">
+                                ${SNW.I18n.t('schedule.addSegmentBtn')}
+                            </button>
+                        </div>
+                    </details>
 
-                    <h3 style="margin-top:12px;font-size:14px;">AutoOff & PIR</h3>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;">${t('profiles.autoOffTimer', '타이머(분)')}
-                            <input type="number" id="sch-ao-timer" min="0" value="${s.autoOff?.timer?.minutes || 0}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">${t('scheduler.scheduledOff', '예약 종료')}
-                            <input type="checkbox" id="sch-ao-offtime-en" ${s.autoOff?.offTime?.enabled ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;">${t('schedule.endTime', '종료 시각')}
-                            <input type="time" id="sch-ao-offtime" value="${s.autoOff?.offTime?.time || '00:00'}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">${t('scheduler.tempOff', '온도 종료')}
-                            <input type="checkbox" id="sch-ao-offtemp-en" ${s.autoOff?.offTemp?.enabled ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;">${t('dashboard.temp', '온도')}(°C)
-                            <input type="number" step="0.1" id="sch-ao-offtemp" value="${s.autoOff?.offTemp?.temp || 0}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
-                    <div class="snw-form-row" style="display:flex;gap:8px;">
-                        <label style="flex:1;font-size:12px;">${t('sensors.pirEnabled', 'PIR 사용')}
-                            <input type="checkbox" id="sch-pir-en" ${s.motion?.pir?.enabled ? 'checked' : ''}>
-                        </label>
-                        <label style="flex:1;">${t('sensors.pirHoldSec', 'PIR Hold(초)')}
-                            <input type="number" id="sch-pir-hold" min="0" value="${s.motion?.pir?.holdSec || 0}"
-                                   style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        </label>
-                    </div>
+                    <details class="snw-accordion">
+                        <summary>${SNW.I18n.t('schedule.secSmart')}</summary>
+                        <div class="snw-accordion__content">
+                            <div class="snw-form-row" style="display:flex;gap:8px; margin-top:8px;">
+                                <label style="flex:1;">${SNW.I18n.t('profiles.autoOffTimer')}
+                                    <input type="number" id="sch-ao-timer" min="0" value="${s.autoOff?.timer?.minutes || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.scheduledOff')}
+                                    <input type="checkbox" id="sch-ao-offtime-en" ${s.autoOff?.offTime?.enabled ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;">${SNW.I18n.t('schedule.endTime')}
+                                    <input type="time" id="sch-ao-offtime" value="${s.autoOff?.offTime?.time || '00:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.tempOff')}
+                                    <input type="checkbox" id="sch-ao-offtemp-en" ${s.autoOff?.offTemp?.enabled ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;">${SNW.I18n.t('dashboard.temp')}(°C)
+                                    <input type="number" step="0.1" id="sch-ao-offtemp" value="${s.autoOff?.offTemp?.temp || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                            <div class="snw-form-row" style="display:flex;gap:8px;">
+                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('sensors.pirEnabled')}
+                                    <input type="checkbox" id="sch-pir-en" ${s.motion?.pir?.enabled ? 'checked' : ''}>
+                                </label>
+                                <label style="flex:1;">${SNW.I18n.t('sensors.pirHoldSec')}
+                                    <input type="number" id="sch-pir-hold" min="0" value="${s.motion?.pir?.holdSec || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                </label>
+                            </div>
+                        </div>
+                    </details>
                 </div>`;
 
             const segContainer = content.querySelector('#sch-segs');

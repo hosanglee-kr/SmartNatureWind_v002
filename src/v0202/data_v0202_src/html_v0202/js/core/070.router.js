@@ -138,6 +138,12 @@ window.SNW = window.SNW || {};
             document.querySelectorAll('#nav-menu a[data-route]').forEach(a => {
                 a.classList.toggle('is-active', a.getAttribute('data-route') === path);
             });
+            
+            // 하단 탭 바 active 동기화 추가
+            document.querySelectorAll('.snw-bottom-nav__item').forEach(a => {
+                a.classList.toggle('is-active', a.getAttribute('data-route') === path);
+            });
+
         } catch (e) {
             SNW.ErrorHandler.handle(e, `page.${ROUTES[parseHash()]?.page || 'unknown'}`);
             _showError(document.getElementById('snw-main'), SNW.I18n.t('msg.unknown'));

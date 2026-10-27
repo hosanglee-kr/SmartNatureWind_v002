@@ -459,7 +459,19 @@ window.SNW = window.SNW || {};
             'chart.exportCsv':              'CSV',
 
             'days.mon': '월', 'days.tue': '화', 'days.wed': '수', 'days.thu': '목',
-            'days.fri': '금', 'days.sat': '토', 'days.sun': '일'
+            'days.fri': '금', 'days.sat': '토', 'days.sun': '일',
+            
+            'style.NATURAL': '자연풍',
+            'style.GUSTY': '돌풍',
+            'style.GENTLE': '산들바람',
+            'style.CYCLIC': '주기풍',
+            'settings.tabGeneral': '일반 / 보안',
+            'settings.tabHardware': '하드웨어 / 핀맵',
+            'settings.tabComm': '통신 / WS',
+            'schedule.secBasic': '기본 일정',
+            'schedule.secSegments': '바람 세그먼트',
+            'schedule.secSmart': '스마트 안심 종료 (AutoOff & PIR)'
+
         },
 
         // =====================================================
@@ -880,7 +892,18 @@ window.SNW = window.SNW || {};
             'chart.exportCsv':              'CSV',
 
             'days.mon': 'Mon', 'days.tue': 'Tue', 'days.wed': 'Wed', 'days.thu': 'Thu',
-            'days.fri': 'Fri', 'days.sat': 'Sat', 'days.sun': 'Sun'
+            'days.fri': 'Fri', 'days.sat': 'Sat', 'days.sun': 'Sun',
+            
+            'style.NATURAL': 'Natural',
+            'style.GUSTY': 'Gusty',
+            'style.GENTLE': 'Gentle',
+            'style.CYCLIC': 'Cyclic',
+            'settings.tabGeneral': 'General / Security',
+            'settings.tabHardware': 'Hardware / Pinmap',
+            'settings.tabComm': 'Comm / WS',
+            'schedule.secBasic': 'Basic Schedule',
+            'schedule.secSegments': 'Wind Segments',
+            'schedule.secSmart': 'Smart Auto Off (AutoOff & PIR)'
         }
     };
 

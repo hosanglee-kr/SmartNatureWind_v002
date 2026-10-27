@@ -5,7 +5,7 @@ window.SNW = window.SNW || {};
     if (!window.SNW_OFFLINE) return;
     
     let WORKING_JSON_BASE = null;
-    const JSON_BASE_CANDIDATES = ['/json/', '../../json/', '../json/', '/src/v0202/data_v0202_src/json/'];
+    const JSON_BASE_CANDIDATES = ['../json/', '/json/', '../../json/', '/src/v0202/data_v0202_src/json/'];
     const FILE_MAP = {
         system: 'cfg_system_0202.json',
         wifi: 'cfg_wifi_0202.json',

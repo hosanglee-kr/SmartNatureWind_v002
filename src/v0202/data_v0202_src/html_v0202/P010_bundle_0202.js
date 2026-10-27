@@ -166,7 +166,6 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-
 /* ---- 010.config.js (5202 bytes) ---- */
 // =========================================================
 // 010.config.js — 프론트엔드 런타임 설정
@@ -335,6 +334,7 @@ window.SNW = window.SNW || {};
 
 
 
+/* ---- 020.i18n.js (46998 bytes) ---- */
 // =========================================================
 // 020.i18n.js — 다국어 사전 (ko/en)
 // Layer 0 (기반) — SNW.CFG 참조만
@@ -1499,6 +1499,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
+/* ---- 033.util.template.js (14015 bytes) ---- */
 // =========================================================
 // 033.util.template.js — SNW.Tpl (페이지 HTML 템플릿)
 // Layer 1 (유틸) — SNW.C, SNW.DomUtil 참조
@@ -2533,6 +2534,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
+/* ---- 070.router.js (7917 bytes) ---- */
 // =========================================================
 // 070.router.js — SNW.Router (해시 SPA 라우터)
 // =========================================================
@@ -2934,6 +2936,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
+/* ---- 110.ui.slider.js (2753 bytes) ---- */
 // =========================================================
 // 110.ui.slider.js — SNW.UI.slider
 // Layer 3 (UI 컴포넌트)
@@ -3012,8 +3015,6 @@ window.SNW = window.SNW || {};
     };
     
 })(window.SNW);
-
-
 
 /* ---- 120.ui.chart.js (5705 bytes) ---- */
 // =========================================================
@@ -3186,6 +3187,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
+/* ---- 130.ui.form.js (13389 bytes) ---- */
 // =========================================================
 // 130.ui.form.js — SNW.UI.form + presetGrid + sensorCards + logViewer
 // Layer 3 (UI 컴포넌트)
@@ -3496,10 +3498,9 @@ window.SNW = window.SNW || {};
     
 })(window.SNW);
 
-
-
 /* ===== LAYER 2 ===== */
 
+/* ---- 200.page.dashboard.js (22707 bytes) ---- */
 // =========================================================
 // 200.page.dashboard.js — SNW.Page.Dashboard
 // Layer 4 (페이지 로직)
@@ -4013,7 +4014,6 @@ SNW.Page = SNW.Page || {};
 
 
 
-
 /* ---- 210.page.chart.js (5630 bytes) ---- */
 /*
  * ------------------------------------------------------
@@ -4205,6 +4205,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
+/* ---- 220.page.schedule.js (25542 bytes) ---- */
 // =========================================================
 // 220.page.schedule.js — SNW.Page.Schedule
 // Layer 4 (페이지 로직)
@@ -4370,9 +4371,9 @@ SNW.Page = SNW.Page || {};
                     <details class="snw-accordion" open>
                         <summary>${SNW.I18n.t('schedule.secSegments')}</summary>
                         <div class="snw-accordion__content">
-                            <div id="sch-segs" style="display:flex;flex-direction:column;gap:8px;"></div>
-                            <button type="button" class="snw-btn" id="btn-add-seg" style="margin-top:8px;">
-                                ${SNW.I18n.t('schedule.addSegmentBtn')}
+                            <div id="sch-segs" style="display:flex;flex-direction:column;"></div>
+                            <button type="button" class="snw-btn snw-btn-primary" id="btn-add-seg" style="margin-top:12px; width:100%;">
+                                + ${SNW.I18n.t('schedule.addSegmentBtn')}
                             </button>
                         </div>
                     </details>
@@ -4417,7 +4418,7 @@ SNW.Page = SNW.Page || {};
             const currentSegs = JSON.parse(JSON.stringify(s.segments || []));
 
             // =========================================================
-            // [O-8] 세그먼트 삭제 Undo
+            // [O-8] 세그먼트 삭제 Undo (완전한 복원 로직 보존)
             // =========================================================
             const _removeWithUndo = (idx) => {
                 if (currentSegs.length <= 1) {
@@ -4427,7 +4428,7 @@ SNW.Page = SNW.Page || {};
                 const removed = currentSegs.splice(idx, 1)[0];
                 renderSegs(currentSegs);
 
-                // Undo 토스트 (일반 ToastUtil로 처리 — 커스텀 버튼 삽입)
+                // Undo 토스트 (커스텀 복원 버튼 삽입)
                 const host = document.getElementById('toast-host');
                 if (host) {
                     const t = document.createElement('div');
@@ -4455,54 +4456,50 @@ SNW.Page = SNW.Page || {};
                 segContainer.innerHTML = '';
                 segs.forEach((seg, idx) => {
                     const segDiv = document.createElement('div');
-                    segDiv.style.cssText = 'padding:8px;border:1px solid var(--snw-border);border-radius:4px;';
+                    segDiv.className = 'snw-seg-card';
                     segDiv.innerHTML = `
-                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-                            <b style="font-size:12px;">${t('scheduler.segment', '세그먼트')} ${idx+1}</b>
-                            <button type="button" class="snw-btn-icon" data-remove-seg="${idx}">🗑</button>
+                        <div class="snw-seg-header">
+                            <span class="snw-seg-title">${t('scheduler.segment', '세그먼트')} ${idx + 1}</span>
+                            <button type="button" class="snw-btn-icon" data-remove-seg="${idx}" style="color:var(--snw-error);">🗑</button>
                         </div>
-                        <div style="display:flex;gap:4px;margin-bottom:4px;">
-                            <label style="flex:1;">On(분)
-                                <input type="number" class="seg-on" min="0" max="1440" value="${seg.onMinutes}"
-                                       style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        <div class="snw-seg-grid">
+                            <label>On(분)
+                                <input type="number" class="seg-on" min="0" max="1440" value="${seg.onMinutes}">
                             </label>
-                            <label style="flex:1;">Off(분)
-                                <input type="number" class="seg-off" min="0" max="1440" value="${seg.offMinutes}"
-                                       style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                            <label>Off(분)
+                                <input type="number" class="seg-off" min="0" max="1440" value="${seg.offMinutes}">
                             </label>
-                        </div>
-                        <div style="display:flex;gap:4px;margin-bottom:4px;">
-                            <label style="flex:1;">모드
-                                <select class="seg-mode"
-                                        style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                            <label style="grid-column: span 2;">모드
+                                <select class="seg-mode">
                                     <option value="PRESET" ${seg.mode === 'PRESET' ? 'selected' : ''}>프리셋</option>
                                     <option value="FIXED"  ${seg.mode === 'FIXED'  ? 'selected' : ''}>고정풍속</option>
                                 </select>
                             </label>
-                        </div>
-                        <div class="seg-preset-area" style="display:${seg.mode === 'PRESET' ? 'block' : 'none'};">
-                            <div style="display:flex;gap:4px;">
-                                <label style="flex:1;">프리셋
-                                    <input type="text" class="seg-preset" value="${SNW.DomUtil.escape(seg.presetCode || '')}"
-                                           style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                            <div class="snw-seg-preset-area" style="display: ${seg.mode === 'PRESET' ? 'grid' : 'none'};">
+                                <label>프리셋
+                                    <input type="text" class="seg-preset" value="${SNW.DomUtil.escape(seg.presetCode || '')}">
                                 </label>
-                                <label style="flex:1;">스타일
-                                    <input type="text" class="seg-style" value="${SNW.DomUtil.escape(seg.styleCode || '')}"
-                                           style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                <label>스타일
+                                    <input type="text" class="seg-style" value="${SNW.DomUtil.escape(seg.styleCode || '')}">
                                 </label>
                             </div>
-                        </div>
-                        <div class="seg-fixed-area" style="display:${seg.mode === 'FIXED' ? 'block' : 'none'};">
-                            <label>고정 풍속(%)
-                                <input type="number" class="seg-fixed" min="0" max="100" value="${seg.fixedSpeed || 0}"
-                                       style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                            </label>
+                            <div class="snw-seg-fixed-area" style="display: ${seg.mode === 'FIXED' ? 'block' : 'none'};">
+                                <label>고정 풍속(%)
+                                    <input type="number" class="seg-fixed" min="0" max="100" value="${seg.fixedSpeed || 0}">
+                                </label>
+                            </div>
                         </div>`;
 
-                    segDiv.querySelector('.seg-mode').addEventListener('change', (e) => {
-                        segDiv.querySelector('.seg-preset-area').style.display = e.target.value === 'PRESET' ? 'block' : 'none';
-                        segDiv.querySelector('.seg-fixed-area').style.display  = e.target.value === 'FIXED'  ? 'block' : 'none';
+                    const modeSel = segDiv.querySelector('.seg-mode');
+                    const presetArea = segDiv.querySelector('.snw-seg-preset-area');
+                    const fixedArea = segDiv.querySelector('.snw-seg-fixed-area');
+
+                    modeSel.addEventListener('change', (e) => {
+                        const isPreset = e.target.value === 'PRESET';
+                        presetArea.style.display = isPreset ? 'grid' : 'none';
+                        fixedArea.style.display  = isPreset ? 'none' : 'block';
                     });
+
                     segDiv.querySelector('[data-remove-seg]').addEventListener('click', () => _removeWithUndo(idx));
                     segContainer.appendChild(segDiv);
                 });
@@ -4668,6 +4665,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
+/* ---- 225.page.sensors.js (6057 bytes) ---- */
 // =========================================================
 // 225.page.sensors.js — SNW.Page.Sensors
 // Layer 4 (페이지 로직)
@@ -4795,7 +4793,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-
+/* ---- 230.page.profiles.js (22900 bytes) ---- */
 // =========================================================
 // 230.page.profiles.js — SNW.Page.Profiles
 // Layer 4 (페이지 로직)
@@ -4972,9 +4970,9 @@ SNW.Page = SNW.Page || {};
                     <details class="snw-accordion" open>
                         <summary>${SNW.I18n.t('schedule.secSegments')}</summary>
                         <div class="snw-accordion__content">
-                            <div id="prof-segs" style="display:flex;flex-direction:column;gap:8px;"></div>
-                            <button type="button" class="snw-btn" id="btn-add-prof-seg" style="margin-top:8px;">
-                                ${SNW.I18n.t('profiles.addSegmentBtn')}
+                            <div id="prof-segs" style="display:flex;flex-direction:column;"></div>
+                            <button type="button" class="snw-btn snw-btn-primary" id="btn-add-prof-seg" style="margin-top:12px; width:100%;">
+                                + ${SNW.I18n.t('profiles.addSegmentBtn')}
                             </button>
                         </div>
                     </details>
@@ -5018,68 +5016,89 @@ SNW.Page = SNW.Page || {};
             const segContainer = content.querySelector('#prof-segs');
             const currentSegs = JSON.parse(JSON.stringify(p.segments || []));
 
-            const _removeSeg = (idx) => {
+            // =========================================================
+            // 세그먼트 삭제 Undo 지원
+            // =========================================================
+            const _removeWithUndo = (idx) => {
                 if (currentSegs.length <= 1) {
                     SNW.ToastUtil.warn(SNW.I18n.t('validate.segmentMin'));
                     return;
                 }
-                currentSegs.splice(idx, 1);
+                const removed = currentSegs.splice(idx, 1)[0];
                 renderSegs(currentSegs);
+
+                const host = document.getElementById('toast-host');
+                if (host) {
+                    const t = document.createElement('div');
+                    t.className = 'snw-toast snw-toast--warn';
+                    t.style.cssText = 'display:flex;align-items:center;gap:12px;';
+                    t.innerHTML = `
+                        <span style="flex:1;">${SNW.I18n.t('segment.deleted')}</span>
+                        <button type="button" style="background:none;border:none;color:var(--snw-primary);cursor:pointer;font-weight:600;text-decoration:underline;padding:0;font-size:13px;">
+                            ${SNW.I18n.t('common.undo')}
+                        </button>`;
+                    t.querySelector('button').onclick = () => {
+                        currentSegs.splice(idx, 0, removed);
+                        renderSegs(currentSegs);
+                        t.remove();
+                    };
+                    host.appendChild(t);
+                    setTimeout(() => {
+                        t.classList.add('snw-toast--out');
+                        setTimeout(() => t.remove(), 300);
+                    }, 5000);
+                }
             };
 
             const renderSegs = (segs) => {
                 segContainer.innerHTML = '';
                 segs.forEach((seg, idx) => {
                     const segDiv = document.createElement('div');
-                    segDiv.style.cssText = 'padding:8px;border:1px solid var(--snw-border);border-radius:4px;';
+                    segDiv.className = 'snw-seg-card';
                     segDiv.innerHTML = `
-                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-                            <b style="font-size:12px;">${SNW.I18n.t('scheduler.segment')} ${idx+1}</b>
-                            <button type="button" class="snw-btn-icon" data-remove-seg="${idx}">🗑</button>
+                        <div class="snw-seg-header">
+                            <span class="snw-seg-title">${SNW.I18n.t('scheduler.segment')} ${idx + 1}</span>
+                            <button type="button" class="snw-btn-icon" data-remove-seg="${idx}" style="color:var(--snw-error);">🗑</button>
                         </div>
-                        <div style="display:flex;gap:4px;margin-bottom:4px;">
-                            <label style="flex:1;">On(분)
-                                <input type="number" class="seg-on" min="0" value="${seg.onMinutes}"
-                                       style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        <div class="snw-seg-grid">
+                            <label>On(분)
+                                <input type="number" class="seg-on" min="0" max="1440" value="${seg.onMinutes}">
                             </label>
-                            <label style="flex:1;">Off(분)
-                                <input type="number" class="seg-off" min="0" value="${seg.offMinutes}"
-                                       style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                            <label>Off(분)
+                                <input type="number" class="seg-off" min="0" max="1440" value="${seg.offMinutes}">
                             </label>
-                        </div>
-                        <div style="display:flex;gap:4px;margin-bottom:4px;">
-                            <label style="flex:1;">모드
-                                <select class="seg-mode"
-                                        style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                            <label style="grid-column: span 2;">모드
+                                <select class="seg-mode">
                                     <option value="PRESET" ${seg.mode === 'PRESET' ? 'selected' : ''}>프리셋</option>
                                     <option value="FIXED"  ${seg.mode === 'FIXED'  ? 'selected' : ''}>고정풍속</option>
                                 </select>
                             </label>
-                        </div>
-                        <div class="seg-preset-area" style="display:${seg.mode === 'PRESET' ? 'block' : 'none'};">
-                            <div style="display:flex;gap:4px;">
-                                <label style="flex:1;">프리셋
-                                    <input type="text" class="seg-preset" value="${SNW.DomUtil.escape(seg.presetCode || '')}"
-                                           style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                            <div class="snw-seg-preset-area" style="display: ${seg.mode === 'PRESET' ? 'grid' : 'none'};">
+                                <label>프리셋
+                                    <input type="text" class="seg-preset" value="${SNW.DomUtil.escape(seg.presetCode || '')}">
                                 </label>
-                                <label style="flex:1;">스타일
-                                    <input type="text" class="seg-style" value="${SNW.DomUtil.escape(seg.styleCode || '')}"
-                                           style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                <label>스타일
+                                    <input type="text" class="seg-style" value="${SNW.DomUtil.escape(seg.styleCode || '')}">
                                 </label>
                             </div>
-                        </div>
-                        <div class="seg-fixed-area" style="display:${seg.mode === 'FIXED' ? 'block' : 'none'};">
-                            <label>고정 풍속(%)
-                                <input type="number" class="seg-fixed" min="0" max="100" value="${seg.fixedSpeed || 0}"
-                                       style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                            </label>
+                            <div class="snw-seg-fixed-area" style="display: ${seg.mode === 'FIXED' ? 'block' : 'none'};">
+                                <label>고정 풍속(%)
+                                    <input type="number" class="seg-fixed" min="0" max="100" value="${seg.fixedSpeed || 0}">
+                                </label>
+                            </div>
                         </div>`;
 
-                    segDiv.querySelector('.seg-mode').addEventListener('change', (e) => {
-                        segDiv.querySelector('.seg-preset-area').style.display = e.target.value === 'PRESET' ? 'block' : 'none';
-                        segDiv.querySelector('.seg-fixed-area').style.display  = e.target.value === 'FIXED'  ? 'block' : 'none';
+                    const modeSel = segDiv.querySelector('.seg-mode');
+                    const presetArea = segDiv.querySelector('.snw-seg-preset-area');
+                    const fixedArea = segDiv.querySelector('.snw-seg-fixed-area');
+
+                    modeSel.addEventListener('change', (e) => {
+                        const isPreset = e.target.value === 'PRESET';
+                        presetArea.style.display = isPreset ? 'grid' : 'none';
+                        fixedArea.style.display  = isPreset ? 'none' : 'block';
                     });
-                    segDiv.querySelector('[data-remove-seg]').addEventListener('click', () => _removeSeg(idx));
+
+                    segDiv.querySelector('[data-remove-seg]').addEventListener('click', () => _removeWithUndo(idx));
                     segContainer.appendChild(segDiv);
                 });
             };
@@ -5201,7 +5220,7 @@ SNW.Page = SNW.Page || {};
     };
 })(window.SNW);
 
-
+/* ---- 240.page.settings.js (34717 bytes) ---- */
 // =========================================================
 // 240.page.settings.js — SNW.Page.Settings
 // Layer 4 (페이지 로직)
@@ -6010,6 +6029,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
+/* ---- 260.page.firmware.js (5321 bytes) ---- */
 // =========================================================
 // 260.page.firmware.js — SNW.Page.Firmware
 // Layer 4 (페이지 로직)
@@ -6154,7 +6174,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-
+/* ---- 270.page.network.js (16146 bytes) ---- */
 // =========================================================
 // 270.page.network.js — SNW.Page.Network
 // Layer 4 (페이지 로직)
@@ -6466,7 +6486,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-
+/* ---- 280.page.logs.js (3977 bytes) ---- */
 // =========================================================
 // 280.page.logs.js — SNW.Page.Logs
 // Layer 4 (페이지 로직)
@@ -6475,36 +6495,36 @@ SNW.Page = SNW.Page || {};
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
 (function(SNW) {
-    'use strict';
-    
-    SNW.Page.Logs = class Logs {
-        constructor(container) {
-            this.el = container;
-            this._active = true;
-            this._unsubs = [];
-            this._wsUnsubs = [];
-            this._viewer = null;
-        }
-        
-        async mount() {
-            this.el.innerHTML = '';
-            this.el.appendChild(SNW.Tpl.logs());
-            SNW.I18n.applyTo(this.el);
-            
-            // 뷰어 마운트
-            this._viewer = SNW.UI.logViewer({
-                root: this.el.querySelector('[data-slot="log"]')
-            });
-            
-            // 필터/툴바를 Tpl 삽입 (beforebegin → Tpl 사용으로 변경)
-            const logSlot = this.el.querySelector('[data-slot="log"]');
-            if (logSlot) {
-                // 이미 존재하는지 확인 후 삽입
-                let toolbar = this.el.querySelector('.snw-logs-toolbar');
-                if (!toolbar) {
-                    toolbar = document.createElement('div');
-                    toolbar.className = 'snw-toolbar snw-logs-toolbar';
-                    toolbar.innerHTML = `
+	'use strict';
+	
+	SNW.Page.Logs = class Logs {
+		constructor(container) {
+			this.el = container;
+			this._active = true;
+			this._unsubs = [];
+			this._wsUnsubs = [];
+			this._viewer = null;
+		}
+		
+		async mount() {
+			this.el.innerHTML = '';
+			this.el.appendChild(SNW.Tpl.logs());
+			SNW.I18n.applyTo(this.el);
+			
+			// 뷰어 마운트
+			this._viewer = SNW.UI.logViewer({
+				root: this.el.querySelector('[data-slot="log"]')
+			});
+			
+			// 필터/툴바를 Tpl 삽입 (beforebegin → Tpl 사용으로 변경)
+			const logSlot = this.el.querySelector('[data-slot="log"]');
+			if (logSlot) {
+				// 이미 존재하는지 확인 후 삽입
+				let toolbar = this.el.querySelector('.snw-logs-toolbar');
+				if (!toolbar) {
+					toolbar = document.createElement('div');
+					toolbar.className = 'snw-toolbar snw-logs-toolbar';
+					toolbar.innerHTML = `
                         <select data-slot="log-filter">
                             <option value="0">${SNW.I18n.t('log.filterAll')}</option>
                             <option value="1">ERROR</option>
@@ -6515,81 +6535,81 @@ SNW.Page = SNW.Page || {};
                         <button type="button" data-action="log-clear" class="snw-btn">${SNW.I18n.t('log.clear')}</button>
                         <button type="button" data-action="log-export" class="snw-btn">${SNW.I18n.t('log.export')}</button>
                     `;
-                    logSlot.parentElement.insertBefore(toolbar, logSlot);
-                }
-                
-                const sel = toolbar.querySelector('[data-slot="log-filter"]');
-                if (sel) {
-                    sel.addEventListener('change', () => {
-                        if (this._viewer) this._viewer.setFilter(Number(sel.value) || 0);
-                    });
-                }
-            }
-            
-            // 초기 로드
-            await this._loadInitial();
-            
-            // WS log 구독
-            const wsLog = SNW.WsManager.get('log');
-            if (wsLog) {
-                const unsub = wsLog.onMessage((entry) => {
-                    if (!this._active || !this._viewer) return;
-                    this._viewer.append(entry);
-                });
-                this._wsUnsubs.push(unsub);
-            }
-            
-            SNW.DomUtil.delegate(this.el, '[data-action="log-clear"]', 'click', () => {
-                if (this._viewer) this._viewer.clear();
-            });
-            SNW.DomUtil.delegate(this.el, '[data-action="log-export"]', 'click', () => this._exportJson());
-            
-            SNW.LogUtil.info('[Logs] mount 완료');
-        }
-        
-        unmount() {
-            this._active = false;
-            this._unsubs.forEach(fn => { try { fn(); } catch {} });
-            this._wsUnsubs.forEach(fn => { try { fn(); } catch {} });
-            this._unsubs = [];
-            this._wsUnsubs = [];
-            this._viewer = null;
-        }
-        
-        async _loadInitial() {
-            try {
-                const data = await SNW.Api.getLogs();
-                if (!this._active) return;
-                const list = (data && data.logs) || [];
-                list.forEach(entry => this._viewer && this._viewer.append(entry));
-            } catch (e) {
-                SNW.LogUtil.warn('[Logs] 초기 로드 실패', e);
-            }
-        }
-        
-        _exportJson() {
-            try {
-                const body = this.el.querySelector('.snw-log-viewer');
-                if (!body) return;
-                const rows = Array.from(body.children).map(r => r.textContent);
-                const blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `snw_logs_${Date.now()}.json`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                URL.revokeObjectURL(url);
-                SNW.ToastUtil.success(SNW.I18n.t('common.success'));
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'logs.export');
-            }
-        }
-    };
+					logSlot.parentElement.insertBefore(toolbar, logSlot);
+				}
+				
+				const sel = toolbar.querySelector('[data-slot="log-filter"]');
+				if (sel) {
+					sel.addEventListener('change', () => {
+						if (this._viewer) this._viewer.setFilter(Number(sel.value) || 0);
+					});
+				}
+			}
+			
+			// 초기 로드
+			await this._loadInitial();
+			
+			// WS log 구독
+			const wsLog = SNW.WsManager.get('log');
+			if (wsLog) {
+				const unsub = wsLog.onMessage((entry) => {
+					if (!this._active || !this._viewer) return;
+					this._viewer.append(entry);
+				});
+				this._wsUnsubs.push(unsub);
+			}
+			
+			SNW.DomUtil.delegate(this.el, '[data-action="log-clear"]', 'click', () => {
+				if (this._viewer) this._viewer.clear();
+			});
+			SNW.DomUtil.delegate(this.el, '[data-action="log-export"]', 'click', () => this._exportJson());
+			
+			SNW.LogUtil.info('[Logs] mount 완료');
+		}
+		
+		unmount() {
+			this._active = false;
+			this._unsubs.forEach(fn => { try { fn(); } catch {} });
+			this._wsUnsubs.forEach(fn => { try { fn(); } catch {} });
+			this._unsubs = [];
+			this._wsUnsubs = [];
+			this._viewer = null;
+		}
+		
+		async _loadInitial() {
+			try {
+				const data = await SNW.Api.getLogs();
+				if (!this._active) return;
+				const list = (data && data.logs) || [];
+				list.forEach(entry => this._viewer && this._viewer.append(entry));
+			} catch (e) {
+				SNW.LogUtil.warn('[Logs] 초기 로드 실패', e);
+			}
+		}
+		
+		_exportJson() {
+			try {
+				const body = this.el.querySelector('.snw-log-viewer');
+				if (!body) return;
+				const rows = Array.from(body.children).map(r => r.textContent);
+				const blob = new Blob([JSON.stringify(rows, null, 2)], { type: 'application/json' });
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement('a');
+				a.href = url;
+				a.download = `snw_logs_${Date.now()}.json`;
+				document.body.appendChild(a);
+				a.click();
+				a.remove();
+				URL.revokeObjectURL(url);
+				SNW.ToastUtil.success(SNW.I18n.t('common.success'));
+			} catch (e) {
+				SNW.ErrorHandler.handle(e, 'logs.export');
+			}
+		}
+	};
 })(window.SNW);
 
-
+/* ---- 290.page.ai.js (4571 bytes) ---- */
 // =========================================================
 // 290.page.ai.js — SNW.Page.AI
 // Layer 4 (페이지 로직)
@@ -6598,26 +6618,26 @@ SNW.Page = SNW.Page || {};
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
 (function(SNW) {
-    'use strict';
-    
-    const MAX_MSG_LEN = 4000;
-    
-    SNW.Page.AI = class AI {
-        constructor(container) {
-            this.el = container;
-            this._active = true;
-            this._history = [];
-        }
-        
-        async mount() {
-            this.el.innerHTML = '';
-            this.el.appendChild(SNW.Tpl.ai());
-            SNW.I18n.applyTo(this.el);
-            
-            const slot = this.el.querySelector('[data-slot="chat"]');
-            const examplePlaceholder = SNW.I18n.t('ai.placeholder');
-            
-            slot.innerHTML = `
+	'use strict';
+	
+	const MAX_MSG_LEN = 4000;
+	
+	SNW.Page.AI = class AI {
+		constructor(container) {
+			this.el = container;
+			this._active = true;
+			this._history = [];
+		}
+		
+		async mount() {
+			this.el.innerHTML = '';
+			this.el.appendChild(SNW.Tpl.ai());
+			SNW.I18n.applyTo(this.el);
+			
+			const slot = this.el.querySelector('[data-slot="chat"]');
+			const examplePlaceholder = SNW.I18n.t('ai.placeholder');
+			
+			slot.innerHTML = `
                 <div class="snw-ai-chat">
                     <div class="snw-ai-messages" data-slot="messages"></div>
                     <div class="snw-ai-examples" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
@@ -6634,98 +6654,98 @@ SNW.Page = SNW.Page || {};
                         </button>
                     </div>
                 </div>`;
-            
-            SNW.DomUtil.delegate(this.el, '[data-action="send"]', 'click', () => this._onSend());
-            
-            // [P1-14] 예시 버튼 클릭 → textarea에 채움
-            SNW.DomUtil.delegate(this.el, '[data-example]', 'click', (e, btn) => {
-                const inp = this.el.querySelector('[data-slot="input"]');
-                if (inp) {
-                    inp.value = btn.getAttribute('data-example');
-                    inp.focus();
-                }
-            });
-            
-            const inp = this.el.querySelector('[data-slot="input"]');
-            if (inp) {
-                inp.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        this._onSend();
-                    }
-                });
-            }
-            
-            SNW.LogUtil.info('[AI] mount 완료');
-        }
-        
-        unmount() { this._active = false; }
-        
-        async _onSend() {
-            const inp = this.el.querySelector('[data-slot="input"]');
-            const msg = (inp && inp.value || '').trim();
-            if (!msg) return;
-            inp.value = '';
-            
-            this._appendMessage('user', msg);
-            this._appendMessage('assistant', SNW.I18n.t('ai.thinking'));
-            
-            try {
-                const body = {
-                    contents: [{ parts: [{ text: msg }] }]
-                };
-                const res = await SNW.Api.gemini(body);
-                if (!this._active) return;
-                
-                let text = '';
-                try {
-                    const candidates = res && res.candidates;
-                    if (candidates && candidates[0] && candidates[0].content &&
-                        candidates[0].content.parts && candidates[0].content.parts[0]) {
-                        text = candidates[0].content.parts[0].text || '';
-                    } else if (typeof res === 'string') {
-                        text = res;
-                    } else if (res && res.text) {
-                        text = res.text;
-                    }
-                } catch {}
-                
-                if (!text) text = '(no response)';
-                this._replaceLastAssistant(text);
-            } catch (e) {
-                this._replaceLastAssistant('[ERROR] ' + (e.message || 'failed'));
-                SNW.ErrorHandler.handle(e, 'ai.send');
-            }
-        }
-        
-        _appendMessage(role, text) {
-            const wrap = this.el.querySelector('[data-slot="messages"]');
-            if (!wrap) return;
-            const cls = role === 'user' ? 'is-user' : 'is-assistant';
-            wrap.appendChild(SNW.DomUtil.html`
+			
+			SNW.DomUtil.delegate(this.el, '[data-action="send"]', 'click', () => this._onSend());
+			
+			// [P1-14] 예시 버튼 클릭 → textarea에 채움
+			SNW.DomUtil.delegate(this.el, '[data-example]', 'click', (e, btn) => {
+				const inp = this.el.querySelector('[data-slot="input"]');
+				if (inp) {
+					inp.value = btn.getAttribute('data-example');
+					inp.focus();
+				}
+			});
+			
+			const inp = this.el.querySelector('[data-slot="input"]');
+			if (inp) {
+				inp.addEventListener('keydown', (e) => {
+					if (e.key === 'Enter' && !e.shiftKey) {
+						e.preventDefault();
+						this._onSend();
+					}
+				});
+			}
+			
+			SNW.LogUtil.info('[AI] mount 완료');
+		}
+		
+		unmount() { this._active = false; }
+		
+		async _onSend() {
+			const inp = this.el.querySelector('[data-slot="input"]');
+			const msg = (inp && inp.value || '').trim();
+			if (!msg) return;
+			inp.value = '';
+			
+			this._appendMessage('user', msg);
+			this._appendMessage('assistant', SNW.I18n.t('ai.thinking'));
+			
+			try {
+				const body = {
+					contents: [{ parts: [{ text: msg }] }]
+				};
+				const res = await SNW.Api.gemini(body);
+				if (!this._active) return;
+				
+				let text = '';
+				try {
+					const candidates = res && res.candidates;
+					if (candidates && candidates[0] && candidates[0].content &&
+						candidates[0].content.parts && candidates[0].content.parts[0]) {
+						text = candidates[0].content.parts[0].text || '';
+					} else if (typeof res === 'string') {
+						text = res;
+					} else if (res && res.text) {
+						text = res.text;
+					}
+				} catch {}
+				
+				if (!text) text = '(no response)';
+				this._replaceLastAssistant(text);
+			} catch (e) {
+				this._replaceLastAssistant('[ERROR] ' + (e.message || 'failed'));
+				SNW.ErrorHandler.handle(e, 'ai.send');
+			}
+		}
+		
+		_appendMessage(role, text) {
+			const wrap = this.el.querySelector('[data-slot="messages"]');
+			if (!wrap) return;
+			const cls = role === 'user' ? 'is-user' : 'is-assistant';
+			wrap.appendChild(SNW.DomUtil.html`
                 <div class="snw-ai-msg ${cls}">
                     <div class="snw-ai-bubble">${text}</div>
                 </div>`);
-            wrap.scrollTop = wrap.scrollHeight;
-        }
-        
-        _replaceLastAssistant(text) {
-            const wrap = this.el.querySelector('[data-slot="messages"]');
-            if (!wrap) return;
-            const list = wrap.querySelectorAll('.snw-ai-msg.is-assistant');
-            const last = list[list.length - 1];
-            if (last) {
-                const bubble = last.querySelector('.snw-ai-bubble');
-                if (bubble) bubble.textContent = text;
-            }
-            wrap.scrollTop = wrap.scrollHeight;
-        }
-    };
+			wrap.scrollTop = wrap.scrollHeight;
+		}
+		
+		_replaceLastAssistant(text) {
+			const wrap = this.el.querySelector('[data-slot="messages"]');
+			if (!wrap) return;
+			const list = wrap.querySelectorAll('.snw-ai-msg.is-assistant');
+			const last = list[list.length - 1];
+			if (last) {
+				const bubble = last.querySelector('.snw-ai-bubble');
+				if (bubble) bubble.textContent = text;
+			}
+			wrap.scrollTop = wrap.scrollHeight;
+		}
+	};
 })(window.SNW);
-
 
 /* ===== LAYER 3 ===== */
 
+/* ---- 300.page.info.js (3551 bytes) ---- */
 // =========================================================
 // 300.page.info.js — SNW.Page.Info
 // Layer 4 (페이지 로직)
@@ -6809,7 +6829,6 @@ SNW.Page = SNW.Page || {};
 		unmount() { this._active = false; }
 	};
 })(window.SNW);
-
 
 
 /* ---- 300.page.windprofile.js (10832 bytes) ---- */
@@ -6954,6 +6973,7 @@ SNW.Page = SNW.Page || {};
 
 /* ===== LAYER 9 ===== */
 
+/* ---- 999.app.js (12213 bytes) ---- */
 // =========================================================
 // 999.app.js — 부트스트랩 (최종 로드)
 // =========================================================
@@ -7217,8 +7237,15 @@ window.SNW = window.SNW || {};
         window.SNW_BOOT_CALLED = true;
         
         try {
-            if (window.SNW_OFFLINE && SNW.Offline && SNW.Offline.ready) {
-                await SNW.Offline.ready;
+            if (window.SNW_OFFLINE) {
+                let waitCount = 0;
+                while ((!SNW.Offline || !SNW.Offline.ready) && waitCount < 60) {
+                    await new Promise(r => setTimeout(r, 50));
+                    waitCount++;
+                }
+                if (SNW.Offline && SNW.Offline.ready) {
+                    await SNW.Offline.ready;
+                }
             }
             
             SNW.I18n.applyTo(document);
@@ -7245,3 +7272,4 @@ window.SNW = window.SNW || {};
         window.SNW_BOOT();
     }
 })(window.SNW);
+

@@ -174,9 +174,9 @@ SNW.Page = SNW.Page || {};
                     <details class="snw-accordion" open>
                         <summary>${SNW.I18n.t('schedule.secSegments')}</summary>
                         <div class="snw-accordion__content">
-                            <div id="prof-segs" style="display:flex;flex-direction:column;gap:8px;"></div>
-                            <button type="button" class="snw-btn" id="btn-add-prof-seg" style="margin-top:8px;">
-                                ${SNW.I18n.t('profiles.addSegmentBtn')}
+                            <div id="prof-segs" style="display:flex;flex-direction:column;"></div>
+                            <button type="button" class="snw-btn snw-btn-primary" id="btn-add-prof-seg" style="margin-top:12px; width:100%;">
+                                + ${SNW.I18n.t('profiles.addSegmentBtn')}
                             </button>
                         </div>
                     </details>
@@ -220,68 +220,89 @@ SNW.Page = SNW.Page || {};
             const segContainer = content.querySelector('#prof-segs');
             const currentSegs = JSON.parse(JSON.stringify(p.segments || []));
 
-            const _removeSeg = (idx) => {
+            // =========================================================
+            // 세그먼트 삭제 Undo 지원
+            // =========================================================
+            const _removeWithUndo = (idx) => {
                 if (currentSegs.length <= 1) {
                     SNW.ToastUtil.warn(SNW.I18n.t('validate.segmentMin'));
                     return;
                 }
-                currentSegs.splice(idx, 1);
+                const removed = currentSegs.splice(idx, 1)[0];
                 renderSegs(currentSegs);
+
+                const host = document.getElementById('toast-host');
+                if (host) {
+                    const t = document.createElement('div');
+                    t.className = 'snw-toast snw-toast--warn';
+                    t.style.cssText = 'display:flex;align-items:center;gap:12px;';
+                    t.innerHTML = `
+                        <span style="flex:1;">${SNW.I18n.t('segment.deleted')}</span>
+                        <button type="button" style="background:none;border:none;color:var(--snw-primary);cursor:pointer;font-weight:600;text-decoration:underline;padding:0;font-size:13px;">
+                            ${SNW.I18n.t('common.undo')}
+                        </button>`;
+                    t.querySelector('button').onclick = () => {
+                        currentSegs.splice(idx, 0, removed);
+                        renderSegs(currentSegs);
+                        t.remove();
+                    };
+                    host.appendChild(t);
+                    setTimeout(() => {
+                        t.classList.add('snw-toast--out');
+                        setTimeout(() => t.remove(), 300);
+                    }, 5000);
+                }
             };
 
             const renderSegs = (segs) => {
                 segContainer.innerHTML = '';
                 segs.forEach((seg, idx) => {
                     const segDiv = document.createElement('div');
-                    segDiv.style.cssText = 'padding:8px;border:1px solid var(--snw-border);border-radius:4px;';
+                    segDiv.className = 'snw-seg-card';
                     segDiv.innerHTML = `
-                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-                            <b style="font-size:12px;">${SNW.I18n.t('scheduler.segment')} ${idx+1}</b>
-                            <button type="button" class="snw-btn-icon" data-remove-seg="${idx}">🗑</button>
+                        <div class="snw-seg-header">
+                            <span class="snw-seg-title">${SNW.I18n.t('scheduler.segment')} ${idx + 1}</span>
+                            <button type="button" class="snw-btn-icon" data-remove-seg="${idx}" style="color:var(--snw-error);">🗑</button>
                         </div>
-                        <div style="display:flex;gap:4px;margin-bottom:4px;">
-                            <label style="flex:1;">On(분)
-                                <input type="number" class="seg-on" min="0" value="${seg.onMinutes}"
-                                       style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                        <div class="snw-seg-grid">
+                            <label>On(분)
+                                <input type="number" class="seg-on" min="0" max="1440" value="${seg.onMinutes}">
                             </label>
-                            <label style="flex:1;">Off(분)
-                                <input type="number" class="seg-off" min="0" value="${seg.offMinutes}"
-                                       style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                            <label>Off(분)
+                                <input type="number" class="seg-off" min="0" max="1440" value="${seg.offMinutes}">
                             </label>
-                        </div>
-                        <div style="display:flex;gap:4px;margin-bottom:4px;">
-                            <label style="flex:1;">모드
-                                <select class="seg-mode"
-                                        style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                            <label style="grid-column: span 2;">모드
+                                <select class="seg-mode">
                                     <option value="PRESET" ${seg.mode === 'PRESET' ? 'selected' : ''}>프리셋</option>
                                     <option value="FIXED"  ${seg.mode === 'FIXED'  ? 'selected' : ''}>고정풍속</option>
                                 </select>
                             </label>
-                        </div>
-                        <div class="seg-preset-area" style="display:${seg.mode === 'PRESET' ? 'block' : 'none'};">
-                            <div style="display:flex;gap:4px;">
-                                <label style="flex:1;">프리셋
-                                    <input type="text" class="seg-preset" value="${SNW.DomUtil.escape(seg.presetCode || '')}"
-                                           style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                            <div class="snw-seg-preset-area" style="display: ${seg.mode === 'PRESET' ? 'grid' : 'none'};">
+                                <label>프리셋
+                                    <input type="text" class="seg-preset" value="${SNW.DomUtil.escape(seg.presetCode || '')}">
                                 </label>
-                                <label style="flex:1;">스타일
-                                    <input type="text" class="seg-style" value="${SNW.DomUtil.escape(seg.styleCode || '')}"
-                                           style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                <label>스타일
+                                    <input type="text" class="seg-style" value="${SNW.DomUtil.escape(seg.styleCode || '')}">
                                 </label>
                             </div>
-                        </div>
-                        <div class="seg-fixed-area" style="display:${seg.mode === 'FIXED' ? 'block' : 'none'};">
-                            <label>고정 풍속(%)
-                                <input type="number" class="seg-fixed" min="0" max="100" value="${seg.fixedSpeed || 0}"
-                                       style="width:100%;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                            </label>
+                            <div class="snw-seg-fixed-area" style="display: ${seg.mode === 'FIXED' ? 'block' : 'none'};">
+                                <label>고정 풍속(%)
+                                    <input type="number" class="seg-fixed" min="0" max="100" value="${seg.fixedSpeed || 0}">
+                                </label>
+                            </div>
                         </div>`;
 
-                    segDiv.querySelector('.seg-mode').addEventListener('change', (e) => {
-                        segDiv.querySelector('.seg-preset-area').style.display = e.target.value === 'PRESET' ? 'block' : 'none';
-                        segDiv.querySelector('.seg-fixed-area').style.display  = e.target.value === 'FIXED'  ? 'block' : 'none';
+                    const modeSel = segDiv.querySelector('.seg-mode');
+                    const presetArea = segDiv.querySelector('.snw-seg-preset-area');
+                    const fixedArea = segDiv.querySelector('.snw-seg-fixed-area');
+
+                    modeSel.addEventListener('change', (e) => {
+                        const isPreset = e.target.value === 'PRESET';
+                        presetArea.style.display = isPreset ? 'grid' : 'none';
+                        fixedArea.style.display  = isPreset ? 'none' : 'block';
                     });
-                    segDiv.querySelector('[data-remove-seg]').addEventListener('click', () => _removeSeg(idx));
+
+                    segDiv.querySelector('[data-remove-seg]').addEventListener('click', () => _removeWithUndo(idx));
                     segContainer.appendChild(segDiv);
                 });
             };

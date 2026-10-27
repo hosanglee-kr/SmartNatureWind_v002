@@ -261,8 +261,15 @@ window.SNW = window.SNW || {};
         window.SNW_BOOT_CALLED = true;
         
         try {
-            if (window.SNW_OFFLINE && SNW.Offline && SNW.Offline.ready) {
-                await SNW.Offline.ready;
+            if (window.SNW_OFFLINE) {
+                let waitCount = 0;
+                while ((!SNW.Offline || !SNW.Offline.ready) && waitCount < 60) {
+                    await new Promise(r => setTimeout(r, 50));
+                    waitCount++;
+                }
+                if (SNW.Offline && SNW.Offline.ready) {
+                    await SNW.Offline.ready;
+                }
             }
             
             SNW.I18n.applyTo(document);

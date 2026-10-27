@@ -279,13 +279,20 @@
 
 **계약 준수 확정**: §3.1 화이트리스트 예외 없이 async_tcp는 반드시 `getRootSnapshot` 경유.
 
+### 7.6 Batch H 프론트엔드 오프라인 로딩 계약 (LOAD-1~LOAD-2)
+
+- **선행 감지 계약**: `window.SNW_OFFLINE`은 번들 스크립트(`P010_bundle_0202.js`) 실행 전 `index.html` 상단에서 선행 판정 완료 필수.
+- **동기 주입 계약**: 오프라인 모드 활성화 시 `document.write('<script src="./js/998.offline_0202.js"><\/script>')`를 통해 번들 실행 전 오프라인 인터셉터가 DOM에 동기 등록되어야 함.
+- **부트스트랩 대기 계약**: `999.app.js`의 `SNW_BOOT()`는 `window.SNW_OFFLINE` 활성화 시 `SNW.Offline.ready`가 생성 및 완료될 때까지 안전 대기 가드(Wait Guard)를 수행한 후 API/WebSocket 초기화 진행.
+
 ---
 
 ## 8. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| **2026-10-26** | **v2.4** | **Batch G — §4 3행 추가, §7.4 27건 감사 신규, §7.5 B-2 위반 수정 화이트리스트 확정, index.html 통일 및 레거시 호환 제거** | Antigravity AI |
+| **2026-10-27** | **v2.5** | **Batch H — §7.6 프론트엔드 오프라인 로딩 및 부트스트랩 동기화 계약 추가 (LOAD-1~LOAD-2)** | Antigravity AI |
+| 2026-10-26 | v2.4 | **Batch G — §4 3행 추가, §7.4 27건 감사 신규, §7.5 B-2 위반 수정 화이트리스트 확정, index.html 통일 및 레거시 호환 제거** | Antigravity AI |
 | 2026-10-21 | v2.3 | 정규식 라우트(`html_v0202|html_v3`), 듀얼 폴백 서빙, `P010_bundle_0202.js`, `CT10::ackEventState` 일괄 현행화 | Antigravity AI |
 | 2026-10-20 | v2.2 | Batch A~F 반영: §2.1 D-4 atomic, §4 A-2/F-2/F-3/D-1 매트릭스, §4.2~§4.4 신규, §7.3 A-1~F-10 통합 | Antigravity AI |
 | 2026-10-19 | v2.1 | N-1~N-4, G-1~G-3 현행화 | Antigravity AI |

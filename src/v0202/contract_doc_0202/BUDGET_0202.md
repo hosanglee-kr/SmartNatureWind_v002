@@ -192,15 +192,15 @@
 
 ### 8.5 예산 대비 실측 판정
 
-| 예산 항목 | 목표 | 실측 | 여유 | 판정 |
+| 예산 항목 | 목표 | 실측 (2026-10-27) | 여유 | 판정 |
 |---|---:|---:|---:|:---:|
-| JS gzip | < 40 KB | 37.5 KB | 2.5 KB | ✅ |
-| CSS gzip | < 10 KB | 7.6 KB | 2.4 KB | ✅ |
-| HTML gzip | < 2 KB | 1.0 KB | 1.0 KB | ✅ |
-| **프론트엔드 합계 gzip** | **< 60 KB** | **46.1 KB** | **13.9 KB** | ✅ |
-| LittleFS 총 사용 | < 200 KB | ~160 KB | 40 KB | ✅ |
-| Flash RAM | < 40% | 34.1% | 5.9% | ✅ |
-| Flash 용량 | < 30% | 23.3% | 6.7% | ✅ |
+| JS gzip (`P010_bundle_0202.js.gz`) | < 80 KB | 64.8 KB (raw 328.2 KB) | 15.2 KB | ✅ (80.3% 절감) |
+| CSS gzip (`P000_common_0202.css.gz`) | < 15 KB | 10.1 KB (raw 51.0 KB) | 4.9 KB | ✅ (80.2% 절감) |
+| HTML gzip (`index.html.gz`) | < 2 KB | 1.3 KB (raw 3.5 KB) | 0.7 KB | ✅ (63.3% 절감) |
+| **프론트엔드 합계 gzip** | **< 100 KB** | **76.2 KB** | **23.8 KB** | ✅ |
+| LittleFS 총 사용 | < 200 KB | ~170 KB | ~30 KB | ✅ |
+| Flash RAM | < 40% | 33.6% | 6.4% | ✅ |
+| Flash 용량 | < 30% | 23.4% | 6.6% | ✅ |
 | 첫 방문 HTTP | ≤ 3 | 3 | 0 | ✅ |
 | 페이지 전환 HTTP | 0 | 0 | 0 | ✅ |
 
@@ -297,7 +297,8 @@
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| **2026-10-26** | **v2.5** | **Batch G — §2 N10 flush 실측(10ms), §3 B-2/B-9/B-12/C-4/B-5 WCET 보정, §10.1/§10.2 신규 (Batch G 영향 + B-1 상세)** | Antigravity AI |
+| **2026-10-27** | **v2.6** | **Batch H — §8.5 프론트엔드 자산 예산 실측치 갱신 (JS 64.8KB, CSS 10.1KB, HTML 1.3KB = 76.2KB gzip), 번들 압축률 80.3% 반영** | Antigravity AI |
+| 2026-10-26 | v2.5 | **Batch G — §2 N10 flush 실측(10ms), §3 B-2/B-9/B-12/C-4/B-5 WCET 보정, §10.1/§10.2 신규 (Batch G 영향 + B-1 상세)** | Antigravity AI |
 | 2026-10-21 | v2.4 | `_0202` 자산 실측명 반영, `/control/ack` 및 `/wifi/state` WCET 추가, 듀얼 서빙 폴백 반영 | Antigravity AI |
 | 2026-10-21 | v2.3 | §8 신규 — 프론트엔드 자산 예산 (v0202 SPA). 배포 자산 실측 (JS 37.5 KB / CSS 7.6 KB / HTML 1.0 KB = 46.1 KB gzip), HTTP 요청 예산 (세션 3건), 예산 여유 분석, 확장 우선순위 | Antigravity AI |
 | 2026-10-20 | v2.2 | Batch A~F 반영: §2 D-1 반영, §3 A-2/F-2/F-3 반영, §6 ws_mutex/sta_connected 메트릭, §8 RAM/Flash 실측, §9 Batch 예산 영향 신규 | Antigravity AI |

@@ -275,7 +275,8 @@ CT10_WS_tick (T-loop)
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| **2026-10-26** | **v2.4** | **Batch G — §1 M10 `_state.pirActive` 판정 규약 명시, §3.1 신규 (C-3 타임라인)** | Antigravity AI |
+| **2026-10-27** | **v2.5** | **Batch H 웹 UI 고도화/오프라인 로더 동기화 상태 무결성 확인 (C++ FSM 변경 없음)** | Antigravity AI |
+| 2026-10-26 | v2.4 | **Batch G — §1 M10 `_state.pirActive` 판정 규약 명시, §3.1 신규 (C-3 타임라인)** | Antigravity AI |
 | 2026-10-21 | v2.3 | AutoOff 래치 해제 엔드포인트 `/control/ack` (`HTTP_API_CTL_ACK`) 명시 및 현행화 | Antigravity AI |
 | 2026-10-20 | v2.2 | Batch A~F 반영: §1 `_dirty*`/`s_staConnected` atomic 명시, §2.4 F-5 profile fall-through, §3 S10 상수, §4 WF10 C-7/C-8/D-4, §6.3 D-1 배치, §7 AutoOff, §8 E-2 분할 상태 소유권 신규 | Antigravity AI |
 | 2026-10-19 | v2.1 | N-1, G-2/G-4, N-3 현행화 | Antigravity AI |

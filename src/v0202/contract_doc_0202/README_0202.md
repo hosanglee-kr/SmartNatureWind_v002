@@ -24,12 +24,9 @@ src/v0202/
 ├── Req_ImplPlan_0202/             # 요구사항 및 구현 계획서
 ├── User_Manual_0202/              # 사용자 매뉴얼
 ├── tools_0202/                    # v0202 빌드/계약 도구 (pio_gzip_0202.py, commit_contracts_0202.py)
-├── tools_0202/                    # v0202 계약 검증 도구 (commit_contracts_0202.py) 및 참조 자료(Ref/)
 │
-├── data_v0202_src/                # [웹 개발 원본] (31 JS + 10 CSS + HTML Shell)
-├── data_v0202/                    # [배포 스테이징] LittleFS 이미지 대상 (json 10개 + html_v0202 3개 자산)
-├── data_src_v0202/                # [레거시 백업] v0202 원본 리소스
-├── data_v0202/                    # [레거시 백업] v0202 배포 리소스
+├── data_v0202_src/                # [웹 개발 원본] (34 번들 JS + 10 CSS + HTML Shell + 998.offline)
+├── data_v0202/                    # [배포 스테이징] LittleFS 이미지 대상 (json 9개 + html_v0202 3개 번들 자산)
 │
 └── [C++ 소스군, v0202 접미사]
     ├── main.cpp, A00_Main_0202.* (엔트리)
@@ -162,6 +159,20 @@ src/v0202/
 | **B-13** | 🟠 High | `A00_Main_0202.cpp` | 음수 LED pin → GPIO 255 크래시 | ✅ 유효성 검증 + 기본값 |
 
 **수정 파일 (17개)**: `main.cpp`, `A20_Const_Const_0202.h`, `M10_MotionLogic_0202.h`, `W10_Web_Upload_0202.cpp`, `070.router.js`, `200.page.dashboard.js`, `W10_Web_Routes_Config_0202.cpp`, `W10_Web_Routes_CRUD_0202.cpp`, `W10_Web_WS_0202.cpp`, `C10_Config_Sys_0202.cpp`, `240.page.settings.js`, `270.page.network.js`, `W10_Web_Routes_System_0202.cpp`, `N10_NvsManager_0202.cpp`, `130.ui.form.js`, `S10_Simul_Core_0202.cpp`, `A00_Main_0202.cpp`, `W10_Web_Static_0202.cpp`
+
+### 3.5 Batch H — 웹 UI 고도화 및 오프라인 로더 개선 (0202_006)
+
+| ID | 심각도 | 위치 | 요약 | 상태 |
+|---|---|---|---|---|
+| **UI-1** | 🟡 Mid | `_components.css` | 모달 스크롤 시 Header/Footer 사라짐 | ✅ Flexbox 구조화 (Header/Footer 고정, Body 단독 터치 스크롤) |
+| **UI-2** | 🟡 Mid | `_components.css`, `220.schedule.js`, `230.profiles.js` | 세그먼트 1열 배치로 모바일 스크롤 과다 | ✅ 세그먼트 카드 2열 그리드(`snw-seg-card`, `snw-seg-grid`) 적용 |
+| **UI-3** | 🟡 Mid | `_profiles.css` | 구형 모달 스타일로 인한 이중 스크롤 위험 | ✅ `#snw-modal-overlay` 오버라이드 제거 및 공통 스타일 통합 |
+| **UI-4** | 🔴 High | `220.schedule.js`, `230.profiles.js` | 세그먼트 삭제 시 Undo 기능 소실 위험 | ✅ 온전한 `_removeWithUndo` 로직 보존 및 프로파일 확대 적용 |
+| **LOAD-1** | 🔴 Blocker | `index.html` | 번들 스크립트 후행 실행으로 로컬 오프라인 모드 실패 | ✅ `window.SNW_OFFLINE` 감지 및 동기 로드(`document.write`) 선행 배치 |
+| **LOAD-2** | 🔴 High | `999.app.js` | 오프라인 어댑터 로드 전 `SNW_BOOT` 실행 레이스 | ✅ `SNW.Offline.ready` 폴링 대기 가드(Wait Guard) 추가 |
+| **LOAD-3** | 🟢 Low | `998.offline_0202.js` | 로컬 Live Server 환경에서 JSON 경로 404 실패 로그 | ✅ `JSON_BASE_CANDIDATES` 1순위를 `../json/`으로 조정 |
+
+**수정 파일 (7개)**: `_components.css`, `_profiles.css`, `220.page.schedule.js`, `230.page.profiles.js`, `index.html`, `999.app.js`, `998.offline_0202.js`
 
 ---
 
@@ -317,7 +328,8 @@ git push origin v0202-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| **2026-10-26** | **v2.4** | **Batch G — P0/P1 코드 재검토**: C-1~C-5 (크리티컬), NEW-C1/C2/U1~U4 (프론트), B-1~B-13 (백엔드/프론트 혼합). §3.4 신규 27건 테이블. 17개 파일 수정 | Antigravity AI |
+| **2026-10-27** | **v2.5** | **Batch H — 웹 UI 고도화 및 오프라인 로더 개선 (0202_006)**: 모달 Flexbox 구조화(UI-1), 세그먼트 2열 그리드(UI-2), 이중 스크롤 제거(UI-3), Undo 복원 보존(UI-4), 오프라인 로더 순서 최적화(LOAD-1), 부트스트랩 대기 가드(LOAD-2), JSON 탐색 최적화(LOAD-3). 총 7개 파일 수정 | Antigravity AI |
+| 2026-10-26 | v2.4 | **Batch G — P0/P1 코드 재검토**: C-1~C-5 (크리티컬), NEW-C1/C2/U1~U4 (프론트), B-1~B-13 (백엔드/프론트 혼합). §3.4 신규 27건 테이블. 17개 파일 수정 | Antigravity AI |
 | 2026-10-21 | v2.3 | `tools_0202`, `data_v0202`, `_0202` 자산 및 curl 검증 경로 일괄 현행화 | Antigravity AI |
 | 2026-10-20 | v2.2 | Batch A~F 반영: §1 디렉토리 트리 0201 접미사, §3 감사 이력 A~F 통합, §4.3 E-2 분할 원칙, §5.2 도구 4종, §6 Batch G 커밋 전략, §7 실측 자원 사용량 | Antigravity AI |
 | 2026-10-19 | v2.1 | N-1~N-4, G-1~G-3 반영 | Antigravity AI |

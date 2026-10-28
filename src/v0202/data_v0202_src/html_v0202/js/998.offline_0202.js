@@ -17,134 +17,18 @@ window.SNW = window.SNW || {};
         webPage: 'cfg_pages_0202.json'
     };
     
-    const cache = {
-        system: {
-            meta: { deviceName: "SmartNatureWind", version: "FW_2.0.2" },
-            system: {
-                logging: { level: "INFO", maxEntries: 300 },
-                webSocket: {
-                    wsChConfig: [
-                        { chIdx: 0, chName: 'state', chIntervalMs: 800, priority: 0 },
-                        { chIdx: 1, chName: 'metrics', chIntervalMs: 1500, priority: 1 },
-                        { chIdx: 2, chName: 'chart', chIntervalMs: 1200, priority: 2 },
-                        { chIdx: 3, chName: 'summary', chIntervalMs: 1500, priority: 3 }
-                    ],
-                    wsEtcConfig: { chartLargeBytes: 3500, chartThrottleMul: 2, wsCleanupMs: 10000 }
-                }
-            },
-            security: { apiKey: "", geminiApiKey: "" },
-            timeCfg: { ntpServer: "pool.ntp.org", timezone: "Asia/Seoul", syncIntervalMin: 60 },
-            hw: {
-                fanPwm: { pin: 6, channel: 0, freq: 25000, res: 10 },
-                fanConfig: { startPercentMin: 18, comfortPercentMin: 22, comfortPercentMax: 65, hardPercentMax: 90 },
-                pir: { enabled: true, pin: 13, debounceSec: 5, holdSec: 120 },
-                tempHum: { enabled: true, type: "DHT22", pin: 17, intervalSec: 30 },
-                led: { pin: 48, numPixels: 1, defaultBrightness: 20 }
-            }
-        },
-        wifi: {
-            wifi: {
-                wifiMode: 2,
-                ap: { ssid: "NatureWind", pass: "2540" },
-                sta: [
-                    { ssid: "HomeWiFi_5G", pass: "12345678" },
-                    { ssid: "Office_AP", pass: "admin1234" }
-                ]
-            }
-        },
-        motion: {
-            motion: {
-                pir: { enabled: true, holdSec: 120 },
-                timing: { simIntervalMs: 500, gustIntervalMs: 2000, thermalIntervalMs: 3000 },
-                sim: { presetCode: 'OCEAN', styleCode: 'BALANCE', fanPowerEnabled: true, intensity: 70, variability: 50, gustFreq: 45, fanLimit: 90, minFan: 10, turbSigma: 0.5, turbLenScale: 40, thermalStrength: 2, thermalRadius: 18 }
-            }
-        },
-        nvsSpec: null,
-        schedules: {
-            schedules: [
-            {
-                schId: 1,
-                schNo: 10,
-                name: "아침 바람 (Morning Breeze)",
-                enabled: true,
-                segCount: 2,
-                period: { days: [1, 1, 1, 1, 1, 0, 0], startTime: "08:00", endTime: "12:00" },
-                segments: [
-                    { order: 1, mode: 'PRESET', presetCode: 'COUNTRY_BREEZE', style: 'BALANCE', onMinutes: 20, offMinutes: 10, override: { enabled: false, windIntensity: -1.0, windVariability: -1.0, gustFrequency: -1.0 } },
-                    { order: 2, mode: 'FIXED', speed: 50, onMinutes: 15, offMinutes: 5, override: { enabled: false, windIntensity: -1.0, windVariability: -1.0, gustFrequency: -1.0 } }
-                ],
-                autoOff: { timer: { enabled: true, minutes: 180 }, offTime: { enabled: false, time: '00:00' }, offTemp: { enabled: false, temp: 0 } },
-                motion: { pir: { enabled: true, holdSec: 120 } }
-            },
-            {
-                schId: 2,
-                schNo: 20,
-                name: "저녁 휴식 (Evening Relax)",
-                enabled: false,
-                segCount: 1,
-                period: { days: [1, 1, 1, 1, 1, 1, 1], startTime: "19:00", endTime: "22:00" },
-                segments: [
-                    { order: 1, mode: 'PRESET', presetCode: 'OCEAN', style: 'RELAX', onMinutes: 30, offMinutes: 10, override: { enabled: false, windIntensity: -1.0, windVariability: -1.0, gustFrequency: -1.0 } }
-                ],
-                autoOff: { timer: { enabled: false, minutes: 0 }, offTime: { enabled: true, time: '22:00' }, offTemp: { enabled: false, temp: 0 } },
-                motion: { pir: { enabled: false, holdSec: 0 } }
-            }]
-        },
-        userProfiles: {
-            userProfiles: {
-                profiles: [
-                {
-                    profileId: 1,
-                    profileNo: 10,
-                    name: "수면 모드 (Sleep Care)",
-                    enabled: true,
-                    segCount: 2,
-                    segments: [
-                        { order: 1, mode: 'PRESET', presetCode: 'FOREST_CANOPY', style: 'SLEEP', onMinutes: 40, offMinutes: 0, override: { enabled: false, windIntensity: -1.0, windVariability: -1.0, gustFrequency: -1.0 } },
-                        { order: 2, mode: 'PRESET', presetCode: 'DESERT_NIGHT', style: 'SLEEP', onMinutes: 120, offMinutes: 0, override: { enabled: false, windIntensity: -1.0, windVariability: -1.0, gustFrequency: -1.0 } }
-                    ],
-                    autoOff: { timer: { enabled: true, minutes: 240 }, offTime: { enabled: true, time: "05:00" }, offTemp: { enabled: true, temp: 26.0 } },
-                    motion: { pir: { enabled: false, holdSec: 0 } }
-                },
-                {
-                    profileId: 2,
-                    profileNo: 20,
-                    name: "집중 모드 (Focus Care)",
-                    enabled: true,
-                    segCount: 1,
-                    segments: [
-                        { order: 1, mode: 'PRESET', presetCode: 'COUNTRY_BREEZE', style: 'FOCUS', onMinutes: 60, offMinutes: 0, override: { enabled: false, windIntensity: -1.0, windVariability: -1.0, gustFrequency: -1.0 } }
-                    ],
-                    autoOff: { timer: { enabled: true, minutes: 180 }, offTime: { enabled: false, time: '00:00' }, offTemp: { enabled: false, temp: 0 } },
-                    motion: { pir: { enabled: true, holdSec: 300 } }
-                }]
-            }
-        },
-        windDict: {
-            windDict: {
-                presets: [
-                    { idx: 0, code: "OCEAN", name: "Ocean Breeze", factors: { windIntensity: 70, gustFrequency: 50, windVariability: 55, fanLimit: 95, minFan: 12, turbulenceLengthScale: 42, turbulenceIntensitySigma: 0.55, thermalBubbleStrength: 2.2, thermalBubbleRadius: 20, baseMinWind: 1.8, baseMaxWind: 5.5 } },
-                    { idx: 1, code: "COUNTRY_BREEZE", name: "Country Breeze", factors: { windIntensity: 55, gustFrequency: 30, windVariability: 40, fanLimit: 90, minFan: 10, turbulenceLengthScale: 38, turbulenceIntensitySigma: 0.4, thermalBubbleStrength: 1.8, thermalBubbleRadius: 16, baseMinWind: 0.7, baseMaxWind: 3.4 } },
-                    { idx: 2, code: "MEDITERRANEAN", name: "Mediterranean", factors: { windIntensity: 65, gustFrequency: 38, windVariability: 50, fanLimit: 92, minFan: 10, turbulenceLengthScale: 35, turbulenceIntensitySigma: 0.48, thermalBubbleStrength: 1.9, thermalBubbleRadius: 18, baseMinWind: 1.6, baseMaxWind: 3.8 } },
-                    { idx: 3, code: "MOUNTAIN", name: "Mountain", factors: { windIntensity: 80, gustFrequency: 55, windVariability: 65, fanLimit: 96, minFan: 14, turbulenceLengthScale: 45, turbulenceIntensitySigma: 0.65, thermalBubbleStrength: 2.5, thermalBubbleRadius: 20, baseMinWind: 2.2, baseMaxWind: 7.5 } },
-                    { idx: 4, code: "PLAINS", name: "Plains", factors: { windIntensity: 85, gustFrequency: 70, windVariability: 75, fanLimit: 100, minFan: 20, turbulenceLengthScale: 50, turbulenceIntensitySigma: 0.75, thermalBubbleStrength: 2.8, thermalBubbleRadius: 22, baseMinWind: 2.5, baseMaxWind: 8.5 } },
-                    { idx: 5, code: "HARBOR_BREEZE", name: "Harbor Breeze", factors: { windIntensity: 60, gustFrequency: 45, windVariability: 45, fanLimit: 90, minFan: 12, turbulenceLengthScale: 36, turbulenceIntensitySigma: 0.45, thermalBubbleStrength: 1.7, thermalBubbleRadius: 15, baseMinWind: 1.2, baseMaxWind: 4.2 } },
-                    { idx: 6, code: "FOREST_CANOPY", name: "Forest Canopy", factors: { windIntensity: 50, gustFrequency: 25, windVariability: 35, fanLimit: 88, minFan: 8, turbulenceLengthScale: 32, turbulenceIntensitySigma: 0.35, thermalBubbleStrength: 1.5, thermalBubbleRadius: 12, baseMinWind: 0.5, baseMaxWind: 2.8 } },
-                    { idx: 7, code: "URBAN_SUNSET", name: "Urban Sunset", factors: { windIntensity: 40, gustFrequency: 20, windVariability: 25, fanLimit: 85, minFan: 8, turbulenceLengthScale: 28, turbulenceIntensitySigma: 0.3, thermalBubbleStrength: 1.3, thermalBubbleRadius: 10, baseMinWind: 0.4, baseMaxWind: 2.2 } },
-                    { idx: 8, code: "TROPICAL_RAIN", name: "Tropical Rain", factors: { windIntensity: 90, gustFrequency: 85, windVariability: 85, fanLimit: 100, minFan: 22, turbulenceLengthScale: 55, turbulenceIntensitySigma: 0.85, thermalBubbleStrength: 3.2, thermalBubbleRadius: 25, baseMinWind: 2.8, baseMaxWind: 9.5 } },
-                    { idx: 9, code: "DESERT_NIGHT", name: "Desert Night", factors: { windIntensity: 45, gustFrequency: 20, windVariability: 30, fanLimit: 85, minFan: 8, turbulenceLengthScale: 30, turbulenceIntensitySigma: 0.3, thermalBubbleStrength: 1.2, thermalBubbleRadius: 10, baseMinWind: 0.9, baseMaxWind: 3.1 } }
-                ],
-                styles: [
-                    { idx: 0, code: "BALANCE", name: "Balance", factors: { intensityFactor: 1, variabilityFactor: 1, gustFactor: 1, thermalFactor: 1 } },
-                    { idx: 1, code: "ACTIVE", name: "Active", factors: { intensityFactor: 1.25, variabilityFactor: 1.2, gustFactor: 1.3, thermalFactor: 1.1 } },
-                    { idx: 2, code: "FOCUS", name: "Focus", factors: { intensityFactor: 1.05, variabilityFactor: 0.8, gustFactor: 0.85, thermalFactor: 0.9 } },
-                    { idx: 3, code: "RELAX", name: "Relax", factors: { intensityFactor: 0.8, variabilityFactor: 0.85, gustFactor: 0.7, thermalFactor: 1.1 } },
-                    { idx: 4, code: "SLEEP", name: "Sleep", factors: { intensityFactor: 0.65, variabilityFactor: 0.6, gustFactor: 0.4, thermalFactor: 0.9 } }
-                ]
-            }
-        },
-        webPage: null
-    };
+        // 기본 캐시 데이터: 998.offline_data_0202.js에서 로드된 SNW.OFFLINE_DEFAULT_CACHE 참조
+    const DEFAULT_CACHE = (SNW && SNW.OFFLINE_DEFAULT_CACHE) || {};
+    
+    // 캐시 객체 초기화: LocalStorage에 사용자가 수정한 내용이 있으면 우선 로드, 없으면 DEFAULT_CACHE 사용
+    const cache = {};
+    for (const [key, defaultVal] of Object.entries(DEFAULT_CACHE)) {
+        const saved = localStorage.getItem('snw.offline.' + key);
+        if (saved) {
+            try { cache[key] = JSON.parse(saved); continue; } catch(e) {}
+        }
+        cache[key] = defaultVal ? JSON.parse(JSON.stringify(defaultVal)) : null;
+    }
     
     const runtime = {
         control: {
@@ -228,6 +112,12 @@ window.SNW = window.SNW || {};
         }));
     }
     
+    function persistCache(key) {
+        if (cache[key]) {
+            try { localStorage.setItem('snw.offline.' + key, JSON.stringify(cache[key])); } catch (e) {}
+        }
+    }
+
     function ensureApi() {
         if (!SNW.Api) SNW.Api = { ApiError: class extends Error { constructor(status) { super('Error');
                     this.status = status; } } };
@@ -287,19 +177,61 @@ window.SNW = window.SNW || {};
         A.overrideFixed = async (percent) => {
             runtime.sim.active = true;
             runtime.control.active = true;
+            runtime.control.state = 'OVERRIDE_HOLD';
+            runtime.control.stateCode = 1;
+            runtime.control.reason = 'MANUAL_OVERRIDE';
+            runtime.control.reasonCode = 1;
             if (percent != null) {
                 runtime.sim.intensity = percent;
             }
+            if (SNW.Store) SNW.Store.set({ control: runtime.control, sim: runtime.sim, fsmState: 1, fsmReason: 1 });
             return { result: 'ok' };
         };
         A.overrideClear = async () => {
             runtime.sim.active = false;
             runtime.control.active = false;
+            runtime.control.state = 'IDLE';
+            runtime.control.stateCode = 0;
+            runtime.control.reason = 'POWER_OFF';
+            runtime.control.reasonCode = 0;
+            if (SNW.Store) SNW.Store.set({ control: runtime.control, sim: runtime.sim, fsmState: 0, fsmReason: 0 });
             return { result: 'ok' };
         };
+        function resolvePreset(presetCode, styleCode) {
+            const presets = (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.presets) || [];
+            const target = presets.find(p => p.code === presetCode);
+            let intensity = target?.params?.windIntensity ?? 50;
+            let variability = target?.params?.windVariability ?? 40;
+            let gustFreq = target?.params?.gustFrequency ?? 30;
+
+            const style = styleCode || runtime.sim.styleCode || 'BALANCE';
+            if (style === 'REFRESH') {
+                intensity = Math.min(100, Math.round(intensity * 1.1));
+                variability = Math.min(100, variability + 15);
+                gustFreq = Math.min(100, gustFreq + 15);
+            } else if (style === 'WAVE') {
+                variability = Math.min(100, variability + 20);
+                gustFreq = Math.min(100, gustFreq + 10);
+            } else if (style === 'SLEEP') {
+                intensity = Math.min(intensity, 30);
+                variability = 15;
+                gustFreq = 5;
+            }
+            return { intensity, variability, gustFreq };
+        }
+
         A.overridePreset = async (b) => {
-            runtime.sim.presetCode = b.presetCode;
             runtime.sim.active = true;
+            runtime.control.active = true;
+            if (b.presetCode) {
+                runtime.sim.presetCode = b.presetCode;
+                const r = resolvePreset(b.presetCode, b.styleCode || runtime.sim.styleCode);
+                runtime.sim.intensity = r.intensity;
+                runtime.sim.variability = r.variability;
+                runtime.sim.gustFreq = r.gustFreq;
+            }
+            if (b.styleCode) runtime.sim.styleCode = b.styleCode;
+            if (SNW.Store) SNW.Store.set({ control: runtime.control, sim: runtime.sim, lastUpdateMs: Date.now() });
             return { result: 'ok' };
         };
         A.overrideParams = async (b) => {
@@ -308,19 +240,23 @@ window.SNW = window.SNW || {};
                 if (b.windVariability != null) runtime.sim.variability = b.windVariability;
                 if (b.gustFrequency != null) runtime.sim.gustFreq = b.gustFrequency;
             }
+            if (SNW.Store) SNW.Store.set({ control: runtime.control, sim: runtime.sim, lastUpdateMs: Date.now() });
             return { result: 'ok', updated: true };
         };
 
         A.patchSim = async (p) => {
-            if (p.styleCode) {
-                runtime.sim.styleCode = p.styleCode;
-                if (p.styleCode === 'SLEEP') {
-                    runtime.sim.intensity = 35;
-                    runtime.sim.variability = 20;
-                    runtime.sim.gustFreq = 10;
-                }
+            if (p.presetCode || p.styleCode) {
+                const code = p.presetCode || runtime.sim.presetCode || 'FOREST';
+                const style = p.styleCode || runtime.sim.styleCode || 'BALANCE';
+                const r = resolvePreset(code, style);
+                runtime.sim.presetCode = code;
+                runtime.sim.styleCode = style;
+                runtime.sim.intensity = (p.intensity != null) ? p.intensity : r.intensity;
+                runtime.sim.variability = (p.variability != null) ? p.variability : r.variability;
+                runtime.sim.gustFreq = (p.gustFreq != null) ? p.gustFreq : r.gustFreq;
             }
             Object.assign(runtime.sim, p);
+            if (SNW.Store) SNW.Store.set({ control: runtime.control, sim: runtime.sim, lastUpdateMs: Date.now() });
             return { updated: true };
         };
 
@@ -402,16 +338,23 @@ window.SNW = window.SNW || {};
                 motion: {}
             }, b.schedule || {});
             list.push(newSch);
+            persistCache('schedules');
             return { result: 'created', id };
         };
-        A.deleteSchedule = async (id) => { cache.schedules.schedules = cache.schedules.schedules.filter(s => s.schId !== id); return { deleted: true }; };
+        A.deleteSchedule = async (id) => { 
+            cache.schedules.schedules = (cache.schedules.schedules || []).filter(s => s.schId !== id); 
+            persistCache('schedules');
+            return { deleted: true }; 
+        };
         A.updateSchedule = async (id, b) => {
-            const idx = cache.schedules.schedules.findIndex(s => s.schId === id);
-            if (idx >= 0) Object.assign(cache.schedules.schedules[idx], b.schedule || {});
+            const list = cache.schedules.schedules || [];
+            const idx = list.findIndex(s => s.schId === id);
+            if (idx >= 0) Object.assign(list[idx], b.schedule || {});
+            persistCache('schedules');
             return { updated: true };
         };
         A.addProfile = async (b) => {
-            const list = cache.userProfiles.userProfiles.profiles || [];
+            const list = (cache.userProfiles && cache.userProfiles.userProfiles && cache.userProfiles.userProfiles.profiles) || [];
             const id = list.length + 1;
             const newProf = Object.assign({
                 profileId: id,
@@ -430,37 +373,73 @@ window.SNW = window.SNW || {};
                 motion: {}
             }, b.profile || {});
             list.push(newProf);
+            persistCache('userProfiles');
             return { result: 'created', id };
         };
-        A.deleteProfile = async (id) => { cache.userProfiles.userProfiles.profiles = cache.userProfiles.userProfiles.profiles.filter(p => p.profileId !== id); return { deleted: true }; };
+        A.deleteProfile = async (id) => { 
+            if (cache.userProfiles && cache.userProfiles.userProfiles && cache.userProfiles.userProfiles.profiles) {
+                cache.userProfiles.userProfiles.profiles = cache.userProfiles.userProfiles.profiles.filter(p => p.profileId !== id); 
+                persistCache('userProfiles');
+            }
+            return { deleted: true }; 
+        };
         A.updateProfile = async (id, b) => {
-            const list = cache.userProfiles.userProfiles.profiles;
+            const list = (cache.userProfiles && cache.userProfiles.userProfiles && cache.userProfiles.userProfiles.profiles) || [];
             const idx = list.findIndex(p => p.profileId === id);
             if (idx >= 0) Object.assign(list[idx], b.profile || {});
+            persistCache('userProfiles');
             return { updated: true };
         };
         A.addWindProfile = async (b) => {
-            const list = cache.windDict.windDict.presets || [];
+            const list = (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.presets) || [];
             list.push(Object.assign({ idx: list.length }, b.preset || {}));
+            persistCache('windDict');
             return { result: 'created', id: list.length - 1 };
         };
-        A.deleteWindProfile = async (id) => { cache.windDict.windDict.presets = cache.windDict.windDict.presets.filter((p, i) => i !== id); return { deleted: true }; };
+        A.deleteWindProfile = async (id) => { 
+            if (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.presets) {
+                cache.windDict.windDict.presets = cache.windDict.windDict.presets.filter((p, i) => i !== id); 
+                persistCache('windDict');
+            }
+            return { deleted: true }; 
+        };
         A.updateWindProfile = async (id, b) => {
-            const list = cache.windDict.windDict.presets;
+            const list = (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.presets) || [];
             if (list[id]) Object.assign(list[id], b.preset || {});
+            persistCache('windDict');
             return { updated: true };
         };
     }
     
+    const wsSubscribers = {
+        state: new Set(),
+        chart: new Set(),
+        metrics: new Set(),
+        diag: new Set(),
+        log: new Set()
+    };
+
     function stubWs() {
         if (SNW.WsManager) {
             SNW.WsManager.initByLevel = () => {};
-            SNW.WsManager.get = () => ({ onMessage: () => () => {}, onOpen: () => () => {}, onClose: () => () => {} });
+            SNW.WsManager.get = (ch) => {
+                const subs = wsSubscribers[ch] || (wsSubscribers[ch] = new Set());
+                return {
+                    onMessage: (cb) => {
+                        subs.add(cb);
+                        return () => subs.delete(cb);
+                    },
+                    onOpen: (cb) => { if (typeof cb === 'function') setTimeout(cb, 0); return () => {}; },
+                    onClose: () => () => {},
+                    send: () => true
+                };
+            };
         }
     }
     
     function startSimulator() {
-        setInterval(() => {
+        if (window._snw_sim_timer) return;
+        window._snw_sim_timer = setInterval(() => {
             if (!runtime.sim.active) return;
             const intensity = runtime.sim.intensity != null ? runtime.sim.intensity : 50;
             const variability = runtime.sim.variability != null ? runtime.sim.variability : 40;
@@ -472,11 +451,229 @@ window.SNW = window.SNW || {};
             runtime.control.sensor.tempC = Number((24 + Math.sin(Date.now() / 60000) * 1.5).toFixed(1));
             runtime.control.sensor.humidity = Math.round(55 + Math.cos(Date.now() / 90000) * 5);
             runtime.control.sensor.motionActive = (Math.floor(Date.now() / 20000) % 2) === 0;
-            runtime.chart.push({ t: Date.now(), wind: runtime.sim.windSpeed, targetWind: runtime.sim.targetWind, pwm: runtime.sim.pwmDuty, gust: 0, thermal: 0 });
+            
+            const chartPoint = {
+                t: Date.now(),
+                wind: runtime.sim.windSpeed,
+                targetWind: runtime.sim.targetWind,
+                pwm: runtime.sim.pwmDuty,
+                gust: 0,
+                thermal: 0
+            };
+            runtime.chart.push(chartPoint);
             if (runtime.chart.length > 120) runtime.chart.shift();
-            if (SNW.Store) SNW.Store.set({ control: runtime.control, sim: runtime.sim, connection: 'online' });
+            
+            // WS 에뮬레이션 브로드캐스트
+            if (wsSubscribers.chart) {
+                wsSubscribers.chart.forEach(fn => { try { fn(chartPoint); } catch (e) {} });
+            }
+            if (wsSubscribers.state) {
+                const stateData = { control: runtime.control, sim: runtime.sim, runtime: runtime.runtime };
+                wsSubscribers.state.forEach(fn => { try { fn(stateData); } catch (e) {} });
+            }
+            
+            if (SNW.Store) {
+                SNW.Store.set({
+                    control: runtime.control,
+                    sim: runtime.sim,
+                    connection: 'online',
+                    lastUpdateMs: Date.now()
+                });
+            }
         }, 1000);
     }
+    
+    function exportBackup() {
+        const backupData = {
+            version: '2.0.2',
+            exportedAt: new Date().toISOString(),
+            cache: cache
+        };
+        const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `snw_offline_backup_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        return backupData;
+    }
+
+    function importBackup(jsonString) {
+        try {
+            const data = (typeof jsonString === 'string') ? JSON.parse(jsonString) : jsonString;
+            if (data && data.cache) {
+                for (const [k, v] of Object.entries(data.cache)) {
+                    cache[k] = v;
+                    persistCache(k);
+                }
+                alert('오프라인 설정이 성공적으로 복원되었습니다.');
+                location.reload();
+                return true;
+            }
+        } catch (e) {
+            console.error('Import failed', e);
+            alert('유효하지 않은 백업 형식입니다: ' + e.message);
+        }
+        return false;
+    }
+
+    function applyScenario(type) {
+        if (type === 'SLEEP') {
+            runtime.sim.presetCode = 'SLEEP';
+            runtime.sim.styleCode = 'SLEEP';
+            runtime.sim.intensity = 30;
+            runtime.sim.variability = 15;
+            runtime.sim.gustFreq = 0;
+            runtime.control.active = true;
+            runtime.control.stateCode = 3;
+            runtime.control.sensor.motionActive = true;
+        } else if (type === 'GALE') {
+            runtime.sim.presetCode = 'OCEAN';
+            runtime.sim.styleCode = 'REFRESH';
+            runtime.sim.intensity = 85;
+            runtime.sim.variability = 70;
+            runtime.sim.gustFreq = 75;
+            runtime.control.active = true;
+            runtime.control.stateCode = 3;
+            runtime.control.sensor.motionActive = true;
+        } else if (type === 'PIR_BLOCK') {
+            runtime.control.sensor.motionActive = false;
+            runtime.control.state = 'MOTION_BLOCKED';
+            runtime.control.stateCode = 4;
+            runtime.control.reason = 'MOTION_TIMEOUT';
+            runtime.control.reasonCode = 2;
+        } else if (type === 'AUTOOFF') {
+            runtime.control.active = false;
+            runtime.control.state = 'AUTOOFF_STOPPED';
+            runtime.control.stateCode = 5;
+            runtime.control.reason = 'AUTOOFF_TIMER';
+            runtime.control.reasonCode = 3;
+        } else { // NATURAL
+            runtime.sim.presetCode = 'FOREST';
+            runtime.sim.styleCode = 'BALANCE';
+            runtime.sim.intensity = 55;
+            runtime.sim.variability = 40;
+            runtime.sim.gustFreq = 30;
+            runtime.control.active = true;
+            runtime.control.stateCode = 3;
+            runtime.control.state = 'SCHEDULE_RUN';
+            runtime.control.sensor.motionActive = true;
+        }
+        if (SNW.Store) {
+            SNW.Store.set({
+                control: runtime.control,
+                sim: runtime.sim,
+                fsmState: runtime.control.stateCode,
+                fsmReason: runtime.control.reasonCode,
+                lastUpdateMs: Date.now()
+            });
+        }
+    }
+
+    function renderOfflineToolbar() {
+        if (document.getElementById('snw-offline-toolbar')) return;
+        const bar = document.createElement('div');
+        bar.id = 'snw-offline-toolbar';
+        bar.className = 'snw-offline-toolbar';
+        bar.style.cssText = `
+            background: #151b23; color: #e6edf3; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            border-bottom: 1px solid #30363d; z-index: 900; position: relative; width: 100%; transition: all 0.2s ease;
+        `;
+
+        const isMobile = (window.innerWidth <= 767);
+        let isCollapsed = isMobile || (localStorage.getItem('snw.offline.toolbar_collapsed') === '1');
+
+        function updateLayout() {
+            if (isCollapsed) {
+                bar.innerHTML = `
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding:3px 12px; height:24px; cursor:pointer;" id="snw-toolbar-toggle-area">
+                        <span style="display:inline-flex; align-items:center; gap:6px;">
+                            <span style="background:#238636; color:#fff; padding:1px 6px; border-radius:10px; font-weight:bold; font-size:10px;">🌿 OFFLINE DEMO</span>
+                            <span style="color:#8b949e; font-size:10px;">가상 모드 (클릭하여 펼치기)</span>
+                        </span>
+                        <button id="btn-toggle-toolbar" style="background:transparent; color:#58a6ff; border:none; cursor:pointer; font-size:10px; padding:0 4px;">펼치기 ▼</button>
+                    </div>
+                `;
+                bar.querySelector('#snw-toolbar-toggle-area').onclick = () => {
+                    isCollapsed = false;
+                    localStorage.setItem('snw.offline.toolbar_collapsed', '0');
+                    updateLayout();
+                };
+            } else {
+                bar.innerHTML = `
+                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; padding:6px 12px;">
+                        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
+                            <span style="background:#238636; color:#fff; padding:2px 6px; border-radius:10px; font-weight:bold; font-size:10px;">🌿 OFFLINE</span>
+                            <label style="color:#8b949e; font-size:11px;">시나리오:
+                                <select id="snw-offline-scenario" style="background:#21262d; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:2px 4px; font-size:11px; margin-left:3px;">
+                                    <option value="NATURAL">자연 산들바람 (기본)</option>
+                                    <option value="SLEEP">취침/수면풍 (약풍 30%)</option>
+                                    <option value="GALE">바닷바람/돌풍 (강풍 85%)</option>
+                                    <option value="PIR_BLOCK">모션 감지 차단 (PIR=OFF)</option>
+                                    <option value="AUTOOFF">자동 종료 래치 (AutoOff)</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:4px;">
+                            <button id="btn-offline-export" style="background:#21262d; color:#58a6ff; border:1px solid #30363d; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:10px;">📥 백업</button>
+                            <button id="btn-offline-import" style="background:#21262d; color:#58a6ff; border:1px solid #30363d; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:10px;">📤 복원</button>
+                            <button id="btn-offline-reset" style="background:#21262d; color:#f85149; border:1px solid #30363d; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:10px;">🔄 리셋</button>
+                            <button id="btn-collapse-toolbar" style="background:transparent; color:#8b949e; border:none; cursor:pointer; font-size:10px; padding:0 4px; margin-left:4px;" title="접기">접기 ▲</button>
+                            <input type="file" id="offline-import-file" accept=".json" style="display:none;" />
+                        </div>
+                    </div>
+                `;
+                bar.querySelector('#snw-offline-scenario').onchange = (e) => applyScenario(e.target.value);
+                bar.querySelector('#btn-offline-export').onclick = () => exportBackup();
+                const fileInput = bar.querySelector('#offline-import-file');
+                bar.querySelector('#btn-offline-import').onclick = () => fileInput.click();
+                fileInput.onchange = (e) => {
+                    const file = e.target.files && e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => importBackup(ev.target.result);
+                    reader.readAsText(file, 'utf-8');
+                };
+                bar.querySelector('#btn-offline-reset').onclick = () => {
+                    if (confirm('오프라인 로컬 저장소를 모두 초기화하시겠습니까?')) {
+                        Object.keys(localStorage).forEach(k => {
+                            if (k.startsWith('snw.offline.')) localStorage.removeItem(k);
+                        });
+                        location.reload();
+                    }
+                };
+                bar.querySelector('#btn-collapse-toolbar').onclick = () => {
+                    isCollapsed = true;
+                    localStorage.setItem('snw.offline.toolbar_collapsed', '1');
+                    updateLayout();
+                };
+            }
+        }
+
+        updateLayout();
+        const app = document.getElementById('app') || document.body;
+        app.insertBefore(bar, app.firstChild);
+
+        // 모바일 하단 탭 바(60px)와 본문 겹침 방지 여백 보장
+        if (isMobile) {
+            const main = document.getElementById('snw-main');
+            if (main) main.style.paddingBottom = '80px';
+        }
+    }
+
+    SNW.Offline = Object.assign(SNW.Offline || {}, {
+        ready: null,
+        _cache: cache,
+        _runtime: runtime,
+        isReady: () => true,
+        ensureApi,
+        stubWs,
+        persistCache,
+        exportBackup,
+        importBackup,
+        applyScenario
+    });
     
     SNW.Offline.ready = (async () => {
         ensureApi();
@@ -485,12 +682,28 @@ window.SNW = window.SNW || {};
         startSimulator();
         
         let waitCount = 0;
-        while (!SNW.LevelUtil && waitCount < 40) { await new Promise(r => setTimeout(r, 50));
-            waitCount++; }
+        while (!SNW.LevelUtil && waitCount < 40) {
+            await new Promise(r => setTimeout(r, 50));
+            waitCount++;
+        }
         if (SNW.LevelUtil) {
             SNW.LevelUtil.current = () => 'L4';
-            SNW.LevelUtil.atLeast = (lvl) => true;
+            SNW.LevelUtil.atLeast = () => true;
         }
         console.log('[Offline] 준비 완료 - 모든 필드 반환');
     })();
+
+    // 브라우저 DOM 준비 완료 시 번들 덮어쓰기 방어 및 L4 고정, 툴바 렌더링
+    if (typeof window !== 'undefined') {
+        try { localStorage.setItem('snw.level', 'L4'); } catch (e) {}
+        window.addEventListener('DOMContentLoaded', () => {
+            ensureApi();
+            stubWs();
+            if (SNW.LevelUtil) {
+                SNW.LevelUtil.current = () => 'L4';
+                SNW.LevelUtil.atLeast = () => true;
+            }
+            renderOfflineToolbar();
+        });
+    }
 })(window.SNW);

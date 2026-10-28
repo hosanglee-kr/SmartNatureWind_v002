@@ -17,6 +17,7 @@ window.SNW = window.SNW || {};
             document.body.appendChild(overlay);
         }
         overlay.innerHTML = '';
+        overlay.style.display = 'flex';
         overlay.classList.remove('is-open');
         
         const box = document.createElement('div');
@@ -41,6 +42,7 @@ window.SNW = window.SNW || {};
             overlay.classList.remove('is-open');
             setTimeout(() => {
                 overlay.innerHTML = '';
+                overlay.style.display = 'none';
                 if (!confirmed && typeof onCancel === 'function') {
                     try { onCancel(); } catch (e) {}
                 }
@@ -267,8 +269,14 @@ window.SNW = window.SNW || {};
                     await new Promise(r => setTimeout(r, 50));
                     waitCount++;
                 }
-                if (SNW.Offline && SNW.Offline.ready) {
-                    await SNW.Offline.ready;
+                if (SNW.Offline) {
+                    if (SNW.Offline.ready) await SNW.Offline.ready;
+                    if (typeof SNW.Offline.ensureApi === 'function') SNW.Offline.ensureApi();
+                    if (typeof SNW.Offline.stubWs === 'function') SNW.Offline.stubWs();
+                }
+                if (typeof SNW.LevelUtil !== 'undefined') {
+                    SNW.LevelUtil.current = () => 'L4';
+                    SNW.LevelUtil.atLeast = () => true;
                 }
             }
             

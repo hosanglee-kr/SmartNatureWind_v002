@@ -1,7 +1,7 @@
 
 /* ===== LAYER 0 ===== */
 
-/* ---- 000.const.js (7867 bytes) ---- */
+/* ---- 000.const.js (8445 bytes) ---- */
 // =========================================================
 // 000.const.js — 프론트엔드 상수 (변경 불변)
 // Layer 0 (기반) — 어떤 모듈도 참조하지 않음
@@ -9,6 +9,36 @@
 window.SNW = window.SNW || {};
 (function (SNW) {
     'use strict';
+
+    /* __AUTO_SYNC_CONST_START__ */
+    // [주의] 아래 AUTO_CONST 블록은 pio_gzip_0202.py에 의해 C++ 헤더에서 자동 동기화됩니다.
+    const AUTO_CONST = {
+        FSM_STATE: {
+            IDLE: 0,
+            OVERRIDE: 1,
+            PROFILE_RUN: 2,
+            SCHEDULE_RUN: 3,
+            MOTION_BLOCKED: 4,
+            AUTOOFF_STOPPED: 5,
+            TIME_INVALID: 6
+        },
+        FSM_REASON: {
+            NONE: 0,
+            OVERRIDE_ACTIVE: 1,
+            PROFILE_MODE: 2,
+            USER_PROFILE_ACTIVE: 3,
+            SCHEDULE_ACTIVE: 4,
+            NO_ACTIVE_SCHEDULE: 5,
+            NO_SCHEDULES: 6,
+            TIME_NOT_VALID: 7,
+            MOTION_NO_PRESENCE: 8,
+            AUTOOFF_TIMER: 9,
+            AUTOOFF_TIME: 10,
+            AUTOOFF_TEMP: 11
+        },
+        WIND_PHASE: { CALM: 'CALM', NORMAL: 'NORMAL', STRONG: 'STRONG' }
+    };
+    /* __AUTO_SYNC_CONST_END__ */
 
     SNW.C = {
         // =====================================================
@@ -20,12 +50,9 @@ window.SNW = window.SNW || {};
         },
 
         // =====================================================
-        // CT10 7-State FSM (SPEC §2.2)
+        // CT10 7-State FSM (SPEC §2.2) - 자동 동기화 연동
         // =====================================================
-        FSM_STATE: {
-            IDLE: 0, OVERRIDE: 1, PROFILE_RUN: 2, SCHEDULE_RUN: 3,
-            MOTION_BLOCKED: 4, AUTOOFF_STOPPED: 5, TIME_INVALID: 6
-        },
+        FSM_STATE: AUTO_CONST.FSM_STATE,
         FSM_STATE_META: {
             0: { code: 'IDLE',            icon: '⏸', color: 'gray',   labelKey: 'fsm.idle',           l1: true  },
             1: { code: 'OVERRIDE',        icon: '✋', color: 'blue',   labelKey: 'fsm.override',       l1: true  },
@@ -37,14 +64,9 @@ window.SNW = window.SNW || {};
         },
 
         // =====================================================
-        // CT10 Reason Code (SPEC §2.2)
+        // CT10 Reason Code (SPEC §2.2) - 자동 동기화 연동
         // =====================================================
-        FSM_REASON: {
-            NONE: 0, OVERRIDE_ACTIVE: 1, PROFILE_MODE: 2, USER_PROFILE_ACTIVE: 3,
-            SCHEDULE_ACTIVE: 4, NO_ACTIVE_SCHEDULE: 5, NO_SCHEDULES: 6,
-            TIME_NOT_VALID: 7, MOTION_NO_PRESENCE: 8,
-            AUTOOFF_TIMER: 9, AUTOOFF_TIME: 10, AUTOOFF_TEMP: 11
-        },
+        FSM_REASON: AUTO_CONST.FSM_REASON,
         FSM_REASON_META: {
             0:  { code: 'NONE',                labelKey: 'reason.none'             },
             1:  { code: 'OVERRIDE_ACTIVE',     labelKey: 'reason.overrideActive'   },
@@ -61,9 +83,9 @@ window.SNW = window.SNW || {};
         },
 
         // =====================================================
-        // S10 Wind Phase
+        // S10 Wind Phase - 자동 동기화 연동
         // =====================================================
-        WIND_PHASE: { CALM: 'CALM', NORMAL: 'NORMAL', STRONG: 'STRONG' },
+        WIND_PHASE: AUTO_CONST.WIND_PHASE,
         WIND_PHASE_META: {
             CALM:   { icon: '🍃', color: 'gray',   labelKey: 'phase.calm'   },
             NORMAL: { icon: '🟢', color: 'green',  labelKey: 'phase.normal' },
@@ -1539,7 +1561,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 033.util.template.js (14532 bytes) ---- */
+/* ---- 033.util.template.js (15330 bytes) ---- */
 // =========================================================
 // 033.util.template.js — SNW.Tpl (페이지 HTML 템플릿)
 // Layer 1 (유틸) — SNW.C, SNW.DomUtil 참조
@@ -1604,19 +1626,28 @@ window.SNW = window.SNW || {};
                     </section>
                     
                     <section class="snw-card snw-card--preset">
-                        <h2 data-i18n="dashboard.presetTitle">프리셋 선택</h2>
-                        <div data-slot="presets"></div>
-                        
-                        <!-- 바람 스타일 선택 UI (5종 백엔드 완벽 매핑) -->
-                        <div style="margin-top:16px;">
-                            <h3 style="margin-bottom:8px; font-size:12px; color:var(--snw-text-dim);" data-i18n="dashboard.styleTitle">바람 스타일</h3>
-                            <div class="snw-style-selector" id="style-selector">
-                                <button type="button" class="snw-style-btn" data-style="BALANCE" data-i18n="style.BALANCE">균형</button>
-                                <button type="button" class="snw-style-btn" data-style="ACTIVE" data-i18n="style.ACTIVE">활동적</button>
-                                <button type="button" class="snw-style-btn" data-style="FOCUS" data-i18n="style.FOCUS">집중</button>
-                                <button type="button" class="snw-style-btn" data-style="RELAX" data-i18n="style.RELAX">휴식</button>
-                                <button type="button" class="snw-style-btn" data-style="SLEEP" data-i18n="style.SLEEP">수면</button>
+                        <!-- 1. 바람 스타일 선택 (상단 세그먼트 탭) -->
+                        <div class="snw-style-section" style="margin-bottom: 20px;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
+                                <h2 style="margin:0; font-size:14px; font-weight:600;" data-i18n="dashboard.styleTitle">바람 스타일</h2>
+                                <span style="font-size:11px; color:var(--snw-text-dim);">스타일 보정</span>
                             </div>
+                            <div class="snw-style-selector" id="style-selector">
+                                <button type="button" class="snw-style-btn" data-style="BALANCE" data-i18n="style.BALANCE">⚖ 균형</button>
+                                <button type="button" class="snw-style-btn" data-style="ACTIVE" data-i18n="style.ACTIVE">⚡ 활동</button>
+                                <button type="button" class="snw-style-btn" data-style="FOCUS" data-i18n="style.FOCUS">🎯 집중</button>
+                                <button type="button" class="snw-style-btn" data-style="RELAX" data-i18n="style.RELAX">🍃 휴식</button>
+                                <button type="button" class="snw-style-btn" data-style="SLEEP" data-i18n="style.SLEEP">🌙 수면</button>
+                            </div>
+                        </div>
+
+                        <!-- 2. 자연풍 프리셋 선택 (하단 4x2 그리드) -->
+                        <div class="snw-preset-section">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
+                                <h2 style="margin:0; font-size:14px; font-weight:600;" data-i18n="dashboard.presetTitle">자연풍 프리셋</h2>
+                                <span style="font-size:11px; color:var(--snw-text-dim);">8대 자연 환경</span>
+                            </div>
+                            <div data-slot="presets"></div>
                         </div>
                     </section>
                     
@@ -2068,7 +2099,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 040.api.js (13009 bytes) ---- */
+/* ---- 040.api.js (13039 bytes) ---- */
 // =========================================================
 // 040.api.js — SNW.Api (REST 클라이언트)
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -2287,7 +2318,7 @@ window.SNW = window.SNW || {};
 	// =====================================================
 	// SNW.Api — 도메인별 그룹
 	// =====================================================
-	SNW.Api = {
+	SNW.Api = Object.assign(SNW.Api || {}, {
 		// --- 메타 ---
 		version() { return _fetch(SNW.CFG.API.version); },
 		diag() { return _fetch(SNW.CFG.API.diag); },
@@ -2402,7 +2433,7 @@ window.SNW = window.SNW || {};
 		setApiKey,
 		getApiKey,
 		ApiError
-	};
+	});
 	
 })(window.SNW);
 
@@ -3385,7 +3416,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 130.ui.form.js (13483 bytes) ---- */
+/* ---- 130.ui.form.js (13890 bytes) ---- */
 // =========================================================
 // 130.ui.form.js — SNW.UI.form + presetGrid + sensorCards + logViewer
 // Layer 3 (UI 컴포넌트)
@@ -3516,6 +3547,19 @@ window.SNW = window.SNW || {};
         let curSelected = selected;
         let curItems = items.slice();
         
+        const PRESET_ICONS = {
+            OCEAN: '🌊',
+            VALLEY: '🏞',
+            FOREST: '🌲',
+            PLAINS: '🌾',
+            RIDGE: '⛰',
+            SLEEP: '🌙',
+            SUNRISE: '🌅',
+            URBAN_EVE: '🏙',
+            COUNTRY_BREEZE: '🏡',
+            MEDITERRANEAN: '🏖'
+        };
+        
         function render() {
             root.innerHTML = '';
             const grid = document.createElement('div');
@@ -3525,11 +3569,12 @@ window.SNW = window.SNW || {};
                 const name = (SNW.I18n && SNW.I18n.hasKey('preset.' + it.code))
                     ? SNW.I18n.t('preset.' + it.code)
                     : (it.name || it.code);
+                const icon = PRESET_ICONS[it.code] || '🍃';
                 const card = SNW.DomUtil.html`
                     <button type="button"
                             class="snw-preset-card ${it.code === curSelected ? 'is-selected' : ''}"
                             data-code="${it.code}">
-                        <span class="snw-preset-card__idx">${i + 1}</span>
+                        <span class="snw-preset-card__icon">${icon}</span>
                         <span class="snw-preset-card__name">${name}</span>
                     </button>`;
                 grid.appendChild(card);
@@ -3700,7 +3745,7 @@ window.SNW = window.SNW || {};
 
 /* ===== LAYER 2 ===== */
 
-/* ---- 200.page.dashboard.js (25701 bytes) ---- */
+/* ---- 200.page.dashboard.js (28986 bytes) ---- */
 // =========================================================
 // 200.page.dashboard.js — SNW.Page.Dashboard
 // Layer 4 (페이지 로직)
@@ -3859,6 +3904,29 @@ SNW.Page = SNW.Page || {};
             this._bindStyleSelector();
         }
 
+        _resolvePresetParams(presetCode, styleCode) {
+            const presets = (this._profileData?.windDict?.presets) || [];
+            const target = presets.find(p => p.code === presetCode);
+            let intensity = target?.params?.windIntensity ?? 50;
+            let variability = target?.params?.windVariability ?? 40;
+            let gustFreq = target?.params?.gustFrequency ?? 30;
+
+            const style = styleCode || SNW.Store.get().sim?.styleCode || 'BALANCE';
+            if (style === 'REFRESH') {
+                intensity = Math.min(100, Math.round(intensity * 1.1));
+                variability = Math.min(100, variability + 15);
+                gustFreq = Math.min(100, gustFreq + 15);
+            } else if (style === 'WAVE') {
+                variability = Math.min(100, variability + 20);
+                gustFreq = Math.min(100, gustFreq + 10);
+            } else if (style === 'SLEEP') {
+                intensity = Math.min(intensity, 30);
+                variability = 15;
+                gustFreq = 5;
+            }
+            return { intensity, variability, gustFreq };
+        }
+
         _bindStyleSelector() {
             const selector = this.el.querySelector('#style-selector');
             if (!selector) return;
@@ -3874,8 +3942,31 @@ SNW.Page = SNW.Page || {};
                 // UI 즉시 반영
                 this._updateStyleUI(newStyle);
                 
+                // 현재 프리셋과 새 스타일에 따른 세부 파라미터 연동 계산
+                const currentPreset = currentSim.presetCode || 'FOREST';
+                const resolved = this._resolvePresetParams(currentPreset, newStyle);
+
+                // 슬라이더 3종 즉시 연동
+                if (this.components.sliderIntensity) this.components.sliderIntensity.set(resolved.intensity);
+                if (this.components.sliderVariability) this.components.sliderVariability.set(resolved.variability);
+                if (this.components.sliderGust) this.components.sliderGust.set(resolved.gustFreq);
+
+                SNW.Store.set({
+                    sim: Object.assign({}, currentSim, {
+                        styleCode: newStyle,
+                        intensity: resolved.intensity,
+                        variability: resolved.variability,
+                        gustFreq: resolved.gustFreq
+                    })
+                });
+
                 try {
-                    await SNW.Api.patchSim({ styleCode: newStyle });
+                    await SNW.Api.patchSim({
+                        styleCode: newStyle,
+                        intensity: resolved.intensity,
+                        variability: resolved.variability,
+                        gustFreq: resolved.gustFreq
+                    });
                 } catch (err) {
                     SNW.ErrorHandler.handle(err, 'dashboard.style');
                     // 실패 시 원복
@@ -4240,25 +4331,47 @@ SNW.Page = SNW.Page || {};
         }
         
         // =========================================================
-        // [O-6] 프리셋 적용 — WS 확인
+        // [O-6] 프리셋 적용 — WS 확인 및 세부 조정값 연동
         // =========================================================
         async _onPresetSelect(code) {
-            const prevSim = SNW.Store.get().sim;
+            const prevSim = SNW.Store.get().sim || {};
             const prevCode = prevSim?.presetCode;
+            const currentStyle = prevSim?.styleCode || 'BALANCE';
             
+            // 프리셋에 따른 세부 조정값 연동 계산
+            const resolved = this._resolvePresetParams(code, currentStyle);
+
             this._pendingPreset = code;
-            SNW.Store.set({ sim: Object.assign({}, prevSim || {}, { presetCode: code }) });
+
+            // 슬라이더 3종 즉시 연동
+            if (this.components.sliderIntensity) this.components.sliderIntensity.set(resolved.intensity);
+            if (this.components.sliderVariability) this.components.sliderVariability.set(resolved.variability);
+            if (this.components.sliderGust) this.components.sliderGust.set(resolved.gustFreq);
+
+            SNW.Store.set({
+                sim: Object.assign({}, prevSim, {
+                    presetCode: code,
+                    intensity: resolved.intensity,
+                    variability: resolved.variability,
+                    gustFreq: resolved.gustFreq
+                })
+            });
             
             const card = this.el.querySelector(`[data-code="${code}"]`);
             if (card) card.classList.add('is-applying');
             
             try {
-                await SNW.Api.patchSim({ presetCode: code });
+                await SNW.Api.patchSim({
+                    presetCode: code,
+                    styleCode: currentStyle,
+                    intensity: resolved.intensity,
+                    variability: resolved.variability,
+                    gustFreq: resolved.gustFreq
+                });
                 
                 // 3초 타임아웃
                 this._timers.push(setTimeout(() => {
                     if (this._pendingPreset === code) {
-                        SNW.ToastUtil.warn(SNW.I18n.t('preset.delayed'));
                         this._pendingPreset = null;
                         if (card) card.classList.remove('is-applying');
                     }
@@ -7493,7 +7606,7 @@ SNW.Page = SNW.Page || {};
 
 /* ===== LAYER 9 ===== */
 
-/* ---- 999.app.js (12213 bytes) ---- */
+/* ---- 999.app.js (12675 bytes) ---- */
 // =========================================================
 // 999.app.js — 부트스트랩 (최종 로드)
 // =========================================================
@@ -7513,6 +7626,7 @@ window.SNW = window.SNW || {};
             document.body.appendChild(overlay);
         }
         overlay.innerHTML = '';
+        overlay.style.display = 'flex';
         overlay.classList.remove('is-open');
         
         const box = document.createElement('div');
@@ -7537,6 +7651,7 @@ window.SNW = window.SNW || {};
             overlay.classList.remove('is-open');
             setTimeout(() => {
                 overlay.innerHTML = '';
+                overlay.style.display = 'none';
                 if (!confirmed && typeof onCancel === 'function') {
                     try { onCancel(); } catch (e) {}
                 }
@@ -7763,8 +7878,14 @@ window.SNW = window.SNW || {};
                     await new Promise(r => setTimeout(r, 50));
                     waitCount++;
                 }
-                if (SNW.Offline && SNW.Offline.ready) {
-                    await SNW.Offline.ready;
+                if (SNW.Offline) {
+                    if (SNW.Offline.ready) await SNW.Offline.ready;
+                    if (typeof SNW.Offline.ensureApi === 'function') SNW.Offline.ensureApi();
+                    if (typeof SNW.Offline.stubWs === 'function') SNW.Offline.stubWs();
+                }
+                if (typeof SNW.LevelUtil !== 'undefined') {
+                    SNW.LevelUtil.current = () => 'L4';
+                    SNW.LevelUtil.atLeast = () => true;
                 }
             }
             

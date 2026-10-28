@@ -156,6 +156,29 @@ SNW.Page = SNW.Page || {};
             this._bindStyleSelector();
         }
 
+        _resolvePresetParams(presetCode, styleCode) {
+            const presets = (this._profileData?.windDict?.presets) || [];
+            const target = presets.find(p => p.code === presetCode);
+            let intensity = target?.params?.windIntensity ?? 50;
+            let variability = target?.params?.windVariability ?? 40;
+            let gustFreq = target?.params?.gustFrequency ?? 30;
+
+            const style = styleCode || SNW.Store.get().sim?.styleCode || 'BALANCE';
+            if (style === 'REFRESH') {
+                intensity = Math.min(100, Math.round(intensity * 1.1));
+                variability = Math.min(100, variability + 15);
+                gustFreq = Math.min(100, gustFreq + 15);
+            } else if (style === 'WAVE') {
+                variability = Math.min(100, variability + 20);
+                gustFreq = Math.min(100, gustFreq + 10);
+            } else if (style === 'SLEEP') {
+                intensity = Math.min(intensity, 30);
+                variability = 15;
+                gustFreq = 5;
+            }
+            return { intensity, variability, gustFreq };
+        }
+
         _bindStyleSelector() {
             const selector = this.el.querySelector('#style-selector');
             if (!selector) return;
@@ -171,8 +194,31 @@ SNW.Page = SNW.Page || {};
                 // UI 즉시 반영
                 this._updateStyleUI(newStyle);
                 
+                // 현재 프리셋과 새 스타일에 따른 세부 파라미터 연동 계산
+                const currentPreset = currentSim.presetCode || 'FOREST';
+                const resolved = this._resolvePresetParams(currentPreset, newStyle);
+
+                // 슬라이더 3종 즉시 연동
+                if (this.components.sliderIntensity) this.components.sliderIntensity.set(resolved.intensity);
+                if (this.components.sliderVariability) this.components.sliderVariability.set(resolved.variability);
+                if (this.components.sliderGust) this.components.sliderGust.set(resolved.gustFreq);
+
+                SNW.Store.set({
+                    sim: Object.assign({}, currentSim, {
+                        styleCode: newStyle,
+                        intensity: resolved.intensity,
+                        variability: resolved.variability,
+                        gustFreq: resolved.gustFreq
+                    })
+                });
+
                 try {
-                    await SNW.Api.patchSim({ styleCode: newStyle });
+                    await SNW.Api.patchSim({
+                        styleCode: newStyle,
+                        intensity: resolved.intensity,
+                        variability: resolved.variability,
+                        gustFreq: resolved.gustFreq
+                    });
                 } catch (err) {
                     SNW.ErrorHandler.handle(err, 'dashboard.style');
                     // 실패 시 원복
@@ -537,25 +583,47 @@ SNW.Page = SNW.Page || {};
         }
         
         // =========================================================
-        // [O-6] 프리셋 적용 — WS 확인
+        // [O-6] 프리셋 적용 — WS 확인 및 세부 조정값 연동
         // =========================================================
         async _onPresetSelect(code) {
-            const prevSim = SNW.Store.get().sim;
+            const prevSim = SNW.Store.get().sim || {};
             const prevCode = prevSim?.presetCode;
+            const currentStyle = prevSim?.styleCode || 'BALANCE';
             
+            // 프리셋에 따른 세부 조정값 연동 계산
+            const resolved = this._resolvePresetParams(code, currentStyle);
+
             this._pendingPreset = code;
-            SNW.Store.set({ sim: Object.assign({}, prevSim || {}, { presetCode: code }) });
+
+            // 슬라이더 3종 즉시 연동
+            if (this.components.sliderIntensity) this.components.sliderIntensity.set(resolved.intensity);
+            if (this.components.sliderVariability) this.components.sliderVariability.set(resolved.variability);
+            if (this.components.sliderGust) this.components.sliderGust.set(resolved.gustFreq);
+
+            SNW.Store.set({
+                sim: Object.assign({}, prevSim, {
+                    presetCode: code,
+                    intensity: resolved.intensity,
+                    variability: resolved.variability,
+                    gustFreq: resolved.gustFreq
+                })
+            });
             
             const card = this.el.querySelector(`[data-code="${code}"]`);
             if (card) card.classList.add('is-applying');
             
             try {
-                await SNW.Api.patchSim({ presetCode: code });
+                await SNW.Api.patchSim({
+                    presetCode: code,
+                    styleCode: currentStyle,
+                    intensity: resolved.intensity,
+                    variability: resolved.variability,
+                    gustFreq: resolved.gustFreq
+                });
                 
                 // 3초 타임아웃
                 this._timers.push(setTimeout(() => {
                     if (this._pendingPreset === code) {
-                        SNW.ToastUtil.warn(SNW.I18n.t('preset.delayed'));
                         this._pendingPreset = null;
                         if (card) card.classList.remove('is-applying');
                     }

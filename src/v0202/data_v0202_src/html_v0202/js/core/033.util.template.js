@@ -62,19 +62,28 @@ window.SNW = window.SNW || {};
                     </section>
                     
                     <section class="snw-card snw-card--preset">
-                        <h2 data-i18n="dashboard.presetTitle">프리셋 선택</h2>
-                        <div data-slot="presets"></div>
-                        
-                        <!-- 바람 스타일 선택 UI (5종 백엔드 완벽 매핑) -->
-                        <div style="margin-top:16px;">
-                            <h3 style="margin-bottom:8px; font-size:12px; color:var(--snw-text-dim);" data-i18n="dashboard.styleTitle">바람 스타일</h3>
-                            <div class="snw-style-selector" id="style-selector">
-                                <button type="button" class="snw-style-btn" data-style="BALANCE" data-i18n="style.BALANCE">균형</button>
-                                <button type="button" class="snw-style-btn" data-style="ACTIVE" data-i18n="style.ACTIVE">활동적</button>
-                                <button type="button" class="snw-style-btn" data-style="FOCUS" data-i18n="style.FOCUS">집중</button>
-                                <button type="button" class="snw-style-btn" data-style="RELAX" data-i18n="style.RELAX">휴식</button>
-                                <button type="button" class="snw-style-btn" data-style="SLEEP" data-i18n="style.SLEEP">수면</button>
+                        <!-- 1. 바람 스타일 선택 (상단 세그먼트 탭) -->
+                        <div class="snw-style-section" style="margin-bottom: 20px;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
+                                <h2 style="margin:0; font-size:14px; font-weight:600;" data-i18n="dashboard.styleTitle">바람 스타일</h2>
+                                <span style="font-size:11px; color:var(--snw-text-dim);">스타일 보정</span>
                             </div>
+                            <div class="snw-style-selector" id="style-selector">
+                                <button type="button" class="snw-style-btn" data-style="BALANCE" data-i18n="style.BALANCE">⚖ 균형</button>
+                                <button type="button" class="snw-style-btn" data-style="ACTIVE" data-i18n="style.ACTIVE">⚡ 활동</button>
+                                <button type="button" class="snw-style-btn" data-style="FOCUS" data-i18n="style.FOCUS">🎯 집중</button>
+                                <button type="button" class="snw-style-btn" data-style="RELAX" data-i18n="style.RELAX">🍃 휴식</button>
+                                <button type="button" class="snw-style-btn" data-style="SLEEP" data-i18n="style.SLEEP">🌙 수면</button>
+                            </div>
+                        </div>
+
+                        <!-- 2. 자연풍 프리셋 선택 (하단 4x2 그리드) -->
+                        <div class="snw-preset-section">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
+                                <h2 style="margin:0; font-size:14px; font-weight:600;" data-i18n="dashboard.presetTitle">자연풍 프리셋</h2>
+                                <span style="font-size:11px; color:var(--snw-text-dim);">8대 자연 환경</span>
+                            </div>
+                            <div data-slot="presets"></div>
                         </div>
                     </section>
                     

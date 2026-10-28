@@ -128,6 +128,19 @@ window.SNW = window.SNW || {};
         let curSelected = selected;
         let curItems = items.slice();
         
+        const PRESET_ICONS = {
+            OCEAN: '🌊',
+            VALLEY: '🏞',
+            FOREST: '🌲',
+            PLAINS: '🌾',
+            RIDGE: '⛰',
+            SLEEP: '🌙',
+            SUNRISE: '🌅',
+            URBAN_EVE: '🏙',
+            COUNTRY_BREEZE: '🏡',
+            MEDITERRANEAN: '🏖'
+        };
+        
         function render() {
             root.innerHTML = '';
             const grid = document.createElement('div');
@@ -137,11 +150,12 @@ window.SNW = window.SNW || {};
                 const name = (SNW.I18n && SNW.I18n.hasKey('preset.' + it.code))
                     ? SNW.I18n.t('preset.' + it.code)
                     : (it.name || it.code);
+                const icon = PRESET_ICONS[it.code] || '🍃';
                 const card = SNW.DomUtil.html`
                     <button type="button"
                             class="snw-preset-card ${it.code === curSelected ? 'is-selected' : ''}"
                             data-code="${it.code}">
-                        <span class="snw-preset-card__idx">${i + 1}</span>
+                        <span class="snw-preset-card__icon">${icon}</span>
                         <span class="snw-preset-card__name">${name}</span>
                     </button>`;
                 grid.appendChild(card);

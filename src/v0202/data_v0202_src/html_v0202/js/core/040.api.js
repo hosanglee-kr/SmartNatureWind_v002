@@ -216,7 +216,7 @@ window.SNW = window.SNW || {};
 	// =====================================================
 	// SNW.Api — 도메인별 그룹
 	// =====================================================
-	SNW.Api = {
+	SNW.Api = Object.assign(SNW.Api || {}, {
 		// --- 메타 ---
 		version() { return _fetch(SNW.CFG.API.version); },
 		diag() { return _fetch(SNW.CFG.API.diag); },
@@ -331,6 +331,6 @@ window.SNW = window.SNW || {};
 		setApiKey,
 		getApiKey,
 		ApiError
-	};
+	});
 	
 })(window.SNW);

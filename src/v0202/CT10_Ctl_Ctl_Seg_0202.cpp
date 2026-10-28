@@ -319,7 +319,7 @@ void CL_CT10_ControlManager::applySegmentOn(const ST_A20_ScheduleSegment_t& p_se
     bool v_ok = S20_resolveWindParams(*g_A20_config_root.windDict,
                                      p_seg.presetCode,
                                      p_seg.styleCode,
-                                     &p_seg.adjust,
+                                     &p_seg.override,
                                      v_resolved);
 
     if (v_ok && v_resolved.valid) {
@@ -370,7 +370,7 @@ void CL_CT10_ControlManager::applySegmentOn(const ST_A20_UserProfileSegment_t& p
     bool v_ok = S20_resolveWindParams(*g_A20_config_root.windDict,
                                      p_seg.presetCode,
                                      p_seg.styleCode,
-                                     &p_seg.adjust,
+                                     &p_seg.override,
                                      v_resolved);
 
     if (v_ok && v_resolved.valid) {

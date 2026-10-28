@@ -152,23 +152,22 @@ void CL_W10_WebAPI::routeControl() {
             uint32_t    v_sec     = v_doc["durationSec"] | 0;
             bool        v_forever = v_doc["forever"] | false;
 
-            ST_A20_AdjustDelta_t v_adj;
-            memset(&v_adj, 0, sizeof(v_adj));
-            if (v_doc["adjust"].is<JsonObject>()) {
-                JsonObject v_aj       = v_doc["adjust"];
-                v_adj.windIntensity   = v_aj["windIntensity"] | 0.0f;
-                v_adj.windVariability = v_aj["windVariability"] | 0.0f;
-                v_adj.gustFrequency   = v_aj["gustFrequency"] | 0.0f;
-                v_adj.fanLimit        = v_aj["fanLimit"] | 0.0f;
-                v_adj.minFan          = v_aj["minFan"] | 0.0f;
-                v_adj.turbulenceLengthScale    = v_aj["turbulenceLengthScale"] | 0.0f;
-                v_adj.turbulenceIntensitySigma = v_aj["turbulenceIntensitySigma"] | 0.0f;
-                v_adj.thermalBubbleStrength    = v_aj["thermalBubbleStrength"] | 0.0f;
-                v_adj.thermalBubbleRadius      = v_aj["thermalBubbleRadius"] | 0.0f;
+            ST_A20_SegmentOverride_t v_ovr;
+            memset(&v_ovr, 0, sizeof(v_ovr));
+            v_ovr.windIntensity   = -1.0f;
+            v_ovr.windVariability = -1.0f;
+            v_ovr.gustFrequency   = -1.0f;
+
+            if (v_doc["override"].is<JsonObject>()) {
+                JsonObject v_o        = v_doc["override"];
+                v_ovr.enabled         = v_o["enabled"] | true;
+                v_ovr.windIntensity   = v_o["windIntensity"] | -1.0f;
+                v_ovr.windVariability = v_o["windVariability"] | -1.0f;
+                v_ovr.gustFrequency   = v_o["gustFrequency"] | -1.0f;
             }
 
             if (s_control) {
-                s_control->startOverridePreset(v_preset, v_style, &v_adj, v_sec, v_forever);
+                s_control->startOverridePreset(v_preset, v_style, &v_ovr, v_sec, v_forever);
             }
             p_request->send(200, "application/json", "{\"result\":\"ok\"}");
         });

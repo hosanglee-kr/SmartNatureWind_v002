@@ -203,11 +203,11 @@ class CL_CT10_ControlManager {
     void stopUserProfile();
 
     void startOverrideFixed(float p_percent, uint32_t p_seconds, bool p_forever = false);
-    void startOverridePreset(const char*                 p_presetCode,
-                             const char*                 p_styleCode,
-                             const ST_A20_AdjustDelta_t* p_adj,
-                             uint32_t                    p_seconds,
-                             bool                        p_forever = false);
+    void startOverridePreset(const char*                     p_presetCode,
+                             const char*                     p_styleCode,
+                             const ST_A20_SegmentOverride_t* p_override,
+                             uint32_t                        p_seconds,
+                             bool                            p_forever = false);
     void applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds, bool p_forever = false);
     void stopOverride();
 

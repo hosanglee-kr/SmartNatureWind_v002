@@ -77,18 +77,13 @@ static inline void A20_resetSchAutoOffDefault(ST_A20_AutoOff_t& p_autoOff) {
 }
 
 // -------------------------
-// AdjustDelta
+// SegmentOverride
 // -------------------------
-static inline void A20_resetAdjustDeltaDefault(ST_A20_AdjustDelta_t& p_adj) {
-    p_adj.windIntensity            = 0.0f;
-    p_adj.gustFrequency            = 0.0f;
-    p_adj.windVariability          = 0.0f;
-    p_adj.fanLimit                 = 0.0f;
-    p_adj.minFan                   = 0.0f;
-    p_adj.turbulenceLengthScale    = 0.0f;
-    p_adj.turbulenceIntensitySigma = 0.0f;
-    p_adj.thermalBubbleStrength    = 0.0f;
-    p_adj.thermalBubbleRadius      = 0.0f;
+static inline void A20_resetSegmentOverrideDefault(ST_A20_SegmentOverride_t& p_ovr) {
+    p_ovr.enabled         = false;
+    p_ovr.windIntensity   = -1.0f;
+    p_ovr.windVariability = -1.0f;
+    p_ovr.gustFrequency   = -1.0f;
 }
 
 // -------------------------
@@ -126,7 +121,7 @@ static inline void A20_resetScheduleSegmentDefault(ST_A20_ScheduleSegment_t& p_s
         G_A20_WindStyle_Arr[EN_A20_WINDSTYLE_BALANCE].code,
         sizeof(p_seg.styleCode));
 
-    A20_resetAdjustDeltaDefault(p_seg.adjust);
+    A20_resetSegmentOverrideDefault(p_seg.override);
     p_seg.fixedSpeed = 0.0f;
 }
 
@@ -143,7 +138,7 @@ static inline void A20_resetUserProfileSegmentDefault(ST_A20_UserProfileSegment_
     memset(p_seg.presetCode, 0, sizeof(p_seg.presetCode));
     memset(p_seg.styleCode, 0, sizeof(p_seg.styleCode));
 
-    A20_resetAdjustDeltaDefault(p_seg.adjust);
+    A20_resetSegmentOverrideDefault(p_seg.override);
     p_seg.fixedSpeed = 0.0f;
 }
 

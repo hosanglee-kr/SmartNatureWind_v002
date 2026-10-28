@@ -24,9 +24,11 @@
           "mode": "PRESET",
           "presetCode": "HARBOR_BREEZE",
           "styleCode": "BALANCE",
-          "adjust": {
-            "windIntensity": 5,
-            "windVariability": 3
+          "override": {
+            "enabled": true,
+            "windIntensity": 70.0,
+            "windVariability": 50.0,
+            "gustFrequency": 45.0
           }
         },
         {
@@ -69,9 +71,11 @@
           "mode": "PRESET",
           "presetCode": "COUNTRY_BREEZE",
           "styleCode": "RELAX",
-          "adjust": {
-            "windIntensity": -5,
-            "windVariability": -10
+          "override": {
+            "enabled": true,
+            "windIntensity": 45.0,
+            "windVariability": 30.0,
+            "gustFrequency": 20.0
           }
         }
       ],
@@ -106,9 +110,11 @@
           "mode": "PRESET",
           "presetCode": "OCEAN",
           "styleCode": "SLEEP",
-          "adjust": {
-            "windIntensity": -20,
-            "windVariability": -25
+          "override": {
+            "enabled": true,
+            "windIntensity": 30.0,
+            "windVariability": 20.0,
+            "gustFrequency": 10.0
           }
         },
         {
@@ -119,9 +125,11 @@
           "mode": "PRESET",
           "presetCode": "FOREST_CANOPY",
           "styleCode": "SLEEP",
-          "adjust": {
-            "windIntensity": -30,
-            "windVariability": -35
+          "override": {
+            "enabled": true,
+            "windIntensity": 25.0,
+            "windVariability": 15.0,
+            "gustFrequency": 5.0
           }
         }
       ],

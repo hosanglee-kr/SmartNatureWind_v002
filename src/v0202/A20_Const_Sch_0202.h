@@ -196,19 +196,17 @@ typedef struct {
 } ST_A20_Motion_t;
 
 /* ======================================================
- * Segment Adjust Delta
+ * Segment Override (세그먼트 개별 물리 파라미터 덮어쓰기)
+ *  - enabled == false : 프리셋 기본 물리값 사용
+ *  - enabled == true  : 설정된 절대값(0~100%)으로 직접 덮어쓰기
+ *  - 음수(-1.0f)     : 해당 항목만 프리셋 값 유지
  * ====================================================== */
 typedef struct {
-    float windIntensity            = 0.0f;
-    float gustFrequency            = 0.0f;
-    float windVariability          = 0.0f;
-    float fanLimit                 = 0.0f;
-    float minFan                   = 0.0f;
-    float turbulenceLengthScale    = 0.0f;
-    float turbulenceIntensitySigma = 0.0f;
-    float thermalBubbleStrength    = 0.0f;
-    float thermalBubbleRadius      = 0.0f;
-} ST_A20_AdjustDelta_t;
+    bool  enabled         = false; // Override 활성화 여부
+    float windIntensity   = -1.0f; // 풍속 강도 (0.0f ~ 100.0f)
+    float windVariability = -1.0f; // 변동성   (0.0f ~ 100.0f)
+    float gustFrequency   = -1.0f; // 돌풍 빈도 (0.0f ~ 100.0f)
+} ST_A20_SegmentOverride_t;
 
 /* ======================================================
  * Schedule JSON 구조
@@ -221,18 +219,18 @@ typedef struct {
 } ST_A20_SchedulePeriod_t;
 
 typedef struct {
-    uint8_t             segId      = 0;
-    uint16_t            segNo      = 0;
-    uint16_t            onMinutes  = 0;
-    uint16_t            offMinutes = 0;
+    uint8_t                  segId      = 0;
+    uint16_t                 segNo      = 0;
+    uint16_t                 onMinutes  = 0;
+    uint16_t                 offMinutes = 0;
 
-    EN_A20_segment_mode_t mode = EN_A20_SEG_MODE_PRESET;
+    EN_A20_segment_mode_t    mode       = EN_A20_SEG_MODE_PRESET;
 
-    char                presetCode[A20_Const::MAX_CODE_LEN] = {0};
-    char                styleCode[A20_Const::MAX_CODE_LEN]  = {0};
-    ST_A20_AdjustDelta_t adjust;
+    char                     presetCode[A20_Const::MAX_CODE_LEN] = {0};
+    char                     styleCode[A20_Const::MAX_CODE_LEN]  = {0};
+    ST_A20_SegmentOverride_t override;
 
-    float fixedSpeed = 0.0f;
+    float                    fixedSpeed = 0.0f;
 } ST_A20_ScheduleSegment_t;
 
 typedef struct {
@@ -261,18 +259,18 @@ typedef struct {
  * UserProfiles JSON 구조
  * ====================================================== */
 typedef struct {
-    uint8_t             segId      = 0;
-    uint16_t            segNo      = 0;
-    uint16_t            onMinutes  = 0;
-    uint16_t            offMinutes = 0;
+    uint8_t                  segId      = 0;
+    uint16_t                 segNo      = 0;
+    uint16_t                 onMinutes  = 0;
+    uint16_t                 offMinutes = 0;
 
-    EN_A20_segment_mode_t mode = EN_A20_SEG_MODE_PRESET;
+    EN_A20_segment_mode_t    mode       = EN_A20_SEG_MODE_PRESET;
 
-    char                presetCode[A20_Const::MAX_CODE_LEN] = {0};
-    char                styleCode[A20_Const::MAX_CODE_LEN]  = {0};
-    ST_A20_AdjustDelta_t adjust;
+    char                     presetCode[A20_Const::MAX_CODE_LEN] = {0};
+    char                     styleCode[A20_Const::MAX_CODE_LEN]  = {0};
+    ST_A20_SegmentOverride_t override;
 
-    float fixedSpeed = 0.0f;
+    float                    fixedSpeed = 0.0f;
 } ST_A20_UserProfileSegment_t;
 
 typedef struct {

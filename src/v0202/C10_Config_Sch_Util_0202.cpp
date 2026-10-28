@@ -155,18 +155,23 @@ bool C10_fromJson_ScheduleItem(const JsonObjectConst& p_js,
             A40_ComFunc::copyStr2Buffer_safe(sg.presetCode, jseg["presetCode"] | "", sizeof(sg.presetCode), p_callerForLog);
             A40_ComFunc::copyStr2Buffer_safe(sg.styleCode,  jseg["styleCode"]  | "", sizeof(sg.styleCode),  p_callerForLog);
 
-            memset(&sg.adjust, 0, sizeof(sg.adjust));
-            if (jseg["adjust"].is<JsonObjectConst>()) {
-                JsonObjectConst adj                = jseg["adjust"].as<JsonObjectConst>();
-                sg.adjust.windIntensity            = (float)(adj["windIntensity"] | 0.0);
-                sg.adjust.windVariability          = (float)(adj["windVariability"] | 0.0);
-                sg.adjust.gustFrequency            = (float)(adj["gustFrequency"] | 0.0);
-                sg.adjust.fanLimit                 = (float)(adj["fanLimit"] | 0.0);
-                sg.adjust.minFan                   = (float)(adj["minFan"] | 0.0);
-                sg.adjust.turbulenceLengthScale    = (float)(adj["turbulenceLengthScale"] | 0.0);
-                sg.adjust.turbulenceIntensitySigma = (float)(adj["turbulenceIntensitySigma"] | 0.0);
-                sg.adjust.thermalBubbleStrength    = (float)(adj["thermalBubbleStrength"] | 0.0);
-                sg.adjust.thermalBubbleRadius      = (float)(adj["thermalBubbleRadius"] | 0.0);
+            memset(&sg.override, 0, sizeof(sg.override));
+            sg.override.windIntensity   = -1.0f;
+            sg.override.windVariability = -1.0f;
+            sg.override.gustFrequency   = -1.0f;
+
+            if (jseg["override"].is<JsonObjectConst>()) {
+                JsonObjectConst ovr         = jseg["override"].as<JsonObjectConst>();
+                sg.override.enabled         = ovr["enabled"] | false;
+                if (ovr.containsKey("windIntensity")) {
+                    sg.override.windIntensity = (float)(ovr["windIntensity"] | -1.0);
+                }
+                if (ovr.containsKey("windVariability")) {
+                    sg.override.windVariability = (float)(ovr["windVariability"] | -1.0);
+                }
+                if (ovr.containsKey("gustFrequency")) {
+                    sg.override.gustFrequency = (float)(ovr["gustFrequency"] | -1.0);
+                }
             }
 
             sg.fixedSpeed = A40_ComFunc::Json_getNum<float>(jseg, "fixedSpeed", 0.0f);

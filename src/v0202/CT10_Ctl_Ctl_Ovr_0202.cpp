@@ -49,7 +49,7 @@ void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seco
 // --------------------------------------------------
 void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
                                                  const char* p_styleCode,
-                                                 const ST_A20_AdjustDelta_t* p_adj,
+                                                 const ST_A20_SegmentOverride_t* p_override,
                                                  uint32_t p_seconds,
                                                  bool p_forever) {
     if (!g_A20_config_root.windDict) return;
@@ -58,7 +58,7 @@ void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
     memset(&v_resolved, 0, sizeof(v_resolved));
 
     bool v_ok = S20_resolveWindParams(*g_A20_config_root.windDict,
-                                     p_presetCode, p_styleCode, p_adj, v_resolved);
+                                     p_presetCode, p_styleCode, p_override, v_resolved);
 
     if (!v_ok || !v_resolved.valid) {
         CL_D10_Logger::log(EN_L10_LOG_WARN,

@@ -34,7 +34,7 @@
 // Wind Profile 해석 함수
 // ------------------------------------------------------
 
-inline bool S20_resolveWindParams(const ST_A20_WindDict_t& p_dict, const char* p_presetCode, const char* p_styleCode, const ST_A20_AdjustDelta_t* p_adj, ST_A20_ResolvedWind_t& p_out) {
+inline bool S20_resolveWindParams(const ST_A20_WindDict_t& p_dict, const char* p_presetCode, const char* p_styleCode, const ST_A20_SegmentOverride_t* p_override, ST_A20_ResolvedWind_t& p_out) {
 	// 0) 출력 안전 초기화 (실패해도 안전)
 	memset(&p_out, 0, sizeof(p_out));
 	p_out.valid	 = false;
@@ -71,22 +71,21 @@ inline bool S20_resolveWindParams(const ST_A20_WindDict_t& p_dict, const char* p
 			v_var *= v_s.factors.variabilityFactor;
 			v_gust *= v_s.factors.gustFactor;
 			v_thB *= v_s.factors.thermalFactor;
-			// (정책 선택) fanLimit/minFan/turb도 스타일 영향 줄지 여부는 여기서 결정
 		}
 	}
 
-	// 4) adjust 적용(널이면 0으로)
-	const float v_adjInt  = p_adj ? p_adj->windIntensity : 0.0f;
-	const float v_adjVar  = p_adj ? p_adj->windVariability : 0.0f;
-	const float v_adjGust = p_adj ? p_adj->gustFrequency : 0.0f;
-	const float v_adjFL	  = p_adj ? p_adj->fanLimit : 0.0f;
-	const float v_adjMin  = p_adj ? p_adj->minFan : 0.0f;
-
-	v_int 	+= v_adjInt;
-	v_var 	+= v_adjVar;
-	v_gust 	+= v_adjGust;
-	v_fl 	+= v_adjFL;
-	v_min 	+= v_adjMin;
+	// 4) Segment Override 적용 (활성화 시 프리셋*스타일 값을 직접 덮어씀)
+	if (p_override && p_override->enabled) {
+		if (p_override->windIntensity >= 0.0f) {
+			v_int = A40_ComFunc::clampVal<float>(p_override->windIntensity, 0.0f, 100.0f);
+		}
+		if (p_override->windVariability >= 0.0f) {
+			v_var = A40_ComFunc::clampVal<float>(p_override->windVariability, 0.0f, 100.0f);
+		}
+		if (p_override->gustFrequency >= 0.0f) {
+			v_gust = A40_ComFunc::clampVal<float>(p_override->gustFrequency, 0.0f, 100.0f);
+		}
+	}
 
 	// 5) clamp + 관계 보정(min <= limit)
 	p_out.windIntensity   = A40_ComFunc::clampVal<float>(v_int, 0.0f, 100.0f);

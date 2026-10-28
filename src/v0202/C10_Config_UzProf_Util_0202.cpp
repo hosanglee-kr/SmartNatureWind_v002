@@ -125,18 +125,23 @@ bool C10_fromJson_UserProfileItem(const JsonObjectConst&    p_jp,
             A40_ComFunc::Json_copyStr(jseg, "presetCode", sg.presetCode, sizeof(sg.presetCode), "", v_caller);
             A40_ComFunc::Json_copyStr(jseg, "styleCode",  sg.styleCode,  sizeof(sg.styleCode),  "", v_caller);
 
-            memset(&sg.adjust, 0, sizeof(sg.adjust));
-            if (jseg["adjust"].is<JsonObjectConst>()) {
-                JsonObjectConst adj                = jseg["adjust"].as<JsonObjectConst>();
-                sg.adjust.windIntensity            = A40_ComFunc::Json_getNum<float>(adj, "windIntensity", 0.0f);
-                sg.adjust.windVariability          = A40_ComFunc::Json_getNum<float>(adj, "windVariability", 0.0f);
-                sg.adjust.gustFrequency            = A40_ComFunc::Json_getNum<float>(adj, "gustFrequency", 0.0f);
-                sg.adjust.fanLimit                 = A40_ComFunc::Json_getNum<float>(adj, "fanLimit", 0.0f);
-                sg.adjust.minFan                   = A40_ComFunc::Json_getNum<float>(adj, "minFan", 0.0f);
-                sg.adjust.turbulenceLengthScale    = A40_ComFunc::Json_getNum<float>(adj, "turbulenceLengthScale", 0.0f);
-                sg.adjust.turbulenceIntensitySigma = A40_ComFunc::Json_getNum<float>(adj, "turbulenceIntensitySigma", 0.0f);
-                sg.adjust.thermalBubbleStrength    = A40_ComFunc::Json_getNum<float>(adj, "thermalBubbleStrength", 0.0f);
-                sg.adjust.thermalBubbleRadius      = A40_ComFunc::Json_getNum<float>(adj, "thermalBubbleRadius", 0.0f);
+            memset(&sg.override, 0, sizeof(sg.override));
+            sg.override.windIntensity   = -1.0f;
+            sg.override.windVariability = -1.0f;
+            sg.override.gustFrequency   = -1.0f;
+
+            if (jseg["override"].is<JsonObjectConst>()) {
+                JsonObjectConst ovr         = jseg["override"].as<JsonObjectConst>();
+                sg.override.enabled         = ovr["enabled"] | false;
+                if (ovr.containsKey("windIntensity")) {
+                    sg.override.windIntensity = A40_ComFunc::Json_getNum<float>(ovr, "windIntensity", -1.0f);
+                }
+                if (ovr.containsKey("windVariability")) {
+                    sg.override.windVariability = A40_ComFunc::Json_getNum<float>(ovr, "windVariability", -1.0f);
+                }
+                if (ovr.containsKey("gustFrequency")) {
+                    sg.override.gustFrequency = A40_ComFunc::Json_getNum<float>(ovr, "gustFrequency", -1.0f);
+                }
             }
 
             sg.fixedSpeed = A40_ComFunc::Json_getNum<float>(jseg, "fixedSpeed", 0.0f);

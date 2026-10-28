@@ -63,16 +63,13 @@ void CL_C10_ConfigManager::toJson_Schedules(const ST_A20_SchedulesRoot_t& p_cfg,
             jseg["presetCode"] = sg.presetCode;
             jseg["styleCode"]  = sg.styleCode;
 
-            JsonObject adj                  = jseg["adjust"].to<JsonObject>();
-            adj["windIntensity"]            = sg.adjust.windIntensity;
-            adj["windVariability"]          = sg.adjust.windVariability;
-            adj["gustFrequency"]            = sg.adjust.gustFrequency;
-            adj["fanLimit"]                 = sg.adjust.fanLimit;
-            adj["minFan"]                   = sg.adjust.minFan;
-            adj["turbulenceLengthScale"]    = sg.adjust.turbulenceLengthScale;
-            adj["turbulenceIntensitySigma"] = sg.adjust.turbulenceIntensitySigma;
-            adj["thermalBubbleStrength"]    = sg.adjust.thermalBubbleStrength;
-            adj["thermalBubbleRadius"]      = sg.adjust.thermalBubbleRadius;
+            JsonObject ovr                  = jseg["override"].to<JsonObject>();
+            ovr["enabled"]                  = sg.override.enabled;
+            if (sg.override.enabled) {
+                ovr["windIntensity"]   = sg.override.windIntensity;
+                ovr["windVariability"] = sg.override.windVariability;
+                ovr["gustFrequency"]   = sg.override.gustFrequency;
+            }
 
             jseg["fixedSpeed"] = sg.fixedSpeed;
         }

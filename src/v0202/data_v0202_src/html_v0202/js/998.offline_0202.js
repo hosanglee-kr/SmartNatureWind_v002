@@ -5,7 +5,7 @@ window.SNW = window.SNW || {};
     if (!window.SNW_OFFLINE) return;
     
     let WORKING_JSON_BASE = null;
-    const JSON_BASE_CANDIDATES = ['../json/', '/json/', '../../json/', '/src/v0202/data_v0202_src/json/'];
+    const JSON_BASE_CANDIDATES = ['../json/', '/json/', '../../json/', './json/', '/src/v0202/data_v0202_src/json/'];
     const FILE_MAP = {
         system: 'cfg_system_0202.json',
         wifi: 'cfg_wifi_0202.json',
@@ -65,22 +65,27 @@ window.SNW = window.SNW || {};
             {
                 schId: 1,
                 schNo: 10,
-                name: "Morning Breeze",
+                name: "아침 바람 (Morning Breeze)",
                 enabled: true,
                 segCount: 2,
                 period: { days: [1, 1, 1, 1, 1, 0, 0], startTime: "08:00", endTime: "12:00" },
-                segments: [{ mode: 'PRESET', onMinutes: 20, offMinutes: 10 }, { mode: 'FIXED', onMinutes: 15, offMinutes: 5 }],
+                segments: [
+                    { order: 1, mode: 'PRESET', presetCode: 'COUNTRY_BREEZE', style: 'BALANCE', onMinutes: 20, offMinutes: 10, override: { enabled: false, windIntensity: -1.0, windVariability: -1.0, gustFrequency: -1.0 } },
+                    { order: 2, mode: 'FIXED', speed: 50, onMinutes: 15, offMinutes: 5, override: { enabled: false, windIntensity: -1.0, windVariability: -1.0, gustFrequency: -1.0 } }
+                ],
                 autoOff: { timer: { enabled: true, minutes: 180 }, offTime: { enabled: false, time: '00:00' }, offTemp: { enabled: false, temp: 0 } },
                 motion: { pir: { enabled: true, holdSec: 120 } }
             },
             {
                 schId: 2,
                 schNo: 20,
-                name: "Evening Relax",
+                name: "저녁 휴식 (Evening Relax)",
                 enabled: false,
                 segCount: 1,
                 period: { days: [1, 1, 1, 1, 1, 1, 1], startTime: "19:00", endTime: "22:00" },
-                segments: [{ mode: 'PRESET', onMinutes: 30, offMinutes: 10 }],
+                segments: [
+                    { order: 1, mode: 'PRESET', presetCode: 'OCEAN', style: 'RELAX', onMinutes: 30, offMinutes: 10, override: { enabled: false, windIntensity: -1.0, windVariability: -1.0, gustFrequency: -1.0 } }
+                ],
                 autoOff: { timer: { enabled: false, minutes: 0 }, offTime: { enabled: true, time: '22:00' }, offTemp: { enabled: false, temp: 0 } },
                 motion: { pir: { enabled: false, holdSec: 0 } }
             }]
@@ -91,20 +96,25 @@ window.SNW = window.SNW || {};
                 {
                     profileId: 1,
                     profileNo: 10,
-                    name: "수면 모드",
+                    name: "수면 모드 (Sleep Care)",
                     enabled: true,
                     segCount: 2,
-                    segments: [{ mode: 'PRESET', onMinutes: 40, offMinutes: 0 }, { mode: 'PRESET', onMinutes: 120, offMinutes: 0 }],
+                    segments: [
+                        { order: 1, mode: 'PRESET', presetCode: 'FOREST_CANOPY', style: 'SLEEP', onMinutes: 40, offMinutes: 0, override: { enabled: false, windIntensity: -1.0, windVariability: -1.0, gustFrequency: -1.0 } },
+                        { order: 2, mode: 'PRESET', presetCode: 'DESERT_NIGHT', style: 'SLEEP', onMinutes: 120, offMinutes: 0, override: { enabled: false, windIntensity: -1.0, windVariability: -1.0, gustFrequency: -1.0 } }
+                    ],
                     autoOff: { timer: { enabled: true, minutes: 240 }, offTime: { enabled: true, time: "05:00" }, offTemp: { enabled: true, temp: 26.0 } },
                     motion: { pir: { enabled: false, holdSec: 0 } }
                 },
                 {
                     profileId: 2,
                     profileNo: 20,
-                    name: "집중 모드",
+                    name: "집중 모드 (Focus Care)",
                     enabled: true,
                     segCount: 1,
-                    segments: [{ mode: 'PRESET', onMinutes: 60, offMinutes: 0 }],
+                    segments: [
+                        { order: 1, mode: 'PRESET', presetCode: 'COUNTRY_BREEZE', style: 'FOCUS', onMinutes: 60, offMinutes: 0, override: { enabled: false, windIntensity: -1.0, windVariability: -1.0, gustFrequency: -1.0 } }
+                    ],
                     autoOff: { timer: { enabled: true, minutes: 180 }, offTime: { enabled: false, time: '00:00' }, offTemp: { enabled: false, temp: 0 } },
                     motion: { pir: { enabled: true, holdSec: 300 } }
                 }]
@@ -114,9 +124,23 @@ window.SNW = window.SNW || {};
             windDict: {
                 presets: [
                     { idx: 0, code: "OCEAN", name: "Ocean Breeze", factors: { windIntensity: 70, gustFrequency: 50, windVariability: 55, fanLimit: 95, minFan: 12, turbulenceLengthScale: 42, turbulenceIntensitySigma: 0.55, thermalBubbleStrength: 2.2, thermalBubbleRadius: 20, baseMinWind: 1.8, baseMaxWind: 5.5 } },
-                    { idx: 1, code: "COUNTRY_BREEZE", name: "Country Breeze", factors: { windIntensity: 55, gustFrequency: 30, windVariability: 40, fanLimit: 90, minFan: 10, turbulenceLengthScale: 38, turbulenceIntensitySigma: 0.4, thermalBubbleStrength: 1.8, thermalBubbleRadius: 16, baseMinWind: 0.7, baseMaxWind: 3.4 } }
+                    { idx: 1, code: "COUNTRY_BREEZE", name: "Country Breeze", factors: { windIntensity: 55, gustFrequency: 30, windVariability: 40, fanLimit: 90, minFan: 10, turbulenceLengthScale: 38, turbulenceIntensitySigma: 0.4, thermalBubbleStrength: 1.8, thermalBubbleRadius: 16, baseMinWind: 0.7, baseMaxWind: 3.4 } },
+                    { idx: 2, code: "MEDITERRANEAN", name: "Mediterranean", factors: { windIntensity: 65, gustFrequency: 38, windVariability: 50, fanLimit: 92, minFan: 10, turbulenceLengthScale: 35, turbulenceIntensitySigma: 0.48, thermalBubbleStrength: 1.9, thermalBubbleRadius: 18, baseMinWind: 1.6, baseMaxWind: 3.8 } },
+                    { idx: 3, code: "MOUNTAIN", name: "Mountain", factors: { windIntensity: 80, gustFrequency: 55, windVariability: 65, fanLimit: 96, minFan: 14, turbulenceLengthScale: 45, turbulenceIntensitySigma: 0.65, thermalBubbleStrength: 2.5, thermalBubbleRadius: 20, baseMinWind: 2.2, baseMaxWind: 7.5 } },
+                    { idx: 4, code: "PLAINS", name: "Plains", factors: { windIntensity: 85, gustFrequency: 70, windVariability: 75, fanLimit: 100, minFan: 20, turbulenceLengthScale: 50, turbulenceIntensitySigma: 0.75, thermalBubbleStrength: 2.8, thermalBubbleRadius: 22, baseMinWind: 2.5, baseMaxWind: 8.5 } },
+                    { idx: 5, code: "HARBOR_BREEZE", name: "Harbor Breeze", factors: { windIntensity: 60, gustFrequency: 45, windVariability: 45, fanLimit: 90, minFan: 12, turbulenceLengthScale: 36, turbulenceIntensitySigma: 0.45, thermalBubbleStrength: 1.7, thermalBubbleRadius: 15, baseMinWind: 1.2, baseMaxWind: 4.2 } },
+                    { idx: 6, code: "FOREST_CANOPY", name: "Forest Canopy", factors: { windIntensity: 50, gustFrequency: 25, windVariability: 35, fanLimit: 88, minFan: 8, turbulenceLengthScale: 32, turbulenceIntensitySigma: 0.35, thermalBubbleStrength: 1.5, thermalBubbleRadius: 12, baseMinWind: 0.5, baseMaxWind: 2.8 } },
+                    { idx: 7, code: "URBAN_SUNSET", name: "Urban Sunset", factors: { windIntensity: 40, gustFrequency: 20, windVariability: 25, fanLimit: 85, minFan: 8, turbulenceLengthScale: 28, turbulenceIntensitySigma: 0.3, thermalBubbleStrength: 1.3, thermalBubbleRadius: 10, baseMinWind: 0.4, baseMaxWind: 2.2 } },
+                    { idx: 8, code: "TROPICAL_RAIN", name: "Tropical Rain", factors: { windIntensity: 90, gustFrequency: 85, windVariability: 85, fanLimit: 100, minFan: 22, turbulenceLengthScale: 55, turbulenceIntensitySigma: 0.85, thermalBubbleStrength: 3.2, thermalBubbleRadius: 25, baseMinWind: 2.8, baseMaxWind: 9.5 } },
+                    { idx: 9, code: "DESERT_NIGHT", name: "Desert Night", factors: { windIntensity: 45, gustFrequency: 20, windVariability: 30, fanLimit: 85, minFan: 8, turbulenceLengthScale: 30, turbulenceIntensitySigma: 0.3, thermalBubbleStrength: 1.2, thermalBubbleRadius: 10, baseMinWind: 0.9, baseMaxWind: 3.1 } }
                 ],
-                styles: []
+                styles: [
+                    { idx: 0, code: "BALANCE", name: "Balance", factors: { intensityFactor: 1, variabilityFactor: 1, gustFactor: 1, thermalFactor: 1 } },
+                    { idx: 1, code: "ACTIVE", name: "Active", factors: { intensityFactor: 1.25, variabilityFactor: 1.2, gustFactor: 1.3, thermalFactor: 1.1 } },
+                    { idx: 2, code: "FOCUS", name: "Focus", factors: { intensityFactor: 1.05, variabilityFactor: 0.8, gustFactor: 0.85, thermalFactor: 0.9 } },
+                    { idx: 3, code: "RELAX", name: "Relax", factors: { intensityFactor: 0.8, variabilityFactor: 0.85, gustFactor: 0.7, thermalFactor: 1.1 } },
+                    { idx: 4, code: "SLEEP", name: "Sleep", factors: { intensityFactor: 0.65, variabilityFactor: 0.6, gustFactor: 0.4, thermalFactor: 0.9 } }
+                ]
             }
         },
         webPage: null
@@ -135,7 +159,7 @@ window.SNW = window.SNW || {};
             sensor: { tempC: 24.5, humidity: 55, motionActive: true },
             event: { ackRequired: false, holdUntilMs: 0, holdRemainMs: 0 },
             system: { uptimeMs: 1000, epochNowMs: 0 },
-            schedule: { index: 0, schId: 1, schNo: 10, name: 'Morning Breeze', fromRunSource: true },
+            schedule: { index: 0, schId: 1, schNo: 10, name: '아침 바람 (Morning Breeze)', fromRunSource: true },
             profile: { index: -1, profileNo: 0, name: '', fromRunSource: false },
             autoOffRt: { timerArmed: true, timerStartMs: 0, timerMinutes: 180, offTimeEnabled: false, offTimeMinutes: 0, offTempEnabled: false, offTemp: 0 },
             segment: { segId: 0, segNo: 0, scheduleRt: { index: -1, onPhase: false, phaseStartMs: 0, loopCount: 0 }, profileRt: { index: -1, onPhase: false, phaseStartMs: 0, loopCount: 0 } },
@@ -260,17 +284,41 @@ window.SNW = window.SNW || {};
         });
         
         // PUT/POST
-        A.overrideFixed = async () => { runtime.sim.active = true;
-            runtime.control.active = true; return { result: 'ok' }; };
-        A.overrideClear = async () => { runtime.sim.active = false;
-            runtime.control.active = false; return { result: 'ok' }; };
-        A.overridePreset = async (b) => { runtime.sim.presetCode = b.presetCode;
-            runtime.sim.active = true; return { result: 'ok' }; };
+        A.overrideFixed = async (percent) => {
+            runtime.sim.active = true;
+            runtime.control.active = true;
+            if (percent != null) {
+                runtime.sim.intensity = percent;
+            }
+            return { result: 'ok' };
+        };
+        A.overrideClear = async () => {
+            runtime.sim.active = false;
+            runtime.control.active = false;
+            return { result: 'ok' };
+        };
+        A.overridePreset = async (b) => {
+            runtime.sim.presetCode = b.presetCode;
+            runtime.sim.active = true;
+            return { result: 'ok' };
+        };
+        A.overrideParams = async (b) => {
+            if (b) {
+                if (b.windIntensity != null) runtime.sim.intensity = b.windIntensity;
+                if (b.windVariability != null) runtime.sim.variability = b.windVariability;
+                if (b.gustFrequency != null) runtime.sim.gustFreq = b.gustFrequency;
+            }
+            return { result: 'ok', updated: true };
+        };
 
         A.patchSim = async (p) => {
-            // 👇 styleCode 업데이트 로직 추가
             if (p.styleCode) {
                 runtime.sim.styleCode = p.styleCode;
+                if (p.styleCode === 'SLEEP') {
+                    runtime.sim.intensity = 35;
+                    runtime.sim.variability = 20;
+                    runtime.sim.gustFreq = 10;
+                }
             }
             Object.assign(runtime.sim, p);
             return { updated: true };
@@ -336,7 +384,24 @@ window.SNW = window.SNW || {};
         A.addSchedule = async (b) => {
             const list = cache.schedules.schedules || [];
             const id = list.length + 1;
-            list.push(Object.assign({ schId: id, enabled: true, segCount: 1, period: { days: [1, 1, 1, 1, 1, 1, 1], startTime: "08:00", endTime: "20:00" }, segments: [], autoOff: {}, motion: {} }, b.schedule || {}));
+            const newSch = Object.assign({
+                schId: id,
+                enabled: true,
+                segCount: 1,
+                period: { days: [1, 1, 1, 1, 1, 1, 1], startTime: "08:00", endTime: "20:00" },
+                segments: [{
+                    order: 1,
+                    mode: 'PRESET',
+                    presetCode: 'OCEAN',
+                    style: 'BALANCE',
+                    onMinutes: 30,
+                    offMinutes: 0,
+                    override: { enabled: false, windIntensity: -1.0, windVariability: -1.0, gustFrequency: -1.0 }
+                }],
+                autoOff: {},
+                motion: {}
+            }, b.schedule || {});
+            list.push(newSch);
             return { result: 'created', id };
         };
         A.deleteSchedule = async (id) => { cache.schedules.schedules = cache.schedules.schedules.filter(s => s.schId !== id); return { deleted: true }; };
@@ -348,7 +413,23 @@ window.SNW = window.SNW || {};
         A.addProfile = async (b) => {
             const list = cache.userProfiles.userProfiles.profiles || [];
             const id = list.length + 1;
-            list.push(Object.assign({ profileId: id, enabled: true, segCount: 1, segments: [], autoOff: {}, motion: {} }, b.profile || {}));
+            const newProf = Object.assign({
+                profileId: id,
+                enabled: true,
+                segCount: 1,
+                segments: [{
+                    order: 1,
+                    mode: 'PRESET',
+                    presetCode: 'OCEAN',
+                    style: 'BALANCE',
+                    onMinutes: 60,
+                    offMinutes: 0,
+                    override: { enabled: false, windIntensity: -1.0, windVariability: -1.0, gustFrequency: -1.0 }
+                }],
+                autoOff: {},
+                motion: {}
+            }, b.profile || {});
+            list.push(newProf);
             return { result: 'created', id };
         };
         A.deleteProfile = async (id) => { cache.userProfiles.userProfiles.profiles = cache.userProfiles.userProfiles.profiles.filter(p => p.profileId !== id); return { deleted: true }; };
@@ -381,12 +462,17 @@ window.SNW = window.SNW || {};
     function startSimulator() {
         setInterval(() => {
             if (!runtime.sim.active) return;
-            runtime.sim.windSpeed = 3 + Math.random() * 4;
-            runtime.sim.pwmDuty = runtime.sim.windSpeed * 10 + 10;
-            runtime.control.sensor.tempC = 24 + Math.sin(Date.now() / 60000) * 2;
-            runtime.control.sensor.humidity = 55 + Math.cos(Date.now() / 90000) * 5;
-            runtime.control.sensor.motionActive = (Math.floor(Date.now() / 15000) % 2) === 0;
-            runtime.chart.push({ t: Date.now(), wind: runtime.sim.windSpeed, targetWind: 5.0, pwm: runtime.sim.pwmDuty, gust: 0, thermal: 0 });
+            const intensity = runtime.sim.intensity != null ? runtime.sim.intensity : 50;
+            const variability = runtime.sim.variability != null ? runtime.sim.variability : 40;
+            const baseSpeed = Math.max(0.4, intensity * 0.055);
+            const varAmp = variability * 0.025;
+            runtime.sim.targetWind = Number(baseSpeed.toFixed(1));
+            runtime.sim.windSpeed = Math.max(0.2, Number((baseSpeed + (Math.random() - 0.5) * varAmp).toFixed(1)));
+            runtime.sim.pwmDuty = Math.min(100, Math.max(15, Math.round(runtime.sim.windSpeed * 12 + 10)));
+            runtime.control.sensor.tempC = Number((24 + Math.sin(Date.now() / 60000) * 1.5).toFixed(1));
+            runtime.control.sensor.humidity = Math.round(55 + Math.cos(Date.now() / 90000) * 5);
+            runtime.control.sensor.motionActive = (Math.floor(Date.now() / 20000) % 2) === 0;
+            runtime.chart.push({ t: Date.now(), wind: runtime.sim.windSpeed, targetWind: runtime.sim.targetWind, pwm: runtime.sim.pwmDuty, gust: 0, thermal: 0 });
             if (runtime.chart.length > 120) runtime.chart.shift();
             if (SNW.Store) SNW.Store.set({ control: runtime.control, sim: runtime.sim, connection: 'online' });
         }, 1000);

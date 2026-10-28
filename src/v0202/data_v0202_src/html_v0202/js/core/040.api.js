@@ -103,7 +103,14 @@ window.SNW = window.SNW || {};
 	        if (path.includes('/diag')) return { heap: 120000, fs_used: 160000, fs_total: 1000000 };
 	        if (path.includes('/version')) return { fw:'FW_Ver_2.0.2' };
 	        if (path.includes('/metrics')) return { metrics: {} };
-	        if (path.includes('/summary')) return { summary: {} };
+	        if (path.includes('/control/override')) {
+	            if (opts.body && rt.sim) {
+	                if (opts.body.windIntensity != null) rt.sim.intensity = opts.body.windIntensity;
+	                if (opts.body.windVariability != null) rt.sim.variability = opts.body.windVariability;
+	                if (opts.body.gustFrequency != null) rt.sim.gustFreq = opts.body.gustFrequency;
+	            }
+	            return { result: 'ok', updated: true };
+	        }
 	        if (path.includes('/config')) return cache;
 	        
 	        return { result: 'ok', updated: true };
@@ -231,6 +238,9 @@ window.SNW = window.SNW || {};
 		},
 		overrideClear() {
 			return _fetch(SNW.CFG.API.overrideClear, { method: 'POST' });
+		},
+		overrideParams(body) {
+			return _fetch(SNW.CFG.API.overrideParams, { method: 'POST', body });
 		},
 		ackEvent() {
 			return _fetch(SNW.CFG.API.ack, { method: 'POST' });

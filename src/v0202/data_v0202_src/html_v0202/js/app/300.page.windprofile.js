@@ -23,11 +23,16 @@ SNW.Page = SNW.Page || {};
             this.el.innerHTML = '';
             this.el.appendChild(SNW.Tpl.windprofile());
             await this._load();
+            this._onLangChange = () => { if (this._active) this._renderList(); };
+            document.addEventListener('snw:langchange', this._onLangChange);
             SNW.DomUtil.delegate(this.el, '[data-action="add-preset"]', 'click', () => this._onAdd());
             SNW.DomUtil.delegate(this.el, '[data-action="edit-preset"]', 'click', (e, el) => { const id = Number(el.getAttribute('data-id')); if (!isNaN(id)) this._onEdit(id); });
             SNW.DomUtil.delegate(this.el, '[data-action="del-preset"]', 'click', (e, el) => { const id = Number(el.getAttribute('data-id')); if (!isNaN(id)) this._onDelete(id); });
         }
-        unmount() { this._active = false; }
+        unmount() {
+            this._active = false;
+            if (this._onLangChange) document.removeEventListener('snw:langchange', this._onLangChange);
+        }
         
         async _load() {
             try { const data = await SNW.Api.listWindProfiles(); if (!this._active) return;
@@ -45,11 +50,12 @@ SNW.Page = SNW.Page || {};
             
             this._presets.forEach((p, idx) => {
                 const f = p.factors || {};
+                const displayName = (SNW.I18n && SNW.I18n.hasKey('preset.' + p.code)) ? SNW.I18n.t('preset.' + p.code) : p.name;
                 wrap.appendChild(SNW.DomUtil.html`
                     <div class="snw-profile-item">
                         <div class="snw-profile-head">
                             <span class="snw-profile-no">#${idx}</span>
-                            <span class="snw-profile-name">${p.name} (${p.code})</span>
+                            <span class="snw-profile-name">${displayName} (${p.code})</span>
                             <button class="snw-btn-icon" data-action="edit-preset" data-id="${idx}">✏️</button>
                             <button class="snw-btn-icon" data-action="del-preset" data-id="${idx}">🗑</button>
                         </div>

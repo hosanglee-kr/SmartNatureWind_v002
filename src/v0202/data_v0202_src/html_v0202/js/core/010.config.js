@@ -34,6 +34,7 @@ window.SNW = window.SNW || {};
 			overrideFixed: '/api/v001/control/override/fixed',
 			overridePreset: '/api/v001/control/override/preset',
 			overrideClear: '/api/v001/control/override/clear',
+			overrideParams: '/api/v001/control/override',
 			ack: '/api/v001/control/ack',
 			controlMode: '/api/v001/control/mode',
 			simulation: '/api/v001/simulation',

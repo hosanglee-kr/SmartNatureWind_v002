@@ -166,7 +166,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 010.config.js (5202 bytes) ---- */
+/* ---- 010.config.js (5251 bytes) ---- */
 // =========================================================
 // 010.config.js — 프론트엔드 런타임 설정
 // Layer 0 (기반) — SNW.C 참조만 허용
@@ -203,6 +203,7 @@ window.SNW = window.SNW || {};
 			overrideFixed: '/api/v001/control/override/fixed',
 			overridePreset: '/api/v001/control/override/preset',
 			overrideClear: '/api/v001/control/override/clear',
+			overrideParams: '/api/v001/control/override',
 			ack: '/api/v001/control/ack',
 			controlMode: '/api/v001/control/mode',
 			simulation: '/api/v001/simulation',
@@ -2067,7 +2068,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 040.api.js (12502 bytes) ---- */
+/* ---- 040.api.js (13009 bytes) ---- */
 // =========================================================
 // 040.api.js — SNW.Api (REST 클라이언트)
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -2173,7 +2174,14 @@ window.SNW = window.SNW || {};
 	        if (path.includes('/diag')) return { heap: 120000, fs_used: 160000, fs_total: 1000000 };
 	        if (path.includes('/version')) return { fw:'FW_Ver_2.0.2' };
 	        if (path.includes('/metrics')) return { metrics: {} };
-	        if (path.includes('/summary')) return { summary: {} };
+	        if (path.includes('/control/override')) {
+	            if (opts.body && rt.sim) {
+	                if (opts.body.windIntensity != null) rt.sim.intensity = opts.body.windIntensity;
+	                if (opts.body.windVariability != null) rt.sim.variability = opts.body.windVariability;
+	                if (opts.body.gustFrequency != null) rt.sim.gustFreq = opts.body.gustFrequency;
+	            }
+	            return { result: 'ok', updated: true };
+	        }
 	        if (path.includes('/config')) return cache;
 	        
 	        return { result: 'ok', updated: true };
@@ -2301,6 +2309,9 @@ window.SNW = window.SNW || {};
 		},
 		overrideClear() {
 			return _fetch(SNW.CFG.API.overrideClear, { method: 'POST' });
+		},
+		overrideParams(body) {
+			return _fetch(SNW.CFG.API.overrideParams, { method: 'POST', body });
 		},
 		ackEvent() {
 			return _fetch(SNW.CFG.API.ack, { method: 'POST' });
@@ -4456,7 +4467,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 220.page.schedule.js (37532 bytes) ---- */
+/* ---- 220.page.schedule.js (37562 bytes) ---- */
 // =========================================================
 // 220.page.schedule.js — SNW.Page.Schedule
 // Layer 4 (페이지 로직)
@@ -4575,7 +4586,9 @@ SNW.Page = SNW.Page || {};
                     timer:   { enabled: false, minutes: 0 },
                     offTime: { enabled: false, time: '00:00' },
                     offTemp: { enabled: false, temp: 0 }
-               const t = (k, fb) => SNW.I18n ? SNW.I18n.t(k) : fb;
+                }
+            };
+            const t = (k, fb) => SNW.I18n ? SNW.I18n.t(k) : fb;
             const dayKeys = ['days.mon','days.tue','days.wed','days.thu','days.fri','days.sat','days.sun'];
 
             const PRESET_CODES = [
@@ -7332,7 +7345,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 300.page.windprofile.js (10832 bytes) ---- */
+/* ---- 300.page.windprofile.js (11249 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : 300.page.windprofile.js
@@ -7358,11 +7371,16 @@ SNW.Page = SNW.Page || {};
             this.el.innerHTML = '';
             this.el.appendChild(SNW.Tpl.windprofile());
             await this._load();
+            this._onLangChange = () => { if (this._active) this._renderList(); };
+            document.addEventListener('snw:langchange', this._onLangChange);
             SNW.DomUtil.delegate(this.el, '[data-action="add-preset"]', 'click', () => this._onAdd());
             SNW.DomUtil.delegate(this.el, '[data-action="edit-preset"]', 'click', (e, el) => { const id = Number(el.getAttribute('data-id')); if (!isNaN(id)) this._onEdit(id); });
             SNW.DomUtil.delegate(this.el, '[data-action="del-preset"]', 'click', (e, el) => { const id = Number(el.getAttribute('data-id')); if (!isNaN(id)) this._onDelete(id); });
         }
-        unmount() { this._active = false; }
+        unmount() {
+            this._active = false;
+            if (this._onLangChange) document.removeEventListener('snw:langchange', this._onLangChange);
+        }
         
         async _load() {
             try { const data = await SNW.Api.listWindProfiles(); if (!this._active) return;
@@ -7380,11 +7398,12 @@ SNW.Page = SNW.Page || {};
             
             this._presets.forEach((p, idx) => {
                 const f = p.factors || {};
+                const displayName = (SNW.I18n && SNW.I18n.hasKey('preset.' + p.code)) ? SNW.I18n.t('preset.' + p.code) : p.name;
                 wrap.appendChild(SNW.DomUtil.html`
                     <div class="snw-profile-item">
                         <div class="snw-profile-head">
                             <span class="snw-profile-no">#${idx}</span>
-                            <span class="snw-profile-name">${p.name} (${p.code})</span>
+                            <span class="snw-profile-name">${displayName} (${p.code})</span>
                             <button class="snw-btn-icon" data-action="edit-preset" data-id="${idx}">✏️</button>
                             <button class="snw-btn-icon" data-action="del-preset" data-id="${idx}">🗑</button>
                         </div>

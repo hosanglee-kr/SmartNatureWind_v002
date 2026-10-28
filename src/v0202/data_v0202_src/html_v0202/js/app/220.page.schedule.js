@@ -116,7 +116,9 @@ SNW.Page = SNW.Page || {};
                     timer:   { enabled: false, minutes: 0 },
                     offTime: { enabled: false, time: '00:00' },
                     offTemp: { enabled: false, temp: 0 }
-               const t = (k, fb) => SNW.I18n ? SNW.I18n.t(k) : fb;
+                }
+            };
+            const t = (k, fb) => SNW.I18n ? SNW.I18n.t(k) : fb;
             const dayKeys = ['days.mon','days.tue','days.wed','days.thu','days.fri','days.sat','days.sun'];
 
             const PRESET_CODES = [

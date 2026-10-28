@@ -27,16 +27,16 @@
 각 부문별 세부 회로도, 수치 모델, 동시성 계약, 상태 전이, API 규격 및 유지보수 절차는 아래의 상세 전문 문서를 참조하십시오.
 
 ### 1. 사용자 가이드 (User Manual)
-* 📖 [**Smart Nature Wind v0202 종합 사용자 매뉴얼**](src/v0202/User_Manual_0202/UserManual_0202_001.md)
-  * 기기 설치, 배선, Wi-Fi(SoftAP/STA) 연결, 6대 웹 화면 조작법, 10대 프리셋 상세 해설, REST API/WebSocket 규격, 고장 진단 및 유지보수 가이드 수록.
+* 📖 [**Smart Nature Wind v0202 종합 사용자 매뉴얼**](src/v0202/User_Manual_0202/UserManual_0202_002.md)
+  * 기기 설치, 배선, Wi-Fi(SoftAP/STA) 연결, 12대 웹 화면 조작법, 10대 프리셋 상세 해설, 대시보드 3대 슬라이더 연동, 오프라인 시뮬레이션 데모 툴바, REST API/WebSocket 규격, 고장 진단 및 유지보수 가이드 수록.
 
-### 2. 기술 사양 및 CBD 엔지니어링 계약서 (Engineering Contracts — Batch G, H, I 완료)
-* 📑 [**README_0202.md (계약 문서 세트 총괄 인덱스 v2.6)**](src/v0202/contract_doc_0202/README_0202.md)
-* 📐 [**SPEC_0202.md (종합 기술 사양서 v2.8)**](src/v0202/contract_doc_0202/SPEC_0202.md) : 하드웨어 핀맵, 25kHz PWM 타이밍, REST/WebSocket 인터페이스, 0~100% 절대값 Override 물리 모델, Gzip Level 9 정적 에셋 파이프라인 (총 85.4 KB).
-* 🤝 [**CONTRACT_0202.md (동시성 계약서 v2.6)**](src/v0202/contract_doc_0202/CONTRACT_0202.md) : FreeRTOS 5대 태스크 구조, 우선순위, Mutex 소유권 및 데드락 방지, Batch I 물리 파라미터 직접 지정 계약(OVR-1~OVR-4).
+### 2. 기술 사양 및 CBD 엔지니어링 계약서 (Engineering Contracts)
+* 📑 [**README_0202.md (계약 문서 세트 총괄 인덱스 v2.7)**](src/v0202/contract_doc_0202/README_0202.md)
+* 📐 [**SPEC_0202.md (종합 기술 사양서 v2.9)**](src/v0202/contract_doc_0202/SPEC_0202.md) : 하드웨어 핀맵, 25kHz PWM 타이밍, REST/WebSocket 인터페이스, 0~100% 절대값 Override 물리 모델, Gzip Level 9 정적 에셋 파이프라인 (총 75 KB 번들) 및 오프라인 모듈 분리 규격.
+* 🤝 [**CONTRACT_0202.md (동시성 계약서 v2.8)**](src/v0202/contract_doc_0202/CONTRACT_0202.md) : FreeRTOS 5대 태스크 구조, 우선순위, Mutex 소유권 및 데드락 방지, Batch I 물리 파라미터 직접 지정 계약(OVR-1~OVR-4), 프론트엔드-백엔드 동기화 및 오프라인 모듈 분리 계약(SYNC-1~SYNC-3).
 * 🔄 [**STATE_0202.md (상태 및 7-State FSM 명세서 v2.5)**](src/v0202/contract_doc_0202/STATE_0202.md) : INIT / AP_CONFIG / STA_CONNECTING / RUNNING / SAFE_MODE / FIRMWARE_UPDATE / FACTORY_RESET 전이 표 및 모달 상태.
-* 🔀 [**FLOW_0202.md (실행 흐름도 및 시퀀스 다이어그램 v2.7)**](src/v0202/contract_doc_0202/FLOW_0202.md) : 부팅 시퀀스, HTTP/WS 처리 루프, 센서 샘플링 및 물리 연산 파이프라인, WindSolver 파라미터 직접 치환(Override) 흐름, 오프라인 개발 어댑터 흐름.
-* ⏱️ [**BUDGET_0202.md (자원 및 WCET 예산 v2.7)**](src/v0202/contract_doc_0202/BUDGET_0202.md) : SRAM/PSRAM/Flash 메모리 버짓, 태스크별 최악 실행 시간(WCET), 프론트엔드 Gzip 예산 (85.4 KB / 100 KB 한도 통과, RAM 33.1%, Flash 23.3%).
+* 🔀 [**FLOW_0202.md (실행 흐름도 및 시퀀스 다이어그램 v2.8)**](src/v0202/contract_doc_0202/FLOW_0202.md) : 부팅 시퀀스, HTTP/WS 처리 루프, 센서 샘플링 및 물리 연산 파이프라인, WindSolver 파라미터 직접 치환(Override) 흐름, `pio_gzip_0202.py` C++ Enum/JSON 동기화 및 오프라인 어댑터 흐름.
+* ⏱️ [**BUDGET_0202.md (자원 및 WCET 예산 v2.7)**](src/v0202/contract_doc_0202/BUDGET_0202.md) : SRAM/PSRAM/Flash 메모리 버짓, 태스크별 최악 실행 시간(WCET), 프론트엔드 Gzip 예산 (75 KB / 100 KB 한도 통과, RAM 33.1%, Flash 23.3%).
 * 🧪 [**TEST_PLAN_0202.md (회귀 테스트 및 검증 계획서 v2.7)**](src/v0202/contract_doc_0202/TEST_PLAN_0202.md) : 단위/통합/스트레스 테스트 케이스(T-70 세그먼트 물리 Override, T-71 3대 슬라이더/SLEEP, T-72 세그먼트 순서이동/다국어) 및 29대 필수 릴리스 게이트.
 
 ### 3. 개발 환경 및 AI 에이전트 협업 가이드 (Developer & Agent Setup)
@@ -68,8 +68,8 @@
   미기상학 대기 경계층 이론을 적용하여 난류 스펙트럼(Turbulence), 열기포 상승(Thermal Bubble), 돌풍(Gust), 하드웨어 관성 필터(Inertia Filter)를 실시간 수치 연산합니다.
 * **10종 자연 환경 프리셋 (10 Nature-Inspired Presets)**  
   시골 산들바람부터 알프스 산맥의 돌풍, 밤 사막의 정적까지 공간과 분위기에 맞춘 10종 고유 프로파일 기본 탑재.
-* **초경량 싱글 번들 Web UI 대시보드 (Gzip Level 9 사전 압축, 총 85.4 KB)**  
-  웹 에셋(35개 JS 모듈, 10개 CSS)을 단일 번들(`P010_bundle_0202.js`, `P000_common_0202.css`, `index.html`)로 패키징하고 플래시 빌드 시 사전 Gzip 압축(Level 9)하여 총 85.4 KB(100 KB 버짓 대비 85.4%)의 초경량 용량을 달성했습니다. 대시보드 3대 물리 파라미터(풍속 세기/변동성/돌풍) 절대값 직접 지정(Override), 수면풍(SLEEP) 모드 토글, 정량적 체감 피드백 가이드(m/s 등), 완전 한/영(ko/en) 다국어 지원, 모바일 반응형 2열 세그먼트 카드 그리드, 세그먼트 순서 이동(▲/▼), 고정 헤더/푸터 스크롤 모달, 세그먼트 삭제 즉시 복원(Undo Toast) 및 오프라인 로컬 개발 어댑터(`998.offline_0202.js`)를 탑재하여 브라우저 로딩 속도 <200ms와 부드러운 반응성을 보장합니다.
+* **초경량 싱글 번들 Web UI 대시보드 (Gzip Level 9 사전 압축, 총 75 KB)**  
+  웹 에셋(35개 JS 모듈, 10개 CSS)을 단일 번들(`P010_bundle_0202.js`, `P000_common_0202.css`, `index.html`)로 패키징하고 플래시 빌드 시 사전 Gzip 압축(Level 9)하여 총 75 KB(100 KB 버짓 대비 75.0%)의 초경량 용량을 달성했습니다. 대시보드 상단 5종 바람 스타일 탭(38px 터치 최적화) + 하단 8종 자연풍 프리셋(4x2 대칭 그리드 및 이모지 아이콘), 프리셋/스타일 선택 시 3대 물리 파라미터(풍속 세기/변동성/돌풍) 슬라이더 즉시 동기화, 수면풍(SLEEP) 전용 모드 토글, 정량적 체감 피드백 가이드(m/s 등), 완전 한/영(ko/en) 다국어 지원, 모바일 반응형 2열 세그먼트 카드 그리드, 세그먼트 순서 이동(▲/▼), 고정 헤더/푸터 스크롤 모달(닫힘 시 오버레이 완전 비활성화 격리), 세그먼트 삭제 즉시 복원(Undo Toast), 오프라인 2분할 어댑터(`998.offline_data_0202.js` 캐시 데이터 + `998.offline_0202.js` 시뮬레이터/인터셉터) 및 모바일 최적화 접이식 데모 툴바를 탑재하여 브라우저 로딩 속도 <200ms와 부드러운 반응성을 보장합니다.
 * **지능형 센서 연동 (Sensor Integration)**  
   - **온습도 센서 (DHT22)**: 실내 온도/습도 추세에 따른 풍속 지능형 자동 제어.
   - **인체감지 센서 (PIR)**: 사람의 재실 여부를 감지하여 부재 시 자동 절전/정지.
@@ -87,10 +87,10 @@
 
 | 모드 | 영문명 | 설명 | 상세 참조 |
 |---|---|---|---|
-| **자연풍 모드** | Natural Wind | 난류, 열기포, 돌풍 알고리즘이 결합되어 실시간으로 변화하는 자연스러운 기류를 생성합니다. | [매뉴얼 §6.1](src/v0202/User_Manual_0202/UserManual_0202_001.md#61-자연풍-시뮬레이션-모드-natural-wind) |
-| **정속 모드** | Constant | 사용자가 지정한 고정 세기(0~100%)로 일정하게 팬을 구동합니다. | [매뉴얼 §6.2](src/v0202/User_Manual_0202/UserManual_0202_001.md#62-정속-모드-constant) |
-| **온도 감응 모드** | Temp-Auto | DHT22 센서의 실내 온도를 바탕으로 풍속을 지능적으로 자동 조정합니다. | [매뉴얼 §6.3](src/v0202/User_Manual_0202/UserManual_0202_001.md#63-온도-감응-자동-모드-temp-auto) |
-| **스케줄 모드** | Schedule | 요일 및 시간대별로 지정된 프리셋과 풍속 규칙에 따라 자동으로 동작합니다. | [매뉴얼 §6.4](src/v0202/User_Manual_0202/UserManual_0202_001.md#64-스케줄-모드-schedule) |
+| **자연풍 모드** | Natural Wind | 난류, 열기포, 돌풍 알고리즘이 결합되어 실시간으로 변화하는 자연스러운 기류를 생성합니다. | [매뉴얼 §6.1](src/v0202/User_Manual_0202/UserManual_0202_002.md#61-인체-감지pir-스마트-절전-운전) |
+| **정속 모드** | Constant | 사용자가 지정한 고정 세기(0~100%)로 일정하게 팬을 구동합니다. | [매뉴얼 §4](src/v0202/User_Manual_0202/UserManual_0202_002.md#4-메인-대시보드-조작-가이드-dashboard) |
+| **온도 감응 모드** | Temp-Auto | DHT22 센서의 실내 온도를 바탕으로 풍속을 지능적으로 자동 조정합니다. | [매뉴얼 §6.2](src/v0202/User_Manual_0202/UserManual_0202_002.md#62-3대-스마트-자동-종료-autooff) |
+| **스케줄 모드** | Schedule | 요일 및 시간대별로 지정된 프리셋과 풍속 규칙에 따라 자동으로 동작합니다. | [매뉴얼 §7](src/v0202/User_Manual_0202/UserManual_0202_002.md#7-주간-스케줄러-설정-schedule) |
 
 > 💡 상태 전이 규칙과 Fail-Safe 조건은 [STATE_0202.md](src/v0202/contract_doc_0202/STATE_0202.md) 문서를 참조하십시오.
 
@@ -113,7 +113,7 @@
 | **9** | **열대 소나기 바람 (Tropical Rain)** | 예측 불가능한 역동적 난류 / 불규칙 돌풍 | 레이싱 콕핏, 게이밍 |
 | **10**| **사막의 밤 바람 (Desert Night)** | 건조하고 고요한 지속 산들바람 | 심야 작업, 깊은 집중 |
 
-> 💡 프리셋별 기저 풍속, 난류 강도, 돌풍 주기 등 물리 파라미터 상세표는 [사용자 매뉴얼 §7](src/v0202/User_Manual_0202/UserManual_0202_001.md#7-10종-자연풍-환경-프리셋-상세-해설)을 참조하십시오.
+> 💡 프리셋별 기저 풍속, 난류 강도, 돌풍 주기 등 물리 파라미터 상세표는 [사용자 매뉴얼 §5](src/v0202/User_Manual_0202/UserManual_0202_002.md#5-자연풍-물리-시뮬레이션-바람-사전-winddict)를 참조하십시오.
 
 ---
 
@@ -133,7 +133,7 @@
 2. 실내 공유기의 Wi-Fi SSID와 비밀번호를 입력하고 **[저장 및 재부팅]**을 클릭합니다.
 3. 기기가 공유기에 연결되면 할당받은 IP(예: `http://192.168.0.x`)로 접속하여 사용합니다.
 
-> 💡 상세한 초기 설정 및 화면 가이드는 [사용자 매뉴얼 §4](src/v0202/User_Manual_0202/UserManual_0202_001.md#4-최초-설정-및-네트워크-연결-quick-start)를 참조하십시오.
+> 💡 상세한 초기 설정 및 화면 가이드는 [사용자 매뉴얼 §3](src/v0202/User_Manual_0202/UserManual_0202_002.md#3-기기-연결-및-웹-대시보드-접속-indexhtml)를 참조하십시오.
 
 ---
 
@@ -184,7 +184,7 @@
 +-------------------------------------------------------------+
 ```
 
-> 💡 핀 번호 변경 및 상세 전기적 인터페이스는 [사용자 매뉴얼 §3](src/v0202/User_Manual_0202/UserManual_0202_001.md#3-하드웨어-구성-및-배선-가이드) 및 [SPEC_0202.md §2](src/v0202/contract_doc_0202/SPEC_0202.md)를 참조하십시오.
+> 💡 핀 번호 변경 및 상세 전기적 인터페이스는 [사용자 매뉴얼 §3](src/v0202/User_Manual_0202/UserManual_0202_002.md#3-기기-연결-및-웹-대시보드-접속-indexhtml) 및 [SPEC_0202.md §2](src/v0202/contract_doc_0202/SPEC_0202.md)를 참조하십시오.
 
 ---
 
@@ -209,7 +209,7 @@
    pio run --target uploadfs
    ```
    > [!IMPORTANT]
-   > `uploadfs` 실행 시 빌드 훅 스크립트([pio_gzip_0202.py](src/v0202/tools_0202/pio_gzip_0202.py))가 자동 동작하여 `data_v0202_src`의 HTML/JS/CSS 자원을 Level 9 Gzip으로 압축 후 `data_v0202` LittleFS 영역에 플래시합니다.
+   > `uploadfs` 실행 시 빌드 훅 스크립트([pio_gzip_0202.py](src/v0202/tools_0202/pio_gzip_0202.py))가 자동 동작하여 C++ Enum(`000.const.js`) 및 JSON Mock(`998.offline_data_0202.js`)을 자동 동기화한 뒤, HTML/JS/CSS 자원을 단일 번들링 및 Level 9 Gzip으로 압축하여 `data_v0202` LittleFS 영역에 플래시합니다. (오프라인 모듈 2종은 LittleFS 배포에서 자동 제외됨)
 
 ---
 
@@ -219,10 +219,10 @@
 기기 IP로 접속 시 브라우저 헤더의 Gzip 지원 여부를 판별하여 초고속으로 SPA Shell을 렌더링하며, 해시 라우팅(#)을 통해 페이지 전환 지연 시간 0ms를 제공합니다.
 
 * **메인 SPA Shell 진입점**: `/` (자동 리다이렉트 `/index.html`)
-* **해시 뷰 라우팅 (Hash Views)**:
-  - `#/dashboard`: 전원 제어, 프리셋 선택, 3대 물리 파라미터(세기/변동성/돌풍) 직접 지정(Override), 수면풍(SLEEP) 모드
-  - `#/chart`: WebSocket 기반 실시간 대기역학 물리 곡선 차트
-  - `#/schedule`: 요일별/시간대별 예약 규칙 관리 (세그먼트 순서 이동 및 Override 지원)
+* **해시 뷰 라우팅 (Hash Views - 12개 페이지)**:
+  - `#/dashboard`: 전원 제어, 상단 바람 스타일 5종 탭(38px 터치 타겟) + 하단 8종 자연풍 프리셋(4x2 대칭 그리드 및 이모지), 프리셋/스타일 선택 시 3대 물리 슬라이더(강도/변동성/돌풍) 즉시 동기화, 수면풍(SLEEP) 전용 모드
+  - `#/chart`: WebSocket 기반 실시간 대기역학 물리 곡선 차트 (오프라인 가상 브로드캐스트 지원)
+  - `#/schedule`: 요일별/시간대별 예약 규칙 관리 (고정 헤더/푸터 모달, 모달 닫힘 시 오버레이 완전 비활성화 격리, 세그먼트 순서 이동 및 Override 지원)
   - `#/profiles`: 개인 맞춤형 풍속/모드 프로필 저장 및 호출 (세그먼트 순서 이동 및 Override 지원)
   - `#/sensors`: 온습도(DHT22) 및 인체감지(PIR) 실시간 센서 모니터링
   - `#/info`: 힙 메모리, 업타임, Wi-Fi RSSI, 센서 상태 확인
@@ -243,7 +243,7 @@
 * `POST /api/v001/ai/gemini` : Gemini AI 프록시 통신
 * `/ws/state`, `/ws/chart`, `/ws/metrics`, `/ws/log`, `/ws/summary` : 실시간 5개 채널 WebSocket 스트리밍
 
-> 💡 웹 화면별 상세 기능은 [사용자 매뉴얼 §5](src/v0202/User_Manual_0202/UserManual_0202_001.md#5-웹-인터페이스-메뉴-가이드), API 명세는 [사용자 매뉴얼 §9](src/v0202/User_Manual_0202/UserManual_0202_001.md#9-rest-api--websocket-명세) 및 [SPEC_0202.md §4](src/v0202/contract_doc_0202/SPEC_0202.md)를 참조하십시오.
+> 💡 웹 화면별 상세 기능은 [사용자 매뉴얼 §4](src/v0202/User_Manual_0202/UserManual_0202_002.md#4-메인-대시보드-조작-가이드-dashboard), API 명세는 [SPEC_0202.md §4](src/v0202/contract_doc_0202/SPEC_0202.md)를 참조하십시오.
 
 ---
 

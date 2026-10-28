@@ -6,6 +6,36 @@ window.SNW = window.SNW || {};
 (function (SNW) {
     'use strict';
 
+    /* __AUTO_SYNC_CONST_START__ */
+    // [주의] 아래 AUTO_CONST 블록은 pio_gzip_0202.py에 의해 C++ 헤더에서 자동 동기화됩니다.
+    const AUTO_CONST = {
+        FSM_STATE: {
+            IDLE: 0,
+            OVERRIDE: 1,
+            PROFILE_RUN: 2,
+            SCHEDULE_RUN: 3,
+            MOTION_BLOCKED: 4,
+            AUTOOFF_STOPPED: 5,
+            TIME_INVALID: 6
+        },
+        FSM_REASON: {
+            NONE: 0,
+            OVERRIDE_ACTIVE: 1,
+            PROFILE_MODE: 2,
+            USER_PROFILE_ACTIVE: 3,
+            SCHEDULE_ACTIVE: 4,
+            NO_ACTIVE_SCHEDULE: 5,
+            NO_SCHEDULES: 6,
+            TIME_NOT_VALID: 7,
+            MOTION_NO_PRESENCE: 8,
+            AUTOOFF_TIMER: 9,
+            AUTOOFF_TIME: 10,
+            AUTOOFF_TEMP: 11
+        },
+        WIND_PHASE: { CALM: 'CALM', NORMAL: 'NORMAL', STRONG: 'STRONG' }
+    };
+    /* __AUTO_SYNC_CONST_END__ */
+
     SNW.C = {
         // =====================================================
         // 사용자 레벨 (L1~L4)
@@ -16,12 +46,9 @@ window.SNW = window.SNW || {};
         },
 
         // =====================================================
-        // CT10 7-State FSM (SPEC §2.2)
+        // CT10 7-State FSM (SPEC §2.2) - 자동 동기화 연동
         // =====================================================
-        FSM_STATE: {
-            IDLE: 0, OVERRIDE: 1, PROFILE_RUN: 2, SCHEDULE_RUN: 3,
-            MOTION_BLOCKED: 4, AUTOOFF_STOPPED: 5, TIME_INVALID: 6
-        },
+        FSM_STATE: AUTO_CONST.FSM_STATE,
         FSM_STATE_META: {
             0: { code: 'IDLE',            icon: '⏸', color: 'gray',   labelKey: 'fsm.idle',           l1: true  },
             1: { code: 'OVERRIDE',        icon: '✋', color: 'blue',   labelKey: 'fsm.override',       l1: true  },
@@ -33,14 +60,9 @@ window.SNW = window.SNW || {};
         },
 
         // =====================================================
-        // CT10 Reason Code (SPEC §2.2)
+        // CT10 Reason Code (SPEC §2.2) - 자동 동기화 연동
         // =====================================================
-        FSM_REASON: {
-            NONE: 0, OVERRIDE_ACTIVE: 1, PROFILE_MODE: 2, USER_PROFILE_ACTIVE: 3,
-            SCHEDULE_ACTIVE: 4, NO_ACTIVE_SCHEDULE: 5, NO_SCHEDULES: 6,
-            TIME_NOT_VALID: 7, MOTION_NO_PRESENCE: 8,
-            AUTOOFF_TIMER: 9, AUTOOFF_TIME: 10, AUTOOFF_TEMP: 11
-        },
+        FSM_REASON: AUTO_CONST.FSM_REASON,
         FSM_REASON_META: {
             0:  { code: 'NONE',                labelKey: 'reason.none'             },
             1:  { code: 'OVERRIDE_ACTIVE',     labelKey: 'reason.overrideActive'   },
@@ -57,9 +79,9 @@ window.SNW = window.SNW || {};
         },
 
         // =====================================================
-        // S10 Wind Phase
+        // S10 Wind Phase - 자동 동기화 연동
         // =====================================================
-        WIND_PHASE: { CALM: 'CALM', NORMAL: 'NORMAL', STRONG: 'STRONG' },
+        WIND_PHASE: AUTO_CONST.WIND_PHASE,
         WIND_PHASE_META: {
             CALM:   { icon: '🍃', color: 'gray',   labelKey: 'phase.calm'   },
             NORMAL: { icon: '🟢', color: 'green',  labelKey: 'phase.normal' },

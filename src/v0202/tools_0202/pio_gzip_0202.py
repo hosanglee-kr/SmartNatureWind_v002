@@ -44,6 +44,8 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import json
+import re
 import shutil
 import sys
 import zipfile
@@ -73,8 +75,9 @@ HTML_SHELL_OUTPUT  = "index.html"  # 배포 시에도 index.html 유지
 
 # 번들에서 제외할 JS 파일 (배포 폴더 복사도 제외됨)
 JS_BUNDLE_EXCLUDES: Set[str] = {
-    "998.offline_0202.js",     # 오프라인 어댑터 (로컬 검증용, ESP32 배포 제외)
-    "P010_bundle_0202_old.js", # 백업 파일
+    "998.offline_0202.js",      # 오프라인 어댑터 로직 (로컬 검증용, ESP32 배포 제외)
+    "998.offline_data_0202.js", # 오프라인 JSON 캐시 데이터 (로컬 검증용, ESP32 배포 제외)
+    "P010_bundle_0202_old.js",  # 백업 파일
 }
 
 # Gzip 압축 대상 확장자
@@ -102,6 +105,131 @@ def find_project_root() -> Path:
 def _log(msg: str, tag: str = "") -> None:
     prefix = f"[pio_gzip_0202{'/' + tag if tag else ''}]"
     print(f"{prefix} {msg}")
+
+
+# ============================================================
+# [0/6] 데이터 동기화 & 인젝션 (C++ Enum -> JS 상수, JSON -> 오프라인 Mock)
+# ============================================================
+def sync_cpp_to_frontend(project_root: Path) -> int:
+    """C++ 헤더(CT10_Ctl_0202.h 등)에서 Enum을 파싱하여 000.const.js에 동기화"""
+    h_file = project_root / "src" / "v0202" / "CT10_Ctl_0202.h"
+    target_js = project_root / "src" / "v0202" / "data_v0202_src" / "html_v0202" / "js" / "core" / "000.const.js"
+
+    if not h_file.is_file() or not target_js.is_file():
+        _log(f"  [SKIP] 파일 없음: {h_file.name} 또는 {target_js.name}", tag="sync")
+        return 0
+
+    content = h_file.read_text(encoding="utf-8")
+
+    # 1. EN_CT10_state_t 파싱
+    state_dict = {}
+    m_state = re.search(r"typedef\s+enum\s*:\s*uint8_t\s*\{([^}]+)\}\s*EN_CT10_state_t;", content)
+    if m_state:
+        for line in m_state.group(1).splitlines():
+            m = re.search(r"EN_CT10_STATE_([A-Za-z0-9_]+)\s*=\s*(\d+)", line)
+            if m:
+                state_dict[m.group(1)] = int(m.group(2))
+
+    # 2. EN_CT10_reason_t 파싱
+    reason_dict = {}
+    m_reason = re.search(r"typedef\s+enum\s*:\s*uint8_t\s*\{([^}]+)\}\s*EN_CT10_reason_t;", content)
+    if m_reason:
+        for line in m_reason.group(1).splitlines():
+            m = re.search(r"EN_CT10_REASON_([A-Za-z0-9_]+)\s*=\s*(\d+)", line)
+            if m:
+                reason_dict[m.group(1)] = int(m.group(2))
+
+    if not state_dict or not reason_dict:
+        _log(f"  [WARN] Enum 파싱 실패 (state={len(state_dict)}, reason={len(reason_dict)})", tag="sync")
+        return 0
+
+    lines_state = ",\n            ".join([f"{k}: {v}" for k, v in state_dict.items()])
+    lines_reason = ",\n            ".join([f"{k}: {v}" for k, v in reason_dict.items()])
+
+    auto_block = (
+        "/* __AUTO_SYNC_CONST_START__ */\n"
+        "    // [주의] 아래 AUTO_CONST 블록은 pio_gzip_0202.py에 의해 C++ 헤더에서 자동 동기화됩니다.\n"
+        "    const AUTO_CONST = {\n"
+        "        FSM_STATE: {\n"
+        f"            {lines_state}\n"
+        "        },\n"
+        "        FSM_REASON: {\n"
+        f"            {lines_reason}\n"
+        "        },\n"
+        "        WIND_PHASE: { CALM: 'CALM', NORMAL: 'NORMAL', STRONG: 'STRONG' }\n"
+        "    };\n"
+        "    /* __AUTO_SYNC_CONST_END__ */"
+    )
+
+    js_code = target_js.read_text(encoding="utf-8")
+    marker_pattern = r"/\* __AUTO_SYNC_CONST_START__ \*/.*?/\* __AUTO_SYNC_CONST_END__ \*/"
+    if re.search(marker_pattern, js_code, flags=re.DOTALL):
+        new_js = re.sub(marker_pattern, auto_block, js_code, flags=re.DOTALL)
+        if new_js != js_code:
+            target_js.write_text(new_js, encoding="utf-8")
+            _log(f"  [SYNC] C++ 헤더 -> {target_js.name} 자동 동기화 완료 (FSM {len(state_dict)}개, Reason {len(reason_dict)}개)", tag="sync")
+        else:
+            _log(f"  [SYNC] {target_js.name} 이미 최신 상태 (변경 없음)", tag="sync")
+    else:
+        _log(f"  [WARN] {target_js.name} 내 마커(/* __AUTO_SYNC_CONST_START__ */) 없음", tag="sync")
+
+    return 0
+
+
+def inject_json_to_offline_adapter(project_root: Path) -> int:
+    """data_v0202_src/json/*.json 파일들을 998.offline_data_0202.js의 DEFAULT_CACHE로 자동 주입"""
+    json_dir = project_root / "src" / "v0202" / "data_v0202_src" / "json"
+    adapter_file = project_root / "src" / "v0202" / "data_v0202_src" / "html_v0202" / "js" / "998.offline_data_0202.js"
+
+    if not json_dir.is_dir() or not adapter_file.is_file():
+        _log(f"  [SKIP] JSON 디렉토리 또는 어댑터 없음: {adapter_file.name}", tag="inject")
+        return 0
+
+    file_key_map = {
+        "cfg_system_0202.json": "system",
+        "cfg_wifi_0202.json": "wifi",
+        "cfg_motion_0202.json": "motion",
+        "cfg_schedules_0202.json": "schedules",
+        "cfg_userProfile_0202.json": "userProfiles",
+        "cfg_windDict_0202.json": "windDict",
+        "cfg_nvsSpec_0202.json": "nvsSpec",
+        "cfg_pages_0202.json": "webPage"
+    }
+
+    cache_data = {}
+    for filename, key in file_key_map.items():
+        fp = json_dir / filename
+        if fp.is_file():
+            try:
+                cache_data[key] = json.loads(fp.read_text(encoding="utf-8"))
+            except Exception as e:
+                _log(f"  [WARN] JSON 파싱 에러: {filename} ({e})", tag="inject")
+                cache_data[key] = None
+        else:
+            cache_data[key] = None
+
+    cache_json_str = json.dumps(cache_data, ensure_ascii=False, indent=8)
+
+    inject_block = (
+        "/* __AUTO_INJECT_CACHE_START__ */\n"
+        "    // [주의] 아래 DEFAULT_CACHE는 pio_gzip_0202.py 빌드 시 data_v0202_src/json/*.json에서 자동 주입됩니다.\n"
+        f"    const DEFAULT_CACHE = {cache_json_str};\n"
+        "    /* __AUTO_INJECT_CACHE_END__ */"
+    )
+
+    adapter_code = adapter_file.read_text(encoding="utf-8")
+    marker_pattern = r"/\* __AUTO_INJECT_CACHE_START__ \*/.*?/\* __AUTO_INJECT_CACHE_END__ \*/"
+    if re.search(marker_pattern, adapter_code, flags=re.DOTALL):
+        new_adapter = re.sub(marker_pattern, inject_block, adapter_code, flags=re.DOTALL)
+        if new_adapter != adapter_code:
+            adapter_file.write_text(new_adapter, encoding="utf-8")
+            _log(f"  [INJECT] 최신 JSON 8종 -> {adapter_file.name} 자동 주입 완료", tag="inject")
+        else:
+            _log(f"  [INJECT] {adapter_file.name} 이미 최신 상태 (변경 없음)", tag="inject")
+    else:
+        _log(f"  [WARN] {adapter_file.name} 내 마커(/* __AUTO_INJECT_CACHE_START__ */) 없음", tag="inject")
+
+    return 0
 
 
 # ============================================================
@@ -391,6 +519,9 @@ def run_staging(
 
     rc = 0
     if not skip_stage:
+        _log("[0/6] 데이터 동기화 & 인젝션 (C++ Enum -> JS, JSON -> 오프라인 Mock)", tag="stage0")
+        rc |= sync_cpp_to_frontend(project_root)
+        rc |= inject_json_to_offline_adapter(project_root)
         rc |= build_js_bundle(html_src, html_dst)
         rc |= build_css_bundle(html_src, html_dst)
         rc |= process_html_shell(html_src, html_dst)

@@ -134,7 +134,9 @@ window.SNW = window.SNW || {};
             grid.className = 'snw-preset-grid';
             
             curItems.forEach((it, i) => {
-                const name = it.name || SNW.I18n.t('preset.' + it.code) || it.code;
+                const name = (SNW.I18n && SNW.I18n.hasKey('preset.' + it.code))
+                    ? SNW.I18n.t('preset.' + it.code)
+                    : (it.name || it.code);
                 const card = SNW.DomUtil.html`
                     <button type="button"
                             class="snw-preset-card ${it.code === curSelected ? 'is-selected' : ''}"

@@ -17,6 +17,7 @@ window.SNW = window.SNW || {};
             value = 50,
             label = '',
             unit = '',
+            feedbackFn = null,
             onChange,
             debounceMs = SNW.C.DEBOUNCE_MS.SLIDER
         } = opts || {};
@@ -41,20 +42,41 @@ window.SNW = window.SNW || {};
                 </div>
                 <input type="range" class="snw-slider__input"
                        min="${min}" max="${max}" value="${value}" data-input />
+                <div class="snw-slider__feedback" data-feedback style="margin-top:4px;font-size:11px;color:var(--snw-text-dim);display:none;"></div>
             </div>`);
         
         const input = root.querySelector('[data-input]');
         const valEl = root.querySelector('[data-val]');
+        const fbEl  = root.querySelector('[data-feedback]');
+        
+        const updateFeedback = (val) => {
+            if (typeof feedbackFn === 'function' && fbEl) {
+                const fb = feedbackFn(Number(val));
+                if (fb) {
+                    fbEl.style.display = 'block';
+                    fbEl.innerHTML = `
+                        <div style="font-weight:600;color:var(--snw-primary);">${SNW.DomUtil.escape(fb.title || '')}</div>
+                        <div style="font-size:10.5px;color:var(--snw-text-dim);margin-top:2px;">${SNW.DomUtil.escape(fb.desc || '')}</div>
+                    `;
+                } else {
+                    fbEl.style.display = 'none';
+                }
+            }
+        };
+
+        updateFeedback(value);
         
         let dragging = false;
         
         input.addEventListener('input', () => {
             dragging = true;
             if (valEl) valEl.textContent = input.value;
+            updateFeedback(input.value);
         });
         
         input.addEventListener('change', () => {
             dragging = false;
+            updateFeedback(input.value);
             debounced(Number(input.value));
         });
         
@@ -66,6 +88,7 @@ window.SNW = window.SNW || {};
                 // [O-2] 사용자 조작 중 무시
                 if (dragging) return;
                 const n = Math.max(min, Math.min(max, Number(v) || 0));
+                updateFeedback(n);
                 // 현재 표시 값과 같으면 스킵 (불필요한 재렌더 방지)
                 if (Number(input.value) === n) return;
                 input.value = String(n);

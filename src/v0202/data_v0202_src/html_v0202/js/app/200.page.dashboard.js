@@ -40,11 +40,22 @@ SNW.Page = SNW.Page || {};
                 ]);
                 if (!this._active) return;
                 this._applyInitialState(stateData);
-                if (profileData) this._applyPresetList(profileData);
+                if (profileData) {
+                    this._profileData = profileData;
+                    this._applyPresetList(profileData);
+                }
             } catch (e) {
                 if (this._active) SNW.LogUtil.warn('[Dashboard] 초기 로드 실패', e);
             }
             
+            const onLangChange = () => {
+                if (this._active && this._profileData) {
+                    this._applyPresetList(this._profileData);
+                }
+            };
+            document.addEventListener('snw:langchange', onLangChange);
+            this._unsubs.push(() => document.removeEventListener('snw:langchange', onLangChange));
+
             this._bindStore();
             this._bindModeSwitch();
             this._startClock();
@@ -103,15 +114,38 @@ SNW.Page = SNW.Page || {};
                 on: false,
                 onToggle: next => this._onPowerToggle(next)
             });
-            this.components.slider = SNW.UI.slider({
+            this.components.sliderIntensity = SNW.UI.slider({
                 root: q('[data-slot="intensity"]'),
                 min: 0, max: 100,
                 value: SNW.CFG.SIM_DEFAULT.intensity,
                 label: SNW.I18n.t('dashboard.intensityLabel'),
                 unit: '%',
+                feedbackFn: val => (SNW.Feedback ? SNW.Feedback.getIntensityGuide(val) : null),
                 debounceMs: SNW.C.DEBOUNCE_MS.SLIDER,
                 onChange: v => this._onIntensityChange(v)
             });
+            this.components.sliderVariability = SNW.UI.slider({
+                root: q('[data-slot="variability"]'),
+                min: 0, max: 100,
+                value: SNW.CFG.SIM_DEFAULT.variability,
+                label: SNW.I18n.t('dashboard.variabilityLabel'),
+                unit: '%',
+                feedbackFn: val => (SNW.Feedback ? SNW.Feedback.getVariabilityGuide(val) : null),
+                debounceMs: SNW.C.DEBOUNCE_MS.SLIDER,
+                onChange: v => this._onVariabilityChange(v)
+            });
+            this.components.sliderGust = SNW.UI.slider({
+                root: q('[data-slot="gust"]'),
+                min: 0, max: 100,
+                value: SNW.CFG.SIM_DEFAULT.gustFreq,
+                label: SNW.I18n.t('dashboard.gustLabel'),
+                unit: '%',
+                feedbackFn: val => (SNW.Feedback ? SNW.Feedback.getGustGuide(val) : null),
+                debounceMs: SNW.C.DEBOUNCE_MS.SLIDER,
+                onChange: v => this._onGustChange(v)
+            });
+            this.components.slider = this.components.sliderIntensity;
+
             this.components.presets = SNW.UI.presetGrid({
                 root: q('[data-slot="presets"]'),
                 items: [], selected: '',
@@ -284,7 +318,9 @@ SNW.Page = SNW.Page || {};
                         phaseEl.textContent = SNW.I18n.t(meta.labelKey);
                     }
                     this.components.gauge.set(sim.pwmDuty != null ? sim.pwmDuty : 0);
-                    if (sim.intensity != null) this.components.slider.set(sim.intensity);
+                    if (sim.intensity != null) this.components.sliderIntensity.set(sim.intensity);
+                    if (sim.variability != null) this.components.sliderVariability.set(sim.variability);
+                    if (sim.gustFreq != null) this.components.sliderGust.set(sim.gustFreq);
                     if (sim.presetCode) this.components.presets.setSelected(sim.presetCode);
                     
                     if (sim.styleCode) this._updateStyleUI(sim.styleCode);
@@ -471,6 +507,32 @@ SNW.Page = SNW.Page || {};
                 SNW.Store.set({ sim: Object.assign({}, prevSim, { intensity: prevVal }) });
                 this.components.slider.set(prevVal);
                 SNW.ErrorHandler.handle(e, 'dashboard.intensity');
+            }
+        }
+
+        async _onVariabilityChange(v) {
+            const prevSim = SNW.Store.get().sim;
+            const prevVal = prevSim?.variability;
+            SNW.Store.set({ sim: Object.assign({}, prevSim || {}, { variability: v }) });
+            try {
+                await SNW.Api.patchSim({ variability: v });
+            } catch (e) {
+                SNW.Store.set({ sim: Object.assign({}, prevSim, { variability: prevVal }) });
+                this.components.sliderVariability.set(prevVal);
+                SNW.ErrorHandler.handle(e, 'dashboard.variability');
+            }
+        }
+
+        async _onGustChange(v) {
+            const prevSim = SNW.Store.get().sim;
+            const prevVal = prevSim?.gustFreq;
+            SNW.Store.set({ sim: Object.assign({}, prevSim || {}, { gustFreq: v }) });
+            try {
+                await SNW.Api.patchSim({ gustFreq: v });
+            } catch (e) {
+                SNW.Store.set({ sim: Object.assign({}, prevSim, { gustFreq: prevVal }) });
+                this.components.sliderGust.set(prevVal);
+                SNW.ErrorHandler.handle(e, 'dashboard.gust');
             }
         }
         

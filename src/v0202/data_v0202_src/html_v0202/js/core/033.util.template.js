@@ -65,21 +65,26 @@ window.SNW = window.SNW || {};
                         <h2 data-i18n="dashboard.presetTitle">프리셋 선택</h2>
                         <div data-slot="presets"></div>
                         
-                        <!-- [신규] 바람 스타일 선택 UI (백엔드 Enum 매핑) -->
+                        <!-- 바람 스타일 선택 UI (5종 백엔드 완벽 매핑) -->
                         <div style="margin-top:16px;">
                             <h3 style="margin-bottom:8px; font-size:12px; color:var(--snw-text-dim);" data-i18n="dashboard.styleTitle">바람 스타일</h3>
                             <div class="snw-style-selector" id="style-selector">
-                                <button type="button" class="snw-style-btn" data-style="BALANCE">자연풍</button>
-                                <button type="button" class="snw-style-btn" data-style="ACTIVE">돌풍</button>
-                                <button type="button" class="snw-style-btn" data-style="RELAX">산들바람</button>
-                                <button type="button" class="snw-style-btn" data-style="FOCUS">주기풍</button>
+                                <button type="button" class="snw-style-btn" data-style="BALANCE" data-i18n="style.BALANCE">균형</button>
+                                <button type="button" class="snw-style-btn" data-style="ACTIVE" data-i18n="style.ACTIVE">활동적</button>
+                                <button type="button" class="snw-style-btn" data-style="FOCUS" data-i18n="style.FOCUS">집중</button>
+                                <button type="button" class="snw-style-btn" data-style="RELAX" data-i18n="style.RELAX">휴식</button>
+                                <button type="button" class="snw-style-btn" data-style="SLEEP" data-i18n="style.SLEEP">수면</button>
                             </div>
                         </div>
                     </section>
                     
-                    <section class="snw-card snw-card--slider">
-                        <h2 data-i18n="dashboard.intensityTitle">강도 조절</h2>
-                        <div data-slot="intensity"></div>
+                    <section class="snw-card snw-card--slider" style="grid-column: 1 / -1;">
+                        <h2 data-i18n="dashboard.physicsTitle">바람 세부 조절 (3대 물리 제어)</h2>
+                        <div style="display:flex;flex-direction:column;gap:16px;">
+                            <div data-slot="intensity"></div>
+                            <div data-slot="variability"></div>
+                            <div data-slot="gust"></div>
+                        </div>
                     </section>
                 </div>`;
         },

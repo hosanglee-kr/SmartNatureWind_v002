@@ -334,7 +334,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 020.i18n.js (46998 bytes) ---- */
+/* ---- 020.i18n.js (49351 bytes) ---- */
 // =========================================================
 // 020.i18n.js — 다국어 사전 (ko/en)
 // Layer 0 (기반) — SNW.CFG 참조만
@@ -419,6 +419,9 @@ window.SNW = window.SNW || {};
             'dashboard.presetCurrent':  '현재 선택',
             'dashboard.intensityTitle': '강도 조절',
             'dashboard.intensityLabel': '강도',
+            'dashboard.physicsTitle':   '바람 세부 조절 (3대 물리 제어)',
+            'dashboard.variabilityLabel': '변동성',
+            'dashboard.gustLabel':      '돌풍 빈도',
             'dashboard.temp':           '온도',
             'dashboard.humidity':       '습도',
             'dashboard.motion':         '인체감지',
@@ -805,10 +808,26 @@ window.SNW = window.SNW || {};
             'settings.tabGeneral': '일반 / 보안',
             'settings.tabHardware': '하드웨어 / 핀맵',
             'settings.tabComm': '통신 / WS',
+            'dashboard.styleTitle': '바람 스타일',
             'schedule.secBasic': '기본 일정',
             'schedule.secSegments': '바람 세그먼트',
-            'schedule.secSmart': '스마트 안심 종료 (AutoOff & PIR)'
-
+            'schedule.secSmart': '스마트 안심 종료 (AutoOff & PIR)',
+            'segment.onMinutes': '작동 시간(분)',
+            'segment.offMinutes': '정지 시간(분)',
+            'segment.mode': '모드',
+            'segment.modePreset': '프리셋 모드',
+            'segment.modeFixed': '고정풍속 모드',
+            'segment.presetSelect': '프리셋 선택',
+            'segment.styleSelect': '스타일 선택',
+            'segment.fixedSpeed': '고정 풍속(%)',
+            'segment.overrideTitle': '⚙️ 고급 물리 설정 (Override 직접 지정)',
+            'segment.overrideDesc': '이 세그먼트에서 바람 세부 설정 직접 지정 (Override)',
+            'segment.overrideIntensity': '바람 강도 (%)',
+            'segment.overrideVariability': '바람 변동성 (%)',
+            'segment.overrideGust': '돌풍 빈도 (%)',
+            'segment.moveUp': '위로',
+            'segment.moveDown': '아래로',
+            'segment.summaryPrefix': '세그먼트 ({count}개):'
         },
 
         // =====================================================
@@ -881,6 +900,9 @@ window.SNW = window.SNW || {};
             'dashboard.presetCurrent':  'Current',
             'dashboard.intensityTitle': 'Intensity',
             'dashboard.intensityLabel': 'Intensity',
+            'dashboard.physicsTitle':   'Physics Controls',
+            'dashboard.variabilityLabel': 'Variability',
+            'dashboard.gustLabel':      'Gust Freq',
             'dashboard.temp':           'Temp',
             'dashboard.humidity':       'Humidity',
             'dashboard.motion':         'Motion',
@@ -1238,9 +1260,26 @@ window.SNW = window.SNW || {};
             'settings.tabGeneral': 'General / Security',
             'settings.tabHardware': 'Hardware / Pinmap',
             'settings.tabComm': 'Comm / WS',
+            'dashboard.styleTitle': 'Wind Style',
             'schedule.secBasic': 'Basic Schedule',
             'schedule.secSegments': 'Wind Segments',
-            'schedule.secSmart': 'Smart Auto Off (AutoOff & PIR)'
+            'schedule.secSmart': 'Smart Auto Off (AutoOff & PIR)',
+            'segment.onMinutes': 'On Duration (min)',
+            'segment.offMinutes': 'Off Duration (min)',
+            'segment.mode': 'Mode',
+            'segment.modePreset': 'Preset Mode',
+            'segment.modeFixed': 'Fixed Speed Mode',
+            'segment.presetSelect': 'Select Preset',
+            'segment.styleSelect': 'Select Style',
+            'segment.fixedSpeed': 'Fixed Speed (%)',
+            'segment.overrideTitle': '⚙️ Advanced Physics (Direct Override)',
+            'segment.overrideDesc': 'Directly specify wind physics for this segment (Override)',
+            'segment.overrideIntensity': 'Wind Intensity (%)',
+            'segment.overrideVariability': 'Wind Variability (%)',
+            'segment.overrideGust': 'Gust Frequency (%)',
+            'segment.moveUp': 'Move Up',
+            'segment.moveDown': 'Move Down',
+            'segment.summaryPrefix': 'Segments ({count}):'
         }
     };
 
@@ -1499,7 +1538,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 033.util.template.js (14015 bytes) ---- */
+/* ---- 033.util.template.js (14532 bytes) ---- */
 // =========================================================
 // 033.util.template.js — SNW.Tpl (페이지 HTML 템플릿)
 // Layer 1 (유틸) — SNW.C, SNW.DomUtil 참조
@@ -1567,21 +1606,26 @@ window.SNW = window.SNW || {};
                         <h2 data-i18n="dashboard.presetTitle">프리셋 선택</h2>
                         <div data-slot="presets"></div>
                         
-                        <!-- [신규] 바람 스타일 선택 UI (백엔드 Enum 매핑) -->
+                        <!-- 바람 스타일 선택 UI (5종 백엔드 완벽 매핑) -->
                         <div style="margin-top:16px;">
                             <h3 style="margin-bottom:8px; font-size:12px; color:var(--snw-text-dim);" data-i18n="dashboard.styleTitle">바람 스타일</h3>
                             <div class="snw-style-selector" id="style-selector">
-                                <button type="button" class="snw-style-btn" data-style="BALANCE">자연풍</button>
-                                <button type="button" class="snw-style-btn" data-style="ACTIVE">돌풍</button>
-                                <button type="button" class="snw-style-btn" data-style="RELAX">산들바람</button>
-                                <button type="button" class="snw-style-btn" data-style="FOCUS">주기풍</button>
+                                <button type="button" class="snw-style-btn" data-style="BALANCE" data-i18n="style.BALANCE">균형</button>
+                                <button type="button" class="snw-style-btn" data-style="ACTIVE" data-i18n="style.ACTIVE">활동적</button>
+                                <button type="button" class="snw-style-btn" data-style="FOCUS" data-i18n="style.FOCUS">집중</button>
+                                <button type="button" class="snw-style-btn" data-style="RELAX" data-i18n="style.RELAX">휴식</button>
+                                <button type="button" class="snw-style-btn" data-style="SLEEP" data-i18n="style.SLEEP">수면</button>
                             </div>
                         </div>
                     </section>
                     
-                    <section class="snw-card snw-card--slider">
-                        <h2 data-i18n="dashboard.intensityTitle">강도 조절</h2>
-                        <div data-slot="intensity"></div>
+                    <section class="snw-card snw-card--slider" style="grid-column: 1 / -1;">
+                        <h2 data-i18n="dashboard.physicsTitle">바람 세부 조절 (3대 물리 제어)</h2>
+                        <div style="display:flex;flex-direction:column;gap:16px;">
+                            <div data-slot="intensity"></div>
+                            <div data-slot="variability"></div>
+                            <div data-slot="gust"></div>
+                        </div>
                     </section>
                 </div>`;
         },
@@ -1900,6 +1944,126 @@ window.SNW = window.SNW || {};
         }
     };
 
+})(window.SNW);
+
+
+/* ---- 035.util.feedback.js (5935 bytes) ---- */
+// =========================================================
+// 035.util.feedback.js — SNW.Feedback (정량적 물리 피드백 헬퍼)
+// Layer 1 (유틸) — 0202_007 설계 기반
+// =========================================================
+window.SNW = window.SNW || {};
+(function(SNW) {
+    'use strict';
+
+    SNW.Feedback = {
+        /**
+         * 바람 강도 (Intensity 0~100%) 실시간 정량 가이드
+         */
+        getIntensityGuide(val) {
+            const isEn = (SNW.I18n && SNW.I18n.getLang() === 'en');
+            const v = Number(val) || 0;
+            if (v <= 0) {
+                return {
+                    title: isEn ? '0.0 m/s · Fan Stopped' : '0.0 m/s · 팬 정지',
+                    desc: isEn ? 'Fan motor is in standby mode.' : '팬 모터가 대기 상태입니다.'
+                };
+            }
+            if (v <= 30) {
+                const speed = (0.5 + (v / 30) * 1.0).toFixed(1);
+                return {
+                    title: isEn ? `Approx ${speed} m/s (Gentle / Sleep)` : `체감 약 ${speed} m/s (초미풍 · 수면풍)`,
+                    desc: isEn
+                        ? 'Gentle breeze comparable to fanning (ideal for sleep or infants, quiet <25dB)'
+                        : '부채질 수준의 고요한 미풍 (수면 시 또는 영유아에 적합, 저소음 <25dB)'
+                };
+            }
+            if (v <= 70) {
+                const speed = (1.5 + ((v - 30) / 40) * 2.0).toFixed(1);
+                return {
+                    title: isEn ? `Approx ${speed} m/s (Natural Breeze · Stage 1-2)` : `체감 약 ${speed} m/s (표준 자연풍 · 1~2단)`,
+                    desc: isEn
+                        ? 'Pleasant fluttering breeze (most comfortable for daily living and relaxation)'
+                        : '나뭇잎이 살랑거리는 기분 좋은 산들바람 (일상 생활 및 휴식에 가장 쾌적)'
+                };
+            }
+            const speed = (3.5 + ((v - 70) / 30) * 2.0).toFixed(1);
+            return {
+                title: isEn ? `Approx ${speed} m/s (Strong Wind · Stage 3-4)` : `체감 약 ${speed} m/s (강풍 · 급속 환기 3~4단)`,
+                desc: isEn
+                    ? 'Cool open-window breeze (ideal after workouts or quick cooling)'
+                    : '창문을 열었을 때 부는 시원한 야외 바람 (운동 직후나 빠른 환기에 적합)'
+            };
+        },
+
+        /**
+         * 바람 변동성 (Variability 0~100%) 실시간 정량 가이드
+         */
+        getVariabilityGuide(val) {
+            const isEn = (SNW.I18n && SNW.I18n.getLang() === 'en');
+            const v = Number(val) || 0;
+            if (v <= 30) {
+                return {
+                    title: isEn ? 'Transition ~10-15s (Delta <10%)' : '풍속 전환 약 10~15초 소요 (변화폭 <10%)',
+                    desc: isEn
+                        ? 'Wind changes very slowly, maintaining a smooth and steady flow.'
+                        : '바람 세기가 천천히 바뀌어 체감상 거의 일정하고 부드럽습니다.'
+                };
+            }
+            if (v <= 70) {
+                return {
+                    title: isEn ? 'Transition ~5-8s (Delta ±30%)' : '풍속 전환 약 5~8초 소요 (변화폭 ±30%)',
+                    desc: isEn
+                        ? 'Rhythmic fluctuation like a forest breeze every 5-8s.'
+                        : '숲속 바람처럼 5~8초 간격으로 오르내리며 자연스러운 리듬감을 줍니다.'
+                };
+            }
+            return {
+                title: isEn ? 'Transition ~2-4s (Delta up to ±60%)' : '풍속 전환 약 2~4초 소요 (변화폭 최대 ±60%)',
+                desc: isEn
+                    ? 'Rapid 2-4s velocity changes creating dynamic coastal or valley winds.'
+                    : '2~3초 만에 풍속이 급격히 전환되어 계곡이나 해변처럼 역동적입니다.'
+            };
+        },
+
+        /**
+         * 돌풍 빈도 (Gust Frequency 0~100%) 실시간 정량 가이드
+         */
+        getGustGuide(val) {
+            const isEn = (SNW.I18n && SNW.I18n.getLang() === 'en');
+            const v = Number(val) || 0;
+            if (v <= 0) {
+                return {
+                    title: isEn ? 'No Gust (Base flow only)' : '돌풍 없음 (기본 기류만 유지)',
+                    desc: isEn
+                        ? 'Maintains gentle airflow without sudden gusts.'
+                        : '돌풍 없이 평온한 기류만 부드럽게 유지됩니다.'
+                };
+            }
+            if (v <= 20) {
+                return {
+                    title: isEn ? 'Inflow every ~60-120s (1-2 min)' : '약 60~120초(1~2분)에 1회 유입',
+                    desc: isEn
+                        ? 'Rare gentle gusts suitable for sleep or quiet focus.'
+                        : '가벼운 돌풍이 드물게 지나가 수면이나 독서에 방해되지 않습니다.'
+                };
+            }
+            if (v <= 60) {
+                return {
+                    title: isEn ? 'Inflow every ~30-50s (Peak ×1.5~2.0)' : '약 30~50초에 1회 유입 (순간 풍속 ×1.5~2.0배)',
+                    desc: isEn
+                        ? 'Refreshing bursts every 30-50s relieving stuffiness.'
+                        : '30~45초마다 시원한 바람이 훅 불어와 답답함을 해소해 줍니다.'
+                };
+            }
+            return {
+                title: isEn ? 'Inflow every ~15-25s (Peak up to ×2.5)' : '약 15~25초에 1회 유입 (순간 풍속 최대 ×2.5배)',
+                desc: isEn
+                    ? 'Frequent energetic gusts giving an invigorating hilltop sensation.'
+                    : '15~20초마다 강력한 돌풍이 연속 유입되어 야외 언덕에 있는 듯 상쾌합니다.'
+            };
+        }
+    };
 })(window.SNW);
 
 
@@ -2936,7 +3100,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 110.ui.slider.js (2753 bytes) ---- */
+/* ---- 110.ui.slider.js (3823 bytes) ---- */
 // =========================================================
 // 110.ui.slider.js — SNW.UI.slider
 // Layer 3 (UI 컴포넌트)
@@ -2956,6 +3120,7 @@ window.SNW = window.SNW || {};
             value = 50,
             label = '',
             unit = '',
+            feedbackFn = null,
             onChange,
             debounceMs = SNW.C.DEBOUNCE_MS.SLIDER
         } = opts || {};
@@ -2980,20 +3145,41 @@ window.SNW = window.SNW || {};
                 </div>
                 <input type="range" class="snw-slider__input"
                        min="${min}" max="${max}" value="${value}" data-input />
+                <div class="snw-slider__feedback" data-feedback style="margin-top:4px;font-size:11px;color:var(--snw-text-dim);display:none;"></div>
             </div>`);
         
         const input = root.querySelector('[data-input]');
         const valEl = root.querySelector('[data-val]');
+        const fbEl  = root.querySelector('[data-feedback]');
+        
+        const updateFeedback = (val) => {
+            if (typeof feedbackFn === 'function' && fbEl) {
+                const fb = feedbackFn(Number(val));
+                if (fb) {
+                    fbEl.style.display = 'block';
+                    fbEl.innerHTML = `
+                        <div style="font-weight:600;color:var(--snw-primary);">${SNW.DomUtil.escape(fb.title || '')}</div>
+                        <div style="font-size:10.5px;color:var(--snw-text-dim);margin-top:2px;">${SNW.DomUtil.escape(fb.desc || '')}</div>
+                    `;
+                } else {
+                    fbEl.style.display = 'none';
+                }
+            }
+        };
+
+        updateFeedback(value);
         
         let dragging = false;
         
         input.addEventListener('input', () => {
             dragging = true;
             if (valEl) valEl.textContent = input.value;
+            updateFeedback(input.value);
         });
         
         input.addEventListener('change', () => {
             dragging = false;
+            updateFeedback(input.value);
             debounced(Number(input.value));
         });
         
@@ -3005,6 +3191,7 @@ window.SNW = window.SNW || {};
                 // [O-2] 사용자 조작 중 무시
                 if (dragging) return;
                 const n = Math.max(min, Math.min(max, Number(v) || 0));
+                updateFeedback(n);
                 // 현재 표시 값과 같으면 스킵 (불필요한 재렌더 방지)
                 if (Number(input.value) === n) return;
                 input.value = String(n);
@@ -3187,7 +3374,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 130.ui.form.js (13389 bytes) ---- */
+/* ---- 130.ui.form.js (13483 bytes) ---- */
 // =========================================================
 // 130.ui.form.js — SNW.UI.form + presetGrid + sensorCards + logViewer
 // Layer 3 (UI 컴포넌트)
@@ -3324,7 +3511,9 @@ window.SNW = window.SNW || {};
             grid.className = 'snw-preset-grid';
             
             curItems.forEach((it, i) => {
-                const name = it.name || SNW.I18n.t('preset.' + it.code) || it.code;
+                const name = (SNW.I18n && SNW.I18n.hasKey('preset.' + it.code))
+                    ? SNW.I18n.t('preset.' + it.code)
+                    : (it.name || it.code);
                 const card = SNW.DomUtil.html`
                     <button type="button"
                             class="snw-preset-card ${it.code === curSelected ? 'is-selected' : ''}"
@@ -3500,7 +3689,7 @@ window.SNW = window.SNW || {};
 
 /* ===== LAYER 2 ===== */
 
-/* ---- 200.page.dashboard.js (22707 bytes) ---- */
+/* ---- 200.page.dashboard.js (25701 bytes) ---- */
 // =========================================================
 // 200.page.dashboard.js — SNW.Page.Dashboard
 // Layer 4 (페이지 로직)
@@ -3543,11 +3732,22 @@ SNW.Page = SNW.Page || {};
                 ]);
                 if (!this._active) return;
                 this._applyInitialState(stateData);
-                if (profileData) this._applyPresetList(profileData);
+                if (profileData) {
+                    this._profileData = profileData;
+                    this._applyPresetList(profileData);
+                }
             } catch (e) {
                 if (this._active) SNW.LogUtil.warn('[Dashboard] 초기 로드 실패', e);
             }
             
+            const onLangChange = () => {
+                if (this._active && this._profileData) {
+                    this._applyPresetList(this._profileData);
+                }
+            };
+            document.addEventListener('snw:langchange', onLangChange);
+            this._unsubs.push(() => document.removeEventListener('snw:langchange', onLangChange));
+
             this._bindStore();
             this._bindModeSwitch();
             this._startClock();
@@ -3606,15 +3806,38 @@ SNW.Page = SNW.Page || {};
                 on: false,
                 onToggle: next => this._onPowerToggle(next)
             });
-            this.components.slider = SNW.UI.slider({
+            this.components.sliderIntensity = SNW.UI.slider({
                 root: q('[data-slot="intensity"]'),
                 min: 0, max: 100,
                 value: SNW.CFG.SIM_DEFAULT.intensity,
                 label: SNW.I18n.t('dashboard.intensityLabel'),
                 unit: '%',
+                feedbackFn: val => (SNW.Feedback ? SNW.Feedback.getIntensityGuide(val) : null),
                 debounceMs: SNW.C.DEBOUNCE_MS.SLIDER,
                 onChange: v => this._onIntensityChange(v)
             });
+            this.components.sliderVariability = SNW.UI.slider({
+                root: q('[data-slot="variability"]'),
+                min: 0, max: 100,
+                value: SNW.CFG.SIM_DEFAULT.variability,
+                label: SNW.I18n.t('dashboard.variabilityLabel'),
+                unit: '%',
+                feedbackFn: val => (SNW.Feedback ? SNW.Feedback.getVariabilityGuide(val) : null),
+                debounceMs: SNW.C.DEBOUNCE_MS.SLIDER,
+                onChange: v => this._onVariabilityChange(v)
+            });
+            this.components.sliderGust = SNW.UI.slider({
+                root: q('[data-slot="gust"]'),
+                min: 0, max: 100,
+                value: SNW.CFG.SIM_DEFAULT.gustFreq,
+                label: SNW.I18n.t('dashboard.gustLabel'),
+                unit: '%',
+                feedbackFn: val => (SNW.Feedback ? SNW.Feedback.getGustGuide(val) : null),
+                debounceMs: SNW.C.DEBOUNCE_MS.SLIDER,
+                onChange: v => this._onGustChange(v)
+            });
+            this.components.slider = this.components.sliderIntensity;
+
             this.components.presets = SNW.UI.presetGrid({
                 root: q('[data-slot="presets"]'),
                 items: [], selected: '',
@@ -3787,7 +4010,9 @@ SNW.Page = SNW.Page || {};
                         phaseEl.textContent = SNW.I18n.t(meta.labelKey);
                     }
                     this.components.gauge.set(sim.pwmDuty != null ? sim.pwmDuty : 0);
-                    if (sim.intensity != null) this.components.slider.set(sim.intensity);
+                    if (sim.intensity != null) this.components.sliderIntensity.set(sim.intensity);
+                    if (sim.variability != null) this.components.sliderVariability.set(sim.variability);
+                    if (sim.gustFreq != null) this.components.sliderGust.set(sim.gustFreq);
                     if (sim.presetCode) this.components.presets.setSelected(sim.presetCode);
                     
                     if (sim.styleCode) this._updateStyleUI(sim.styleCode);
@@ -3974,6 +4199,32 @@ SNW.Page = SNW.Page || {};
                 SNW.Store.set({ sim: Object.assign({}, prevSim, { intensity: prevVal }) });
                 this.components.slider.set(prevVal);
                 SNW.ErrorHandler.handle(e, 'dashboard.intensity');
+            }
+        }
+
+        async _onVariabilityChange(v) {
+            const prevSim = SNW.Store.get().sim;
+            const prevVal = prevSim?.variability;
+            SNW.Store.set({ sim: Object.assign({}, prevSim || {}, { variability: v }) });
+            try {
+                await SNW.Api.patchSim({ variability: v });
+            } catch (e) {
+                SNW.Store.set({ sim: Object.assign({}, prevSim, { variability: prevVal }) });
+                this.components.sliderVariability.set(prevVal);
+                SNW.ErrorHandler.handle(e, 'dashboard.variability');
+            }
+        }
+
+        async _onGustChange(v) {
+            const prevSim = SNW.Store.get().sim;
+            const prevVal = prevSim?.gustFreq;
+            SNW.Store.set({ sim: Object.assign({}, prevSim || {}, { gustFreq: v }) });
+            try {
+                await SNW.Api.patchSim({ gustFreq: v });
+            } catch (e) {
+                SNW.Store.set({ sim: Object.assign({}, prevSim, { gustFreq: prevVal }) });
+                this.components.sliderGust.set(prevVal);
+                SNW.ErrorHandler.handle(e, 'dashboard.gust');
             }
         }
         
@@ -4205,7 +4456,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 220.page.schedule.js (25542 bytes) ---- */
+/* ---- 220.page.schedule.js (37532 bytes) ---- */
 // =========================================================
 // 220.page.schedule.js — SNW.Page.Schedule
 // Layer 4 (페이지 로직)
@@ -4316,18 +4567,23 @@ SNW.Page = SNW.Page || {};
                 period: { enabled: true, days: [1,1,1,1,1,1,1], startTime: '08:00', endTime: '20:00' },
                 segments: [{
                     segNo: 10, onMinutes: 20, offMinutes: 10, mode: 'PRESET',
-                    presetCode: 'OCEAN', styleCode: 'BALANCE', adjust: {}, fixedSpeed: 0
+                    presetCode: 'HARBOR_BREEZE', styleCode: 'BALANCE',
+                    override: { enabled: false, windIntensity: 70, windVariability: 50, gustFrequency: 45 },
+                    fixedSpeed: 0
                 }],
                 autoOff: {
                     timer:   { enabled: false, minutes: 0 },
                     offTime: { enabled: false, time: '00:00' },
                     offTemp: { enabled: false, temp: 0 }
-                },
-                motion: { pir: { enabled: false, holdSec: 0 } }
-            };
-
-            const t = (k, fb) => SNW.I18n ? SNW.I18n.t(k) : fb;
+               const t = (k, fb) => SNW.I18n ? SNW.I18n.t(k) : fb;
             const dayKeys = ['days.mon','days.tue','days.wed','days.thu','days.fri','days.sat','days.sun'];
+
+            const PRESET_CODES = [
+                'OCEAN', 'COUNTRY_BREEZE', 'MEDITERRANEAN', 'MOUNTAIN', 'PLAINS',
+                'HARBOR_BREEZE', 'FOREST_CANOPY', 'URBAN_SUNSET', 'TROPICAL_RAIN', 'DESERT_NIGHT'
+            ];
+
+            const STYLE_CODES = ['BALANCE', 'ACTIVE', 'FOCUS', 'RELAX', 'SLEEP'];
 
             const content = document.createElement('div');
             let daysHtml = `<div class="snw-form-row"><label>${t('scheduler.day', '요일')}</label><div style="display:flex;gap:4px;">`;
@@ -4368,11 +4624,11 @@ SNW.Page = SNW.Page || {};
                         </div>
                     </details>
 
-                    <details class="snw-accordion" open>
-                        <summary>${SNW.I18n.t('schedule.secSegments')}</summary>
+                    <details class="snw-accordion" open id="details-segs">
+                        <summary id="sch-seg-summary" style="cursor:pointer;font-weight:600;">${SNW.I18n.t('schedule.secSegments')}</summary>
                         <div class="snw-accordion__content">
-                            <div id="sch-segs" style="display:flex;flex-direction:column;"></div>
-                            <button type="button" class="snw-btn snw-btn-primary" id="btn-add-seg" style="margin-top:12px; width:100%;">
+                            <div id="sch-segs" style="display:flex;flex-direction:column;gap:12px;"></div>
+                            <button type="button" class="snw-btn snw-btn-secondary" id="btn-add-seg" style="margin-top:12px; width:100%; border: 1px dashed var(--snw-primary); color: var(--snw-primary); background: transparent;">
                                 + ${SNW.I18n.t('schedule.addSegmentBtn')}
                             </button>
                         </div>
@@ -4414,12 +4670,56 @@ SNW.Page = SNW.Page || {};
                     </details>
                 </div>`;
 
+            // 조건부 비활성화 바인딩
+            const bindConditionals = () => {
+                const pairs = [
+                    { chk: '#sch-ao-offtime-en', target: '#sch-ao-offtime' },
+                    { chk: '#sch-ao-offtemp-en', target: '#sch-ao-offtemp' },
+                    { chk: '#sch-pir-en', target: '#sch-pir-hold' }
+                ];
+                pairs.forEach(({ chk, target }) => {
+                    const chkEl = content.querySelector(chk);
+                    const tgtEl = content.querySelector(target);
+                    if (chkEl && tgtEl) {
+                        const update = () => {
+                            tgtEl.disabled = !chkEl.checked;
+                            tgtEl.style.opacity = chkEl.checked ? '1' : '0.4';
+                        };
+                        chkEl.addEventListener('change', update);
+                        update();
+                    }
+                });
+            };
+            bindConditionals();
+
             const segContainer = content.querySelector('#sch-segs');
             const currentSegs = JSON.parse(JSON.stringify(s.segments || []));
 
-            // =========================================================
-            // [O-8] 세그먼트 삭제 Undo (완전한 복원 로직 보존)
-            // =========================================================
+            const updateSummaryText = () => {
+                const sumEl = content.querySelector('#sch-seg-summary');
+                if (!sumEl) return;
+                if (!currentSegs.length) {
+                    sumEl.textContent = `${t('schedule.secSegments', '세그먼트')} (0)`;
+                    return;
+                }
+                const parts = currentSegs.map((sg, i) => {
+                    if (sg.mode === 'FIXED') return `${i+1}:${t('segment.modeFixed', '고정')}(${sg.fixedSpeed || 0}%) ${sg.onMinutes}m/${sg.offMinutes}m`;
+                    const pName = t('preset.' + sg.presetCode, sg.presetCode);
+                    return `${i+1}:${pName} ${sg.onMinutes}m/${sg.offMinutes}m`;
+                });
+                sumEl.textContent = `${t('segment.summaryPrefix', '세그먼트')} (${currentSegs.length}) · ${parts.join(' → ')}`;
+            };
+
+            const _moveSeg = (idx, dir) => {
+                const targetIdx = idx + dir;
+                if (targetIdx < 0 || targetIdx >= currentSegs.length) return;
+                const temp = currentSegs[idx];
+                currentSegs[idx] = currentSegs[targetIdx];
+                currentSegs[targetIdx] = temp;
+                currentSegs.forEach((sg, i) => { sg.segNo = (i + 1) * 10; });
+                renderSegs(currentSegs);
+            };
+
             const _removeWithUndo = (idx) => {
                 if (currentSegs.length <= 1) {
                     SNW.ToastUtil.warn(SNW.I18n.t('validate.segmentMin'));
@@ -4428,26 +4728,25 @@ SNW.Page = SNW.Page || {};
                 const removed = currentSegs.splice(idx, 1)[0];
                 renderSegs(currentSegs);
 
-                // Undo 토스트 (커스텀 복원 버튼 삽입)
                 const host = document.getElementById('toast-host');
                 if (host) {
-                    const t = document.createElement('div');
-                    t.className = 'snw-toast snw-toast--warn';
-                    t.style.cssText = 'display:flex;align-items:center;gap:12px;';
-                    t.innerHTML = `
+                    const tEl = document.createElement('div');
+                    tEl.className = 'snw-toast snw-toast--warn';
+                    tEl.style.cssText = 'display:flex;align-items:center;gap:12px;';
+                    tEl.innerHTML = `
                         <span style="flex:1;">${SNW.I18n.t('segment.deleted')}</span>
                         <button type="button" style="background:none;border:none;color:var(--snw-primary);cursor:pointer;font-weight:600;text-decoration:underline;padding:0;font-size:13px;">
                             ${SNW.I18n.t('common.undo')}
                         </button>`;
-                    t.querySelector('button').onclick = () => {
+                    tEl.querySelector('button').onclick = () => {
                         currentSegs.splice(idx, 0, removed);
                         renderSegs(currentSegs);
-                        t.remove();
+                        tEl.remove();
                     };
-                    host.appendChild(t);
+                    host.appendChild(tEl);
                     setTimeout(() => {
-                        t.classList.add('snw-toast--out');
-                        setTimeout(() => t.remove(), 300);
+                        tEl.classList.add('snw-toast--out');
+                        setTimeout(() => tEl.remove(), 300);
                     }, 5000);
                 }
             };
@@ -4455,55 +4754,139 @@ SNW.Page = SNW.Page || {};
             const renderSegs = (segs) => {
                 segContainer.innerHTML = '';
                 segs.forEach((seg, idx) => {
+                    const ovr = seg.override || { enabled: false, windIntensity: 70, windVariability: 50, gustFrequency: 40 };
                     const segDiv = document.createElement('div');
                     segDiv.className = 'snw-seg-card';
+                    segDiv.style.cssText = 'background:var(--snw-surface);border:1px solid var(--snw-border);border-radius:8px;padding:12px;';
+                    
                     segDiv.innerHTML = `
-                        <div class="snw-seg-header">
-                            <span class="snw-seg-title">${t('scheduler.segment', '세그먼트')} ${idx + 1}</span>
-                            <button type="button" class="snw-btn-icon" data-remove-seg="${idx}" style="color:var(--snw-error);">🗑</button>
+                        <div class="snw-seg-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                            <span class="snw-seg-title" style="font-weight:bold;color:var(--snw-primary);">${t('scheduler.segment', '세그먼트')} ${idx + 1}</span>
+                            <div style="display:flex;align-items:center;gap:4px;">
+                                <button type="button" class="snw-btn-icon btn-move-up" data-move-up="${idx}" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} title="${t('segment.moveUp', '위로')}">▲</button>
+                                <button type="button" class="snw-btn-icon btn-move-down" data-move-down="${idx}" ${idx === segs.length - 1 ? 'disabled style="opacity:0.3;"' : ''} title="${t('segment.moveDown', '아래로')}">▼</button>
+                                <button type="button" class="snw-btn-icon btn-del-seg" data-remove-seg="${idx}" style="color:var(--snw-error);" title="${t('common.delete', '삭제')}">🗑</button>
+                            </div>
                         </div>
-                        <div class="snw-seg-grid">
-                            <label>On(분)
-                                <input type="number" class="seg-on" min="0" max="1440" value="${seg.onMinutes}">
+                        <div class="snw-seg-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <label style="font-size:12px;">${t('segment.onMinutes', '작동 시간(분)')}
+                                <input type="number" class="seg-on" min="0" max="1440" value="${seg.onMinutes}" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                             </label>
-                            <label>Off(분)
-                                <input type="number" class="seg-off" min="0" max="1440" value="${seg.offMinutes}">
+                            <label style="font-size:12px;">${t('segment.offMinutes', '정지 시간(분)')}
+                                <input type="number" class="seg-off" min="0" max="1440" value="${seg.offMinutes}" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                             </label>
-                            <label style="grid-column: span 2;">모드
-                                <select class="seg-mode">
-                                    <option value="PRESET" ${seg.mode === 'PRESET' ? 'selected' : ''}>프리셋</option>
-                                    <option value="FIXED"  ${seg.mode === 'FIXED'  ? 'selected' : ''}>고정풍속</option>
+                            <label style="grid-column: span 2; font-size:12px;">${t('segment.mode', '모드')}
+                                <select class="seg-mode" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                    <option value="PRESET" ${seg.mode === 'PRESET' ? 'selected' : ''}>${t('segment.modePreset', '프리셋 모드')}</option>
+                                    <option value="FIXED"  ${seg.mode === 'FIXED'  ? 'selected' : ''}>${t('segment.modeFixed', '고정풍속 모드')}</option>
                                 </select>
                             </label>
-                            <div class="snw-seg-preset-area" style="display: ${seg.mode === 'PRESET' ? 'grid' : 'none'};">
-                                <label>프리셋
-                                    <input type="text" class="seg-preset" value="${SNW.DomUtil.escape(seg.presetCode || '')}">
+                            <div class="snw-seg-preset-area" style="grid-column: span 2; display: ${seg.mode === 'PRESET' ? 'grid' : 'none'}; grid-template-columns:1fr 1fr; gap:8px;">
+                                <label style="font-size:12px;">${t('segment.presetSelect', '프리셋 선택')}
+                                    <select class="seg-preset" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                        ${PRESET_CODES.map(c => `<option value="${c}" ${seg.presetCode === c ? 'selected' : ''}>${c} (${t('preset.' + c, c)})</option>`).join('')}
+                                    </select>
                                 </label>
-                                <label>스타일
-                                    <input type="text" class="seg-style" value="${SNW.DomUtil.escape(seg.styleCode || '')}">
+                                <label style="font-size:12px;">${t('segment.styleSelect', '스타일 선택')}
+                                    <select class="seg-style" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                        ${STYLE_CODES.map(c => `<option value="${c}" ${seg.styleCode === c ? 'selected' : ''}>${c} (${t('style.' + c, c)})</option>`).join('')}
+                                    </select>
                                 </label>
+                                <details class="snw-accordion snw-seg-override" style="grid-column: span 2; margin-top:4px; border: 1px dashed var(--snw-border); border-radius: 6px; padding: 6px 10px;">
+                                    <summary style="font-size:11.5px; font-weight:600; color:var(--snw-primary); cursor:pointer;">
+                                        ${t('segment.overrideTitle', '⚙️ 고급 물리 설정 (Override 직접 지정)')}
+                                    </summary>
+                                    <div class="snw-accordion__content" style="padding-top:8px;">
+                                        <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;margin-bottom:8px;cursor:pointer;">
+                                            <input type="checkbox" class="seg-ovr-en" ${ovr.enabled ? 'checked' : ''}>
+                                            <span>${t('segment.overrideDesc', '이 세그먼트에서 바람 세부 설정 직접 지정 (Override)')}</span>
+                                        </label>
+                                        <div class="seg-ovr-fields" style="${ovr.enabled ? '' : 'display:none;opacity:0.5;'}">
+                                            <div class="snw-form-row" style="margin-bottom:8px;">
+                                                <div style="display:flex;justify-content:space-between;font-size:11px;">
+                                                    <label>${t('segment.overrideIntensity', '바람 강도 (%)')}</label>
+                                                    <b class="val-int-txt">${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}%</b>
+                                                </div>
+                                                <input type="range" class="seg-ovr-int" min="0" max="100" value="${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}" style="width:100%;">
+                                                <div class="fb-int-txt" style="font-size:10.5px;color:var(--snw-text-dim);margin-top:2px;"></div>
+                                            </div>
+                                            <div class="snw-form-row" style="margin-bottom:8px;">
+                                                <div style="display:flex;justify-content:space-between;font-size:11px;">
+                                                    <label>${t('segment.overrideVariability', '바람 변동성 (%)')}</label>
+                                                    <b class="val-var-txt">${ovr.windVariability >= 0 ? ovr.windVariability : 50}%</b>
+                                                </div>
+                                                <input type="range" class="seg-ovr-var" min="0" max="100" value="${ovr.windVariability >= 0 ? ovr.windVariability : 50}" style="width:100%;">
+                                                <div class="fb-var-txt" style="font-size:10.5px;color:var(--snw-text-dim);margin-top:2px;"></div>
+                                            </div>
+                                            <div class="snw-form-row">
+                                                <div style="display:flex;justify-content:space-between;font-size:11px;">
+                                                    <label>${t('segment.overrideGust', '돌풍 빈도 (%)')}</label>
+                                                    <b class="val-gust-txt">${ovr.gustFrequency >= 0 ? ovr.gustFrequency : 40}%</b>
+                                                </div>
+                                                <input type="range" class="seg-ovr-gust" min="0" max="100" value="${ovr.gustFrequency >= 0 ? ovr.gustFrequency : 40}" style="width:100%;">
+                                                <div class="fb-gust-txt" style="font-size:10.5px;color:var(--snw-text-dim);margin-top:2px;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </details>
                             </div>
-                            <div class="snw-seg-fixed-area" style="display: ${seg.mode === 'FIXED' ? 'block' : 'none'};">
-                                <label>고정 풍속(%)
-                                    <input type="number" class="seg-fixed" min="0" max="100" value="${seg.fixedSpeed || 0}">
+                            <div class="snw-seg-fixed-area" style="grid-column: span 2; display: ${seg.mode === 'FIXED' ? 'block' : 'none'};">
+                                <label style="font-size:12px;">${t('segment.fixedSpeed', '고정 풍속(%)')}
+                                    <input type="number" class="seg-fixed" min="0" max="100" value="${seg.fixedSpeed || 0}" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                                 </label>
                             </div>
                         </div>`;
 
+                    // 모드 전환 바인딩
                     const modeSel = segDiv.querySelector('.seg-mode');
                     const presetArea = segDiv.querySelector('.snw-seg-preset-area');
                     const fixedArea = segDiv.querySelector('.snw-seg-fixed-area');
-
                     modeSel.addEventListener('change', (e) => {
                         const isPreset = e.target.value === 'PRESET';
                         presetArea.style.display = isPreset ? 'grid' : 'none';
                         fixedArea.style.display  = isPreset ? 'none' : 'block';
+                        updateSummaryText();
                     });
 
-                    segDiv.querySelector('[data-remove-seg]').addEventListener('click', () => _removeWithUndo(idx));
+                    // Override 토글 및 실시간 뱃지 연동
+                    const ovrEn = segDiv.querySelector('.seg-ovr-en');
+                    const ovrFields = segDiv.querySelector('.seg-ovr-fields');
+                    ovrEn.addEventListener('change', () => {
+                        ovrFields.style.display = ovrEn.checked ? 'block' : 'none';
+                    });
+
+                    const bindRange = (rangeSel, txtSel, fbSel, guideFn) => {
+                        const rEl = segDiv.querySelector(rangeSel);
+                        const tEl = segDiv.querySelector(txtSel);
+                        const fEl = segDiv.querySelector(fbSel);
+                        if (!rEl) return;
+                        const sync = () => {
+                            if (tEl) tEl.textContent = `${rEl.value}%`;
+                            if (fEl && guideFn) {
+                                const g = guideFn(Number(rEl.value));
+                                fEl.textContent = g ? `▶ ${g.title}` : '';
+                            }
+                        };
+                        rEl.addEventListener('input', sync);
+                        sync();
+                    };
+
+                    bindRange('.seg-ovr-int',  '.val-int-txt',  '.fb-int-txt',  val => SNW.Feedback?.getIntensityGuide(val));
+                    bindRange('.seg-ovr-var',  '.val-var-txt',  '.fb-var-txt',  val => SNW.Feedback?.getVariabilityGuide(val));
+                    bindRange('.seg-ovr-gust', '.val-gust-txt', '.fb-gust-txt', val => SNW.Feedback?.getGustGuide(val));
+
+                    // 순서 이동 및 삭제 버튼 바인딩
+                    const upBtn = segDiv.querySelector('.btn-move-up');
+                    const downBtn = segDiv.querySelector('.btn-move-down');
+                    if (upBtn) upBtn.onclick = () => _moveSeg(idx, -1);
+                    if (downBtn) downBtn.onclick = () => _moveSeg(idx, 1);
+                    segDiv.querySelector('.btn-del-seg').onclick = () => _removeWithUndo(idx);
+
                     segContainer.appendChild(segDiv);
                 });
+                updateSummaryText();
             };
+
             renderSegs(currentSegs);
 
             content.querySelector('#btn-add-seg').addEventListener('click', () => {
@@ -4511,23 +4894,23 @@ SNW.Page = SNW.Page || {};
                     segNo: currentSegs.length * 10 + 10,
                     onMinutes: 20, offMinutes: 10, mode: 'PRESET',
                     presetCode: 'OCEAN', styleCode: 'BALANCE',
-                    adjust: {}, fixedSpeed: 0
+                    override: { enabled: false, windIntensity: 70, windVariability: 50, gustFrequency: 40 },
+                    fixedSpeed: 0
                 });
                 renderSegs(currentSegs);
             });
 
             // =========================================================
-            // 저장 — [O-7] 필드별 검증
+            // 저장 — [O-7] 필드별 검증 & Override 직결 수집
             // =========================================================
             SNW.UI.modal(
-                isEdit ? t('common.edit', '편집') : t('schedule.add', '스케줄 추가'),
+                isEdit ? `스케줄 수정: ${SNW.DomUtil.escape(s.name)}` : t('schedule.add', '스케줄 추가'),
                 content,
                 async () => {
                     const nameEl  = content.querySelector('#sch-name');
                     const startEl = content.querySelector('#sch-start');
                     const endEl   = content.querySelector('#sch-end');
 
-                    // 필드 초기화
                     [nameEl, startEl, endEl].forEach(el => el.classList.remove('is-error'));
 
                     const errors = [];
@@ -4547,7 +4930,7 @@ SNW.Page = SNW.Page || {};
                         const v = Number(el.value);
                         if (isNaN(v) || v < 0 || v > 1440) {
                             el.classList.add('is-error');
-                            errors.push({ el, msg: `세그먼트 ${i+1} On: 0~1440분` });
+                            errors.push({ el, msg: `세그먼트 ${i+1} 작동 시간: 0~1440분` });
                         }
                     });
                     offInputs.forEach((el, i) => {
@@ -4555,7 +4938,7 @@ SNW.Page = SNW.Page || {};
                         const v = Number(el.value);
                         if (isNaN(v) || v < 0 || v > 1440) {
                             el.classList.add('is-error');
-                            errors.push({ el, msg: `세그먼트 ${i+1} Off: 0~1440분` });
+                            errors.push({ el, msg: `세그먼트 ${i+1} 정지 시간: 0~1440분` });
                         }
                     });
 
@@ -4566,18 +4949,25 @@ SNW.Page = SNW.Page || {};
                         return false;
                     }
 
-                    // body 구성
+                    // body 구성 (Override 직결 전송)
                     const newSegs = [];
-                    segContainer.querySelectorAll('.seg-mode').forEach((modeEl, idx) => {
-                        const on   = Number(segContainer.querySelectorAll('.seg-on')[idx].value);
-                        const off  = Number(segContainer.querySelectorAll('.seg-off')[idx].value);
-                        const mode = modeEl.value;
+                    segContainer.querySelectorAll('.snw-seg-card').forEach((card, idx) => {
+                        const on   = Number(card.querySelector('.seg-on').value);
+                        const off  = Number(card.querySelector('.seg-off').value);
+                        const mode = card.querySelector('.seg-mode').value;
                         const seg = { segNo: idx * 10 + 10, onMinutes: on, offMinutes: off, mode };
                         if (mode === 'PRESET') {
-                            seg.presetCode = segContainer.querySelectorAll('.seg-preset')[idx].value;
-                            seg.styleCode  = segContainer.querySelectorAll('.seg-style')[idx].value;
+                            seg.presetCode = card.querySelector('.seg-preset').value;
+                            seg.styleCode  = card.querySelector('.seg-style').value;
+                            const ovrEn = card.querySelector('.seg-ovr-en').checked;
+                            seg.override = {
+                                enabled: ovrEn,
+                                windIntensity:   ovrEn ? Number(card.querySelector('.seg-ovr-int').value) : -1.0,
+                                windVariability: ovrEn ? Number(card.querySelector('.seg-ovr-var').value) : -1.0,
+                                gustFrequency:   ovrEn ? Number(card.querySelector('.seg-ovr-gust').value) : -1.0
+                            };
                         } else {
-                            seg.fixedSpeed = Number(segContainer.querySelectorAll('.seg-fixed')[idx].value);
+                            seg.fixedSpeed = Number(card.querySelector('.seg-fixed').value);
                         }
                         newSegs.push(seg);
                     });
@@ -4632,7 +5022,7 @@ SNW.Page = SNW.Page || {};
                     }
                 },
                 null,
-                { width: '520px' }
+                { width: '560px' }
             );
         }
 
@@ -4793,7 +5183,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 230.page.profiles.js (22900 bytes) ---- */
+/* ---- 230.page.profiles.js (33290 bytes) ---- */
 // =========================================================
 // 230.page.profiles.js — SNW.Page.Profiles
 // Layer 4 (페이지 로직)
@@ -4920,6 +5310,14 @@ SNW.Page = SNW.Page || {};
         _onEdit(id) { this._openEditor(this._profiles.find(p => p.profileId === id)); }
 
         async _openEditor(target) {
+            const t = (k, fb) => SNW.I18n ? SNW.I18n.t(k) : fb;
+            const PRESET_CODES = [
+                'OCEAN', 'COUNTRY_BREEZE', 'MEDITERRANEAN', 'MOUNTAIN', 'PLAINS',
+                'HARBOR_BREEZE', 'FOREST_CANOPY', 'URBAN_SUNSET', 'TROPICAL_RAIN', 'DESERT_NIGHT'
+            ];
+
+            const STYLE_CODES = ['BALANCE', 'ACTIVE', 'FOCUS', 'RELAX', 'SLEEP'];
+
             const isEdit = !!target;
             const maxNo = this._profiles.reduce((m, x) => Math.max(m, x.profileNo || 0), 0);
             const p = target || {
@@ -4927,7 +5325,9 @@ SNW.Page = SNW.Page || {};
                 repeatSegments: false, repeatCount: 0,
                 segments: [{
                     segNo: 10, onMinutes: 20, offMinutes: 0, mode: 'PRESET',
-                    presetCode: 'OCEAN', styleCode: 'BALANCE', adjust: {}, fixedSpeed: 0
+                    presetCode: 'OCEAN', styleCode: 'BALANCE',
+                    override: { enabled: false, windIntensity: 70, windVariability: 50, gustFrequency: 40 },
+                    fixedSpeed: 0
                 }],
                 autoOff: {
                     timer:   { enabled: false, minutes: 0 },
@@ -4970,7 +5370,7 @@ SNW.Page = SNW.Page || {};
                     <details class="snw-accordion" open>
                         <summary>${SNW.I18n.t('schedule.secSegments')}</summary>
                         <div class="snw-accordion__content">
-                            <div id="prof-segs" style="display:flex;flex-direction:column;"></div>
+                            <div id="prof-segs" style="display:flex;flex-direction:column;gap:12px;"></div>
                             <button type="button" class="snw-btn snw-btn-primary" id="btn-add-prof-seg" style="margin-top:12px; width:100%;">
                                 + ${SNW.I18n.t('profiles.addSegmentBtn')}
                             </button>
@@ -5017,6 +5417,19 @@ SNW.Page = SNW.Page || {};
             const currentSegs = JSON.parse(JSON.stringify(p.segments || []));
 
             // =========================================================
+            // 세그먼트 순서 이동
+            // =========================================================
+            const _moveSeg = (idx, dir) => {
+                const targetIdx = idx + dir;
+                if (targetIdx < 0 || targetIdx >= currentSegs.length) return;
+                const temp = currentSegs[idx];
+                currentSegs[idx] = currentSegs[targetIdx];
+                currentSegs[targetIdx] = temp;
+                currentSegs.forEach((seg, i) => { seg.segNo = i * 10 + 10; });
+                renderSegs(currentSegs);
+            };
+
+            // =========================================================
             // 세그먼트 삭제 Undo 지원
             // =========================================================
             const _removeWithUndo = (idx) => {
@@ -5029,23 +5442,23 @@ SNW.Page = SNW.Page || {};
 
                 const host = document.getElementById('toast-host');
                 if (host) {
-                    const t = document.createElement('div');
-                    t.className = 'snw-toast snw-toast--warn';
-                    t.style.cssText = 'display:flex;align-items:center;gap:12px;';
-                    t.innerHTML = `
+                    const tEl = document.createElement('div');
+                    tEl.className = 'snw-toast snw-toast--warn';
+                    tEl.style.cssText = 'display:flex;align-items:center;gap:12px;';
+                    tEl.innerHTML = `
                         <span style="flex:1;">${SNW.I18n.t('segment.deleted')}</span>
                         <button type="button" style="background:none;border:none;color:var(--snw-primary);cursor:pointer;font-weight:600;text-decoration:underline;padding:0;font-size:13px;">
                             ${SNW.I18n.t('common.undo')}
                         </button>`;
-                    t.querySelector('button').onclick = () => {
+                    tEl.querySelector('button').onclick = () => {
                         currentSegs.splice(idx, 0, removed);
                         renderSegs(currentSegs);
-                        t.remove();
+                        tEl.remove();
                     };
-                    host.appendChild(t);
+                    host.appendChild(tEl);
                     setTimeout(() => {
-                        t.classList.add('snw-toast--out');
-                        setTimeout(() => t.remove(), 300);
+                        tEl.classList.add('snw-toast--out');
+                        setTimeout(() => tEl.remove(), 300);
                     }, 5000);
                 }
             };
@@ -5053,37 +5466,84 @@ SNW.Page = SNW.Page || {};
             const renderSegs = (segs) => {
                 segContainer.innerHTML = '';
                 segs.forEach((seg, idx) => {
+                    const ovr = seg.override || { enabled: false, windIntensity: 70, windVariability: 50, gustFrequency: 40 };
                     const segDiv = document.createElement('div');
                     segDiv.className = 'snw-seg-card';
+                    segDiv.style.cssText = 'background:var(--snw-surface);border:1px solid var(--snw-border);border-radius:8px;padding:12px;';
                     segDiv.innerHTML = `
-                        <div class="snw-seg-header">
-                            <span class="snw-seg-title">${SNW.I18n.t('scheduler.segment')} ${idx + 1}</span>
-                            <button type="button" class="snw-btn-icon" data-remove-seg="${idx}" style="color:var(--snw-error);">🗑</button>
+                        <div class="snw-seg-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                            <span class="snw-seg-title" style="font-weight:bold;color:var(--snw-primary);">${t('scheduler.segment', '세그먼트')} ${idx + 1}</span>
+                            <div style="display:flex;align-items:center;gap:4px;">
+                                <button type="button" class="snw-btn-icon btn-move-up" data-move-up="${idx}" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} title="${t('segment.moveUp', '위로')}">▲</button>
+                                <button type="button" class="snw-btn-icon btn-move-down" data-move-down="${idx}" ${idx === segs.length - 1 ? 'disabled style="opacity:0.3;"' : ''} title="${t('segment.moveDown', '아래로')}">▼</button>
+                                <button type="button" class="snw-btn-icon" data-remove-seg="${idx}" style="color:var(--snw-error);" title="${t('common.delete', '삭제')}">🗑</button>
+                            </div>
                         </div>
-                        <div class="snw-seg-grid">
-                            <label>On(분)
-                                <input type="number" class="seg-on" min="0" max="1440" value="${seg.onMinutes}">
+                        <div class="snw-seg-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                            <label style="font-size:12px;">${t('segment.onMinutes', '작동 시간(분)')}
+                                <input type="number" class="seg-on" min="0" max="1440" value="${seg.onMinutes}" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                             </label>
-                            <label>Off(분)
-                                <input type="number" class="seg-off" min="0" max="1440" value="${seg.offMinutes}">
+                            <label style="font-size:12px;">${t('segment.offMinutes', '정지 시간(분)')}
+                                <input type="number" class="seg-off" min="0" max="1440" value="${seg.offMinutes}" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                             </label>
-                            <label style="grid-column: span 2;">모드
-                                <select class="seg-mode">
-                                    <option value="PRESET" ${seg.mode === 'PRESET' ? 'selected' : ''}>프리셋</option>
-                                    <option value="FIXED"  ${seg.mode === 'FIXED'  ? 'selected' : ''}>고정풍속</option>
+                            <label style="grid-column: span 2; font-size:12px;">${t('segment.mode', '모드')}
+                                <select class="seg-mode" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                    <option value="PRESET" ${seg.mode === 'PRESET' ? 'selected' : ''}>${t('segment.modePreset', '프리셋 모드')}</option>
+                                    <option value="FIXED"  ${seg.mode === 'FIXED'  ? 'selected' : ''}>${t('segment.modeFixed', '고정풍속 모드')}</option>
                                 </select>
                             </label>
-                            <div class="snw-seg-preset-area" style="display: ${seg.mode === 'PRESET' ? 'grid' : 'none'};">
-                                <label>프리셋
-                                    <input type="text" class="seg-preset" value="${SNW.DomUtil.escape(seg.presetCode || '')}">
+                            <div class="snw-seg-preset-area" style="grid-column: span 2; display: ${seg.mode === 'PRESET' ? 'grid' : 'none'}; grid-template-columns:1fr 1fr; gap:8px;">
+                                <label style="font-size:12px;">${t('segment.presetSelect', '프리셋 선택')}
+                                    <select class="seg-preset" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                        ${PRESET_CODES.map(c => `<option value="${c}" ${seg.presetCode === c ? 'selected' : ''}>${c} (${t('preset.' + c, c)})</option>`).join('')}
+                                    </select>
                                 </label>
-                                <label>스타일
-                                    <input type="text" class="seg-style" value="${SNW.DomUtil.escape(seg.styleCode || '')}">
+                                <label style="font-size:12px;">${t('segment.styleSelect', '스타일 선택')}
+                                    <select class="seg-style" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                                        ${STYLE_CODES.map(c => `<option value="${c}" ${seg.styleCode === c ? 'selected' : ''}>${c} (${t('style.' + c, c)})</option>`).join('')}
+                                    </select>
                                 </label>
+                                <details class="snw-accordion snw-seg-override" style="grid-column: span 2; margin-top:4px; border: 1px dashed var(--snw-border); border-radius: 6px; padding: 6px 10px;">
+                                    <summary style="font-size:11.5px; font-weight:600; color:var(--snw-primary); cursor:pointer;">
+                                        ${t('segment.overrideTitle', '⚙️ 고급 물리 설정 (Override 직접 지정)')}
+                                    </summary>
+                                    <div class="snw-accordion__content" style="padding-top:8px;">
+                                        <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;margin-bottom:8px;cursor:pointer;">
+                                            <input type="checkbox" class="seg-ovr-en" ${ovr.enabled ? 'checked' : ''}>
+                                            <span>${t('segment.overrideDesc', '이 세그먼트에서 바람 세부 설정 직접 지정 (Override)')}</span>
+                                        </label>
+                                        <div class="seg-ovr-fields" style="${ovr.enabled ? '' : 'display:none;opacity:0.5;'}">
+                                            <div class="snw-form-row" style="margin-bottom:8px;">
+                                                <div style="display:flex;justify-content:space-between;font-size:11px;">
+                                                    <label>${t('segment.overrideIntensity', '바람 강도 (%)')}</label>
+                                                    <b class="val-int-txt">${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}%</b>
+                                                </div>
+                                                <input type="range" class="seg-ovr-int" min="0" max="100" value="${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}" style="width:100%;">
+                                                <div class="fb-int-txt" style="font-size:10.5px;color:var(--snw-text-dim);margin-top:2px;"></div>
+                                            </div>
+                                            <div class="snw-form-row" style="margin-bottom:8px;">
+                                                <div style="display:flex;justify-content:space-between;font-size:11px;">
+                                                    <label>${t('segment.overrideVariability', '바람 변동성 (%)')}</label>
+                                                    <b class="val-var-txt">${ovr.windVariability >= 0 ? ovr.windVariability : 50}%</b>
+                                                </div>
+                                                <input type="range" class="seg-ovr-var" min="0" max="100" value="${ovr.windVariability >= 0 ? ovr.windVariability : 50}" style="width:100%;">
+                                                <div class="fb-var-txt" style="font-size:10.5px;color:var(--snw-text-dim);margin-top:2px;"></div>
+                                            </div>
+                                            <div class="snw-form-row">
+                                                <div style="display:flex;justify-content:space-between;font-size:11px;">
+                                                    <label>${t('segment.overrideGust', '돌풍 빈도 (%)')}</label>
+                                                    <b class="val-gust-txt">${ovr.gustFrequency >= 0 ? ovr.gustFrequency : 40}%</b>
+                                                </div>
+                                                <input type="range" class="seg-ovr-gust" min="0" max="100" value="${ovr.gustFrequency >= 0 ? ovr.gustFrequency : 40}" style="width:100%;">
+                                                <div class="fb-gust-txt" style="font-size:10.5px;color:var(--snw-text-dim);margin-top:2px;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </details>
                             </div>
-                            <div class="snw-seg-fixed-area" style="display: ${seg.mode === 'FIXED' ? 'block' : 'none'};">
-                                <label>고정 풍속(%)
-                                    <input type="number" class="seg-fixed" min="0" max="100" value="${seg.fixedSpeed || 0}">
+                            <div class="snw-seg-fixed-area" style="grid-column: span 2; display: ${seg.mode === 'FIXED' ? 'block' : 'none'};">
+                                <label style="font-size:12px;">${t('segment.fixedSpeed', '고정 풍속(%)')}
+                                    <input type="number" class="seg-fixed" min="0" max="100" value="${seg.fixedSpeed || 0}" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                                 </label>
                             </div>
                         </div>`;
@@ -5098,7 +5558,40 @@ SNW.Page = SNW.Page || {};
                         fixedArea.style.display  = isPreset ? 'none' : 'block';
                     });
 
+                    // Override 토글 및 실시간 가이드 연동
+                    const ovrEn = segDiv.querySelector('.seg-ovr-en');
+                    const ovrFields = segDiv.querySelector('.seg-ovr-fields');
+                    ovrEn.addEventListener('change', () => {
+                        ovrFields.style.display = ovrEn.checked ? 'block' : 'none';
+                    });
+
+                    const bindRange = (rangeSel, txtSel, fbSel, guideFn) => {
+                        const rEl = segDiv.querySelector(rangeSel);
+                        const tEl = segDiv.querySelector(txtSel);
+                        const fEl = segDiv.querySelector(fbSel);
+                        if (!rEl) return;
+                        const sync = () => {
+                            if (tEl) tEl.textContent = `${rEl.value}%`;
+                            if (fEl && guideFn) {
+                                const g = guideFn(Number(rEl.value));
+                                fEl.textContent = g ? `▶ ${g.title}` : '';
+                            }
+                        };
+                        rEl.addEventListener('input', sync);
+                        sync();
+                    };
+
+                    bindRange('.seg-ovr-int',  '.val-int-txt',  '.fb-int-txt',  val => SNW.Feedback?.getIntensityGuide(val));
+                    bindRange('.seg-ovr-var',  '.val-var-txt',  '.fb-var-txt',  val => SNW.Feedback?.getVariabilityGuide(val));
+                    bindRange('.seg-ovr-gust', '.val-gust-txt', '.fb-gust-txt', val => SNW.Feedback?.getGustGuide(val));
+
+                    // 순서 이동 및 삭제 버튼 바인딩
+                    const upBtn = segDiv.querySelector('.btn-move-up');
+                    const downBtn = segDiv.querySelector('.btn-move-down');
+                    if (upBtn) upBtn.onclick = () => _moveSeg(idx, -1);
+                    if (downBtn) downBtn.onclick = () => _moveSeg(idx, 1);
                     segDiv.querySelector('[data-remove-seg]').addEventListener('click', () => _removeWithUndo(idx));
+
                     segContainer.appendChild(segDiv);
                 });
             };
@@ -5109,7 +5602,8 @@ SNW.Page = SNW.Page || {};
                     segNo: currentSegs.length * 10 + 10,
                     onMinutes: 20, offMinutes: 0, mode: 'PRESET',
                     presetCode: 'OCEAN', styleCode: 'BALANCE',
-                    adjust: {}, fixedSpeed: 0
+                    override: { enabled: false, windIntensity: 70, windVariability: 50, gustFrequency: 40 },
+                    fixedSpeed: 0
                 });
                 renderSegs(currentSegs);
             });
@@ -5127,16 +5621,23 @@ SNW.Page = SNW.Page || {};
                     }
 
                     const newSegs = [];
-                    segContainer.querySelectorAll('.seg-mode').forEach((modeEl, idx) => {
-                        const on   = Number(segContainer.querySelectorAll('.seg-on')[idx].value);
-                        const off  = Number(segContainer.querySelectorAll('.seg-off')[idx].value);
-                        const mode = modeEl.value;
+                    segContainer.querySelectorAll('.snw-seg-card').forEach((card, idx) => {
+                        const on   = Number(card.querySelector('.seg-on').value);
+                        const off  = Number(card.querySelector('.seg-off').value);
+                        const mode = card.querySelector('.seg-mode').value;
                         const seg = { segNo: idx * 10 + 10, onMinutes: on, offMinutes: off, mode };
                         if (mode === 'PRESET') {
-                            seg.presetCode = segContainer.querySelectorAll('.seg-preset')[idx].value;
-                            seg.styleCode  = segContainer.querySelectorAll('.seg-style')[idx].value;
+                            seg.presetCode = card.querySelector('.seg-preset').value;
+                            seg.styleCode  = card.querySelector('.seg-style').value;
+                            const ovrEn = card.querySelector('.seg-ovr-en').checked;
+                            seg.override = {
+                                enabled: ovrEn,
+                                windIntensity:   ovrEn ? Number(card.querySelector('.seg-ovr-int').value) : -1.0,
+                                windVariability: ovrEn ? Number(card.querySelector('.seg-ovr-var').value) : -1.0,
+                                gustFrequency:   ovrEn ? Number(card.querySelector('.seg-ovr-gust').value) : -1.0
+                            };
                         } else {
-                            seg.fixedSpeed = Number(segContainer.querySelectorAll('.seg-fixed')[idx].value);
+                            seg.fixedSpeed = Number(card.querySelector('.seg-fixed').value);
                         }
                         newSegs.push(seg);
                     });

@@ -13,9 +13,9 @@
 | **프레임워크** | Arduino Framework (`-std=gnu++17`) on FreeRTOS |
 | **빌드 도구** | PlatformIO IDE |
 | **파일 시스템** | LittleFS (`./src/v0202/data_v0202`) |
-| **정적 에셋 파이프라인**| SPA 단일 번들 (`P010_bundle_0202.js`, `P000_common_0202.css`, `P010_main_0202.html`) + Level 9 Gzip 사전 압축 (`tools_0202/pio_gzip_0202.py`) |
+| **정적 에셋 파이프라인**| SPA 단일 번들 (`P010_bundle_0202.js`, `P000_common_0202.css`, `P010_main_0202.html`) + Level 9 Gzip 사전 압축 (`tools_0202/pio_gzip_0202.py`, 35종 JS 번들, 총 85.4 KB) |
 | **현재 활성 버전** | **v0202 (FW_Ver_2.0.2)** (C++ 백엔드 소스 `_0202` 접미사 / LittleFS 에셋 `_0202`) |
-| **소프트웨어 계약** | CBD (Contract-Based Design) v2.5~v2.7 (Batch G & Batch H 완료 — 동시성, 상태전이, 자원예산 엄격 준수) |
+| **소프트웨어 계약** | CBD (Contract-Based Design) v2.5~v2.8 (Batch G, Batch H, Batch I 완료 — 동시성, 상태전이, 자원예산, 물리 Override 엄격 준수) |
 
 ---
 
@@ -25,11 +25,11 @@
 
 - `src/main.cpp`: 아두이노 표준 메인 진입점. Serial/Logger 초기화 후 `A00_init()` 및 `A00_run()` 호출 위임.
 - `src/v0202/`: 핵심 비즈니스 로직 및 컴포넌트 디렉토리.
-  - `contract_doc_0202/`: CBD 엔지니어링 계약서 7종 (`SPEC v2.7`, `CONTRACT v2.5`, `STATE v2.5`, `FLOW v2.6`, `BUDGET v2.6`, `TEST_PLAN v2.6`, `README v2.5` — Batch G & Batch H 완료) 및 용어집(`Ref/UI_TERMINOLOGY_0170.md`).
+  - `contract_doc_0202/`: CBD 엔지니어링 계약서 7종 (`SPEC v2.8`, `CONTRACT v2.6`, `STATE v2.5`, `FLOW v2.7`, `BUDGET v2.7`, `TEST_PLAN v2.7`, `README v2.6` — Batch G, Batch H, Batch I 완료) 및 용어집(`Ref/UI_TERMINOLOGY_0170.md`).
   - `Req_ImplPlan_0202/`: 요구사항 정의서 및 리팩토링 구현 계획서.
   - `User_Manual_0202/`: 공식 종합 사용자 매뉴얼 (`UserManual_0202_001.md`, `introduce_Doc_0202_001.md`).
   - `tools_0202/`: 활성 빌드 전처리 도구 (`pio_gzip_0202.py` - PlatformIO extra_scripts 자동 번들/Gzip) 및 계약 커밋 도구 (`commit_contracts_0202.py`).
-  - `data_v0202_src/`: [웹 개발 원본] SPA 프론트엔드 리소스 (`html_v0202/` 내 `index.html`, 10개 CSS, 34개 JS 모듈 + `998.offline_0202.js` 오프라인 어댑터 + 로컬 검증용 raw 번들, `.gz` 제외).
+  - `data_v0202_src/`: [웹 개발 원본] SPA 프론트엔드 리소스 (`html_v0202/` 내 `index.html`, 10개 CSS, 35개 JS 모듈 + `998.offline_0202.js` 오프라인 어댑터 + 로컬 검증용 raw 번들, `.gz` 제외).
   - `data_v0202/`: [배포 스테이징] LittleFS 플래시 대상 디렉토리 (`json/` 9개 설정 파일 + `html_v0202/` 3개 Gzip 번들 자산 raw+gz).
   - **C++ 소스군 (`_0202` 접미사)**:
     - `A00_Main_0202.cpp/h`: 부팅 초기화 시퀀스 및 FreeRTOS 메인 루프 위임.
@@ -164,10 +164,10 @@ build_src_filter =
 
 - **메인 SPA Shell**: `/` (자동 리다이렉트 `/index.html`)
 - **해시 뷰 라우팅 (Hash Views - 12개 페이지)**:
-  - `#/dashboard`: 전원 제어, 프리셋 선택, 풍속 슬라이더 (L1)
+  - `#/dashboard`: 전원 제어, 프리셋 선택, 3대 물리 파라미터(세기/변동성/돌풍) 직접 지정(Override), 수면풍(SLEEP) 모드 (L1)
   - `#/chart`: WebSocket 기반 실시간 대기역학 물리 곡선 차트 (L1)
-  - `#/schedule`: 요일별/시간대별 예약 규칙 관리 (L1)
-  - `#/profiles`: 개인 맞춤형 풍속/모드 프로필 저장 및 호출 (L1)
+  - `#/schedule`: 요일별/시간대별 예약 규칙 관리 (세그먼트 순서 이동 및 Override 지원) (L1)
+  - `#/profiles`: 개인 맞춤형 풍속/모드 프로필 저장 및 호출 (세그먼트 순서 이동 및 Override 지원) (L1)
   - `#/sensors`: 온습도(DHT22) 및 인체감지(PIR) 실시간 센서 모니터링 (L1)
   - `#/settings`: 시스템, GPIO 핀맵, PWM 타이밍, 보안(API Key) 설정 (L2)
   - `#/network`: Wi-Fi SoftAP / STA 네트워크 상세 설정 (L2)
@@ -181,7 +181,7 @@ build_src_filter =
 - `/api/v001/version` : 펌웨어 버전, 빌드 해시, 빌드 시각 (B-1)
 - `/api/v001/state` : 현재 팬 상태, 동작 모드, 목표 풍속 조회 및 제어 (N-1)
 - `/api/v001/reload` : [F-05] 비동기 202 설정 재적용 (atomic CAS + loopTask 위임)
-- `/api/v001/control/*` : `/control/ack` (AutoOff 래치 해제), `/control/mode` (모드 전환), `/control/override/fixed` (수동 풍속), `/control/factoryReset` (NVS 리셋)
+- `/api/v001/control/*` : `/control/ack` (AutoOff 래치 해제), `/control/mode` (모드 전환), `/control/override` ([Batch I] 세기/변동성/돌풍 직접 지정), `/control/override/fixed` (수동 풍속), `/control/factoryReset` (NVS 리셋)
 - `/api/v001/system` : Free Heap/PSRAM, Wi-Fi RSSI, 센서 실측값 (F-2 공통 헬퍼, B-4 clearApiKey)
 - `/api/v001/wifi/*` : `/wifi/state` (연결 상태), `/wifi/scan` (AP 스캔), `/wifi/config` (설정 저장, F-3)
 - `/api/v001/config/*`, `/api/v001/config/save` : JSON 설정 읽기, 검증 및 디스크 영구 저장
@@ -229,13 +229,13 @@ build_src_filter =
 ## 🤖 8. CBD 계약 및 에이전트 협업 가이드
 
 - **문서 참조 링크 규격**: 프로젝트 내 모든 문서 간 참조 링크는 **프로젝트 루트 기준의 상대 경로**(`src/v0202/...`, `platformio.ini` 등)로 표기합니다.
-- **CBD 계약 (Batch G & Batch H 완료) 동시성/FSM 계약 준수**:
+- **CBD 계약 (Batch G, Batch H, Batch I 완료) 동시성/FSM/물리 계약 준수**:
   - 공유 자원 접근 시 [CONTRACT_0202.md](src/v0202/contract_doc_0202/CONTRACT_0202.md)의 Mutex 소유권 및 데드락 방지 원칙 준수.
   - 기기 상태 변경 시 [STATE_0202.md](src/v0202/contract_doc_0202/STATE_0202.md)에 명시된 7대 FSM 상태 전이 규칙 준수.
   - 최악 실행 시간(WCET) 및 메모리 버짓은 [BUDGET_0202.md](src/v0202/contract_doc_0202/BUDGET_0202.md) 기준 내 유지.
   - 시스템 기술 사양은 [SPEC_0202.md](src/v0202/contract_doc_0202/SPEC_0202.md)의 SSOT 기준을 준수.
   - 실행 흐름 및 부팅 시퀀스는 [FLOW_0202.md](src/v0202/contract_doc_0202/FLOW_0202.md)를 준수.
-  - 회귀 검증 및 릴리스 게이트는 [TEST_PLAN_0202.md](src/v0202/contract_doc_0202/TEST_PLAN_0202.md)의 26대 필수 세트 및 절차를 준수.
+  - 회귀 검증 및 릴리스 게이트는 [TEST_PLAN_0202.md](src/v0202/contract_doc_0202/TEST_PLAN_0202.md)의 29대 필수 세트 및 절차를 준수.
 - **로깅 표준**: 모든 시스템 로깅은 `CL_D10_Logger::log(EN_L10_LOG_..., ...)`를 사용합니다.
 - **답변 언어**: 사용자와의 모든 상호작용 및 기술 설명은 명확하고 정중한 **한국어**로 작성합니다.
 

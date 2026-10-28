@@ -174,6 +174,17 @@ src/v0202/
 
 **수정 파일 (7개)**: `_components.css`, `_profiles.css`, `220.page.schedule.js`, `230.page.profiles.js`, `index.html`, `999.app.js`, `998.offline_0202.js`
 
+### 3.6 Batch I — 바람 물리 파라미터 직접 지정 (Override) 모델 전면 개편 및 UI 고도화 (0202_007)
+
+| ID | 심각도 | 위치 | 요약 | 상태 |
+|---|---|---|---|---|
+| **OVR-1** | 🔴 High | `A20_Const_Sch_0202.h`, `S20_WindSolver_0202.h`, C++ Config/Control | 상대적 adjust Delta 폐기 및 0~100% 절대값 `override` 모델 도입 | ✅ `A20_SegOverride_0202` 구조체 및 Solver 우선 치환 파이프라인 구현 |
+| **OVR-2** | 🟡 Mid | `200.page.dashboard.js`, `W10_Web_Routes_Control_0202.cpp` | 대시보드 3대 물리 슬라이더 및 SLEEP 스타일 연동 | ✅ 실시간 0.1s 디바운스 제어 + SLEEP 모드 UI 토글 |
+| **OVR-3** | 🟡 Mid | `220.page.schedule.js`, `230.page.profiles.js` | 세그먼트 편집 모달 Override 아코디언 및 순서 이동(▲/▼) | ✅ 10대 프리셋/5대 스타일 코드 연동, order 자동 재인덱싱 |
+| **OVR-4** | 🟢 Low | `035.util.feedback.js`, `020.i18n.js` | 물리 수치별 정량적 체감 가이드 및 한/영(ko/en) 완전 다국어화 | ✅ 슬라이더 즉시 반응 가이드 텍스트 + 실시간 언어 전환 이벤트 리스너 |
+
+**수정 파일 (20개+)**: 백엔드 C++ (`A20_Const_Sch_0202.h`, `S20_WindSolver_0202.h`, `CT10_Ctl_Ctl_Seg_0202.cpp`, `CT10_Ctl_Ctl_Ovr_0202.cpp`, `W10_Web_Routes_Control_0202.cpp`, `C10_Config_Sch_*`, `C10_Config_UzProf_*`, `A23_Com_ResetCfg_0202.h`), JSON 설정, 프론트엔드 Web UI (`035.util.feedback.js`, `020.i18n.js`, `033.util.template.js`, `130.ui.form.js`, `200.page.dashboard.js`, `220.page.schedule.js`, `230.page.profiles.js`)
+
 ---
 
 ## 4. CBD 워크플로
@@ -314,13 +325,13 @@ git push origin v0202-release-2026-10-26
 
 ---
 
-## 7. 실측 자원 사용량 (2026-10-26 빌드 결과)
+## 7. 실측 자원 사용량 (2026-10-28 Batch I 빌드 결과)
 
 | 자원 | 사용 | 총량 | 여유 | 판정 |
 |---|---|---|---|---|
-| **RAM** | 110,100 B (33.6%) | 327,680 B | 217,580 B (66.4%) | ✅ BUDGET §6 >100KB |
-| **Flash** | 1,532,741 B (23.4%) | 6,553,600 B | 5,020,859 B (76.6%) | ✅ 여유 충분 |
-| **littlefs.bin** | 114.4 KB | - | - | ✅ 73% 절감 |
+| **RAM** | 108,612 B (33.1%) | 327,680 B | 219,068 B (66.9%) | ✅ BUDGET §6 >100KB 통과 |
+| **Flash** | 1,525,937 B (23.3%) | 6,553,600 B | 5,027,663 B (76.7%) | ✅ 여유 충분 |
+| **littlefs.bin** | 114.4 KB (프론트 gz 85.4 KB) | 1,048,576 B (1MB) | 934,176 B (89.1%) | ✅ BUDGET §6 <100KB 통과 |
 
 ---
 
@@ -328,7 +339,8 @@ git push origin v0202-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| **2026-10-27** | **v2.5** | **Batch H — 웹 UI 고도화 및 오프라인 로더 개선 (0202_006)**: 모달 Flexbox 구조화(UI-1), 세그먼트 2열 그리드(UI-2), 이중 스크롤 제거(UI-3), Undo 복원 보존(UI-4), 오프라인 로더 순서 최적화(LOAD-1), 부트스트랩 대기 가드(LOAD-2), JSON 탐색 최적화(LOAD-3). 총 7개 파일 수정 | Antigravity AI |
+| **2026-10-28** | **v2.6** | **Batch I — 바람 물리 파라미터 직접 지정 (Override) 모델 전면 개편 및 UI 고도화 (0202_007)**: adjust Delta 완전 폐기 및 0~100% 절대값 `override` 모델 도입(OVR-1), 대시보드 3대 물리 슬라이더 및 SLEEP 모드 연동(OVR-2), 세그먼트 편집 모달 Override 아코디언 및 순서 이동(▲/▼)(OVR-3), 물리 수치별 정량 가이드 및 35종 JS 번들링/완전 다국어화(OVR-4) | Antigravity AI |
+| 2026-10-27 | v2.5 | **Batch H — 웹 UI 고도화 및 오프라인 로더 개선 (0202_006)**: 모달 Flexbox 구조화(UI-1), 세그먼트 2열 그리드(UI-2), 이중 스크롤 제거(UI-3), Undo 복원 보존(UI-4), 오프라인 로더 순서 최적화(LOAD-1), 부트스트랩 대기 가드(LOAD-2), JSON 탐색 최적화(LOAD-3). 총 7개 파일 수정 | Antigravity AI |
 | 2026-10-26 | v2.4 | **Batch G — P0/P1 코드 재검토**: C-1~C-5 (크리티컬), NEW-C1/C2/U1~U4 (프론트), B-1~B-13 (백엔드/프론트 혼합). §3.4 신규 27건 테이블. 17개 파일 수정 | Antigravity AI |
 | 2026-10-21 | v2.3 | `tools_0202`, `data_v0202`, `_0202` 자산 및 curl 검증 경로 일괄 현행화 | Antigravity AI |
 | 2026-10-20 | v2.2 | Batch A~F 반영: §1 디렉토리 트리 0201 접미사, §3 감사 이력 A~F 통합, §4.3 E-2 분할 원칙, §5.2 도구 4종, §6 Batch G 커밋 전략, §7 실측 자원 사용량 | Antigravity AI |

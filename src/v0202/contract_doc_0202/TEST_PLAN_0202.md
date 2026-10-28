@@ -1,7 +1,7 @@
-# TEST_PLAN_0202.md — 회귀 테스트 절차서 (v2.5)
+# TEST_PLAN_0202.md — 회귀 테스트 절차서 (v2.7)
 
 > **검증 대상**: Smart Nature Wind v0202 펌웨어 + v0202 SPA 프론트엔드  
-> **기준선**: Batch A~F 백엔드 리팩토링 + Phase 0~7 프론트엔드 재설계 + Batch G 코드 재검토(P0/P1) 완료  
+> **기준선**: Batch A~F 백엔드 리팩토링 + Phase 0~7 프론트엔드 재설계 + Batch G 코드 재검토(P0/P1) + Batch H UI 고도화 + Batch I 물리 Override 및 다국어 고도화 완료  
 > **검증 환경**: ESP32-S3-N16R8, LittleFS 업로드 완료, 권장 로그 `EN_L10_LOG_DEBUG`  
 > **파일명 정책**: 계약 문서 `_0202.md` 유지, 코드 참조 `_0202` 접미사
 
@@ -14,6 +14,7 @@
 3. [백엔드 Batch A~F 신규 (T-14 ~ T-28)](#3-백엔드-batch-af-신규)
    - 3.1 [Batch G — P0 크리티컬 회귀 (T-46 ~ T-50)](#31-batch-g--p0-크리티컬-회귀-t-46--t-50)
    - 3.2 [Batch G — P1 회귀 (T-51 ~ T-67)](#32-batch-g--p1-회귀-t-51--t-67)
+   - 3.3 [Batch I — 바람 물리 Override 및 UI 고도화 회귀 (T-70 ~ T-72)](#33-batch-i--바람-물리-override-및-ui-고도화-회귀-t-70--t-72)
 4. [프론트엔드 v0202 SPA (T-29 ~ T-35)](#4-프론트엔드-v0202-spa)
 5. [정적 감사 (T-36 ~ T-40)](#5-정적-감사)
 6. [부하/안정성 (T-41 ~ T-45)](#6-부하안정성)
@@ -47,6 +48,9 @@ L5 부하/안정성 (5건) ─── 양산 승인 조건
 L6 Batch G 코드 재검토 (22건) ─── P0 필수 5건 / P1 필수 8건
     P0: T-46, T-47, T-48, T-49, T-50
     P1: T-51~T-56, T-57~T-67 (B-1~B-13)
+
+L7 Batch I 물리 Override 및 UI 고도화 (3건) ─── 릴리스 차단 조건
+    T-70 (물리 Override 절대값 직접 지정), T-71 (대시보드 3슬라이더/SLEEP), T-72 (순서이동/다국어)
 ```
 
 ### 1.2 검증 환경
@@ -55,8 +59,8 @@ L6 Batch G 코드 재검토 (22건) ─── P0 필수 5건 / P1 필수 8건
 |---|---|
 | MCU | ESP32-S3-N16R8 (16MB Flash, 8MB PSRAM) |
 | 펌웨어 | `FW_Ver_2.0.0` (v0202 코드 접미사) |
-| 프론트엔드 | SPA 3자산 (HTML+CSS+JS, gz 46KB) |
-| 계약 문서 | v2.4 (2026-10-26, Batch G 반영) |
+| 프론트엔드 | SPA 3자산 (HTML+CSS+35종 JS 번들, gz 85.4KB) |
+| 계약 문서 | v2.6 (2026-10-28, Batch I 반영) |
 | CI 환경 | GitHub Actions (ubuntu-latest) |
 | 브라우저 | Chrome/Edge/Safari/Firefox 최신 |
 | 로그 레벨 | `EN_L10_LOG_DEBUG` (검증 기간 한정) |
@@ -1522,7 +1526,116 @@ curl -s http://$IP/api/v001/system | jq '.system.hw.led.pin'
 - [ ] 4단계: WARN 로그 존재
 - [ ] 5단계: 원본 설정 유지 (사용자 통지)
 
-**실패 시 조치**: `A00_Main_0202.cpp`의 LED pin 유효성 검증 블록 확인.
+
+---
+
+## 3.3 Batch I — 바람 물리 Override 및 UI 고도화 회귀 (T-70 ~ T-72)
+
+### T-70. [OVR-1] 세그먼트 물리 파라미터 절대값 직접 지정 (Override) 검증
+
+**목적**: 기존 상대적 adjust Delta 완전 폐기 및 0~100% 절대값 직접 지정(`override.enabled`, `windIntensity`, `windVariability`, `gustFrequency`) 동작 검증.
+
+**검증 절차**:
+```bash
+# 1. override 활성화 세그먼트 생성 (windIntensity 80.0, windVariability 50.0, gustFrequency 30.0)
+curl -X POST http://$IP/api/v001/schedules -H "X-API-Key: $KEY" -d '{
+  "schedules": [{
+    "id": "sch_test_ovr",
+    "name": "OVR Test",
+    "enabled": true,
+    "segments": [{
+      "order": 1,
+      "name": "OVR Seg",
+      "presetCode": "OCEAN",
+      "style": "BALANCE",
+      "startTime": "00:00",
+      "duration": 60,
+      "speed": 100,
+      "override": {
+        "enabled": true,
+        "windIntensity": 80.0,
+        "windVariability": 50.0,
+        "gustFrequency": 30.0
+      }
+    }]
+  }]
+}'
+
+# 2. C++ WindSolver 파라미터 확인 (시뮬레이터 상태 조회)
+curl -s http://$IP/api/v001/control/status | jq '.windParams'
+# 기대: base preset 값 대신 intensity 80, variability 50, gust 30 절대값 적용
+
+# 3. override 비활성화(enabled: false) 시 preset 기본값 복귀 검증
+curl -X PATCH http://$IP/api/v001/schedules/sch_test_ovr -H "X-API-Key: $KEY" -d '{
+  "segments": [{
+    "order": 1,
+    "override": {
+      "enabled": false,
+      "windIntensity": -1.0,
+      "windVariability": -1.0,
+      "gustFrequency": -1.0
+    }
+  }]
+}'
+curl -s http://$IP/api/v001/control/status | jq '.windParams'
+# 기대: OCEAN preset 기본 파라미터로 자동 환원
+```
+
+**합격 판정**:
+- [ ] `override.enabled == true` 시 지정된 절대값(0~100)으로 시뮬레이션 파라미터 즉시 치환
+- [ ] `override.enabled == false` 시 Preset/Style 기본 파라미터로 동작
+- [ ] 구형 adjust Delta 잔존 참조 0건
+
+---
+
+### T-71. [OVR-2] 대시보드 3대 물리 슬라이더 및 SLEEP 모드 실시간 제어 검증
+
+**목적**: 대시보드 세기/변동성/돌풍 슬라이더 조작 시 100ms 디바운스 `/api/v001/control/override` 통신 및 SLEEP 모드 토글 검증.
+
+**검증 절차**:
+```bash
+# 1. 브라우저에서 Dashboard 접속 (#dashboard)
+# 2. '물리 바람 파라미터 오버라이드' 섹션 확인 (세기, 변동성, 돌풍 슬라이더 3종)
+# 3. 풍속 세기 슬라이더 75%로 조작
+# DevTools Network 탭 확인:
+# POST /api/v001/control/override
+# Payload: {"windIntensity": 75} (100ms 디바운스 적용)
+
+# 4. 정량적 체감 가이드 텍스트 확인
+# 기대: "75%: 강한 바람 (약 4.2 m/s, 나무 잔가지 흔들림, 시원하고 뚜렷한 냉감)" 즉시 렌더링
+
+# 5. 수면풍(SLEEP) 버튼 클릭
+# 기대: wind style SLEEP 활성화, 버튼 하이라이트 표시
+```
+
+**합격 판정**:
+- [ ] 슬라이더 조작 시 100ms 디바운스 후 단 1회 POST 호출
+- [ ] 수치 변경 시 정량 피드백 가이드 텍스트가 지연 없이 반응
+- [ ] SLEEP 모드 토글 및 WebSocket 브로드캐스트 정합성 확인
+
+---
+
+### T-72. [OVR-3/OVR-4] 세그먼트 순서 이동(▲/▼) 및 다국어 지원 검증
+
+**목적**: 세그먼트 순서 이동(▲/▼) 시 `order` 재인덱싱 및 완전 한/영 다국어 지원 검증.
+
+**검증 절차**:
+```bash
+# 1. 스케줄 또는 프로파일 편집 모달 오픈 (#schedule 또는 #profiles)
+# 2. 세그먼트 2개 이상 등록 후 두 번째 세그먼트의 '▲' 버튼 클릭
+# 기대: 배열 순서 변경 및 각 세그먼트의 'order' 번호가 1, 2 순서대로 자동 재배열
+# 3. 첫 번째 세그먼트의 '▲' 비활성화(disabled), 마지막 세그먼트의 '▼' 비활성화 확인
+
+# 4. 언어 토글 (우측 상단 KO / EN 버튼)
+# 기대:
+# - 프리셋 드롭다운: 'OCEAN (바다 바람)' <-> 'OCEAN (Ocean Breeze)'
+# - 스타일 드롭다운: 'BALANCE (균형)' <-> 'BALANCE (Balanced)'
+# - 물리 수치 피드백 가이드 문구 즉각 언어 전환 확인
+```
+
+**합격 판정**:
+- [ ] 세그먼트 순서 변경 시 order 필드가 1부터 순차적으로 정합성 유지
+- [ ] 언어 변경 시 화면 새로고침 없이 프리셋 명칭 및 피드백 문구 즉시 번역
 
 ---
 
@@ -1889,8 +2002,9 @@ done
 | L5 부하/안정성 | T-41 ~ T-45 (5건) | 24h+ | 릴리스 후 병행 |
 | **L6 Batch G P0** | **T-46 ~ T-50 (5건)** | **40분** | **5/5 필수** |
 | **L6 Batch G P1** | **T-51 ~ T-67 (17건)** | **120분** | **8건 필수** (T-51, T-52, T-53, T-54, T-57, T-58, T-61, T-65) |
+| **L7 Batch I OVR** | **T-70 ~ T-72 (3건)** | **30분** | **3/3 필수** (T-70, T-71, T-72) |
 
-### 릴리스 차단 필수 세트 (최소 26건)
+### 릴리스 차단 필수 세트 (최소 29건)
 
 | # | 테스트 | 그룹 | Batch |
 |:---:|---|---|:---:|
@@ -1920,6 +2034,9 @@ done
 | **24** | **T-58 (B-2 root 스냅샷)** | **L6** | **B-2/B-9** |
 | **25** | **T-61 (B-5 q=0)** | **L6** | **B-5** |
 | **26** | **T-65 (B-11 config 복구)** | **L6** | **B-11** |
+| **27** | **T-70 (OVR-1 세그먼트 물리 Override)** | **L7** | **OVR-1** |
+| **28** | **T-71 (OVR-2 대시보드 3슬라이더/SLEEP)** | **L7** | **OVR-2** |
+| **29** | **T-72 (OVR-3/4 순서이동/다국어)** | **L7** | **OVR-3/4** |
 
 ---
 
@@ -1964,6 +2081,9 @@ done
 | **T-67 LED pin 크래시** | **uint8 암묵 캐스팅** | **유효 범위 검증 (0~48)** |
 | **T-68 모달 스크롤/세그먼트 겹침** | **인라인 스타일 충돌** | **Flexbox 레이아웃 + 2열 그리드 + Undo 복원 검증** |
 | **T-69 로컬 오프라인 통신 실패** | **스크립트 순서/레이스** | **선행 감지(document.write) + `SNW.Offline.ready` 대기 가드** |
+| **T-70 Override 물리 미반영** | **`override.enabled` false 판정** | **`S20_resolveWindParams` 우선 치환 분기 확인** |
+| **T-71 슬라이더 렉/네트워크 폭주** | **debounce 미적용** | **100ms 디바운스 타이머 로직 확인** |
+| **T-72 세그먼트 order 불일치** | **삭제/이동 후 재인덱싱 누락** | **`_reindexSegments` 자동 호출 확인** |
 
 ---
 
@@ -1983,10 +2103,11 @@ done
 | **G-8.1** | **Batch G P0 필수 5/5 (T-46~T-50)** | ⬜ |
 | **G-8.2** | **Batch G P1 필수 8/8 (T-51, T-52, T-53, T-54, T-57, T-58, T-61, T-65)** | ⬜ |
 | **G-8.3** | **정적 회귀 grep: B-2 위반 0건 / A-2 위반 0건 / 하드코딩 0건** | ⬜ |
+| **G-9.1** | **Batch I Override 물리 필수 3/3 (T-70, T-71, T-72)** | ⬜ |
 
 ### 9.2 릴리스 승인 조건
 
-**모든 게이트 (G-7.0 ~ G-8.3) 통과 시 → 릴리스 승인**.
+**모든 게이트 (G-7.0 ~ G-9.1) 통과 시 → 릴리스 승인**.
 
 **미통과 시**:
 - 각 게이트 재실행
@@ -2025,7 +2146,8 @@ git push origin v0202-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| **2026-10-27** | **v2.6** | **Batch H 웹 UI/오프라인 로더 반영**: §8 트러블슈팅 매트릭스 T-68(모달/세그먼트 2열 그리드 및 Undo 복원 검증), T-69(로컬 오프라인 감지 및 동기 로드 가드 검증) 신규 추가 | Antigravity AI |
+| **2026-10-28** | **v2.7** | **Batch I 바람 물리 파라미터 직접 지정 (Override) 모델 및 UI 고도화 반영**: §3.3 T-70~T-72 (3건) 신규, §1.1 L7 계층 추가, §7 회귀 매트릭스 확장(필수 26→29건), §8 트러블슈팅 매트릭스 T-70~T-72 추가, §9.1 G-9.1 릴리스 게이트 추가 | Antigravity AI |
+| 2026-10-27 | v2.6 | **Batch H 웹 UI/오프라인 로더 반영**: §8 트러블슈팅 매트릭스 T-68(모달/세그먼트 2열 그리드 및 Undo 복원 검증), T-69(로컬 오프라인 감지 및 동기 로드 가드 검증) 신규 추가 | Antigravity AI |
 | 2026-10-26 | v2.5 | **Batch G 코드 재검토 반영**: §3.1 T-46~T-50 (C-1~C-5 P0 5건) 신규, §3.2 T-51~T-67 (B-1~B-13, NEW-C1~U4 P1 17건) 신규. §1.1 L6 계층 추가. T-1/T-3/T-9 판정 기준 보강(C-3/B-1/B-5 영향). §7 매트릭스 확장(필수 13→26건). §8 트러블슈팅 16건 추가. §9 G-8 게이트 신규 | Antigravity AI |
 | 2026-10-21 | v2.4 | `cfg_motion_0202.json`, `P010_*_0202.*` 자산명, 리다이렉트 기대값 일괄 현행화 | Antigravity AI |
 | 2026-10-21 | v2.3 | 프론트엔드 v0202 SPA 통합: T-29~T-35 (7건) 신규, T-36~T-40 정적 감사 확장, T-41~T-45 부하/안정성 신규, §7 매트릭스 재구성 (L1~L5 계층), §8 트러블슈팅 SPA 항목 추가, §9 Phase 7 릴리스 게이트 신규 | Antigravity AI |

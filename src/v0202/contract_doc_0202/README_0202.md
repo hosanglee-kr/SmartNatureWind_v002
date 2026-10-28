@@ -25,7 +25,7 @@ src/v0202/
 ├── User_Manual_0202/              # 사용자 매뉴얼
 ├── tools_0202/                    # v0202 빌드/계약 도구 (pio_gzip_0202.py, commit_contracts_0202.py)
 │
-├── data_v0202_src/                # [웹 개발 원본] (34 번들 JS + 10 CSS + HTML Shell + 998.offline)
+├── data_v0202_src/                # [웹 개발 원본] (35 번들 JS + 10 CSS + HTML Shell + 998.offline)
 ├── data_v0202/                    # [배포 스테이징] LittleFS 이미지 대상 (json 9개 + html_v0202 3개 번들 자산)
 │
 └── [C++ 소스군, v0202 접미사]
@@ -339,7 +339,8 @@ git push origin v0202-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| **2026-10-28** | **v2.6** | **Batch I — 바람 물리 파라미터 직접 지정 (Override) 모델 전면 개편 및 UI 고도화 (0202_007)**: adjust Delta 완전 폐기 및 0~100% 절대값 `override` 모델 도입(OVR-1), 대시보드 3대 물리 슬라이더 및 SLEEP 모드 연동(OVR-2), 세그먼트 편집 모달 Override 아코디언 및 순서 이동(▲/▼)(OVR-3), 물리 수치별 정량 가이드 및 35종 JS 번들링/완전 다국어화(OVR-4) | Antigravity AI |
+| **2026-10-28** | **v2.7** | **웹 오프라인 어댑터 및 한/영 다국어 연동 검증 반영**: Mock 데이터 10개 프리셋/5개 스타일 factors 동기화, `/control/override` 인터셉트, 스케줄/프로필 한/영 병기 표기, 프리셋 관리 화면 실시간 i18n 번역 연동 및 T-73 회귀 절차 수립 | Antigravity AI |
+| 2026-10-28 | v2.6 | **Batch I — 바람 물리 파라미터 직접 지정 (Override) 모델 전면 개편 및 UI 고도화 (0202_007)**: adjust Delta 완전 폐기 및 0~100% 절대값 `override` 모델 도입(OVR-1), 대시보드 3대 물리 슬라이더 및 SLEEP 모드 연동(OVR-2), 세그먼트 편집 모달 Override 아코디언 및 순서 이동(▲/▼)(OVR-3), 물리 수치별 정량 가이드 및 35종 JS 번들링/완전 다국어화(OVR-4) | Antigravity AI |
 | 2026-10-27 | v2.5 | **Batch H — 웹 UI 고도화 및 오프라인 로더 개선 (0202_006)**: 모달 Flexbox 구조화(UI-1), 세그먼트 2열 그리드(UI-2), 이중 스크롤 제거(UI-3), Undo 복원 보존(UI-4), 오프라인 로더 순서 최적화(LOAD-1), 부트스트랩 대기 가드(LOAD-2), JSON 탐색 최적화(LOAD-3). 총 7개 파일 수정 | Antigravity AI |
 | 2026-10-26 | v2.4 | **Batch G — P0/P1 코드 재검토**: C-1~C-5 (크리티컬), NEW-C1/C2/U1~U4 (프론트), B-1~B-13 (백엔드/프론트 혼합). §3.4 신규 27건 테이블. 17개 파일 수정 | Antigravity AI |
 | 2026-10-21 | v2.3 | `tools_0202`, `data_v0202`, `_0202` 자산 및 curl 검증 경로 일괄 현행화 | Antigravity AI |

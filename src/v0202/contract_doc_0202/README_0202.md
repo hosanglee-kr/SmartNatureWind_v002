@@ -28,32 +28,18 @@ src/v0202/
 ├── data_v0202_src/                # [웹 개발 원본] (35 번들 JS + 10 CSS + HTML Shell + 998.offline)
 ├── data_v0202/                    # [배포 스테이징] LittleFS 이미지 대상 (json 9개 + html_v0202 3개 번들 자산)
 │
-└── [C++ 소스군, v0202 접미사]
-    ├── main.cpp, A00_Main_0202.* (엔트리)
-    ├── A20_Const_*_0202.h (상수/구조체)
-    ├── A22_Com_Lookup_0202.h, A23_Com_ResetCfg_0202.h
-    ├── A30_LED_0202.h
-    ├── A40_Com_Utils_0202.h, A40_Com_Utils_IO_0202.cpp (E-2.5 분리)
-    ├── C10_Config_0202.h, C10_Config_Core/Extras/Sys_0202.cpp
-    ├── C10_Config_Sch_*_0202.* (E-2.3 5분할)
-    ├── C10_Config_UzProf_*_0202.* (E-2.6 5분할)
-    ├── C10_Config_WindDc_*_0202.* (E-2.7 5분할)
-    ├── CT10_Ctl_0202.h, CT10_Ctl_Basic/Ctl/StMG/IOWS_0202.cpp
-    ├── CT10_Ctl_Ctl_Seg/Ovr/Mode_0202.cpp (E-2.4 4분할)
-    ├── D10_Logger_0202.h
-    ├── M10_MotionLogic_0202.h
-    ├── N10_NvsManager_0202.*
-    ├── P10_PWM_ctrl_0202.h (헤더 인라인)
-    ├── S10_Simul_0202.h, S10_Simul_Const_0202.h
-    ├── S10_Simul_Core/Physic/IO_0202.cpp
-    ├── S20_WindSolver_0202.h (헤더 인라인)
-    ├── TM10_TimeMg_0202.h/.cpp (E-2.1 분리)
-    ├── W10_Web_0202.h, W10_Web_Const_0202.h
-    ├── W10_Web_Routes_0202.cpp (Core)
-    ├── W10_Web_Routes_System/Control/Config/Network/CRUD_0202.cpp (E-2.2 6분할)
-    ├── W10_Web_Static/Upload/Util/WS/Gemini_0202.cpp
-    └── WF10_WiFiMgr_0202.*
+└── [C++ 소스군, v0202 접미사]      # 상세 모듈 매핑 및 파일 목록은 SPEC_0202.md §3 참조
+    ├── main.cpp, A00_Main_0202.* (부팅 엔트리)
+    ├── A20~A40 (상수, 룩업, NeoPixel, 유틸/IO)
+    ├── C10_Config_* (환경설정 로드/저장/검증 분할 소스)
+    ├── CT10_Ctl_* (장치 제어, FSM 상태, 세그먼트, WS 분할 소스)
+    ├── D10 (로거), M10 (모션), N10 (NVS), P10 (PWM)
+    ├── S10/S20 (물리 시뮬레이션, 자연풍 솔버)
+    ├── TM10 (시간/NTP), WF10 (Wi-Fi 매니저)
+    └── W10_Web_* (비동기 웹서버 Core, 라우트 분할 소스)
 ```
+
+> 💡 **C++ 소스 파일 상세 매핑 SSOT**: 각 모듈별 C++ 헤더/구현 파일 30여 종의 상세 목록 및 단일 책임 분할 명세는 **[SPEC_0202.md §3](SPEC_0202.md#3-모듈-구성-및-파일-매핑-v0202-접미사)**에 단일 정의되어 있습니다.
 
 ---
 
@@ -72,118 +58,19 @@ src/v0202/
 
 ---
 
-## 3. 감사 이력 (Audit Findings)
+## 3. 감사 및 계약 마일스톤 요약 (Audit & Contract Milestones)
 
-### 3.1 기존 이슈 (F-01 ~ I-6)
+> 💡 **감사 이력 및 해결 규약 SSOT**: 각 배치별 상세 감사 이슈(F-01~I-6, B-1~B-13, C-1~C-5, NEW-C1~U4, OVR-1~4, SYNC-1~3) 및 동시성 해결 코드는 **[CONTRACT_0202.md §7 (감사 이력 및 계약 해결 내역)](CONTRACT_0202.md#7-감사-이력-및-계약-해결-내역)**에 전량 단일 보관(SSOT)되어 있습니다.
 
-| ID | 심각도 | 상태 | 요약 | 해결 |
-|---|---|---|---|---|
-| F-01 | 🔴 High | ✅ | WF10 GOT_IP 이벤트 누락 | startSTA 후 TM10 명시 통지 |
-| F-02 | 🟡 Mid | ✅ | 이중 xTaskCreate 위험 | `_ensureWifiTask` mutex 보호 |
-| F-03 | 🔴 High | ✅ | M10 tick 미호출 | `A00_run` 배치 |
-| F-04 | 🔴 High | ✅ | N10 flush 미호출 | `A00_run` 배치 |
-| F-05 | 🟡 Mid | ✅ | async_tcp reload 블로킹 | loopTask 위임 (atomic flag) |
-| F-06 | 🟡 Mid | ✅ | async_tcp motion patch 락 경합 | loopTask 위임 (atomic flag) |
-| F-07 | 🟢 Low | ⏸ | Logger 링버퍼 레이스 | 로그 유실 수용 |
-| F-08 | 🟢 Low | ⏸ | A00_run root raw 역참조 | 저위험 수용 |
-| F-09 | 🟡 Mid | ✅ | PIR 부팅 false-positive | F-03으로 해소 |
-| F-10 | 🟡 Mid | ⚠️ | async_tcp 스택 4KB | 부담 완화, 8KB 후보 관측 |
-| I-1 | 🟡 Mid | ✅ | Reload 완료 판별 불가 | `control.pendingReload` 노출 |
-| I-2 | 🟡 Mid | ✅ | save 없는 reload 시 패치 소실 | SPEC §5.2 명문화 |
-| I-3 | 🟢 Low | ✅ | `_pendingMotionSimApply` 잔재 | begin/reloadAll 방어 store |
-| I-4 | 🟢 Low | ✅ | `applyMotionSimConfigToSim` public 노출 | private 이동 |
-| I-5 | 🟢 Low | ⏸ | reload 중 LED 지연 | 체감 불가 수용 |
-| I-6 | 🟢 Low | ✅ | 다중 JS 로드 LWIP 소켓 고갈 | 번들 + Gzip (11→4) |
-
-### 3.2 N/G 시리즈
-
-| ID | 심각도 | 상태 | 요약 | 해결 |
-|---|---|---|---|---|
-| N-1 | 🟢 Low | ✅ | reload 실패 미노출 | `control.lastReloadOk` |
-| N-2 | 🟡 Mid | ✅ | pages JSON 손상 시 404 | 정적 폴더 우선 등록 |
-| N-3 | 🟡 Mid | ✅ | root 무한 리다이렉트 | 404 + 진단 |
-| N-4 | 🟡 Mid | ✅ | 업로드 핸들 누수 | safeAbort close |
-| G-1 | 🟢 Low | ✅ | Accept-Encoding 미검사 | gzip/raw 분기 |
-| G-2 | 🟡 Mid | ✅ | long path `.gz` 미인식 | regex 라우트 대체 |
-| G-3 | 🟢 Low | ✅ | 번들 소스 누락 무시 | fail-fast `sys.exit(1)` |
-
-### 3.3 Batch A~F 신규
-
-| Batch | ID | 심각도 | 요약 | 상태 |
-|---|---|---|---|---|
-| A | A-1 | 🔴 High | FIXED self-heal 무한 재호출 | ✅ `mode==PRESET` 조건 |
-| A | A-2 | 🔴 High | CT10 `sim`/`motion` public 노출 | ✅ 위임 3종 + private |
-| A | A-3 | 🔴 High | checkApiKey null Core Dump | ✅ null 방어 |
-| B | B-1~B-6 | 🟡 Mid | 버전/NVS 키/기본 preset 리터럴 | ✅ 상수화 |
-| C | C-1~C-8 | 🟢 Low | S10/A00/TM10/WF10 매직넘버 | ✅ `G_S10_*` 등 |
-| D | D-1 | 🟢 Low | WS tick mutex 4회 | ✅ `consumeAllDirty` (4→1) |
-| D | D-2/D-3 | 🟢 Low | 정적 서빙 String 할당 | ✅ 사전 계산/스택 버퍼 |
-| D | D-4 | 🟡 Mid | isStaConnected 10ms mutex | ✅ atomic lock-free |
-| D | D-5 | 🟢 Low | toChartJson 4.8KB vector | ✅ static 배열 (`.bss`) |
-| E | E-1~E-10 | 🟢 Low | Dead Code | ✅ 정리 |
-| E-2 | E-2.1~E-2.7 | 🟢 Low | 29파일 분할 (대형 파일) | ✅ 4~6분할 |
-| F | F-1 | 🟡 Mid | factory reset NVS 잔존 | ✅ `N10::resetRuntime` |
-| F | F-2/F-3 | 🟢 Low | POST/PATCH 60/180줄 중복 | ✅ 공통 헬퍼 |
-| F | F-4 | 🟢 Low | Logger 초기 DEBUG | ✅ INFO 변경 |
-| F | F-5 | 🟡 Mid | profile fall-through | ✅ 명시 IDLE 반환 |
-| F | F-8/F-9 | 🟢 Low | 0.01f/0.33f 하드코딩 | ✅ 상수화 |
-| F | F-10 | 🟢 Low | 분할 시 매크로 파일 스코프 | ✅ Internal 헤더 승격 |
-
-### 3.4 Batch G — 코드 재검토 (P0/P1 이슈)
-
-| ID | 심각도 | 위치 | 요약 | 상태 |
-|---|---|---|---|---|
-| **C-1** | 🔴 Blocker | `main.cpp` | `while(!Serial)` 무한 루프 (USB 미연결 시 setup 정지) | ✅ 3s 타임아웃 |
-| **C-2** | 🔴 Blocker | `200.page.dashboard.js` | 프리셋 그리드 영구 비어있음 (mount 순서) | ✅ `_mountComponents` 선행 |
-| **C-3** | 🔴 High | `M10_MotionLogic_0202.h` | `isActive()` holdSec 이중 적용 (2×연장) | ✅ `_state.pirActive` 단일 판정 |
-| **C-4** | 🔴 High | `W10_Web_Upload_0202.cpp` | 업로드 핸들 누수 (`available()==0` write-only) | ✅ stale close |
-| **C-5** | 🔴 High | `070.router.js` | dispatch 재진입 → watcher/timer 누수 | ✅ `_dispatching` 가드 |
-| **NEW-C1** | 🔴 High | `240.page.settings.js` | `\|\|`로 0값 손실 (pin=0, brightness=0, holdSec=0) | ✅ `nz()` 헬퍼 |
-| **NEW-C2** | 🔴 High | `240.page.settings.js` | `dht.type` XSS (사용자 PATCH 가능) | ✅ `esc()` 적용 |
-| **NEW-U1** | 🟡 Mid | `240.page.settings.js` | API Key 프리필 → DOM 평문 노출 | ✅ placeholder 패턴 |
-| **NEW-U2** | 🟡 Mid | `240.page.settings.js` | API Key 삭제 UI 부재 | ✅ 체크박스 |
-| **NEW-U3** | 🟡 Mid | `240.page.settings.js` | wsChConfig 손상 시 복구 불가 | ✅ 기본 4채널 + baseline |
-| **NEW-U4** | 🟡 Mid | `240.page.settings.js` | 문자열 `"false"` 오판 | ✅ `asBool()` |
-| **B-1** | 🟠 High | `N10_NvsManager_0202.cpp` | flush 11회 commit (100ms 블로킹) | ✅ 단일 `nvs_commit` (10ms) |
-| **B-2** | 🟠 High | `W10_Web_Routes_Config/CRUD/WS_0202.cpp` | async_tcp root 직접 참조 3곳 | ✅ `getRootSnapshot` |
-| **B-3** | 🟠 High | `240.page.settings.js`, `270.page.network.js` | XSS (deviceName/SSID/hostname) | ✅ `esc()` |
-| **B-4** | 🟠 High | `C10_Config_Sys_0202.cpp` | API Key 삭제 불가 (빈 문자열 무시) | ✅ `clearApiKey` 플래그 |
-| **B-5** | 🟠 High | `W10_Web_Static_0202.cpp` | `gzip;q=0` 오탐지 (RFC 7231 위반) | ✅ `W10_acceptsGzip` 파서 |
-| **B-6** | 🟡 Mid | `W10_Web_Routes_System_0202.cpp` | routeMotion POST/PATCH 60줄 중복 | ✅ `_routeMotionPatchBody` |
-| **B-7** | 🟡 Mid | `N10_NvsManager_0202.cpp` | NVS 쓰기 반환값 무시 (조용한 실패) | ✅ 반환값 검사 + 재시도 |
-| **B-8** | 🟡 Mid | `130.ui.form.js` | 로그 필터 `textContent` 오매칭 | ✅ `.snw-log-lv` 정확 비교 |
-| **B-9** | 🟡 Mid | `W10_Web_Routes_CRUD_0202.cpp` | WindProfile GET FS 재로드(100ms) + race | ✅ `getRootSnapshot` |
-| **B-10** | 🟢 Low | `S10_Simul_Core_0202.cpp` | 브로드캐스트용 JsonDocument dead code | ✅ 제거 |
-| **B-11** | 🟠 High | `A00_Main_0202.cpp` | config 손상 시 부팅 중단 → 웹 복구 불가 | ✅ in-memory defaults + Recovery AP |
-| **B-12** | 🟠 High | `W10_Web_Upload_0202.cpp` | OTA 세션 잔존 + write 반환값 무시 | ✅ `Update.abort()` + 반환 검사 |
-| **B-13** | 🟠 High | `A00_Main_0202.cpp` | 음수 LED pin → GPIO 255 크래시 | ✅ 유효성 검증 + 기본값 |
-
-**수정 파일 (17개)**: `main.cpp`, `A20_Const_Const_0202.h`, `M10_MotionLogic_0202.h`, `W10_Web_Upload_0202.cpp`, `070.router.js`, `200.page.dashboard.js`, `W10_Web_Routes_Config_0202.cpp`, `W10_Web_Routes_CRUD_0202.cpp`, `W10_Web_WS_0202.cpp`, `C10_Config_Sys_0202.cpp`, `240.page.settings.js`, `270.page.network.js`, `W10_Web_Routes_System_0202.cpp`, `N10_NvsManager_0202.cpp`, `130.ui.form.js`, `S10_Simul_Core_0202.cpp`, `A00_Main_0202.cpp`, `W10_Web_Static_0202.cpp`
-
-### 3.5 Batch H — 웹 UI 고도화 및 오프라인 로더 개선 (0202_006)
-
-| ID | 심각도 | 위치 | 요약 | 상태 |
-|---|---|---|---|---|
-| **UI-1** | 🟡 Mid | `_components.css` | 모달 스크롤 시 Header/Footer 사라짐 | ✅ Flexbox 구조화 (Header/Footer 고정, Body 단독 터치 스크롤) |
-| **UI-2** | 🟡 Mid | `_components.css`, `220.schedule.js`, `230.profiles.js` | 세그먼트 1열 배치로 모바일 스크롤 과다 | ✅ 세그먼트 카드 2열 그리드(`snw-seg-card`, `snw-seg-grid`) 적용 |
-| **UI-3** | 🟡 Mid | `_profiles.css` | 구형 모달 스타일로 인한 이중 스크롤 위험 | ✅ `#snw-modal-overlay` 오버라이드 제거 및 공통 스타일 통합 |
-| **UI-4** | 🔴 High | `220.schedule.js`, `230.profiles.js` | 세그먼트 삭제 시 Undo 기능 소실 위험 | ✅ 온전한 `_removeWithUndo` 로직 보존 및 프로파일 확대 적용 |
-| **LOAD-1** | 🔴 Blocker | `index.html` | 번들 스크립트 후행 실행으로 로컬 오프라인 모드 실패 | ✅ `window.SNW_OFFLINE` 감지 및 동기 로드(`document.write`) 선행 배치 |
-| **LOAD-2** | 🔴 High | `999.app.js` | 오프라인 어댑터 로드 전 `SNW_BOOT` 실행 레이스 | ✅ `SNW.Offline.ready` 폴링 대기 가드(Wait Guard) 추가 |
-| **LOAD-3** | 🟢 Low | `998.offline_0202.js` | 로컬 Live Server 환경에서 JSON 경로 404 실패 로그 | ✅ `JSON_BASE_CANDIDATES` 1순위를 `../json/`으로 조정 |
-
-**수정 파일 (7개)**: `_components.css`, `_profiles.css`, `220.page.schedule.js`, `230.page.profiles.js`, `index.html`, `999.app.js`, `998.offline_0202.js`
-
-### 3.6 Batch I — 바람 물리 파라미터 직접 지정 (Override) 모델 전면 개편 및 UI 고도화 (0202_007)
-
-| ID | 심각도 | 위치 | 요약 | 상태 |
-|---|---|---|---|---|
-| **OVR-1** | 🔴 High | `A20_Const_Sch_0202.h`, `S20_WindSolver_0202.h`, C++ Config/Control | 상대적 adjust Delta 폐기 및 0~100% 절대값 `override` 모델 도입 | ✅ `A20_SegOverride_0202` 구조체 및 Solver 우선 치환 파이프라인 구현 |
-| **OVR-2** | 🟡 Mid | `200.page.dashboard.js`, `W10_Web_Routes_Control_0202.cpp` | 대시보드 3대 물리 슬라이더 및 SLEEP 스타일 연동 | ✅ 실시간 0.1s 디바운스 제어 + SLEEP 모드 UI 토글 |
-| **OVR-3** | 🟡 Mid | `220.page.schedule.js`, `230.page.profiles.js` | 세그먼트 편집 모달 Override 아코디언 및 순서 이동(▲/▼) | ✅ 10대 프리셋/5대 스타일 코드 연동, order 자동 재인덱싱 |
-| **OVR-4** | 🟢 Low | `035.util.feedback.js`, `020.i18n.js` | 물리 수치별 정량적 체감 가이드 및 한/영(ko/en) 완전 다국어화 | ✅ 슬라이더 즉시 반응 가이드 텍스트 + 실시간 언어 전환 이벤트 리스너 |
-
-**수정 파일 (20개+)**: 백엔드 C++ (`A20_Const_Sch_0202.h`, `S20_WindSolver_0202.h`, `CT10_Ctl_Ctl_Seg_0202.cpp`, `CT10_Ctl_Ctl_Ovr_0202.cpp`, `W10_Web_Routes_Control_0202.cpp`, `C10_Config_Sch_*`, `C10_Config_UzProf_*`, `A23_Com_ResetCfg_0202.h`), JSON 설정, 프론트엔드 Web UI (`035.util.feedback.js`, `020.i18n.js`, `033.util.template.js`, `130.ui.form.js`, `200.page.dashboard.js`, `220.page.schedule.js`, `230.page.profiles.js`)
+| 배치 (Batch) | 식별 코드 | 핵심 해결 내용 및 계약 규약 | 상세 참조 |
+|---|---|---|:---:|
+| **초기 감사** | F-01 ~ I-6 | WF10 IP 누락, N10 flush 누락, async_tcp reload CAS 위임(F-05), JS 번들링/Gzip(I-6) | [CONTRACT §7.1](CONTRACT_0202.md#71-기존-10대-이슈-해결-내역-f-01--f-10) |
+| **N/G 시리즈** | N-1~N-4, G-1~G-3 | reload 상태 노출, 404 차단, Gzip 라우트 regex 파서, 번들 누락 fail-fast | [CONTRACT §7.2](CONTRACT_0202.md#72-ng-시리즈) |
+| **Batch A~F** | A-1~F-10 | FIXED self-heal 무한루프 차단, WS mutex 배치(4→1), 29개 소스 모듈 단일책임 분할(E-2) | [CONTRACT §7.3](CONTRACT_0202.md#73-batch-af-통합-신규-항목-a-1--f-10) |
+| **Batch G** | C-1~C-5, B-1~B-13, NEW | USB CDC 타임아웃, PIR holdSec 단일판정, NVS 단일 commit, async_tcp getRootSnapshot | [CONTRACT §7.4](CONTRACT_0202.md#74-batch-g-신규-감사-항목-27건) |
+| **Batch H** | UI-1~4, LOAD-1~3 | 모달 Header/Footer 고정, 세그먼트 2열 그리드, Undo 복원, 오프라인 어댑터 선행 로드 | [CONTRACT §7.6](CONTRACT_0202.md#76-batch-h-프론트엔드-오프라인-로딩-계약-load-1load-2) |
+| **Batch I** | OVR-1~4 | 바람 물리 0~100% 절대값 `override` 모델 도입, 3대 슬라이더 연동, 한/영 완전 다국어 | [CONTRACT §7.7](CONTRACT_0202.md#77-batch-i-바람-물리-파라미터-직접-지정-override-계약-ovr-1ovr-4) |
+| **0202_008** | OFFLINE, SYNC-1~3 | C++ Enum ➔ `000.const.js` 동기화, 오프라인 모듈 2분할, 대시보드 슬라이더 연동 | [CONTRACT §7.8~7.9](CONTRACT_0202.md#79-프론트엔드-백엔드-데이터-동기화-및-오프라인-모듈-분리-계약-sync-1sync-3) |
 
 ---
 
@@ -339,7 +226,8 @@ git push origin v0202-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| **2026-10-28** | **v2.7** | **웹 오프라인 어댑터 및 한/영 다국어 연동 검증 반영**: Mock 데이터 10개 프리셋/5개 스타일 factors 동기화, `/control/override` 인터셉트, 스케줄/프로필 한/영 병기 표기, 프리셋 관리 화면 실시간 i18n 번역 연동 및 T-73 회귀 절차 수립 | Antigravity AI |
+| **2026-10-28** | **v2.8** | **계약 문서 간 중복 통폐합 및 마일스톤 정리 (0202_008)**: C++ 소스 목록 SPEC §3 위임, 감사 이력 상세 CONTRACT §7 단일 SSOT화 및 마일스톤 요약표 전환, 오프라인 2분할/동기화 반영 | Antigravity AI |
+| 2026-10-28 | v2.7 | **웹 오프라인 어댑터 및 한/영 다국어 연동 검증 반영**: Mock 데이터 10개 프리셋/5개 스타일 factors 동기화, `/control/override` 인터셉트, 스케줄/프로필 한/영 병기 표기, 프리셋 관리 화면 실시간 i18n 번역 연동 및 T-73 회귀 절차 수립 | Antigravity AI |
 | 2026-10-28 | v2.6 | **Batch I — 바람 물리 파라미터 직접 지정 (Override) 모델 전면 개편 및 UI 고도화 (0202_007)**: adjust Delta 완전 폐기 및 0~100% 절대값 `override` 모델 도입(OVR-1), 대시보드 3대 물리 슬라이더 및 SLEEP 모드 연동(OVR-2), 세그먼트 편집 모달 Override 아코디언 및 순서 이동(▲/▼)(OVR-3), 물리 수치별 정량 가이드 및 35종 JS 번들링/완전 다국어화(OVR-4) | Antigravity AI |
 | 2026-10-27 | v2.5 | **Batch H — 웹 UI 고도화 및 오프라인 로더 개선 (0202_006)**: 모달 Flexbox 구조화(UI-1), 세그먼트 2열 그리드(UI-2), 이중 스크롤 제거(UI-3), Undo 복원 보존(UI-4), 오프라인 로더 순서 최적화(LOAD-1), 부트스트랩 대기 가드(LOAD-2), JSON 탐색 최적화(LOAD-3). 총 7개 파일 수정 | Antigravity AI |
 | 2026-10-26 | v2.4 | **Batch G — P0/P1 코드 재검토**: C-1~C-5 (크리티컬), NEW-C1/C2/U1~U4 (프론트), B-1~B-13 (백엔드/프론트 혼합). §3.4 신규 27건 테이블. 17개 파일 수정 | Antigravity AI |

@@ -294,9 +294,18 @@
 
 ### 7.8 웹 오프라인 어댑터 및 다국어 지원 규약 (OFFLINE-1~OFFLINE-3)
 
-- **[OFFLINE-1] Mock 데이터 패리티 및 정합성**: `998.offline_0202.js`의 `cache.windDict`는 백엔드 `cfg_windDict_0202.json`의 10개 프리셋(`OCEAN` ~ `DESERT_NIGHT`) 및 5개 스타일(`BALANCE`, `ACTIVE`, `FOCUS`, `RELAX`, `SLEEP`) 전체 factors를 100% 동일하게 유지하여 오프라인 환경에서도 온라인과 동등한 물리 시뮬레이션 환경을 보장함.
+- **[OFFLINE-1] Mock 데이터 패리티 및 정합성**: `998.offline_data_0202.js`의 `cache.windDict`는 백엔드 `cfg_windDict_0202.json`의 10개 프리셋(`OCEAN` ~ `DESERT_NIGHT`) 및 5개 스타일(`BALANCE`, `ACTIVE`, `FOCUS`, `RELAX`, `SLEEP`) 전체 factors를 100% 동일하게 유지하여 오프라인 환경에서도 온라인과 동등한 물리 시뮬레이션 환경을 보장함.
 - **[OFFLINE-2] 엔드포인트 패리티 및 시뮬레이터 반응**: 백엔드 `/control/override` 등 신규 제어 엔드포인트의 오프라인 인터셉트를 필수 지원하며, `startSimulator()` 루프가 `intensity`와 `variability` 파라미터에 기반하여 풍속과 PWM을 실시간 동적 계산하여 UI에 전달함.
 - **[OFFLINE-3] 다국어(ko/en) 호환성 및 한/영 병기 표기**: 오프라인 Mock 데이터의 스케줄/프로필 명칭은 한/영 병기 표기(`"아침 바람 (Morning Breeze)"`, `"수면 모드 (Sleep Care)"`)를 기본 제공하여 언어 토글 시 데이터 식별성을 보장하며, 프리셋 관리 화면(`300.page.windprofile.js`)은 `preset.<CODE>` i18n 키 우선 해석 및 `snw:langchange` 리스너를 통해 실시간 언어 전환을 보장함.
+
+### 7.9 프론트엔드-백엔드 데이터 동기화 및 오프라인 모듈 분리 계약 (SYNC-1~SYNC-3)
+
+- **[SYNC-1] C++ Enum 자동 단방향 동기화 규약**: `CT10_Ctl_0202.h`에 정의된 FSM 상태 enum(`EN_CT10_State_t`) 및 원인 코드(`EN_CT10_StateReason_t`)는 `pio_gzip_0202.py` 실행 시 `000.const.js`의 마커 블록(`/* === AUTO-SYNC: C++ ENUM START === */`) 내로 자동 파싱·주입되어야 하며, 프론트엔드와 백엔드 간 상태 코드 불일치(State mismatch)를 원천 차단함.
+- **[SYNC-2] 오프라인 어댑터 2분할 및 LittleFS 배포 제외 규약**: 오프라인 환경은 대용량 JSON Mock 캐시 전담 파일(`998.offline_data_0202.js`)과 경량 시뮬레이터 로직(`998.offline_0202.js`)으로 엄격히 2분할 관리함. 두 파일은 `pio_gzip_0202.py`의 `JS_BUNDLE_EXCLUDES` 목록에 등록되어 ESP32 LittleFS 플래시 번들(`P010_bundle_0202.js`)에서 100% 영구 제외되며 기기 런타임 메모리 오버헤드를 유발하지 않아야 함.
+- **[SYNC-3] FSM 상태 일치성 및 모달 오버레이 격리 규약**:
+  - 대시보드 전원 가동 시 `OVERRIDE_HOLD`(`stateCode=1`, `reasonCode=1`) 상태로 일치 전이하여 토스트 오류를 방지함.
+  - 프리셋/스타일 선택 시 슬라이더 3종(강도/변동성/돌풍) 파라미터가 `cfg_windDict_0202.json` 배수 수식에 따라 즉시 동기화되어야 함.
+  - 스케줄/프로필 모달 닫기 시 `.snw-modal-overlay`는 CSS 차원(`pointer-events: none; visibility: hidden;`) 및 JS 인라인(`display: 'none'`)으로 완전 비활성화 격리되어 화면 인터랙션 차단을 방지해야 함.
 
 ---
 
@@ -304,7 +313,8 @@
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| **2026-10-28** | **v2.7** | **웹 오프라인 어댑터 및 한/영 다국어 연동 규약 추가 (§7.8 OFFLINE-1~OFFLINE-3)**: Mock 데이터 10개 프리셋/5개 스타일 factors 동기화, `/control/override` 인터셉트, 스케줄/프로필 한/영 병기 표기, 프리셋 관리 목록 실시간 i18n 반영 | Antigravity AI |
+| **2026-10-28** | **v2.8** | **프론트엔드-백엔드 동기화 및 오프라인 2분할 계약 추가 (§7.9 SYNC-1~SYNC-3)**: `CT10_Ctl_0202.h` Enum ➔ `000.const.js` 자동 주입, `998.offline_data_0202.js` 분리 및 플래시 제외, 대시보드 프리셋/스타일 슬라이더 동기화, 모달 오버레이 격리 | Antigravity AI |
+| 2026-10-28 | v2.7 | 웹 오프라인 어댑터 및 한/영 다국어 연동 규약 추가 (§7.8 OFFLINE-1~OFFLINE-3): Mock 데이터 10개 프리셋/5개 스타일 factors 동기화, `/control/override` 인터셉트, 스케줄/프로필 한/영 병기 표기, 프리셋 관리 목록 실시간 i18n 반영 | Antigravity AI |
 | 2026-10-28 | v2.6 | Batch I — §7.7 바람 물리 제어 Override 전면 개편 (OVR-1~OVR-4), adjust 폐기, 3대 물리 제어 슬라이더 및 한/영 다국어 정합성 현행화 | Antigravity AI |
 | 2026-10-27 | v2.5 | Batch H — §7.6 프론트엔드 오프라인 로딩 및 부트스트랩 동기화 계약 추가 (LOAD-1~LOAD-2) | Antigravity AI |
 | 2026-10-26 | v2.4 | Batch G — §4 3행 추가, §7.4 27건 감사 신규, §7.5 B-2 위반 수정 화이트리스트 확정, index.html 통일 및 레거시 호환 제거 | Antigravity AI |

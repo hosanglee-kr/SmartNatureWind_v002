@@ -122,7 +122,7 @@ void CL_TM10_TimeManager::_onSntpTimeSync(struct timeval* p_tv) {
 // ======================================================
 void CL_TM10_TimeManager::_stopSntp() {
     if (!s_running) return;
-    sntp_stop();
+    esp_sntp_stop();
     s_running = false;
 }
 
@@ -134,11 +134,11 @@ void CL_TM10_TimeManager::_startSntpWithServer(uint8_t p_idx) {
 
     _stopSntp();
 
-    sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    sntp_setservername(0, s_serverList[p_idx]);
-    sntp_set_time_sync_notification_cb(&CL_TM10_TimeManager::_onSntpTimeSync);
-    sntp_set_sync_interval((uint32_t)s_syncIntervalMs);
-    sntp_init();
+    esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    esp_sntp_setservername(0, s_serverList[p_idx]);
+    esp_sntp_set_time_sync_notification_cb(&CL_TM10_TimeManager::_onSntpTimeSync);
+    esp_sntp_set_sync_interval((uint32_t)s_syncIntervalMs);
+    esp_sntp_init();
 
     s_running         = true;
     s_activeServerIdx = p_idx;
@@ -329,7 +329,7 @@ void CL_TM10_TimeManager::tick(const ST_A20_SystemConfig_t* p_sysOrNull) {
                                      (uint32_t)G_TM10_MIN_SYNC_INTERVAL_MS,
                                      (uint32_t)G_TM10_MAX_SYNC_INTERVAL_MS);
         s_syncIntervalMs = v_ms;
-        sntp_set_sync_interval((uint32_t)s_syncIntervalMs);
+        esp_sntp_set_sync_interval((uint32_t)s_syncIntervalMs);
     }
 
     if (s_waitingCallback) {

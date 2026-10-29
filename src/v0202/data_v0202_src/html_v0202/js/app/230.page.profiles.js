@@ -288,6 +288,7 @@ SNW.Page = SNW.Page || {};
                         <div class="snw-seg-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
                             <span class="snw-seg-title" style="font-weight:bold;color:var(--snw-primary);">${t('scheduler.segment', '세그먼트')} ${idx + 1}</span>
                             <div style="display:flex;align-items:center;gap:4px;">
+                                <button type="button" class="snw-btn-icon btn-preview-seg" data-preview-seg="${idx}" title="미리보기">🎬</button>
                                 <button type="button" class="snw-btn-icon btn-move-up" data-move-up="${idx}" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} title="${t('segment.moveUp', '위로')}">▲</button>
                                 <button type="button" class="snw-btn-icon btn-move-down" data-move-down="${idx}" ${idx === segs.length - 1 ? 'disabled style="opacity:0.3;"' : ''} title="${t('segment.moveDown', '아래로')}">▼</button>
                                 <button type="button" class="snw-btn-icon" data-remove-seg="${idx}" style="color:var(--snw-error);" title="${t('common.delete', '삭제')}">🗑</button>
@@ -398,6 +399,28 @@ SNW.Page = SNW.Page || {};
                     bindRange('.seg-ovr-int',  '.val-int-txt',  '.fb-int-txt',  val => SNW.Feedback?.getIntensityGuide(val));
                     bindRange('.seg-ovr-var',  '.val-var-txt',  '.fb-var-txt',  val => SNW.Feedback?.getVariabilityGuide(val));
                     bindRange('.seg-ovr-gust', '.val-gust-txt', '.fb-gust-txt', val => SNW.Feedback?.getGustGuide(val));
+
+                    // [SIM-5] 세그먼트 미리보기 바인딩
+                    const prevBtn = segDiv.querySelector('.btn-preview-seg');
+                    if (prevBtn) {
+                        prevBtn.onclick = () => {
+                            const segData = {
+                                mode: segDiv.querySelector('.seg-mode')?.value || 'PRESET',
+                                presetCode: segDiv.querySelector('.seg-preset')?.value || 'OCEAN',
+                                styleCode:  segDiv.querySelector('.seg-style')?.value  || 'BALANCE',
+                                fixedSpeed: Number(segDiv.querySelector('.seg-fixed')?.value || 0),
+                                override: {
+                                    enabled: segDiv.querySelector('.seg-ovr-en')?.checked || false,
+                                    windIntensity:   Number(segDiv.querySelector('.seg-ovr-int')?.value || -1),
+                                    windVariability: Number(segDiv.querySelector('.seg-ovr-var')?.value || -1),
+                                    gustFrequency:   Number(segDiv.querySelector('.seg-ovr-gust')?.value || -1)
+                                }
+                            };
+                            if (SNW.Preview && SNW.Preview.showModal) {
+                                SNW.Preview.showModal(segData);
+                            }
+                        };
+                    }
 
                     // 순서 이동 및 삭제 버튼 바인딩
                     const upBtn = segDiv.querySelector('.btn-move-up');

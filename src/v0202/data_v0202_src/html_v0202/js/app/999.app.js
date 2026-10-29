@@ -303,4 +303,36 @@ window.SNW = window.SNW || {};
     } else {
         window.SNW_BOOT();
     }
+
+    // [U-B5] 첫 방문 온보딩
+    function _maybeShowOnboarding() {
+        if (localStorage.getItem('snw.onboarded') === '1') return;
+        const content = document.createElement('div');
+        content.innerHTML = `
+            <div class="snw-onboarding" style="text-align:center;padding:12px;">
+                <h3 style="color:var(--snw-primary);margin-bottom:8px;">🌿 Smart Nature Wind</h3>
+                <p style="font-size:13px;line-height:1.5;">실제 자연의 바람을 재현하는 스마트 선풍기입니다.</p>
+                <p style="color:var(--snw-text-dim);font-size:12px;margin-top:6px;">
+                    일반 선풍기와 달리 파도, 숲, 산바람 등 10가지 자연풍을 재현합니다.
+                </p>
+            </div>
+            <div style="text-align:right;font-size:11px;color:var(--snw-text-faint);margin-top:12px;">
+                💡 언제든지 우측 상단 🌐로 언어를 바꿀 수 있습니다.
+            </div>`;
+        SNW.UI.modal('환영합니다', content, () => {
+            localStorage.setItem('snw.onboarded', '1');
+            return true;
+        }, null, { okLabel: '시작하기', hideCancel: true, width: '440px' });
+    }
+
+    // [U-B8] 야간 자동 감광
+    function _applyNightMode() {
+        const h = new Date().getHours();
+        const isNight = (h >= 22 || h < 6);
+        document.body.classList.toggle('snw-night-mode', isNight);
+    }
+    _applyNightMode();
+    setInterval(_applyNightMode, 60000);
+    setTimeout(_maybeShowOnboarding, 1500);
+
 })(window.SNW);

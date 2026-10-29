@@ -122,24 +122,43 @@ window.SNW = window.SNW || {};
     // 2) SNW.UI.presetGrid
     // =========================================================
     SNW.UI.presetGrid = function(opts) {
-        const { root, items = [], selected = '', onSelect } = opts || {};
+        const { root, items = [], selected = '', onSelect, onPreview, onTrial } = opts || {};
         if (!root) return { setItems: () => {}, setSelected: () => {} };
         
         let curSelected = selected;
         let curItems = items.slice();
         
+        // [U-010] cfg_windDict_0202.json 10개 프리셋 코드와 1:1 매칭
         const PRESET_ICONS = {
-            OCEAN: '🌊',
-            VALLEY: '🏞',
-            FOREST: '🌲',
-            PLAINS: '🌾',
-            RIDGE: '⛰',
-            SLEEP: '🌙',
-            SUNRISE: '🌅',
-            URBAN_EVE: '🏙',
+            OCEAN:          '🌊',
             COUNTRY_BREEZE: '🏡',
-            MEDITERRANEAN: '🏖'
+            MEDITERRANEAN:  '🏖',
+            MOUNTAIN:       '🏔',
+            PLAINS:         '🌾',
+            HARBOR_BREEZE:  '⚓',
+            FOREST_CANOPY:  '🌲',
+            URBAN_SUNSET:   '🌆',
+            TROPICAL_RAIN:  '🌴',
+            DESERT_NIGHT:   '🌙'
         };
+
+        function _drawSpark(canvas, points) {
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            let min = Infinity, max = -Infinity;
+            points.forEach(p => { if (p.wind < min) min = p.wind; if (p.wind > max) max = p.wind; });
+            if (max <= min) max = min + 1;
+            ctx.strokeStyle = 'rgba(74,158,255,0.85)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            points.forEach((p, i) => {
+                const x = (i / (points.length - 1)) * w;
+                const y = h - ((p.wind - min) / (max - min)) * (h - 2) - 1;
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+        }
         
         function render() {
             root.innerHTML = '';
@@ -151,13 +170,55 @@ window.SNW = window.SNW || {};
                     ? SNW.I18n.t('preset.' + it.code)
                     : (it.name || it.code);
                 const icon = PRESET_ICONS[it.code] || '🍃';
-                const card = SNW.DomUtil.html`
-                    <button type="button"
-                            class="snw-preset-card ${it.code === curSelected ? 'is-selected' : ''}"
-                            data-code="${it.code}">
-                        <span class="snw-preset-card__icon">${icon}</span>
-                        <span class="snw-preset-card__name">${name}</span>
-                    </button>`;
+
+                // [SIM-1] hover 미니 파형 (canvas) + 미리보기 버튼
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = `snw-preset-card ${it.code === curSelected ? 'is-selected' : ''}`;
+                card.setAttribute('data-code', it.code);
+                card.innerHTML = `
+                    <span class="snw-preset-card__icon">${icon}</span>
+                    <span class="snw-preset-card__name">${name}</span>
+                    <span class="snw-preset-card__actions" style="position:absolute;top:2px;right:2px;display:flex;gap:3px;">
+                        <span class="snw-preset-card__preview" title="미리보기" style="font-size:11px;opacity:0.75;">🎬</span>
+                        <span class="snw-preset-card__trial"   title="실제 체험" style="font-size:11px;opacity:0.75;">🔊</span>
+                    </span>
+                    <canvas class="snw-preset-card__spark" width="60" height="20" style="display:none;"></canvas>`;
+
+                const prevBtn = card.querySelector('.snw-preset-card__preview');
+                if (prevBtn) {
+                    prevBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        if (typeof onPreview === 'function') onPreview(it.code);
+                    };
+                }
+                const trialBtn = card.querySelector('.snw-preset-card__trial');
+                if (trialBtn) {
+                    trialBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        if (typeof onTrial === 'function') onTrial(it.code);
+                    };
+                }
+
+                card.addEventListener('mouseenter', () => {
+                    const cv = card.querySelector('.snw-preset-card__spark');
+                    if (!cv) return;
+                    if (cv.dataset.drawn === '1') { cv.style.display = 'block'; return; }
+                    const styleCode = SNW.Store.get().sim?.styleCode || 'BALANCE';
+                    if (SNW.Preview && SNW.Preview.generate) {
+                        const preview = SNW.Preview.generate(it.code, styleCode, null);
+                        if (preview && preview.points) {
+                            _drawSpark(cv, preview.points);
+                            cv.dataset.drawn = '1';
+                            cv.style.display = 'block';
+                        }
+                    }
+                });
+                card.addEventListener('mouseleave', () => {
+                    const cv = card.querySelector('.snw-preset-card__spark');
+                    if (cv) cv.style.display = 'none';
+                });
+
                 grid.appendChild(card);
             });
             

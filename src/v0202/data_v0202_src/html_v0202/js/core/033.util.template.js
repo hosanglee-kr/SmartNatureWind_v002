@@ -105,14 +105,25 @@ window.SNW = window.SNW || {};
             return tpl`
                 <section class="snw-card">
                     <h2 data-i18n="chart.title">실시간 물리 차트</h2>
+                    <div class="snw-tabs" style="margin-bottom:12px;display:flex;gap:4px;">
+                        <button type="button" class="snw-tab-btn is-active"
+                                data-chart-tab="live">📊 <span data-i18n="chart.tab.live">실제 작동 중</span></button>
+                        <button type="button" class="snw-tab-btn"
+                                data-chart-tab="preview">🎬 <span data-i18n="chart.tab.preview">예상 파형</span></button>
+                    </div>
                     <div class="snw-chart-toolbar">
                         <select data-slot="range">
                             <option value="5" data-i18n="chart.range5s">5초</option>
                             <option value="30" data-i18n="chart.range30s">30초</option>
                             <option value="120" selected data-i18n="chart.range120s">120초</option>
                         </select>
+                        <label style="display:flex;align-items:center;gap:4px;font-size:12px;margin-left:8px;cursor:pointer;">
+                            <input type="checkbox" data-chart-overlay>
+                            <span data-i18n="chart.overlay">예상 오버레이</span>
+                        </label>
                         <button data-action="export" data-i18n="chart.exportCsv">CSV</button>
                     </div>
+                    <div data-slot="banner" style="display:none;padding:6px 12px;background:var(--snw-surface-2);border-radius:4px;margin-bottom:8px;font-size:12px;"></div>
                     <div data-slot="chart" class="snw-chart-area"></div>
                 </section>`;
         },

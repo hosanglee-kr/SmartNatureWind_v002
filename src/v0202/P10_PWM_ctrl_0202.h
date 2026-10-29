@@ -67,6 +67,14 @@ class CL_P10_PWM {
 			return;
 		}
 
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+		bool v_ok1 = ledcAttach((uint8_t)_state.pin, _state.freq, _state.resolutionBits);
+		if (!v_ok1) {
+			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[P10] ledcAttach failed pin=%d freq=%lu res=%u",
+				(int16_t)_state.pin, (unsigned long)_state.freq, (unsigned)_state.resolutionBits);
+			return;
+		}
+#else
 		bool v_ok1 = ledcSetup(_state.channel, _state.freq, _state.resolutionBits);
 		if (!v_ok1) {
 			CL_D10_Logger::log(EN_L10_LOG_ERROR, "[P10] ledcSetup failed ch=%u freq=%lu res=%u",
@@ -74,6 +82,7 @@ class CL_P10_PWM {
 			return;
 		}
 		ledcAttachPin(_state.pin, _state.channel);
+#endif
 
 		if (_state.resolutionBits >= 1 && _state.resolutionBits <= 20) {
 			_state.maxDuty = (1UL << _state.resolutionBits) - 1UL;
@@ -178,7 +187,11 @@ class CL_P10_PWM {
 	}
 
 	float getDutyPercent() const { return _state.dutyPercent; }
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+	uint32_t getRawDuty() const { return (_state.initialized) ? ledcRead((uint8_t)_state.pin) : 0; }
+#else
 	uint32_t getRawDuty() const { return (_state.initialized) ? ledcRead(_state.channel) : 0; }
+#endif
 
 	// 호환용 래퍼
 	void P10_begin(const ST_A20_SystemConfig_t& p_cfg) { begin(p_cfg); }
@@ -195,7 +208,11 @@ class CL_P10_PWM {
 	void _setRawDuty(uint32_t p_raw) {
 		if (!_state.initialized) return;
 		if (p_raw > _state.maxDuty) p_raw = _state.maxDuty;
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+		ledcWrite((uint8_t)_state.pin, p_raw);
+#else
 		ledcWrite(_state.channel, p_raw);
+#endif
 	}
 };
 

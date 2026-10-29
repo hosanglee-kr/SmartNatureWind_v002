@@ -34,6 +34,43 @@ SNW.Page = SNW.Page || {};
 			this.el.appendChild(SNW.Tpl.chart());
 			SNW.I18n.applyTo(this.el);
 			
+			// [REQ-1] Chart 탭 전환
+			this._activeTab = 'live';
+			this._showOverlay = false;
+			const overlayChk = this.el.querySelector('[data-chart-overlay]');
+			if (overlayChk) {
+				overlayChk.addEventListener('change', () => {
+					this._showOverlay = overlayChk.checked;
+					this._switchTab(this._activeTab);
+				});
+			}
+			const banner = this.el.querySelector('[data-slot="banner"]');
+			const updateBanner = () => {
+				if (!banner) return;
+				if (this._activeTab === 'live') {
+					banner.style.display = 'block';
+					banner.innerHTML = '🔴 <b>실선풍기 가동 중</b> · WS 라이브 데이터';
+					banner.style.background = 'rgba(74,158,255,0.1)';
+				} else {
+					banner.style.display = 'block';
+					banner.innerHTML = '🎬 <b>예상 파형 (±10% 오차)</b> · 실선풍기는 가동되지 않습니다';
+					banner.style.background = 'rgba(240,136,62,0.1)';
+				}
+			};
+			updateBanner();
+
+			this.el.querySelectorAll('[data-chart-tab]').forEach(btn => {
+				btn.addEventListener('click', () => {
+					const tab = btn.getAttribute('data-chart-tab');
+					if (tab === this._activeTab) return;
+					this._activeTab = tab;
+					this.el.querySelectorAll('[data-chart-tab]').forEach(b =>
+						b.classList.toggle('is-active', b === btn));
+					updateBanner();
+					this._switchTab(tab);
+				});
+			});
+
 			// 차트 초기화
 			const chartSlot = this.el.querySelector('[data-slot="chart"]');
 			this.chart = SNW.UI.chart({
@@ -42,12 +79,27 @@ SNW.Page = SNW.Page || {};
 				series: SNW.CFG.UI.MINI_CHART_SERIES
 			});
 			
-			// 초기 데이터 (풀 덤프)
+			// 초기 데이터 (풀 덤프: S-2 getChartHistory 우선)
 			try {
-				const simState = await SNW.Api.getSimState();
-				if (this._active) this._applyInitial(simState);
+				const hist = await SNW.Api.getChartHistory();
+				if (!this._active) return;
+				if (hist && Array.isArray(hist.chart) && hist.chart.length > 0) {
+					this._buffer = hist.chart.map(e => ({
+						t:          (e.t != null)          ? e.t          : Date.now(),
+						windSpeed:  (e.wind != null)       ? e.wind       : 0,
+						targetWind: (e.targetWind != null) ? e.targetWind : 0,
+						pwmDuty:    (e.pwm != null)        ? e.pwm        : 0
+					}));
+					this._redrawRange();
+				} else {
+					const simState = await SNW.Api.getSimState();
+					if (this._active) this._applyInitial(simState);
+				}
 			} catch (e) {
-				SNW.LogUtil.warn('[Chart] 초기 sim state 실패', e);
+				try {
+					const simState = await SNW.Api.getSimState();
+					if (this._active) this._applyInitial(simState);
+				} catch (e2) { /* ignore */ }
 			}
 			
 			// WS chart 구독
@@ -111,29 +163,88 @@ SNW.Page = SNW.Page || {};
 		//  - diffOnly: { sim: { windSpeed, targetWind, pwmDuty, ... } }
 		//  - full dump: { chart: [...], sim: {...} }
 		// -------------------------------------------------
+
+		_switchTab(tab) {
+			if (!this.chart) return;
+			this.chart.clear();
+			this._buffer = [];
+
+			if (tab === 'live') {
+				// 실제: S-2 이력 + WS 라이브
+				SNW.Api.getChartHistory().then(hist => {
+					if (hist?.chart?.length) {
+						this._buffer = hist.chart.map(e => ({
+							t: e.t || Date.now(),
+							windSpeed: e.wind || 0,
+							targetWind: e.targetWind || 0,
+							pwmDuty: e.pwm || 0
+						}));
+						this._redrawRange();
+						if (this._showOverlay) this._drawOverlay();
+					}
+				}).catch(() => {});
+			} else {
+				// 예상: 현재 프리셋 × 스타일로 생성
+				const sim = SNW.Store.get().sim || {};
+				if (SNW.Preview && SNW.Preview.generate) {
+					const preview = SNW.Preview.generate(
+						sim.presetCode || 'OCEAN',
+						sim.styleCode || 'BALANCE',
+						null
+					);
+					if (preview && preview.points) {
+						this._buffer = preview.points.map(p => ({
+							t: p.t,
+							windSpeed: p.wind,
+							targetWind: p.avg,
+							pwmDuty: 0
+						}));
+						this._redrawRange();
+					}
+				}
+			}
+		}
+
+		// [U-002] diffOnly 응답 = {chart: [1개]} → append (교체 아님)
 		_onWsChart(data) {
+			if (this._activeTab !== 'live') return;   // [REQ-1] 예상 탭에서는 실측 무시
 			if (!data) return;
 			const sim = data.sim || {};
-			
-			// full dump (배열)
-			if (Array.isArray(data.chart)) {
+
+			if (Array.isArray(data.chart) && data.chart.length > 0) {
+				if (data.chart.length === 1) {
+					// diffOnly 1점 = append
+					const e = data.chart[0];
+					this._pushPoint({
+						t:          (e.t != null)          ? e.t          : Date.now(),
+						windSpeed:  (e.wind != null)       ? e.wind       : 0,
+						targetWind: (e.targetWind != null) ? e.targetWind : 0,
+						pwmDuty:    (e.pwm != null)        ? e.pwm        : 0,
+						gust:       (e.gust != null)       ? e.gust       : 0,
+						thermal:    (e.thermal != null)    ? e.thermal    : 0
+					});
+					return;
+				}
+				// 2개 이상 = full dump (이력 교체)
 				this._buffer = data.chart.map(e => ({
-					t: e.t != null ? e.t : Date.now(),
-					windSpeed: e.wind != null ? e.wind : 0,
-					targetWind: e.targetWind != null ? e.targetWind : 0,
-					pwmDuty: e.pwm != null ? e.pwm : 0
+					t:          (e.t != null)          ? e.t          : Date.now(),
+					windSpeed:  (e.wind != null)       ? e.wind       : 0,
+					targetWind: (e.targetWind != null) ? e.targetWind : 0,
+					pwmDuty:    (e.pwm != null)        ? e.pwm        : 0
 				}));
 				this._redrawRange();
 				return;
 			}
-			
-			// diffOnly (최신 1개)
-			this._pushPoint({
-				t: Date.now(),
-				windSpeed: sim.windSpeed != null ? sim.windSpeed : 0,
-				targetWind: sim.targetWind != null ? sim.targetWind : 0,
-				pwmDuty: sim.pwmDuty != null ? sim.pwmDuty : 0
-			});
+
+			// sim만 (chart 없이) - 안전망
+			if (sim.windSpeed != null || sim.pwmDuty != null) {
+				this._pushPoint({
+					t: Date.now(),
+					windSpeed: sim.windSpeed != null ? sim.windSpeed : 0,
+					targetWind: sim.targetWind != null ? sim.targetWind : 0,
+					pwmDuty: sim.pwmDuty != null ? sim.pwmDuty : 0
+				});
+			}
 		}
 		
 		_pushPoint(pt) {

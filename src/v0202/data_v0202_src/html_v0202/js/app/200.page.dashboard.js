@@ -149,34 +149,179 @@ SNW.Page = SNW.Page || {};
             this.components.presets = SNW.UI.presetGrid({
                 root: q('[data-slot="presets"]'),
                 items: [], selected: '',
-                onSelect: code => this._onPresetSelect(code)
+                onSelect: code => this._onPresetSelect(code),
+                onPreview: code => this._onPreviewClick(code),
+                onTrial: code => this._onRealTrialClick(code)
             });
             
             // 스타일 선택 이벤트 바인딩 추가
             this._bindStyleSelector();
+
+            // [SIM-4] 프리셋 영역 A/B 비교 버튼 배치
+            const presetSlot = this.el.querySelector('[data-slot="presets"]');
+            if (presetSlot && presetSlot.parentElement) {
+                const header = presetSlot.parentElement.querySelector('h2, .snw-card__header');
+                if (header) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'snw-btn snw-btn--sm';
+                    btn.style.cssText = 'float:right;font-size:11px;padding:2px 8px;margin-top:-2px;';
+                    btn.textContent = '⚖ A/B 비교';
+                    btn.onclick = () => this._onCompareClick();
+                    header.appendChild(btn);
+
+                    const tourBtn = document.createElement('button');
+                    tourBtn.type = 'button';
+                    tourBtn.className = 'snw-btn snw-btn--sm';
+                    tourBtn.style.cssText = 'float:right;font-size:11px;padding:2px 8px;margin-top:-2px;margin-right:4px;';
+                    tourBtn.textContent = '🎬 투어';
+                    tourBtn.onclick = () => this._onTastingTour();
+                    header.appendChild(tourBtn);
+
+                    const sleepBtn = document.createElement('button');
+                    sleepBtn.type = 'button';
+                    sleepBtn.className = 'snw-btn snw-btn--sm';
+                    sleepBtn.style.cssText = 'float:right;font-size:11px;padding:2px 8px;margin-top:-2px;margin-right:4px;';
+                    sleepBtn.textContent = '🌙 수면모드';
+                    sleepBtn.onclick = () => this._onSleepMode();
+                    header.appendChild(sleepBtn);
+                }
+            }
         }
 
+        // [U-001/U-004] 정본은 프리셋.factors × 스타일.factors (S20 미러)
+        //  - target?.params → target?.factors (JSON 실제 구조)
+        //  - REFRESH/WAVE → 실제 5종(BALANCE/ACTIVE/FOCUS/RELAX/SLEEP) factor 곱
         _resolvePresetParams(presetCode, styleCode) {
             const presets = (this._profileData?.windDict?.presets) || [];
-            const target = presets.find(p => p.code === presetCode);
-            let intensity = target?.params?.windIntensity ?? 50;
-            let variability = target?.params?.windVariability ?? 40;
-            let gustFreq = target?.params?.gustFrequency ?? 30;
+            const styles  = (this._profileData?.windDict?.styles)  || [];
 
-            const style = styleCode || SNW.Store.get().sim?.styleCode || 'BALANCE';
-            if (style === 'REFRESH') {
-                intensity = Math.min(100, Math.round(intensity * 1.1));
-                variability = Math.min(100, variability + 15);
-                gustFreq = Math.min(100, gustFreq + 15);
-            } else if (style === 'WAVE') {
-                variability = Math.min(100, variability + 20);
-                gustFreq = Math.min(100, gustFreq + 10);
-            } else if (style === 'SLEEP') {
-                intensity = Math.min(intensity, 30);
-                variability = 15;
-                gustFreq = 5;
+            const preset = presets.find(p => p.code === presetCode);
+            const style  = styles.find(s => s.code === (styleCode || 'BALANCE'));
+
+            const pf = preset?.factors || {};
+            const sf = style?.factors  || {};
+
+            const clamp = v => Math.max(0, Math.min(100, Math.round(v)));
+            const mul   = (base, f) => (base ?? 50) * (f ?? 1);
+
+            return {
+                intensity:   clamp(mul(pf.windIntensity,   sf.intensityFactor)),
+                variability: clamp(mul(pf.windVariability, sf.variabilityFactor)),
+                gustFreq:    clamp(mul(pf.gustFrequency,   sf.gustFactor))
+            };
+        }
+
+
+        // [SIM-2] 가상 미리보기 모달 (30초 파형 애니메이션)
+        async _onPreviewClick(presetCode) {
+            const styleCode = SNW.Store.get().sim?.styleCode || 'BALANCE';
+            if (!SNW.Preview || !SNW.Preview.generate) {
+                SNW.ToastUtil.error('미리보기 모듈 미로드');
+                return;
             }
-            return { intensity, variability, gustFreq };
+            const preview = SNW.Preview.generate(presetCode, styleCode, null);
+            if (!preview) { SNW.ToastUtil.error('미리보기 생성 실패'); return; }
+
+            const feelings = SNW.Preview.toFeelings(
+                preview.intensity, preview.variability, preview.gustFreq);
+
+            const content = document.createElement('div');
+            content.innerHTML = `
+                <div class="snw-preview-modal">
+                    <canvas data-preview-canvas width="500" height="180" style="width:100%;background:var(--snw-bg-2);border-radius:6px;"></canvas>
+                    <div style="margin-top:8px;font-size:12px;color:var(--snw-text-dim);">
+                        🎬 <b>예상 파형 (±10% 오차)</b> · 실선풍기는 가동되지 않습니다
+                    </div>
+                    <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div>🌊 <b>${SNW.Preview.labelFor('coolness')}</b> ${this._stars(feelings.coolness)}</div>
+                        <div>🎵 <b>${SNW.Preview.labelFor('smoothness')}</b> ${this._stars(feelings.smoothness)}</div>
+                        <div>⚡ <b>${SNW.Preview.labelFor('dynamism')}</b> ${this._stars(feelings.dynamism)}</div>
+                        <div>🍃 <b>${SNW.Preview.labelFor('calmness')}</b> ${this._stars(feelings.calmness)}</div>
+                    </div>
+                    <div style="margin-top:12px;font-size:12px;color:var(--snw-text-dim);">
+                        평균 ${preview.avg} m/s · 강도 ${Math.round(preview.intensity)}% ·
+                        변동 ${Math.round(preview.variability)}% · 돌풍 ${Math.round(preview.gustFreq)}%
+                    </div>
+                </div>`;
+
+            SNW.UI.modal(
+                `🎬 미리보기 — ${presetCode} + ${styleCode}`,
+                content,
+                () => { this._applyPresetFromPreview(presetCode); return true; },
+                null,
+                { okLabel: '이 설정 적용', width: '540px', cancelLabel: '닫기' }
+            );
+
+            // 애니메이션 (30초 → 3초 재생)
+            const canvas = content.querySelector('[data-preview-canvas]');
+            if (canvas) this._animatePreview(canvas, preview.points);
+        }
+
+        _stars(n) {
+            return '●'.repeat(n) + '○'.repeat(5 - n);
+        }
+
+        _animatePreview(canvas, points) {
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+            let min = Infinity, max = -Infinity;
+            points.forEach(p => { if (p.wind < min) min = p.wind; if (p.wind > max) max = p.wind; });
+            if (max <= min) max = min + 1;
+
+            let drawn = 0;
+            const drawNext = () => {
+                if (drawn >= points.length || !canvas.isConnected) return;
+                ctx.clearRect(0, 0, w, h);
+
+                // 격자
+                ctx.strokeStyle = 'rgba(139,148,158,0.1)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i <= 4; i++) {
+                    const y = (h / 4) * i;
+                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+                }
+
+                // 파형
+                ctx.strokeStyle = 'rgba(74,158,255,1)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let i = 0; i <= drawn; i++) {
+                    const p = points[i];
+                    const x = (i / (points.length - 1)) * w;
+                    const y = h - ((p.wind - min) / (max - min)) * (h - 20) - 10;
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // gust 표시
+                for (let i = 0; i <= drawn; i++) {
+                    if (!points[i].gust) continue;
+                    const x = (i / (points.length - 1)) * w;
+                    const y = h - ((points[i].wind - min) / (max - min)) * (h - 20) - 10;
+                    ctx.fillStyle = 'rgba(240,136,62,0.9)';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                drawn += 3;
+                setTimeout(drawNext, 30);
+            };
+            drawNext();
+        }
+
+        async _applyPresetFromPreview(presetCode) {
+            try {
+                const styleCode = SNW.Store.get().sim?.styleCode || 'BALANCE';
+                await SNW.Api.patchSim({
+                    presetCode, styleCode,
+                    override: { enabled: false, windIntensity: -1, windVariability: -1, gustFrequency: -1 }
+                });
+                SNW.ToastUtil.success(SNW.I18n.t('preset.applied'));
+            } catch (e) {
+                SNW.ErrorHandler.handle(e, 'preview.apply');
+            }
         }
 
         _bindStyleSelector() {
@@ -415,14 +560,17 @@ SNW.Page = SNW.Page || {};
         }
         
         // [O-15] AutoOff/모션 배너 처리
+        // [U-012] reasonCode → i18n 키 매핑 (AUTOOFF_TIMER → 취침 타이머 완료)
         _updateBanner(ctl) {
             if (!SNW.Banner) return;
             
             if (ctl.stateCode === 5 /* AUTOOFF_STOPPED */) {
+                const reasonKey  = SNW.C.AUTOOFF_REASON_MAP ? SNW.C.AUTOOFF_REASON_MAP[ctl.reasonCode] : null;
+                const reasonText = reasonKey ? SNW.I18n.t(reasonKey) : (ctl.reason || '-');
                 SNW.Banner.update('autooff', {
                     id: 'autooff',
                     level: 'warn',
-                    text: SNW.I18n.t('banner.autoOff', { reason: ctl.reason || '-' }),
+                    text: SNW.I18n.t('banner.autoOff', { reason: reasonText }),
                     actions: [
                         {
                             label: SNW.I18n.t('power.ackAndRestart'),

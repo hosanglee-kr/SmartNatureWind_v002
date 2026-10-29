@@ -740,3 +740,37 @@ void CL_CT10_ControlManager::exportMetricsJson(JsonDocument& p_doc) {
 
     v_m["timeValid"] = CL_TM10_TimeManager::isTimeValid();
 }
+
+// --------------------------------------------------
+// [MON-A] Monitor Snapshot (Phase 1)
+// --------------------------------------------------
+ST_MON_Snapshot_t CL_CT10_ControlManager::getMonitorSnapshot() {
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    ST_MON_Snapshot_t s = {};
+
+    if (v_guard.isAcquired()) {
+        s.state  = (uint8_t)runCtx.state;
+        s.reason = (uint8_t)runCtx.reason;
+        s.activeSchId = runCtx.activeSchId;
+        s.activeSegNo = runCtx.activeSegNo;
+        s.activeProfileNo = runCtx.activeProfileNo;
+
+        s.windSpeed   = sim.currentWindSpeed;
+        s.targetWind  = sim.targetWindSpeed;
+        s.pwmDuty     = pwm ? pwm->P10_getDutyPercent() : 0.0f;
+        s.intensity   = sim.userIntensity;
+        s.variability = sim.userVariability;
+        s.gustFreq    = sim.userGustFreq;
+        s.presetIdx   = 0;
+        s.styleIdx    = 0;
+        s.gustActive  = sim.gustActive;
+        s.thermalActive = sim.thermalActive;
+        s.overrideActive = overrideState.active;
+        s.autoOffTimerArmed = autoOffRt.timerArmed;
+        s.autoOffTimerMinutes = autoOffRt.timerMinutes;
+        s.tempC = getCurrentTemperatureMock();
+        s.humidity = getCurrentHumidityMock();
+        s.motionActive = (motion != nullptr) ? motion->isActive() : false;
+    }
+    return s;
+}

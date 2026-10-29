@@ -181,6 +181,8 @@ class CL_W10_WebAPI {
     // 6. 시뮬레이션 제어 (GET/POST)
     static void routeSimulation(); // GET/POST /api/v001/simulation
     static void routeSimState();   // GET /api/v001/sim/state
+    static void routeChartHistory(); // [U-002] GET /api/v001/sim/chart
+    static void routeMonitor();      // [MON-B] GET /api/v001/monitor
     
     // 7. CRUD: Wind Profiles
     static void routeWindProfile();   // GET/POST /api/v001/windProfile

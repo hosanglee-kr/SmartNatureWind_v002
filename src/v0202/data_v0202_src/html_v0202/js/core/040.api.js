@@ -261,6 +261,13 @@ window.SNW = window.SNW || {};
 		},
 		getSim() { return _fetch(SNW.CFG.API.simulation); },
 		getSimState() { return _fetch(SNW.CFG.API.simState); },
+		getChartHistory() { return _fetch(SNW.CFG.API.chartHistory); },
+		getMonitor(type, range) {
+			return _fetch(`${SNW.CFG.API.monitor}?type=${type}&range=${range}`);
+		},
+		getPastEvents(days) {
+			return _fetch(`${SNW.CFG.API.monitor}/events?days=${days || 7}`);
+		},
 		
 		// --- WindDict ---
 		listWindProfiles() { return _fetch(SNW.CFG.API.windProfile); },

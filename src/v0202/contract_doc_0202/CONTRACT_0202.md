@@ -325,3 +325,24 @@
 | 2026-10-19 | v1.2 | W10 Gzip 서빙, I-6 번들 | Antigravity AI |
 | 2026-10-19 | v1.1 | 심볼/시그니처 동기화 | Antigravity AI |
 | (초기) | v1.0 | 최초 정적 감사 기반 계약서 | 개발팀 |
+
+
+### 7.10 대시보드·세그먼트·스타일 통합 물리 파이프라인 (PHY-1~PHY-4)
+- **[PHY-1] 단일 정본**: `S20_resolveWindParams`가 모든 풍속 파라미터(강도/변동/돌풍/난류/열기포)를 결정.
+- **[PHY-2] 스타일 정규화**: 5종 스타일(BALANCE/ACTIVE/FOCUS/RELAX/SLEEP) multipliers가 10개 프리셋에 100% 동일하게 작용.
+- **[PHY-3] 개별 오버라이드 격리**: 슬라이더 조작 시 `override.enabled=true`, 프리셋/스타일 재선택 시 자동 해제.
+- **[PHY-4] 상태 안전**: 모든 물리 반영은 `_recursiveMutex` 하에서 원자적으로 수행.
+
+### 7.11 모니터링 저장·조회 계약 (MON-1~MON-3)
+- **[MON-1] 스냅샷 캡처**: CT10이 1초 주기 tick에서 Monitor에 불변 스냅샷 전달.
+- **[MON-2] 다운샘플링 인터페이스**: 5분(1초 원본, 최대 300점), 30분(5초 평균, 최대 360점), 1시간(30초 평균, 최대 120점).
+- **[MON-3] 이벤트 캡처**: State, Config, System 변경 즉시 캡처.
+
+### 7.12 모니터링 Cold 저장·CSV 계약 (MON-4~MON-5)
+- **[MON-4] Cold LittleFS 저장**: `/lfs/monitor/` 디렉토리에 5개 바이너리 파일 영구 보관 (1시간 배치 flush).
+- **[MON-5] 지난 이벤트 + CSV**: `/api/v001/monitor/events?days={1|3|7}` 및 `/api/v001/monitor/export?type=wind&range={5m|30m|1h}&all={0|1}`.
+
+### 7.13 UX 재설계·온보딩·야간 감광 계약 (UX-1~UX-3)
+- **[UX-1] 시뮬레이션 페이지 정체성**: 파라미터 덤프에서 직관적인 '바람 체험실'로 재설계.
+- **[UX-2] 첫 방문 온보딩**: `localStorage['snw.onboarded']` 기반 1회 온보딩 팝업 제공.
+- **[UX-3] 야간 감광**: 22:00~06:00 야간 시간대 `.snw-night-mode` 밝기 75% 감광 및 소음 사전 경고.

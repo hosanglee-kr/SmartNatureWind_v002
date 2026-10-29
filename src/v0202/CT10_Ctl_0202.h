@@ -22,6 +22,7 @@
 #include <freertos/semphr.h>
 
 #include "A20_Const_0202.h"
+#include "CT10_Monitor_0202.h"
 #include "C10_Config_0202.h"
 #include "D10_Logger_0202.h"
 #include "M10_MotionLogic_0202.h"
@@ -196,6 +197,7 @@ class CL_CT10_ControlManager {
     void exportStateJson_v02(JsonDocument& p_doc);
     void exportChartJson(JsonDocument& p_doc, bool p_diffOnly);
     void exportSummaryJson(JsonDocument& p_doc);
+    ST_MON_Snapshot_t getMonitorSnapshot();
     void exportMetricsJson(JsonDocument& p_doc);
 
     void setProfileMode(bool p_profileMode);

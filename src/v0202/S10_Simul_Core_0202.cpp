@@ -102,6 +102,9 @@ void CL_S10_Simulation::begin(CL_P10_PWM& p_pwm) {
 }
 
 void CL_S10_Simulation::stop() {
+    memset(&_overrideState, 0, sizeof(_overrideState));
+    _overrideState.windIntensity = _overrideState.windVariability = _overrideState.gustFrequency = -1.0f;
+
     active      = false;
     _fanCfgSnap = nullptr;
 
@@ -120,6 +123,9 @@ void CL_S10_Simulation::stop() {
 }
 
 void CL_S10_Simulation::resetDefaults() {
+    memset(&_overrideState, 0, sizeof(_overrideState));
+    _overrideState.windIntensity = _overrideState.windVariability = _overrideState.gustFrequency = -1.0f;
+
     active      = false;
     _fanCfgSnap = nullptr;
 
@@ -305,6 +311,9 @@ void CL_S10_Simulation::applyResolvedWind(const ST_A20_ResolvedWind_t& p_resolve
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[S10] %s: Mutex timeout", __func__);
         return;
     }
+
+    memset(&_overrideState, 0, sizeof(_overrideState));
+    _overrideState.windIntensity = _overrideState.windVariability = _overrideState.gustFrequency = -1.0f;
 
     _tickNowMs  = millis();
     _tickNowSec = (float)_tickNowMs / 1000.0f;

@@ -339,6 +339,9 @@ void CL_W10_WebAPI::routeSimulation() {
 
             JsonDocument v_res;
             v_res["updated"] = v_changed;
+            if (v_changed && s_control) {
+                s_control->exportSimJson(v_res);   // [Q8-A] 최종 확정값 반환
+            }
             sendJson(p_request, v_res);
         });
 }
@@ -401,4 +404,15 @@ void CL_W10_WebAPI::routeMotionFeed() {
             v_res["type"] = "pir";
             sendJson(p_request, v_res);
         });
+}
+
+// [U-002] 차트 120초 이력 REST API
+void CL_W10_WebAPI::routeChartHistory() {
+    s_server->on(W10_Const::HTTP_API_CHART_HISTORY, HTTP_GET, [](AsyncWebServerRequest* p_request) {
+        if (!checkApiKey(p_request)) { p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}"); return; }
+        if (!s_control) { p_request->send(500, "application/json", "{\"error\":\"control not ready\"}"); return; }
+        JsonDocument v_doc;
+        s_control->exportChartJson(v_doc, /*p_diffOnly=*/false);
+        sendJson(p_request, v_doc);
+    });
 }

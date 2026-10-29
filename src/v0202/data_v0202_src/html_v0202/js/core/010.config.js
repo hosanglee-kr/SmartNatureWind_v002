@@ -39,6 +39,8 @@ window.SNW = window.SNW || {};
 			controlMode: '/api/v001/control/mode',
 			simulation: '/api/v001/simulation',
 			simState: '/api/v001/sim/state',
+			chartHistory: '/api/v001/sim/chart',
+			monitor: '/api/v001/monitor',
 			windProfile: '/api/v001/windProfile',
 			schedules: '/api/v001/schedules',
 			userProfiles: '/api/v001/user_profiles',

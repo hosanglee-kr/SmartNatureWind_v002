@@ -46,6 +46,7 @@
 #include "W10_Web_0202.h"
 #include "WF10_WiFiMgr_0202.h"
 #include "TM10_TimeMg_0202.h"
+#include "CT10_Monitor_0202.h"   // [MON-A] Phase 1
 #include "A20_Const_Const_0202.h"   // [C] G_A00_WDT_TIMEOUT_SEC, G_A00_LOOP_DELAY_MS
 
 // ======================================================
@@ -166,7 +167,7 @@ void A00_init() {
     }
 
     uint8_t v_ledBright = v_sys.hw.led.defaultBrightness;
-    if (v_ledBright > 255) v_ledBright = 255;   // uint8_t이나 명시 (방어)
+    // v_ledBright is uint8_t, naturally <= 255
 
     static CL_A30_LED s_led((uint8_t)v_ledPin, v_ledNum);
     g_A00_ledController = &s_led;
@@ -216,11 +217,27 @@ void A00_init() {
                        CL_W10_WebAPI::wsCleanupTick);
     CT10_WS_begin();
 
+    // [MON-A] 모니터 시작 (Warm PSRAM)
+    if (CL_MON_Monitor::begin()) {
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] Monitor initialized");
+    } else {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A00] Monitor init failed (PSRAM)");
+    }
+
     // ------------------------------------------------------
     // 10. Watchdog 초기화 (마지막 배치)
     //  - [C] esp_task_wdt_init(10) → A20_Const::G_A00_WDT_TIMEOUT_SEC
     // ------------------------------------------------------
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+    esp_task_wdt_config_t twdt_config = {
+        .timeout_ms = A20_Const::G_A00_WDT_TIMEOUT_SEC * 1000,
+        .idle_core_mask = (1 << portNUM_PROCESSORS) - 1,
+        .trigger_panic = true
+    };
+    esp_task_wdt_init(&twdt_config);
+#else
     esp_task_wdt_init(A20_Const::G_A00_WDT_TIMEOUT_SEC, true);
+#endif
     esp_task_wdt_add(NULL);
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] Init complete. Ready.");
@@ -271,6 +288,9 @@ void A00_run() {
     } else {
         CL_TM10_TimeManager::tick(nullptr);
     }
+
+    // [MON-A] 모니터 캡처 (내부 1초 throttle)
+    CL_MON_Monitor::tick(CL_CT10_ControlManager::instance().getMonitorSnapshot());
 
     // ------------------------------------------------------
     // [E-1] pending free 처리 (reloadAll의 지연 free)

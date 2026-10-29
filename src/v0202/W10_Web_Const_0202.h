@@ -50,6 +50,8 @@ constexpr const char* HTTP_API_FW_CHECK = HTTP_API_BASE "/system/firmware/check"
 constexpr const char* HTTP_API_MOTION          = HTTP_API_BASE "/motion";
 constexpr const char* HTTP_API_SIMULATION      = HTTP_API_BASE "/simulation";
 constexpr const char* HTTP_API_SIM_STATE       = HTTP_API_BASE "/sim/state";
+constexpr const char* HTTP_API_CHART_HISTORY   = HTTP_API_BASE "/sim/chart";  // [U-002]
+constexpr const char* HTTP_API_MONITOR         = HTTP_API_BASE "/monitor";    // [MON-B] Phase 1
 constexpr const char* HTTP_API_CONTROL_SUMMARY = HTTP_API_BASE "/control/summary";
 
 // --------------------------------------------------

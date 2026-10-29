@@ -48,6 +48,28 @@ window.SNW = window.SNW || {};
             // --- 네비게이션 ---
             'nav.dashboard':   '대시보드',
             'nav.chart':       '실시간 차트',
+		'nav.monitor':          '모니터링',
+		'monitor.title':        '선풍기 모니터링',
+		'monitor.range.5m':     '5분',
+		'monitor.range.30m':    '30분',
+		'monitor.range.1h':     '1시간',
+		'monitor.layer.timeline': '상태 타임라인',
+		'monitor.layer.wind':   '풍속 / PWM',
+		'monitor.layer.events': '이벤트',
+		'monitor.layer.current': '현재 설정',
+		'monitor.tab.live':    '실시간',
+		'monitor.tab.past':    '지난 이벤트',
+		'monitor.csv.download':'CSV 다운로드',
+
+
+		'chart.tab.live':       '실제 작동 중',
+		'chart.tab.preview':    '예상 파형',
+
+		'preview.feel.coolness':   '시원함',
+		'preview.feel.smoothness': '부드러움',
+		'preview.feel.dynamism':   '역동성',
+		'preview.feel.calmness':   '차분함',
+
             'nav.schedule':    '스케줄',
             'nav.profiles':    '프로필',
             'nav.sensors':     '센서',
@@ -531,6 +553,28 @@ window.SNW = window.SNW || {};
 
             'nav.dashboard':   'Dashboard',
             'nav.chart':       'Chart',
+		'nav.monitor':          'Monitor',
+		'monitor.title':        'Fan Monitoring',
+		'monitor.range.5m':     '5m',
+		'monitor.range.30m':    '30m',
+		'monitor.range.1h':     '1h',
+		'monitor.layer.timeline': 'State Timeline',
+		'monitor.layer.wind':   'Wind / PWM',
+		'monitor.layer.events': 'Events',
+		'monitor.layer.current': 'Current Settings',
+		'monitor.tab.live':    'Live',
+		'monitor.tab.past':    'Past Events',
+		'monitor.csv.download':'Download CSV',
+
+
+		'chart.tab.live':       'Live Operating',
+		'chart.tab.preview':    'Expected Waveform',
+
+		'preview.feel.coolness':   'Coolness',
+		'preview.feel.smoothness': 'Smoothness',
+		'preview.feel.dynamism':   'Dynamism',
+		'preview.feel.calmness':   'Calmness',
+
             'nav.schedule':    'Schedule',
             'nav.profiles':    'Profiles',
             'nav.sensors':     'Sensors',

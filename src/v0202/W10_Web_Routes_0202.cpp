@@ -99,6 +99,8 @@ void CL_W10_WebAPI::begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_co
     routeMotion();
     routeSimulation();
     routeSimState();
+    routeChartHistory();   // [U-002]
+    routeMonitor();        // [MON-B] Phase 1
     routeControl();
     routeControlSummary();
 

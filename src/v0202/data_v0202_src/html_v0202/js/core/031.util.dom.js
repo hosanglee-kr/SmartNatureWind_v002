@@ -4,6 +4,12 @@
 // =========================================================
 window.SNW = window.SNW || {};
 (function(SNW) {
+    'use strict';
+    SNW.DomUtil = SNW.DomUtil || {};
+    // [U-B6] 용어 툴팁
+    SNW.DomUtil.tooltip = function(term, definition) {
+        return `<span class="snw-term" title="${SNW.DomUtil.escape(definition)}" style="cursor:help;border-bottom:1px dashed var(--snw-text-dim);">${SNW.DomUtil.escape(term)}</span>`;
+    };
 	'use strict';
 	
 	SNW.DomUtil = {

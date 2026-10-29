@@ -75,8 +75,7 @@
 #include "C10_Config_0202.h"
 #include "D10_Logger_0202.h"
 #include "P10_PWM_ctrl_0202.h"
-
-
+#include "S20_WindSolver_0202.h"   // [U-004] override S20
 #include "S10_Simul_Const_0202.h"
 
 // ------------------------------------------------------
@@ -213,8 +212,10 @@ class CL_S10_Simulation {
 	CL_P10_PWM*				  	_pwm		  		= nullptr;
 
 	const ST_A20_FanConfig_t* 	_fanCfgSnap 		= nullptr;
-
 	SemaphoreHandle_t 			_recursiveMutex 	= nullptr;
+
+	// [U-004] override
+	ST_A20_SegmentOverride_t 	_overrideState 		= { false, -1.0f, -1.0f, -1.0f };
 	
 	unsigned long			  	_tickNowMs  	= 0;
 	float					  	_tickNowSec 	= 0.0f;

@@ -223,163 +223,77 @@ void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
 // patchFromJson
 // ==================================================
 bool CL_S10_Simulation::patchFromJson(const JsonDocument& p_doc) {
-    bool v_changed           = false;
-    bool v_needPresetReapply = false;
-    bool v_needPhaseReset    = false;
-
     CL_A40_MutexGuard_Semaphore v_MutxGuard(_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-
-    if (!v_MutxGuard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[S10] %s: Mutex timeout", __func__);
-        return false;
-    }
+    if (!v_MutxGuard.isAcquired()) return false;
 
     JsonObjectConst v_sim = p_doc["sim"].as<JsonObjectConst>();
-    if (v_sim.isNull()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[S10] patchFromJson failed: 'sim' object not found.");
-        return false;
-    }
+    if (v_sim.isNull()) return false;
 
+    bool v_changed = false;
+    bool v_presetChanged = false;
+    bool v_styleChanged  = false;
+
+    // [1] preset/style 변경 감지
     if (!v_sim["presetCode"].isNull() && v_sim["presetCode"].is<const char*>()) {
         const char* v_new = v_sim["presetCode"].as<const char*>();
         if (v_new && v_new[0] && strcasecmp(v_new, presetCode) != 0) {
-            memset(presetCode, 0, sizeof(presetCode));
             strlcpy(presetCode, v_new, sizeof(presetCode));
-            v_changed           = true;
-            v_needPresetReapply = true;
-            v_needPhaseReset    = true;
+            v_changed = true; v_presetChanged = true;
         }
     }
-
     if (!v_sim["styleCode"].isNull() && v_sim["styleCode"].is<const char*>()) {
         const char* v_new = v_sim["styleCode"].as<const char*>();
         if (v_new && v_new[0] && strcasecmp(v_new, styleCode) != 0) {
-            memset(styleCode, 0, sizeof(styleCode));
             strlcpy(styleCode, v_new, sizeof(styleCode));
+            v_changed = true; v_styleChanged = true;
+        }
+    }
+
+    // [2] override 파싱 (Q5-1)
+    ST_A20_SegmentOverride_t v_newOvr = { false, -1.0f, -1.0f, -1.0f };
+    bool v_overrideProvided = false;
+    if (!v_sim["override"].isNull() && v_sim["override"].is<JsonObjectConst>()) {
+        JsonObjectConst v_ovr = v_sim["override"].as<JsonObjectConst>();
+        v_newOvr.enabled = v_ovr["enabled"] | false;
+        if (!v_ovr["windIntensity"].isNull())   v_newOvr.windIntensity   = v_ovr["windIntensity"].as<float>();
+        if (!v_ovr["windVariability"].isNull()) v_newOvr.windVariability = v_ovr["windVariability"].as<float>();
+        if (!v_ovr["gustFrequency"].isNull())   v_newOvr.gustFrequency   = v_ovr["gustFrequency"].as<float>();
+        v_overrideProvided = true;
+    }
+
+    // [3] Q7-3: preset/style 재선택 시 override 해제
+    if (v_presetChanged || v_styleChanged) {
+        v_newOvr = { false, -1.0f, -1.0f, -1.0f };
+        v_overrideProvided = true;
+    }
+
+    // [4] S20 resolve → 최종 물리 반영
+    if (g_A20_config_root.windDict) {
+        ST_A20_ResolvedWind_t v_resolved;
+        memset(&v_resolved, 0, sizeof(v_resolved));
+        bool v_ok = S20_resolveWindParams(
+            *g_A20_config_root.windDict, presetCode, styleCode,
+            (v_newOvr.enabled ? &v_newOvr : nullptr), v_resolved);
+        if (v_ok && v_resolved.valid) {
+            userIntensity   = A40_ComFunc::clampVal<float>(v_resolved.windIntensity,   0.0f, 100.0f);
+            userVariability = A40_ComFunc::clampVal<float>(v_resolved.windVariability, 0.0f, 100.0f);
+            userGustFreq    = A40_ComFunc::clampVal<float>(v_resolved.gustFrequency,   0.0f, 100.0f);
+            fanLimitPct     = A40_ComFunc::clampVal<float>(v_resolved.fanLimit,        0.0f, 100.0f);
+            minFanPct       = A40_ComFunc::clampVal<float>(v_resolved.minFan,          0.0f, 100.0f);
+            turbLenScale    = v_resolved.turbulenceLengthScale;
+            turbSigma       = v_resolved.turbulenceIntensitySigma;
+            thermalStrength = v_resolved.thermalBubbleStrength;
+            thermalRadius   = v_resolved.thermalBubbleRadius;
             v_changed = true;
         }
     }
 
+    if (v_overrideProvided) _overrideState = v_newOvr;
+
+    // [5] fanPowerEnabled (기존 유지)
     if (!v_sim["fanPowerEnabled"].isNull()) {
-        const bool v_new = v_sim["fanPowerEnabled"].as<bool>();
-        if (v_new != fanPowerEnabled) {
-            fanPowerEnabled = v_new;
-            v_changed       = true;
-        }
-    }
-
-    if (!v_sim["intensity"].isNull()) {
-        const float v_new = constrain(v_sim["intensity"].as<float>(), 0.0f, 100.0f);
-        if (v_new != userIntensity) {
-            userIntensity = v_new;
-            v_changed     = true;
-        }
-    }
-
-    if (!v_sim["variability"].isNull()) {
-        const float v_new = constrain(v_sim["variability"].as<float>(), 0.0f, 100.0f);
-        if (v_new != userVariability) {
-            userVariability       = v_new;
-            const float v_varNorm = userVariability / 100.0f;
-            windChangeRate        = constrain(0.10f + v_varNorm * 0.20f, 0.06f, 0.34f);
-            v_changed             = true;
-        }
-    }
-
-    if (!v_sim["gustFreq"].isNull()) {
-        const float v_new = constrain(v_sim["gustFreq"].as<float>(), 0.0f, 100.0f);
-        if (v_new != userGustFreq) {
-            userGustFreq = v_new;
-            v_changed    = true;
-        }
-    }
-
-    bool  v_minOrLimitChanged = false;
-    float v_limit             = fanLimitPct;
-    float v_min               = minFanPct;
-
-    if (!v_sim["fanLimit"].isNull()) {
-        const float v_new = constrain(v_sim["fanLimit"].as<float>(), 0.0f, 100.0f);
-        if (v_new != v_limit) {
-            v_limit             = v_new;
-            v_minOrLimitChanged = true;
-        }
-    }
-
-    if (!v_sim["minFan"].isNull()) {
-        const float v_new = constrain(v_sim["minFan"].as<float>(), 0.0f, 100.0f);
-        if (v_new != v_min) {
-            v_min               = v_new;
-            v_minOrLimitChanged = true;
-        }
-    }
-
-    if (v_minOrLimitChanged) {
-        if (v_min > v_limit) {
-            v_min = v_limit;
-        }
-        if (v_limit != fanLimitPct || v_min != minFanPct) {
-            fanLimitPct = v_limit;
-            minFanPct   = v_min;
-            v_changed   = true;
-        }
-    }
-
-    if (!v_sim["turbLenScale"].isNull()) {
-        const float v_new = max(1.0f, v_sim["turbLenScale"].as<float>());
-        if (v_new != turbLenScale) {
-            turbLenScale = v_new;
-            v_changed    = true;
-        }
-    }
-
-    if (!v_sim["turbSigma"].isNull()) {
-        const float v_new = max(0.0f, v_sim["turbSigma"].as<float>());
-        if (v_new != turbSigma) {
-            turbSigma = v_new;
-            v_changed = true;
-        }
-    }
-
-    if (!v_sim["thermalStrength"].isNull()) {
-        const float v_new = max(1.0f, v_sim["thermalStrength"].as<float>());
-        if (v_new != thermalStrength) {
-            thermalStrength = v_new;
-            v_changed       = true;
-        }
-    }
-
-    if (!v_sim["thermalRadius"].isNull()) {
-        const float v_new = max(0.0f, v_sim["thermalRadius"].as<float>());
-        if (v_new != thermalRadius) {
-            thermalRadius = v_new;
-            v_changed     = true;
-        }
-    }
-
-    if (v_needPresetReapply) {
-        applyPresetCore(presetCode);
-    }
-    if (v_needPhaseReset) {
-        if (_tickNowMs == 0UL) {
-            _tickNowMs  = millis();
-            _tickNowSec = (float)_tickNowMs / 1000.0f;
-        }
-        initPhaseFromBase();
-    }
-
-    if (v_changed) {
-        CL_D10_Logger::log(EN_L10_LOG_INFO,
-                           "[S10] patchFromJson applied. preset=%s style=%s intensity=%.1f var=%.1f gust=%.1f "
-                           "fanLimit=%.1f minFan=%.1f turbSigma=%.2f",
-                           presetCode,
-                           styleCode,
-                           userIntensity,
-                           userVariability,
-                           userGustFreq,
-                           fanLimitPct,
-                           minFanPct,
-                           turbSigma);
+        bool v_new = v_sim["fanPowerEnabled"].as<bool>();
+        if (v_new != fanPowerEnabled) { fanPowerEnabled = v_new; v_changed = true; }
     }
 
     return v_changed;

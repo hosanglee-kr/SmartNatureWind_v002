@@ -32,7 +32,7 @@
 }
 
 
-/* ---- _components.css (27013 bytes) ---- */
+/* ---- _components.css (27320 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : _components.css
@@ -232,6 +232,14 @@
 }
 .snw-preset-card__icon { font-size: 18px; line-height: 1; }
 .snw-preset-card__name { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.snw-preset-card__spark {
+    position: absolute;
+    bottom: 2px; left: 2px; right: 2px;
+    width: calc(100% - 4px);
+    height: 20px;
+    pointer-events: none;
+    opacity: 0.85;
+}
 .snw-preset-card.is-selected .snw-preset-card__name { color: var(--snw-primary); font-weight: 600; }
 
 /* =====================================================
@@ -620,6 +628,12 @@
 .snw-accordion__content {
     padding: 0 12px 12px;
     border-top: 1px solid var(--snw-border);
+}
+
+/* [U-B8] 야간 감광 모드 */
+body.snw-night-mode {
+    filter: brightness(0.75);
+    transition: filter 0.3s ease;
 }
 
 

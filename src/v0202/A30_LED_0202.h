@@ -10,9 +10,9 @@
  */
 class CL_A30_LED {
   private:
-    Adafruit_NeoPixel _pixel;
     const uint8_t     _pin;
     const uint16_t    _numPixels;
+    Adafruit_NeoPixel _pixel;
 
     uint32_t _lastLedMs = 0;     // 내부 타이머
     bool     _ledState  = false; // 현재 점멸 상태 (On/Off)

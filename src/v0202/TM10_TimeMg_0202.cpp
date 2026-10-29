@@ -134,7 +134,7 @@ void CL_TM10_TimeManager::_startSntpWithServer(uint8_t p_idx) {
 
     _stopSntp();
 
-    esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    esp_sntp_setoperatingmode(ESP_SNTP_OPMODE_POLL);
     esp_sntp_setservername(0, s_serverList[p_idx]);
     esp_sntp_set_time_sync_notification_cb(&CL_TM10_TimeManager::_onSntpTimeSync);
     esp_sntp_set_sync_interval((uint32_t)s_syncIntervalMs);

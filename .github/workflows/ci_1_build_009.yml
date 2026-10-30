@@ -27,8 +27,15 @@
 #      - 그 결과 SCons가 툴체인 경로를 전달하지 못해
 #        'xtensa-esp32s3-elf-g++: not found' 오류가 발생함.
 #      - 따라서 Core를 6.1.19로 고정하여 검증된 SCons 조합을 유지함.
-#      - 추가로 pio run 실행 시 PATH에 툴체인 bin을 명시하여 안정성을 보강함.
-#      - 캐시 키 접미사 -v5- 는 기존 손상/불일치 캐시를 무효화하기 위한 1회성 조치.
+#   7. CI 코어 디렉토리 강제 (PLATFORMIO_CORE_DIR):
+#      - platformio.ini의 [platformio] 섹션에 core_dir=C:\.pio (Windows 경로)가
+#        하드코딩되어 있어 Linux 러너에서 framework-arduinoespressif32의 헤더 경로
+#        (cores/esp32, variants/...)가 빌드 플래그에 누락됨.
+#      - 그 결과 'fatal error: Arduino.h: No such file or directory' 오류가 발생함.
+#      - CI에서는 PLATFORMIO_CORE_DIR 환경변수로 Linux 경로(/home/runner/.platformio)를
+#        강제하여 platformio.ini의 core_dir를 무시하도록 함(우선순위: 환경변수 > ini).
+#      - pio run / buildfs 두 단계 모두에 동일 env를 적용해 일관성을 유지함.
+#      - 캐시 키 접미사 -v6- 는 기존 손상/불일치 캐시를 무효화하기 위한 1회성 조치.
 # =====================================================================
 
 name: PR Build
@@ -221,9 +228,9 @@ jobs:
             ~/.cache/pip
             ~/.platformio
             .pio/libdeps
-          key: ${{ runner.os }}-pio-${{ matrix.environments }}-v5-${{ hashFiles('**/platformio.ini') }}
+          key: ${{ runner.os }}-pio-${{ matrix.environments }}-v6-${{ hashFiles('**/platformio.ini') }}
           restore-keys: |
-            ${{ runner.os }}-pio-${{ matrix.environments }}-v5-
+            ${{ runner.os }}-pio-${{ matrix.environments }}-v6-
             ${{ runner.os }}-pio-
 
       # ---------------------------------------------------------------
@@ -240,26 +247,34 @@ jobs:
           pio --version
 
       # ---------------------------------------------------------------
-      # [수정] PATH 보강 + 빌드 로그 수집
-      # - SCons가 툴체인 경로를 상속하지 못하는 경우를 대비해
-      #   툴체인 bin을 PATH에 명시적으로 추가함.
+      # [수정] PATH 보강 + CI 코어 디렉토리 강제 + 빌드 로그 수집
+      # - PATH: SCons가 툴체인 경로를 상속하지 못하는 경우 대비.
+      # - PLATFORMIO_CORE_DIR: platformio.ini의 core_dir=C:\.pio(Windows)를
+      #   무시하고 Linux 경로를 강제하여 Arduino.h 헤더 경로 누락을 방지.
       # ---------------------------------------------------------------
       - name: Run PlatformIO build for ${{ matrix.environments }}
         id: pio_build
         shell: bash
         env:
           PLATFORMIO_BUILD_CACHE_DIR: /home/runner/.platformio/.cache
+          PLATFORMIO_CORE_DIR: /home/runner/.platformio
         run: |
           export PATH="$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin:$PATH"
+          echo "PLATFORMIO_CORE_DIR=$PLATFORMIO_CORE_DIR"
           set +e
           pio run -e ${{ matrix.environments }} 2>&1 | tee pio-build.log
           status=${PIPESTATUS[0]}
           echo "exit_status=${status}" >> "$GITHUB_OUTPUT"
           exit $status
 
+      # ---------------------------------------------------------------
+      # [수정] buildfs 단계도 동일하게 PLATFORMIO_CORE_DIR 강제
+      # ---------------------------------------------------------------
       - name: Build filesystem image
         if: success()
         shell: bash
+        env:
+          PLATFORMIO_CORE_DIR: /home/runner/.platformio
         run: |
           DATA_DIR=$(python3 -c "import configparser; c=configparser.ConfigParser(); c.read('platformio.ini'); print(c.get('platformio', 'data_dir', fallback='data'))" 2>/dev/null || echo "src/v0202/data_v0202")
           if [ -d "$DATA_DIR" ] || [ -d "data" ] || [ -d "src/data" ] || [ -d "src/v0202/data_v0202" ]; then

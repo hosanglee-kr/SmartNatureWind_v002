@@ -21,11 +21,14 @@
 #      - build 전 계약 문서 무결성 gate(commit_contracts_0202.py)를 수행하여 계약 위반 머지를 차단함.
 #      - commit_contracts_0202.py를 --dry-run/--strict로 실행.
 #      - 실패 시 build job을 needs 의존으로 자동 스킵하여 조기 실패 유도.
-#   6. 툴체인 캐시 무결성 (이중 방어):
-#      - (1차) actions/cache 복원 후 실행 가능 여부를 검증하여 손상된 캐시는 삭제.
-#      - (2차) pio pkg install 이후 bin/ 디렉토리가 비어 있으면
-#              Espressif 공식 tar.gz를 수동 다운로드하여 복구.
-#      - 캐시 키 접미사 -v4- 는 기존 손상 캐시 무효화 용도.
+#   6. 빌드 재현성 (PlatformIO Core 버전 고정):
+#      - PlatformIO Core 6.2.0은 tool-scons 4.41101.0(SCons 4.11.1)을 강제하여
+#        espressif32 플랫폼이 요구하는 4.40801.0(SCons 4.8.1)과 충돌함.
+#      - 그 결과 SCons가 툴체인 경로를 전달하지 못해
+#        'xtensa-esp32s3-elf-g++: not found' 오류가 발생함.
+#      - 따라서 Core를 6.1.19로 고정하여 검증된 SCons 조합을 유지함.
+#      - 추가로 pio run 실행 시 PATH에 툴체인 bin을 명시하여 안정성을 보강함.
+#      - 캐시 키 접미사 -v5- 는 기존 손상/불일치 캐시를 무효화하기 위한 1회성 조치.
 # =====================================================================
 
 name: PR Build
@@ -47,6 +50,9 @@ permissions:
   contents: read
 
 jobs:
+  # =====================================================================
+  # 1단계: PR 메타데이터 조기 저장 + 계약 문서 검증 + 빌드 대상 환경 동적 추출
+  # =====================================================================
   get_environments:
     runs-on: ubuntu-latest
     outputs:
@@ -55,6 +61,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ---------------------------------------------------------------
+      # [최우선] PR 컨텍스트 저장 및 아티팩트 업로드
+      # ---------------------------------------------------------------
       - name: Save PR metadata
         shell: bash
         env:
@@ -93,11 +102,20 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+      # ---------------------------------------------------------------
+      # Python 3.11 설정 (계약 검증 + 환경 파싱 공용)
+      # ---------------------------------------------------------------
       - name: Set up Python for parsing
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
+      # ---------------------------------------------------------------
+      # [신규] 계약 문서 무결성 Gate (build 이전 조기 차단)
+      # - 목적: 계약 위반 PR이 컴파일 성공해도 머지되는 것을 방지
+      # - 1종 도구는 모두 읽기 전용 (--dry-run / --check) → 파일/git 변경 없음
+      # - 실패 시 build job은 needs 의존으로 자동 스킵됨
+      # ---------------------------------------------------------------
       - name: Verify contract docs (gate)
         shell: bash
         run: |
@@ -106,6 +124,9 @@ jobs:
           python3 src/v0202/tools_0202/commit_contracts_0202.py --dry-run --strict
           echo "=== [OK] 계약 문서 검증 통과 ==="
 
+      # ---------------------------------------------------------------
+      # PlatformIO 빌드 타깃 환경 동적 파싱
+      # ---------------------------------------------------------------
       - name: List PlatformIO environments
         id: list_envs
         shell: bash
@@ -137,6 +158,9 @@ jobs:
           fi
           echo "envs=${ENVS}" >> $GITHUB_OUTPUT
 
+      # ---------------------------------------------------------------
+      # 환경 파싱 실패 대응 마커 생성
+      # ---------------------------------------------------------------
       - name: Prepare env failure marker
         if: failure()
         shell: bash
@@ -170,6 +194,9 @@ jobs:
           retention-days: 7
           if-no-files-found: warn
 
+  # =====================================================================
+  # 2단계: 환경별 매트릭스 병렬 컴파일
+  # =====================================================================
   build:
     runs-on: ubuntu-latest
     needs: get_environments
@@ -194,104 +221,36 @@ jobs:
             ~/.cache/pip
             ~/.platformio
             .pio/libdeps
-          key: ${{ runner.os }}-pio-${{ matrix.environments }}-v4-${{ hashFiles('**/platformio.ini') }}
+          key: ${{ runner.os }}-pio-${{ matrix.environments }}-v5-${{ hashFiles('**/platformio.ini') }}
           restore-keys: |
-            ${{ runner.os }}-pio-${{ matrix.environments }}-v4-
+            ${{ runner.os }}-pio-${{ matrix.environments }}-v5-
             ${{ runner.os }}-pio-
 
       # ---------------------------------------------------------------
-      # [1차 방어] 캐시 복원된 툴체인 실행 가능 여부 검증
+      # [수정] PlatformIO Core 6.1.19 고정
+      # - Core 6.2.0은 tool-scons 4.41101.0(SCons 4.11.1)을 강제하여
+      #   espressif32가 요구하는 4.40801.0(SCons 4.8.1)과 충돌함.
+      # - 그 결과 'xtensa-esp32s3-elf-g++: not found' 오류가 발생하므로
+      #   검증된 Core 6.1.19로 고정하여 재현성을 확보함.
       # ---------------------------------------------------------------
-      - name: Validate or clean ESP32-S3 toolchain cache
-        shell: bash
-        run: |
-          set +e
-          TC_S3=~/.platformio/packages/toolchain-xtensa-esp32s3
-          TC_RV=~/.platformio/packages/toolchain-riscv32-esp
-          BIN="$TC_S3/bin/xtensa-esp32s3-elf-g++"
-
-          if [ -x "$BIN" ] && "$BIN" --version >/dev/null 2>&1; then
-            echo "[OK] Cached ESP32-S3 toolchain is executable — keep as-is."
-            "$BIN" --version | head -n 1
-          else
-            echo "[CLEAN] Cached ESP32-S3 toolchain missing or corrupt — removing for fresh install."
-            ls -la "$TC_S3" 2>/dev/null || echo "  (toolchain-xtensa-esp32s3 not present)"
-            rm -rf "$TC_S3" "$TC_RV"
-          fi
-          echo "=== Remaining ~/.platformio/packages entries ==="
-          ls -la ~/.platformio/packages/ 2>/dev/null || true
-
       - name: Install PlatformIO
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade platformio
-
-      - name: Pre-install PlatformIO packages
-        shell: bash
-        run: |
-          set +e
-          pio pkg install -e ${{ matrix.environments }} 2>&1 | tee pio-pkg-install.log
-          PKG_STATUS=${PIPESTATUS[0]}
-          echo "pkg_install_status=${PKG_STATUS}"
+          pip install 'platformio==6.1.19'
+          pio --version
 
       # ---------------------------------------------------------------
-      # [2차 방어] bin/ 이 비어 있으면 Espressif 공식 툴체인으로 수동 복구
-      # - PlatformIO의 압축 해제가 실패하여 패키지 메타데이터만 생성된 경우를 대비.
-      # - 공식 crosstool-NG 릴리스의 tar.gz를 받아 bin, lib, xtensa-esp32s3-elf
-      #   디렉토리를 PlatformIO 패키지 경로에 직접 배치.
+      # [수정] PATH 보강 + 빌드 로그 수집
+      # - SCons가 툴체인 경로를 상속하지 못하는 경우를 대비해
+      #   툴체인 bin을 PATH에 명시적으로 추가함.
       # ---------------------------------------------------------------
-      - name: Repair ESP32-S3 toolchain if bin is empty
-        shell: bash
-        run: |
-          set -e
-          TC_DIR="$HOME/.platformio/packages/toolchain-xtensa-esp32s3"
-          BIN="$TC_DIR/bin/xtensa-esp32s3-elf-g++"
-
-          if [ -x "$BIN" ]; then
-            echo "[OK] Toolchain binary already present: $BIN"
-            "$BIN" --version | head -n 1 || true
-            exit 0
-          fi
-
-          echo "[REPAIR] Toolchain bin is missing. Downloading official Espressif toolchain..."
-          TMP=$(mktemp -d)
-          URL="https://github.com/espressif/crosstool-NG/releases/download/esp-2021r2-patch5/xtensa-esp32s3-elf-gcc8_4_0-esp-2021r2-patch5-linux-amd64.tar.gz"
-
-          curl -L --fail --retry 3 --retry-delay 5 -o "$TMP/toolchain.tar.gz" "$URL"
-          tar -xzf "$TMP/toolchain.tar.gz" -C "$TMP"
-
-          EXTRACTED=$(find "$TMP" -maxdepth 1 -type d -name 'xtensa-esp32s3-elf' | head -n 1)
-          if [ -z "$EXTRACTED" ]; then
-            echo "[ERROR] Could not find extracted 'xtensa-esp32s3-elf' directory."
-            ls -la "$TMP"
-            exit 1
-          fi
-
-          mkdir -p "$TC_DIR"
-          # package.json 등 PlatformIO 메타데이터는 유지하고, 컴파일러 실행에 필요한 디렉토리만 복사
-          for d in bin lib xtensa-esp32s3-elf share; do
-            if [ -d "$EXTRACTED/$d" ]; then
-              cp -a "$EXTRACTED/$d" "$TC_DIR/"
-            fi
-          done
-
-          if [ -x "$BIN" ]; then
-            echo "[OK] Toolchain repaired successfully."
-            "$BIN" --version | head -n 1
-          else
-            echo "[ERROR] Repair failed: $BIN still missing."
-            ls -la "$TC_DIR"
-            exit 1
-          fi
-
-          rm -rf "$TMP"
-
       - name: Run PlatformIO build for ${{ matrix.environments }}
         id: pio_build
         shell: bash
         env:
           PLATFORMIO_BUILD_CACHE_DIR: /home/runner/.platformio/.cache
         run: |
+          export PATH="$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin:$PATH"
           set +e
           pio run -e ${{ matrix.environments }} 2>&1 | tee pio-build.log
           status=${PIPESTATUS[0]}

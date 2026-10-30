@@ -313,7 +313,8 @@
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| **2026-10-28** | **v2.8** | **프론트엔드-백엔드 동기화 및 오프라인 2분할 계약 추가 (§7.9 SYNC-1~SYNC-3)**: `CT10_Ctl_0202.h` Enum ➔ `000.const.js` 자동 주입, `998.offline_data_0202.js` 분리 및 플래시 제외, 대시보드 프리셋/스타일 슬라이더 동기화, 모달 오버레이 격리 | Antigravity AI |
+| **2026-10-30** | **v2.9** | **W10 REST 라우팅 Regex 의존성 제거, onNotFound Gzip 서빙 및 ArduinoJson v7 파싱 계약 (§7.14 ROUTE-1~3)**: `/:id` 기반 REST 라우팅 통일, `onNotFound` 핸들러 기반 `/html_v0202/` Gzip 정적 서빙, ArduinoJson v7 `.is<T>()` 타입 안전성 계약 명시 | Antigravity AI |
+| 2026-10-28 | v2.8 | 프론트엔드-백엔드 동기화 및 오프라인 2분할 계약 추가 (§7.9 SYNC-1~SYNC-3): `CT10_Ctl_0202.h` Enum ➔ `000.const.js` 자동 주입, `998.offline_data_0202.js` 분리 및 플래시 제외, 대시보드 프리셋/스타일 슬라이더 동기화, 모달 오버레이 격리 | Antigravity AI |
 | 2026-10-28 | v2.7 | 웹 오프라인 어댑터 및 한/영 다국어 연동 규약 추가 (§7.8 OFFLINE-1~OFFLINE-3): Mock 데이터 10개 프리셋/5개 스타일 factors 동기화, `/control/override` 인터셉트, 스케줄/프로필 한/영 병기 표기, 프리셋 관리 목록 실시간 i18n 반영 | Antigravity AI |
 | 2026-10-28 | v2.6 | Batch I — §7.7 바람 물리 제어 Override 전면 개편 (OVR-1~OVR-4), adjust 폐기, 3대 물리 제어 슬라이더 및 한/영 다국어 정합성 현행화 | Antigravity AI |
 | 2026-10-27 | v2.5 | Batch H — §7.6 프론트엔드 오프라인 로딩 및 부트스트랩 동기화 계약 추가 (LOAD-1~LOAD-2) | Antigravity AI |
@@ -346,3 +347,8 @@
 - **[UX-1] 시뮬레이션 페이지 정체성**: 파라미터 덤프에서 직관적인 '바람 체험실'로 재설계.
 - **[UX-2] 첫 방문 온보딩**: `localStorage['snw.onboarded']` 기반 1회 온보딩 팝업 제공.
 - **[UX-3] 야간 감광**: 22:00~06:00 야간 시간대 `.snw-night-mode` 밝기 75% 감광 및 소음 사전 경고.
+
+### 7.14 W10 웹 라우팅 및 역직렬화 안전 계약 (ROUTE-1~ROUTE-3)
+- **[ROUTE-1] REST API ID 매핑**: 정규식 라우트 대신 `/:id` 라우트 패턴을 사용하며, `p_request->hasParam("id")` 유효성 검사 후 `p_request->getParam("id")->value().toInt()`로 안전하게 ID를 추출한다.
+- **[ROUTE-2] 정적 Gzip 호스팅**: 정규식 라우트 대신 `s_server->onNotFound` 핸들러에서 URL의 `PATH_STATIC_HTML` 접두사 일치 여부를 검사하고 `.gz` 우선 서빙을 수행하여 `ASYNCWEBSERVER_REGEX` 매크로 비활성화 환경에서도 안전하게 정적 자산을 제공한다.
+- **[ROUTE-3] ArduinoJson v7 역직렬화 타입 안전성**: `containsKey` 비권장 API를 배제하고, `obj["field"].is<T>()`를 통한 타입 검사 및 `obj["field"].as<T>()` / `A40_ComFunc::Json_getNum` 헬퍼를 통해 누락 필드 및 타입 불일치 크래시를 원천 방지한다.

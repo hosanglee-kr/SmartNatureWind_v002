@@ -133,14 +133,14 @@ bool C10_fromJson_UserProfileItem(const JsonObjectConst&    p_jp,
             if (jseg["override"].is<JsonObjectConst>()) {
                 JsonObjectConst ovr         = jseg["override"].as<JsonObjectConst>();
                 sg.override.enabled         = ovr["enabled"] | false;
-                if (ovr.containsKey("windIntensity")) {
-                    sg.override.windIntensity = A40_ComFunc::Json_getNum<float>(ovr, "windIntensity", -1.0f);
+                if (ovr["windIntensity"].is<float>()) {
+                    sg.override.windIntensity = ovr["windIntensity"].as<float>();
                 }
-                if (ovr.containsKey("windVariability")) {
-                    sg.override.windVariability = A40_ComFunc::Json_getNum<float>(ovr, "windVariability", -1.0f);
+                if (ovr["windVariability"].is<float>()) {
+                    sg.override.windVariability = ovr["windVariability"].as<float>();
                 }
-                if (ovr.containsKey("gustFrequency")) {
-                    sg.override.gustFrequency = A40_ComFunc::Json_getNum<float>(ovr, "gustFrequency", -1.0f);
+                if (ovr["gustFrequency"].is<float>()) {
+                    sg.override.gustFrequency = ovr["gustFrequency"].as<float>();
                 }
             }
 

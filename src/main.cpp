@@ -19,7 +19,7 @@
  *  - DEBUG → INFO (config 로드 후 applySystemRuntimeFromConfig가 오버라이드)
  * ------------------------------------------------------
  * [API / WS 진입점]
- *  - REST     : /api/v001/*
+ *  - REST     : /api/v001/ *
  *  - WebSocket: /ws/{log|state|chart|metrics|summary}
  *  - Web UI   : /  →  /P010_main_0202.html (reDirect)
  * ------------------------------------------------------
@@ -34,7 +34,7 @@
 #include <LittleFS.h>
 
 #include "v0202/A00_Main_0202.h"
-#include "v0202/A20_Const_Const_0202.h"   // [E-10] 부트 지연 상수
+#include "v0202/A20_Const_Const_0202.h" // [E-10] 부트 지연 상수
 
 // ======================================================
 // Arduino setup() — 부팅 시 1회 실행
@@ -55,7 +55,6 @@ void setup() {
             delay(A20_Const::G_A00_USB_CDC_POLL_MS);
         }
     }
-
 
     Serial.println();
     Serial.println("=====================================");

@@ -84,7 +84,7 @@ void CL_W10_WebAPI::routeWindProfile() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeWindProfileID() {
     // PUT
-    s_server->on((String(W10_Const::HTTP_API_WIND_PROFILE) + "/([0-9]+)").c_str(),
+    s_server->on((String(W10_Const::HTTP_API_WIND_PROFILE) + "/:id").c_str(),
                  HTTP_PUT,
                  [](AsyncWebServerRequest* p_request) {},
                  nullptr,
@@ -95,7 +95,11 @@ void CL_W10_WebAPI::routeWindProfileID() {
                      }
                      if (p_index + p_len != p_total) return;
 
-                     int v_id = p_request->pathArg(0).toInt();
+                     if (!p_request->hasParam("id")) {
+                         p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
+                         return;
+                     }
+                     int v_id = p_request->getParam("id")->value().toInt();
 
                      JsonDocument v_doc;
                      if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
@@ -114,14 +118,18 @@ void CL_W10_WebAPI::routeWindProfileID() {
                  });
 
     // DELETE
-    s_server->on((String(W10_Const::HTTP_API_WIND_PROFILE) + "/([0-9]+)").c_str(),
+    s_server->on((String(W10_Const::HTTP_API_WIND_PROFILE) + "/:id").c_str(),
                  HTTP_DELETE,
                  [](AsyncWebServerRequest* p_request) {
                      if (!checkApiKey(p_request)) {
                          p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
                          return;
                      }
-                     int  v_id      = p_request->pathArg(0).toInt();
+                     if (!p_request->hasParam("id")) {
+                         p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
+                         return;
+                     }
+                     int  v_id      = p_request->getParam("id")->value().toInt();
                      bool v_deleted = CL_C10_ConfigManager::deleteWindProfile((uint16_t)v_id);
 
                      JsonDocument v_res;
@@ -192,7 +200,7 @@ void CL_W10_WebAPI::routeSchedules() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeSchedulesID() {
     // PUT
-    s_server->on((String(W10_Const::HTTP_API_SCHEDULES) + "/([0-9]+)").c_str(),
+    s_server->on((String(W10_Const::HTTP_API_SCHEDULES) + "/:id").c_str(),
                  HTTP_PUT,
                  [](AsyncWebServerRequest* p_request) {},
                  nullptr,
@@ -203,7 +211,11 @@ void CL_W10_WebAPI::routeSchedulesID() {
                      }
                      if (p_index + p_len != p_total) return;
 
-                     int v_id = p_request->pathArg(0).toInt();
+                     if (!p_request->hasParam("id")) {
+                         p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
+                         return;
+                     }
+                     int v_id = p_request->getParam("id")->value().toInt();
 
                      JsonDocument v_doc;
                      if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
@@ -222,14 +234,18 @@ void CL_W10_WebAPI::routeSchedulesID() {
                  });
 
     // DELETE
-    s_server->on((String(W10_Const::HTTP_API_SCHEDULES) + "/([0-9]+)").c_str(),
+    s_server->on((String(W10_Const::HTTP_API_SCHEDULES) + "/:id").c_str(),
                  HTTP_DELETE,
                  [](AsyncWebServerRequest* p_request) {
                      if (!checkApiKey(p_request)) {
                          p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
                          return;
                      }
-                     int  v_id      = p_request->pathArg(0).toInt();
+                     if (!p_request->hasParam("id")) {
+                         p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
+                         return;
+                     }
+                     int  v_id      = p_request->getParam("id")->value().toInt();
                      bool v_deleted = CL_C10_ConfigManager::deleteSchedule((uint16_t)v_id);
 
                      JsonDocument v_res;
@@ -300,7 +316,7 @@ void CL_W10_WebAPI::routeUserProfiles() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeUserProfilesID() {
     // PUT
-    s_server->on((String(W10_Const::HTTP_API_USER_PROFILES) + "/([0-9]+)").c_str(),
+    s_server->on((String(W10_Const::HTTP_API_USER_PROFILES) + "/:id").c_str(),
                  HTTP_PUT,
                  [](AsyncWebServerRequest* p_request) {},
                  nullptr,
@@ -311,7 +327,11 @@ void CL_W10_WebAPI::routeUserProfilesID() {
                      }
                      if (p_index + p_len != p_total) return;
 
-                     int v_id = p_request->pathArg(0).toInt();
+                     if (!p_request->hasParam("id")) {
+                         p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
+                         return;
+                     }
+                     int v_id = p_request->getParam("id")->value().toInt();
 
                      JsonDocument v_doc;
                      if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
@@ -330,14 +350,18 @@ void CL_W10_WebAPI::routeUserProfilesID() {
                  });
 
     // DELETE
-    s_server->on((String(W10_Const::HTTP_API_USER_PROFILES) + "/([0-9]+)").c_str(),
+    s_server->on((String(W10_Const::HTTP_API_USER_PROFILES) + "/:id").c_str(),
                  HTTP_DELETE,
                  [](AsyncWebServerRequest* p_request) {
                      if (!checkApiKey(p_request)) {
                          p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
                          return;
                      }
-                     int  v_id      = p_request->pathArg(0).toInt();
+                     if (!p_request->hasParam("id")) {
+                         p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
+                         return;
+                     }
+                     int  v_id      = p_request->getParam("id")->value().toInt();
                      bool v_deleted = CL_C10_ConfigManager::deleteUserProfiles((uint16_t)v_id);
 
                      JsonDocument v_res;

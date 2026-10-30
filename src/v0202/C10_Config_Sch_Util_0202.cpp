@@ -163,14 +163,14 @@ bool C10_fromJson_ScheduleItem(const JsonObjectConst& p_js,
             if (jseg["override"].is<JsonObjectConst>()) {
                 JsonObjectConst ovr         = jseg["override"].as<JsonObjectConst>();
                 sg.override.enabled         = ovr["enabled"] | false;
-                if (ovr.containsKey("windIntensity")) {
-                    sg.override.windIntensity = (float)(ovr["windIntensity"] | -1.0);
+                if (ovr["windIntensity"].is<float>()) {
+                    sg.override.windIntensity = ovr["windIntensity"].as<float>();
                 }
-                if (ovr.containsKey("windVariability")) {
-                    sg.override.windVariability = (float)(ovr["windVariability"] | -1.0);
+                if (ovr["windVariability"].is<float>()) {
+                    sg.override.windVariability = ovr["windVariability"].as<float>();
                 }
-                if (ovr.containsKey("gustFrequency")) {
-                    sg.override.gustFrequency = (float)(ovr["gustFrequency"] | -1.0);
+                if (ovr["gustFrequency"].is<float>()) {
+                    sg.override.gustFrequency = ovr["gustFrequency"].as<float>();
                 }
             }
 

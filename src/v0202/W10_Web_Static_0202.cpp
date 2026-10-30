@@ -186,8 +186,12 @@ void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_fil
 // ======================================================
 void CL_W10_WebAPI::W10_registerGzipServe() {
     // v0201 대응
-    s_server->on("^\\/(html_v0202)\\/.+", HTTP_GET, [](AsyncWebServerRequest* r) {
+    s_server->onNotFound([](AsyncWebServerRequest* r) {
         String v_url = r->url();
+        if (r->method() != HTTP_GET || !v_url.startsWith(W10_Const::PATH_STATIC_HTML)) {
+            r->send(404, "text/plain; charset=utf-8", "not found: " + v_url);
+            return;
+        }
         char v_gzPath[192];
         int  v_n = snprintf(v_gzPath, sizeof(v_gzPath), "%s.gz", v_url.c_str());
         if (v_n < 0 || v_n >= (int)sizeof(v_gzPath)) {

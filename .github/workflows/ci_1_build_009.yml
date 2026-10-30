@@ -21,6 +21,11 @@
 #      - build 전 계약 문서 무결성 gate(commit_contracts_0202.py)를 수행하여 계약 위반 머지를 차단함.
 #      - commit_contracts_0202.py를 --dry-run/--strict로 실행.
 #      - 실패 시 build job을 needs 의존으로 자동 스킵하여 조기 실패 유도.
+#   6. 툴체인 캐시 무결성 (조건부 검증):
+#      - actions/cache로 복원된 툴체인이 실행 가능하면 그대로 사용(캐시 이점 유지).
+#      - 실행 파일이 없거나 --version 실행이 실패하면(=xtensa-esp32s3-elf-g++: not found 등)
+#        해당 툴체인 디렉토리만 선택적으로 삭제하여 PlatformIO가 새로 설치하도록 유도.
+#      - 캐시 키 접미사 -v2- 는 최초 1회 손상 캐시 무효화 용도.
 # =====================================================================
 
 name: PR Build
@@ -187,7 +192,7 @@ jobs:
           if-no-files-found: warn
 
   # =====================================================================
-  # 2단계: 환경별 매트릭스 병렬 컴파일 (원본 유지)
+  # 2단계: 환경별 매트릭스 병렬 컴파일
   # =====================================================================
   build:
     runs-on: ubuntu-latest
@@ -213,10 +218,35 @@ jobs:
             ~/.cache/pip
             ~/.platformio
             .pio/libdeps
-          key: ${{ runner.os }}-pio-${{ matrix.environments }}-${{ hashFiles('**/platformio.ini') }}
+          key: ${{ runner.os }}-pio-${{ matrix.environments }}-v2-${{ hashFiles('**/platformio.ini') }}
           restore-keys: |
-            ${{ runner.os }}-pio-${{ matrix.environments }}-
+            ${{ runner.os }}-pio-${{ matrix.environments }}-v2-
             ${{ runner.os }}-pio-
+
+      # ---------------------------------------------------------------
+      # [핵심] 툴체인 캐시 조건부 검증
+      # - 캐시 복원된 툴체인의 실행 파일이 정상 동작하면 그대로 유지 (빌드 시간 단축)
+      # - 실행 파일이 없거나 --version 실행 실패 시 → 해당 툴체인만 삭제 후 재설치
+      #   (xtensa-esp32s3-elf-g++: not found 등 손상 캐시 자동 복구)
+      # ---------------------------------------------------------------
+      - name: Validate or clean ESP32-S3 toolchain cache
+        shell: bash
+        run: |
+          set +e
+          TC_S3=~/.platformio/packages/toolchain-xtensa-esp32s3
+          TC_RV=~/.platformio/packages/toolchain-riscv32-esp
+          BIN="$TC_S3/bin/xtensa-esp32s3-elf-g++"
+
+          if [ -x "$BIN" ] && "$BIN" --version >/dev/null 2>&1; then
+            echo "[OK] Cached ESP32-S3 toolchain is executable — keep as-is."
+            "$BIN" --version | head -n 1
+          else
+            echo "[CLEAN] Cached ESP32-S3 toolchain missing or corrupt — removing for fresh install."
+            ls -la "$TC_S3" 2>/dev/null || echo "  (toolchain-xtensa-esp32s3 not present)"
+            rm -rf "$TC_S3" "$TC_RV"
+          fi
+          echo "=== Remaining ~/.platformio/packages entries ==="
+          ls -la ~/.platformio/packages/ 2>/dev/null || true
 
       - name: Install PlatformIO
         run: |

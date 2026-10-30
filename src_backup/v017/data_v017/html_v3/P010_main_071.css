@@ -1,0 +1,849 @@
+/*
+ * ------------------------------------------------------
+ * 소스명 : P010_main_071.css
+ * 모듈 약어 : SC10
+ * 모듈명 : Smart Nature Wind Main UI Style
+ * ------------------------------------------------------
+ * 기능 요약:
+ * - 메인 관리 페이지 전용 레이아웃 / 스타일
+ * - 공통 스타일(P000_common_070.js) 위에 덧입히는 오버레이
+ * - 상태 카드, 풍속 설정, Wi-Fi, PWM, 로그 콘솔, 업로드 섹션 스타일
+ * ------------------------------------------------------
+ * 주의:
+ * - Reset / Nav / Modal / Toast 등 공통 요소는 P000_common_070.css에서 처리
+ * - 여기서는 "메인 페이지 전용" 느낌을 위한 디테일만 정의/오버라이드
+ * ------------------------------------------------------
+ */
+
+/* ======================= 1. 페이지 전체 분위기 / 래퍼 ======================= */
+
+/* 공통 wrap(max-width:1200) → 메인 페이지에서는 조금 더 좁게 */
+.wrap {
+  max-width: 960px;
+  margin: 20px auto;
+}
+
+/* 배경 톤을 메인에서 약간 더 파랗게 */
+body {
+  background-color: #f0f4f8;
+}
+
+/* 메인 타이틀 */
+h1 {
+  color: #1a5276;
+  text-align: center;
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* 버전 Pill 바로 옆에 붙는 스타일은 .pill에서 처리 */
+
+/* ======================= 2. 카드 / 섹션 / 그리드 ======================= */
+
+/* 공통 card 위에 살짝 더 강한 그림자 + 라운드 */
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px 25px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+  border: 1px solid #e0e6ed;
+}
+
+/* 섹션 제목 (메인 페이지용) */
+.section-title {
+  margin-top: 0;
+  border-left: 4px solid #3498db;
+  padding-left: 10px;
+  font-size: 1.3em;
+  font-weight: 700;
+  color: #2c3e50;
+}
+
+/* 그리드: 공통 grid를 사용하되 메인 페이지에 맞게 간격 조정 */
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.col-12 {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+}
+.col-6 {
+  flex: 1 1 calc(50% - 8px);
+  display: flex;
+  flex-direction: column;
+}
+.col-4 {
+  flex: 1 1 calc(33.333% - 10.666px);
+  display: flex;
+  flex-direction: column;
+}
+.col-3 {
+  flex: 1 1 calc(25% - 12px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ======================= 3. 유틸리티 레이아웃 ======================= */
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+.row.tight {
+  margin-bottom: 5px;
+  gap: 8px;
+}
+.row .flex {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.right {
+  margin-left: auto;
+}
+.fill {
+  flex-grow: 1;
+}
+
+.mt8 {
+  margin-top: 8px;
+}
+.mt16 {
+  margin-top: 16px;
+}
+
+.hr {
+  border-top: 1px solid #e0e6ed;
+  margin: 20px 0;
+}
+
+.muted {
+  color: #7f8c8d;
+  font-size: 0.9em;
+}
+
+/* ======================= 4. 폼 요소 / 레이블 ======================= */
+
+label {
+  font-weight: 600;
+  margin-bottom: 5px;
+  font-size: 0.9em;
+  color: #4a637a;
+  display: block;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #c8d4e0;
+  border-radius: 8px;
+  font-size: 15px;
+  box-sizing: border-box;
+  background-color: #fcfdfe;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus,
+select:focus {
+  border-color: #3498db;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+/* ======================= 5. 버튼 ======================= */
+
+/* 공통 .btn 위에 메인 페이지용 톤 */
+.btn {
+  background-color: #f1f6f9;
+  color: #4a637a;
+  border: 1px solid #c8d4e0;
+  border-radius: 8px;
+  padding: 8px 15px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+  font-weight: 600;
+  white-space: nowrap;
+  font-size: 0.9em;
+}
+
+.btn:hover {
+  background-color: #e5edf3;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* OK (Primary) */
+.btn.ok {
+  background-color: #2ecc71;
+  color: #fff;
+  border-color: #27ae60;
+}
+.btn.ok:hover {
+  background-color: #27ae60;
+}
+
+/* Warn */
+.btn.warn {
+  background-color: #f39c12;
+  color: #fff;
+  border-color: #e67e22;
+}
+.btn.warn:hover {
+  background-color: #e67e22;
+}
+
+/* Error */
+.btn.err {
+  background-color: #e74c3c;
+  color: #fff;
+  border-color: #c0392b;
+}
+.btn.err:hover {
+  background-color: #c0392b;
+}
+
+/* 전체 저장 버튼은 Dirty 상태에 따라 JS에서 색 변경 */
+#btnSaveAllConfig {
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+  font-weight: 700;
+}
+
+/* ======================= 6. 상태 Pill / 상단 상태 카드 ======================= */
+
+.pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.9em;
+  font-weight: 700;
+  background-color: #ecf0f1;
+  color: #2c3e50;
+  margin-left: 8px;
+  white-space: nowrap;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* 시뮬 상태 색상 */
+#simActive.pill {
+  background-color: #2ecc71;
+  color: #fff;
+}
+#simActive.pill[data-status="idle"] {
+  background-color: #e74c3c;
+  color: #fff;
+}
+
+/* ======================= 7. STA 목록 / 테이블 스타일 ======================= */
+
+.list {
+  border: 1px solid #c8d4e0;
+  border-radius: 8px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.list table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.list th,
+.list td {
+  padding: 10px 15px;
+  text-align: left;
+  border-bottom: 1px solid #ecf0f1;
+  font-size: 0.95em;
+}
+
+.list th {
+  background-color: #f1f6f9;
+  font-weight: 700;
+  color: #4a637a;
+}
+
+.list td:last-child {
+  text-align: right;
+  width: 120px;
+}
+
+.list tr:last-child td {
+  border-bottom: none;
+}
+
+.list .muted {
+  display: block;
+  padding: 15px;
+  text-align: center;
+}
+
+/* ======================= 8. 로그 콘솔 ======================= */
+
+pre#logConsole {
+  background-color: #2c3e50;
+  color: #ecf0f1;
+  padding: 15px;
+  border-radius: 8px;
+  overflow-y: auto;
+  max-height: 400px;
+  font-size: 0.85em;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  font-family: monospace;
+}
+
+/* ======================= 9. 로딩 / 토스트 (공통에서 정의된 것 보완) ======================= */
+
+/* 메인 페이지는 진한 다크 오버레이 */
+#loadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(44, 62, 80, 0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.spinner {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #3498db;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* 토스트 위치 / 색 톤 */
+#toastContainer {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1001;
+}
+
+.toast {
+  background-color: #333;
+  color: #fff;
+  padding: 10px 15px;
+  border-radius: 6px;
+  margin-top: 10px;
+  opacity: 0.92;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: opacity 0.3s;
+  font-size: 0.9em;
+}
+
+.toast.ok {
+  background-color: #2ecc71;
+}
+.toast.warn {
+  background-color: #f39c12;
+}
+.toast.err {
+  background-color: #e74c3c;
+}
+
+/* ======================= 10. 반응형 ======================= */
+
+@media (max-width: 768px) {
+  .wrap {
+    padding: 10px;
+  }
+
+  .col-4,
+  .col-3 {
+    flex: 1 1 calc(50% - 8px);
+  }
+}
+
+@media (max-width: 480px) {
+  .col-4,
+  .col-6,
+  .col-3 {
+    flex: 1 1 100%;
+  }
+
+  .row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .row .right {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .row.tight {
+    width: 100%;
+  }
+
+  .row.tight .btn {
+    flex-grow: 1;
+  }
+
+  .pill {
+    margin-left: 0;
+    margin-top: 5px;
+  }
+
+  h1 {
+    font-size: 1.8em;
+  }
+}
+
+/* ======================= 11. 저장 버튼 강조 (Q3-b) ======================= */
+
+/* 임시 적용 중 + dirty 상태일 때 저장 버튼 시선 유도 */
+.btn-attention {
+  animation: btn-attention-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes btn-attention-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+  70%  { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+}
+
+
+/* ======================= Round 4: 신규 UI ======================= */
+
+/* 프리셋 설명 툴팁 (#1) */
+.preset-desc {
+  margin-top: 6px;
+  padding: 6px 10px;
+  background-color: #f7f9fb;
+  border-left: 3px solid #3498db;
+  border-radius: 4px;
+  font-size: 0.85em;
+  line-height: 1.4;
+  color: #4a637a;
+  min-height: 1.2em;
+}
+.preset-desc:empty { display: none; }
+
+/* 로그 콘솔 (필터 대응, #7) */
+.log-view {
+  background-color: #2c3e50;
+  color: #ecf0f1;
+  padding: 12px 15px;
+  border-radius: 8px;
+  max-height: 400px;
+  min-height: 100px;
+  overflow-y: auto;
+  font-size: 0.85em;
+  line-height: 1.5;
+  font-family: monospace;
+  white-space: pre-wrap;
+}
+
+.log-line {
+  padding: 2px 0;
+  border-bottom: 1px dotted rgba(236, 240, 241, 0.1);
+}
+.log-line:last-child { border-bottom: none; }
+
+.log-line[data-level="1"] { color: #e74c3c; font-weight: 600; }  /* ERROR */
+.log-line[data-level="2"] { color: #f1c40f; }                     /* WARN */
+.log-line[data-level="3"] { color: #ecf0f1; }                     /* INFO */
+.log-line[data-level="4"] { color: #95a5a6; }                     /* DEBUG */
+
+.log-filter-group {
+  display: inline-flex;
+  gap: 4px;
+  margin-right: 8px;
+}
+.log-filter-group .btn.active {
+  background-color: #3498db;
+  color: #fff;
+  border-color: #2980b9;
+}
+
+/* 저장 상태 배지 (#4) */
+#saveStatusBadge {
+  margin-right: 6px;
+}
+
+
+/* ============================================================ */
+/* Round 4-C: 아이콘 버튼 / 이벤트 히스토리                       */
+/* ============================================================ */
+
+/* ── 아이콘 버튼 (⭐/🤖) ── */
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    padding: 2px 8px;
+    margin-left: 6px;
+    cursor: pointer;
+    font-size: 1em;
+    line-height: 1;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    vertical-align: middle;
+}
+.btn-icon:hover {
+    background-color: #eef2f6;
+    border-color: #3498db;
+}
+.btn-icon:active {
+    transform: scale(0.94);
+}
+.btn-icon.is-fav {
+    color: #f39c12;
+    border-color: #f39c12;
+    background-color: #fff8e8;
+}
+
+/* ── 이벤트 히스토리 ── */
+.event-history {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #e0e6ed;
+    border-radius: 6px;
+    padding: 6px 10px;
+    background: #f9fafb;
+    font-size: 0.88em;
+}
+.event-line {
+    display: flex;
+    gap: 10px;
+    padding: 4px 0;
+    border-bottom: 1px dotted #e5eaef;
+    align-items: baseline;
+}
+.event-line:last-child { border-bottom: none; }
+
+.event-line .evt-ts {
+    flex-shrink: 0;
+    font-family: ui-monospace, monospace;
+    color: #7f8c8d;
+    font-size: 0.85em;
+}
+.event-line .evt-msg { flex-grow: 1; }
+
+.event-line .evt-info  { color: #2980b9; }
+.event-line .evt-warn  { color: #d68910; font-weight: 600; }
+.event-line .evt-err   { color: #c0392b; font-weight: 600; }
+.event-line .evt-ok    { color: #27ae60; }
+
+
+/* ============================================================ */
+/* Track C+D: 최근 사용 프리셋 + 모바일 아코디언                */
+/* ============================================================ */
+
+/* ── C: optgroup 시각 구분 ── */
+#preset optgroup {
+    font-weight: 700;
+    color: #4a637a;
+}
+#preset optgroup[label^="⭐"] option {
+    color: #b45309;
+}
+#preset optgroup[label^="🕘"] option {
+    color: #6b7280;
+}
+
+/* ── D: 모바일 아코디언 (≤768px) ── */
+@media (max-width: 768px) {
+
+    /* 헤더를 클릭 가능하게 */
+    .wrap > .grid > section.card > .row.middle:first-child {
+        cursor: pointer;
+        user-select: none;
+        position: relative;
+        padding-right: 30px;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* 토글 아이콘 */
+    .wrap > .grid > section.card > .row.middle:first-child::after {
+        content: "▼";
+        position: absolute;
+        right: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.85em;
+        color: #7f8c8d;
+        transition: transform 0.2s ease;
+        pointer-events: none;
+    }
+
+    /* 접힘 상태: 화살표 회전 */
+    .wrap > .grid > section.card.collapsed > .row.middle:first-child::after {
+        transform: translateY(-50%) rotate(-90deg);
+    }
+
+    /* 접힘 상태: 헤더 외 모든 직계 자식 숨김 */
+    .wrap > .grid > section.card.collapsed > *:not(.row.middle):not(:first-child) {
+        display: none !important;
+    }
+
+    /* 접힌 카드 그림자 축소 */
+    .wrap > .grid > section.card.collapsed {
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        margin-bottom: 12px;
+    }
+
+    /* 접힌 카드의 헤더 하단 마진 제거 */
+    .wrap > .grid > section.card.collapsed > .row.middle:first-child {
+        margin-bottom: 0;
+    }
+}
+
+/* ============================================================ */
+/* 실행 컨텍스트 미니맵 (P010)                                  */
+/* ============================================================ */
+
+.cmm-window-toggle {
+    display: inline-flex;
+    gap: 3px;
+    background: #f1f4f8;
+    padding: 2px;
+    border-radius: 6px;
+    border: 1px solid #d6e2ed;
+}
+
+.cmm-window-toggle .btn-small {
+    padding: 3px 10px;
+    font-size: 0.78em;
+    line-height: 1.2;
+    border-radius: 4px;
+    background: transparent;
+    color: #566573;
+    border: none;
+    transition: all 0.15s;
+}
+.cmm-window-toggle .btn-small:hover {
+    background: #e1ecf4;
+    color: #2980b9;
+}
+.cmm-window-toggle .btn-small.active {
+    background: #3498db;
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(52,152,219,0.35);
+}
+
+/* ── 타임라인 ── */
+.cmm-timeline {
+    position: relative;
+    height: 34px;
+    background: #ecf0f1;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: crosshair;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+    user-select: none;
+    margin-top: 10px;
+    transition: box-shadow 0.15s;
+}
+.cmm-timeline:hover {
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.12), 0 0 0 2px rgba(52,152,219,0.15);
+}
+.cmm-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #95a5a6;
+    font-size: 0.82em;
+}
+
+/* ── 프리셋 블록 ── */
+.cmm-block {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border-right: 1px solid rgba(255,255,255,0.35);
+    transition: filter 0.12s;
+    cursor: pointer;
+    min-width: 1px;
+}
+.cmm-block:last-child { border-right: none; }
+.cmm-block:hover {
+    filter: brightness(1.18);
+    z-index: 2;
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,0.6);
+}
+
+/* ── 이벤트 도트 ── */
+.cmm-event-dot {
+    position: absolute;
+    top: 3px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    border: 1.5px solid #ffffff;
+    box-shadow: 0 0 4px rgba(0,0,0,0.35);
+    pointer-events: none;
+    z-index: 3;
+    transform: translateX(-50%);
+}
+
+/* ── 시간축 ── */
+.cmm-axis {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 4px;
+    font-size: 0.7em;
+    color: #95a5a6;
+    font-family: ui-monospace, monospace;
+    padding: 0 2px;
+}
+
+.cmm-note {
+    margin-top: 8px;
+    font-size: 0.78em;
+    text-align: right;
+}
+
+@media (max-width: 600px) {
+    .cmm-window-toggle .btn-small {
+        padding: 2px 7px;
+        font-size: 0.72em;
+    }
+}
+
+/* ============================================================ */
+/* 이벤트 리스트 강조 (미니맵 클릭 시)                          */
+/* ============================================================ */
+
+.event-line.evt-highlight {
+    background-color: #fff8e1;
+    box-shadow: inset 4px 0 0 #f39c12;
+    animation: evtHighlightPulse 1.5s ease-out 2;
+    border-radius: 4px;
+}
+
+@keyframes evtHighlightPulse {
+    0%   { background-color: #ffe082; box-shadow: inset 4px 0 0 #e67e22; }
+    50%  { background-color: #fff3b0; box-shadow: inset 4px 0 0 #f39c12; }
+    100% { background-color: #fff8e1; box-shadow: inset 4px 0 0 #f39c12; }
+}
+
+/* ============================================================ */
+/* 프리셋 이력 통계                                              */
+/* ============================================================ */
+
+.cmm-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+}
+
+@media (max-width: 600px) {
+    .cmm-stats-grid { grid-template-columns: 1fr; }
+}
+
+.cmm-stat-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 20px;
+    color: #95a5a6;
+    font-size: 0.85em;
+}
+
+.cmm-stat-card {
+    padding: 12px 14px;
+    background: #ffffff;
+    border-radius: 8px;
+    border-left: 5px solid #3498db;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.cmm-stat-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+}
+
+.cmm-stat-rank {
+    display: inline-block;
+    font-size: 0.75em;
+    font-weight: 700;
+    color: #ffffff;
+    background: #34495e;
+    padding: 1px 7px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+}
+
+.cmm-stat-card.rank-1 .cmm-stat-rank { background: #d4a017; }
+.cmm-stat-card.rank-2 .cmm-stat-rank { background: #7f8c8d; }
+.cmm-stat-card.rank-3 .cmm-stat-rank { background: #b87333; }
+
+.cmm-stat-name {
+    font-size: 1.05em;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 4px;
+    word-break: keep-all;
+}
+
+.cmm-stat-code {
+    font-family: ui-monospace, monospace;
+    font-size: 0.8em;
+    color: #7f8c8d;
+    margin-bottom: 8px;
+}
+
+.cmm-stat-bar-wrap {
+    height: 6px;
+    background: #ecf0f1;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.cmm-stat-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s ease-out;
+}
+
+.cmm-stat-duration {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.8em;
+}
+
+.cmm-stat-duration .dur-value {
+    font-weight: 700;
+    color: #2c3e50;
+    font-family: ui-monospace, monospace;
+}
+
+.cmm-stat-duration .dur-pct {
+    color: #95a5a6;
+    font-family: ui-monospace, monospace;
+}
+

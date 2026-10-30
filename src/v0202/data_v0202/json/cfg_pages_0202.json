@@ -1,0 +1,32 @@
+{
+  "pages": [
+    {
+      "uri": "/index.html",
+      "path": "/html_v0202/index.html",
+      "label": "Smart Nature Wind",
+      "enable": true,
+      "isMain": true,
+      "order": 10,
+      "pageAssets": [
+        { "uri": "/P000_common_0202.css", "path": "/html_v0202/P000_common_0202.css" },
+        { "uri": "/P010_bundle_0202.js",  "path": "/html_v0202/P010_bundle_0202.js"  }
+      ]
+    }
+  ],
+  "reDirect": [
+    { "uriFrom": "/",           "uriTo": "/index.html" },
+    { "uriFrom": "/dashboard",  "uriTo": "/index.html#/dashboard" },
+    { "uriFrom": "/chart",      "uriTo": "/index.html#/chart" },
+    { "uriFrom": "/schedule",   "uriTo": "/index.html#/schedule" },
+    { "uriFrom": "/profiles",   "uriTo": "/index.html#/profiles" },
+    { "uriFrom": "/sensors",    "uriTo": "/index.html#/sensors" },
+    { "uriFrom": "/settings",   "uriTo": "/index.html#/settings" },
+    { "uriFrom": "/network",    "uriTo": "/index.html#/network" },
+    { "uriFrom": "/logs",       "uriTo": "/index.html#/logs" },
+    { "uriFrom": "/diagnostics","uriTo": "/index.html#/diagnostics" },
+    { "uriFrom": "/firmware",   "uriTo": "/index.html#/firmware" },
+    { "uriFrom": "/ai",         "uriTo": "/index.html#/ai" },
+    { "uriFrom": "/info",       "uriTo": "/index.html#/info" }
+  ],
+  "assets": []
+}

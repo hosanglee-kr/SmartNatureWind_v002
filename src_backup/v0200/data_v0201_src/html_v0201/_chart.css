@@ -1,0 +1,30 @@
+/*
+ * ------------------------------------------------------
+ * 소스명   : _chart.css
+ * 레이어   : CSS (빌드 시 P000_common_0200.css로 concat)
+ * 기능 요약:
+ *  - Chart 페이지 전용 스타일
+ *  - 대형 캔버스 영역, 범위 선택 툴바 확장
+ * ------------------------------------------------------
+ */
+
+.snw-chart-area {
+    height: 60vh;
+    min-height: 320px;
+    max-height: 700px;
+}
+
+@media (max-width: 767px) {
+    .snw-chart-area {
+        height: 50vh;
+        min-height: 240px;
+    }
+}
+
+/* 차트 페이지 툴바 */
+.snw-chart-toolbar {
+    justify-content: space-between;
+    padding-bottom: var(--snw-spacing-sm);
+    border-bottom: 1px solid var(--snw-border);
+    margin-bottom: var(--snw-spacing);
+}

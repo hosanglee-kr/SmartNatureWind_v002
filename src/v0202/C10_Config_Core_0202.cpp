@@ -1,0 +1,651 @@
+/*
+ * ------------------------------------------------------
+ * 소스명 : C10_Config_Core_0202.cpp
+ * 모듈 약어 : C10
+ * 모듈명 : Smart Nature Wind Configuration Manager - Core
+ * ------------------------------------------------------
+ * 기능 요약:
+ *  - 전체 Config Root 로드/해제/저장 관리
+ *  - LittleFS 기반 JSON I/O (A40_IO::Load/Save) + .bak 자동 복구
+ *  - Dirty Flag 기반 saveDirtyConfigs / saveAll
+ *  - 전체 JSON Export(toJson_All)
+ *  - 공장 초기화(factoryResetFromDefault)
+ *  - cfg_jsonFile.json(=10_cfg_jsonFile.json) 기반 섹션 파일 경로 매핑 로드
+ *
+ * [Batch F-1] factoryResetFromDefault 시 N10::resetRuntime() 호출
+ *  - E-NOTE-3 기능 버그 수정
+ *  - factory reset 후 이전 override/lastProfile 등이 NVS에 잔존 방지
+ * ------------------------------------------------------
+ * [구현 규칙]
+ *  - ArduinoJson v7.x.x 사용 (v6 이하 사용 금지)
+ *  - JsonDocument 단일 타입만 사용
+ *  - createNestedArray/Object/containsKey 사용 금지
+ *  - memset + strlcpy 기반 안전 초기화
+ * ------------------------------------------------------
+ */
+
+#include <FS.h>
+#include <LittleFS.h>
+#include <new>
+
+#include "C10_Config_0202.h"
+
+#include "A40_Com_Utils_0202.h"     // A40_ComFunc / A40_IO / CL_A40_MutexGuard_Semaphore
+#include "A23_Com_ResetCfg_0202.h"  // A20_resetXxxDefault
+#include "N10_NvsManager_0202.h"    // [F-1] factory reset 시 NVS 런타임 초기화
+
+// ------------------------------------------------------
+// 전역 Config Root 정의
+// ------------------------------------------------------
+ST_A20_ConfigRoot_t g_A20_config_root = {};
+
+// ------------------------------------------------------
+// 정적 멤버 정의
+// ------------------------------------------------------
+bool CL_C10_ConfigManager::_dirty_system       = false;
+bool CL_C10_ConfigManager::_dirty_wifi         = false;
+bool CL_C10_ConfigManager::_dirty_motion       = false;
+bool CL_C10_ConfigManager::_dirty_schedules    = false;
+bool CL_C10_ConfigManager::_dirty_userProfiles = false;
+bool CL_C10_ConfigManager::_dirty_windDict     = false;
+bool CL_C10_ConfigManager::_dirty_nvsSpec      = false;
+bool CL_C10_ConfigManager::_dirty_webPage      = false;
+
+portMUX_TYPE CL_C10_ConfigManager::s_dirtyflagSpinlock = portMUX_INITIALIZER_UNLOCKED;
+
+ST_A20_cfg_jsonFile_t CL_C10_ConfigManager::s_cfgJsonFileMap{};
+
+SemaphoreHandle_t CL_C10_ConfigManager::s_recursiveMutex = nullptr;
+
+portMUX_TYPE CL_C10_ConfigManager::s_rootSwapMux = portMUX_INITIALIZER_UNLOCKED;
+
+// [E-1] pending free 큐 정의
+ST_A20_ConfigRoot_t CL_C10_ConfigManager::s_pendingFree[CL_C10_ConfigManager::PENDING_FREE_SLOTS] = {};
+uint32_t            CL_C10_ConfigManager::s_pendingFreeMs[CL_C10_ConfigManager::PENDING_FREE_SLOTS] = {0, 0};
+uint8_t             CL_C10_ConfigManager::s_pendingFreeCount = 0;
+
+portMUX_TYPE CL_C10_ConfigManager::s_pendingFreeMux = portMUX_INITIALIZER_UNLOCKED;
+
+// =====================================================
+// 내부 유틸: 섹션 new 할당 헬퍼
+// =====================================================
+template <typename T>
+static bool C10_allocSection(T*& p_ptr, const char* p_name) {
+    if (p_ptr) return true;
+    T* v_new = new (std::nothrow) T();
+    if (!v_new) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadAll: new failed (%s) - out of memory", p_name);
+        return false;
+    }
+    p_ptr = v_new;
+    return true;
+}
+
+bool CL_C10_ConfigManager::begin() {
+    if (s_recursiveMutex != nullptr) return true;
+
+    s_recursiveMutex = xSemaphoreCreateRecursiveMutex();
+
+    if (s_recursiveMutex == nullptr) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] Mutex Creation Failed!");
+        return false;
+    }
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] Mutex initialized successfully.");
+    return true;
+}
+
+void CL_C10_ConfigManager::getRootSnapshot(ST_A20_ConfigRoot_t& p_out) {
+    portENTER_CRITICAL(&s_rootSwapMux);
+    memcpy(&p_out, &g_A20_config_root, sizeof(p_out));
+    portEXIT_CRITICAL(&s_rootSwapMux);
+}
+
+// =====================================================
+// cfg_jsonFile.json 로드
+// =====================================================
+bool CL_C10_ConfigManager::_loadCfgJsonFile() {
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_MutxGuard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
+        return false;
+    }
+
+    JsonDocument v_doc;
+
+    if (!A40_IO::Load_File2JsonDoc_V21(A20_Const::CFG_JSON_FILE, v_doc, true, __func__)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] Failed to load cfg json map: %s", A20_Const::CFG_JSON_FILE);
+        return false;
+    }
+
+    JsonObjectConst v_root = v_doc["configJsonFile"].as<JsonObjectConst>();
+    if (v_root.isNull()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] Invalid cfg json map: missing 'configJsonFile'");
+        return false;
+    }
+
+    bool v_reqOk = true;
+
+    v_reqOk &= A40_ComFunc::Json_copyStrReq(v_root, "system", s_cfgJsonFileMap.system, A20_Const::LEN_PATH, "", __func__);
+    v_reqOk &= A40_ComFunc::Json_copyStrReq(v_root, "wifi", s_cfgJsonFileMap.wifi, A20_Const::LEN_PATH, "", __func__);
+    v_reqOk &= A40_ComFunc::Json_copyStrReq(v_root, "motion", s_cfgJsonFileMap.motion, A20_Const::LEN_PATH, "", __func__);
+    v_reqOk &= A40_ComFunc::Json_copyStrReq(v_root, "nvsSpec", s_cfgJsonFileMap.nvsSpec, A20_Const::LEN_PATH, "", __func__);
+    v_reqOk &= A40_ComFunc::Json_copyStrReq(v_root, "schedules", s_cfgJsonFileMap.schedules, A20_Const::LEN_PATH, "", __func__);
+    v_reqOk &= A40_ComFunc::Json_copyStrReq(v_root, "userProfiles", s_cfgJsonFileMap.userProfiles, A20_Const::LEN_PATH, "", __func__);
+    v_reqOk &= A40_ComFunc::Json_copyStrReq(v_root, "windDict", s_cfgJsonFileMap.windDict, A20_Const::LEN_PATH, "", __func__);
+    v_reqOk &= A40_ComFunc::Json_copyStrReq(v_root, "webPage", s_cfgJsonFileMap.webPage, A20_Const::LEN_PATH, "", __func__);
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO,
+                       "[C10] cfg_jsonFile loaded: system=%s wifi=%s motion=%s nvsSpec=%s schedules=%s userProfiles=%s "
+                       "windDict=%s webPage=%s",
+                       s_cfgJsonFileMap.system,
+                       s_cfgJsonFileMap.wifi,
+                       s_cfgJsonFileMap.motion,
+                       s_cfgJsonFileMap.nvsSpec,
+                       s_cfgJsonFileMap.schedules,
+                       s_cfgJsonFileMap.userProfiles,
+                       s_cfgJsonFileMap.windDict,
+                       s_cfgJsonFileMap.webPage);
+
+    if (!v_reqOk) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] cfg_jsonFile missing/invalid required keys.");
+        return false;
+    }
+
+    return true;
+}
+
+// =====================================================
+// 1. 전체 관리 (Load/Free/Save)
+// =====================================================
+bool CL_C10_ConfigManager::loadAll(ST_A20_ConfigRoot_t& p_root) {
+    bool v_ok = true;
+
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_MutxGuard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
+        return false;
+    }
+
+    if (!_loadCfgJsonFile()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: cfg_jsonFile load failed.", __func__);
+        return false;
+    }
+
+    if (!C10_allocSection(p_root.system, "system")) v_ok = false;
+    if (!C10_allocSection(p_root.wifi, "wifi")) v_ok = false;
+    if (!C10_allocSection(p_root.motion, "motion")) v_ok = false;
+    if (!C10_allocSection(p_root.nvsSpec, "nvsSpec")) v_ok = false;
+    if (!C10_allocSection(p_root.windDict, "windDict")) v_ok = false;
+    if (!C10_allocSection(p_root.schedules, "schedules")) v_ok = false;
+    if (!C10_allocSection(p_root.userProfiles, "userProfiles")) v_ok = false;
+    if (!C10_allocSection(p_root.webPage, "webPage")) v_ok = false;
+
+    if (!v_ok) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] loadAll: section allocation failed. Free allocated sections.");
+        freeAll(p_root);
+        return false;
+    }
+
+    A20_resetSystemDefault(*p_root.system);
+    A20_resetWifiDefault(*p_root.wifi);
+    A20_resetMotionDefault(*p_root.motion);
+    A20_resetNvsSpecDefault(*p_root.nvsSpec);
+    A20_resetWindDictDefault(*p_root.windDict);
+    A20_resetSchedulesDefault(*p_root.schedules);
+    A20_resetUserProfilesDefault(*p_root.userProfiles);
+    A20_resetWebPageDefault(*p_root.webPage);
+
+    if (!loadSystemConfig(*p_root.system)) v_ok = false;
+    if (!loadWifiConfig(*p_root.wifi)) v_ok = false;
+    if (!loadMotionConfig(*p_root.motion)) v_ok = false;
+    if (!loadNvsSpecConfig(*p_root.nvsSpec)) v_ok = false;
+    if (!loadWindDict(*p_root.windDict)) v_ok = false;
+    if (!loadSchedules(*p_root.schedules)) v_ok = false;
+    if (!loadUserProfiles(*p_root.userProfiles)) v_ok = false;
+    if (!loadWebPageConfig(*p_root.webPage)) v_ok = false;
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] Config loaded (all sections, result=%d)", v_ok ? 1 : 0);
+    return v_ok;
+}
+
+bool CL_C10_ConfigManager::freeLazySection(const char* p_section, ST_A20_ConfigRoot_t& p_root) {
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_MutxGuard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
+        return false;
+    }
+
+    if (!p_section) return false;
+
+    if (strcmp(p_section, "wifi") == 0) {
+        if (p_root.wifi) { delete p_root.wifi; p_root.wifi = nullptr; }
+        return true;
+    }
+    if (strcmp(p_section, "motion") == 0) {
+        if (p_root.motion) { delete p_root.motion; p_root.motion = nullptr; }
+        return true;
+    }
+    if (strcmp(p_section, "nvsSpec") == 0) {
+        if (p_root.nvsSpec) { delete p_root.nvsSpec; p_root.nvsSpec = nullptr; }
+        return true;
+    }
+    if (strcmp(p_section, "schedules") == 0) {
+        if (p_root.schedules) { delete p_root.schedules; p_root.schedules = nullptr; }
+        return true;
+    }
+    if (strcmp(p_section, "userProfiles") == 0) {
+        if (p_root.userProfiles) { delete p_root.userProfiles; p_root.userProfiles = nullptr; }
+        return true;
+    }
+    if (strcmp(p_section, "windDict") == 0) {
+        if (p_root.windDict) { delete p_root.windDict; p_root.windDict = nullptr; }
+        return true;
+    }
+    if (strcmp(p_section, "webPage") == 0) {
+        if (p_root.webPage) { delete p_root.webPage; p_root.webPage = nullptr; }
+        return true;
+    }
+    return false;
+}
+
+void CL_C10_ConfigManager::freeAll(ST_A20_ConfigRoot_t& p_root) {
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_MutxGuard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
+        return;
+    }
+
+    if (p_root.system)       { delete p_root.system; p_root.system = nullptr; }
+    if (p_root.wifi)         { delete p_root.wifi; p_root.wifi = nullptr; }
+    if (p_root.motion)       { delete p_root.motion; p_root.motion = nullptr; }
+    if (p_root.nvsSpec)      { delete p_root.nvsSpec; p_root.nvsSpec = nullptr; }
+    if (p_root.windDict)     { delete p_root.windDict; p_root.windDict = nullptr; }
+    if (p_root.schedules)    { delete p_root.schedules; p_root.schedules = nullptr; }
+    if (p_root.userProfiles) { delete p_root.userProfiles; p_root.userProfiles = nullptr; }
+    if (p_root.webPage)      { delete p_root.webPage; p_root.webPage = nullptr; }
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] All config objects freed");
+}
+
+// =====================================================
+// [E-1] pending free 큐
+// =====================================================
+void CL_C10_ConfigManager::queuePendingFree(const ST_A20_ConfigRoot_t& p_old) {
+    ST_A20_ConfigRoot_t v_oldest;
+    memset(&v_oldest, 0, sizeof(v_oldest));
+    bool v_hasOldest = false;
+    uint8_t v_newCount = 0;
+
+    portENTER_CRITICAL(&s_pendingFreeMux);
+
+    if (s_pendingFreeCount >= PENDING_FREE_SLOTS) {
+        v_oldest    = s_pendingFree[0];
+        v_hasOldest = true;
+
+        for (uint8_t i = 1; i < PENDING_FREE_SLOTS; i++) {
+            s_pendingFree[i - 1]   = s_pendingFree[i];
+            s_pendingFreeMs[i - 1] = s_pendingFreeMs[i];
+        }
+        s_pendingFreeCount = PENDING_FREE_SLOTS - 1;
+    }
+
+    s_pendingFree[s_pendingFreeCount]   = p_old;
+    s_pendingFreeMs[s_pendingFreeCount] = millis();
+    s_pendingFreeCount++;
+    v_newCount = s_pendingFreeCount;
+
+    portEXIT_CRITICAL(&s_pendingFreeMux);
+
+    if (v_hasOldest) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10] pending queue full → oldest freed immediately");
+        freeAll(v_oldest);
+    }
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] pending free queued (count=%u)", v_newCount);
+}
+
+void CL_C10_ConfigManager::processPendingFree() {
+    ST_A20_ConfigRoot_t v_expired[PENDING_FREE_SLOTS];
+    memset(v_expired, 0, sizeof(v_expired));
+    uint8_t v_expiredCount = 0;
+
+    uint32_t v_now = millis();
+
+    portENTER_CRITICAL(&s_pendingFreeMux);
+    uint8_t v_keep = 0;
+    for (uint8_t i = 0; i < s_pendingFreeCount; i++) {
+        if (v_now - s_pendingFreeMs[i] >= PENDING_FREE_GRACE_MS) {
+            v_expired[v_expiredCount++] = s_pendingFree[i];
+            memset(&s_pendingFree[i], 0, sizeof(s_pendingFree[i]));
+        } else {
+            if (v_keep != i) {
+                s_pendingFree[v_keep]   = s_pendingFree[i];
+                s_pendingFreeMs[v_keep] = s_pendingFreeMs[i];
+            }
+            v_keep++;
+        }
+    }
+    s_pendingFreeCount = v_keep;
+    portEXIT_CRITICAL(&s_pendingFreeMux);
+
+    for (uint8_t i = 0; i < v_expiredCount; i++) {
+        freeAll(v_expired[i]);
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] pending free executed (idx=%u)", i);
+    }
+}
+
+// -----------------------------------------------------
+// Dirty Config 저장
+// -----------------------------------------------------
+bool CL_C10_ConfigManager::saveDirtyConfigs() {
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_MutxGuard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
+        return false;
+    }
+
+    uint8_t v_attempt = 0;
+    uint8_t v_saved   = 0;
+    uint8_t v_failed  = 0;
+
+    auto trySave = [&](bool& p_dirty, const char* p_name, auto&& p_saveFn, const void* p_obj) {
+        bool v_isDirty = A40_ComFunc::Dirty_readAtomic(p_dirty, s_dirtyflagSpinlock);
+        if (!v_isDirty || !p_obj) return;
+
+        v_attempt++;
+        bool v_ok = p_saveFn(p_obj);
+        if (v_ok) {
+            A40_ComFunc::Dirty_clearAtomic(p_dirty, s_dirtyflagSpinlock);
+            v_saved++;
+            CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] dirty-save ok: %s", p_name);
+        } else {
+            v_failed++;
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] dirty-save failed: %s", p_name);
+        }
+    };
+
+    auto saveSystem_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveSystemConfig(*static_cast<const ST_A20_SystemConfig_t*>(p));
+    };
+    auto saveWifi_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveWifiConfig(*static_cast<const ST_A20_WifiConfig_t*>(p));
+    };
+    auto saveMotion_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveMotionConfig(*static_cast<const ST_A20_MotionConfig_t*>(p));
+    };
+    auto saveNvs_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveNvsSpecConfig(*static_cast<const ST_A20_NvsSpecConfig_t*>(p));
+    };
+    auto saveSchedules_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveSchedules(*static_cast<const ST_A20_SchedulesRoot_t*>(p));
+    };
+    auto saveUserProfiles_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveUserProfiles(*static_cast<const ST_A20_UserProfilesRoot_t*>(p));
+    };
+    auto saveWind_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveWindDict(*static_cast<const ST_A20_WindDict_t*>(p));
+    };
+    auto saveWeb_wrap = [](const void* p) -> bool {
+        return CL_C10_ConfigManager::saveWebPageConfig(*static_cast<const ST_A20_WebPageConfig_t*>(p));
+    };
+
+    trySave(_dirty_system,       "system",       saveSystem_wrap,       g_A20_config_root.system);
+    trySave(_dirty_wifi,         "wifi",         saveWifi_wrap,         g_A20_config_root.wifi);
+    trySave(_dirty_motion,       "motion",       saveMotion_wrap,       g_A20_config_root.motion);
+    trySave(_dirty_nvsSpec,      "nvsSpec",      saveNvs_wrap,          g_A20_config_root.nvsSpec);
+    trySave(_dirty_schedules,    "schedules",    saveSchedules_wrap,    g_A20_config_root.schedules);
+    trySave(_dirty_userProfiles, "userProfiles", saveUserProfiles_wrap, g_A20_config_root.userProfiles);
+    trySave(_dirty_windDict,     "windDict",     saveWind_wrap,         g_A20_config_root.windDict);
+    trySave(_dirty_webPage,      "webPage",      saveWeb_wrap,          g_A20_config_root.webPage);
+
+    if (v_attempt == 0) {
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[C10] saveDirtyConfigs: nothing to save (no dirty flags).");
+        return true;
+    }
+    if (v_failed == 0) {
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] saveDirtyConfigs: saved=%u/%u (all ok)", v_saved, v_attempt);
+        return true;
+    }
+    CL_D10_Logger::log(EN_L10_LOG_WARN,
+                       "[C10] saveDirtyConfigs: saved=%u failed=%u attempted=%u",
+                       v_saved, v_failed, v_attempt);
+    return false;
+}
+
+void CL_C10_ConfigManager::getDirtyStatus(JsonDocument& p_doc) {
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_MutxGuard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
+        return;
+    }
+
+    p_doc["system"]       = A40_ComFunc::Dirty_readAtomic(_dirty_system, s_dirtyflagSpinlock);
+    p_doc["wifi"]         = A40_ComFunc::Dirty_readAtomic(_dirty_wifi, s_dirtyflagSpinlock);
+    p_doc["motion"]       = A40_ComFunc::Dirty_readAtomic(_dirty_motion, s_dirtyflagSpinlock);
+    p_doc["nvsSpec"]      = A40_ComFunc::Dirty_readAtomic(_dirty_nvsSpec, s_dirtyflagSpinlock);
+    p_doc["schedules"]    = A40_ComFunc::Dirty_readAtomic(_dirty_schedules, s_dirtyflagSpinlock);
+    p_doc["userProfiles"] = A40_ComFunc::Dirty_readAtomic(_dirty_userProfiles, s_dirtyflagSpinlock);
+    p_doc["windDict"]     = A40_ComFunc::Dirty_readAtomic(_dirty_windDict, s_dirtyflagSpinlock);
+    p_doc["webPage"]      = A40_ComFunc::Dirty_readAtomic(_dirty_webPage, s_dirtyflagSpinlock);
+}
+
+bool CL_C10_ConfigManager::saveAll(const ST_A20_ConfigRoot_t& p_root) {
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_MutxGuard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
+        return false;
+    }
+
+    uint8_t v_okCnt = 0;
+    uint8_t v_ngCnt = 0;
+
+    auto track = [&](const char* p_name, bool p_ok) {
+        if (p_ok) {
+            v_okCnt++;
+        } else {
+            v_ngCnt++;
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] saveAll failed: %s", p_name);
+        }
+    };
+
+    if (p_root.system)       track("system",       saveSystemConfig(*p_root.system));
+    if (p_root.wifi)         track("wifi",         saveWifiConfig(*p_root.wifi));
+    if (p_root.motion)       track("motion",       saveMotionConfig(*p_root.motion));
+    if (p_root.nvsSpec)      track("nvsSpec",      saveNvsSpecConfig(*p_root.nvsSpec));
+    if (p_root.schedules)    track("schedules",    saveSchedules(*p_root.schedules));
+    if (p_root.userProfiles) track("userProfiles", saveUserProfiles(*p_root.userProfiles));
+    if (p_root.windDict)     track("windDict",     saveWindDict(*p_root.windDict));
+    if (p_root.webPage)      track("webPage",      saveWebPageConfig(*p_root.webPage));
+
+    if (v_ngCnt > 0) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] saveAll: ok=%u ng=%u", v_okCnt, v_ngCnt);
+        return false;
+    }
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] saveAll: ok=%u", v_okCnt);
+    return true;
+}
+
+// -----------------------------------------------------
+// 3. All Config → JSON Export
+// -----------------------------------------------------
+void CL_C10_ConfigManager::toJson_All(const ST_A20_ConfigRoot_t& p,
+                                      JsonDocument&              p_doc,
+                                      bool                       p_includeSystem,
+                                      bool                       p_includeWifi,
+                                      bool                       p_includeMotion,
+                                      bool                       p_includeNvsSpec,
+                                      bool                       p_includeSchedules,
+                                      bool                       p_includeUserProfiles,
+                                      bool                       p_includeWindDict,
+                                      bool                       p_includeWebPage) {
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_MutxGuard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
+        return;
+    }
+
+    if (p_includeSystem && p.system) toJson_System(*p.system, p_doc);
+    if (p_includeWifi && p.wifi) toJson_Wifi(*p.wifi, p_doc);
+    if (p_includeMotion && p.motion) toJson_Motion(*p.motion, p_doc);
+    if (p_includeNvsSpec && p.nvsSpec) toJson_NvsSpec(*p.nvsSpec, p_doc);
+    if (p_includeSchedules && p.schedules) toJson_Schedules(*p.schedules, p_doc);
+    if (p_includeUserProfiles && p.userProfiles) toJson_UserProfiles(*p.userProfiles, p_doc);
+    if (p_includeWindDict && p.windDict) toJson_WindDict(*p.windDict, p_doc);
+    if (p_includeWebPage && p.webPage) toJson_WebPage(*p.webPage, p_doc);
+
+    CL_D10_Logger::log(EN_L10_LOG_DEBUG,
+                       "[C10] Config export -> JSON (sys=%d wifi=%d motion=%d nvs=%d sch=%d up=%d wind=%d web=%d)",
+                       p_includeSystem ? 1 : 0,
+                       p_includeWifi ? 1 : 0,
+                       p_includeMotion ? 1 : 0,
+                       p_includeNvsSpec ? 1 : 0,
+                       p_includeSchedules ? 1 : 0,
+                       p_includeUserProfiles ? 1 : 0,
+                       p_includeWindDict ? 1 : 0,
+                       p_includeWebPage ? 1 : 0);
+}
+
+// -----------------------------------------------------
+// 8. Factory Reset 구현
+// -----------------------------------------------------
+bool CL_C10_ConfigManager::factoryResetFromDefault() {
+    CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_MutxGuard.isAcquired()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: Mutex timeout", __func__);
+        return false;
+    }
+
+    bool v_fileFound = false;
+
+#ifdef CFG_DEFAULT_FILE_EXISTS
+    JsonDocument v_def;
+
+    if (A40_IO::Load_File2JsonDoc_V21(A20_Const::CFG_DEFAULT_FILE, v_def, true, __func__)) {
+        v_fileFound = true;
+
+        if (s_cfgJsonFileMap.system[0] == '\0') {
+            if (!_loadCfgJsonFile()) {
+                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] factoryReset: cfg_jsonFile load failed.");
+                return false;
+            }
+        }
+
+        bool    v_allSaveOk = true;
+        uint8_t v_savedCnt  = 0;
+
+        if (v_def["system"].is<JsonObjectConst>()) {
+            JsonDocument v_doc;
+            v_doc["system"] = v_def["system"];
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.system, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
+        }
+        if (v_def["wifi"].is<JsonObjectConst>()) {
+            JsonDocument v_doc;
+            v_doc["wifi"] = v_def["wifi"];
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.wifi, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
+        }
+        if (v_def["motion"].is<JsonObjectConst>()) {
+            JsonDocument v_doc;
+            v_doc["motion"] = v_def["motion"];
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.motion, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
+        }
+        if (v_def["nvsSpec"].is<JsonObjectConst>()) {
+            JsonDocument v_doc;
+            v_doc["nvsSpec"] = v_def["nvsSpec"];
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.nvsSpec, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
+        }
+        if (v_def["windDict"].is<JsonObjectConst>() || v_def["windProfile"].is<JsonObjectConst>()) {
+            JsonDocument v_doc;
+            v_doc["windDict"] = v_def["windDict"].is<JsonObjectConst>() ? v_def["windDict"] : v_def["windProfile"];
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.windDict, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
+        }
+        if (v_def["schedules"].is<JsonObjectConst>() || v_def["schedules"].is<JsonArrayConst>()) {
+            JsonDocument v_doc;
+            v_doc["schedules"] = v_def["schedules"];
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.schedules, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
+        }
+        if (v_def["userProfiles"].is<JsonObjectConst>()) {
+            JsonDocument v_doc;
+            v_doc["userProfiles"] = v_def["userProfiles"];
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.userProfiles, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
+        }
+        if (v_def["pages"].is<JsonArrayConst>() || v_def["webPage"].is<JsonObjectConst>()) {
+            JsonDocument v_doc;
+            if (v_def["webPage"].is<JsonObjectConst>()) {
+                v_doc = v_def["webPage"];
+            } else {
+                v_doc["pages"]    = v_def["pages"];
+                v_doc["reDirect"] = v_def["reDirect"];
+                v_doc["assets"]   = v_def["assets"];
+            }
+            if (A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.webPage, v_doc, true, true, __func__)) v_savedCnt++;
+            else v_allSaveOk = false;
+        }
+
+        if (!v_allSaveOk) {
+            CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                               "[C10] Factory Reset: master-file restore partial failure (saved=%u).",
+                               (unsigned)v_savedCnt);
+            return false;
+        }
+
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[C10] Factory Reset: Restored from default master file (sections=%u).",
+                           (unsigned)v_savedCnt);
+    }
+#endif
+
+    if (!v_fileFound) {
+        bool v_allocOk = true;
+
+        if (!C10_allocSection(g_A20_config_root.system, "system")) v_allocOk = false;
+        if (!C10_allocSection(g_A20_config_root.wifi, "wifi")) v_allocOk = false;
+        if (!C10_allocSection(g_A20_config_root.motion, "motion")) v_allocOk = false;
+        if (!C10_allocSection(g_A20_config_root.nvsSpec, "nvsSpec")) v_allocOk = false;
+        if (!C10_allocSection(g_A20_config_root.windDict, "windDict")) v_allocOk = false;
+        if (!C10_allocSection(g_A20_config_root.schedules, "schedules")) v_allocOk = false;
+        if (!C10_allocSection(g_A20_config_root.userProfiles, "userProfiles")) v_allocOk = false;
+        if (!C10_allocSection(g_A20_config_root.webPage, "webPage")) v_allocOk = false;
+
+        if (!v_allocOk) {
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] Factory Reset: allocation failed. abort.");
+            freeAll(g_A20_config_root);
+            return false;
+        }
+
+        if (s_cfgJsonFileMap.system[0] == '\0') {
+            if (!_loadCfgJsonFile()) {
+                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] Factory Reset: cfg_jsonFile load failed.");
+                return false;
+            }
+        }
+
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] Factory Reset: Using hardcoded defaults in C++.");
+        A20_resetToDefault(g_A20_config_root);
+
+        if (!saveAll(g_A20_config_root)) {
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] Factory Reset: saveAll failed (partial write).");
+            return false;
+        }
+    }
+
+    // ======================================================
+    // [F-1] NVS 런타임 상태 초기화 (E-NOTE-3 기능 버그 수정)
+    //  - factory reset 후 이전 override/lastProfile 등이 NVS에 잔존
+    //  - 재부팅 시 정책상 자동 복원은 없으나 NVS 오염 상태 유지
+    //  - resetRuntime(): in-memory 초기화 + flush(true)로 NVS에 기본값 기록
+    //  - routeConfigInit/routeControl에서 factory reset 후 ESP.restart() 호출되므로
+    //    본 resetRuntime은 재부팅 전 안전 정리 목적
+    // ======================================================
+    CL_N10_NvsManager::resetRuntime();
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[C10] Factory Reset: NVS runtime reset done.");
+
+    return true;
+}

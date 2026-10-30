@@ -1,0 +1,38 @@
+{
+  "pages": [
+    {
+      "uri": "/P010_main_0201.html",
+      "path": "/html_v0201/P010_main_0201.html",
+      "label": "Smart Nature Wind",
+      "enable": true,
+      "isMain": true,
+      "order": 10,
+      "pageAssets": [
+        { "uri": "/P000_common_0201.css", "path": "/html_v0201/P000_common_0201.css" },
+        { "uri": "/P010_bundle_0201.js",  "path": "/html_v0201/P010_bundle_0201.js"  }
+      ]
+    }
+  ],
+  "reDirect": [
+    { "uriFrom": "/",           "uriTo": "/P010_main_0201.html" },
+    { "uriFrom": "/index.html", "uriTo": "/P010_main_0201.html" },
+    { "uriFrom": "/main",       "uriTo": "/P010_main_0201.html" },
+    { "uriFrom": "/dashboard",  "uriTo": "/P010_main_0201.html#/dashboard" },
+    { "uriFrom": "/chart",      "uriTo": "/P010_main_0201.html#/chart" },
+    { "uriFrom": "/chart_t2",   "uriTo": "/P010_main_0201.html#/chart" },
+    { "uriFrom": "/chart_t3",   "uriTo": "/P010_main_0201.html#/chart" },
+    { "uriFrom": "/schedule",   "uriTo": "/P010_main_0201.html#/schedule" },
+    { "uriFrom": "/schedules_t2","uriTo":"/P010_main_0201.html#/schedule" },
+    { "uriFrom": "/profiles",   "uriTo": "/P010_main_0201.html#/profiles" },
+    { "uriFrom": "/userProfile_t2","uriTo":"/P010_main_0201.html#/profiles" },
+    { "uriFrom": "/sensors",    "uriTo": "/P010_main_0201.html#/sensors" },
+    { "uriFrom": "/settings",   "uriTo": "/P010_main_0201.html#/settings" },
+    { "uriFrom": "/network",    "uriTo": "/P010_main_0201.html#/network" },
+    { "uriFrom": "/logs",       "uriTo": "/P010_main_0201.html#/logs" },
+    { "uriFrom": "/diagnostics","uriTo": "/P010_main_0201.html#/diagnostics" },
+    { "uriFrom": "/firmware",   "uriTo": "/P010_main_0201.html#/firmware" },
+    { "uriFrom": "/ai",         "uriTo": "/P010_main_0201.html#/ai" },
+    { "uriFrom": "/info",       "uriTo": "/P010_main_0201.html#/info" }
+  ],
+  "assets": []
+}

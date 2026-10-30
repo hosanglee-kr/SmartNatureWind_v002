@@ -1,0 +1,340 @@
+/*
+ * ------------------------------------------------------
+ * 소스명 : P050_chart_t2_071.js
+ * 모듈명 : Smart Nature Wind Chart Monitor Controller (v009)
+ * ------------------------------------------------------
+ * 기능 요약:
+ * - /ws/chart WebSocket을 통한 실시간 차트 데이터 모니터링
+ * - 6개 Chart.js 차트에 풍속/파라미터/난류/이벤트/프리셋/타이밍 실시간 반영
+ * - 일시정지/재개/줌 초기화 + 차트 접기 토글
+ * - ⚠️ 설정 변경/저장 기능은 전혀 없음 (순수 모니터 페이지)
+ * ------------------------------------------------------
+ * [v009] 백엔드 epoch ms 전환 정합
+ *  - timestamp: epoch ms (SNTP sync 후)
+ *  - WS payload: root 레벨 "chart" 배열
+ *  - WS 인증: SNW.buildWsUrl(SNW_API.WS_API_CHART) 사용
+ * ------------------------------------------------------
+ */
+
+(() => {
+  "use strict";
+
+  const refreshLabel = SNW.$("#refreshInfo");
+
+  let isPaused = false;
+  const charts = [];
+
+  // ======================= Chart.js 공통 옵션 =======================
+
+  const baseOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: false,
+    scales: {
+      x: {
+        type: "time",
+        time: { unit: "second" }
+      }
+    },
+    plugins: {
+      legend: { position: "bottom" },
+      zoom: {
+        zoom: {
+          wheel: { enabled: true },
+          pinch: { enabled: true },
+          mode: "x"
+        },
+        pan: {
+          enabled: true,
+          mode: "x"
+        }
+      }
+    }
+  };
+
+  const initChart = (ctx, config) => {
+    const chart = new Chart(ctx, config);
+    charts.push(chart);
+    return chart;
+  };
+
+  // ======================= 차트 인스턴스 =======================
+
+  let chartWind, chartParam, chartTurbThermSig, chartEvent, chartPreset, chartTiming;
+
+  function initCharts() {
+    const ctxWind = SNW.$("#chartWind");
+    const ctxParam = SNW.$("#chartParams");
+    const ctxTurbThermSig = SNW.$("#chartTurbThermSig");
+    const ctxEvent = SNW.$("#chartEvents");
+    const ctxPreset = SNW.$("#chartPreset");
+    const ctxTiming = SNW.$("#chartTiming");
+
+    if (!ctxWind || !ctxParam || !ctxTurbThermSig || !ctxEvent || !ctxPreset || !ctxTiming) {
+      console.error("[ChartT2] Canvas 요소가 일부 없습니다.");
+      return;
+    }
+
+    chartWind = initChart(ctxWind, {
+      type: "line",
+      data: {
+        datasets: [
+          { label: "풍속 (m/s)", yAxisID: "yWind", borderColor: "#2196f3", data: [], tension: 0.3 },
+          { label: "PWM Duty (%)", yAxisID: "yPWM", borderColor: "#ff6384", data: [], tension: 0.3 }
+        ]
+      },
+      options: {
+        ...baseOptions,
+        scales: {
+          ...baseOptions.scales,
+          yWind: { position: "left", min: 0, max: 20 },
+          yPWM: { position: "right", min: 0, max: 100, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+
+    chartParam = initChart(ctxParam, {
+      type: "line",
+      data: {
+        datasets: [
+          { label: "강도(Intensity %)", borderColor: "#4caf50", data: [] },
+          { label: "가변성(Variability %)", borderColor: "#ff9800", data: [] },
+          { label: "팬 최대(Fan Limit %)", borderColor: "#00bcd4", data: [] },
+          { label: "팬 최소(Min Fan %)", borderColor: "#e91e63", data: [] }
+        ]
+      },
+      options: {
+        ...baseOptions,
+        scales: {
+          ...baseOptions.scales,
+          y: { min: 0, max: 200 }
+        }
+      }
+    });
+
+    chartTurbThermSig = initChart(ctxTurbThermSig, {
+      type: "line",
+      data: {
+        datasets: [
+          { label: "난류 시그마(Turb Sig)", yAxisID: "ySig", borderColor: "#9c27b0", data: [], tension: 0.3 },
+          { label: "난류 길이(Turb Len)", yAxisID: "yLen", borderColor: "#795548", data: [], tension: 0.3 },
+          { label: "열기포 세기(Therm Str)", yAxisID: "ySig", borderColor: "#8bc34a", data: [], tension: 0.3, borderDash: [5, 5] },
+          { label: "열기포 반경(Therm Rad)", yAxisID: "yLen", borderColor: "#ffc107", data: [], tension: 0.3, borderDash: [5, 5] }
+        ]
+      },
+      options: {
+        ...baseOptions,
+        scales: {
+          ...baseOptions.scales,
+          ySig: { position: "left", min: 0, max: 5 },
+          yLen: { position: "right", min: 0, max: 200, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+
+    chartEvent = initChart(ctxEvent, {
+      type: "line",
+      data: {
+        datasets: [
+          { label: "돌풍(Gust)", borderColor: "#f44336", data: [], stepped: true },
+          { label: "열기포(Thermal)", borderColor: "#03a9f4", data: [], stepped: true }
+        ]
+      },
+      options: {
+        ...baseOptions,
+        scales: {
+          ...baseOptions.scales,
+          y: { min: 0, max: 1 }
+        }
+      }
+    });
+
+    chartPreset = initChart(ctxPreset, {
+      type: "line",
+      data: {
+        datasets: [
+          { label: "Preset Index", borderColor: "#607d8b", data: [], stepped: true }
+        ]
+      },
+      options: {
+        ...baseOptions,
+        scales: {
+          ...baseOptions.scales,
+          y: { min: 0, max: 10 }
+        }
+      }
+    });
+
+    chartTiming = initChart(ctxTiming, {
+      type: "line",
+      data: {
+        datasets: [
+          { label: "Sim Interval (ms)", borderColor: "#9e9e9e", data: [], tension: 0.3 },
+          { label: "Gust Interval (ms)", borderColor: "#bdbdbd", data: [], tension: 0.3 },
+          { label: "Thermal Interval (ms)", borderColor: "#e0e0e0", data: [], tension: 0.3 }
+        ]
+      },
+      options: {
+        ...baseOptions,
+        scales: {
+          ...baseOptions.scales,
+          y: { min: 0 }
+        }
+      }
+    });
+  }
+
+  // ======================= WS 데이터 → 차트 반영 =======================
+  // [diffOnly 대응] 백엔드는 매 tick마다 최신 1개만 전송
+  //  → 프론트는 append + max 120개 유지
+  const MAX_CHART_POINTS = 120;   // S10 CHART_CAPACITY와 동일
+
+  function _appendDataset(dataset, recs, key, transform) {
+    if (!Array.isArray(dataset) || !Array.isArray(recs)) return;
+
+    for (const r of recs) {
+      const x = Number(r.t) || 0;
+      if (!x) continue;
+
+      let y = r[key];
+      if (transform) y = transform(y);
+
+      // 중복 timestamp 방지 (동일 t 는 마지막 값으로 교체)
+      const last = dataset[dataset.length - 1];
+      if (last && last.x === x) {
+        last.y = y;
+      } else {
+        dataset.push({ x, y });
+      }
+    }
+
+    // cap
+    if (dataset.length > MAX_CHART_POINTS) {
+      dataset.splice(0, dataset.length - MAX_CHART_POINTS);
+    }
+  }
+
+  function processChartRecords(recs) {
+    if (!Array.isArray(recs) || recs.length === 0) return;
+
+    // 1) 풍속 / PWM
+    _appendDataset(chartWind.data.datasets[0].data, recs, "wind");
+    _appendDataset(chartWind.data.datasets[1].data, recs, "pwm");
+
+    // 2) 핵심 파라미터
+    _appendDataset(chartParam.data.datasets[0].data, recs, "intensity");
+    _appendDataset(chartParam.data.datasets[1].data, recs, "variability");
+    _appendDataset(chartParam.data.datasets[2].data, recs, "fanLimit");
+    _appendDataset(chartParam.data.datasets[3].data, recs, "minFan");
+
+    // 3) 난류/열기포
+    _appendDataset(chartTurbThermSig.data.datasets[0].data, recs, "turb_sig");
+    _appendDataset(chartTurbThermSig.data.datasets[1].data, recs, "turb_len");
+    _appendDataset(chartTurbThermSig.data.datasets[2].data, recs, "therm_str");
+    _appendDataset(chartTurbThermSig.data.datasets[3].data, recs, "therm_rad");
+
+    // 4) 이벤트 (0/1)
+    _appendDataset(chartEvent.data.datasets[0].data, recs, "gust", (v) => v ? 1 : 0);
+    _appendDataset(chartEvent.data.datasets[1].data, recs, "thermal", (v) => v ? 1 : 0);
+
+    // 5) 프리셋 인덱스
+    _appendDataset(chartPreset.data.datasets[0].data, recs, "preset");
+
+    // 6) 타이밍
+    _appendDataset(chartTiming.data.datasets[0].data, recs, "sim_int");
+    _appendDataset(chartTiming.data.datasets[1].data, recs, "gust_int");
+    _appendDataset(chartTiming.data.datasets[2].data, recs, "thermal_int");
+
+    charts.forEach((c) => c.update("none"));
+
+    const last = recs[recs.length - 1];
+    if (refreshLabel && last?.t) {
+      const ts = new Date(Number(last.t)).toLocaleTimeString();
+      refreshLabel.textContent = `🕒 WS 업데이트: ${ts} (샘플 ${recs.length}개)`;
+    }
+  }
+
+  // ======================= WebSocket =======================
+
+  function initWebSocket() {
+    // [인증] buildWsUrl 사용 (?apiKey=xxx 자동 부착)
+    const url = SNW.buildWsUrl(SNW_API.WS_API_CHART);
+    const ws = new WebSocket(url);
+
+    ws.onopen = () => {
+      if (refreshLabel) refreshLabel.textContent = "✅ 실시간 차트 데이터 수신 중...";
+      SNW.toast("/ws/chart 연결 성공", "ok");
+    };
+
+    ws.onmessage = (event) => {
+      if (isPaused) return;
+      try {
+        const data = JSON.parse(event.data);
+        // [Epoch] WS payload는 root 레벨 "chart" 배열
+        if (Array.isArray(data.chart)) {
+          processChartRecords(data.chart);
+        }
+      } catch (e) {
+        console.error("[ChartT2] WS 데이터 파싱 오류:", e);
+        SNW.toast("WS 데이터 파싱 오류", "err");
+      }
+    };
+
+    ws.onclose = () => {
+      if (refreshLabel) refreshLabel.textContent = "❌ WS 연결 끊김. 5초 후 재연결 시도...";
+      SNW.toast("/ws/chart 연결 끊김", "warn");
+      setTimeout(initWebSocket, 5000);
+    };
+
+    ws.onerror = (e) => {
+      console.error("[ChartT2] WebSocket 오류:", e);
+      if (refreshLabel) refreshLabel.textContent = "⚠️ WS 오류 발생";
+    };
+  }
+
+  // ======================= 이벤트 =======================
+
+  function bindEvents() {
+    SNW.$("#btnPause")?.addEventListener("click", () => {
+      isPaused = true;
+      if (refreshLabel) refreshLabel.textContent = "⏸ 갱신 일시정지됨";
+      SNW.toast("차트 갱신 일시정지", "warn");
+    });
+
+    SNW.$("#btnResume")?.addEventListener("click", () => {
+      isPaused = false;
+      SNW.toast("차트 갱신 재개", "ok");
+    });
+
+    SNW.$("#btnResetZoomAll")?.addEventListener("click", () => {
+      charts.forEach((c) => c.resetZoom && c.resetZoom());
+      SNW.toast("모든 차트 줌 초기화", "ok");
+    });
+
+    document.querySelectorAll(".chart-container").forEach((container) => {
+      const header = container.querySelector(".chart-header");
+      const content = container.querySelector(".chart-content");
+      const btnToggle = container.querySelector(".btn-toggle");
+
+      if (!header || !content || !btnToggle) return;
+
+      header.addEventListener("click", () => {
+        if (content.style.display === "none") {
+          content.style.display = "block";
+          btnToggle.textContent = "▲";
+        } else {
+          content.style.display = "none";
+          btnToggle.textContent = "▼";
+        }
+      });
+    });
+  }
+
+  // ======================= 초기화 =======================
+
+  document.addEventListener("DOMContentLoaded", () => {
+    initCharts();
+    bindEvents();
+    initWebSocket();
+  });
+})();

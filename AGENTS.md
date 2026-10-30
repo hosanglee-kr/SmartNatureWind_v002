@@ -77,6 +77,7 @@ Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
 
 ### 4.2 C++ 백엔드 구현 규칙
 1. **ArduinoJson v7**: 반드시 단일 `JsonDocument` 타입 사용 (`doc["key"].to<JsonObject>()` 문법, `createNested*` 금지).
+   - **키 검사**: `containsKey("key")` 금지 (v7 비권장/향후 삭제 예정 경고). 대신 `obj["key"].is<JsonVariant>()` 또는 정밀 타입(`obj["key"].is<int>()`, `is<const char*>()` 등) 사용.
 2. **로깅**: 항상 `CL_D10_Logger::log(EN_L10_LOG_..., "[모듈] 메시지", ...)` 사용.
 3. **메모리/문자열**: 안전한 버퍼 관리를 위해 `memset` + `strlcpy` 패턴 준수. 물리량 계산 시 `float` 상수 `1.0f` 표기.
 4. **동시성 보호**: `async_tcp` 컨텍스트에서 `g_A20_config_root` 직접 접근 절대 금지 (`getRootSnapshot` 필수 경유).

@@ -258,7 +258,7 @@ bool C10_validateUserProfilesLoaded(const ST_A20_UserProfilesRoot_t& p_root, con
 
         for (uint8_t v_k = 0; v_k < up.segCount && v_k < A20_Const::MAX_SEGMENTS_PER_PROFILE; v_k++) {
             const ST_A20_UserProfileSegment_t& sg = up.segments[v_k];
-            if ((uint16_t)sg.segId == 0u || (uint16_t)sg.segId > 255u) {
+            if (sg.segId == 0u) {
                 CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: invalid segId=%u (profileId=%u)",
                                    v_caller, (unsigned)sg.segId, (unsigned)v_pid);
                 return false;

@@ -42,21 +42,8 @@
 #include "A23_Com_ResetCfg_0202.h"  // A20_resetXxxDefault (내부적으로 A25 재포함)
 
 #include <cstring>
-#include <ctime>
 
-// =====================================================
-// AutoOff 시간(localtime null) 방어
-//  - 타임이 아직 동기화되지 않아 localtime()이 null일 수 있음
-// =====================================================
-static bool C10_isLocalTimeReady() {
-    time_t v_now = time(nullptr);
-    if (v_now <= 0) return false;
 
-    struct tm* v_tm = localtime(&v_now);
-    if (!v_tm) return false;
-
-    return true;
-}
 
 // =====================================================
 // WebSocket 채널 유틸 (A20_Const_WS_040 기반)

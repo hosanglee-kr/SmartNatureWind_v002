@@ -99,11 +99,6 @@ void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
     }
 
     // 스냅샷 필드
-    EN_A20_WindPhase_t v_phase           = EN_A20_WIND_PHASE_NORMAL;
-    float              v_avg             = 0.0f;
-    bool               v_gust            = false;
-    bool               v_therm           = false;
-    uint8_t            v_samp            = 0;
     uint8_t            v_presetIdx       = 0;
     float              v_intensity       = 0.0f;
     float              v_variability     = 0.0f;
@@ -134,11 +129,6 @@ void CL_S10_Simulation::toChartJson(JsonDocument& p_doc, bool p_diffOnly) {
             return;
         }
 
-        v_phase        = phase;
-        v_avg          = _getAvgWindFast();
-        v_gust         = gustActive;
-        v_therm        = thermalActive;
-        v_samp         = historyCount;
         v_intensity    = userIntensity;
         v_variability  = userVariability;
         v_gustFreq     = userGustFreq;

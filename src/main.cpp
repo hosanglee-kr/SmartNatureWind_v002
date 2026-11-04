@@ -21,11 +21,11 @@
  * [API / WS 진입점]
  *  - REST     : /api/v001/ *
  *  - WebSocket: /ws/{log|state|chart|metrics|summary}
- *  - Web UI   : /  →  /P010_main_0202.html (reDirect)
+ *  - Web UI   : /  →  /index.html (reDirect)
  * ------------------------------------------------------
  * [구현 규칙]
  *  - 본 파일은 엔트리포인트 역할만 수행 (비즈니스 로직 금지)
- *  - 실제 초기화/루프 구현은 A00_Main_0202 로 위임
+ *  - 실제 초기화/루프 구현은 A00_Main_0203 로 위임
  *  - Logger 는 A00_init 이전에 초기화 (부팅 로그 확보 목적)
  * ------------------------------------------------------
  */
@@ -34,8 +34,8 @@
 #include <LittleFS.h>
 
 
-#include "v0202/A00_Main_0202.h"
-#include "v0202/A20_Const_Const_0202.h" // [E-10] 부트 지연 상수
+#include "v0203/A00_Main_0203.h"
+#include "v0203/A20_Const_Const_0203.h"
 
 // ======================================================
 // Arduino setup() — 부팅 시 1회 실행
@@ -94,7 +94,7 @@ void setup() {
     Serial.println("Access endpoints:");
     Serial.println("   REST      : /api/v001/{version|state|system|motion|config|...}");
     Serial.println("   WebSocket : /ws/{log|state|chart|metrics|summary}");
-    Serial.println("   Web UI    : /  (→ /P010_main_0202.html)");
+    Serial.println("   Web UI    : /  (→ /index.html)");
     Serial.println();
 }
 

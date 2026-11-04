@@ -160,10 +160,10 @@ void CL_W10_WebAPI::routeSession() {
         auto         s = CL_CT10_ControlManager::getSessionSnapshot();
         JsonDocument v_res;
 
-        v_res["active"]        = (s.state == EN_SESSION_RUNNING || s.state == EN_SESSION_PAUSED);
+        v_res["active"]        = (s.state == EN_SESSION_ACTIVE || s.state == EN_SESSION_PAUSED);
         v_res["type"]          = (uint8_t)s.type;
         v_res["trigger"]       = (uint8_t)s.trigger;
-        v_res["state"]         = (s.state == EN_SESSION_RUNNING)  ? "RUNNING"
+        v_res["state"]         = (s.state == EN_SESSION_ACTIVE)  ? "ACTIVE"
                                  : (s.state == EN_SESSION_PAUSED) ? "PAUSED"
                                                                   : "COMPLETED";
         v_res["pausedAccumMs"] = s.pausedAccumMs;

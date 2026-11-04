@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `f0417c47`
+- Built from commit: `345d33d4`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -945,7 +945,7 @@ Nodes (3): 6.1 인체 감지(PIR) 스마트 절전 운전, 6.2 3대 스마트 �
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `CL_CT10_ControlManager` connect `CL_CT10_ControlManager` to `CL_S10_Simulation`, `CL_N10_NvsManager`, `ST_CT10_SessionContext_t`, `CL_P10_PWM`, `src_v0203_ct10_ctl_0203`, `CT10_Ctl_Ctl_0203.cpp`, `CT10_Ctl_Ctl_Seg_0203.cpp`, `CL_W10_WebAPI`, `CL_CT10_ControlManager::tickLoop`, `C10_Config_Core_0203.cpp`, `2. 백엔드 기존 회귀`, `AsyncWebServerRequest`, `3. 백엔드 Batch A~F 신규`, `A00_init`, `src_v0203_c10_config_0203`, `CL_S10_Simulation::tick`, `CT10_Ctl_IOWS_0203.cpp`, `1. 상태 변수 소유권 및 접근 매트릭스`, `CT10_Ctl_IOWS_0203.cpp`, `CL_W10_WebAPI::routeComfort`?**
-  _High betweenness centrality (0.100) - this node is a cross-community bridge._
+  _High betweenness centrality (0.098) - this node is a cross-community bridge._
 - **What connects `EN_A20_CONTROL_RUN_CONTINUE`, `EN_A20_CONTROL_RUN_SCHEDULE`, `EN_A20_WIND_PHASE_CALM` to the rest of the system?**
   _452 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `CL_S10_Simulation` be split into smaller, more focused modules?**

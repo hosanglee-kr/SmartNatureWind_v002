@@ -245,6 +245,8 @@ class CL_CT10_ControlManager {
     static uint8_t     getRecommendedProfileId();  // 0이면 없음
     static const char* getRecommendedPresetCode();   // "OCEAN" 등
     static const char* getRecommendedStyleCode();    // "ACTIVE" 등
+    static float       getCurrentTemperatureMock();
+    static float       getCurrentHumidityMock();
 
     // ======================================================
     // [F-05] Pending reload (atomic CAS)
@@ -423,9 +425,6 @@ class CL_CT10_ControlManager {
     void ackEventState();
     void onAutoOffTriggered(EN_CT10_reason_t p_reason);
     bool checkAutoOff(EN_CT10_reason_t* p_reasonOrNull = nullptr);
-
-    static float getCurrentTemperatureMock();
-    static float getCurrentHumidityMock();
 
     int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg, bool p_allowOverlap = true);
 

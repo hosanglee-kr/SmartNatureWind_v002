@@ -27,6 +27,7 @@
  */
 
 #include "CT10_Ctl_0203.h"
+#include "N10_NvsManager_0203.h"
 
 #include "A40_Com_Utils_0203.h"
 
@@ -544,6 +545,22 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
         }
     }
 
+    // 7-1) [v0203 Stage 5] Pending Schedule snapshot (수동 재생 중 스케줄 대기 상태)
+    {
+        JsonObject v_ps = A40_ComFunc::Json_ensureObject(v_ctl["pendingSchedule"]);
+        v_ps["active"] = runCtx.pendingScheduleActive;
+        if (runCtx.pendingScheduleActive) {
+            v_ps["schId"]       = runCtx.pendingSchId;
+            v_ps["schNo"]       = runCtx.pendingSchNo;
+            v_ps["name"]        = runCtx.pendingSchName;
+            v_ps["startTime"]   = runCtx.pendingSchStart;
+            v_ps["profileNo"]   = runCtx.pendingProfileNo;
+            v_ps["remainMin"]   = runCtx.pendingRemainMin;
+            v_ps["inactiveDueToManual"] = true;
+            v_ps["manualOverride"]      = CL_N10_NvsManager::isManualOvrSchedule();
+        }
+    }
+
     // 8) AutoOff runtime snapshot
     {
         JsonObject v_ao = A40_ComFunc::Json_ensureObject(v_ctl["autoOffRt"]);
@@ -600,6 +617,36 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
 
     // [B-N-1] 마지막 reloadAll 결과
     v_ctl["lastReloadOk"] = CL_CT10_ControlManager::isLastReloadOk();
+
+    // 9-1) [v0203 Stage 3] Session runtime snapshot
+    {
+        JsonObject v_sess = A40_ComFunc::Json_ensureObject(v_ctl["session"]);
+        auto s = CL_CT10_ControlManager::getSessionSnapshot();
+        v_sess["active"]        = (s.state == EN_SESSION_ACTIVE || s.state == EN_SESSION_PAUSED);
+        v_sess["type"]          = (uint8_t)s.type;
+        v_sess["trigger"]       = (uint8_t)s.trigger;
+        v_sess["state"]         = (s.state == EN_SESSION_ACTIVE) ? "ACTIVE" :
+                                 (s.state == EN_SESSION_PAUSED)  ? "PAUSED"  : "COMPLETED";
+        v_sess["pausedAccumMs"] = s.pausedAccumMs;
+
+        if (s.type == EN_CT10_SESSION_PLAYLIST) {
+            v_sess["typeName"]    = "PLAYLIST";
+            v_sess["profileId"]   = s.payload.playlist.profileId;
+            v_sess["profileNo"]   = s.payload.playlist.profileNo;
+            v_sess["currentStep"] = s.payload.playlist.currentStepIdx + 1;
+            v_sess["totalSteps"]  = s.payload.playlist.totalSteps;
+            v_sess["loopCount"]   = s.payload.playlist.loopCount;
+        } else if (s.type == EN_CT10_SESSION_PRESET) {
+            v_sess["typeName"]   = "PRESET";
+            v_sess["presetCode"] = s.payload.preset.presetCode;
+            v_sess["styleCode"]  = s.payload.preset.styleCode;
+        } else if (s.type == EN_CT10_SESSION_FIXED) {
+            v_sess["typeName"] = "FIXED";
+            v_sess["percent"]  = s.payload.fixed.percent;
+        } else {
+            v_sess["typeName"] = "NONE";
+        }
+    }
 
     // 10) Simulation snapshot 병합
     sim.toJson(p_doc);

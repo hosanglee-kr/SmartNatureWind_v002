@@ -216,7 +216,8 @@ window.SNW = window.SNW || {};
                                                 "enabled": true,
                                                 "holdSec": 120
                                         }
-                                }
+                                },
+                                "profileId": 1
                         },
                         {
                                 "schId": 2,
@@ -275,7 +276,8 @@ window.SNW = window.SNW || {};
                                                 "enabled": true,
                                                 "holdSec": 120
                                         }
-                                }
+                                },
+                                "profileId": 2
                         },
                         {
                                 "schId": 3,
@@ -349,7 +351,8 @@ window.SNW = window.SNW || {};
                                                 "enabled": true,
                                                 "holdSec": 300
                                         }
-                                }
+                                },
+                                "profileId": 3
                         }
                 ]
         },
@@ -423,7 +426,48 @@ window.SNW = window.SNW || {};
                                                 "pir": {
                                                         "enabled": false
                                                 }
-                                        }
+                                        },
+                                        "steps": [
+                                                {
+                                                        "stepNo": 10,
+                                                        "durationMin": 40,
+                                                        "type": "PRESET",
+                                                        "presetCode": "OCEAN",
+                                                        "styleCode": "SLEEP",
+                                                        "fixedSpeed": 50.0,
+                                                        "override": {
+                                                                "enabled": true,
+                                                                "windIntensity": 35.0,
+                                                                "windVariability": 20.0,
+                                                                "gustFrequency": 15.0
+                                                        }
+                                                },
+                                                {
+                                                        "stepNo": 20,
+                                                        "durationMin": 120,
+                                                        "type": "PRESET",
+                                                        "presetCode": "FOREST_CANOPY",
+                                                        "styleCode": "SLEEP",
+                                                        "fixedSpeed": 50.0,
+                                                        "override": {
+                                                                "enabled": true,
+                                                                "windIntensity": 25.0,
+                                                                "windVariability": 15.0,
+                                                                "gustFrequency": 10.0
+                                                        }
+                                                },
+                                                {
+                                                        "stepNo": 30,
+                                                        "durationMin": 90,
+                                                        "type": "FIXED",
+                                                        "presetCode": "OCEAN",
+                                                        "styleCode": "BALANCE",
+                                                        "fixedSpeed": 45.0,
+                                                        "override": {
+                                                                "enabled": false
+                                                        }
+                                                }
+                                        ]
                                 },
                                 {
                                         "profileId": 2,
@@ -466,7 +510,23 @@ window.SNW = window.SNW || {};
                                                         "enabled": true,
                                                         "holdSec": 300
                                                 }
-                                        }
+                                        },
+                                        "steps": [
+                                                {
+                                                        "stepNo": 10,
+                                                        "durationMin": 60,
+                                                        "type": "PRESET",
+                                                        "presetCode": "URBAN_SUNSET",
+                                                        "styleCode": "FOCUS",
+                                                        "fixedSpeed": 50.0,
+                                                        "override": {
+                                                                "enabled": true,
+                                                                "windIntensity": 55.0,
+                                                                "windVariability": 30.0,
+                                                                "gustFrequency": 25.0
+                                                        }
+                                                }
+                                        ]
                                 },
                                 {
                                         "profileId": 3,
@@ -509,7 +569,23 @@ window.SNW = window.SNW || {};
                                                         "enabled": true,
                                                         "holdSec": 180
                                                 }
-                                        }
+                                        },
+                                        "steps": [
+                                                {
+                                                        "stepNo": 10,
+                                                        "durationMin": 60,
+                                                        "type": "PRESET",
+                                                        "presetCode": "HARBOR_BREEZE",
+                                                        "styleCode": "RELAX",
+                                                        "fixedSpeed": 50.0,
+                                                        "override": {
+                                                                "enabled": true,
+                                                                "windIntensity": 45.0,
+                                                                "windVariability": 35.0,
+                                                                "gustFrequency": 20.0
+                                                        }
+                                                }
+                                        ]
                                 },
                                 {
                                         "profileId": 4,
@@ -551,7 +627,23 @@ window.SNW = window.SNW || {};
                                                 "pir": {
                                                         "enabled": false
                                                 }
-                                        }
+                                        },
+                                        "steps": [
+                                                {
+                                                        "stepNo": 10,
+                                                        "durationMin": 25,
+                                                        "type": "PRESET",
+                                                        "presetCode": "PLAINS",
+                                                        "styleCode": "BALANCE",
+                                                        "fixedSpeed": 50.0,
+                                                        "override": {
+                                                                "enabled": true,
+                                                                "windIntensity": 60.0,
+                                                                "windVariability": 50.0,
+                                                                "gustFrequency": 40.0
+                                                        }
+                                                }
+                                        ]
                                 },
                                 {
                                         "profileId": 5,
@@ -594,7 +686,23 @@ window.SNW = window.SNW || {};
                                                         "enabled": true,
                                                         "holdSec": 150
                                                 }
-                                        }
+                                        },
+                                        "steps": [
+                                                {
+                                                        "stepNo": 10,
+                                                        "durationMin": 40,
+                                                        "type": "PRESET",
+                                                        "presetCode": "MOUNTAIN",
+                                                        "styleCode": "ACTIVE",
+                                                        "fixedSpeed": 50.0,
+                                                        "override": {
+                                                                "enabled": true,
+                                                                "windIntensity": 85.0,
+                                                                "windVariability": 70.0,
+                                                                "gustFrequency": 65.0
+                                                        }
+                                                }
+                                        ]
                                 },
                                 {
                                         "profileId": 6,
@@ -620,7 +728,8 @@ window.SNW = window.SNW || {};
                                                 "pir": {
                                                         "enabled": false
                                                 }
-                                        }
+                                        },
+                                        "steps": []
                                 }
                         ]
                 }

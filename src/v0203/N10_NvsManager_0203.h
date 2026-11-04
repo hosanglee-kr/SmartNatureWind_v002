@@ -38,6 +38,10 @@ typedef struct {
 	float	 overrideFixedPercent;
 	char	 overridePresetCode[24];
 	char	 overrideStyleCode[24];
+	// [v0203 신규] Manual Session 영속화
+	bool	 manualActive;
+	int16_t	 manualProfileNo;
+	bool	 manualOvrSchedule;
 } ST_N10_RuntimeState_t;
 
 typedef struct {
@@ -68,6 +72,10 @@ class CL_N10_NvsManager {
 	static constexpr const char* G_N10_KEY_OVERRIDE_FIXED   = "ovr_fixed";    // float
 	static constexpr const char* G_N10_KEY_OVERRIDE_PRESET  = "ovr_preset";   // string
 	static constexpr const char* G_N10_KEY_OVERRIDE_STYLE   = "ovr_style";    // string
+	// [v0203 신규] Session NVS 키
+	static constexpr const char* G_N10_KEY_MANUAL_ACTIVE    = "man_active";   // uint8(bool)
+	static constexpr const char* G_N10_KEY_MANUAL_PROFILE   = "man_prof";     // int16
+	static constexpr const char* G_N10_KEY_MANUAL_OVR_SCH   = "man_ovr_sch";  // uint8(bool)
 
   public:
 	// ==================================================
@@ -86,6 +94,15 @@ class CL_N10_NvsManager {
 	// ==================================================
 	// Getter / JSON Export
 	// ==================================================
+	// [v0203 신규] Session 영속화 메서드
+	static void    setManualSession(int16_t p_profileNo, bool p_active);
+	static int16_t getManualProfileNo();
+	static bool    isManualActive();
+	static void    setManualOvrSchedule(bool p_ovr);
+	static bool    isManualOvrSchedule();
+	static bool    getManualOverrideSchedule() { return isManualOvrSchedule(); }
+	static void    setManualOverrideSchedule(bool p_ovr) { setManualOvrSchedule(p_ovr); }
+
 	static ST_N10_RuntimeState_t getState();
 	static void toJson(JsonDocument& p_doc);
 

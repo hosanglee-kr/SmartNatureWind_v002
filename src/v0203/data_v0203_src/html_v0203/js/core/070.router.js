@@ -7,6 +7,11 @@ window.SNW = window.SNW || {};
     
     const ROUTES = {
         '/dashboard':   { page:'dashboard',   level:'L1' },
+        '/automation':          { page:'automation', params:{ tab:'studio' }, level:'L1' },
+        '/automation/studio':   { page:'automation', params:{ tab:'studio' }, level:'L1' },
+        '/automation/playlist': { page:'automation', params:{ tab:'playlist' }, level:'L1' },
+        '/automation/schedule': { page:'automation', params:{ tab:'schedule' }, level:'L1' },
+        '/automation/timer':    { page:'automation', params:{ tab:'timer' }, level:'L1' },
         '/chart':       { page:'chart',       level:'L2' },
         '/schedule':    { page:'schedule',    level:'L2' },
         '/profiles':    { page:'profiles',    level:'L2' },
@@ -65,7 +70,7 @@ window.SNW = window.SNW || {};
     }
 
     function parseHash() {
-        const raw = location.hash.replace(/^#/, '') || '/dashboard';
+        const raw = location.hash.replace(/^#/, '').split('?')[0] || '/dashboard';
         return ROUTES[raw] ? raw : '/dashboard';
     }
     function _clearMain() {
@@ -131,7 +136,13 @@ window.SNW = window.SNW || {};
                 return;
             }
 
-            currentPage = new PageClass(main);
+            const params = Object.assign({}, route.params || {});
+            const qIdx = location.hash.indexOf('?');
+            if (qIdx >= 0) {
+                const qs = new URLSearchParams(location.hash.slice(qIdx + 1));
+                for (const [k, v] of qs.entries()) params[k] = v;
+            }
+            currentPage = new PageClass(main, params);
             currentPath = path;
             await currentPage.mount();
             

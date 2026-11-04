@@ -42,6 +42,7 @@ void CL_C10_ConfigManager::toJson_Schedules(const ST_A20_SchedulesRoot_t& p_cfg,
         js["schNo"]          = s.schNo;
         js["name"]           = s.name;
         js["enabled"]        = s.enabled;
+        js["profileId"]      = s.profileId;
         js["repeatSegments"] = s.repeatSegments;
         js["repeatCount"]    = s.repeatCount;
 

@@ -174,6 +174,7 @@ class CL_W10_WebAPI {
     static void routeGeminiProxy(); // POST /api/v001/ai/gemini
     
     // 5. 제어 및 상태 요약 (POST/GET)
+    static void routeSession();        // [v0203 Stage 3] Session API /api/v001/session/*
     static void routeControl();        // 여러 제어용 /api/v001/control/*
     static void routeControlSummary(); // GET  /api/v001/control/summary
     static void routeMotionFeed();     // POST /api/v001/motion/pir/feed
@@ -187,6 +188,8 @@ class CL_W10_WebAPI {
     // 7. CRUD: Wind Profiles
     static void routeWindProfile();   // GET/POST /api/v001/windProfile
     static void routeWindProfileID(); // PUT/DELETE /api/v001/windProfile/{id}
+    static void routeWindDict();      // [v0203 Stage 4] GET /api/v001/windDict
+    static void routeComfort();       // [v0203 Stage 6] GET /api/v001/comfort
     
     // 8. CRUD: Schedules
     static void routeSchedules();   // GET/POST /api/v001/schedules

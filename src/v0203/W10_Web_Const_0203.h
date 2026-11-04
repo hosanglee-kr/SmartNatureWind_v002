@@ -52,6 +52,8 @@ constexpr const char* HTTP_API_SIMULATION      = HTTP_API_BASE "/simulation";
 constexpr const char* HTTP_API_SIM_STATE       = HTTP_API_BASE "/sim/state";
 constexpr const char* HTTP_API_CHART_HISTORY   = HTTP_API_BASE "/sim/chart";  // [U-002]
 constexpr const char* HTTP_API_MONITOR         = HTTP_API_BASE "/monitor";    // [MON-B] Phase 1
+constexpr const char* HTTP_API_MONITOR_TIMELINE        = HTTP_API_BASE "/monitor/timeline";        // [v0203 Stage 7]
+constexpr const char* HTTP_API_MONITOR_SESSION_SUMMARY = HTTP_API_BASE "/monitor/session-summary"; // [v0203 Stage 7]
 constexpr const char* HTTP_API_CONTROL_SUMMARY = HTTP_API_BASE "/control/summary";
 
 // --------------------------------------------------
@@ -67,9 +69,21 @@ constexpr const char* HTTP_API_RELOAD       = HTTP_API_BASE "/reload";
 // 4. 리소스 CRUD (Profile, Schedule, User)
 // --------------------------------------------------
 constexpr const char* HTTP_API_WIND_PROFILE        = HTTP_API_BASE "/windProfile";
+constexpr const char* HTTP_API_WIND_DICT           = HTTP_API_BASE "/windDict";
 constexpr const char* HTTP_API_SCHEDULES           = HTTP_API_BASE "/schedules";
 constexpr const char* HTTP_API_USER_PROFILES       = HTTP_API_BASE "/user_profiles";
 constexpr const char* HTTP_API_USER_PROFILES_PATCH = HTTP_API_BASE "/user_profiles/patch";
+
+// --------------------------------------------------
+// 4-1. Session 제어 (Stage 3 신규)
+// --------------------------------------------------
+constexpr const char* HTTP_API_SESSION_START   = HTTP_API_BASE "/session/start";
+constexpr const char* HTTP_API_SESSION_PAUSE   = HTTP_API_BASE "/session/pause";
+constexpr const char* HTTP_API_SESSION_RESUME  = HTTP_API_BASE "/session/resume";
+constexpr const char* HTTP_API_SESSION_STOP    = HTTP_API_BASE "/session/stop";
+constexpr const char* HTTP_API_SESSION_CURRENT = HTTP_API_BASE "/session/current";
+constexpr const char* HTTP_API_SESSION_SCH_OVERRIDE = HTTP_API_BASE "/session/schedule-override"; // [v0203 Stage 5]
+constexpr const char* HTTP_API_COMFORT = HTTP_API_BASE "/comfort"; // [v0203 Stage 6]
 
 // --------------------------------------------------
 // 5. 하드웨어 직접 제어 (Direct HW Control)

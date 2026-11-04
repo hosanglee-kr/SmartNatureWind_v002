@@ -64,6 +64,8 @@
     --snw-header-h: 56px;
     --snw-footer-h: 40px;
     --snw-sidebar-w: 220px;
+    --snw-bottom-nav-h: 56px;
+    --snw-np-h: 48px;
     
     /* 그림자 */
     --snw-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -77,6 +79,7 @@
     /* z-index */
     --snw-z-sidebar: 100;
     --snw-z-header: 50;
+    --snw-z-np: 90;
     --snw-z-toast: 1000;
     --snw-z-modal: 900;
 }

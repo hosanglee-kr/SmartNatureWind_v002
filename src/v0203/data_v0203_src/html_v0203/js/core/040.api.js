@@ -98,7 +98,7 @@ window.SNW = window.SNW || {};
 	        }
 	        if (path.includes('/schedules')) return cache.schedules || { schedules: [] };
 	        if (path.includes('/user_profiles')) return cache.userProfiles || { userProfiles: { profiles: [] } };
-	        if (path.includes('/windProfile')) return cache.windDict || { windDict: { presets: [] } };
+	        if (path.includes('/windDict') || path.includes('/windProfile')) return (cache.windDict && cache.windDict.windDict) ? cache.windDict.windDict : (cache.windDict || { presets: [], styles: [] });
 	        if (path.includes('/logs')) return { logs: [{ ts:0, lv:3, msg:'[Offline]' }] };
 	        if (path.includes('/diag')) return { heap: 120000, fs_used: 160000, fs_total: 1000000 };
 	        if (path.includes('/version')) return { fw:'FW_Ver_2.0.3' };
@@ -271,6 +271,26 @@ window.SNW = window.SNW || {};
 		
 		// --- WindDict ---
 		listWindProfiles() { return _fetch(SNW.CFG.API.windProfile); },
+		getWindDict() {
+			return _fetch(SNW.CFG.API.windDict).then(d => (d && d.windDict) ? d.windDict : d);
+		},
+		getComfort() {
+			return _fetch(SNW.CFG.API.comfort);
+		},
+		getMonitorTimeline(since = 0) {
+			const q = since > 0 ? `?since=${since}` : '';
+			return _fetch(`${SNW.CFG.API.monitorTimeline}${q}`);
+		},
+		getTimeline(since = 0) {
+			return this.getMonitorTimeline(since);
+		},
+		getSessionSummary(from = 0, to = 0) {
+			const params = [];
+			if (from > 0) params.push(`from=${from}`);
+			if (to > 0) params.push(`to=${to}`);
+			const q = params.length > 0 ? `?${params.join('&')}` : '';
+			return _fetch(`${SNW.CFG.API.monitorSessionSummary}${q}`);
+		},
 		addWindProfile(body) { return _fetch(SNW.CFG.API.windProfile, { method: 'POST', body }); },
 		updateWindProfile(id, b) { return _fetch(`${SNW.CFG.API.windProfile}/${id}`, { method: 'PUT', body: b }); },
 		deleteWindProfile(id) { return _fetch(`${SNW.CFG.API.windProfile}/${id}`, { method: 'DELETE' }); },
@@ -289,6 +309,41 @@ window.SNW = window.SNW || {};
 		patchProfiles(body) { return _fetch(SNW.CFG.API.userProfilesPatch, { method: 'POST', body }); },
 		selectProfile(id) { return _fetch(SNW.CFG.API.profileSelect, { method: 'POST', body: { id } }); },
 		stopProfile() { return _fetch(SNW.CFG.API.profileStop, { method: 'POST' }); },
+
+		// --- Session (Stage 3 신규) ---
+		sessionStart(type, payload, trigger = 'MANUAL') {
+			return _fetch(SNW.CFG.API.sessionStart, {
+				method: 'POST',
+				body: { type, payload, trigger }
+			});
+		},
+		startPlaylist(profileId) {
+			return this.sessionStart('PLAYLIST', { profileId });
+		},
+		startPreset(presetCode, styleCode) {
+			return this.sessionStart('PRESET', { presetCode, styleCode });
+		},
+		startFixed(percent) {
+			return this.sessionStart('FIXED', { percent });
+		},
+		pauseSession() {
+			return _fetch(SNW.CFG.API.sessionPause, { method: 'POST' });
+		},
+		resumeSession() {
+			return _fetch(SNW.CFG.API.sessionResume, { method: 'POST' });
+		},
+		stopSession() {
+			return _fetch(SNW.CFG.API.sessionStop, { method: 'POST' });
+		},
+		getCurrentSession() {
+			return _fetch(SNW.CFG.API.sessionCurrent);
+		},
+		setScheduleOverride(override) {
+			return _fetch(SNW.CFG.API.sessionSchOverride, {
+				method: 'POST',
+				body: { override: !!override }
+			});
+		},
 		
 		// --- Motion ---
 		getMotion() { return _fetch(SNW.CFG.API.motion); },

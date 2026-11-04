@@ -188,7 +188,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 010.config.js (5324 bytes) ---- */
+/* ---- 010.config.js (5898 bytes) ---- */
 // =========================================================
 // 010.config.js — 프론트엔드 런타임 설정
 // Layer 0 (기반) — SNW.C 참조만 허용
@@ -222,6 +222,13 @@ window.SNW = window.SNW || {};
 			state: '/api/v001/state',
 			metrics: '/api/v001/metrics',
 			controlSummary: '/api/v001/control/summary',
+			// Session (Stage 3 신규)
+			sessionStart: '/api/v001/session/start',
+			sessionPause: '/api/v001/session/pause',
+			sessionResume: '/api/v001/session/resume',
+			sessionStop: '/api/v001/session/stop',
+			sessionCurrent: '/api/v001/session/current',
+			sessionSchOverride: '/api/v001/session/schedule-override',
 			overrideFixed: '/api/v001/control/override/fixed',
 			overridePreset: '/api/v001/control/override/preset',
 			overrideClear: '/api/v001/control/override/clear',
@@ -233,6 +240,10 @@ window.SNW = window.SNW || {};
 			chartHistory: '/api/v001/sim/chart',
 			monitor: '/api/v001/monitor',
 			windProfile: '/api/v001/windProfile',
+			windDict: '/api/v001/windDict', // [v0203 Stage 4]
+			comfort: '/api/v001/comfort', // [v0203 Stage 6]
+			monitorTimeline: '/api/v001/monitor/timeline', // [v0203 Stage 7]
+			monitorSessionSummary: '/api/v001/monitor/session-summary', // [v0203 Stage 7]
 			schedules: '/api/v001/schedules',
 			userProfiles: '/api/v001/user_profiles',
 			userProfilesPatch: '/api/v001/user_profiles/patch',
@@ -359,1043 +370,584 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 020.i18n.js (50842 bytes) ---- */
+/* ---- 020.i18n.js (27163 bytes) ---- */
 // =========================================================
-// 020.i18n.js — 다국어 사전 (ko/en)
-// Layer 0 (기반) — SNW.CFG 참조만
+// 020.i18n.js — 다국어 완전판 (ko/en)
 // =========================================================
 window.SNW = window.SNW || {};
 (function (SNW) {
     'use strict';
 
     const DICT = {
-        // =====================================================
-        // 한국어 (기본)
-        // =====================================================
         ko: {
-            // --- 공통 ---
-            'app.title':        'Smart Nature Wind',
-            'common.ok':        '확인',
-            'common.cancel':    '취소',
-            'common.save':      '저장',
-            'common.apply':     '적용',
-            'common.reset':     '초기화',
-            'common.close':     '닫기',
-            'common.delete':    '삭제',
-            'common.edit':      '편집',
-            'common.add':       '추가',
-            'common.loading':   '로딩 중...',
-            'common.noData':    '데이터 없음',
-            'common.error':     '오류',
-            'common.warning':   '경고',
-            'common.success':   '완료',
-            'common.unknown':   '알 수 없음',
-            'common.offline':   '오프라인',
-            'common.online':    '온라인',
-            'common.start':     '시작',
-            'common.stop':      '정지',
-            'common.undo':      '실행 취소',
-            'msg.noProfilesWarn': '등록된 프로필이 없습니다. 프로필 메뉴에서 추가해 주세요.',
+            // =====================================================
+            // 공통
+            // =====================================================
+            'app.title': 'Smart Nature Wind',
+            'common.ok': '확인',
+            'common.cancel': '취소',
+            'common.close': '닫기',
+            'common.save': '저장',
+            'common.delete': '삭제',
+            'common.edit': '편집',
+            'common.loading': '로딩 중...',
+            'common.noData': '데이터 없음',
+            'common.error': '오류',
+            'common.success': '완료',
+            'common.undo': '실행 취소',
+            'common.apply': '적용',
 
-            // --- Header/Footer ---
-            'header.clock':       '시계',
-            'header.wifi':        'Wi-Fi 상태',
-            'header.menu':        '메뉴',
-            'footer.lastUpdate':  '마지막 업데이트',
-            'footer.refresh':     '강제 새로고침',
-            'footer.online':      '🟢 실시간 연결',
-            'footer.offline':     '🔴 연결 끊김 (재시도 중)',
-            'footer.polling':     '🟡 REST 폴링 모드',
+            // =====================================================
+            // 온보딩
+            // =====================================================
+            'onboarding.step2': 'Wi-Fi 안내',
+            'onboarding.step3': '첫 바람 선택',
+            'onboarding.step4': '시작',
+            'onboarding.wifiTitle': 'Wi-Fi 연결 확인',
+            'onboarding.wifiDesc': '기기 기본 Wi-Fi에 연결되어 있습니다. 아래 정보로 접속할 수 있습니다.',
+            'onboarding.connected': '연결 확인',
+            'onboarding.firstBreezeTitle': '첫 바람을 선택하세요',
+            'onboarding.firstBreezeDesc': '세 가지 자연풍 중 하나를 골라 시작해 보세요.',
+            'onboarding.breeze.ocean': '바다 바람',
+            'onboarding.breeze.oceanDesc': '파도처럼 밀려오는 시원함',
+            'onboarding.breeze.forest': '숲속 바람',
+            'onboarding.breeze.forestDesc': '잔잔하고 부드러운 숲의 쉼표',
+            'onboarding.breeze.mountain': '산바람',
+            'onboarding.breeze.mountainDesc': '상쾌한 계곡의 역동적 바람',
+            'onboarding.startNowTitle': '지금 시작할까요?',
+            'onboarding.startNowDesc': '"{name}"을(를) 바로 재생합니다.',
+            'onboarding.startNow': '지금 시작',
+            'onboarding.later': '나중에',
 
-            // --- 네비게이션 ---
-            'nav.dashboard':   '대시보드',
-            'nav.chart':       '실시간 차트',
-		'nav.monitor':          '모니터링',
-		'monitor.title':        '선풍기 모니터링',
-		'monitor.range.5m':     '5분',
-		'monitor.range.30m':    '30분',
-		'monitor.range.1h':     '1시간',
-		'monitor.layer.timeline': '상태 타임라인',
-		'monitor.layer.wind':   '풍속 / PWM',
-		'monitor.layer.events': '이벤트',
-		'monitor.layer.current': '현재 설정',
-		'monitor.tab.live':    '실시간',
-		'monitor.tab.past':    '지난 이벤트',
-		'monitor.csv.download':'CSV 다운로드',
+            // =====================================================
+            // Session
+            // =====================================================
+            'session.playlist': '플레이리스트',
+            'session.preset': '프리셋',
+            'session.fixed': '일반 선풍기',
+            'session.manual': '수동 재생',
+            'session.schedule': '자동 실행',
+            'session.paused': '일시정지',
+            'session.playing': '재생 중',
+            'session.none': '세션 없음',
 
+            // =====================================================
+            // Now Playing
+            // =====================================================
+            'np.pause': '일시정지',
+            'np.resume': '재개',
+            'np.stop': '정지',
+            'np.step': 'Step {n}/{total}',
+            'np.schedulePending': '스케줄 대기',
+            'np.scheduleConflict': '스케줄 충돌 안내',
 
-		'chart.tab.live':       '실제 작동 중',
-		'chart.tab.preview':    '예상 파형',
+            // =====================================================
+            // 홈 (Dashboard)
+            // =====================================================
+            'home.title': '홈',
+            'home.nowPlaying': '지금 재생 중',
+            'home.playlist': '🎵 재생할 플레이리스트',
+            'home.noPlaylist': '작곡한 프로필이 없습니다',
+            'home.goStudio': '🎨 Studio에서 작곡하기',
+            'home.normalFan': '🌀 일반 선풍기',
+            'home.context': '오늘의 추천',
+            'home.recommend': '이 날씨엔 "{name}"이 시원해요',
+            'home.playRecommend': '▶ 지금 재생',
+            'home.fanStop': '끔',
+            'home.fanStage': '{n}단',
 
-		'preview.feel.coolness':   '시원함',
-		'preview.feel.smoothness': '부드러움',
-		'preview.feel.dynamism':   '역동성',
-		'preview.feel.calmness':   '차분함',
+            // =====================================================
+            // Studio
+            // =====================================================
+            'studio.title': 'Wind Design Studio',
+            'studio.new': '새 프로필 작곡',
+            'studio.edit': '프로필 편집',
+            'studio.name': '프로필 이름',
+            'studio.repeat': '반복',
+            'studio.repeatCount': '회 (0=무한)',
+            'studio.steps': 'Step 시퀀스',
+            'studio.addStep': '+ Step 추가',
+            'studio.stepTitle': 'Step {n}',
+            'studio.type': '타입',
+            'studio.typePreset': '프리셋 재생',
+            'studio.typeFixed': '고정 풍속',
+            'studio.typeRest': '휴지 (정지)',
+            'studio.duration': '지속',
+            'studio.minutes': '분',
+            'studio.preset': '프리셋',
+            'studio.style': '스타일',
+            'studio.fixedSpeed': '고정 풍속',
+            'studio.override': '⚙ 물리 세부 조정 (Override)',
+            'studio.intensity': '강도',
+            'studio.variability': '변동성',
+            'studio.gust': '돌풍',
+            'studio.preview': '🎬 예상 파형',
+            'studio.previewAll': '🎬 전체 시나리오 체험',
+            'studio.moveUp': '위로',
+            'studio.moveDown': '아래로',
+            'studio.deleteStep': '삭제',
+            'studio.save': '저장',
+            'studio.update': '업데이트',
+            'studio.cancel': '취소',
+            'studio.confirmCancel': '편집 내용을 버리시겠습니까?',
 
-            'nav.schedule':    '스케줄',
-            'nav.profiles':    '프로필',
-            'nav.sensors':     '센서',
-            'nav.simulation':  '시뮬레이션',
-            'nav.windprofile': '바람 프리셋 관리',
-            'nav.settings':    '설정',
-            'nav.network':     '네트워크',
-            'nav.logs':        '로그',
-            'nav.diagnostics': '진단',
-            'nav.firmware':    '펌웨어',
-            'nav.ai':          'AI',
-            'nav.info':        '정보',
+            // =====================================================
+            // Playlist
+            // =====================================================
+            'playlist.title': 'Wind Playlist',
+            'playlist.count': '{n}개 프로필',
+            'playlist.new': '+ 새로 작곡',
+            'playlist.steps': '{n} Step',
+            'playlist.refs': '⏰ 스케줄 {n}개에서 사용 중',
+            'playlist.noRefs': '스케줄 미참조',
+            'playlist.play': '▶ 재생',
+            'playlist.edit': '✏️ 편집',
+            'playlist.delete': '🗑',
+            'playlist.confirmDelete': '삭제하시겠습니까?',
+            'playlist.confirmDeleteWithRefs': '이 프로필은 스케줄 {n}개에서 참조 중입니다.\n삭제하면 해당 스케줄이 비활성화됩니다. 계속?',
 
-            // [P1-6] 네비게이션 그룹
-            'nav.groupControl':  '제어',
-            'nav.groupSettings': '설정',
-            'nav.groupSystem':   '시스템',
-
-            // --- Dashboard ---
-            'dashboard.title':          '대시보드',
-            'dashboard.realtimeState':  '실시간 상태',
-            'dashboard.currentWind':    '현재 풍속',
-            'dashboard.targetWind':     '목표 풍속',
-            'dashboard.pwmOutput':      'PWM 출력',
-            'dashboard.state':          '상태',
-            'dashboard.phase':          'Phase',
-            'dashboard.sensorTitle':    '센서',
-            'dashboard.powerTitle':     '전원 제어',
-            'dashboard.powerOn':        '켜기',
-            'dashboard.powerOff':       '끄기',
-            'dashboard.presetTitle':    '프리셋 선택',
-            'dashboard.presetCurrent':  '현재 선택',
-            'dashboard.intensityTitle': '강도 조절',
-            'dashboard.intensityLabel': '강도',
-            'dashboard.physicsTitle':   '바람 세부 조절 (3대 물리 제어)',
-            'dashboard.variabilityLabel': '변동성',
-            'dashboard.gustLabel':      '돌풍 빈도',
-            'dashboard.temp':           '온도',
-            'dashboard.humidity':       '습도',
-            'dashboard.motion':         '인체감지',
-            'dashboard.motionDetected': '감지',
-            'dashboard.motionAbsent':   '부재',
-
-            // --- FSM ---
-            'fsm.idle':           '대기 중',
-            'fsm.override':       '수동 제어 중',
-            'fsm.profileRun':     '프로필 실행 중',
-            'fsm.scheduleRun':    '스케줄 실행 중',
-            'fsm.motionBlocked':  '인체 미감지',
-            'fsm.autoOffStopped': '자동 꺼짐',
-            'fsm.timeInvalid':    '시간 미동기',
-
-            // --- Reason ---
-            'reason.none':              '없음',
-            'reason.overrideActive':    '수동 제어 활성',
-            'reason.profileMode':       '프로필 모드',
-            'reason.userProfileActive': '사용자 프로필 활성',
-            'reason.scheduleActive':    '스케줄 활성',
-            'reason.noActiveSchedule':  '활성 스케줄 없음',
-            'reason.noSchedules':       '스케줄 없음',
-            'reason.timeNotValid':      '시간 미동기',
-            'reason.motionNoPresence':  '인체 미감지',
-            'reason.autoOffTimer':      '설정 시간 완료',
-            'reason.autoOffTime':       '예약 종료 시각',
-            'reason.autoOffTemp':       '온도 조건 도달',
-
-            // --- Phase ---
-            'phase.calm':   '잔잔함',
-            'phase.normal': '보통',
-            'phase.strong': '강함',
-
-            // --- AutoOff ---
-            'autoOff.timer':   '설정 시간 완료',
-            'autoOff.time':    '예약 종료 시각',
-            'autoOff.temp':    '온도 조건 도달',
-            'autoOff.recover': '자동 꺼짐 상태입니다. 다시 켜시겠습니까?',
-            'autoOff.ack':     '확인',
-            'autoOff.restart': '다시 켜기',
-            'autoOff.profile': '프로필 시작',
-
-            // --- 프리셋 ---
-            'preset.OCEAN':          '해변 바람',
-            'preset.COUNTRY_BREEZE': '시골 바람',
-            'preset.MEDITERRANEAN':  '지중해 바람',
-            'preset.MOUNTAIN':       '산 바람',
-            'preset.PLAINS':         '대평원 바람',
-            'preset.HARBOR_BREEZE':  '항구 바람',
-            'preset.FOREST_CANOPY':  '숲 그늘 바람',
-            'preset.URBAN_SUNSET':   '도시 석양 바람',
-            'preset.TROPICAL_RAIN':  '열대 소나기 바람',
-            'preset.DESERT_NIGHT':   '사막의 밤 바람',
-            'preset.applying':       '적용 중…',
-            'preset.applied':        '프리셋 적용 완료',
-            'preset.delayed':        '프리셋 적용이 지연되고 있습니다',
-
-            // --- 스타일 ---
-            'style.BALANCE': '균형',
-            'style.ACTIVE':  '활동적',
-            'style.FOCUS':   '집중',
-            'style.RELAX':   '휴식',
-            'style.SLEEP':   '수면',
-
-            // --- 차트 ---
-            'chart.title':    '실시간 물리 차트',
-            'chart.wind':     '풍속',
-            'chart.target':   '목표',
-            'chart.pwm':      'PWM',
-            'chart.time':     '시간',
-            'chart.export':   'CSV 내보내기',
-            'chart.range5':   '5초',
-            'chart.range30':  '30초',
-            'chart.range120': '120초',
-
-            // --- 로그 ---
-            'log.title':  '시스템 로그',
-            'log.level':  '레벨',
-            'log.none':   'NONE',
-            'log.error':  'ERROR',
-            'log.warn':   'WARN',
-            'log.info':   'INFO',
-            'log.debug':  'DEBUG',
-            'log.filter': '필터',
-            'log.filterAll': '전체',
-            'log.clear':  '지우기',
-            'log.export': '내보내기',
-
-            // --- 센서 (P0-1 수정: sensors.temp/hum/motion/title 추가) ---
-            'sensor.title':       '센서 및 모션',
-            'sensor.temperature': '온도',
-            'sensor.humidity':    '습도',
-            'sensor.motion':      '인체감지',
-            'sensor.holdSec':     '유지 시간',
-            'sensor.pirFeed':     'PIR 피드 테스트',
-            'sensor.dht22':       'DHT22 설정',
-            'sensor.pir':         'PIR 설정',
-
-            'sensors.title':          '실시간 센서 상태',
-            'sensors.temp':           '온도',
-            'sensors.hum':            '습도',
-            'sensors.motion':         '인체감지',
-            'sensors.pirEnabled':     'PIR 센서 활성화',
-            'sensors.pirHoldSec':     'PIR Hold (초)',
-            'sensors.feedPir':        'PIR 강제 감지 테스트',
-            'sensors.feedPirSuccess': 'PIR 신호 전송 완료',
-            'sensors.saveMotionSuccess': '모션 설정 저장 완료',
-            'sensors.motionConfig':   '모션 로직 설정 (cfg_motion)',
-
-            // --- PIR 테스트 결과 (O-13) ---
-            'pir.testSuccess':        '✅ PIR 감지 → 재실 상태 확인됨',
-            'pir.testFail':           '❌ PIR 피드는 전송되었으나 서버가 미감지',
-            'pir.holdRemain':         'hold {sec}초',
-
-            // --- 전원 제어 진단 (O-1) ---
-            'power.motionBlocked':    '인체 미감지 상태입니다. PIR 센서 앞에서 손을 흔들어주세요.',
-            'power.autoOffLatched':   '자동 꺼짐 상태를 해제한 뒤 다시 시도합니다.',
-            'power.failed':           '전원 켜기에 실패했습니다: {reason}',
-            'power.forceOn':          '강제 켜기',
-            'power.ackAndRestart':    '확인 후 재시작',
-            'power.ackOnly':          '확인만',
-
-            // --- 배너 (O-5, O-17) ---
-            'banner.offline':         '🔴 연결 끊김 · 재연결 중 ({attempt}/{max})',
-            'banner.polling':         '🟡 실시간 연결 끊김 · 2초 주기 폴링으로 전환',
-            'banner.reconnected':     '🟢 연결 복구됨',
-            'banner.motionBlocked':   '🚫 인체 미감지로 정지됨',
-            'banner.autoOff':         '🛑 자동 꺼짐 · 사유: {reason}',
-
-            // --- 재접속 안내 (O-9) ---
-            'reconnect.title':        '재접속 안내',
-            'reconnect.body':         'Wi-Fi를 "NatureWind"(2540)에 연결한 뒤 http://192.168.4.1 로 접속하세요.',
-
-            // --- 스케줄러 ---
-            'scheduler.title':      '스케줄 예약',
-            'scheduler.enabled':    '활성',
-            'scheduler.day':        '요일',
-            'scheduler.start':      '시작',
-            'scheduler.end':        '종료',
-            'scheduler.segment':    '세그먼트',
-            'scheduler.on':         '작동',
-            'scheduler.off':        '정지',
-            'scheduler.overlapWarn':'시간대 겹침이 있습니다',
-            'scheduler.scheduledOff': '예약 종료',
-            'scheduler.tempOff':    '온도 종료',
-            'schedule.segmentRepeat': '세그먼트 반복',
-            'schedule.repeatCount': '반복 횟수 (0=무한)',
-            'schedule.segmentsTitle': '세그먼트 (바람 구간)',
-            'schedule.addSegmentBtn': '+ 세그먼트 추가',
-            'schedule.add':         '스케줄 추가',
-            'schedule.name':        '이름',
-            'schedule.startTime':   '시작',
-            'schedule.endTime':     '종료',
-
-            // --- 프로필 ---
-            'profile.title':  '사용자 프로필',
-            'profile.start':  '시작',
-            'profile.stop':   '정지',
-            'profile.active': '실행 중',
-            'profiles.add':   '프로필 추가',
-            'profiles.name':  '이름',
-            'profiles.no':    '번호 (No)',
-            'profiles.enabled': '활성화 여부',
-            'profiles.addSegment': '세그먼트 추가',
-            'profiles.autoOffTimer': '자동 꺼짐 타이머(분)',
-            'profiles.segmentsTitle': '세그먼트 (바람 구간)',
-            'profiles.addSegmentBtn': '+ 세그먼트 추가',
-
-            // --- 시스템 (P0-2: Settings 섹션 헤더 i18n) ---
-            'system.title':        '시스템 설정',
-            'system.logLevel':     '로그 레벨',
-            'system.apiKey':       'API 키',
-            'system.geminiKey':    'Gemini API 키',
-            'system.save':         '설정 저장',
-            'system.reload':       '재로드',
-            'system.factoryReset': '공장 초기화',
-            'system.reboot':       '재시작',
-            'system.hwPinmap':     '하드웨어 핀맵',
-            'system.fanCurve':     '팬 커브',
-
-            'settings.title':               '시스템 설정',
-            'settings.wsChannel':           'WebSocket 채널',
-            'settings.hardware':            'Hardware (PWM / Fan / PIR / DHT / LED)',
-            'settings.factoryReset':        '공장 초기화',
-            'settings.save':                '저장',
-            'settings.reload':              '재로드',
-            'settings.configured':          '(설정됨)',
-            'settings.notConfigured':       '(미설정)',
-            'settings.deleteApiKey':        'API Key 삭제',
-            'settings.keyPlaceholderChange':'변경하려면 새 키 입력 (빈칸=유지)',
-            'settings.keyPlaceholderInput': '키 입력',
-            'settings.wsChannelConfig':     'WebSocket 채널 설정',
-            'settings.deleteGeminiKey':     'Gemini 키 삭제',
-            'settings.testApiKey':          'API Key 테스트',
-            'settings.testApiSuccess':      'API Key 검증 성공',
-            'settings.testApiFail':         'API Key 검증 실패: {msg}',
-            'settings.reloadRequested':     '재로드 요청됨: {status}',
-            'settings.reloadInProgress':    '재로드 진행 중...',
-            'settings.reloadFailed':        '재로드 실패 (lastReloadOk=false)',
-            'settings.reloadComplete':      '재로드 완료',
-            'settings.offlineReloadNotice': '오프라인 모드에서는 reload가 즉시 반환됩니다.',
-            'settings.factoryResetConfirm': '정말 공장 초기화 하시겠습니까? 모든 설정이 삭제됩니다.',
-            'settings.factoryResetWarning': '⚠️ 경고',
-            'settings.factoryResetTitle':   '⚠️ 공장 초기화',
-            'settings.factoryResetItems':   '다음 설정이 삭제됩니다:',
-            'settings.factoryResetConfirmWord': '확인을 위해 "초기화"를 입력하세요',
-            'settings.factoryResetWord':    '초기화',
-            'settings.factoryResetSuccess': '기기가 재시작됩니다. Wi-Fi를 "NatureWind"(2540)에 연결한 뒤 http://192.168.4.1 로 접속하세요.',
-            'settings.deviceRestarting':    '기기가 재시작됩니다...',
-
-            // [P0-2] Settings 섹션 헤더
-            'settings.secMeta':       '메타 / 로깅 / 보안',
-            'settings.secFanPwm':     '팬 PWM',
-            'settings.secFanCurve':   '팬 커브 (%)',
-            'settings.secPir':        'PIR 센서',
-            'settings.secDht':        'DHT22 센서',
-            'settings.secLed':        '상태 LED',
-
-            // [P0-2] Settings 필드 레이블
-            'settings.fieldDeviceName': '기기 이름',
-            'settings.fieldLogLevel': '로그 레벨',
-            'settings.fieldLogMax':   '로그 최대 개수',
-            'settings.fieldPin':      '핀',
-            'settings.fieldChannel':  '채널',
-            'settings.fieldFreq':     '주파수 (Hz)',
-            'settings.fieldRes':      '해상도 (bits)',
-            'settings.fieldStart':    '시작',
-            'settings.fieldComfortMin': '쾌적 최소',
-            'settings.fieldComfortMax': '쾌적 최대',
-            'settings.fieldHardMax':  '최대 한계',
-            'settings.fieldDebounce': '디바운스 (초)',
-            'settings.fieldHold':     '유지 (초)',
-            'settings.fieldInterval': '주기 (초)',
-            'settings.fieldNumPixels':'픽셀 수',
-            'settings.fieldBrightness': '밝기 (0~255)',
-            'settings.fieldEnabled':  '활성화',
-            'settings.fieldType':     '종류',
-            'settings.fieldPinPwm':   'PWM 핀',
-            'settings.fieldPinPir':   'PIR 핀',
-            'settings.fieldPinDht':   'DHT 핀',
-            'settings.fieldPinLed':   'LED 핀',
-            'settings.fieldRange':    '{min}~{max}',
-            'settings.fieldRecommended': '권장: {range}',
-            'settings.saveAndReload': '저장 후 자동 재적용',
-            'settings.saveOnly':      '저장만',
-            'settings.reloadOnly':    '재적용만',
-            'settings.dirtyWarning':  '저장되지 않은 변경이 있습니다. 재적용하면 소실됩니다.',
-
-            // --- 네트워크 ---
-            'network.title':        '네트워크 및 시간',
-            'network.wifiMode':     'Wi-Fi 모드',
-            'network.ssid':         'SSID',
-            'network.ip':           'IP',
-            'network.rssi':         'RSSI',
-            'network.scan':         'Wi-Fi 스캔',
-            'network.connect':      '연결',
-            'network.ntpServer':    'NTP 서버',
-            'network.timezone':     '시간대',
-            'network.syncInterval': '동기화 주기',
-            'network.apSettings':   'AP 설정',
-            'network.staSettings':  'STA 설정',
-            'network.addSta':       'STA 추가',
-            'network.noStaNotice':  '등록된 Wi-Fi가 없습니다. STA 추가 버튼을 눌러 등록하세요.',
-            'network.saveWifi':     'Wi-Fi 설정 저장',
-            'network.saveTime':     '시간 설정 저장',
-            'network.syncTimeBtn':  '현재 시간 동기화',
-            'network.scanWifi':     'Wi-Fi 스캔',
-            'network.wifiConfig':   'Wi-Fi 설정 (AP / STA)',
-            'network.timeConfig':   '시간 설정',
-            'network.status':       '연결 상태',
-            'network.mac':          'MAC 주소',
-            'network.timeSynced':   '시간 동기화',
-            'network.synced':       '완료',
-            'network.notSynced':    '미완료',
-
-            // --- 진단 ---
-            'diag.title':    '시스템 진단',
-            'diag.heap':     'Heap 사용',
-            'diag.fs':       '파일시스템',
-            'diag.uptime':   '업타임',
-            'diag.dirty':    'Dirty Flags',
-            'diag.reloadOk': 'Reload 결과',
-            'diagnostics.title': '시스템 진단 및 메트릭',
-            'diagnostics.metricsRealtime': 'Metrics (실시간)',
-            'diagnostics.allJson': '전체 설정 JSON',
-            'diagnostics.saveDirty': 'Dirty 설정 저장',
-            'diagnostics.saveDirtySuccess': 'Dirty 설정 저장 완료',
-            'diagnostics.fetchFail': '설정 조회 실패',
-
-            // --- 펌웨어 ---
-            'firmware.title':       '펌웨어 관리',
-            'firmware.version':     '현재 버전',
-            'firmware.ota':         'OTA 업데이트',
-            'firmware.otaUpdate':   'OTA 업데이트',
-            'firmware.fileUpload':  '파일 업로드 (LittleFS)',
-            'firmware.upload':      '파일 업로드',
-            'firmware.uploadBtn':   '업로드',
-            'firmware.otaSuccess':  'OTA 완료 (재시작 중)',
-            'firmware.progress':    '진행률',
-            'firmware.checkUpdate': '업데이트 확인',
-
-            // --- AI ---
-            'ai.title':       'AI 어시스턴트',
-            'ai.send':        '전송',
-            'ai.thinking':    '생각 중...',
-            'ai.placeholder': '예: "10분 후 꺼줘" 또는 "지금 상태 진단해줘"',
-            'ai.example1':    '예: "10분 후 꺼줘"',
-            'ai.example2':    '예: "지금 상태 진단해줘"',
-            'ai.example3':    '예: "너무 더운데 시원하게"',
-
-            // --- 시뮬레이션 ---
-            'simulation.saveBtn':     '시뮬레이션 설정 저장',
-            'simulation.saveSuccess': '시뮬레이션 설정 저장 완료',
-
-            // --- 바람 프리셋 ---
-            'windprofile.code':         '코드 (영문)',
-            'windprofile.factorsTitle': '기본 바람 파라미터',
-            'windprofile.intensity':    '강도',
-            'windprofile.variability':  '변동성',
-            'windprofile.gust':         '돌풍',
-            'windprofile.fanLimit':     '팬한계',
-            'windprofile.add':          '프리셋 추가',
-
-            // --- 검증 메시지 (O-7, O-18) ---
-            'validate.range':         '{field}은(는) {min}~{max} 범위여야 합니다',
-            'validate.required':      '{field}은(는) 필수입니다',
-            'validate.multiErrors':   '{count}개 필드 확인 필요',
-            'validate.segmentMin':    '최소 1개 세그먼트가 필요합니다',
-            'validate.timeOrder':     '종료 시각은 시작 시각 이후여야 합니다',
-
-            // --- Undo (O-8) ---
-            'segment.deleted':        '세그먼트 삭제됨',
-
-            // --- 메시지 ---
-            'msg.apiKeyRequired': 'API 키가 필요합니다',
-            'msg.reloadPending':  '재로드 진행 중입니다',
-            'msg.noChange':       '변경 사항 없음',
-            'msg.saveSuccess':    '저장되었습니다',
-            'msg.saveAndReloadSuccess': '저장 및 재적용 완료',
-            'msg.reloadSuccess':  '설정이 적용되었습니다',
-            'msg.reloadFail':     '설정 적용 실패',
-            'msg.reloadDiscardWarning': '저장하지 않은 변경사항이 소실됩니다. 계속하시겠습니까?',
-            'msg.networkError':   '네트워크 오류',
-            'msg.timeout':        '요청 시간 초과',
-            'msg.unknown':        '알 수 없는 오류가 발생했습니다',
-            'msg.accessDenied':   '이 페이지에 접근할 수 없습니다 (레벨 제한)',
-            'msg.deleteConfirm':  '정말 삭제하시겠습니까?',
-
-            // --- 단위 ---
-            'unit.celsius':   '°C',
-            'unit.humidity':  '%',
-            'unit.windSpeed': 'm/s',
-            'unit.percent':   '%',
-            'unit.seconds':   '초',
-            'unit.minutes':   '분',
-            'unit.ms':        'ms',
-
-            // --- 확장 (기존 페이지 연동) ---
-            'dashboard.modeTitle':          '작동 모드 설정',
-            'dashboard.modeSchedule':       '◻ 스케줄 자동 모드',
-            'dashboard.modeProfile':        '◼ 프로필 수동 모드',
-            'dashboard.modeScheduleShort':  '스케줄 모드 (자동)',
-            'dashboard.modeProfileShort':   '프로필 모드 (수동)',
-            'dashboard.modeSwitchedSchedule': '스케줄 자동 모드로 전환되었습니다.',
-            'dashboard.modeSwitchedProfile':  '프로필 수동 모드로 전환되었습니다.',
-            'dashboard.selectProfileModal':   '실행할 프로필 선택',
-            'dashboard.sch':                '스케줄',
-            'dashboard.prof':               '프로필',
-            'dashboard.pwm':                'PWM',
-
-            'chart.range5s':                '5초',
-            'chart.range30s':               '30초',
-            'chart.range120s':              '120초',
-            'chart.exportCsv':              'CSV',
+            // =====================================================
+            // Schedule
+            // =====================================================
+            'schedule.title': '스케줄',
+            'schedule.count': '{n}개 스케줄',
+            'schedule.new': '+ 새 스케줄',
+            'schedule.name': '스케줄 이름',
+            'schedule.days': '요일',
+            'schedule.start': '시작',
+            'schedule.end': '종료',
+            'schedule.profile': '🎵 실행할 플레이리스트',
+            'schedule.profileHint': '💡 새 프로필은 Studio 탭에서 작곡 후 선택할 수 있습니다.',
+            'schedule.noProfile': '먼저 프로필을 작곡해야 스케줄을 만들 수 있습니다.',
+            'schedule.goStudio': '🎨 Studio에서 작곡하기',
+            'schedule.note': '💡 스케줄은 플레이리스트를 자동 재생합니다.\nStep 편집은 Studio 탭에서 하세요.',
+            'schedule.missingProfile': '(삭제된 프로필)',
+            'schedule.confirmDelete': '"{name}" 스케줄을 삭제하시겠습니까?',
+            'schedule.conflict': '⏰ 스케줄 충돌 안내',
+            'schedule.manualActive': '현재 수동 재생 중입니다.',
+            'schedule.nextSchedule': '다음 스케줄',
+            'schedule.in': '({n}분 후)',
+            'schedule.now': '(지금 활성)',
+            'schedule.conflictDesc': '수동 재생을 종료하지 않으면 스케줄이 실행되지 않습니다. 어떻게 하시겠어요?',
+            'schedule.stopManual': '⏹ 수동 정지',
+            'schedule.keepManual': '계속 수동 유지',
+            'schedule.stopped': '수동 재생 종료 · 다음 스케줄 대기',
 
             'days.mon': '월', 'days.tue': '화', 'days.wed': '수', 'days.thu': '목',
             'days.fri': '금', 'days.sat': '토', 'days.sun': '일',
-            
-            'style.NATURAL': '자연풍',
-            'style.GUSTY': '돌풍',
-            'style.GENTLE': '산들바람',
-            'style.CYCLIC': '주기풍',
-            'settings.tabGeneral': '일반 / 보안',
-            'settings.tabHardware': '하드웨어 / 핀맵',
-            'settings.tabComm': '통신 / WS',
-            'dashboard.styleTitle': '바람 스타일',
-            'schedule.secBasic': '기본 일정',
-            'schedule.secSegments': '바람 세그먼트',
-            'schedule.secSmart': '스마트 안심 종료 (AutoOff & PIR)',
-            'segment.onMinutes': '작동 시간(분)',
-            'segment.offMinutes': '정지 시간(분)',
-            'segment.mode': '모드',
-            'segment.modePreset': '프리셋 모드',
-            'segment.modeFixed': '고정풍속 모드',
-            'segment.presetSelect': '프리셋 선택',
-            'segment.styleSelect': '스타일 선택',
-            'segment.fixedSpeed': '고정 풍속(%)',
-            'segment.overrideTitle': '⚙️ 고급 물리 설정 (Override 직접 지정)',
-            'segment.overrideDesc': '이 세그먼트에서 바람 세부 설정 직접 지정 (Override)',
-            'segment.overrideIntensity': '바람 강도 (%)',
-            'segment.overrideVariability': '바람 변동성 (%)',
-            'segment.overrideGust': '돌풍 빈도 (%)',
-            'segment.moveUp': '위로',
-            'segment.moveDown': '아래로',
-            'segment.summaryPrefix': '세그먼트 ({count}개):'
+
+            // =====================================================
+            // Simulation
+            // =====================================================
+            'sim.title': '🎬 바람 스튜디오',
+            'sim.singleTab': '🎬 단일 미리보기',
+            'sim.abTab': '⚖ A/B 비교',
+            'sim.feelings': '감성 피드백',
+            'sim.applyA': '✓ 이 설정 적용',
+            'sim.applyB': 'B로 적용',
+            'sim.feel.coolness': '시원함',
+            'sim.feel.freshness': '청량감',
+            'sim.feel.dynamism': '역동성',
+            'sim.feel.smoothness': '부드러움',
+            'sim.feel.calmness': '차분함',
+            'sim.avg': '평균',
+            'sim.intensity': '강도',
+            'sim.variability': '변동성',
+            'sim.gust': '돌풍',
+
+            // =====================================================
+            // Monitor
+            // =====================================================
+            'monitor.title': '모니터',
+            'monitor.liveTab': '📊 실시간',
+            'monitor.retroTab': '🎬 회고',
+            'monitor.liveWind': '📊 실시간 풍속',
+            'monitor.sensors': '🌡️ 센서',
+            'monitor.retroTitle': '🎬 세션 회고',
+            'monitor.range1h': '최근 1시간',
+            'monitor.range24h': '최근 24시간',
+            'monitor.range7d': '최근 7일',
+            'monitor.refresh': '🔄',
+            'monitor.sessionSummary': '세션 요약',
+            'monitor.totalSessions': '총 세션',
+            'monitor.totalActive': '총 가동',
+            'monitor.avgWind': '평균 풍속',
+            'monitor.maxWind': '최고 풍속',
+            'monitor.avgTemp': '평균 온도',
+            'monitor.presenceRatio': '재실 비율',
+            'monitor.timelineTitle': '이벤트 타임라인',
+            'monitor.eventList': '이벤트 목록 (최근 30개)',
+            'monitor.temp': '온도',
+            'monitor.humidity': '습도',
+            'monitor.motion': '재실',
+            'monitor.detected': '감지',
+            'monitor.absent': '부재',
+
+            // =====================================================
+            // Context
+            // =====================================================
+            'context.comfort': '쾌적',
+            'context.slight': '약간 덥네요',
+            'context.uncomfort': '끈적이는 날씨',
+            'context.severe': '숨이 막혀요',
+
+            // =====================================================
+            // Settings
+            // =====================================================
+            'settings.title': '⚙️ 설정',
+            'settings.tabGeneral': '일반',
+            'settings.tabNetwork': '네트워크',
+            'settings.tabHardware': '하드웨어',
+            'settings.tabAdvanced': '고급',
+            'settings.lang': '언어',
+            'settings.version': '버전 정보',
+            'settings.manual': '사용자 매뉴얼',
+            'settings.logs': '시스템 로그',
+            'settings.diag': '진단',
+            'settings.firmware': '펌웨어 업데이트',
+            'settings.factoryReset': '공장 초기화',
+            'settings.advanced': '⚠️ 고급 설정',
+
+            // =====================================================
+            // Header / Nav
+            // =====================================================
+            'nav.home': '홈',
+            'nav.wind': '바람',
+            'nav.automation': '자동화',
+            'nav.monitor': '모니터',
+            'nav.settings': '설정',
+            'header.menu': '메뉴',
+            'header.language': '언어',
+            'header.online': '온라인',
+            'header.offline': '오프라인',
+            'header.connecting': '연결 중',
+
+            // =====================================================
+            // 메시지
+            // =====================================================
+            'msg.saveSuccess': '저장 완료',
+            'msg.deleteSuccess': '삭제 완료',
+            'msg.updateSuccess': '업데이트 완료',
+            'msg.playSuccess': '재생 시작',
+            'msg.loadFailed': '로드 실패',
+            'msg.saveFailed': '저장 실패',
+            'msg.networkError': '네트워크 오류',
+            'msg.stepMin': '최소 1개 Step이 필요합니다',
+            'msg.stepMax': 'Step은 최대 8개까지 추가 가능합니다',
+            'msg.nameRequired': '프로필 이름을 입력하세요',
+            'msg.durationRange': 'Step 지속 시간은 1~1440분이어야 합니다',
+            'msg.selectProfile': '실행할 플레이리스트를 선택하세요',
+            'msg.timeOrder': '종료 시각이 시작 시각보다 빨라야 합니다',
         },
 
-        // =====================================================
-        // English
-        // =====================================================
         en: {
-            'app.title':        'Smart Nature Wind',
-            'common.ok':        'OK',
-            'common.cancel':    'Cancel',
-            'common.save':      'Save',
-            'common.apply':     'Apply',
-            'common.reset':     'Reset',
-            'common.close':     'Close',
-            'common.delete':    'Delete',
-            'common.edit':      'Edit',
-            'common.add':       'Add',
-            'common.loading':   'Loading...',
-            'common.noData':    'No data',
-            'common.error':     'Error',
-            'common.warning':   'Warning',
-            'common.success':   'Success',
-            'common.unknown':   'Unknown',
-            'common.offline':   'Offline',
-            'common.online':    'Online',
-            'common.start':     'Start',
-            'common.stop':      'Stop',
-            'common.undo':      'Undo',
-            'msg.noProfilesWarn': 'No profiles registered. Please add one in Profiles menu.',
+            // =====================================================
+            // Common
+            // =====================================================
+            'app.title': 'Smart Nature Wind',
+            'common.ok': 'OK',
+            'common.cancel': 'Cancel',
+            'common.close': 'Close',
+            'common.save': 'Save',
+            'common.delete': 'Delete',
+            'common.edit': 'Edit',
+            'common.loading': 'Loading...',
+            'common.noData': 'No data',
+            'common.error': 'Error',
+            'common.success': 'Success',
+            'common.undo': 'Undo',
+            'common.apply': 'Apply',
 
-            'header.clock':       'Clock',
-            'header.wifi':        'Wi-Fi',
-            'header.menu':        'Menu',
-            'footer.lastUpdate':  'Last update',
-            'footer.refresh':     'Force refresh',
-            'footer.online':      '🟢 Live',
-            'footer.offline':     '🔴 Disconnected (retrying)',
-            'footer.polling':     '🟡 REST polling mode',
+            // =====================================================
+            // Onboarding
+            // =====================================================
+            'onboarding.step2': 'Wi-Fi Info',
+            'onboarding.step3': 'Choose First Breeze',
+            'onboarding.step4': 'Start',
+            'onboarding.wifiTitle': 'Wi-Fi Connection',
+            'onboarding.wifiDesc': 'You are connected to the device Wi-Fi. Use the info below to access.',
+            'onboarding.connected': 'Got it',
+            'onboarding.firstBreezeTitle': 'Choose your first breeze',
+            'onboarding.firstBreezeDesc': 'Pick one of three nature winds to begin.',
+            'onboarding.breeze.ocean': 'Ocean Breeze',
+            'onboarding.breeze.oceanDesc': 'Cool waves rolling in',
+            'onboarding.breeze.forest': 'Forest Canopy',
+            'onboarding.breeze.forestDesc': 'Soft, calm forest rest',
+            'onboarding.breeze.mountain': 'Mountain Wind',
+            'onboarding.breeze.mountainDesc': 'Refreshing valley breeze',
+            'onboarding.startNowTitle': 'Start now?',
+            'onboarding.startNowDesc': 'Playing "{name}" right away.',
+            'onboarding.startNow': 'Start Now',
+            'onboarding.later': 'Later',
 
-            'nav.dashboard':   'Dashboard',
-            'nav.chart':       'Chart',
-		'nav.monitor':          'Monitor',
-		'monitor.title':        'Fan Monitoring',
-		'monitor.range.5m':     '5m',
-		'monitor.range.30m':    '30m',
-		'monitor.range.1h':     '1h',
-		'monitor.layer.timeline': 'State Timeline',
-		'monitor.layer.wind':   'Wind / PWM',
-		'monitor.layer.events': 'Events',
-		'monitor.layer.current': 'Current Settings',
-		'monitor.tab.live':    'Live',
-		'monitor.tab.past':    'Past Events',
-		'monitor.csv.download':'Download CSV',
+            // =====================================================
+            // Session
+            // =====================================================
+            'session.playlist': 'Playlist',
+            'session.preset': 'Preset',
+            'session.fixed': 'Normal Fan',
+            'session.manual': 'Manual',
+            'session.schedule': 'Scheduled',
+            'session.paused': 'Paused',
+            'session.playing': 'Playing',
+            'session.none': 'No Session',
 
+            // =====================================================
+            // Now Playing
+            // =====================================================
+            'np.pause': 'Pause',
+            'np.resume': 'Resume',
+            'np.stop': 'Stop',
+            'np.step': 'Step {n}/{total}',
+            'np.schedulePending': 'Scheduled',
+            'np.scheduleConflict': 'Schedule Conflict',
 
-		'chart.tab.live':       'Live Operating',
-		'chart.tab.preview':    'Expected Waveform',
+            // =====================================================
+            // Home
+            // =====================================================
+            'home.title': 'Home',
+            'home.nowPlaying': 'Now Playing',
+            'home.playlist': '🎵 Play Playlists',
+            'home.noPlaylist': 'No profiles yet',
+            'home.goStudio': '🎨 Create in Studio',
+            'home.normalFan': '🌀 Normal Fan',
+            'home.context': "Today's Pick",
+            'home.recommend': '"{name}" feels great today',
+            'home.playRecommend': '▶ Play Now',
+            'home.fanStop': 'Off',
+            'home.fanStage': 'Stage {n}',
 
-		'preview.feel.coolness':   'Coolness',
-		'preview.feel.smoothness': 'Smoothness',
-		'preview.feel.dynamism':   'Dynamism',
-		'preview.feel.calmness':   'Calmness',
+            // =====================================================
+            // Studio
+            // =====================================================
+            'studio.title': 'Wind Design Studio',
+            'studio.new': 'New Profile',
+            'studio.edit': 'Edit Profile',
+            'studio.name': 'Profile Name',
+            'studio.repeat': 'Repeat',
+            'studio.repeatCount': 'times (0=infinite)',
+            'studio.steps': 'Step Sequence',
+            'studio.addStep': '+ Add Step',
+            'studio.stepTitle': 'Step {n}',
+            'studio.type': 'Type',
+            'studio.typePreset': 'Preset',
+            'studio.typeFixed': 'Fixed Speed',
+            'studio.typeRest': 'Rest (Fan Off)',
+            'studio.duration': 'Duration',
+            'studio.minutes': 'min',
+            'studio.preset': 'Preset',
+            'studio.style': 'Style',
+            'studio.fixedSpeed': 'Fixed Speed',
+            'studio.override': '⚙ Physics Override',
+            'studio.intensity': 'Intensity',
+            'studio.variability': 'Variability',
+            'studio.gust': 'Gust',
+            'studio.preview': '🎬 Preview',
+            'studio.previewAll': '🎬 Preview Full Scenario',
+            'studio.moveUp': 'Up',
+            'studio.moveDown': 'Down',
+            'studio.deleteStep': 'Delete',
+            'studio.save': 'Save',
+            'studio.update': 'Update',
+            'studio.cancel': 'Cancel',
+            'studio.confirmCancel': 'Discard changes?',
 
-            'nav.schedule':    'Schedule',
-            'nav.profiles':    'Profiles',
-            'nav.sensors':     'Sensors',
-            'nav.simulation':  'Simulation',
-            'nav.windprofile': 'Wind Presets',
-            'nav.settings':    'Settings',
-            'nav.network':     'Network',
-            'nav.logs':        'Logs',
-            'nav.diagnostics': 'Diagnostics',
-            'nav.firmware':    'Firmware',
-            'nav.ai':          'AI',
-            'nav.info':        'Info',
+            // =====================================================
+            // Playlist
+            // =====================================================
+            'playlist.title': 'Wind Playlist',
+            'playlist.count': '{n} profiles',
+            'playlist.new': '+ New',
+            'playlist.steps': '{n} Steps',
+            'playlist.refs': '⏰ Used by {n} schedule(s)',
+            'playlist.noRefs': 'No schedule references',
+            'playlist.play': '▶ Play',
+            'playlist.edit': '✏️ Edit',
+            'playlist.delete': '🗑',
+            'playlist.confirmDelete': 'Delete this profile?',
+            'playlist.confirmDeleteWithRefs': 'This profile is referenced by {n} schedule(s).\nDeleting will disable those schedules. Continue?',
 
-            'nav.groupControl':  'Control',
-            'nav.groupSettings': 'Settings',
-            'nav.groupSystem':   'System',
-
-            'dashboard.title':          'Dashboard',
-            'dashboard.realtimeState':  'Real-time Status',
-            'dashboard.currentWind':    'Current Wind',
-            'dashboard.targetWind':     'Target Wind',
-            'dashboard.pwmOutput':      'PWM Output',
-            'dashboard.state':          'State',
-            'dashboard.phase':          'Phase',
-            'dashboard.sensorTitle':    'Sensors',
-            'dashboard.powerTitle':     'Power',
-            'dashboard.powerOn':        'On',
-            'dashboard.powerOff':       'Off',
-            'dashboard.presetTitle':    'Preset',
-            'dashboard.presetCurrent':  'Current',
-            'dashboard.intensityTitle': 'Intensity',
-            'dashboard.intensityLabel': 'Intensity',
-            'dashboard.physicsTitle':   'Physics Controls',
-            'dashboard.variabilityLabel': 'Variability',
-            'dashboard.gustLabel':      'Gust Freq',
-            'dashboard.temp':           'Temp',
-            'dashboard.humidity':       'Humidity',
-            'dashboard.motion':         'Motion',
-            'dashboard.motionDetected': 'Detected',
-            'dashboard.motionAbsent':   'Absent',
-
-            'fsm.idle':           'Idle',
-            'fsm.override':       'Override',
-            'fsm.profileRun':     'Profile Running',
-            'fsm.scheduleRun':    'Schedule Running',
-            'fsm.motionBlocked':  'Motion Blocked',
-            'fsm.autoOffStopped': 'Auto Off',
-            'fsm.timeInvalid':    'Time Invalid',
-
-            'reason.none':              'None',
-            'reason.overrideActive':    'Override Active',
-            'reason.profileMode':       'Profile Mode',
-            'reason.userProfileActive': 'User Profile Active',
-            'reason.scheduleActive':    'Schedule Active',
-            'reason.noActiveSchedule':  'No Active Schedule',
-            'reason.noSchedules':       'No Schedules',
-            'reason.timeNotValid':      'Time Not Valid',
-            'reason.motionNoPresence':  'No Presence',
-            'reason.autoOffTimer':      'Timer Expired',
-            'reason.autoOffTime':       'Scheduled End Time',
-            'reason.autoOffTemp':       'Temperature Triggered',
-
-            'phase.calm':   'Calm',
-            'phase.normal': 'Normal',
-            'phase.strong': 'Strong',
-
-            'autoOff.timer':   'Timer expired',
-            'autoOff.time':    'Scheduled end time',
-            'autoOff.temp':    'Temperature threshold',
-            'autoOff.recover': 'Auto Off triggered. Turn on again?',
-            'autoOff.ack':     'Acknowledge',
-            'autoOff.restart': 'Turn On Again',
-            'autoOff.profile': 'Start Profile',
-
-            'preset.OCEAN':          'Ocean Breeze',
-            'preset.COUNTRY_BREEZE': 'Country Breeze',
-            'preset.MEDITERRANEAN':  'Mediterranean',
-            'preset.MOUNTAIN':       'Mountain',
-            'preset.PLAINS':         'Plains',
-            'preset.HARBOR_BREEZE':  'Harbor Breeze',
-            'preset.FOREST_CANOPY':  'Forest Canopy',
-            'preset.URBAN_SUNSET':   'Urban Sunset',
-            'preset.TROPICAL_RAIN':  'Tropical Rain',
-            'preset.DESERT_NIGHT':   'Desert Night',
-            'preset.applying':       'Applying...',
-            'preset.applied':        'Preset applied',
-            'preset.delayed':        'Preset application delayed',
-
-            'style.BALANCE': 'Balance',
-            'style.ACTIVE':  'Active',
-            'style.FOCUS':   'Focus',
-            'style.RELAX':   'Relax',
-            'style.SLEEP':   'Sleep',
-
-            'chart.title':    'Live Chart',
-            'chart.wind':     'Wind',
-            'chart.target':   'Target',
-            'chart.pwm':      'PWM',
-            'chart.time':     'Time',
-            'chart.export':   'Export CSV',
-            'chart.range5':   '5s',
-            'chart.range30':  '30s',
-            'chart.range120': '120s',
-
-            'log.title':  'System Logs',
-            'log.level':  'Level',
-            'log.none':   'NONE',
-            'log.error':  'ERROR',
-            'log.warn':   'WARN',
-            'log.info':   'INFO',
-            'log.debug':  'DEBUG',
-            'log.filter': 'Filter',
-            'log.filterAll': 'All',
-            'log.clear':  'Clear',
-            'log.export': 'Export',
-
-            'sensor.title':       'Sensors & Motion',
-            'sensor.temperature': 'Temperature',
-            'sensor.humidity':    'Humidity',
-            'sensor.motion':      'Motion',
-            'sensor.holdSec':     'Hold time',
-            'sensor.pirFeed':     'PIR Feed Test',
-            'sensor.dht22':       'DHT22 Config',
-            'sensor.pir':         'PIR Config',
-
-            'sensors.title':          'Live Sensor Status',
-            'sensors.temp':           'Temperature',
-            'sensors.hum':            'Humidity',
-            'sensors.motion':         'Motion',
-            'sensors.pirEnabled':     'Enable PIR Sensor',
-            'sensors.pirHoldSec':     'PIR Hold (sec)',
-            'sensors.feedPir':        'Force PIR Trigger',
-            'sensors.feedPirSuccess': 'PIR signal sent successfully',
-            'sensors.saveMotionSuccess': 'Motion settings saved successfully',
-            'sensors.motionConfig':   'Motion Logic Config (cfg_motion)',
-
-            'pir.testSuccess':        '✅ PIR detected → presence confirmed',
-            'pir.testFail':           '❌ PIR feed sent but server did not detect',
-            'pir.holdRemain':         'hold {sec}s',
-
-            'power.motionBlocked':    'No motion detected. Wave your hand in front of the PIR sensor.',
-            'power.autoOffLatched':   'Clearing Auto-Off latch and retrying.',
-            'power.failed':           'Failed to power on: {reason}',
-            'power.forceOn':          'Force On',
-            'power.ackAndRestart':    'Ack & Restart',
-            'power.ackOnly':          'Ack Only',
-
-            'banner.offline':         '🔴 Disconnected · Reconnecting ({attempt}/{max})',
-            'banner.polling':         '🟡 Live connection lost · Switched to 2s polling',
-            'banner.reconnected':     '🟢 Reconnected',
-            'banner.motionBlocked':   '🚫 Stopped due to no presence',
-            'banner.autoOff':         '🛑 Auto-Off · Reason: {reason}',
-
-            'reconnect.title':        'Reconnect Guide',
-            'reconnect.body':         'Connect Wi-Fi to "NatureWind" (2540) and visit http://192.168.4.1.',
-
-            'scheduler.title':      'Scheduler',
-            'scheduler.enabled':    'Enabled',
-            'scheduler.day':        'Day',
-            'scheduler.start':      'Start',
-            'scheduler.end':        'End',
-            'scheduler.segment':    'Segment',
-            'scheduler.on':         'On',
-            'scheduler.off':        'Off',
-            'scheduler.overlapWarn':'Time overlap detected',
-            'scheduler.scheduledOff': 'Scheduled Off',
-            'scheduler.tempOff':    'Temperature Off',
-            'schedule.segmentRepeat': 'Segment Repeat',
-            'schedule.repeatCount': 'Repeat Count (0=infinite)',
-            'schedule.segmentsTitle': 'Segments (Wind Intervals)',
-            'schedule.addSegmentBtn': '+ Add Segment',
-            'schedule.add':         'Add Schedule',
-            'schedule.name':        'Name',
-            'schedule.startTime':   'Start',
-            'schedule.endTime':     'End',
-
-            'profile.title':  'User Profiles',
-            'profile.start':  'Start',
-            'profile.stop':   'Stop',
-            'profile.active': 'Running',
-            'profiles.add':   'Add Profile',
-            'profiles.name':  'Name',
-            'profiles.no':    'No',
-            'profiles.enabled': 'Enabled',
-            'profiles.addSegment': 'Add Segment',
-            'profiles.autoOffTimer': 'Auto-off Timer (min)',
-            'profiles.segmentsTitle': 'Segments (Wind Intervals)',
-            'profiles.addSegmentBtn': '+ Add Segment',
-
-            'system.title':        'System Settings',
-            'system.logLevel':     'Log Level',
-            'system.apiKey':       'API Key',
-            'system.geminiKey':    'Gemini API Key',
-            'system.save':         'Save Settings',
-            'system.reload':       'Reload',
-            'system.factoryReset': 'Factory Reset',
-            'system.reboot':       'Reboot',
-            'system.hwPinmap':     'HW Pinmap',
-            'system.fanCurve':     'Fan Curve',
-
-            'settings.title':               'System Settings',
-            'settings.wsChannel':           'WebSocket Channels',
-            'settings.hardware':            'Hardware (PWM / Fan / PIR / DHT / LED)',
-            'settings.factoryReset':        'Factory Reset',
-            'settings.save':                'Save',
-            'settings.reload':              'Reload',
-            'settings.configured':          '(Configured)',
-            'settings.notConfigured':       '(Not Configured)',
-            'settings.deleteApiKey':        'Delete API Key',
-            'settings.keyPlaceholderChange':'Enter new key to change (blank=keep)',
-            'settings.keyPlaceholderInput': 'Enter key',
-            'settings.wsChannelConfig':     'WebSocket Channel Settings',
-            'settings.deleteGeminiKey':     'Delete Gemini Key',
-            'settings.testApiKey':          'Test API Key',
-            'settings.testApiSuccess':      'API Key verified successfully',
-            'settings.testApiFail':         'API Key verification failed: {msg}',
-            'settings.reloadRequested':     'Reload requested: {status}',
-            'settings.reloadInProgress':    'Reload in progress...',
-            'settings.reloadFailed':        'Reload failed (lastReloadOk=false)',
-            'settings.reloadComplete':      'Reload complete',
-            'settings.offlineReloadNotice': 'In offline mode, reload returns immediately.',
-            'settings.factoryResetConfirm': 'Are you sure you want to factory reset? All settings will be deleted.',
-            'settings.factoryResetWarning': '⚠️ Warning',
-            'settings.factoryResetTitle':   '⚠️ Factory Reset',
-            'settings.factoryResetItems':   'The following will be deleted:',
-            'settings.factoryResetConfirmWord': 'Type "reset" to confirm',
-            'settings.factoryResetWord':    'reset',
-            'settings.factoryResetSuccess': 'Device is restarting. Connect Wi-Fi to "NatureWind" (2540) and visit http://192.168.4.1.',
-            'settings.deviceRestarting':    'Device is restarting...',
-
-            'settings.secMeta':       'Meta / Logging / Security',
-            'settings.secFanPwm':     'Fan PWM',
-            'settings.secFanCurve':   'Fan Curve (%)',
-            'settings.secPir':        'PIR Sensor',
-            'settings.secDht':        'DHT22 Sensor',
-            'settings.secLed':        'Status LED',
-
-            'settings.fieldDeviceName': 'Device Name',
-            'settings.fieldLogLevel': 'Log Level',
-            'settings.fieldLogMax':   'Log Max Entries',
-            'settings.fieldPin':      'Pin',
-            'settings.fieldChannel':  'Channel',
-            'settings.fieldFreq':     'Frequency (Hz)',
-            'settings.fieldRes':      'Resolution (bits)',
-            'settings.fieldStart':    'Start',
-            'settings.fieldComfortMin': 'Comfort Min',
-            'settings.fieldComfortMax': 'Comfort Max',
-            'settings.fieldHardMax':  'Hard Max',
-            'settings.fieldDebounce': 'Debounce (sec)',
-            'settings.fieldHold':     'Hold (sec)',
-            'settings.fieldInterval': 'Interval (sec)',
-            'settings.fieldNumPixels':'Num Pixels',
-            'settings.fieldBrightness': 'Brightness (0~255)',
-            'settings.fieldEnabled':  'Enabled',
-            'settings.fieldType':     'Type',
-            'settings.fieldPinPwm':   'PWM Pin',
-            'settings.fieldPinPir':   'PIR Pin',
-            'settings.fieldPinDht':   'DHT Pin',
-            'settings.fieldPinLed':   'LED Pin',
-            'settings.fieldRange':    '{min}~{max}',
-            'settings.fieldRecommended': 'Recommended: {range}',
-            'settings.saveAndReload': 'Save & Auto-Reload',
-            'settings.saveOnly':      'Save Only',
-            'settings.reloadOnly':    'Reload Only',
-            'settings.dirtyWarning':  'Unsaved changes exist. Reloading will discard them.',
-
-            'network.title':        'Network & Time',
-            'network.wifiMode':     'Wi-Fi Mode',
-            'network.ssid':         'SSID',
-            'network.ip':           'IP',
-            'network.rssi':         'RSSI',
-            'network.scan':         'Scan Wi-Fi',
-            'network.connect':      'Connect',
-            'network.ntpServer':    'NTP Server',
-            'network.timezone':     'Timezone',
-            'network.syncInterval': 'Sync Interval',
-            'network.apSettings':   'AP Settings',
-            'network.staSettings':  'STA Settings',
-            'network.addSta':       'Add STA',
-            'network.noStaNotice':  'No Wi-Fi networks registered. Click Add STA to add one.',
-            'network.saveWifi':     'Save Wi-Fi Settings',
-            'network.saveTime':     'Save Time Settings',
-            'network.syncTimeBtn':  'Sync Current Time',
-            'network.scanWifi':     'Wi-Fi Scan',
-            'network.wifiConfig':   'Wi-Fi Settings (AP / STA)',
-            'network.timeConfig':   'Time Settings',
-            'network.status':       'Connection Status',
-            'network.mac':          'MAC Address',
-            'network.timeSynced':   'Time Sync',
-            'network.synced':       'Synced',
-            'network.notSynced':    'Not Synced',
-
-            'diag.title':    'Diagnostics',
-            'diag.heap':     'Heap',
-            'diag.fs':       'File System',
-            'diag.uptime':   'Uptime',
-            'diag.dirty':    'Dirty Flags',
-            'diag.reloadOk': 'Reload Result',
-            'diagnostics.title': 'System Diagnostics & Metrics',
-            'diagnostics.metricsRealtime': 'Metrics (Realtime)',
-            'diagnostics.allJson': 'Full Config JSON',
-            'diagnostics.saveDirty': 'Save Dirty Configs',
-            'diagnostics.saveDirtySuccess': 'Dirty settings saved successfully',
-            'diagnostics.fetchFail': 'Failed to query config',
-
-            'firmware.title':       'Firmware',
-            'firmware.version':     'Current Version',
-            'firmware.ota':         'OTA Update',
-            'firmware.otaUpdate':   'OTA Update',
-            'firmware.fileUpload':  'File Upload (LittleFS)',
-            'firmware.upload':      'Upload File',
-            'firmware.uploadBtn':   'Upload',
-            'firmware.otaSuccess':  'OTA Complete (Restarting)',
-            'firmware.progress':    'Progress',
-            'firmware.checkUpdate': 'Check Update',
-
-            'ai.title':       'AI Assistant',
-            'ai.send':        'Send',
-            'ai.thinking':    'Thinking...',
-            'ai.placeholder': 'e.g., "Turn off in 10 minutes" or "Diagnose now"',
-            'ai.example1':    'e.g., "Turn off in 10 minutes"',
-            'ai.example2':    'e.g., "Diagnose now"',
-            'ai.example3':    'e.g., "It\'s hot, cool me down"',
-
-            'simulation.saveBtn':     'Save Simulation Settings',
-            'simulation.saveSuccess': 'Simulation settings saved successfully',
-
-            'windprofile.code':         'Code (Alpha)',
-            'windprofile.factorsTitle': 'Basic Wind Parameters',
-            'windprofile.intensity':    'Intensity',
-            'windprofile.variability':  'Variability',
-            'windprofile.gust':         'Gust',
-            'windprofile.fanLimit':     'Fan Limit',
-            'windprofile.add':          'Add Preset',
-
-            'validate.range':         '{field} must be in {min}~{max}',
-            'validate.required':      '{field} is required',
-            'validate.multiErrors':   '{count} field(s) need attention',
-            'validate.segmentMin':    'At least 1 segment is required',
-            'validate.timeOrder':     'End time must be after start time',
-
-            'segment.deleted':        'Segment deleted',
-
-            'msg.apiKeyRequired': 'API Key required',
-            'msg.reloadPending':  'Reload in progress',
-            'msg.noChange':       'No changes',
-            'msg.saveSuccess':    'Saved',
-            'msg.saveAndReloadSuccess': 'Saved and reloaded',
-            'msg.reloadSuccess':  'Settings applied',
-            'msg.reloadFail':     'Failed to apply settings',
-            'msg.reloadDiscardWarning': 'Unsaved changes will be discarded. Continue?',
-            'msg.networkError':   'Network error',
-            'msg.timeout':        'Timeout',
-            'msg.unknown':        'Unknown error',
-            'msg.accessDenied':   'Access denied (level restricted)',
-            'msg.deleteConfirm':  'Are you sure you want to delete?',
-
-            'unit.celsius':   '°C',
-            'unit.humidity':  '%',
-            'unit.windSpeed': 'm/s',
-            'unit.percent':   '%',
-            'unit.seconds':   's',
-            'unit.minutes':   'm',
-            'unit.ms':        'ms',
-
-            'dashboard.modeTitle':          'Operation Mode',
-            'dashboard.modeSchedule':       '◻ Schedule Auto Mode',
-            'dashboard.modeProfile':        '◼ Profile Manual Mode',
-            'dashboard.modeScheduleShort':  'Schedule Mode (Auto)',
-            'dashboard.modeProfileShort':   'Profile Mode (Manual)',
-            'dashboard.modeSwitchedSchedule': 'Switched to schedule auto mode.',
-            'dashboard.modeSwitchedProfile':  'Switched to profile manual mode.',
-            'dashboard.selectProfileModal':   'Select Profile to Run',
-            'dashboard.sch':                'Schedule',
-            'dashboard.prof':               'Profile',
-            'dashboard.pwm':                'PWM',
-
-            'chart.range5s':                '5s',
-            'chart.range30s':               '30s',
-            'chart.range120s':              '120s',
-            'chart.exportCsv':              'CSV',
+            // =====================================================
+            // Schedule
+            // =====================================================
+            'schedule.title': 'Schedule',
+            'schedule.count': '{n} schedules',
+            'schedule.new': '+ New Schedule',
+            'schedule.name': 'Schedule Name',
+            'schedule.days': 'Days',
+            'schedule.start': 'Start',
+            'schedule.end': 'End',
+            'schedule.profile': '🎵 Playlist to Run',
+            'schedule.profileHint': '💡 Create new profiles in the Studio tab first.',
+            'schedule.noProfile': 'Create a profile first to schedule.',
+            'schedule.goStudio': '🎨 Create in Studio',
+            'schedule.note': '💡 Schedules auto-play playlists.\nEdit Steps in the Studio tab.',
+            'schedule.missingProfile': '(Deleted profile)',
+            'schedule.confirmDelete': 'Delete schedule "{name}"?',
+            'schedule.conflict': '⏰ Schedule Conflict',
+            'schedule.manualActive': 'Currently playing manually.',
+            'schedule.nextSchedule': 'Next schedule',
+            'schedule.in': '(in {n} min)',
+            'schedule.now': '(active now)',
+            'schedule.conflictDesc': 'Schedules will not run while manual playback is active. What would you like to do?',
+            'schedule.stopManual': '⏹ Stop Manual',
+            'schedule.keepManual': 'Keep Manual',
+            'schedule.stopped': 'Manual stopped · Waiting for next schedule',
 
             'days.mon': 'Mon', 'days.tue': 'Tue', 'days.wed': 'Wed', 'days.thu': 'Thu',
             'days.fri': 'Fri', 'days.sat': 'Sat', 'days.sun': 'Sun',
-            
-            'style.NATURAL': 'Natural',
-            'style.GUSTY': 'Gusty',
-            'style.GENTLE': 'Gentle',
-            'style.CYCLIC': 'Cyclic',
-            'settings.tabGeneral': 'General / Security',
-            'settings.tabHardware': 'Hardware / Pinmap',
-            'settings.tabComm': 'Comm / WS',
-            'dashboard.styleTitle': 'Wind Style',
-            'schedule.secBasic': 'Basic Schedule',
-            'schedule.secSegments': 'Wind Segments',
-            'schedule.secSmart': 'Smart Auto Off (AutoOff & PIR)',
-            'segment.onMinutes': 'On Duration (min)',
-            'segment.offMinutes': 'Off Duration (min)',
-            'segment.mode': 'Mode',
-            'segment.modePreset': 'Preset Mode',
-            'segment.modeFixed': 'Fixed Speed Mode',
-            'segment.presetSelect': 'Select Preset',
-            'segment.styleSelect': 'Select Style',
-            'segment.fixedSpeed': 'Fixed Speed (%)',
-            'segment.overrideTitle': '⚙️ Advanced Physics (Direct Override)',
-            'segment.overrideDesc': 'Directly specify wind physics for this segment (Override)',
-            'segment.overrideIntensity': 'Wind Intensity (%)',
-            'segment.overrideVariability': 'Wind Variability (%)',
-            'segment.overrideGust': 'Gust Frequency (%)',
-            'segment.moveUp': 'Move Up',
-            'segment.moveDown': 'Move Down',
-            'segment.summaryPrefix': 'Segments ({count}):'
-        }
+
+            // =====================================================
+            // Simulation
+            // =====================================================
+            'sim.title': '🎬 Wind Studio',
+            'sim.singleTab': '🎬 Single Preview',
+            'sim.abTab': '⚖ A/B Compare',
+            'sim.feelings': 'Feelings',
+            'sim.applyA': '✓ Apply This',
+            'sim.applyB': 'Apply B',
+            'sim.feel.coolness': 'Coolness',
+            'sim.feel.freshness': 'Freshness',
+            'sim.feel.dynamism': 'Dynamism',
+            'sim.feel.smoothness': 'Smoothness',
+            'sim.feel.calmness': 'Calmness',
+            'sim.avg': 'Avg',
+            'sim.intensity': 'Intensity',
+            'sim.variability': 'Variability',
+            'sim.gust': 'Gust',
+
+            // =====================================================
+            // Monitor
+            // =====================================================
+            'monitor.title': 'Monitor',
+            'monitor.liveTab': '📊 Live',
+            'monitor.retroTab': '🎬 Retro',
+            'monitor.liveWind': '📊 Live Wind',
+            'monitor.sensors': '🌡️ Sensors',
+            'monitor.retroTitle': '🎬 Session Retro',
+            'monitor.range1h': 'Last 1h',
+            'monitor.range24h': 'Last 24h',
+            'monitor.range7d': 'Last 7d',
+            'monitor.refresh': '🔄',
+            'monitor.sessionSummary': 'Session Summary',
+            'monitor.totalSessions': 'Sessions',
+            'monitor.totalActive': 'Active Time',
+            'monitor.avgWind': 'Avg Wind',
+            'monitor.maxWind': 'Max Wind',
+            'monitor.avgTemp': 'Avg Temp',
+            'monitor.presenceRatio': 'Presence',
+            'monitor.timelineTitle': 'Event Timeline',
+            'monitor.eventList': 'Events (Latest 30)',
+            'monitor.temp': 'Temp',
+            'monitor.humidity': 'Humidity',
+            'monitor.motion': 'Motion',
+            'monitor.detected': 'Detected',
+            'monitor.absent': 'Absent',
+
+            // =====================================================
+            // Context
+            // =====================================================
+            'context.comfort': 'Comfortable',
+            'context.slight': 'A bit warm',
+            'context.uncomfort': 'Sticky weather',
+            'context.severe': 'Suffocating',
+
+            // =====================================================
+            // Settings
+            // =====================================================
+            'settings.title': '⚙️ Settings',
+            'settings.tabGeneral': 'General',
+            'settings.tabNetwork': 'Network',
+            'settings.tabHardware': 'Hardware',
+            'settings.tabAdvanced': 'Advanced',
+            'settings.lang': 'Language',
+            'settings.version': 'Version',
+            'settings.manual': 'User Manual',
+            'settings.logs': 'System Logs',
+            'settings.diag': 'Diagnostics',
+            'settings.firmware': 'Firmware Update',
+            'settings.factoryReset': 'Factory Reset',
+            'settings.advanced': '⚠️ Advanced',
+
+            // =====================================================
+            // Header / Nav
+            // =====================================================
+            'nav.home': 'Home',
+            'nav.wind': 'Wind',
+            'nav.automation': 'Auto',
+            'nav.monitor': 'Monitor',
+            'nav.settings': 'Settings',
+            'header.menu': 'Menu',
+            'header.language': 'Language',
+            'header.online': 'Online',
+            'header.offline': 'Offline',
+            'header.connecting': 'Connecting',
+
+            // =====================================================
+            // Messages
+            // =====================================================
+            'msg.saveSuccess': 'Saved',
+            'msg.deleteSuccess': 'Deleted',
+            'msg.updateSuccess': 'Updated',
+            'msg.playSuccess': 'Playing',
+            'msg.loadFailed': 'Load failed',
+            'msg.saveFailed': 'Save failed',
+            'msg.networkError': 'Network error',
+            'msg.stepMin': 'At least 1 step required',
+            'msg.stepMax': 'Maximum 8 steps allowed',
+            'msg.nameRequired': 'Please enter a name',
+            'msg.durationRange': 'Duration must be 1~1440 min',
+            'msg.selectProfile': 'Please select a playlist',
+            'msg.timeOrder': 'End time must be after start time',
+        },
     };
 
     const SUPPORTED_LANGS = ['ko', 'en'];
-    let currentLang = (function() {
+
+    let currentLang = (function () {
         try {
-            const v = localStorage.getItem(SNW.CFG.LS_KEY.LANG);
-            return SUPPORTED_LANGS.includes(v) ? v : 'ko';
+            const saved = localStorage.getItem(SNW.CFG?.LS_KEY?.LANG || 'snw.lang');
+            if (SUPPORTED_LANGS.includes(saved)) return saved;
+            // 브라우저 언어 자동 감지
+            const nav = navigator.language || 'ko';
+            return nav.startsWith('ko') ? 'ko' : 'en';
         } catch { return 'ko'; }
     })();
 
     SNW.I18n = {
         getLang() { return currentLang; },
+
         setLang(lang) {
             if (!SUPPORTED_LANGS.includes(lang)) return;
             currentLang = lang;
-            try { localStorage.setItem(SNW.CFG.LS_KEY.LANG, lang); } catch {}
+            try { localStorage.setItem(SNW.CFG?.LS_KEY?.LANG || 'snw.lang', lang); } catch { }
             document.documentElement.lang = lang;
             document.dispatchEvent(new CustomEvent('snw:langchange', { detail: { lang } }));
+            this.applyTo(document);
         },
+
         t(key, params) {
             const dict = DICT[currentLang] || DICT.ko;
-            let s = dict[key] != null ? dict[key] : (DICT.ko[key] != null ? DICT.ko[key] : key);
+            let s = dict[key] != null ? dict[key] : (DICT.ko[key] || key);
             if (params) {
                 s = s.replace(/\{(\w+)\}/g, (m, k) => params[k] != null ? String(params[k]) : m);
             }
             return s;
         },
+
         hasKey(key) {
             return DICT.ko[key] != null || DICT.en[key] != null;
         },
+
         applyTo(root) {
             (root || document).querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (key && this.hasKey(key)) el.textContent = this.t(key);
             });
-            (root || document).querySelectorAll('[data-i18n-attr]').forEach(el => {
-                el.getAttribute('data-i18n-attr').split(',').forEach(pair => {
-                    const [attr, k] = pair.split(':').map(s => s.trim());
-                    if (attr && k && this.hasKey(k)) el.setAttribute(attr, this.t(k));
-                });
-            });
-        }
+        },
     };
 
     document.documentElement.lang = currentLang;
-
 })(window.SNW);
 
 
@@ -2162,7 +1714,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 040.api.js (13308 bytes) ---- */
+/* ---- 040.api.js (15051 bytes) ---- */
 // =========================================================
 // 040.api.js — SNW.Api (REST 클라이언트)
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -2263,7 +1815,7 @@ window.SNW = window.SNW || {};
 	        }
 	        if (path.includes('/schedules')) return cache.schedules || { schedules: [] };
 	        if (path.includes('/user_profiles')) return cache.userProfiles || { userProfiles: { profiles: [] } };
-	        if (path.includes('/windProfile')) return cache.windDict || { windDict: { presets: [] } };
+	        if (path.includes('/windDict') || path.includes('/windProfile')) return (cache.windDict && cache.windDict.windDict) ? cache.windDict.windDict : (cache.windDict || { presets: [], styles: [] });
 	        if (path.includes('/logs')) return { logs: [{ ts:0, lv:3, msg:'[Offline]' }] };
 	        if (path.includes('/diag')) return { heap: 120000, fs_used: 160000, fs_total: 1000000 };
 	        if (path.includes('/version')) return { fw:'FW_Ver_2.0.3' };
@@ -2436,6 +1988,26 @@ window.SNW = window.SNW || {};
 		
 		// --- WindDict ---
 		listWindProfiles() { return _fetch(SNW.CFG.API.windProfile); },
+		getWindDict() {
+			return _fetch(SNW.CFG.API.windDict).then(d => (d && d.windDict) ? d.windDict : d);
+		},
+		getComfort() {
+			return _fetch(SNW.CFG.API.comfort);
+		},
+		getMonitorTimeline(since = 0) {
+			const q = since > 0 ? `?since=${since}` : '';
+			return _fetch(`${SNW.CFG.API.monitorTimeline}${q}`);
+		},
+		getTimeline(since = 0) {
+			return this.getMonitorTimeline(since);
+		},
+		getSessionSummary(from = 0, to = 0) {
+			const params = [];
+			if (from > 0) params.push(`from=${from}`);
+			if (to > 0) params.push(`to=${to}`);
+			const q = params.length > 0 ? `?${params.join('&')}` : '';
+			return _fetch(`${SNW.CFG.API.monitorSessionSummary}${q}`);
+		},
 		addWindProfile(body) { return _fetch(SNW.CFG.API.windProfile, { method: 'POST', body }); },
 		updateWindProfile(id, b) { return _fetch(`${SNW.CFG.API.windProfile}/${id}`, { method: 'PUT', body: b }); },
 		deleteWindProfile(id) { return _fetch(`${SNW.CFG.API.windProfile}/${id}`, { method: 'DELETE' }); },
@@ -2454,6 +2026,41 @@ window.SNW = window.SNW || {};
 		patchProfiles(body) { return _fetch(SNW.CFG.API.userProfilesPatch, { method: 'POST', body }); },
 		selectProfile(id) { return _fetch(SNW.CFG.API.profileSelect, { method: 'POST', body: { id } }); },
 		stopProfile() { return _fetch(SNW.CFG.API.profileStop, { method: 'POST' }); },
+
+		// --- Session (Stage 3 신규) ---
+		sessionStart(type, payload, trigger = 'MANUAL') {
+			return _fetch(SNW.CFG.API.sessionStart, {
+				method: 'POST',
+				body: { type, payload, trigger }
+			});
+		},
+		startPlaylist(profileId) {
+			return this.sessionStart('PLAYLIST', { profileId });
+		},
+		startPreset(presetCode, styleCode) {
+			return this.sessionStart('PRESET', { presetCode, styleCode });
+		},
+		startFixed(percent) {
+			return this.sessionStart('FIXED', { percent });
+		},
+		pauseSession() {
+			return _fetch(SNW.CFG.API.sessionPause, { method: 'POST' });
+		},
+		resumeSession() {
+			return _fetch(SNW.CFG.API.sessionResume, { method: 'POST' });
+		},
+		stopSession() {
+			return _fetch(SNW.CFG.API.sessionStop, { method: 'POST' });
+		},
+		getCurrentSession() {
+			return _fetch(SNW.CFG.API.sessionCurrent);
+		},
+		setScheduleOverride(override) {
+			return _fetch(SNW.CFG.API.sessionSchOverride, {
+				method: 'POST',
+				body: { override: !!override }
+			});
+		},
 		
 		// --- Motion ---
 		getMotion() { return _fetch(SNW.CFG.API.motion); },
@@ -2679,7 +2286,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 060.store.js (3181 bytes) ---- */
+/* ---- 060.store.js (3311 bytes) ---- */
 // =========================================================
 // 060.store.js — SNW.Store + SNW.StoreBridge
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -2738,6 +2345,7 @@ window.SNW = window.SNW || {};
 		sim: null, // /state.sim
 		time: null, // control.time
 		system: null, // control.system (uptimeMs/epochNowMs)
+		session: null, // [v0203 Stage 3] Session 스냅샷
 		
 		// 파생 상태
 		lastUpdateMs: 0,
@@ -2781,6 +2389,7 @@ window.SNW = window.SNW || {};
 					patch.system = ctl.system || null;
 					patch.fsmState = (ctl.stateCode != null) ? ctl.stateCode : 0;
 					patch.fsmReason = (ctl.reasonCode != null) ? ctl.reasonCode : 0;
+					patch.session = ctl.session || null; // [v0203 Stage 3] Session 연결
 				}
 				if (sim) {
 					patch.sim = sim;
@@ -2810,7 +2419,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 070.router.js (7917 bytes) ---- */
+/* ---- 070.router.js (8709 bytes) ---- */
 // =========================================================
 // 070.router.js — SNW.Router (해시 SPA 라우터)
 // =========================================================
@@ -2820,6 +2429,11 @@ window.SNW = window.SNW || {};
     
     const ROUTES = {
         '/dashboard':   { page:'dashboard',   level:'L1' },
+        '/automation':          { page:'automation', params:{ tab:'studio' }, level:'L1' },
+        '/automation/studio':   { page:'automation', params:{ tab:'studio' }, level:'L1' },
+        '/automation/playlist': { page:'automation', params:{ tab:'playlist' }, level:'L1' },
+        '/automation/schedule': { page:'automation', params:{ tab:'schedule' }, level:'L1' },
+        '/automation/timer':    { page:'automation', params:{ tab:'timer' }, level:'L1' },
         '/chart':       { page:'chart',       level:'L2' },
         '/schedule':    { page:'schedule',    level:'L2' },
         '/profiles':    { page:'profiles',    level:'L2' },
@@ -2878,7 +2492,7 @@ window.SNW = window.SNW || {};
     }
 
     function parseHash() {
-        const raw = location.hash.replace(/^#/, '') || '/dashboard';
+        const raw = location.hash.replace(/^#/, '').split('?')[0] || '/dashboard';
         return ROUTES[raw] ? raw : '/dashboard';
     }
     function _clearMain() {
@@ -2944,7 +2558,13 @@ window.SNW = window.SNW || {};
                 return;
             }
 
-            currentPage = new PageClass(main);
+            const params = Object.assign({}, route.params || {});
+            const qIdx = location.hash.indexOf('?');
+            if (qIdx >= 0) {
+                const qs = new URLSearchParams(location.hash.slice(qIdx + 1));
+                for (const [k, v] of qs.entries()) params[k] = v;
+            }
+            currentPage = new PageClass(main, params);
             currentPath = path;
             await currentPage.mount();
             
@@ -3212,7 +2832,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 110.ui.slider.js (3823 bytes) ---- */
+/* ---- 110.ui.slider.js (9241 bytes) ---- */
 // =========================================================
 // 110.ui.slider.js — SNW.UI.slider
 // Layer 3 (UI 컴포넌트)
@@ -3313,7 +2933,510 @@ window.SNW = window.SNW || {};
         };
     };
     
+
+    // =========================================================
+    // [Stage 6] Snap 슬라이더 (일반 선풍기용 + Haptic 연동)
+    // =========================================================
+    SNW.UI.snapSlider = function(container, opts = {}) {
+        const {
+            min        = 0,
+            max        = 100,
+            value      = 0,
+            snapPoints = [0, 20, 40, 60, 80, 100],
+            snapRadius = 8,
+            label      = '',
+            format     = (v) => `${v}%`,
+            onChange   = null,
+        } = opts;
+
+        if (!container) return { set: () => {}, get: () => value };
+
+        container.innerHTML = `
+            <div class="snw-snapslider">
+                <div class="snw-snapslider__head">
+                    <span class="snw-snapslider__label">${SNW.DomUtil ? SNW.DomUtil.escape(label) : label}</span>
+                    <span class="snw-snapslider__value" data-slot="val">${format(value)}</span>
+                </div>
+                <div class="snw-snapslider__track-wrap">
+                    <input type="range"
+                           class="snw-snapslider__input"
+                           min="${min}" max="${max}" step="1"
+                           value="${value}"
+                           data-slot="input">
+                    <div class="snw-snapslider__ticks">
+                        ${snapPoints.map(p =>
+                            `<span class="snw-snapslider__tick"
+                                   style="left:${((p - min) / (max - min) * 100).toFixed(1)}%"></span>`
+                        ).join('')}
+                    </div>
+                </div>
+                <div class="snw-snapslider__stops">
+                    ${snapPoints.map(p =>
+                        `<button type="button"
+                                 class="snw-snapslider__stop"
+                                 data-snap="${p}">${format(p)}</button>`
+                    ).join('')}
+                </div>
+            </div>`;
+
+        const input   = container.querySelector('[data-slot="input"]');
+        const valEl   = container.querySelector('[data-slot="val"]');
+        const stopEls = container.querySelectorAll('[data-snap]');
+
+        let currentValue = Number(value) || 0;
+        let dragging = false;
+        let lastSnapFired = currentValue;
+
+        function snapToNearest(raw) {
+            const v = Number(raw);
+            if (!snapPoints || snapPoints.length === 0) return v;
+
+            let nearest = snapPoints[0];
+            let minDist = Math.abs(nearest - v);
+            for (const p of snapPoints) {
+                const d = Math.abs(p - v);
+                if (d < minDist) { minDist = d; nearest = p; }
+            }
+            if (minDist <= snapRadius) return nearest;
+            return v;
+        }
+
+        function updateUI(v) {
+            if (valEl) valEl.textContent = format(v);
+            stopEls.forEach(el => {
+                const sp = Number(el.getAttribute('data-snap'));
+                el.classList.toggle('is-active', sp === v);
+            });
+        }
+
+        input.addEventListener('input', () => {
+            dragging = true;
+            const raw = Number(input.value);
+            if (valEl) valEl.textContent = format(raw);
+        });
+
+        function finalize() {
+            if (!dragging) return;
+            dragging = false;
+
+            const raw = Number(input.value);
+            const snapped = snapToNearest(raw);
+
+            if (snapped !== raw) {
+                input.value = snapped;
+            }
+
+            if (snapped !== lastSnapFired) {
+                if (snapPoints.includes(snapped)) {
+                    if (SNW.Haptic && typeof SNW.Haptic.snap === 'function') SNW.Haptic.snap();
+                }
+                lastSnapFired = snapped;
+            }
+
+            currentValue = snapped;
+            updateUI(snapped);
+
+            if (typeof onChange === 'function') {
+                try { onChange(snapped); } catch (e) { if (SNW.LogUtil) SNW.LogUtil.error(e); }
+            }
+        }
+
+        input.addEventListener('pointerup', finalize);
+        input.addEventListener('pointercancel', finalize);
+        input.addEventListener('touchend', finalize);
+        input.addEventListener('change', () => {
+            if (!dragging) finalize();
+        });
+
+        stopEls.forEach(el => {
+            el.addEventListener('click', () => {
+                const target = Number(el.getAttribute('data-snap'));
+                if (target === currentValue) return;
+
+                currentValue = target;
+                input.value = target;
+                lastSnapFired = target;
+                updateUI(target);
+
+                if (snapPoints.includes(target)) {
+                    if (SNW.Haptic && typeof SNW.Haptic.snap === 'function') SNW.Haptic.snap();
+                }
+
+                if (typeof onChange === 'function') {
+                    try { onChange(target); } catch (e) { if (SNW.LogUtil) SNW.LogUtil.error(e); }
+                }
+            });
+        });
+
+        updateUI(currentValue);
+
+        return {
+            set(v) {
+                const n = Math.max(min, Math.min(max, Number(v) || 0));
+                if (n === currentValue) return;
+                currentValue = n;
+                input.value = n;
+                updateUI(n);
+            },
+            get() { return currentValue; },
+        };
+    };
+
 })(window.SNW);
+
+/* ---- 115.ui.eq.js (6552 bytes) ---- */
+// =========================================================
+// 115.ui.eq.js — 이퀄라이저 (실시간 파형 애니메이션)
+// Layer 1 (UI 컴포넌트)
+// =========================================================
+window.SNW = window.SNW || {};
+(function(SNW) {
+    'use strict';
+
+    SNW.UI = SNW.UI || {};
+
+    /**
+     * 이퀄라이저 (Canvas 2D)
+     * @param {HTMLElement} container
+     * @param {Object} opts { bars, fps, maxWind, bufferSize }
+     * @returns {{ push(windSpeed), start(), stop(), clear(), renderStatic() }}
+     */
+    SNW.UI.equalizer = function(container, opts = {}) {
+        const {
+            bars       = 20,
+            fps        = 60,
+            maxWind    = 11.0,       // 최대 풍속 (m/s)
+            bufferSize = 30,         // 로컬 버퍼 (WS 간격 × 30 ≈ 24초)
+        } = opts;
+
+        if (!container) {
+            return { push: () => {}, start: () => {}, stop: () => {}, clear: () => {}, renderStatic: () => {} };
+        }
+
+        // 캔버스 초기화
+        container.innerHTML = '';
+        const canvas = document.createElement('canvas');
+        canvas.className = 'snw-eq-canvas';
+        canvas.setAttribute('aria-label', '풍속 그래프');
+        container.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+
+        // DPR (고해상도)
+        let dpr = window.devicePixelRatio || 1;
+        let cw = 0, ch = 0;
+
+        // 로컬 링 버퍼
+        const buffer = new Array(bufferSize).fill(0);
+
+        // 애니메이션 상태
+        let running = false;
+        let rafId = null;
+        let lastTs = 0;
+
+        // prefers-reduced-motion
+        const reduceMotion = window.matchMedia &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // =========================================================
+        // 리사이즈
+        // =========================================================
+        function resize() {
+            const rect = container.getBoundingClientRect();
+            cw = Math.max(60, Math.floor(rect.width || container.clientWidth || 300));
+            ch = Math.max(40, Math.floor(rect.height || container.clientHeight || 60));
+
+            canvas.width  = Math.floor(cw * dpr);
+            canvas.height = Math.floor(ch * dpr);
+            canvas.style.width  = cw + 'px';
+            canvas.style.height = ch + 'px';
+
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            render();
+        }
+
+        // =========================================================
+        // 렌더
+        // =========================================================
+        function render() {
+            ctx.clearRect(0, 0, cw, ch);
+
+            const barW = cw / bars;
+            const gap = Math.max(1, barW * 0.15);
+            const actualW = barW - gap;
+
+            // 최근 bufferSize 값을 bars 개수로 다운샘플
+            const step = Math.max(1, Math.floor(bufferSize / bars));
+            for (let i = 0; i < bars; i++) {
+                const srcIdx = Math.min(bufferSize - 1, i * step + Math.floor(step / 2));
+                const v = buffer[srcIdx] || 0;
+
+                // 정규화
+                const ratio = Math.min(1, Math.max(0, v / maxWind));
+                const bh = Math.max(2, ratio * (ch - 4));
+
+                // 색상 매핑
+                let color;
+                if (v > 6)      color = '#f0883e';   // 강함 (주황)
+                else if (v > 3) color = '#3fb950';   // 보통 (초록)
+                else            color = '#4a9eff';   // 잔잔 (파랑)
+
+                ctx.fillStyle = color;
+                const x = i * barW + gap / 2;
+                const y = ch - bh;
+                // 둥근 막대 (roundRect 미지원 브라우저 대응)
+                if (typeof ctx.roundRect === 'function') {
+                    ctx.beginPath();
+                    ctx.roundRect(x, y, actualW, bh, 2);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(x, y, actualW, bh);
+                }
+            }
+        }
+
+        // =========================================================
+        // 애니메이션 루프
+        // =========================================================
+        function tick(ts) {
+            if (!running) return;
+
+            const frameInterval = reduceMotion ? 500 : Math.floor(1000 / fps);
+            if (ts - lastTs >= frameInterval) {
+                lastTs = ts;
+                render();
+            }
+            rafId = requestAnimationFrame(tick);
+        }
+
+        // =========================================================
+        // ResizeObserver
+        // =========================================================
+        let ro = null;
+        if (typeof ResizeObserver !== 'undefined') {
+            ro = new ResizeObserver(resize);
+            ro.observe(container);
+        } else {
+            window.addEventListener('resize', resize);
+        }
+
+        // 초기 렌더
+        requestAnimationFrame(resize);
+
+        // =========================================================
+        // Public API
+        // =========================================================
+        return {
+            /** 새 풍속 값 push (WS state에서 호출) */
+            push(windSpeed) {
+                buffer.shift();
+                buffer.push(Math.max(0, Number(windSpeed) || 0));
+                if (!running) render();   // 정지 시 즉시 렌더
+            },
+
+            start() {
+                if (running) return;
+                if (reduceMotion) {
+                    // reduced-motion: 애니메이션 없이 push 시 렌더만
+                    running = true;
+                    return;
+                }
+                running = true;
+                rafId = requestAnimationFrame(tick);
+            },
+
+            stop() {
+                running = false;
+                if (rafId) {
+                    cancelAnimationFrame(rafId);
+                    rafId = null;
+                }
+            },
+
+            clear() {
+                buffer.fill(0);
+                render();
+            },
+
+            /** 정지 상태용 — 회색 라인 */
+            renderStatic() {
+                ctx.clearRect(0, 0, cw, ch);
+                ctx.strokeStyle = '#59636e';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(4, ch / 2);
+                ctx.lineTo(cw - 4, ch / 2);
+                ctx.stroke();
+            },
+        };
+    };
+})(window.SNW);
+
+
+
+/* ---- 116.ui.sparkline.js (3395 bytes) ---- */
+// =========================================================
+// 116.ui.sparkline.js — 경량 SVG Sparkline
+// Layer 1 (UI 코어 컴포넌트)
+// =========================================================
+window.SNW = window.SNW || {};
+(function(SNW) {
+    'use strict';
+
+    SNW.UI = SNW.UI || {};
+
+    /**
+     * Sparkline 렌더러
+     * @param {HTMLElement} container
+     * @param {Object} opts { width, height, color, baseline }
+     * @returns {{render(points), clear()}}
+     */
+    SNW.UI.sparkline = function(container, opts = {}) {
+        const {
+            width  = 200,
+            height = 40,
+            color  = '#4a9eff',
+            baseline = null,   // 0이면 바닥에 선
+        } = opts;
+
+        if (!container) return { render: () => {}, clear: () => {} };
+
+        // SVG 요소 초기화
+        container.innerHTML = '';
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+        svg.setAttribute('preserveAspectRatio', 'none');
+        svg.style.cssText = 'width:100%;height:100%;display:block;';
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', color);
+        path.setAttribute('stroke-width', '1.5');
+        path.setAttribute('stroke-linejoin', 'round');
+        path.setAttribute('stroke-linecap', 'round');
+        svg.appendChild(path);
+
+        if (baseline !== null) {
+            const bl = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            bl.setAttribute('x1', '0');
+            bl.setAttribute('x2', String(width));
+            bl.setAttribute('y1', String(height - baseline * height));
+            bl.setAttribute('y2', String(height - baseline * height));
+            bl.setAttribute('stroke', 'rgba(139,148,158,0.2)');
+            bl.setAttribute('stroke-width', '1');
+            svg.insertBefore(bl, path);
+        }
+
+        container.appendChild(svg);
+
+        return {
+            render(points) {
+                if (!points || points.length < 2) {
+                    path.setAttribute('d', '');
+                    return;
+                }
+
+                // 값 범위 계산
+                let minV = Infinity, maxV = -Infinity;
+                points.forEach(p => {
+                    const v = (typeof p === 'number') ? p : (p.wind || 0);
+                    if (v < minV) minV = v;
+                    if (v > maxV) maxV = v;
+                });
+                if (maxV <= minV) maxV = minV + 1;
+
+                // Padding
+                const padY = 2;
+                const innerH = height - padY * 2;
+
+                // path 생성
+                const n = points.length;
+                const stepX = width / (n - 1);
+                let d = '';
+                points.forEach((p, i) => {
+                    const v = (typeof p === 'number') ? p : (p.wind || 0);
+                    const x = i * stepX;
+                    const y = padY + innerH - ((v - minV) / (maxV - minV)) * innerH;
+                    d += (i === 0 ? 'M' : 'L') + x.toFixed(2) + ',' + y.toFixed(2) + ' ';
+                });
+                path.setAttribute('d', d.trim());
+            },
+            clear() {
+                path.setAttribute('d', '');
+            }
+        };
+    };
+})(window.SNW);
+
+
+
+/* ---- 117.ui.haptic.js (1786 bytes) ---- */
+// =========================================================
+// 117.ui.haptic.js — 햅틱 래퍼 (지원 감지 + 폴백)
+// Layer 1 (UI 유틸)
+// =========================================================
+window.SNW = window.SNW || {};
+(function(SNW) {
+    'use strict';
+
+    SNW.Haptic = {
+        /** 지원 여부 */
+        isSupported() {
+            return 'vibrate' in navigator && typeof navigator.vibrate === 'function';
+        },
+
+        /** 지원 시 실행, 미지원 시 무음 통과 */
+        _vibrate(pattern) {
+            if (!this.isSupported()) return false;
+            try {
+                return navigator.vibrate(pattern);
+            } catch {
+                return false;
+            }
+        },
+
+        // =========================================================
+        // 프리셋 패턴 (의도별)
+        // =========================================================
+
+        /** 단계 Snap (가벼운 톡) — 10ms */
+        snap() {
+            return this._vibrate(10);
+        },
+
+        /** ON/OFF (확실한 톡) — 30ms */
+        toggle() {
+            return this._vibrate(30);
+        },
+
+        /** Step 전환 (이중 리듬) — 10-20-10 */
+        stepChange() {
+            return this._vibrate([10, 20, 10]);
+        },
+
+        /** 저장/성공 (짧고 명확) — 20ms */
+        success() {
+            return this._vibrate(20);
+        },
+
+        /** 오류 (긴 진동) — 100ms */
+        error() {
+            return this._vibrate(100);
+        },
+
+        /** 경고 (이중 짧은) — 15-30-15 */
+        warn() {
+            return this._vibrate([15, 30, 15]);
+        },
+
+        /** 정지 (긴 단일) — 50ms */
+        stop() {
+            return this._vibrate(50);
+        },
+    };
+})(window.SNW);
+
+
 
 /* ---- 120.ui.chart.js (5705 bytes) ---- */
 // =========================================================
@@ -3874,210 +3997,593 @@ window.SNW = window.SNW || {};
     
 })(window.SNW);
 
-/* ---- 135.util.preview.js (8839 bytes) ---- */
+/* ---- 135.util.preview.js (8072 bytes) ---- */
 // =========================================================
-// 135.util.preview.js — SNW.Preview (가상 미리보기 엔진 + 정성 라벨)
-// Layer 1 (유틸) — 998.offline의 resolvePreset 재활용
-// [SIM-2] 30초 파형 시뮬레이션 (프론트 간이 엔진, ±10% 오차 명시)
-// [SIM-8] "느낌" 5점 정성 라벨 (시원함/부드러움/역동성)
+// 135.util.preview.js — 물리 파형 미리보기 (S20 미러)
+// Layer 1 (유틸리티 엔진)
+// - 실제 팬 미가동, 클라이언트에서 물리 파형 시뮬레이션
 // =========================================================
 window.SNW = window.SNW || {};
-(function (SNW) {
+(function(SNW) {
     'use strict';
 
-    SNW.Preview = {
-        // ---------------------------------------------
-        // [SIM-2] 30초 파형 시뮬레이션
-        //  - preset × style factor 계산 (백엔드 S20 미러)
-        //  - 100ms 해상도로 300개 포인트 생성
-        // ---------------------------------------------
-        generate(presetCode, styleCode, override) {
-            const presets = SNW.Store.get()._presetsCache || [];
-            const styles = SNW.Store.get()._stylesCache || [];
-            const p = presets.find(x => x.code === presetCode);
-            const s = styles.find(x => x.code === (styleCode || 'BALANCE'));
-            if (!p || !s) return null;
+    // 캐시 (한 번 로드 후 재사용)
+    let _windDict = null;
+    let _loading = null;
 
-            const pf = p.factors || {};
-            const sf = s.factors || {};
-            const ov = override || { enabled: false };
+    async function ensureWindDict() {
+        if (_windDict) return _windDict;
+        if (_loading) return _loading;
+        _loading = SNW.Api.getWindDict().then(d => {
+            _windDict = d || { presets: [], styles: [] };
+            return _windDict;
+        }).catch(() => {
+            _windDict = { presets: [], styles: [] };
+            return _windDict;
+        });
+        return _loading;
+    }
 
-            const mul = (base, f, ovr) => {
-                if (ov.enabled && ovr != null && ovr >= 0) return ovr;
-                return (base ?? 50) * (f ?? 1);
-            };
+    function findPreset(code) {
+        if (!_windDict || !_windDict.presets) return null;
+        return _windDict.presets.find(p => p.code === code) || null;
+    }
 
-            const intensity = Math.max(0, Math.min(100,
-                mul(pf.windIntensity, sf.intensityFactor, ov.windIntensity)));
-            const variability = Math.max(0, Math.min(100,
-                mul(pf.windVariability, sf.variabilityFactor, ov.windVariability)));
-            const gustFreq = Math.max(0, Math.min(100,
-                mul(pf.gustFrequency, sf.gustFactor, ov.gustFrequency)));
+    function findStyle(code) {
+        if (!_windDict || !_windDict.styles) return null;
+        return _windDict.styles.find(s => s.code === code) || null;
+    }
 
-            const baseMin = pf.baseMinWind ?? 1.8;
-            const baseMax = pf.baseMaxWind ?? 5.5;
-            const avg = baseMin + (baseMax - baseMin) * (intensity / 100);
-            const turbAmp = (variability / 100) * (baseMax - baseMin) * 0.3;
-            const gustProb = (gustFreq / 100) * 0.03;  // 100ms당 3% × gustFreq%
-            const gustMul = pf.gustStrengthMax ?? 2.0;
+    // =========================================================
+    // 물리 파라미터 계산 (S20 미러)
+    // =========================================================
+    function resolveParams(presetCode, styleCode, override) {
+        const preset = findPreset(presetCode);
+        const style = findStyle(styleCode || 'BALANCE');
+        if (!preset) return null;
 
-            const points = [];
-            let gustActive = false;
-            let gustRemain = 0;
+        const pf = preset.factors || {};
+        const sf = style ? style.factors : { intensityFactor: 1, variabilityFactor: 1, gustFactor: 1 };
+        const ov = override || { enabled: false };
 
-            for (let i = 0; i < 300; i++) {  // 30초 × 10Hz
-                const t = i * 100;
-                // 난류 (sin 합성, 3개 주파수)
-                const turb = Math.sin(t * 0.002) * turbAmp * 0.5
-                    + Math.sin(t * 0.0071) * turbAmp * 0.3
-                    + Math.sin(t * 0.0137) * turbAmp * 0.2;
+        // 강도
+        let intensity = (pf.windIntensity || 50) * (sf.intensityFactor || 1);
+        if (ov.enabled && ov.windIntensity >= 0) intensity = ov.windIntensity;
+        intensity = Math.max(0, Math.min(100, intensity));
 
-                // 돌풍 발생
-                if (!gustActive && Math.random() < gustProb) {
-                    gustActive = true;
-                    gustRemain = 5 + Math.floor(Math.random() * 20);  // 0.5~2.5초
-                }
+        // 변동성
+        let variability = (pf.windVariability || 40) * (sf.variabilityFactor || 1);
+        if (ov.enabled && ov.windVariability >= 0) variability = ov.windVariability;
+        variability = Math.max(0, Math.min(100, variability));
 
-                let gustBoost = 0;
-                if (gustActive) {
-                    gustBoost = avg * (gustMul - 1) * 0.7;
-                    if (--gustRemain <= 0) gustActive = false;
-                }
+        // 돌풍
+        let gustFreq = (pf.gustFrequency || 30) * (sf.gustFactor || 1);
+        if (ov.enabled && ov.gustFrequency >= 0) gustFreq = ov.gustFrequency;
+        gustFreq = Math.max(0, Math.min(100, gustFreq));
 
-                const wind = Math.max(0.2, Math.min(11.0, avg + turb + gustBoost));
-                points.push({
-                    t,
-                    wind: Number(wind.toFixed(2)),
-                    avg: Number(avg.toFixed(2)),
-                    gust: gustBoost > 0,
-                    intensity, variability, gustFreq
-                });
+        // 물리 파라미터
+        const baseMin = pf.baseMinWind || 1.0;
+        const baseMax = pf.baseMaxWind || 5.0;
+        const turbSigma = pf.turbulenceIntensitySigma || 0.5;
+        const thermalStr = pf.thermalBubbleStrength || 2.0;
+
+        return { intensity, variability, gustFreq, baseMin, baseMax, turbSigma, thermalStr };
+    }
+
+    // =========================================================
+    // 30초 파형 생성 (100ms × 300 샘플)
+    // =========================================================
+    function generateWaveform(params) {
+        if (!params) return null;
+
+        const { intensity, variability, gustFreq, baseMin, baseMax, turbSigma } = params;
+
+        // 평균 풍속 (강도 기반)
+        const avg = baseMin + (baseMax - baseMin) * (intensity / 100);
+
+        // 난류 진폭 (변동성 기반)
+        const turbAmp = (variability / 100) * (baseMax - baseMin) * turbSigma;
+
+        // 돌풍 확률 (100ms당)
+        const gustProb = (gustFreq / 100) * 0.02;
+        const gustMul  = 1.8;
+
+        const points = [];
+        let gustRemain = 0;
+
+        for (let i = 0; i < 300; i++) {
+            const t = i * 100;  // ms
+
+            // 다중 사인파 난류
+            const turb =
+                Math.sin(t * 0.0015) * turbAmp * 0.5 +
+                Math.sin(t * 0.0053) * turbAmp * 0.3 +
+                Math.sin(t * 0.0121) * turbAmp * 0.2;
+
+            // 돌풍
+            let gustBoost = 0;
+            if (gustRemain > 0) {
+                gustBoost = avg * (gustMul - 1) * 0.6;
+                gustRemain--;
+            } else if (Math.random() < gustProb) {
+                gustRemain = 5 + Math.floor(Math.random() * 15);
             }
-            return { points, avg, intensity, variability, gustFreq };
+
+            const wind = Math.max(0.2, Math.min(11.0, avg + turb + gustBoost));
+
+            points.push({
+                t,
+                wind: Number(wind.toFixed(2)),
+                gust: gustBoost > 0,
+            });
+        }
+
+        return { points, avg: Number(avg.toFixed(2)), intensity, variability, gustFreq };
+    }
+
+    // =========================================================
+    // Public API
+    // =========================================================
+    SNW.Preview = {
+        async init() {
+            await ensureWindDict();
         },
 
-        // ---------------------------------------------
-        // [SIM-8] 정성 라벨 (시원함/부드러움/역동성 0~5)
-        // ---------------------------------------------
+        /**
+         * 단일 Step의 예상 파형
+         * @param {Object} step ST_A20_Step_t
+         * @returns {Promise<{points, avg, intensity, variability, gustFreq} | null>}
+         */
+        async generateStep(step) {
+            await ensureWindDict();
+
+            if (!step) return null;
+
+            // REST: 완전 정지
+            if (step.type === 'REST') {
+                const points = [];
+                for (let i = 0; i < 300; i++) {
+                    points.push({ t: i * 100, wind: 0, gust: false });
+                }
+                return { points, avg: 0, intensity: 0, variability: 0, gustFreq: 0 };
+            }
+
+            // FIXED: 고정 PWM
+            if (step.type === 'FIXED') {
+                const speed = Number(step.fixedSpeed) || 0;
+                const windEquivalent = (speed / 100) * 8;   // PWM% → m/s 근사
+                const points = [];
+                for (let i = 0; i < 300; i++) {
+                    points.push({ t: i * 100, wind: windEquivalent, gust: false });
+                }
+                return { points, avg: Number(windEquivalent.toFixed(2)), intensity: speed, variability: 0, gustFreq: 0 };
+            }
+
+            // PRESET: 물리 시뮬레이션
+            const params = resolveParams(
+                step.presetCode || 'OCEAN',
+                step.styleCode  || 'BALANCE',
+                step.override);
+            if (!params) return null;
+
+            return generateWaveform(params);
+        },
+
+        /**
+         * 여러 Step을 연결한 Playlist 전체 파형 (30초 압축)
+         * @param {Array} steps
+         * @returns {Promise<{points}>}
+         */
+        async generatePlaylistWaveform(steps) {
+            await ensureWindDict();
+
+            if (!steps || steps.length === 0) return null;
+
+            const total = 300;
+            const perStep = Math.floor(total / steps.length);
+            const allPoints = [];
+
+            for (let i = 0; i < steps.length; i++) {
+                const wave = await this.generateStep(steps[i]);
+                if (!wave) continue;
+
+                // 각 Step 파형을 perStep 샘플로 다운샘플
+                const stepSamples = Math.min(perStep, wave.points.length);
+                for (let j = 0; j < stepSamples; j++) {
+                    const idx = Math.floor((j / stepSamples) * wave.points.length);
+                    allPoints.push(wave.points[idx]);
+                }
+            }
+
+            // 시간 재부여
+            allPoints.forEach((p, i) => { p.t = i * 100; });
+
+            return { points: allPoints };
+        },
+
+        /**
+         * 5축 감성 레이더
+         */
         toFeelings(intensity, variability, gustFreq) {
             const clamp = v => Math.max(0, Math.min(5, Math.round(v)));
             return {
-                coolness: clamp(intensity / 20),                    // 시원함
-                smoothness: clamp(5 - variability / 20),             // 부드러움 (변동성 반비례)
-                dynamism: clamp((variability + gustFreq) / 40),    // 역동성
-                calmness: clamp(5 - (intensity + gustFreq) / 40)   // 차분함
+                coolness:   clamp(intensity / 20),                    // 시원함
+                smoothness: clamp(5 - variability / 20),              // 부드러움
+                dynamism:   clamp((variability + gustFreq) / 40),     // 역동성
+                calmness:   clamp(5 - (intensity + gustFreq) / 40),   // 차분함
+                freshness:  clamp((intensity + gustFreq) / 40),       // 청량감
             };
         },
-
-        // ---------------------------------------------
-        // 라벨 → i18n 문자열
-        // ---------------------------------------------
-        labelFor(key) {
-            return SNW.I18n.t('preview.feel.' + key);
-        },
-        // ---------------------------------------------
-        // [SIM-5] 세그먼트 미리보기 (세그먼트의 preset/style/override로 파형)
-        // ---------------------------------------------
-        segmentPreview(segment) {
-            if (!segment) return null;
-            if (segment.mode === 'FIXED') {
-                const speed = Number(segment.fixedSpeed) || 0;
-                const points = [];
-                for (let i = 0; i < 300; i++) {
-                    points.push({
-                        t: i * 100, wind: speed / 10, avg: speed / 10, gust: false,
-                        intensity: speed, variability: 0, gustFreq: 0
-                    });
-                }
-                return { points, avg: speed / 10, intensity: speed, variability: 0, gustFreq: 0, fixedMode: true };
-            }
-            const ovr = segment.override || { enabled: false };
-            return this.generate(
-                segment.presetCode || 'OCEAN',
-                segment.styleCode  || 'BALANCE',
-                ovr.enabled ? ovr : null
-            );
-        },
-
-        showModal(segData) {
-            const pv = this.segmentPreview(segData);
-            if (!pv) return;
-            const content = document.createElement('div');
-            content.innerHTML = `
-                <canvas data-seg-pv width="500" height="160"
-                        style="width:100%;background:var(--snw-bg-2);border-radius:6px;"></canvas>
-                <div style="margin-top:8px;font-size:12px;color:var(--snw-text-dim);">
-                    🎬 예상 파형 (±10% 오차) ·
-                    <b>${segData.mode === 'FIXED' ? '고정 ' + segData.fixedSpeed + '%' : (segData.presetCode || 'OCEAN') + ' · ' + (segData.styleCode || 'BALANCE')}</b>
-                </div>
-                <div style="margin-top:8px;font-size:12px;color:var(--snw-text-dim);">
-                    평균 ${pv.avg} m/s · 강도 ${Math.round(pv.intensity)}% ·
-                    변동 ${Math.round(pv.variability)}% · 돌풍 ${Math.round(pv.gustFreq)}%
-                </div>
-            `;
-            SNW.UI.modal('🎬 세그먼트 미리보기', content, () => true, null,
-                         { okLabel: '닫기', hideCancel: true, width: '540px' });
-            this._animate(content.querySelector('[data-seg-pv]'), pv.points);
-        },
-
-        _animate(canvas, points) {
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            const w = canvas.width, h = canvas.height;
-            let min = Infinity, max = -Infinity;
-            points.forEach(p => { if (p.wind < min) min = p.wind; if (p.wind > max) max = p.wind; });
-            if (max <= min) max = min + 1;
-            let drawn = 0;
-            const drawNext = () => {
-                if (drawn >= points.length || !canvas.isConnected) return;
-                ctx.clearRect(0, 0, w, h);
-                ctx.strokeStyle = 'rgba(139,148,158,0.1)';
-                ctx.lineWidth = 1;
-                for (let i = 0; i <= 4; i++) {
-                    const y = (h / 4) * i;
-                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-                }
-                ctx.strokeStyle = 'rgba(74,158,255,1)';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                for (let i = 0; i <= drawn; i++) {
-                    const p = points[i];
-                    const x = (i / (points.length - 1)) * w;
-                    const y = h - ((p.wind - min) / (max - min)) * (h - 20) - 10;
-                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                }
-                ctx.stroke();
-                for (let i = 0; i <= drawn; i++) {
-                    if (!points[i].gust) continue;
-                    const x = (i / (points.length - 1)) * w;
-                    const y = h - ((points[i].wind - min) / (max - min)) * (h - 20) - 10;
-                    ctx.fillStyle = 'rgba(240,136,62,0.9)';
-                    ctx.beginPath();
-                    ctx.arc(x, y, 3, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                drawn += 3;
-                setTimeout(drawNext, 30);
-            };
-            drawNext();
-        },
-
     };
+})(window.SNW);
+
+
+/* ---- 140.ui.simulation.js (15994 bytes) ---- */
+// =========================================================
+// 140.ui.simulation.js — Simulation 모달 (5축 레이더 + A/B 비교)
+// Layer 3 (UI 시뮬레이션 컴포넌트)
+// =========================================================
+window.SNW = window.SNW || {};
+SNW.UI = SNW.UI || {};
+(function(SNW) {
+    'use strict';
+
+    /**
+     * Simulation 모달
+     * @param {Object} config {
+     *   mode: 'single' | 'ab',
+     *   a: { presetCode, styleCode, override },  // 필수
+     *   b: { presetCode, styleCode, override },  // mode='ab'일 때
+     *   onApply: (chosenConfig) => void,         // "적용" 버튼
+     * }
+     */
+    SNW.UI.simulationModal = async function(config) {
+        if (!config || !config.a) return null;
+        if (SNW.Preview && typeof SNW.Preview.init === 'function') {
+            await SNW.Preview.init();
+        }
+
+        // =========================================================
+        // A 파형 생성
+        // =========================================================
+        const waveA = await SNW.Preview.generateStep({
+            type: 'PRESET',
+            presetCode: config.a.presetCode || 'OCEAN',
+            styleCode:  config.a.styleCode  || 'BALANCE',
+            override:   config.a.override || { enabled: false },
+        });
+
+        const feelingsA = SNW.Preview.toFeelings(
+            waveA.intensity, waveA.variability, waveA.gustFreq);
+
+        // =========================================================
+        // B 파형 생성 (A/B 모드)
+        // =========================================================
+        let waveB = null, feelingsB = null;
+        if (config.mode === 'ab' && config.b) {
+            waveB = await SNW.Preview.generateStep({
+                type: 'PRESET',
+                presetCode: config.b.presetCode || 'COUNTRY_BREEZE',
+                styleCode:  config.b.styleCode  || 'RELAX',
+                override:   config.b.override || { enabled: false },
+            });
+            feelingsB = SNW.Preview.toFeelings(
+                waveB.intensity, waveB.variability, waveB.gustFreq);
+        }
+
+        // =========================================================
+        // DOM
+        // =========================================================
+        const content = document.createElement('div');
+        content.className = 'snw-sim';
+        content.innerHTML = `
+            <div class="snw-sim__tabs" style="display:flex;gap:6px;margin-bottom:12px;">
+                <button type="button" class="snw-tab-btn ${config.mode !== 'ab' ? 'is-active' : ''}" data-mode="single">🎬 단일 미리보기</button>
+                <button type="button" class="snw-tab-btn ${config.mode === 'ab' ? 'is-active' : ''}" data-mode="ab">⚖ A/B 비교</button>
+            </div>
+
+            <div class="snw-sim__wave-section" data-slot="wave-a">
+                <div class="snw-sim__wave-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px;font-weight:600;">
+                    <span class="snw-sim__badge" style="padding:2px 8px;border-radius:4px;background:rgba(74,158,255,0.15);color:var(--snw-primary,#4a9eff);">${config.mode === 'ab' ? 'A' : '설정'}</span>
+                    <span>${SNW.DomUtil ? SNW.DomUtil.escape(config.a.presetCode + ' · ' + config.a.styleCode) : ''}</span>
+                </div>
+                <canvas class="snw-sim__canvas" data-slot="canvas-a" width="600" height="160" style="width:100%;height:160px;background:var(--snw-surface-2,#12161c);border-radius:var(--snw-radius,8px);display:block;"></canvas>
+                <div class="snw-sim__meta" data-slot="meta-a" style="display:flex;justify-content:space-around;font-size:12px;color:var(--snw-text-dim,#8b949e);margin-top:6px;"></div>
+            </div>
+
+            <div class="snw-sim__wave-section" data-slot="wave-b" ${config.mode !== 'ab' ? 'style="display:none;margin-top:12px;"' : 'style="margin-top:12px;"'}>
+                <div class="snw-sim__wave-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px;font-weight:600;">
+                    <span class="snw-sim__badge snw-sim__badge--b" style="padding:2px 8px;border-radius:4px;background:rgba(240,136,62,0.15);color:#f0883e;">B</span>
+                    <span>${config.b ? (SNW.DomUtil ? SNW.DomUtil.escape(config.b.presetCode + ' · ' + config.b.styleCode) : '') : '-'}</span>
+                </div>
+                <canvas class="snw-sim__canvas" data-slot="canvas-b" width="600" height="160" style="width:100%;height:160px;background:var(--snw-surface-2,#12161c);border-radius:var(--snw-radius,8px);display:block;"></canvas>
+                <div class="snw-sim__meta" data-slot="meta-b" style="display:flex;justify-content:space-around;font-size:12px;color:var(--snw-text-dim,#8b949e);margin-top:6px;"></div>
+            </div>
+
+            <div class="snw-sim__feelings" style="margin-top:16px;">
+                <h3 style="font-size:14px;font-weight:600;margin-bottom:8px;">감성 레이더 (Feelings)</h3>
+                <div class="snw-sim__radar-wrap" style="text-align:center;">
+                    <canvas class="snw-sim__radar" data-slot="radar" width="280" height="280" style="width:280px;height:280px;"></canvas>
+                </div>
+                <div class="snw-sim__feelings-legend" data-slot="legend" style="display:flex;justify-content:center;gap:16px;margin-top:8px;font-size:12px;"></div>
+            </div>
+
+            <div class="snw-sim__actions" style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
+                <button type="button" class="snw-btn" data-action="close" style="padding:8px 16px;">닫기</button>
+                ${config.mode === 'ab'
+                    ? `<button type="button" class="snw-btn" data-action="apply-b" style="padding:8px 16px;">B로 적용</button>
+                       <button type="button" class="snw-btn snw-btn-primary" data-action="apply-a" style="padding:8px 16px;">A로 적용</button>`
+                    : `<button type="button" class="snw-btn snw-btn-primary" data-action="apply-a" style="padding:8px 16px;">✓ 이 설정 적용</button>`}
+            </div>
+        `;
+
+        // =========================================================
+        // 파형 애니메이션
+        // =========================================================
+        const canvasA = content.querySelector('[data-slot="canvas-a"]');
+        const canvasB = content.querySelector('[data-slot="canvas-b"]');
+        const radar   = content.querySelector('[data-slot="radar"]');
+
+        animateWave(canvasA, waveA.points, '#4a9eff');
+        if (waveB) animateWave(canvasB, waveB.points, '#f0883e');
+
+        // =========================================================
+        // 메타 표시
+        // =========================================================
+        renderMeta(content.querySelector('[data-slot="meta-a"]'), waveA);
+        if (waveB) renderMeta(content.querySelector('[data-slot="meta-b"]'), waveB);
+
+        // =========================================================
+        // 5축 레이더
+        // =========================================================
+        drawRadar(radar, feelingsA, feelingsB);
+
+        // 범례
+        const legend = content.querySelector('[data-slot="legend"]');
+        legend.innerHTML = `
+            <div class="snw-sim__legend-item" style="display:flex;align-items:center;gap:4px;">
+                <span class="snw-sim__legend-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#4a9eff"></span>
+                ${config.mode === 'ab' ? 'A' : '현재'}
+            </div>
+            ${config.mode === 'ab' ? `
+                <div class="snw-sim__legend-item" style="display:flex;align-items:center;gap:4px;">
+                    <span class="snw-sim__legend-dot" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f0883e"></span>
+                    B
+                </div>
+            ` : ''}
+        `;
+
+        // =========================================================
+        // 액션
+        // =========================================================
+        let resolved = false;
+        let promiseResolve;
+
+        const promise = new Promise(res => { promiseResolve = res; });
+
+        let modalRef = null;
+        const close = (chosen) => {
+            if (resolved) return;
+            resolved = true;
+            if (modalRef && typeof modalRef.close === 'function') modalRef.close();
+            promiseResolve(chosen);
+        };
+
+        modalRef = SNW.UI.modal(
+            '🎬 바람 스튜디오 (Simulation)', content,
+            null,
+            null,
+            { hideOk: true, hideCancel: true, width: '560px' }
+        );
+
+        const btnClose = content.querySelector('[data-action="close"]');
+        const btnApplyA = content.querySelector('[data-action="apply-a"]');
+        const btnApplyB = content.querySelector('[data-action="apply-b"]');
+
+        if (btnClose) btnClose.onclick = () => close(null);
+        if (btnApplyA) btnApplyA.onclick = () => close(config.a);
+        if (btnApplyB) btnApplyB.onclick = () => close(config.b);
+
+        // 탭 전환 (A/B)
+        content.querySelectorAll('[data-mode]').forEach(btn => {
+            btn.onclick = () => {
+                const mode = btn.getAttribute('data-mode');
+                content.querySelectorAll('[data-mode]').forEach(b =>
+                    b.classList.toggle('is-active', b === btn));
+                const wb = content.querySelector('[data-slot="wave-b"]');
+                if (wb) wb.style.display = (mode === 'ab') ? 'block' : 'none';
+
+                drawRadar(radar, feelingsA, (mode === 'ab') ? feelingsB : null);
+            };
+        });
+
+        return promise;
+    };
+
+    // =========================================================
+    // 내부: 파형 애니메이션
+    // =========================================================
+    function animateWave(canvas, points, color) {
+        if (!canvas || !points || points.length === 0) return;
+
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+
+        let minV = Infinity, maxV = -Infinity;
+        points.forEach(p => {
+            if (p.wind < minV) minV = p.wind;
+            if (p.wind > maxV) maxV = p.wind;
+        });
+        if (maxV <= minV) maxV = minV + 1;
+
+        let drawn = 0;
+        const step = 3;
+
+        const drawNext = () => {
+            if (drawn >= points.length || !canvas.isConnected) return;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // 그리드
+            ctx.strokeStyle = 'rgba(139,148,158,0.1)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = (h / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+
+            // 파형
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            for (let i = 0; i <= drawn; i++) {
+                const p = points[i];
+                const x = (i / (points.length - 1)) * w;
+                const y = h - ((p.wind - minV) / (maxV - minV)) * (h - 20) - 10;
+                if (i === 0) ctx.moveTo(x, y);
+                else         ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // 돌풍 마커
+            for (let i = 0; i <= drawn; i++) {
+                if (!points[i].gust) continue;
+                const x = (i / (points.length - 1)) * w;
+                const y = h - ((points[i].wind - minV) / (maxV - minV)) * (h - 20) - 10;
+                ctx.fillStyle = 'rgba(240,136,62,0.9)';
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            drawn += step;
+            setTimeout(drawNext, 20);
+        };
+        drawNext();
+    }
+
+    // =========================================================
+    // 내부: 메타 표시
+    // =========================================================
+    function renderMeta(el, wave) {
+        if (!el || !wave) return;
+        el.innerHTML = `
+            <div>평균 <b>${wave.avg ? wave.avg.toFixed(1) : 0} m/s</b></div>
+            <div>강도 <b>${Math.round(wave.intensity || 0)}%</b></div>
+            <div>변동성 <b>${Math.round(wave.variability || 0)}%</b></div>
+            <div>돌풍 <b>${Math.round(wave.gustFreq || 0)}%</b></div>
+        `;
+    }
+
+    // =========================================================
+    // 내부: 5축 레이더
+    // =========================================================
+    function drawRadar(canvas, fA, fB) {
+        if (!canvas || !fA) return;
+
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        const cx = w / 2;
+        const cy = h / 2;
+        const maxR = Math.min(w, h) / 2 - 36;
+
+        ctx.clearRect(0, 0, w, h);
+
+        const axes = [
+            { key: 'coolness',   label: '시원함',   angle: -Math.PI / 2 },
+            { key: 'freshness',  label: '청량감',   angle: -Math.PI / 2 + Math.PI * 2 / 5 },
+            { key: 'dynamism',   label: '역동성',   angle: -Math.PI / 2 + Math.PI * 4 / 5 },
+            { key: 'smoothness', label: '부드러움', angle: -Math.PI / 2 + Math.PI * 6 / 5 },
+            { key: 'calmness',   label: '차분함',   angle: -Math.PI / 2 + Math.PI * 8 / 5 },
+        ];
+
+        // 그리드 (5단계 원)
+        ctx.strokeStyle = 'rgba(139,148,158,0.15)';
+        ctx.lineWidth = 1;
+        for (let ring = 1; ring <= 5; ring++) {
+            const r = (ring / 5) * maxR;
+            ctx.beginPath();
+            axes.forEach((axis, i) => {
+                const x = cx + Math.cos(axis.angle) * r;
+                const y = cy + Math.sin(axis.angle) * r;
+                if (i === 0) ctx.moveTo(x, y);
+                else         ctx.lineTo(x, y);
+            });
+            ctx.closePath();
+            ctx.stroke();
+        }
+
+        // 축
+        ctx.strokeStyle = 'rgba(139,148,158,0.3)';
+        axes.forEach(axis => {
+            const x = cx + Math.cos(axis.angle) * maxR;
+            const y = cy + Math.sin(axis.angle) * maxR;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        });
+
+        // 라벨
+        ctx.fillStyle = '#8b949e';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        axes.forEach(axis => {
+            const x = cx + Math.cos(axis.angle) * (maxR + 18);
+            const y = cy + Math.sin(axis.angle) * (maxR + 18);
+            ctx.fillText(axis.label, x, y);
+        });
+
+        // A 폴리곤
+        drawPolygon(ctx, cx, cy, maxR, axes, fA, 'rgba(74,158,255,0.35)', 'rgba(74,158,255,1)');
+
+        // B 폴리곤
+        if (fB) {
+            drawPolygon(ctx, cx, cy, maxR, axes, fB, 'rgba(240,136,62,0.25)', 'rgba(240,136,62,1)');
+        }
+
+        // 중심점
+        ctx.fillStyle = '#4a9eff';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function drawPolygon(ctx, cx, cy, maxR, axes, feelings, fillColor, strokeColor) {
+        ctx.beginPath();
+        axes.forEach((axis, i) => {
+            const val = feelings[axis.key] || 0;
+            const r = (val / 5) * maxR;
+            const x = cx + Math.cos(axis.angle) * r;
+            const y = cy + Math.sin(axis.angle) * r;
+            if (i === 0) ctx.moveTo(x, y);
+            else         ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.fillStyle = fillColor;
+        ctx.fill();
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
 })(window.SNW);
 
 
 
 /* ===== LAYER 2 ===== */
 
-/* ---- 200.page.dashboard.js (36415 bytes) ---- */
+/* ---- 200.page.dashboard.js (17334 bytes) ---- */
 // =========================================================
-// 200.page.dashboard.js — SNW.Page.Dashboard
+// 200.page.dashboard.js — 홈 (Stage 6 감성 UX 완성형)
 // Layer 4 (페이지 로직)
-// [O-1] 전원 켜기 3중 함정 진단
-// [O-2] 슬라이더 WS 덮어쓰기 방지 (낙관적 잠금)
-// [O-3] 프로필 모달 취소 시 롤백
-// [O-6] 프리셋 적용 WS 확인
-// [O-15] 배너로 AutoOff/모션 표시
+// 4대 섹션: ① Now Playing & 이퀄라이저 ② 플레이리스트 ③ Context 추천 ④ 일반 선풍기 Snap
 // =========================================================
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
@@ -4087,778 +4593,380 @@ SNW.Page = SNW.Page || {};
     SNW.Page.Dashboard = class Dashboard {
         constructor(container) {
             this.el = container;
-            this._unsubs = [];
-            this._wsUnsubs = [];
-            this._timers = [];
-            this.components = {};
             this._active = true;
-            this._pendingIntensity = null;
-            this._pendingPreset = null;
-            this._pendingPowerToggle = false;
+            this._unsubs = [];
+            this._eq = null;
+            this._slider = null;
+            this._contextCache = null;
+            this._contextFetchMs = 0;
         }
-        
+
         async mount() {
             this.el.innerHTML = '';
-            this.el.appendChild(SNW.Tpl.dashboard());
-            SNW.I18n.applyTo(this.el);
-            
-            // [C-2] 컴포넌트를 먼저 마운트 → 데이터 주입 순서 보장
-            this._mountComponents();
-            
-            try {
-                const [stateData, profileData] = await Promise.all([
-                    SNW.Api.getState(),
-                    SNW.Api.listWindProfiles().catch(() => null)
-                ]);
-                if (!this._active) return;
-                this._applyInitialState(stateData);
-                if (profileData) {
-                    this._profileData = profileData;
-                    this._applyPresetList(profileData);
-                }
-            } catch (e) {
-                if (this._active) SNW.LogUtil.warn('[Dashboard] 초기 로드 실패', e);
-            }
-            
-            const onLangChange = () => {
-                if (this._active && this._profileData) {
-                    this._applyPresetList(this._profileData);
-                }
-            };
-            document.addEventListener('snw:langchange', onLangChange);
-            this._unsubs.push(() => document.removeEventListener('snw:langchange', onLangChange));
-
+            this._render();
             this._bindStore();
-            this._bindModeSwitch();
-            this._startClock();
+            await this._loadProfiles();
+            await this._refreshContext(true);
         }
 
         unmount() {
             this._active = false;
             this._unsubs.forEach(fn => { try { fn(); } catch {} });
-            this._wsUnsubs.forEach(fn => { try { fn(); } catch {} });
-            this._timers.forEach(id => { clearInterval(id); clearTimeout(id); });
             this._unsubs = [];
-            this._wsUnsubs = [];
-            this._timers = [];
-            // [O-15] 페이지 이탈 시 배너 정리
-            if (SNW.Banner) SNW.Banner.hide();
-        }
-        
-        _applyInitialState(data) {
-            if (!data) return;
-            const ctl = data.control || null;
-            const sim = data.sim || null;
-            SNW.Store.set({
-                control: ctl,
-                sim,
-                time: ctl && ctl.time,
-                system: ctl && ctl.system,
-                fsmState: (ctl && ctl.stateCode != null) ? ctl.stateCode : 0,
-                fsmReason: (ctl && ctl.reasonCode != null) ? ctl.reasonCode : 0,
-                lastUpdateMs: Date.now()
-            });
-        }
-        
-        _applyPresetList(profileData) {
-            const presets = (profileData && profileData.windDict && profileData.windDict.presets) || [];
-            const order = SNW.C.PRESET_DISPLAY_ORDER;
-            const indexed = presets.map(p => ({ p, i: order.indexOf(p.code) }));
-            indexed.sort((a, b) => {
-                const ai = a.i < 0 ? 9999 : a.i;
-                const bi = b.i < 0 ? 9999 : b.i;
-                return ai - bi;
-            });
-            const items = indexed.map(({ p }) => ({
-                code: p.code,
-                name: SNW.I18n.t('preset.' + p.code) || p.name || p.code
-            }));
-            if (this.components.presets) this.components.presets.setItems(items);
-        }
-        
-        _mountComponents() {
-            const q = sel => this.el.querySelector(sel);
-            this.components.badge = SNW.UI.stateBadge(q('[data-slot="badge"]'));
-            this.components.gauge = SNW.UI.gauge(q('[data-slot="gauge"]'));
-            this.components.sensors = SNW.UI.sensorCards(q('[data-slot="sensors"]'));
-            this.components.toggle = SNW.UI.toggle({
-                root: q('[data-slot="power"]'),
-                on: false,
-                onToggle: next => this._onPowerToggle(next)
-            });
-            this.components.sliderIntensity = SNW.UI.slider({
-                root: q('[data-slot="intensity"]'),
-                min: 0, max: 100,
-                value: SNW.CFG.SIM_DEFAULT.intensity,
-                label: SNW.I18n.t('dashboard.intensityLabel'),
-                unit: '%',
-                feedbackFn: val => (SNW.Feedback ? SNW.Feedback.getIntensityGuide(val) : null),
-                debounceMs: SNW.C.DEBOUNCE_MS.SLIDER,
-                onChange: v => this._onIntensityChange(v)
-            });
-            this.components.sliderVariability = SNW.UI.slider({
-                root: q('[data-slot="variability"]'),
-                min: 0, max: 100,
-                value: SNW.CFG.SIM_DEFAULT.variability,
-                label: SNW.I18n.t('dashboard.variabilityLabel'),
-                unit: '%',
-                feedbackFn: val => (SNW.Feedback ? SNW.Feedback.getVariabilityGuide(val) : null),
-                debounceMs: SNW.C.DEBOUNCE_MS.SLIDER,
-                onChange: v => this._onVariabilityChange(v)
-            });
-            this.components.sliderGust = SNW.UI.slider({
-                root: q('[data-slot="gust"]'),
-                min: 0, max: 100,
-                value: SNW.CFG.SIM_DEFAULT.gustFreq,
-                label: SNW.I18n.t('dashboard.gustLabel'),
-                unit: '%',
-                feedbackFn: val => (SNW.Feedback ? SNW.Feedback.getGustGuide(val) : null),
-                debounceMs: SNW.C.DEBOUNCE_MS.SLIDER,
-                onChange: v => this._onGustChange(v)
-            });
-            this.components.slider = this.components.sliderIntensity;
-
-            this.components.presets = SNW.UI.presetGrid({
-                root: q('[data-slot="presets"]'),
-                items: [], selected: '',
-                onSelect: code => this._onPresetSelect(code),
-                onPreview: code => this._onPreviewClick(code),
-                onTrial: code => this._onRealTrialClick(code)
-            });
-            
-            // 스타일 선택 이벤트 바인딩 추가
-            this._bindStyleSelector();
-
-            // [SIM-4] 프리셋 영역 A/B 비교 버튼 배치
-            const presetSlot = this.el.querySelector('[data-slot="presets"]');
-            if (presetSlot && presetSlot.parentElement) {
-                const header = presetSlot.parentElement.querySelector('h2, .snw-card__header');
-                if (header) {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'snw-btn snw-btn--sm';
-                    btn.style.cssText = 'float:right;font-size:11px;padding:2px 8px;margin-top:-2px;';
-                    btn.textContent = '⚖ A/B 비교';
-                    btn.onclick = () => this._onCompareClick();
-                    header.appendChild(btn);
-
-                    const tourBtn = document.createElement('button');
-                    tourBtn.type = 'button';
-                    tourBtn.className = 'snw-btn snw-btn--sm';
-                    tourBtn.style.cssText = 'float:right;font-size:11px;padding:2px 8px;margin-top:-2px;margin-right:4px;';
-                    tourBtn.textContent = '🎬 투어';
-                    tourBtn.onclick = () => this._onTastingTour();
-                    header.appendChild(tourBtn);
-
-                    const sleepBtn = document.createElement('button');
-                    sleepBtn.type = 'button';
-                    sleepBtn.className = 'snw-btn snw-btn--sm';
-                    sleepBtn.style.cssText = 'float:right;font-size:11px;padding:2px 8px;margin-top:-2px;margin-right:4px;';
-                    sleepBtn.textContent = '🌙 수면모드';
-                    sleepBtn.onclick = () => this._onSleepMode();
-                    header.appendChild(sleepBtn);
-                }
-            }
+            if (this._eq) this._eq.stop();
+            this._eq = null;
+            this._slider = null;
         }
 
-        // [U-001/U-004] 정본은 프리셋.factors × 스타일.factors (S20 미러)
-        //  - target?.params → target?.factors (JSON 실제 구조)
-        //  - REFRESH/WAVE → 실제 5종(BALANCE/ACTIVE/FOCUS/RELAX/SLEEP) factor 곱
-        _resolvePresetParams(presetCode, styleCode) {
-            const presets = (this._profileData?.windDict?.presets) || [];
-            const styles  = (this._profileData?.windDict?.styles)  || [];
+        // =========================================================
+        // 레이아웃 (4 섹션, 엄지존 최적화)
+        // =========================================================
+        _render() {
+            this.el.innerHTML = `
+                <div class="snw-dashboard">
+                    <!-- ① Now Playing + 이퀄라이저 -->
+                    <section class="snw-card snw-card--nowplaying">
+                        <div class="snw-np-big">
+                            <div class="snw-np-big__eq" data-slot="eq"></div>
+                            <div class="snw-np-big__info">
+                                <div class="snw-np-big__title" data-slot="np-title">꺼짐</div>
+                                <div class="snw-np-big__sub" data-slot="np-sub">세션 없음</div>
+                            </div>
+                            <div class="snw-np-big__controls">
+                                <button type="button" class="snw-btn" data-action="pause" hidden>⏸</button>
+                                <button type="button" class="snw-btn" data-action="stop" hidden>⏹</button>
+                            </div>
+                        </div>
+                    </section>
 
-            const preset = presets.find(p => p.code === presetCode);
-            const style  = styles.find(s => s.code === (styleCode || 'BALANCE'));
+                    <!-- ② 재생할 플레이리스트 -->
+                    <section class="snw-card snw-card--playlist">
+                        <h2 style="font-size:16px;margin-bottom:12px;font-weight:600;">🎵 재생할 플레이리스트</h2>
+                        <div data-slot="playlist-grid" class="snw-playlist-grid">
+                            <div class="snw-empty" style="color:var(--snw-text-dim,#8b949e);">로딩 중...</div>
+                        </div>
+                    </section>
 
-            const pf = preset?.factors || {};
-            const sf = style?.factors  || {};
+                    <!-- ③ Context 추천 (Stage 6 신규) -->
+                    <section class="snw-card snw-card--comfort" data-slot="comfort-card">
+                        <div class="snw-comfort">
+                            <div class="snw-comfort__header">
+                                <span data-slot="comfort-env" style="font-family:var(--snw-font-mono, monospace);">🌡️ --°C  💧 --%</span>
+                                <span class="snw-comfort__level" data-slot="comfort-level">--</span>
+                            </div>
+                            <div class="snw-comfort__body">
+                                <span data-slot="comfort-recommend">기상 분석 중...</span>
+                            </div>
+                            <button type="button" class="snw-btn snw-btn-primary snw-btn--full" data-action="play-recommend" disabled>
+                                ▶ 지금 재생
+                            </button>
+                        </div>
+                    </section>
 
-            const clamp = v => Math.max(0, Math.min(100, Math.round(v)));
-            const mul   = (base, f) => (base ?? 50) * (f ?? 1);
-
-            return {
-                intensity:   clamp(mul(pf.windIntensity,   sf.intensityFactor)),
-                variability: clamp(mul(pf.windVariability, sf.variabilityFactor)),
-                gustFreq:    clamp(mul(pf.gustFrequency,   sf.gustFactor))
-            };
-        }
-
-
-        // [SIM-2] 가상 미리보기 모달 (30초 파형 애니메이션)
-        async _onPreviewClick(presetCode) {
-            const styleCode = SNW.Store.get().sim?.styleCode || 'BALANCE';
-            if (!SNW.Preview || !SNW.Preview.generate) {
-                SNW.ToastUtil.error('미리보기 모듈 미로드');
-                return;
-            }
-            const preview = SNW.Preview.generate(presetCode, styleCode, null);
-            if (!preview) { SNW.ToastUtil.error('미리보기 생성 실패'); return; }
-
-            const feelings = SNW.Preview.toFeelings(
-                preview.intensity, preview.variability, preview.gustFreq);
-
-            const content = document.createElement('div');
-            content.innerHTML = `
-                <div class="snw-preview-modal">
-                    <canvas data-preview-canvas width="500" height="180" style="width:100%;background:var(--snw-bg-2);border-radius:6px;"></canvas>
-                    <div style="margin-top:8px;font-size:12px;color:var(--snw-text-dim);">
-                        🎬 <b>예상 파형 (±10% 오차)</b> · 실선풍기는 가동되지 않습니다
-                    </div>
-                    <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                        <div>🌊 <b>${SNW.Preview.labelFor('coolness')}</b> ${this._stars(feelings.coolness)}</div>
-                        <div>🎵 <b>${SNW.Preview.labelFor('smoothness')}</b> ${this._stars(feelings.smoothness)}</div>
-                        <div>⚡ <b>${SNW.Preview.labelFor('dynamism')}</b> ${this._stars(feelings.dynamism)}</div>
-                        <div>🍃 <b>${SNW.Preview.labelFor('calmness')}</b> ${this._stars(feelings.calmness)}</div>
-                    </div>
-                    <div style="margin-top:12px;font-size:12px;color:var(--snw-text-dim);">
-                        평균 ${preview.avg} m/s · 강도 ${Math.round(preview.intensity)}% ·
-                        변동 ${Math.round(preview.variability)}% · 돌풍 ${Math.round(preview.gustFreq)}%
-                    </div>
+                    <!-- ④ 일반 선풍기 (Snap + Haptic, 최하단) -->
+                    <section class="snw-card snw-card--fan">
+                        <h2 style="font-size:16px;margin-bottom:12px;font-weight:600;">🌀 일반 선풍기</h2>
+                        <div data-slot="slider"></div>
+                    </section>
                 </div>`;
 
-            SNW.UI.modal(
-                `🎬 미리보기 — ${presetCode} + ${styleCode}`,
-                content,
-                () => { this._applyPresetFromPreview(presetCode); return true; },
-                null,
-                { okLabel: '이 설정 적용', width: '540px', cancelLabel: '닫기' }
-            );
+            // 이퀄라이저 초기화
+            const eqSlot = this.el.querySelector('[data-slot="eq"]');
+            if (SNW.UI && typeof SNW.UI.equalizer === 'function') {
+                this._eq = SNW.UI.equalizer(eqSlot, { bars: 20, fps: 60, maxWind: 11 });
+            }
 
-            // 애니메이션 (30초 → 3초 재생)
-            const canvas = content.querySelector('[data-preview-canvas]');
-            if (canvas) this._animatePreview(canvas, preview.points);
-        }
-
-        _stars(n) {
-            return '●'.repeat(n) + '○'.repeat(5 - n);
-        }
-
-        _animatePreview(canvas, points) {
-            const ctx = canvas.getContext('2d');
-            const w = canvas.width, h = canvas.height;
-            let min = Infinity, max = -Infinity;
-            points.forEach(p => { if (p.wind < min) min = p.wind; if (p.wind > max) max = p.wind; });
-            if (max <= min) max = min + 1;
-
-            let drawn = 0;
-            const drawNext = () => {
-                if (drawn >= points.length || !canvas.isConnected) return;
-                ctx.clearRect(0, 0, w, h);
-
-                // 격자
-                ctx.strokeStyle = 'rgba(139,148,158,0.1)';
-                ctx.lineWidth = 1;
-                for (let i = 0; i <= 4; i++) {
-                    const y = (h / 4) * i;
-                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-                }
-
-                // 파형
-                ctx.strokeStyle = 'rgba(74,158,255,1)';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                for (let i = 0; i <= drawn; i++) {
-                    const p = points[i];
-                    const x = (i / (points.length - 1)) * w;
-                    const y = h - ((p.wind - min) / (max - min)) * (h - 20) - 10;
-                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                }
-                ctx.stroke();
-
-                // gust 표시
-                for (let i = 0; i <= drawn; i++) {
-                    if (!points[i].gust) continue;
-                    const x = (i / (points.length - 1)) * w;
-                    const y = h - ((points[i].wind - min) / (max - min)) * (h - 20) - 10;
-                    ctx.fillStyle = 'rgba(240,136,62,0.9)';
-                    ctx.beginPath();
-                    ctx.arc(x, y, 3, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-
-                drawn += 3;
-                setTimeout(drawNext, 30);
-            };
-            drawNext();
-        }
-
-        async _applyPresetFromPreview(presetCode) {
-            try {
-                const styleCode = SNW.Store.get().sim?.styleCode || 'BALANCE';
-                await SNW.Api.patchSim({
-                    presetCode, styleCode,
-                    override: { enabled: false, windIntensity: -1, windVariability: -1, gustFrequency: -1 }
+            // Snap 슬라이더 초기화
+            const sliderSlot = this.el.querySelector('[data-slot="slider"]');
+            if (SNW.UI && typeof SNW.UI.snapSlider === 'function') {
+                this._slider = SNW.UI.snapSlider(sliderSlot, {
+                    min: 0, max: 100,
+                    value: 0,
+                    snapPoints: [0, 20, 40, 60, 80, 100],
+                    snapRadius: 8,
+                    label: '',
+                    format: (v) => {
+                        const labels = ['끔', '1단', '2단', '3단', '4단', '5단'];
+                        const idx = v / 20;
+                        return labels[Math.min(5, Math.max(0, idx))] || `${v}%`;
+                    },
+                    onChange: (v) => this._onFanChange(v),
                 });
-                SNW.ToastUtil.success(SNW.I18n.t('preset.applied'));
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'preview.apply');
+            }
+
+            // Now Playing 컨트롤
+            const btnPause = this.el.querySelector('[data-action="pause"]');
+            const btnStop  = this.el.querySelector('[data-action="stop"]');
+            if (btnPause) btnPause.onclick = () => this._onPauseToggle();
+            if (btnStop)  btnStop.onclick  = () => this._onStop();
+
+            // Context 재생 버튼
+            const btnRec = this.el.querySelector('[data-action="play-recommend"]');
+            if (btnRec) {
+                btnRec.onclick = () => this._onPlayRecommendation();
             }
         }
 
-        _bindStyleSelector() {
-            const selector = this.el.querySelector('#style-selector');
-            if (!selector) return;
-            
-            selector.addEventListener('click', async (e) => {
-                const btn = e.target.closest('.snw-style-btn');
-                if (!btn) return;
-                
-                const newStyle = btn.getAttribute('data-style');
-                const currentSim = SNW.Store.get().sim || {};
-                if (currentSim.styleCode === newStyle) return;
-                
-                // UI 즉시 반영
-                this._updateStyleUI(newStyle);
-                
-                // 현재 프리셋과 새 스타일에 따른 세부 파라미터 연동 계산
-                const currentPreset = currentSim.presetCode || 'FOREST';
-                const resolved = this._resolvePresetParams(currentPreset, newStyle);
-
-                // 슬라이더 3종 즉시 연동
-                if (this.components.sliderIntensity) this.components.sliderIntensity.set(resolved.intensity);
-                if (this.components.sliderVariability) this.components.sliderVariability.set(resolved.variability);
-                if (this.components.sliderGust) this.components.sliderGust.set(resolved.gustFreq);
-
-                SNW.Store.set({
-                    sim: Object.assign({}, currentSim, {
-                        styleCode: newStyle,
-                        intensity: resolved.intensity,
-                        variability: resolved.variability,
-                        gustFreq: resolved.gustFreq
-                    })
-                });
-
-                try {
-                    await SNW.Api.patchSim({
-                        styleCode: newStyle,
-                        intensity: resolved.intensity,
-                        variability: resolved.variability,
-                        gustFreq: resolved.gustFreq
-                    });
-                } catch (err) {
-                    SNW.ErrorHandler.handle(err, 'dashboard.style');
-                    // 실패 시 원복
-                    this._updateStyleUI(currentSim.styleCode);
-                }
-            });
-        }
-        
-        _updateStyleUI(styleCode) {
-            this.el.querySelectorAll('.snw-style-btn').forEach(btn => {
-                btn.classList.toggle('is-active', btn.getAttribute('data-style') === styleCode);
-            });
-        }
-        
         // =========================================================
-        // [O-3] 모드 스위치 — 취소 시 롤백
-        // =========================================================
-        _bindModeSwitch() {
-            const switchEl = this.el.querySelector('#mode-switch');
-            if (!switchEl) return;
-            
-            switchEl.addEventListener('change', async (e) => {
-                const isProfileMode = e.target.checked;
-                const prevMode = !isProfileMode;
-                const modeEl = this.el.querySelector('[data-slot="current-mode-text"]');
-                
-                const updateModeText = (profileMode) => {
-                    if (modeEl) modeEl.textContent = profileMode
-                        ? SNW.I18n.t('dashboard.modeProfileShort')
-                        : SNW.I18n.t('dashboard.modeScheduleShort');
-                };
-                updateModeText(isProfileMode);
-                
-                try {
-                    if (isProfileMode) {
-                        await this._promptProfileSelection();
-                    } else {
-                        await SNW.Api.stopProfile();
-                        SNW.ToastUtil.success(SNW.I18n.t('dashboard.modeSwitchedSchedule'));
-                    }
-                } catch (err) {
-                    switchEl.checked = prevMode;
-                    updateModeText(prevMode);
-                    
-                    if (err.message === 'CANCELLED') return;
-                    if (err.message === 'NO_PROFILES') {
-                        SNW.ToastUtil.warn(SNW.I18n.t('msg.noProfilesWarn'));
-                        return;
-                    }
-                    SNW.ErrorHandler.handle(err, 'dashboard.modeSwitch');
-                }
-            });
-        }
-        
-        // [O-3] 프로필 선택 모달 — 취소 시 reject
-        async _promptProfileSelection() {
-            const data = await SNW.Api.listProfiles().catch(() => null);
-            const profiles = (data?.userProfiles?.profiles || []).filter(p => p.enabled);
-            
-            if (profiles.length === 0) throw new Error('NO_PROFILES');
-            
-            const content = document.createElement('div');
-            content.className = 'snw-profile-picker';
-            
-            profiles.forEach(p => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'snw-btn snw-profile-picker__item';
-                btn.innerHTML = `
-                    <span>${SNW.DomUtil.escape(p.name || '#' + p.profileNo)}</span>
-                    <span style="color:var(--snw-primary);">${SNW.I18n.t('common.start')} ▶</span>
-                `;
-                btn.onclick = async () => {
-                    try {
-                        await SNW.Api.selectProfile(p.profileNo);
-                        SNW.ToastUtil.success(SNW.I18n.t('dashboard.modeSwitchedProfile'));
-                        modalRef.close();
-                        resolve();
-                    } catch (e) {
-                        reject(e);
-                    }
-                };
-                content.appendChild(btn);
-            });
-            
-            let resolve, reject;
-            const promise = new Promise((res, rej) => { resolve = res; reject = rej; });
-            
-            const modalRef = SNW.UI.modal(
-                SNW.I18n.t('dashboard.selectProfileModal'),
-                content,
-                null,
-                () => reject(new Error('CANCELLED')),
-                { hideOk: true }
-            );
-            
-            return promise;
-        }
-        
-        // =========================================================
-        // Store 구독 — [O-1][O-2][O-6][O-15] 반영
+        // Store 구독
         // =========================================================
         _bindStore() {
-            const s = SNW.Store;
-            
+            if (!SNW.Store || typeof SNW.Store.watch !== 'function') return;
+
             this._unsubs.push(
-                s.watch('fsmState', code => {
-                    if (this._active) this.components.badge.set(code, s.get().fsmReason);
-                }),
-                s.watch('fsmReason', reason => {
-                    if (this._active) this.components.badge.set(s.get().fsmState, reason);
-                }),
-                
-                // [O-2][O-6] sim 구독 — 잠금 해제/프리셋 확정
-                s.watch('sim', sim => {
-                    if (!this._active || !sim) return;
-                    
-                    // [O-2] 강도 잠금
-                    if (this._pendingIntensity !== null) {
-                        if (Math.abs(sim.intensity - this._pendingIntensity) <= 1) {
-                            this._pendingIntensity = null;
-                        } else {
-                            return; // 확정 전 → UI 덮어쓰기 방지
-                        }
-                    }
-                    
-                    // [O-6] 프리셋 확정
-                    if (this._pendingPreset && sim.presetCode === this._pendingPreset) {
-                        const card = this.el.querySelector(`[data-code="${sim.presetCode}"]`);
-                        if (card) card.classList.remove('is-applying');
-                        SNW.ToastUtil.success(SNW.I18n.t('preset.applied'));
-                        this._pendingPreset = null;
-                    }
-                    
-                    // UI 갱신
-                    const curWind = this.el.querySelector('[data-slot="cur-wind"]');
-                    if (curWind) curWind.textContent = (sim.windSpeed != null ? sim.windSpeed.toFixed(1) : '-');
-                    const tgtWind = this.el.querySelector('[data-slot="target-wind"]');
-                    if (tgtWind) tgtWind.textContent = (sim.targetWind != null ? sim.targetWind.toFixed(1) : '-');
-                    const phaseEl = this.el.querySelector('[data-slot="phase"]');
-                    if (phaseEl) {
-                        const meta = SNW.C.WIND_PHASE_META[sim.phase] || SNW.C.WIND_PHASE_META.NORMAL;
-                        phaseEl.textContent = SNW.I18n.t(meta.labelKey);
-                    }
-                    this.components.gauge.set(sim.pwmDuty != null ? sim.pwmDuty : 0);
-                    if (sim.intensity != null) this.components.sliderIntensity.set(sim.intensity);
-                    if (sim.variability != null) this.components.sliderVariability.set(sim.variability);
-                    if (sim.gustFreq != null) this.components.sliderGust.set(sim.gustFreq);
-                    if (sim.presetCode) this.components.presets.setSelected(sim.presetCode);
-                    
-                    if (sim.styleCode) this._updateStyleUI(sim.styleCode);
-                }),
-                
-                // [O-1][O-15] control 구독 — 배너 갱신
-                s.watch('control', ctl => {
-                    if (!this._active || !ctl) return;
-                    this.components.toggle.set(!!ctl.active);
-                    if (ctl.sensor) {
-                        this.components.sensors.set({
-                            tempC: ctl.sensor.tempC,
-                            humidity: ctl.sensor.humidity,
-                            motionActive: ctl.sensor.motionActive
-                        });
-                    }
-                    
-                    const schName = ctl.schedule && ctl.schedule.name ? ctl.schedule.name : '-';
-                    const profName = ctl.profile && ctl.profile.name ? ctl.profile.name : '-';
-                    const schEl = this.el.querySelector('[data-slot="sch-name"]');
-                    if (schEl) schEl.textContent = schName;
-                    const profEl = this.el.querySelector('[data-slot="prof-name"]');
-                    if (profEl) profEl.textContent = profName;
-                    
-                    let autoOffStr = '비활성';
-                    if (ctl.autoOffRt) {
-                        if (ctl.autoOffRt.timerArmed) autoOffStr = `타이머 (${ctl.autoOffRt.timerMinutes}분)`;
-                        else if (ctl.autoOffRt.offTimeEnabled) autoOffStr = `예약 종료 (${ctl.autoOffRt.offTimeMinutes}분)`;
-                        else if (ctl.autoOffRt.offTempEnabled) autoOffStr = `온도 (${ctl.autoOffRt.offTemp}°C)`;
-                    }
-                    const aoEl = this.el.querySelector('[data-slot="autooff"]');
-                    if (aoEl) aoEl.textContent = autoOffStr;
-                    
-                    const isProfMode = ctl.profileMode || (ctl.runSource === 2);
-                    const modeEl = this.el.querySelector('[data-slot="current-mode-text"]');
-                    if (modeEl) modeEl.textContent = isProfMode
-                        ? SNW.I18n.t('dashboard.modeProfileShort')
-                        : SNW.I18n.t('dashboard.modeScheduleShort');
-                    const switchEl = this.el.querySelector('#mode-switch');
-                    if (switchEl && switchEl.checked !== isProfMode) switchEl.checked = isProfMode;
-                    
-                    // [O-15] AutoOff/모션 배너
-                    this._updateBanner(ctl);
-                })
+                SNW.Store.watch('session', () => this._renderNowPlaying()),
+                SNW.Store.watch('sim',     () => this._onSimUpdate()),
+                SNW.Store.watch('control', () => this._onControlUpdate()),
             );
+            // 초기 렌더
+            this._renderNowPlaying();
         }
-        
-        // [O-15] AutoOff/모션 배너 처리
-        // [U-012] reasonCode → i18n 키 매핑 (AUTOOFF_TIMER → 취침 타이머 완료)
-        _updateBanner(ctl) {
-            if (!SNW.Banner) return;
-            
-            if (ctl.stateCode === 5 /* AUTOOFF_STOPPED */) {
-                const reasonKey  = SNW.C.AUTOOFF_REASON_MAP ? SNW.C.AUTOOFF_REASON_MAP[ctl.reasonCode] : null;
-                const reasonText = reasonKey ? SNW.I18n.t(reasonKey) : (ctl.reason || '-');
-                SNW.Banner.update('autooff', {
-                    id: 'autooff',
-                    level: 'warn',
-                    text: SNW.I18n.t('banner.autoOff', { reason: reasonText }),
-                    actions: [
-                        {
-                            label: SNW.I18n.t('power.ackAndRestart'),
-                            onClick: async () => {
-                                try {
-                                    await SNW.Api.ackEvent();
-                                    await this._onPowerToggle(true);
-                                } catch (e) { SNW.ErrorHandler.handle(e, 'dashboard.ackRestart'); }
-                            }
-                        },
-                        {
-                            label: SNW.I18n.t('power.ackOnly'),
-                            onClick: async () => {
-                                try {
-                                    await SNW.Api.ackEvent();
-                                    SNW.Banner.hide();
-                                } catch (e) { SNW.ErrorHandler.handle(e, 'dashboard.ack'); }
-                            }
-                        }
-                    ]
-                });
-            } else if (ctl.stateCode === 4 /* MOTION_BLOCKED */) {
-                SNW.Banner.update('motion', {
-                    id: 'motion',
-                    level: 'warn',
-                    text: SNW.I18n.t('banner.motionBlocked'),
-                    actions: [{
-                        label: SNW.I18n.t('power.forceOn'),
-                        onClick: () => this._onPowerToggle(true)
-                    }]
-                });
+
+        // =========================================================
+        // Now Playing 렌더
+        // =========================================================
+        _renderNowPlaying() {
+            const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+            const s = store.session;
+            const titleEl = this.el.querySelector('[data-slot="np-title"]');
+            const subEl   = this.el.querySelector('[data-slot="np-sub"]');
+            const btnPause = this.el.querySelector('[data-action="pause"]');
+            const btnStop  = this.el.querySelector('[data-action="stop"]');
+            if (!titleEl) return;
+
+            const isActive = s && s.type && s.type !== 'NONE' && s.active !== false;
+
+            if (!isActive) {
+                titleEl.textContent = '꺼짐';
+                subEl.textContent   = '세션 없음';
+                if (btnPause) btnPause.hidden = true;
+                if (btnStop)  btnStop.hidden  = true;
+                this._eq?.renderStatic();
+                this._eq?.stop();
+                this._slider?.set(0);
+                return;
+            }
+
+            const isPaused = s.state === 'PAUSED';
+            let title = '', sub = '';
+
+            if (s.type === 'PLAYLIST') {
+                title = s.profileName || '플레이리스트';
+                const remain = this._fmtRemain(s.stepRemainSec || 0);
+                sub = `Step ${s.currentStep || 1}/${s.totalSteps || 1} · ${remain}`;
+            } else if (s.type === 'PRESET') {
+                title = `${s.presetCode || ''} · ${s.styleCode || ''}`;
+                sub = isPaused ? '일시정지' : '재생 중';
+            } else if (s.type === 'FIXED') {
+                title = `일반 선풍기 ${Math.round(s.percent || 0)}%`;
+                sub = isPaused ? '일시정지' : '재생 중';
+                if (this._slider) this._slider.set(s.percent || 0);
+            }
+
+            const triggerIcon = s.trigger === 'MANUAL' ? '✋' : '⏰';
+            titleEl.textContent = `${triggerIcon} ${title}`;
+            subEl.textContent   = isPaused ? `⏸ ${sub}` : sub;
+
+            if (btnPause) {
+                btnPause.hidden = false;
+                btnPause.textContent = isPaused ? '▶' : '⏸';
+            }
+            if (btnStop) {
+                btnStop.hidden = false;
+            }
+
+            if (isPaused) {
+                this._eq?.renderStatic();
+                this._eq?.stop();
             } else {
-                SNW.Banner.hide();
+                this._eq?.start();
             }
         }
-        
-        _startClock() {
-            const clockEl = document.getElementById('header-clock');
-            if (!clockEl) return;
-            const id = SNW.TimeUtil.startClock(clockEl, () => {
-                const t = SNW.Store.get().time || {};
-                return {
-                    hour: t.hour != null ? t.hour : -1,
-                    min: t.min != null ? t.min : -1
-                };
-            });
-            this._timers.push(id);
+
+        // =========================================================
+        // sim 업데이트 → 이퀄라이저 push
+        // =========================================================
+        _onSimUpdate() {
+            const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+            const sim = store.sim;
+            if (!sim) return;
+
+            const s = store.session;
+            const isActive = s && s.type && s.type !== 'NONE' && s.state === 'ACTIVE';
+
+            if (this._eq && isActive) {
+                this._eq.push(sim.windSpeed || 0);
+                this._eq.start();
+            }
         }
-        
+
         // =========================================================
-        // [O-1] 전원 토글 — 진단 후 안전 실행
+        // control 업데이트 → Context 카드 재조회 (10초 throttle)
         // =========================================================
-        async _onPowerToggle(next) {
-            if (this._pendingPowerToggle) return;
-            this._pendingPowerToggle = true;
-            
-            const prevCtl = SNW.Store.get().control || {};
-            const prevActive = !!prevCtl.active;
-            
+        _onControlUpdate() {
+            const now = Date.now();
+            if (now - this._contextFetchMs < 10000) return;
+            this._refreshContext(false);
+        }
+
+        // =========================================================
+        // Context 조회
+        // =========================================================
+        async _refreshContext(force = false) {
+            const now = Date.now();
+            if (!force && now - this._contextFetchMs < 10000) return;
+            this._contextFetchMs = now;
+
             try {
-                if (!next) {
-                    await SNW.Api.overrideClear();
+                if (SNW.Api && typeof SNW.Api.getComfort === 'function') {
+                    const ctx = await SNW.Api.getComfort();
+                    this._contextCache = ctx;
+                    this._renderContext(ctx);
+                }
+            } catch (e) {
+                if (SNW.LogUtil) SNW.LogUtil.warn('[Dashboard] comfort fetch failed', e);
+            }
+        }
+
+        _renderContext(ctx) {
+            if (!ctx) return;
+            const envEl     = this.el.querySelector('[data-slot="comfort-env"]');
+            const levelEl   = this.el.querySelector('[data-slot="comfort-level"]');
+            const recEl     = this.el.querySelector('[data-slot="comfort-recommend"]');
+            const playBtn   = this.el.querySelector('[data-action="play-recommend"]');
+            if (!envEl) return;
+
+            const emoji = ['🟢', '🟡', '🟠', '🔴'][ctx.level] || '⚪';
+            const tempStr = (ctx.tempC != null) ? ctx.tempC.toFixed(1) : '--';
+            const humStr  = (ctx.humidity != null) ? ctx.humidity.toFixed(0) : '--';
+
+            envEl.textContent = `🌡️ ${tempStr}°C  💧 ${humStr}%`;
+            levelEl.textContent = `${emoji} ${ctx.levelText || ''}`;
+            levelEl.className = `snw-comfort__level snw-comfort__level--${ctx.level}`;
+
+            // 추천 표시
+            const rec = ctx.recommend || {};
+            if (rec.profileId > 0) {
+                recEl.innerHTML = `💡 현재 날씨엔 "<b>프로필 #${rec.profileId}</b>"이 가장 쾌적합니다`;
+                if (playBtn) playBtn.disabled = false;
+            } else if (rec.presetCode) {
+                recEl.innerHTML = `💡 현재 날씨엔 "<b>${rec.presetCode} · ${rec.styleCode}</b>" 바람을 추천합니다`;
+                if (playBtn) playBtn.disabled = false;
+            } else {
+                recEl.textContent = '현재 추천 바람 정보를 준비 중입니다';
+                if (playBtn) playBtn.disabled = true;
+            }
+        }
+
+        // =========================================================
+        // 프로필 로드
+        // =========================================================
+        async _loadProfiles() {
+            try {
+                if (!SNW.Api || typeof SNW.Api.listProfiles !== 'function') return;
+                const data = await SNW.Api.listProfiles();
+                const pRoot = (data && data.userProfiles) ? data.userProfiles : data;
+                const profiles = (pRoot && pRoot.profiles) ? pRoot.profiles : (Array.isArray(pRoot) ? pRoot : []);
+                const grid = this.el.querySelector('[data-slot="playlist-grid"]');
+                if (!grid) return;
+
+                if (profiles.length === 0) {
+                    grid.innerHTML = `<div class="snw-empty" style="color:var(--snw-text-dim,#8b949e);padding:16px 0;">작곡한 프로필이 없습니다.<br><a href="#/automation/studio" style="color:var(--snw-primary,#4a9eff);text-decoration:none;font-weight:600;display:inline-block;margin-top:8px;">🎨 Studio에서 작곡하기</a></div>`;
                     return;
                 }
-                
-                // ON: 진단
-                const st = await SNW.Api.getState();
-                const ctl = st.control || {};
-                
-                // Case 1: AutoOff 래치
-                if (ctl.stateCode === 5) {
-                    SNW.ToastUtil.info(SNW.I18n.t('power.autoOffLatched'));
-                    await SNW.Api.ackEvent();
-                    await new Promise(r => setTimeout(r, 100));
-                }
-                
-                // Case 2: 모션 블록
-                if (ctl.stateCode === 4 || ctl.sensor?.motionActive === false) {
-                    SNW.ToastUtil.warn(SNW.I18n.t('power.motionBlocked'));
-                    this.components.toggle.set(prevActive);
-                    this._pendingPowerToggle = false;
-                    return;
-                }
-                
-                // 낙관적 UI
-                SNW.Store.set({ control: Object.assign({}, ctl, { active: true }) });
-                
-                const intensity = SNW.Store.get().sim?.intensity ?? 70;
-                await SNW.Api.overrideFixed(intensity, 0, true);
-                
-                // 서버 실제 반영 검증
-                const after = await SNW.Api.getState();
-                if (after.control?.stateCode !== 1 /* OVERRIDE */) {
-                    SNW.ToastUtil.error(SNW.I18n.t('power.failed', {
-                        reason: after.control?.reason || 'unknown'
-                    }));
-                    this.components.toggle.set(prevActive);
-                    SNW.Store.set({
-                        control: Object.assign({}, after.control, { active: prevActive })
-                    });
-                }
-            } catch (e) {
-                this.components.toggle.set(prevActive);
-                SNW.ErrorHandler.handle(e, 'dashboard.power');
-            } finally {
-                this._pendingPowerToggle = false;
-            }
-        }
-        
-        // =========================================================
-        // [O-2] 강도 변경 — 낙관적 잠금
-        // =========================================================
-        async _onIntensityChange(v) {
-            const prevSim = SNW.Store.get().sim;
-            const prevVal = prevSim?.intensity;
-            
-            this._pendingIntensity = v;
-            SNW.Store.set({ sim: Object.assign({}, prevSim || {}, { intensity: v }) });
-            
-            try {
-                await SNW.Api.patchSim({ intensity: v });
-                // 1초 후에도 WS가 반영 안 하면 잠금 해제 (안전망)
-                this._timers.push(setTimeout(() => {
-                    if (this._pendingIntensity === v) this._pendingIntensity = null;
-                }, 1000));
-            } catch (e) {
-                this._pendingIntensity = null;
-                SNW.Store.set({ sim: Object.assign({}, prevSim, { intensity: prevVal }) });
-                this.components.slider.set(prevVal);
-                SNW.ErrorHandler.handle(e, 'dashboard.intensity');
-            }
-        }
 
-        async _onVariabilityChange(v) {
-            const prevSim = SNW.Store.get().sim;
-            const prevVal = prevSim?.variability;
-            SNW.Store.set({ sim: Object.assign({}, prevSim || {}, { variability: v }) });
-            try {
-                await SNW.Api.patchSim({ variability: v });
-            } catch (e) {
-                SNW.Store.set({ sim: Object.assign({}, prevSim, { variability: prevVal }) });
-                this.components.sliderVariability.set(prevVal);
-                SNW.ErrorHandler.handle(e, 'dashboard.variability');
-            }
-        }
-
-        async _onGustChange(v) {
-            const prevSim = SNW.Store.get().sim;
-            const prevVal = prevSim?.gustFreq;
-            SNW.Store.set({ sim: Object.assign({}, prevSim || {}, { gustFreq: v }) });
-            try {
-                await SNW.Api.patchSim({ gustFreq: v });
-            } catch (e) {
-                SNW.Store.set({ sim: Object.assign({}, prevSim, { gustFreq: prevVal }) });
-                this.components.sliderGust.set(prevVal);
-                SNW.ErrorHandler.handle(e, 'dashboard.gust');
-            }
-        }
-        
-        // =========================================================
-        // [O-6] 프리셋 적용 — WS 확인 및 세부 조정값 연동
-        // =========================================================
-        async _onPresetSelect(code) {
-            const prevSim = SNW.Store.get().sim || {};
-            const prevCode = prevSim?.presetCode;
-            const currentStyle = prevSim?.styleCode || 'BALANCE';
-            
-            // 프리셋에 따른 세부 조정값 연동 계산
-            const resolved = this._resolvePresetParams(code, currentStyle);
-
-            this._pendingPreset = code;
-
-            // 슬라이더 3종 즉시 연동
-            if (this.components.sliderIntensity) this.components.sliderIntensity.set(resolved.intensity);
-            if (this.components.sliderVariability) this.components.sliderVariability.set(resolved.variability);
-            if (this.components.sliderGust) this.components.sliderGust.set(resolved.gustFreq);
-
-            SNW.Store.set({
-                sim: Object.assign({}, prevSim, {
-                    presetCode: code,
-                    intensity: resolved.intensity,
-                    variability: resolved.variability,
-                    gustFreq: resolved.gustFreq
-                })
-            });
-            
-            const card = this.el.querySelector(`[data-code="${code}"]`);
-            if (card) card.classList.add('is-applying');
-            
-            try {
-                await SNW.Api.patchSim({
-                    presetCode: code,
-                    styleCode: currentStyle,
-                    intensity: resolved.intensity,
-                    variability: resolved.variability,
-                    gustFreq: resolved.gustFreq
+                grid.innerHTML = '';
+                profiles.slice(0, 4).forEach(p => {
+                    const card = document.createElement('button');
+                    card.type = 'button';
+                    card.className = 'snw-playlist-card';
+                    const pName = SNW.DomUtil ? SNW.DomUtil.escape(p.name || '프로필') : (p.name || '프로필');
+                    card.innerHTML = `
+                        <div class="snw-playlist-card__icon">🌊</div>
+                        <div class="snw-playlist-card__name">${pName}</div>
+                        <div class="snw-playlist-card__meta">${p.stepCount || (p.steps ? p.steps.length : 0)} Step</div>`;
+                    card.onclick = async () => {
+                        try {
+                            await SNW.Api.startPlaylist(p.profileId);
+                            if (SNW.Haptic) SNW.Haptic.stepChange();
+                        } catch (e) {
+                            if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '재생 실패');
+                        }
+                    };
+                    grid.appendChild(card);
                 });
-                
-                // 3초 타임아웃
-                this._timers.push(setTimeout(() => {
-                    if (this._pendingPreset === code) {
-                        this._pendingPreset = null;
-                        if (card) card.classList.remove('is-applying');
-                    }
-                }, 3000));
             } catch (e) {
-                this._pendingPreset = null;
-                if (card) card.classList.remove('is-applying');
-                SNW.Store.set({ sim: Object.assign({}, prevSim, { presetCode: prevCode }) });
-                this.components.presets.setSelected(prevCode);
-                SNW.ErrorHandler.handle(e, 'dashboard.preset');
+                if (SNW.LogUtil) SNW.LogUtil.warn('[Dashboard] profiles load fail', e);
             }
+        }
+
+        // =========================================================
+        // 액션
+        // =========================================================
+        async _onFanChange(percent) {
+            try {
+                if (percent === 0) {
+                    await SNW.Api.stopSession();
+                } else {
+                    await SNW.Api.startFixed(percent);
+                }
+            } catch (e) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '실패');
+            }
+        }
+
+        async _onPauseToggle() {
+            const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+            const s = store.session;
+            if (!s) return;
+            try {
+                if (s.state === 'PAUSED') {
+                    await SNW.Api.resumeSession();
+                    if (SNW.Haptic) SNW.Haptic.success();
+                } else {
+                    await SNW.Api.pauseSession();
+                    if (SNW.Haptic) SNW.Haptic.snap();
+                }
+            } catch (e) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error(e.message);
+            }
+        }
+
+        async _onStop() {
+            try {
+                await SNW.Api.stopSession();
+                if (SNW.Haptic) SNW.Haptic.stop();
+            } catch (e) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error(e.message);
+            }
+        }
+
+        async _onPlayRecommendation() {
+            const ctx = this._contextCache;
+            if (!ctx) return;
+
+            const rec = ctx.recommend || {};
+            try {
+                if (rec.profileId > 0) {
+                    await SNW.Api.startPlaylist(rec.profileId);
+                } else {
+                    await SNW.Api.startPreset(rec.presetCode, rec.styleCode);
+                }
+                if (SNW.Haptic) SNW.Haptic.stepChange();
+                if (SNW.ToastUtil) SNW.ToastUtil.success('추천 바람 재생 시작');
+            } catch (e) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '재생 실패');
+            }
+        }
+
+        _fmtRemain(sec) {
+            if (!sec || sec < 0) return '0:00';
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${m}:${String(s).padStart(2, '0')}`;
         }
     };
 })(window.SNW);
-
 
 
 /* ---- 210.page.chart.js (9487 bytes) ---- */
@@ -7526,306 +7634,372 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 260.page.monitor.js (17180 bytes) ---- */
+/* ---- 260.page.monitor.js (15556 bytes) ---- */
 // =========================================================
-// 260.page.monitor.js — SNW.Page.Monitor (MON-C + MON-E + MON-F)
-// 4 레이어: 상태 타임라인 / 풍속·PWM / 이벤트 / 현재 설정 + 지난 이벤트 7일
+// 260.page.monitor.js — SNW.Page.Monitor (Stage 7 회고 + 실시간 EQ)
 // =========================================================
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
-    (function (SNW) {
-        'use strict';
+(function(SNW) {
+    'use strict';
 
-        SNW.Page.Monitor = class Monitor {
-            constructor(container) {
-                this.el = container;
-                this._active = true;
-                this._range = '5m';
-                this._unsubs = [];
-                this._timers = [];
-                this._stateColors = {
-                    0: '#59636e', 1: '#4a9eff', 2: '#3fb950', 3: '#2dd4bf',
-                    4: '#d29922', 5: '#f0883e', 6: '#f85149'
-                };
+    SNW.Page.Monitor = class Monitor {
+        constructor(container) {
+            this.el = container;
+            this._active = true;
+            this._currentTab = 'live';
+            this._unsubs = [];
+            this._liveEq = null;
+            this._retroRange = '24h';
+        }
+
+        async mount() {
+            this.el.innerHTML = '';
+            this._render();
+            this._bindStore();
+            await this._loadLiveData();
+
+            // 라이브 이퀄라이저 초기화
+            const liveEqSlot = this.el.querySelector('[data-slot="live-eq"]');
+            if (liveEqSlot && SNW.UI && typeof SNW.UI.equalizer === 'function') {
+                this._liveEq = SNW.UI.equalizer(liveEqSlot, { bars: 40, fps: 30, maxWind: 11 });
             }
 
-            async mount() {
-                this.el.innerHTML = '';
-                this._renderShell();
-                await this._refresh();
-                SNW.WsManager.get('state')?.onMessage(() => {
-                    if (this._active) this._refresh();
-                });
+            // 탭 초기화
+            this._switchTab(this._currentTab);
+        }
 
-                // 탭 전환 (실시간 vs 지난 이벤트)
-                this.el.querySelectorAll('[data-tab]').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const tab = btn.getAttribute('data-tab');
-                        this.el.querySelectorAll('[data-tab]').forEach(b => b.classList.toggle('is-active', b === btn));
-                        this.el.querySelectorAll('[data-tab-content]').forEach(c => {
-                            c.style.display = c.getAttribute('data-tab-content') === tab ? 'block' : 'none';
-                        });
-                        if (tab === 'past') this._loadPastEvents();
-                    });
-                });
-
-                // 시간 범위 버튼
-                this.el.querySelectorAll('[data-range]').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        this._range = btn.getAttribute('data-range');
-                        this.el.querySelectorAll('[data-range]').forEach(b =>
-                            b.classList.toggle('is-active', b === btn));
-                        this._refresh();
-                    });
-                });
-
-                // 새로고침 버튼
-                const refreshBtn = this.el.querySelector('[data-action="refresh"]');
-                if (refreshBtn) refreshBtn.onclick = () => this._refresh();
-
-                // CSV 다운로드 버튼
-                const csvBtn = this.el.querySelector('[data-action="csv"]');
-                if (csvBtn) {
-                    csvBtn.onclick = () => {
-                        const url = `${SNW.CFG.API.monitor}/export?type=wind&range=${this._range}&format=csv`;
-                        window.open(url, '_blank');
-                    };
-                }
-
-                // 지난 이벤트 새로고침
-                const pastRefreshBtn = this.el.querySelector('[data-action="past-refresh"]');
-                if (pastRefreshBtn) pastRefreshBtn.onclick = () => this._loadPastEvents();
+        unmount() {
+            this._active = false;
+            this._unsubs.forEach(fn => { try { fn(); } catch {} });
+            this._unsubs = [];
+            if (this._liveEq && typeof this._liveEq.stop === 'function') {
+                this._liveEq.stop();
             }
+        }
 
-            unmount() { this._active = false; this._timers.forEach(id => clearInterval(id)); }
-
-            _renderShell() {
-                this.el.innerHTML = `
-                <section class="snw-card">
-                    <h2>🎛 선풍기 모니터링</h2>
-                    <div class="snw-tabs" style="margin-bottom:12px;display:flex;gap:4px;">
+        _render() {
+            this.el.innerHTML = `
+                <div class="snw-monitor">
+                    <div class="snw-tabs">
                         <button type="button" class="snw-tab-btn is-active" data-tab="live">📊 실시간</button>
-                        <button type="button" class="snw-tab-btn" data-tab="past">📅 지난 이벤트 (7일)</button>
+                        <button type="button" class="snw-tab-btn" data-tab="retro">🎬 회고</button>
                     </div>
-                    <div data-tab-content="live">
-                        <div class="snw-toolbar" style="gap:4px;display:flex;align-items:center;">
-                            <button type="button" class="snw-tab-btn is-active" data-range="5m">⏱ 5분</button>
-                            <button type="button" class="snw-tab-btn" data-range="30m">⏱ 30분</button>
-                            <button type="button" class="snw-tab-btn" data-range="1h">⏱ 1시간</button>
-                            <span style="flex:1;"></span>
-                            <button type="button" class="snw-btn" data-action="refresh">🔄</button>
-                            <button type="button" class="snw-btn" data-action="csv">📥 CSV</button>
-                        </div>
-                        <h3 style="margin-top:16px;">📊 상태 타임라인</h3>
-                        <div data-slot="timeline" style="position:relative;height:32px;background:var(--snw-bg-2);border-radius:4px;margin-bottom:16px;overflow:hidden;"></div>
-                        <h3>🌬 풍속 / PWM</h3>
-                        <div data-slot="wind" style="height:200px;background:var(--snw-bg-2);border-radius:4px;margin-bottom:16px;"></div>
-                        <h3>📌 이벤트</h3>
-                        <div data-slot="events" style="max-height:240px;overflow-y:auto;background:var(--snw-bg-2);border-radius:4px;padding:8px;font-size:12px;"></div>
-                        <h3 style="margin-top:16px;">🎛 현재 설정</h3>
-                        <div data-slot="current" style="background:var(--snw-surface-2);padding:12px;border-radius:4px;font-size:13px;"></div>
-                    </div>
-                    <div data-tab-content="past" style="display:none;">
-                        <div class="snw-toolbar" style="display:flex;gap:8px;align-items:center;">
-                            <label style="font-size:12px;">조회 기간:</label>
-                            <select id="past-days" style="padding:4px 8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
-                                <option value="1">1일</option>
-                                <option value="3">3일</option>
-                                <option value="7" selected>7일</option>
-                            </select>
-                            <label style="font-size:12px;margin-left:4px;">유형:</label>
-                            <select id="past-kind" style="padding:4px 8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
-                                <option value="all">전체</option>
-                                <option value="state">상태</option>
-                                <option value="config">설정</option>
-                                <option value="system">시스템</option>
-                            </select>
-                            <button type="button" class="snw-btn" data-action="past-refresh">🔄</button>
-                        </div>
-                        <div data-slot="past-events" style="max-height:500px;overflow-y:auto;background:var(--snw-bg-2);border-radius:4px;padding:8px;font-size:12px;margin-top:8px;"></div>
-                    </div>
-                </section>`;
-            }
-
-            async _refresh() {
-                try {
-                    const [wind, state, config, system, current] = await Promise.all([
-                        SNW.Api.getMonitor('wind', this._range).catch(() => ({ data: [] })),
-                        SNW.Api.getMonitor('state', this._range).catch(() => ({ data: [] })),
-                        SNW.Api.getMonitor('config', this._range).catch(() => ({ data: [] })),
-                        SNW.Api.getMonitor('system', this._range).catch(() => ({ data: [] })),
-                        SNW.Api.getState().catch(() => ({}))
-                    ]);
-                    if (!this._active) return;
-                    this._renderTimeline(state?.data || []);
-                    this._renderWindChart(wind?.data || []);
-                    this._renderEvents(state?.data || [], config?.data || [], system?.data || []);
-                    this._renderCurrent(current?.control, current?.sim);
-                } catch (e) {
-                    SNW.LogUtil.warn('[Monitor] refresh 실패', e);
-                }
-            }
-
-            async _loadPastEvents() {
-                const days = Number(this.el.querySelector('#past-days')?.value || 7);
-                try {
-                    const data = await SNW.Api.getPastEvents(days);
-                    const slot = this.el.querySelector('[data-slot="past-events"]');
-                    if (!slot) return;
-                    const events = (data?.events || []).sort((a, b) => b.t - a.t);
-                    if (!events.length) {
-                        slot.innerHTML = '<div style="color:var(--snw-text-dim);padding:8px;">이벤트 없음</div>';
-                        return;
-                    }
-                    const groups = {};
-                    events.forEach(e => {
-                        const d = new Date(e.t * 1000).toLocaleDateString('ko-KR');
-                        (groups[d] = groups[d] || []).push(e);
-                    });
-                    slot.innerHTML = Object.entries(groups).map(([date, list]) => `
-                    <div style="padding:8px;border-bottom:1px solid var(--snw-border);font-weight:600;">📅 ${date}</div>
-                    ${list.map(e => {
-                        const time = new Date(e.t * 1000).toLocaleTimeString('ko-KR', { hour12: false });
-                        let icon = '•', text = '';
-                        if (e.kind === 'state') {
-                            icon = e.new === 3 ? '🟢' : e.new === 5 ? '🛑' : e.new === 4 ? '🟡' : '⚪';
-                            text = `<b>${SNW.FsmUtil.getState(e.new).label}</b>`;
-                        } else if (e.kind === 'config') {
-                            icon = '⚙️';
-                            const keys = ['프리셋', '스타일', '강도', '변동', '돌풍'];
-                            text = `<b>${keys[e.type] || '설정'}</b> ${e.old} → ${e.new}`;
-                        } else {
-                            icon = '⚠️';
-                            text = `<b>시스템</b> type=${e.type}`;
-                        }
-                        return `<div style="display:flex;gap:8px;padding:4px 8px;border-bottom:1px solid rgba(255,255,255,0.05);">
-                            <span style="color:var(--snw-text-faint);font-family:monospace;min-width:70px;">${time}</span>
-                            <span>${icon}</span><span>${text}</span>
-                        </div>`;
-                    }).join('')}
-                `).join('');
-                } catch (e) { SNW.LogUtil.warn('[Monitor] past events 실패', e); }
-            }
-
-            _renderTimeline(events) {
-                const slot = this.el.querySelector('[data-slot="timeline"]');
-                if (!slot || !events.length) {
-                    if (slot) slot.innerHTML = '<div style="padding:8px;font-size:12px;color:var(--snw-text-dim);">이벤트 없음</div>';
-                    return;
-                }
-                const first = events[0].t, last = events[events.length - 1].t;
-                const total = Math.max(1, last - first);
-                slot.innerHTML = '';
-                events.forEach((e, i) => {
-                    const next = i + 1 < events.length ? events[i + 1].t : last;
-                    const left = ((e.t - first) / total) * 100;
-                    const width = Math.max(0.5, ((next - e.t) / total) * 100);
-                    const div = document.createElement('div');
-                    div.style.cssText = `position:absolute;left:${left}%;width:${width}%;height:100%;background:${this._stateColors[e.new] || '#555'};`;
-                    div.title = `${SNW.FsmUtil.getState(e.new).label} (${new Date(e.t * 1000).toLocaleTimeString()})`;
-                    slot.appendChild(div);
-                });
-                slot.style.position = 'relative';
-                slot.style.overflow = 'hidden';
-            }
-
-            _renderWindChart(points) {
-                const slot = this.el.querySelector('[data-slot="wind"]');
-                if (!slot || !points.length) {
-                    if (slot) slot.innerHTML = '<div style="padding:8px;font-size:12px;color:var(--snw-text-dim);">데이터 없음</div>';
-                    return;
-                }
-                slot.innerHTML = '';
-                const cv = document.createElement('canvas');
-                cv.width = slot.clientWidth || 600;
-                cv.height = 200;
-                cv.style.width = '100%'; cv.style.height = '100%';
-                slot.appendChild(cv);
-                const ctx = cv.getContext('2d');
-                const w = cv.width, h = cv.height;
-                const values = points.map(p => p.avg);
-                const min = Math.min(...values), max = Math.max(...values);
-                const range = Math.max(1, max - min);
-
-                // grid
-                ctx.strokeStyle = 'rgba(139,148,158,0.15)';
-                ctx.lineWidth = 1;
-                for (let i = 0; i <= 4; i++) {
-                    const y = (h / 4) * i;
-                    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-                }
-
-                // line
-                ctx.strokeStyle = '#4a9eff';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                points.forEach((p, i) => {
-                    const x = (i / (points.length - 1)) * w;
-                    const y = h - ((p.avg - min) / range) * (h - 20) - 10;
-                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-                });
-                ctx.stroke();
-
-                // gust markers
-                points.forEach((p, i) => {
-                    if (!p.gust) return;
-                    const x = (i / (points.length - 1)) * w;
-                    const y = h - ((p.avg - min) / range) * (h - 20) - 10;
-                    ctx.fillStyle = 'rgba(240,136,62,0.9)';
-                    ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
-                });
-            }
-
-            _renderEvents(states, configs, systems) {
-                const slot = this.el.querySelector('[data-slot="events"]');
-                if (!slot) return;
-                const merged = [
-                    ...states.map(e => ({ t: e.t, kind: 'state', e })),
-                    ...configs.map(e => ({ t: e.t, kind: 'config', e })),
-                    ...systems.map(e => ({ t: e.t, kind: 'system', e }))
-                ].sort((a, b) => b.t - a.t).slice(0, 50);
-
-                if (!merged.length) {
-                    slot.innerHTML = '<div style="color:var(--snw-text-dim);">이벤트 없음</div>';
-                    return;
-                }
-
-                slot.innerHTML = merged.map(({ kind, e }) => {
-                    const time = new Date(e.t * 1000).toLocaleTimeString('ko-KR', { hour12: false });
-                    let icon = '•', text = '';
-                    if (kind === 'state') {
-                        icon = e.new === 3 ? '🟢' : e.new === 5 ? '🛑' : e.new === 4 ? '🟡' : '⚪';
-                        text = `<b>${SNW.FsmUtil.getState(e.new).label}</b>`;
-                        if (e.new === 3) text += ` (${e.preset || '?'} · segNo ${e.segNo})`;
-                    } else if (kind === 'config') {
-                        icon = '⚙️';
-                        const keys = ['프리셋', '스타일', '강도', '변동', '돌풍'];
-                        text = `<b>${keys[e.type] || '설정'}</b> ${e.old} → ${e.new}`;
-                    } else if (kind === 'system') {
-                        icon = '⚠️';
-                        text = `<b>시스템 이벤트</b> (type=${e.type})`;
-                    }
-                    return `<div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid var(--snw-border);">
-                    <span style="color:var(--snw-text-faint);font-family:monospace;">${time}</span>
-                    <span>${icon}</span>
-                    <span>${text}</span>
+                    <div data-tab-content="live"></div>
+                    <div data-tab-content="retro" style="display:none;"></div>
                 </div>`;
-                }).join('');
+
+            this.el.querySelectorAll('[data-tab]').forEach(btn => {
+                btn.onclick = () => this._switchTab(btn.getAttribute('data-tab'));
+            });
+        }
+
+        _switchTab(tab) {
+            this._currentTab = tab;
+            this.el.querySelectorAll('[data-tab]').forEach(b =>
+                b.classList.toggle('is-active', b.getAttribute('data-tab') === tab));
+            this.el.querySelectorAll('[data-tab-content]').forEach(c => {
+                c.style.display = (c.getAttribute('data-tab-content') === tab) ? 'block' : 'none';
+            });
+
+            if (tab === 'live')  this._renderLive();
+            if (tab === 'retro') this._renderRetro();
+        }
+
+        // =========================================================
+        // 라이브 탭
+        // =========================================================
+        _renderLive() {
+            const slot = this.el.querySelector('[data-tab-content="live"]');
+            if (!slot) return;
+            slot.innerHTML = `
+                <div class="snw-card">
+                    <h2>📊 실시간 풍속</h2>
+                    <div data-slot="live-eq" class="snw-monitor__eq" style="height:100px;"></div>
+                    <div class="snw-monitor__live-info" data-slot="live-info"></div>
+                </div>
+                <div class="snw-card">
+                    <h2>🌡️ 센서</h2>
+                    <div class="snw-monitor__sensors" data-slot="live-sensors"></div>
+                </div>`;
+
+            // 이퀄라이저 재초기화
+            const eqSlot = slot.querySelector('[data-slot="live-eq"]');
+            if (eqSlot && SNW.UI && typeof SNW.UI.equalizer === 'function') {
+                this._liveEq = SNW.UI.equalizer(eqSlot, { bars: 40, fps: 30, maxWind: 11 });
+                this._liveEq.start();
+            }
+            this._onLiveUpdate();
+        }
+
+        _onLiveUpdate() {
+            const storeData = (SNW.Store && typeof SNW.Store.get === 'function') ? SNW.Store.get() : {};
+            const ctl = storeData.control;
+            const sim = storeData.sim;
+            const session = storeData.session;
+
+            if (this._liveEq && sim) {
+                this._liveEq.push(sim.windSpeed || 0);
             }
 
-            _renderCurrent(ctl, sim) {
-                const slot = this.el.querySelector('[data-slot="current"]');
-                if (!slot || !ctl) return;
-                const stateMeta = SNW.FsmUtil.getState(ctl.stateCode || 0);
-                slot.innerHTML = `
-                <div><b>상태:</b> ${stateMeta.icon} ${stateMeta.label} · <i>${SNW.FsmUtil.getReason(ctl.reasonCode || 0).label}</i></div>
-                <div style="margin-top:4px;"><b>프리셋:</b> ${sim?.presetCode || '-'} · <b>스타일:</b> ${sim?.styleCode || '-'}</div>
-                <div style="margin-top:4px;"><b>강도:</b> ${Math.round(sim?.intensity || 0)}% · <b>변동:</b> ${Math.round(sim?.variability || 0)}% · <b>돌풍:</b> ${Math.round(sim?.gustFreq || 0)}%</div>
-                <div style="margin-top:4px;"><b>현재:</b> ${(sim?.windSpeed || 0).toFixed(1)} m/s · PWM ${(sim?.pwmDuty || 0).toFixed(0)}%</div>
-            `;
+            const infoEl = this.el.querySelector('[data-slot="live-info"]');
+            if (infoEl && session && session.type !== 'NONE') {
+                let title = '';
+                if (session.type === 'PLAYLIST') title = session.profileName;
+                else if (session.type === 'PRESET') title = `${session.presetCode} · ${session.styleCode}`;
+                else title = `일반 선풍기 ${Math.round(session.percent || 0)}%`;
+
+                infoEl.innerHTML = `
+                    <div class="snw-monitor__live-row">
+                        <span>${session.trigger === 'MANUAL' ? '✋' : '⏰'} ${SNW.DomUtil.escape(title)}</span>
+                    </div>
+                    ${session.type === 'PLAYLIST' ? `
+                        <div class="snw-monitor__live-row">
+                            <span>Step ${session.currentStep}/${session.totalSteps}</span>
+                            <span>${this._fmtTime(session.stepRemainSec || 0)}</span>
+                        </div>` : ''}
+                `;
+            } else if (infoEl) {
+                infoEl.innerHTML = '<div class="snw-empty">세션 없음</div>';
             }
-        };
-    })(window.SNW);
+
+            const sensorsEl = this.el.querySelector('[data-slot="live-sensors"]');
+            if (sensorsEl && ctl && ctl.sensor) {
+                const s = ctl.sensor;
+                sensorsEl.innerHTML = `
+                    <div class="snw-sensor-row">
+                        <span>🌡️ 온도</span><b>${(s.tempC || 0).toFixed(1)}°C</b>
+                    </div>
+                    <div class="snw-sensor-row">
+                        <span>💧 습도</span><b>${Math.round(s.humidity || 0)}%</b>
+                    </div>
+                    <div class="snw-sensor-row">
+                        <span>👤 재실</span><b>${s.motionActive ? '감지' : '부재'}</b>
+                    </div>
+                `;
+            }
+        }
+
+        // =========================================================
+        // 회고 탭
+        // =========================================================
+        async _renderRetro() {
+            const slot = this.el.querySelector('[data-tab-content="retro"]');
+            if (!slot) return;
+            slot.innerHTML = `
+                <div class="snw-card">
+                    <h2>🎬 세션 회고</h2>
+                    <div class="snw-toolbar" style="margin-bottom:12px;">
+                        <select data-slot="retro-range">
+                            <option value="1h">최근 1시간</option>
+                            <option value="24h" selected>최근 24시간</option>
+                            <option value="7d">최근 7일</option>
+                        </select>
+                        <button type="button" class="snw-btn" data-action="refresh">🔄</button>
+                    </div>
+                    <div data-slot="retro-content" class="snw-loading">로딩 중...</div>
+                </div>`;
+
+            const refreshBtn = slot.querySelector('[data-action="refresh"]');
+            if (refreshBtn) refreshBtn.onclick = () => this._loadRetro();
+            const rangeSelect = slot.querySelector('[data-slot="retro-range"]');
+            if (rangeSelect) rangeSelect.onchange = () => this._loadRetro();
+
+            await this._loadRetro();
+        }
+
+        async _loadRetro() {
+            const slot = this.el.querySelector('[data-slot="retro-content"]');
+            if (!slot) return;
+
+            const rangeEl = this.el.querySelector('[data-slot="retro-range"]');
+            const range = rangeEl ? rangeEl.value : '24h';
+
+            const now = Math.floor(Date.now() / 1000);
+            const durMap = { '1h': 3600, '24h': 86400, '7d': 604800 };
+            const since = now - (durMap[range] || 86400);
+
+            try {
+                const getTlFn = (SNW.Api && (SNW.Api.getTimeline || SNW.Api.getMonitorTimeline)) ?
+                    (SNW.Api.getTimeline || SNW.Api.getMonitorTimeline).bind(SNW.Api) : () => Promise.resolve({ events: [] });
+                const getSumFn = (SNW.Api && SNW.Api.getSessionSummary) ?
+                    SNW.Api.getSessionSummary.bind(SNW.Api) : () => Promise.resolve(null);
+
+                const [timeline, summary] = await Promise.all([
+                    getTlFn(since),
+                    getSumFn(since, now).catch(() => null),
+                ]);
+
+                slot.innerHTML = '';
+                slot.appendChild(this._renderSummary(summary));
+                slot.appendChild(this._renderTimeline(timeline));
+                slot.appendChild(this._renderEventList(timeline));
+            } catch (e) {
+                slot.innerHTML = '<div class="snw-error">회고 데이터 로드 실패</div>';
+            }
+        }
+
+        _renderSummary(summary) {
+            const div = document.createElement('div');
+            div.className = 'snw-retro-summary';
+            if (!summary || !summary.sessions) {
+                div.innerHTML = '<div class="snw-empty">세션 데이터 없음</div>';
+                return div;
+            }
+
+            const stats = summary.stats || {};
+            div.innerHTML = `
+                <div class="snw-retro-summary__title">세션 요약</div>
+                <div class="snw-retro-summary__grid">
+                    <div><span>총 세션</span><b>${stats.totalSessions || 0}회</b></div>
+                    <div><span>총 가동</span><b>${this._fmtDuration(stats.totalActiveSec || 0)}</b></div>
+                    <div><span>평균 풍속</span><b>${(stats.avgWindSpeed || 0).toFixed(1)} m/s</b></div>
+                    <div><span>최고 풍속</span><b>${(stats.maxWindSpeed || 0).toFixed(1)} m/s</b></div>
+                    <div><span>평균 온도</span><b>${(stats.avgTempC || 0).toFixed(1)}°C</b></div>
+                    <div><span>재실 비율</span><b>${Math.round((stats.presenceRatio || 0) * 100)}%</b></div>
+                </div>
+            `;
+            return div;
+        }
+
+        _renderTimeline(timeline) {
+            const div = document.createElement('div');
+            div.className = 'snw-retro-timeline';
+
+            if (!timeline || !timeline.events || timeline.events.length === 0) {
+                div.innerHTML = '<div class="snw-empty">이벤트 없음</div>';
+                return div;
+            }
+
+            // 이벤트 마커
+            div.innerHTML = `
+                <div class="snw-retro-timeline__title">이벤트 타임라인</div>
+                <div class="snw-retro-timeline__bar">
+                    ${timeline.events.map(e => this._eventMarker(e, timeline)).join('')}
+                </div>
+            `;
+            return div;
+        }
+
+        _eventMarker(e, timeline) {
+            const start = timeline.from || 0;
+            const end   = timeline.to   || Math.floor(Date.now() / 1000);
+            const span  = Math.max(1, end - start);
+            const pos   = Math.min(100, Math.max(0, ((e.t - start) / span) * 100));
+
+            const icon = {
+                0: '⚪',   // STATE_CHANGE
+                1: '➡️',   // STEP_CHANGE
+                2: '▶',    // SESSION_START
+                3: '⏹',    // SESSION_END
+                4: '✋',   // MANUAL_OVERRIDE
+                5: '🌙',   // AUTOOFF
+                6: '⏸',    // PAUSE
+                7: '▶',    // RESUME
+            }[e.eventType] || '•';
+
+            const color = {
+                0: '#59636e',
+                1: '#4a9eff',
+                2: '#3fb950',
+                3: '#8b949e',
+                4: '#d29922',
+                5: '#f0883e',
+                6: '#d29922',
+                7: '#3fb950',
+            }[e.eventType] || '#59636e';
+
+            return `
+                <div class="snw-retro-marker" style="left:${pos}%;background:${color};" title="${this._fmtTimeOfDay(e.t)} · ${SNW.DomUtil.escape(e.label || '')}">
+                    <span>${icon}</span>
+                </div>
+            `;
+        }
+
+        _renderEventList(timeline) {
+            const div = document.createElement('div');
+            div.className = 'snw-retro-events';
+
+            if (!timeline || !timeline.events || timeline.events.length === 0) {
+                return div;
+            }
+
+            const events = timeline.events.slice(-30).reverse();
+            div.innerHTML = `
+                <div class="snw-retro-events__title">이벤트 목록 (최근 30개)</div>
+                ${events.map(e => `
+                    <div class="snw-retro-event-row">
+                        <span class="snw-retro-event-row__time">${this._fmtTimeOfDay(e.t)}</span>
+                        <span class="snw-retro-event-row__icon">${
+                            2 === e.eventType ? '▶' :
+                            3 === e.eventType ? '⏹' :
+                            1 === e.eventType ? '➡️' :
+                            4 === e.eventType ? '✋' :
+                            5 === e.eventType ? '🌙' :
+                            6 === e.eventType ? '⏸' :
+                            7 === e.eventType ? '▶' : '•'
+                        }</span>
+                        <span class="snw-retro-event-row__label">${SNW.DomUtil.escape(e.label || '')}</span>
+                    </div>
+                `).join('')}
+            `;
+            return div;
+        }
+
+        // =========================================================
+        // Store
+        // =========================================================
+        _bindStore() {
+            if (SNW.Store && typeof SNW.Store.subscribe === 'function') {
+                this._unsubs.push(
+                    SNW.Store.subscribe(() => {
+                        if (this._active && this._currentTab === 'live') {
+                            this._onLiveUpdate();
+                        }
+                    })
+                );
+            }
+        }
+
+        _fmtTime(sec) {
+            if (!sec || sec < 0) return '0:00';
+            const m = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${m}:${String(s).padStart(2, '0')}`;
+        }
+
+        _fmtDuration(sec) {
+            if (!sec) return '0분';
+            const h = Math.floor(sec / 3600);
+            const m = Math.floor((sec % 3600) / 60);
+            return h > 0 ? `${h}시간 ${m}분` : `${m}분`;
+        }
+
+        _fmtTimeOfDay(epoch) {
+            const d = new Date(epoch * 1000);
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        }
+
+        async _loadLiveData() {
+            try {
+                if (SNW.Api && typeof SNW.Api.getState === 'function') {
+                    const st = await SNW.Api.getState();
+                    if (st && SNW.Store && typeof SNW.Store.set === 'function') {
+                        SNW.Store.set({
+                            control: st.control,
+                            sim: st.sim,
+                            session: st.control?.session,
+                        });
+                    }
+                }
+            } catch (e) {
+                if (SNW.LogUtil && typeof SNW.LogUtil.warn === 'function') {
+                    SNW.LogUtil.warn('monitor load failed', e);
+                }
+            }
+        }
+    };
+})(window.SNW);
 
 
 /* ---- 270.page.network.js (16146 bytes) ---- */
@@ -8397,6 +8571,1163 @@ SNW.Page = SNW.Page || {};
 	};
 })(window.SNW);
 
+/* ---- 290.page.automation.js (3405 bytes) ---- */
+// =========================================================
+// 290.page.automation.js — 자동화 페이지 (Studio/Playlist/스케줄/타이머)
+// Layer 3 (페이지 컴포넌트)
+// =========================================================
+window.SNW = window.SNW || {};
+SNW.Page = SNW.Page || {};
+(function(SNW) {
+    'use strict';
+
+    SNW.Page.Automation = class Automation {
+        constructor(container, params = {}) {
+            this.el = container;
+            this.params = params;
+            this.currentTab = params.tab || 'studio';
+            this._active = true;
+            this._panels = {};
+        }
+
+        async mount() {
+            this.el.innerHTML = `
+                <div class="snw-automation">
+                    <div class="snw-tabs snw-automation__tabs" style="display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--snw-border,#2f3844);padding-bottom:8px;overflow-x:auto;">
+                        <button type="button" class="snw-tab-btn ${this.currentTab === 'studio'   ? 'is-active' : ''}" data-tab="studio">🎨 Studio</button>
+                        <button type="button" class="snw-tab-btn ${this.currentTab === 'playlist' ? 'is-active' : ''}" data-tab="playlist">🎵 Playlist</button>
+                        <button type="button" class="snw-tab-btn ${this.currentTab === 'schedule' ? 'is-active' : ''}" data-tab="schedule">⏰ 스케줄</button>
+                        <button type="button" class="snw-tab-btn ${this.currentTab === 'timer'    ? 'is-active' : ''}" data-tab="timer">⏱️ 타이머</button>
+                    </div>
+                    <div class="snw-automation__content" data-slot="panel"></div>
+                </div>`;
+
+            // 탭 클릭
+            this.el.querySelectorAll('.snw-tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tab = btn.getAttribute('data-tab');
+                    if (tab !== this.currentTab) {
+                        SNW.Router.navigate(`/automation/${tab}`);
+                    }
+                });
+            });
+
+            await this._mountTab(this.currentTab);
+        }
+
+        unmount() {
+            this._active = false;
+            Object.values(this._panels).forEach(p => {
+                if (p && typeof p.unmount === 'function') p.unmount();
+            });
+            this._panels = {};
+        }
+
+        async _mountTab(tab) {
+            // 이전 탭 정리
+            const prev = this._panels[this.currentTab];
+            if (prev && prev !== this._panels[tab] && typeof prev.unmount === 'function') {
+                prev.unmount();
+            }
+
+            const slot = this.el.querySelector('[data-slot="panel"]');
+            if (!slot) return;
+            slot.innerHTML = '';
+
+            const PanelClass = {
+                studio:   SNW.Studio,
+                playlist: SNW.Playlist,
+                schedule: SNW.SchedulePanel,
+                timer:    SNW.TimerPanel,
+            }[tab];
+
+            if (!PanelClass) {
+                slot.innerHTML = `<div class="snw-empty">${SNW.DomUtil ? SNW.DomUtil.escape(tab) : tab} 준비 중</div>`;
+                return;
+            }
+
+            const panel = new PanelClass(slot, this.params);
+            this._panels[tab] = panel;
+            this.currentTab = tab;
+            await panel.mount();
+        }
+    };
+})(window.SNW);
+
+
+
+/* ---- 291.studio.js (26729 bytes) ---- */
+// =========================================================
+// 291.studio.js — Wind Design Studio (작곡)
+// Layer 3 (Studio 패널 컴포넌트)
+// =========================================================
+window.SNW = window.SNW || {};
+(function(SNW) {
+    'use strict';
+
+    // =========================================================
+    // Step 편집기 (내부)
+    // =========================================================
+    class StepEditor {
+        constructor(step, index, onChange, onDelete, onMoveUp, onMoveDown) {
+            this.step = JSON.parse(JSON.stringify(step || this._defaultStep()));
+            this.index = index;
+            this.onChange = onChange;
+            this.onDelete = onDelete;
+            this.onMoveUp = onMoveUp;
+            this.onMoveDown = onMoveDown;
+            this.el = null;
+            this._sparkline = null;
+            this._debounceTimer = null;
+        }
+
+        _defaultStep() {
+            return {
+                stepNo: 1,
+                durationMin: 20,
+                type: 'PRESET',
+                presetCode: 'OCEAN',
+                styleCode: 'BALANCE',
+                fixedSpeed: 0,
+                override: {
+                    enabled: false,
+                    windIntensity: -1,
+                    windVariability: -1,
+                    gustFrequency: -1,
+                },
+            };
+        }
+
+        render() {
+            const s = this.step;
+            const isPreset = s.type === 'PRESET';
+            const isFixed  = s.type === 'FIXED';
+            const isRest   = s.type === 'REST';
+            const ovr = s.override || { enabled: false };
+
+            const el = document.createElement('div');
+            el.className = 'snw-step-card';
+            el.innerHTML = `
+                <div class="snw-step-card__header">
+                    <span class="snw-step-card__title">Step ${this.index + 1}</span>
+                    <div class="snw-step-card__actions">
+                        <button type="button" class="snw-icon-btn" data-action="up"   title="위로" ${this.index === 0 ? 'disabled' : ''}>▲</button>
+                        <button type="button" class="snw-icon-btn" data-action="down" title="아래로">▼</button>
+                        <button type="button" class="snw-icon-btn" data-action="sim-step" title="예상 파형 시뮬레이션">🎬</button>
+                        <button type="button" class="snw-icon-btn snw-icon-btn--danger" data-action="delete" title="삭제">🗑</button>
+                    </div>
+                </div>
+
+                <div class="snw-step-card__grid">
+                    <label class="snw-step-field">
+                        <span>타입</span>
+                        <select data-field="type">
+                            <option value="PRESET" ${isPreset ? 'selected' : ''}>프리셋 재생</option>
+                            <option value="FIXED"  ${isFixed  ? 'selected' : ''}>고정 풍속</option>
+                            <option value="REST"   ${isRest   ? 'selected' : ''}>휴지 (정지)</option>
+                        </select>
+                    </label>
+
+                    <label class="snw-step-field">
+                        <span>지속</span>
+                        <div class="snw-step-field__row">
+                            <input type="number" data-field="durationMin" min="1" max="1440" value="${s.durationMin || 20}">
+                            <span class="snw-step-field__unit">분</span>
+                        </div>
+                    </label>
+                </div>
+
+                ${isPreset ? `
+                <div class="snw-step-card__grid">
+                    <label class="snw-step-field">
+                        <span>프리셋</span>
+                        <select data-field="presetCode">
+                            ${this._presetOptions(s.presetCode)}
+                        </select>
+                    </label>
+                    <label class="snw-step-field">
+                        <span>스타일</span>
+                        <select data-field="styleCode">
+                            ${this._styleOptions(s.styleCode)}
+                        </select>
+                    </label>
+                </div>` : ''}
+
+                ${isFixed ? `
+                <div class="snw-step-card__grid">
+                    <label class="snw-step-field snw-step-field--full">
+                        <span>고정 풍속 <b data-slot="fixed-label">${s.fixedSpeed || 50}%</b></span>
+                        <input type="range" data-field="fixedSpeed" min="0" max="100" step="5" value="${s.fixedSpeed || 50}">
+                    </label>
+                </div>` : ''}
+
+                ${isPreset ? `
+                <details class="snw-step-card__override" ${ovr.enabled ? 'open' : ''}>
+                    <summary>
+                        <label class="snw-step-checkbox" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                            <input type="checkbox" data-field="overrideEnabled" ${ovr.enabled ? 'checked' : ''}>
+                            <span>⚙ 물리 세부 조정 (Override)</span>
+                        </label>
+                    </summary>
+                    <div class="snw-step-card__override-body">
+                        <label class="snw-step-field snw-step-field--full">
+                            <span>강도 <b data-slot="ovr-int-label">${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}%</b></span>
+                            <input type="range" data-field="ovrIntensity" min="0" max="100" value="${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}">
+                        </label>
+                        <label class="snw-step-field snw-step-field--full">
+                            <span>변동성 <b data-slot="ovr-var-label">${ovr.windVariability >= 0 ? ovr.windVariability : 50}%</b></span>
+                            <input type="range" data-field="ovrVariability" min="0" max="100" value="${ovr.windVariability >= 0 ? ovr.windVariability : 50}">
+                        </label>
+                        <label class="snw-step-field snw-step-field--full">
+                            <span>돌풍 <b data-slot="ovr-gust-label">${ovr.gustFrequency >= 0 ? ovr.gustFrequency : 45}%</b></span>
+                            <input type="range" data-field="ovrGust" min="0" max="100" value="${ovr.gustFrequency >= 0 ? ovr.gustFrequency : 45}">
+                        </label>
+                    </div>
+                </details>` : ''}
+
+                <div class="snw-step-card__sparkline" data-slot="sparkline" style="height:40px;margin-top:10px;"></div>
+                <div class="snw-step-card__sparkline-meta" data-slot="sparkline-meta" style="font-size:11px;color:var(--snw-text-dim,#8b949e);margin-top:4px;"></div>
+            `;
+
+            this.el = el;
+
+            // 이벤트
+            const btnDel = el.querySelector('[data-action="delete"]');
+            if (btnDel) btnDel.onclick = () => this.onDelete(this.index);
+            const btnUp = el.querySelector('[data-action="up"]');
+            if (btnUp) btnUp.onclick = () => this.onMoveUp(this.index);
+            const btnDown = el.querySelector('[data-action="down"]');
+            if (btnDown) btnDown.onclick = () => this.onMoveDown(this.index);
+            const btnSim = el.querySelector('[data-action="sim-step"]');
+            if (btnSim) {
+                btnSim.onclick = async () => {
+                    if (SNW.UI && typeof SNW.UI.simulationModal === 'function') {
+                        await SNW.UI.simulationModal({
+                            mode: 'single',
+                            a: {
+                                presetCode: this.step.presetCode || 'OCEAN',
+                                styleCode:  this.step.styleCode  || 'BALANCE',
+                                override:   this.step.override,
+                            },
+                        });
+                    }
+                };
+            }
+
+            el.querySelectorAll('[data-field]').forEach(input => {
+                input.addEventListener('input',  () => this._onFieldChange(el, input));
+                input.addEventListener('change', () => this._onFieldChange(el, input));
+            });
+
+            // Sparkline 초기화
+            if (SNW.UI && typeof SNW.UI.sparkline === 'function') {
+                this._sparkline = SNW.UI.sparkline(
+                    el.querySelector('[data-slot="sparkline"]'),
+                    { color: '#4a9eff', baseline: 0 });
+                this._updateSparkline();
+            }
+
+            return el;
+        }
+
+        _presetOptions(current) {
+            const presets = (SNW.Studio._windDict && SNW.Studio._windDict.presets) || [];
+            return presets.map(p =>
+                `<option value="${p.code}" ${p.code === current ? 'selected' : ''}>${SNW.DomUtil ? SNW.DomUtil.escape(p.name || p.code) : p.code}</option>`
+            ).join('');
+        }
+
+        _styleOptions(current) {
+            const styles = (SNW.Studio._windDict && SNW.Studio._windDict.styles) || [];
+            return styles.map(s =>
+                `<option value="${s.code}" ${s.code === current ? 'selected' : ''}>${SNW.DomUtil ? SNW.DomUtil.escape(s.name || s.code) : s.code}</option>`
+            ).join('');
+        }
+
+        _onFieldChange(el, input) {
+            const field = input.getAttribute('data-field');
+            const val = (input.type === 'checkbox') ? input.checked : input.value;
+
+            if (!this.step.override) {
+                this.step.override = { enabled: false, windIntensity: -1, windVariability: -1, gustFrequency: -1 };
+            }
+
+            switch (field) {
+                case 'type':
+                    this.step.type = val;
+                    if (val === 'PRESET' && !this.step.presetCode) this.step.presetCode = 'OCEAN';
+                    if (val === 'PRESET' && !this.step.styleCode)  this.step.styleCode  = 'BALANCE';
+                    this._rerender();
+                    return;
+                case 'durationMin':
+                    this.step.durationMin = Math.max(1, Math.min(1440, Number(val) || 1));
+                    break;
+                case 'presetCode':
+                    this.step.presetCode = val;
+                    break;
+                case 'styleCode':
+                    this.step.styleCode = val;
+                    break;
+                case 'fixedSpeed':
+                    this.step.fixedSpeed = Number(val) || 0;
+                    const lbl = el.querySelector('[data-slot="fixed-label"]');
+                    if (lbl) lbl.textContent = this.step.fixedSpeed + '%';
+                    break;
+                case 'overrideEnabled':
+                    this.step.override.enabled = !!val;
+                    if (val) {
+                        if (this.step.override.windIntensity < 0)   this.step.override.windIntensity = 70;
+                        if (this.step.override.windVariability < 0) this.step.override.windVariability = 50;
+                        if (this.step.override.gustFrequency < 0)   this.step.override.gustFrequency = 45;
+                    }
+                    break;
+                case 'ovrIntensity':
+                    this.step.override.windIntensity = Number(val);
+                    const lInt = el.querySelector('[data-slot="ovr-int-label"]');
+                    if (lInt) lInt.textContent = val + '%';
+                    break;
+                case 'ovrVariability':
+                    this.step.override.windVariability = Number(val);
+                    const lVar = el.querySelector('[data-slot="ovr-var-label"]');
+                    if (lVar) lVar.textContent = val + '%';
+                    break;
+                case 'ovrGust':
+                    this.step.override.gustFrequency = Number(val);
+                    const lGust = el.querySelector('[data-slot="ovr-gust-label"]');
+                    if (lGust) lGust.textContent = val + '%';
+                    break;
+            }
+
+            this.onChange(this.index, this.step);
+            this._scheduleSparklineUpdate();
+        }
+
+        _rerender() {
+            const newEl = this.render();
+            if (this.el && this.el.parentNode) {
+                this.el.parentNode.replaceChild(newEl, this.el);
+            }
+            this.onChange(this.index, this.step);
+        }
+
+        _scheduleSparklineUpdate() {
+            if (this._debounceTimer) clearTimeout(this._debounceTimer);
+            this._debounceTimer = setTimeout(() => this._updateSparkline(), 250);
+        }
+
+        async _updateSparkline() {
+            if (!this._sparkline || !SNW.Preview) return;
+            const wave = await SNW.Preview.generateStep(this.step);
+            if (wave && wave.points) {
+                this._sparkline.render(wave.points);
+                const meta = this.el.querySelector('[data-slot="sparkline-meta"]');
+                if (meta) {
+                    meta.textContent = wave.avg > 0
+                        ? `예상 평균 ${wave.avg} m/s · 강도 ${Math.round(wave.intensity)}%`
+                        : '완전 휴지 (0 m/s)';
+                }
+            }
+        }
+
+        getStep() { return this.step; }
+    }
+
+    // =========================================================
+    // Studio 페이지
+    // =========================================================
+    SNW.Studio = class Studio {
+        constructor(container, params = {}) {
+            this.el = container;
+            this.params = params;
+            this._active = true;
+            this._steps = [];
+            this._stepEditors = [];
+            this._profileId = null;    // edit mode
+            this._profileNo = 0;
+            this._name = '';
+            this._repeat = false;
+            this._repeatCount = 0;
+        }
+
+        static _windDict = null;
+
+        async mount() {
+            this.el.innerHTML = '<div class="snw-loading">Studio 로딩 중...</div>';
+
+            // windDict 로드
+            if (!SNW.Studio._windDict) {
+                try {
+                    const data = await SNW.Api.getWindDict();
+                    SNW.Studio._windDict = data || { presets: [], styles: [] };
+                    if (SNW.Preview) await SNW.Preview.init();
+                } catch (e) {
+                    this.el.innerHTML = '<div class="snw-error">WindDict 로드 실패</div>';
+                    return;
+                }
+            }
+
+            // URL query 또는 params에서 edit ID 확인
+            const editId = (this.params && this.params.edit) ? parseInt(this.params.edit, 10) : null;
+
+            if (editId) {
+                await this._loadProfile(editId);
+            } else {
+                this._resetNewProfile();
+            }
+
+            this._render();
+        }
+
+        unmount() {
+            this._active = false;
+        }
+
+        _resetNewProfile() {
+            this._profileId = null;
+            this._profileNo = Math.floor(Date.now() / 1000) % 65535;
+            this._name = '새 프로필';
+            this._repeat = false;
+            this._repeatCount = 0;
+            this._steps = [this._defaultStep()];
+        }
+
+        async _loadProfile(profileId) {
+            try {
+                const data = await SNW.Api.listProfiles();
+                const root = (data && data.userProfiles) ? data.userProfiles : data;
+                const profiles = (root && root.profiles) || [];
+                const target = profiles.find(p => (p.profileId === profileId || p.profileNo === profileId));
+                if (!target) {
+                    if (SNW.ToastUtil) SNW.ToastUtil.warn('프로필을 찾을 수 없습니다.');
+                    this._resetNewProfile();
+                    return;
+                }
+                this._profileId = target.profileId || target.profileNo;
+                this._profileNo = target.profileNo;
+                this._name = target.name;
+                this._repeat = !!target.repeat;
+                this._repeatCount = target.repeatCount || 0;
+                this._steps = (target.steps && target.steps.length > 0) ? target.steps : [this._defaultStep()];
+            } catch (e) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error('프로필 로드 실패');
+                this._resetNewProfile();
+            }
+        }
+
+        _defaultStep() {
+            return {
+                stepNo: 1, durationMin: 20, type: 'PRESET',
+                presetCode: 'OCEAN', styleCode: 'BALANCE', fixedSpeed: 0,
+                override: { enabled: false, windIntensity: -1, windVariability: -1, gustFrequency: -1 },
+            };
+        }
+
+        _render() {
+            const isEdit = !!this._profileId;
+
+            this.el.innerHTML = `
+                <div class="snw-studio">
+                    <div class="snw-card" style="background:var(--snw-surface,#1a2028);border:1px solid var(--snw-border,#2f3844);border-radius:var(--snw-radius,8px);padding:16px;">
+                        <h2 style="font-size:18px;margin-bottom:12px;color:var(--snw-text,#e6edf3);">${isEdit ? '프로필 편집' : '새 프로필 작곡'}</h2>
+
+                        <div class="snw-form">
+                            <div class="snw-form-row" style="margin-bottom:12px;">
+                                <label style="display:block;font-size:12px;color:var(--snw-text-dim,#8b949e);margin-bottom:4px;">프로필 이름</label>
+                                <input type="text" data-field="name" value="${SNW.DomUtil ? SNW.DomUtil.escape(this._name) : this._name}" maxlength="32" style="width:100%;padding:8px 10px;background:var(--snw-surface-2,#232b36);border:1px solid var(--snw-border,#2f3844);border-radius:var(--snw-radius-sm,4px);color:var(--snw-text,#e6edf3);">
+                            </div>
+                            <div class="snw-form-row snw-form-row--inline" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+                                <label class="snw-step-checkbox" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                                    <input type="checkbox" data-field="repeat" ${this._repeat ? 'checked' : ''}>
+                                    <span>반복</span>
+                                </label>
+                                <input type="number" data-field="repeatCount" min="0" max="99" value="${this._repeatCount}" placeholder="0=무한" style="width:80px;padding:6px;background:var(--snw-surface-2,#232b36);border:1px solid var(--snw-border,#2f3844);border-radius:var(--snw-radius-sm,4px);color:var(--snw-text,#e6edf3);">
+                                <span class="snw-form-hint" style="font-size:12px;color:var(--snw-text-dim,#8b949e);">회 (0=무한)</span>
+                            </div>
+                        </div>
+
+                        <h3 class="snw-form-section" style="font-size:14px;color:var(--snw-primary,#4a9eff);margin:16px 0 10px;">Step 시퀀스</h3>
+                        <div data-slot="steps"></div>
+
+                        <button type="button" class="snw-btn snw-btn--add-step" data-action="add-step" style="width:100%;padding:10px;margin-top:10px;background:var(--snw-surface-2,#232b36);border:1px dashed var(--snw-border,#2f3844);color:var(--snw-text,#e6edf3);border-radius:var(--snw-radius-sm,4px);cursor:pointer;">
+                            + Step 추가 (최대 8개)
+                        </button>
+                    </div>
+
+                    <div class="snw-studio__bar">
+                        <button type="button" class="snw-btn" data-action="preview-all" style="padding:8px 16px;background:var(--snw-surface-2,#232b36);color:var(--snw-primary,#4a9eff);border:1px solid var(--snw-primary,#4a9eff);border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-weight:600;">🎬 시나리오 체험</button>
+                        <button type="button" class="snw-btn" data-action="cancel" style="padding:8px 16px;background:var(--snw-surface-3,#2f3844);color:var(--snw-text,#e6edf3);border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;">취소</button>
+                        <button type="button" class="snw-btn snw-btn-primary" data-action="save" style="padding:8px 20px;background:var(--snw-primary,#4a9eff);color:#fff;border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-weight:600;">
+                            ${isEdit ? '업데이트' : '저장'}
+                        </button>
+                    </div>
+                </div>`;
+
+            // 폼 바인딩
+            this.el.querySelector('[data-field="name"]').addEventListener('input', e => {
+                this._name = e.target.value;
+            });
+            this.el.querySelector('[data-field="repeat"]').addEventListener('change', e => {
+                this._repeat = e.target.checked;
+            });
+            this.el.querySelector('[data-field="repeatCount"]').addEventListener('input', e => {
+                this._repeatCount = Math.max(0, parseInt(e.target.value, 10) || 0);
+            });
+
+            // 액션 바인딩
+            this.el.querySelector('[data-action="add-step"]').onclick = () => this._onAddStep();
+            this.el.querySelector('[data-action="cancel"]').onclick   = () => this._onCancel();
+            this.el.querySelector('[data-action="save"]').onclick     = () => this._onSave();
+            const btnPreviewAll = this.el.querySelector('[data-action="preview-all"]');
+            if (btnPreviewAll) {
+                btnPreviewAll.onclick = async () => {
+                    const firstPreset = this._steps.find(s => s.type === 'PRESET');
+                    if (!firstPreset) {
+                        if (SNW.ToastUtil) SNW.ToastUtil.error('PRESET Step이 없어 시뮬레이션을 생성할 수 없습니다');
+                        return;
+                    }
+                    if (SNW.UI && typeof SNW.UI.simulationModal === 'function') {
+                        await SNW.UI.simulationModal({
+                            mode: 'single',
+                            a: {
+                                presetCode: firstPreset.presetCode || 'OCEAN',
+                                styleCode:  firstPreset.styleCode  || 'BALANCE',
+                                override:   firstPreset.override,
+                            },
+                        });
+                    }
+                };
+            }
+
+            this._renderSteps();
+        }
+
+        _renderSteps() {
+            const slot = this.el.querySelector('[data-slot="steps"]');
+            if (!slot) return;
+            slot.innerHTML = '';
+
+            this._stepEditors = [];
+
+            this._steps.forEach((step, idx) => {
+                const editor = new StepEditor(
+                    step, idx,
+                    (i, s) => { this._steps[i] = s; },
+                    (i) => this._onDeleteStep(i),
+                    (i) => this._onMoveStep(i, -1),
+                    (i) => this._onMoveStep(i, 1),
+                );
+                const stepEl = editor.render();
+                slot.appendChild(stepEl);
+                this._stepEditors.push(editor);
+            });
+        }
+
+        _onAddStep() {
+            if (this._steps.length >= 8) {
+                if (SNW.ToastUtil) SNW.ToastUtil.warn('Step은 최대 8개까지 추가 가능합니다.');
+                return;
+            }
+            this._steps.push(this._defaultStep());
+            this._renderSteps();
+        }
+
+        _onDeleteStep(idx) {
+            if (this._steps.length <= 1) {
+                if (SNW.ToastUtil) SNW.ToastUtil.warn('최소 1개의 Step이 필요합니다.');
+                return;
+            }
+            this._steps.splice(idx, 1);
+            this._steps.forEach((s, i) => { s.stepNo = i + 1; });
+            this._renderSteps();
+        }
+
+        _onMoveStep(idx, dir) {
+            const target = idx + dir;
+            if (target < 0 || target >= this._steps.length) return;
+            const tmp = this._steps[idx];
+            this._steps[idx] = this._steps[target];
+            this._steps[target] = tmp;
+            this._steps.forEach((s, i) => { s.stepNo = i + 1; });
+            this._renderSteps();
+        }
+
+        async _onSave() {
+            if (!this._name.trim()) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error('프로필 이름을 입력하세요.');
+                return;
+            }
+            if (this._steps.length === 0) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error('최소 1개의 Step이 필요합니다.');
+                return;
+            }
+            for (const s of this._steps) {
+                if (s.durationMin < 1 || s.durationMin > 1440) {
+                    if (SNW.ToastUtil) SNW.ToastUtil.error('Step 지속 시간은 1~1440분이어야 합니다.');
+                    return;
+                }
+            }
+
+            const profile = {
+                profileNo: this._profileNo,
+                name: this._name.trim(),
+                enabled: true,
+                repeat: this._repeat,
+                repeatCount: this._repeatCount,
+                stepCount: this._steps.length,
+                steps: this._steps,
+                autoOff: {
+                    timer:   { enabled: false, minutes: 0 },
+                    offTime: { enabled: false, time: '00:00' },
+                    offTemp: { enabled: false, temp: 0 },
+                },
+                motion: { pir: { enabled: true, holdSec: 120 } },
+            };
+
+            try {
+                if (this._profileId) {
+                    await SNW.Api.updateProfile(this._profileId, profile);
+                } else {
+                    await SNW.Api.addProfile(profile);
+                }
+                if (SNW.ToastUtil) SNW.ToastUtil.success(this._profileId ? '업데이트 완료' : '저장 완료');
+                const targetProfId = this._profileId;
+                setTimeout(() => {
+                    if (targetProfId && confirm('지금 이 프로필을 재생해 보시겠어요?')) {
+                        if (SNW.Api && typeof SNW.Api.startPlaylist === 'function') {
+                            SNW.Api.startPlaylist(targetProfId);
+                        }
+                    }
+                }, 400);
+                SNW.Router.navigate('/automation/playlist');
+            } catch (e) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '저장 실패');
+            }
+        }
+
+        _onCancel() {
+            if (confirm('편집 내용을 버리시겠습니까?')) {
+                SNW.Router.navigate('/automation/playlist');
+            }
+        }
+    };
+})(window.SNW);
+
+
+
+/* ---- 292.playlist.js (10011 bytes) ---- */
+// =========================================================
+// 292.playlist.js — Wind Playlist (재생 목록)
+// Layer 3 (Playlist 패널 컴포넌트)
+// =========================================================
+window.SNW = window.SNW || {};
+(function(SNW) {
+    'use strict';
+
+    SNW.Playlist = class Playlist {
+        constructor(container) {
+            this.el = container;
+            this._active = true;
+            this._profiles = [];
+            this._schedules = [];
+        }
+
+        async mount() {
+            this.el.innerHTML = '<div class="snw-loading">로딩 중...</div>';
+
+            if (SNW.Preview) await SNW.Preview.init();
+
+            try {
+                const [profData, schData] = await Promise.all([
+                    SNW.Api.listProfiles(),
+                    SNW.Api.listSchedules ? SNW.Api.listSchedules().catch(() => null) : null,
+                ]);
+                const pRoot = (profData && profData.userProfiles) ? profData.userProfiles : profData;
+                this._profiles = (pRoot && pRoot.profiles) || [];
+
+                const sRoot = (schData && schData.schedules) ? schData.schedules : schData;
+                this._schedules = (sRoot && sRoot.schedules) ? sRoot.schedules : (Array.isArray(sRoot) ? sRoot : []);
+            } catch (e) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error('데이터 로드 실패');
+            }
+
+            await this._render();
+        }
+
+        unmount() { this._active = false; }
+
+        async _render() {
+            if (this._profiles.length === 0) {
+                this.el.innerHTML = `
+                    <div class="snw-card" style="background:var(--snw-surface,#1a2028);border:1px solid var(--snw-border,#2f3844);border-radius:var(--snw-radius,8px);padding:32px;text-align:center;">
+                        <div class="snw-empty">
+                            <p style="color:var(--snw-text-dim,#8b949e);margin-bottom:16px;">아직 작곡한 프로필이 없습니다.</p>
+                            <button type="button" class="snw-btn snw-btn-primary" data-action="new" style="padding:10px 20px;background:var(--snw-primary,#4a9eff);color:#fff;border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-weight:600;">
+                                🎨 Studio에서 작곡하기
+                            </button>
+                        </div>
+                    </div>`;
+                this.el.querySelector('[data-action="new"]').onclick = () => {
+                    SNW.Router.navigate('/automation/studio');
+                };
+                return;
+            }
+
+            this.el.innerHTML = `
+                <div class="snw-playlist">
+                    <div class="snw-playlist__header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+                        <span style="font-size:14px;color:var(--snw-text-dim,#8b949e);">${this._profiles.length}개의 프로필</span>
+                        <button type="button" class="snw-btn snw-btn-primary snw-btn--sm" data-action="new" style="padding:6px 14px;background:var(--snw-primary,#4a9eff);color:#fff;border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-size:13px;font-weight:600;">
+                            + 새로 작곡
+                        </button>
+                    </div>
+                    <div class="snw-playlist__list" data-slot="list" style="display:flex;flex-direction:column;gap:12px;"></div>
+                </div>`;
+
+            this.el.querySelector('[data-action="new"]').onclick = () => {
+                SNW.Router.navigate('/automation/studio');
+            };
+
+            const listSlot = this.el.querySelector('[data-slot="list"]');
+            for (let i = 0; i < this._profiles.length; i++) {
+                const card = await this._renderCard(this._profiles[i]);
+                listSlot.appendChild(card);
+            }
+        }
+
+        async _renderCard(profile) {
+            const pId = profile.profileId || profile.profileNo;
+            const refCount = this._schedules.filter(s => s.profileId === pId).length;
+
+            const card = document.createElement('div');
+            card.className = 'snw-playlist-item';
+            card.style.cssText = 'background:var(--snw-surface-2,#232b36);border:1px solid var(--snw-border,#2f3844);border-radius:var(--snw-radius,8px);padding:14px;display:flex;flex-direction:column;gap:10px;';
+            card.innerHTML = `
+                <div class="snw-playlist-item__main" style="display:flex;flex-direction:column;gap:6px;">
+                    <div class="snw-playlist-item__head" style="display:flex;justify-content:space-between;align-items:center;">
+                        <span class="snw-playlist-item__name" style="font-weight:600;font-size:15px;color:var(--snw-text,#e6edf3);">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(profile.name) : profile.name}</span>
+                        <span class="snw-playlist-item__meta" style="font-size:12px;color:var(--snw-text-dim,#8b949e);">${profile.stepCount || (profile.steps ? profile.steps.length : 0)} Step · ${this._fmtTotal(profile)}</span>
+                    </div>
+                    <div class="snw-playlist-item__sparkline" data-slot="spark" style="height:44px;margin:4px 0;"></div>
+                    <div class="snw-playlist-item__refs" style="font-size:11px;color:var(--snw-text-faint,#6e7a87);">
+                        ${refCount > 0
+                            ? `<span style="color:var(--snw-warn,#d29922);">⏰ 스케줄 ${refCount}개에서 사용 중</span>`
+                            : `<span class="snw-playlist-item__noref">스케줄 미참조</span>`}
+                    </div>
+                </div>
+                <div class="snw-playlist-item__actions" style="display:flex;gap:8px;justify-content:flex-end;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">
+                    <button type="button" class="snw-btn snw-btn-primary snw-btn--sm" data-action="play" style="padding:6px 14px;background:var(--snw-primary,#4a9eff);color:#fff;border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-size:12px;font-weight:600;">▶ 재생</button>
+                    <button type="button" class="snw-btn snw-btn--sm" data-action="edit" style="padding:6px 12px;background:var(--snw-surface-3,#2f3844);color:var(--snw-text,#e6edf3);border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-size:12px;">✏️ 편집</button>
+                    <button type="button" class="snw-btn snw-btn--sm snw-btn--danger" data-action="delete" style="padding:6px 12px;background:rgba(248,81,73,0.15);color:var(--snw-error,#f85149);border:1px solid rgba(248,81,73,0.3);border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-size:12px;">🗑</button>
+                </div>
+            `;
+
+            // Sparkline 렌더링
+            if (SNW.Preview && SNW.UI && typeof SNW.UI.sparkline === 'function') {
+                (async () => {
+                    const wave = await SNW.Preview.generatePlaylistWaveform(profile.steps || []);
+                    if (wave && wave.points) {
+                        const sl = SNW.UI.sparkline(
+                            card.querySelector('[data-slot="spark"]'),
+                            { color: '#4a9eff', baseline: 0 });
+                        sl.render(wave.points);
+                    }
+                })();
+            }
+
+            // 액션 바인딩
+            card.querySelector('[data-action="play"]').onclick = async () => {
+                try {
+                    await SNW.Api.startPlaylist(pId);
+                    if (SNW.ToastUtil) SNW.ToastUtil.success(`▶ ${profile.name} 재생 시작`);
+                    if (navigator.vibrate) navigator.vibrate([10, 20, 10]);
+                } catch (e) {
+                    if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '재생 실패');
+                }
+            };
+
+            card.querySelector('[data-action="edit"]').onclick = () => {
+                SNW.Router.navigate(`/automation/studio?edit=${pId}`);
+            };
+
+            card.querySelector('[data-action="delete"]').onclick = async () => {
+                if (refCount > 0) {
+                    if (!confirm(`이 프로필은 스케줄 ${refCount}개에서 참조 중입니다.\n삭제하면 해당 스케줄이 비활성화됩니다. 계속하시겠습니까?`)) {
+                        return;
+                    }
+                } else {
+                    if (!confirm('정말 삭제하시겠습니까?')) return;
+                }
+                try {
+                    await SNW.Api.deleteProfile(pId);
+                    if (SNW.ToastUtil) SNW.ToastUtil.success('삭제 완료');
+                    await this.mount();
+                } catch (e) {
+                    if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '삭제 실패');
+                }
+            };
+
+            return card;
+        }
+
+        _fmtTotal(profile) {
+            if (!profile.steps) return '0분';
+            let total = 0;
+            for (const s of profile.steps) total += Number(s.durationMin) || 0;
+            if (profile.repeat && profile.repeatCount > 0) {
+                total *= profile.repeatCount;
+            }
+            const h = Math.floor(total / 60);
+            const m = total % 60;
+            return h > 0 ? `${h}시간 ${m}분` : `${m}분`;
+        }
+    };
+
+    // =========================================================
+    // 타이머 placeholder (Stage 7 예정)
+    // =========================================================
+    // SNW.SchedulePanel은 293.schedule_panel.js에서 구현
+
+    SNW.TimerPanel = class TimerPanel {
+        constructor(el) { this.el = el; }
+        async mount() {
+            this.el.innerHTML = '<div class="snw-empty" style="text-align:center;padding:32px;color:var(--snw-text-dim,#8b949e);">Stage 7에서 구현됩니다</div>';
+        }
+        unmount() {}
+    };
+})(window.SNW);
+
+
+
+/* ---- 293.schedule_panel.js (16496 bytes) ---- */
+// =========================================================
+// 293.schedule_panel.js — Schedule 편집 (Profile 참조만)
+// Layer 3 (Schedule 패널 컴포넌트)
+// =========================================================
+window.SNW = window.SNW || {};
+(function(SNW) {
+    'use strict';
+
+    SNW.SchedulePanel = class SchedulePanel {
+        constructor(container) {
+            this.el = container;
+            this._active = true;
+            this._schedules = [];
+            this._profiles = [];
+        }
+
+        async mount() {
+            this.el.innerHTML = '<div class="snw-loading">로딩 중...</div>';
+            await this._load();
+            this._render();
+        }
+
+        unmount() { this._active = false; }
+
+        async _load() {
+            try {
+                const [schData, profData] = await Promise.all([
+                    SNW.Api.listSchedules ? SNW.Api.listSchedules() : null,
+                    SNW.Api.listProfiles ? SNW.Api.listProfiles() : null,
+                ]);
+
+                if (schData) {
+                    const sRoot = schData.schedules ? schData.schedules : schData;
+                    this._schedules = (sRoot && sRoot.schedules) ? sRoot.schedules : (Array.isArray(sRoot) ? sRoot : []);
+                } else {
+                    this._schedules = [];
+                }
+
+                if (profData) {
+                    const pRoot = profData.userProfiles ? profData.userProfiles : profData;
+                    this._profiles = (pRoot && pRoot.profiles) ? pRoot.profiles : (Array.isArray(pRoot) ? pRoot : []);
+                } else {
+                    this._profiles = [];
+                }
+            } catch (e) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error('스케줄 로드 실패');
+            }
+        }
+
+        _render() {
+            // 참조 가능한 프로필이 없으면 안내
+            if (this._profiles.length === 0) {
+                this.el.innerHTML = `
+                    <div class="snw-card" style="background:var(--snw-surface,#1a2028);border:1px solid var(--snw-border,#2f3844);border-radius:var(--snw-radius,8px);padding:32px;text-align:center;">
+                        <div class="snw-empty">
+                            <p style="color:var(--snw-text-dim,#8b949e);margin-bottom:16px;">먼저 프로필을 작곡해야 스케줄을 만들 수 있습니다.</p>
+                            <button type="button" class="snw-btn snw-btn-primary" data-action="to-studio" style="padding:10px 20px;background:var(--snw-primary,#4a9eff);color:#fff;border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-weight:600;">
+                                🎨 Studio에서 작곡하기
+                            </button>
+                        </div>
+                    </div>`;
+                const btn = this.el.querySelector('[data-action="to-studio"]');
+                if (btn) {
+                    btn.onclick = () => {
+                        SNW.Router.navigate('/automation/studio');
+                    };
+                }
+                return;
+            }
+
+            this.el.innerHTML = `
+                <div class="snw-schedule">
+                    <div class="snw-schedule__header">
+                        <span>${this._schedules.length}개 스케줄</span>
+                        <button type="button" class="snw-btn snw-btn-primary snw-btn--sm" data-action="add" style="padding:6px 14px;background:var(--snw-primary,#4a9eff);color:#fff;border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-weight:600;">
+                            + 새 스케줄
+                        </button>
+                    </div>
+
+                    <div class="snw-schedule__list" data-slot="list"></div>
+
+                    <div class="snw-schedule__note">
+                        💡 스케줄은 <b>플레이리스트를 자동 재생</b>합니다.
+                        Step 편집은 Studio 탭에서 하세요.
+                    </div>
+                </div>`;
+
+            const addBtn = this.el.querySelector('[data-action="add"]');
+            if (addBtn) addBtn.onclick = () => this._openEditor(null);
+
+            const listSlot = this.el.querySelector('[data-slot="list"]');
+            if (!listSlot) return;
+
+            if (this._schedules.length === 0) {
+                listSlot.innerHTML = '<div class="snw-empty" style="text-align:center;padding:32px;color:var(--snw-text-dim,#8b949e);">아직 스케줄이 없습니다</div>';
+                return;
+            }
+
+            this._schedules.forEach(sch => {
+                listSlot.appendChild(this._renderScheduleCard(sch));
+            });
+        }
+
+        _renderScheduleCard(sch) {
+            const card = document.createElement('div');
+            card.className = 'snw-schedule-item' + (sch.enabled ? '' : ' is-disabled');
+
+            const profile = this._profiles.find(p => p.profileId === sch.profileId);
+            const profileName = profile ? profile.name : '(삭제된 프로필)';
+            const profileMissing = !profile;
+
+            const days = (sch.period && sch.period.days) || [0,0,0,0,0,0,0];
+            const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
+            const daysStr = days.map((d, i) => d ? dayNames[i] : '·').join(' ');
+
+            const startTime = (sch.period && sch.period.startTime) || '00:00';
+            const endTime   = (sch.period && sch.period.endTime)   || '23:59';
+
+            card.innerHTML = `
+                <div class="snw-schedule-item__head">
+                    <label class="snw-switch">
+                        <input type="checkbox" data-action="toggle" ${sch.enabled ? 'checked' : ''}>
+                        <span class="snw-switch__slider"></span>
+                    </label>
+                    <span class="snw-schedule-item__name">${SNW.DomUtil ? SNW.DomUtil.escape(sch.name) : sch.name}</span>
+                    <button type="button" class="snw-icon-btn" data-action="edit" title="편집">✏️</button>
+                    <button type="button" class="snw-icon-btn snw-icon-btn--danger" data-action="delete" title="삭제">🗑</button>
+                </div>
+                <div class="snw-schedule-item__time">
+                    ⏰ ${startTime} ~ ${endTime}
+                </div>
+                <div class="snw-schedule-item__days">${daysStr}</div>
+                <div class="snw-schedule-item__ref ${profileMissing ? 'is-missing' : ''}">
+                    🎵 ${SNW.DomUtil ? SNW.DomUtil.escape(profileName) : profileName}
+                </div>`;
+
+            // 액션 바인딩
+            const toggleInput = card.querySelector('[data-action="toggle"]');
+            if (toggleInput) {
+                toggleInput.addEventListener('change', async (e) => {
+                    await this._onToggle(sch, e.target.checked);
+                });
+            }
+
+            const editBtn = card.querySelector('[data-action="edit"]');
+            if (editBtn) editBtn.onclick = () => this._openEditor(sch);
+
+            const delBtn = card.querySelector('[data-action="delete"]');
+            if (delBtn) delBtn.onclick = () => this._onDelete(sch);
+
+            return card;
+        }
+
+        _openEditor(sch) {
+            const isEdit = !!sch;
+            const days = sch ? ((sch.period && sch.period.days) || [0,0,0,0,0,0,0]) : [0,1,1,1,1,1,0];
+            const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
+
+            const content = document.createElement('div');
+            content.className = 'snw-schedule-editor';
+            content.innerHTML = `
+                <div class="snw-form">
+                    <div class="snw-form-row" style="margin-bottom:12px;">
+                        <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;">스케줄 이름</label>
+                        <input type="text" data-field="name" maxlength="32" class="snw-input"
+                               style="width:100%;box-sizing:border-box;padding:8px 12px;background:var(--snw-surface-2,#12161c);border:1px solid var(--snw-border,#2f3844);border-radius:var(--snw-radius-sm,4px);color:var(--snw-text,#e6edf3);"
+                               value="${isEdit ? (SNW.DomUtil ? SNW.DomUtil.escape(sch.name) : sch.name) : '새 스케줄'}">
+                    </div>
+
+                    <div class="snw-form-row" style="margin-bottom:12px;">
+                        <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;">요일</label>
+                        <div class="snw-day-picker">
+                            ${dayNames.map((d, i) =>
+                                `<label class="snw-day-chip ${days[i] ? 'is-active' : ''}">
+                                    <input type="checkbox" data-day="${i}" ${days[i] ? 'checked' : ''}>
+                                    <span>${d}</span>
+                                </label>`
+                            ).join('')}
+                        </div>
+                    </div>
+
+                    <div class="snw-form-row snw-form-row--inline" style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                        <label style="font-weight:600;font-size:13px;">시작</label>
+                        <input type="time" data-field="startTime" class="snw-input"
+                               style="padding:6px 10px;background:var(--snw-surface-2,#12161c);border:1px solid var(--snw-border,#2f3844);border-radius:var(--snw-radius-sm,4px);color:var(--snw-text,#e6edf3);"
+                               value="${isEdit && sch.period ? sch.period.startTime : '08:00'}">
+                        <label style="font-weight:600;font-size:13px;">종료</label>
+                        <input type="time" data-field="endTime" class="snw-input"
+                               style="padding:6px 10px;background:var(--snw-surface-2,#12161c);border:1px solid var(--snw-border,#2f3844);border-radius:var(--snw-radius-sm,4px);color:var(--snw-text,#e6edf3);"
+                               value="${isEdit && sch.period ? sch.period.endTime : '20:00'}">
+                    </div>
+
+                    <h3 class="snw-form-section" style="font-size:14px;margin:16px 0 8px 0;font-weight:600;">🎵 실행할 플레이리스트</h3>
+                    <div class="snw-profile-picker">
+                        ${this._profiles.map(p => `
+                            <label class="snw-profile-radio ${isEdit && sch.profileId === p.profileId ? 'is-selected' : ''}">
+                                <input type="radio" name="profile" value="${p.profileId}"
+                                       ${isEdit && sch.profileId === p.profileId ? 'checked' : ''}>
+                                <div class="snw-profile-radio__content">
+                                    <div class="snw-profile-radio__name">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(p.name) : p.name}</div>
+                                    <div class="snw-profile-radio__meta">
+                                        ${p.stepCount || (p.steps ? p.steps.length : 0)}개 Step · ${this._fmtTotal(p)}
+                                    </div>
+                                </div>
+                            </label>
+                        `).join('')}
+                    </div>
+
+                    <div class="snw-schedule-editor__hint" style="margin-top:12px;">
+                        💡 새 프로필은 <b>Studio 탭</b>에서 작곡 후 선택할 수 있습니다.
+                    </div>
+                </div>`;
+
+            // 요일 칩 토글
+            content.querySelectorAll('.snw-day-chip').forEach(chip => {
+                chip.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'INPUT') return;
+                    const input = chip.querySelector('input');
+                    input.checked = !input.checked;
+                    chip.classList.toggle('is-active', input.checked);
+                });
+            });
+
+            // 프로필 라디오 선택 표시
+            content.querySelectorAll('.snw-profile-radio').forEach(radio => {
+                radio.addEventListener('click', (e) => {
+                    if (e.target.tagName === 'INPUT') return;
+                    const input = radio.querySelector('input');
+                    input.checked = true;
+                    content.querySelectorAll('.snw-profile-radio').forEach(r =>
+                        r.classList.toggle('is-selected', r === radio));
+                });
+            });
+
+            SNW.UI.modal(
+                isEdit ? '스케줄 편집' : '새 스케줄',
+                content,
+                async () => {
+                    const nameEl  = content.querySelector('[data-field="name"]');
+                    const startEl = content.querySelector('[data-field="startTime"]');
+                    const endEl   = content.querySelector('[data-field="endTime"]');
+                    const selectedRadio = content.querySelector('input[name="profile"]:checked');
+
+                    // 검증
+                    if (!nameEl.value.trim()) {
+                        if (SNW.ToastUtil) SNW.ToastUtil.error('이름을 입력하세요');
+                        return false;
+                    }
+                    if (!selectedRadio) {
+                        if (SNW.ToastUtil) SNW.ToastUtil.error('실행할 플레이리스트를 선택하세요');
+                        return false;
+                    }
+                    if (startEl.value >= endEl.value) {
+                        if (SNW.ToastUtil) SNW.ToastUtil.error('종료 시각이 시작 시각보다 빨라야 합니다');
+                        return false;
+                    }
+
+                    const profileId = Number(selectedRadio.value);
+                    const schNo = isEdit
+                        ? sch.schNo
+                        : (Date.now() % 65535) + 1;
+
+                    const schedule = {
+                        schNo,
+                        name: nameEl.value.trim(),
+                        enabled: isEdit ? sch.enabled : true,
+                        period: {
+                            days: Array.from(content.querySelectorAll('[data-day]')).map(cb => cb.checked ? 1 : 0),
+                            startTime: startEl.value,
+                            endTime: endEl.value,
+                        },
+                        profileId,
+                    };
+
+                    try {
+                        if (isEdit) {
+                            await SNW.Api.updateSchedule(sch.schId, schedule);
+                        } else {
+                            await SNW.Api.addSchedule(schedule);
+                        }
+                        if (SNW.ToastUtil) SNW.ToastUtil.success(isEdit ? '스케줄 업데이트' : '스케줄 생성');
+                        await this.mount();
+                        return true;
+                    } catch (e) {
+                        if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '저장 실패');
+                        return false;
+                    }
+                },
+                null,
+                { width: '480px' }
+            );
+        }
+
+        async _onToggle(sch, enabled) {
+            const newSch = { ...sch, enabled };
+            try {
+                await SNW.Api.updateSchedule(sch.schId, newSch);
+                sch.enabled = enabled;
+            } catch (e) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '토글 실패');
+                await this.mount();
+            }
+        }
+
+        async _onDelete(sch) {
+            if (!confirm(`"${sch.name}" 스케줄을 삭제하시겠습니까?`)) return;
+            try {
+                await SNW.Api.deleteSchedule(sch.schId);
+                if (SNW.ToastUtil) SNW.ToastUtil.success('삭제 완료');
+                await this.mount();
+            } catch (e) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '삭제 실패');
+            }
+        }
+
+        _fmtTotal(profile) {
+            if (!profile.steps) return '0분';
+            let total = 0;
+            for (const s of profile.steps) total += Number(s.durationMin) || 0;
+            if (profile.repeat && profile.repeatCount > 0) total *= profile.repeatCount;
+            const h = Math.floor(total / 60);
+            const m = total % 60;
+            return h > 0 ? `${h}시간 ${m}분` : `${m}분`;
+        }
+    };
+})(window.SNW);
+
+
+
 /* ===== LAYER 3 ===== */
 
 /* ---- 300.page.info.js (3551 bytes) ---- */
@@ -8633,12 +9964,245 @@ SNW.Page = SNW.Page || {};
 
 /* ===== LAYER 9 ===== */
 
-/* ---- 999.app.js (14229 bytes) ---- */
+/* ---- 998.onboarding.js (10532 bytes) ---- */
+// =========================================================
+// 998.onboarding.js — 첫 방문 온보딩 (4단계)
+// =========================================================
+window.SNW = window.SNW || {};
+(function(SNW) {
+    'use strict';
+
+    const LS_KEY = 'snw.onboarded';
+
+    SNW.Onboarding = {
+        async start() {
+            // 이미 완료
+            if (localStorage.getItem(LS_KEY) === '1') return;
+
+            // =========================================================
+            // 1) 언어
+            // =========================================================
+            const lang = await this._stepLang();
+            if (lang && SNW.I18n && typeof SNW.I18n.setLang === 'function') {
+                SNW.I18n.setLang(lang);
+            }
+
+            // =========================================================
+            // 2) WiFi 안내 (이미 연결됨 가정)
+            // =========================================================
+            await this._stepWifi();
+            await new Promise(r => setTimeout(r, 300));
+
+            // =========================================================
+            // 3) 첫 바람 선택 (큐레이션 3개)
+            // =========================================================
+            const choice = await this._stepFirstBreeze();
+
+            // =========================================================
+            // 4) 지금 시작?
+            // =========================================================
+            if (choice) {
+                const startNow = await this._stepStartNow(choice);
+                if (startNow && SNW.Api) {
+                    try {
+                        if (typeof SNW.Api.startPreset === 'function') {
+                            await SNW.Api.startPreset(choice.presetCode, choice.styleCode);
+                        } else if (typeof SNW.Api.startSession === 'function') {
+                            await SNW.Api.startSession('PRESET', {
+                                presetCode: choice.presetCode,
+                                styleCode: choice.styleCode,
+                            });
+                        }
+                    } catch (e) {
+                        if (SNW.LogUtil && typeof SNW.LogUtil.warn === 'function') {
+                            SNW.LogUtil.warn('onboarding start failed', e);
+                        }
+                    }
+                }
+            }
+
+            // 완료
+            localStorage.setItem(LS_KEY, '1');
+        },
+
+        // =========================================================
+        // 1) 언어 선택
+        // =========================================================
+        _stepLang() {
+            const content = document.createElement('div');
+            content.className = 'snw-onboarding-step';
+            content.innerHTML = `
+                <div class="snw-onboarding-hero">🌿</div>
+                <h2>Smart Nature Wind</h2>
+                <p class="snw-onboarding-desc">
+                    자연의 바람을 그대로 담은 스마트 선풍기<br>
+                    A smart fan that recreates nature's breeze
+                </p>
+                <div class="snw-onboarding-choices">
+                    <button type="button" class="snw-onboarding-choice" data-lang="ko">
+                        <span class="snw-onboarding-choice__icon">🇰🇷</span>
+                        <span>한국어</span>
+                    </button>
+                    <button type="button" class="snw-onboarding-choice" data-lang="en">
+                        <span class="snw-onboarding-choice__icon">🇬🇧</span>
+                        <span>English</span>
+                    </button>
+                </div>
+            `;
+
+            return new Promise(resolve => {
+                let modalRef = null;
+                content.querySelectorAll('[data-lang]').forEach(btn => {
+                    btn.onclick = () => {
+                        resolve(btn.getAttribute('data-lang'));
+                        if (modalRef && typeof modalRef.close === 'function') {
+                            modalRef.close();
+                        }
+                    };
+                });
+                modalRef = SNW.UI.modal('환영합니다 / Welcome', content, null, null,
+                    { hideOk: true, hideCancel: true, width: '440px' });
+            });
+        },
+
+        // =========================================================
+        // 2) WiFi 안내
+        // =========================================================
+        _stepWifi() {
+            const t = (k, fb) => (SNW.I18n && typeof SNW.I18n.t === 'function' ? SNW.I18n.t(k) : fb);
+            const content = document.createElement('div');
+            content.className = 'snw-onboarding-step';
+            content.innerHTML = `
+                <div class="snw-onboarding-hero">📶</div>
+                <h2>${t('onboarding.wifiTitle', 'Wi-Fi 연결 안내')}</h2>
+                <p class="snw-onboarding-desc">
+                    ${t('onboarding.wifiDesc', 'NatureWind AP에 연결되었거나 홈 Wi-Fi에 정상 연결되었습니다.')}
+                </p>
+                <div class="snw-onboarding-info">
+                    <div><b>SSID:</b> NatureWind</div>
+                    <div><b>Password:</b> 2540</div>
+                    <div><b>URL:</b> http://192.168.4.1</div>
+                </div>
+            `;
+
+            return new Promise(resolve => {
+                SNW.UI.modal(
+                    t('onboarding.step2', '단계 2: 네트워크 안내'),
+                    content,
+                    () => { resolve(); return true; },
+                    null,
+                    { okLabel: t('onboarding.connected', '확인 완료'), hideCancel: true, width: '440px' }
+                );
+            });
+        },
+
+        // =========================================================
+        // 3) 첫 바람 선택
+        // =========================================================
+        _stepFirstBreeze() {
+            const t = (k, fb) => (SNW.I18n && typeof SNW.I18n.t === 'function' ? SNW.I18n.t(k) : fb);
+            const choices = [
+                {
+                    presetCode: 'OCEAN', styleCode: 'BALANCE',
+                    icon: '🌊',
+                    title: t('onboarding.breeze.ocean', '시원한 바닷바람'),
+                    desc: t('onboarding.breeze.oceanDesc', '탁 트인 해안가의 상쾌하고 청량한 리듬'),
+                },
+                {
+                    presetCode: 'FOREST_CANOPY', styleCode: 'RELAX',
+                    icon: '🌲',
+                    title: t('onboarding.breeze.forest', '숲속 산들바람'),
+                    desc: t('onboarding.breeze.forestDesc', '나뭇잎을 부드럽게 스치는 편안한 휴식'),
+                },
+                {
+                    presetCode: 'MOUNTAIN', styleCode: 'ACTIVE',
+                    icon: '🏔️',
+                    title: t('onboarding.breeze.mountain', '고산 능선바람'),
+                    desc: t('onboarding.breeze.mountainDesc', '역동적이고 강력한 피톤치드 에너자이징'),
+                },
+            ];
+
+            const content = document.createElement('div');
+            content.className = 'snw-onboarding-step';
+            content.innerHTML = `
+                <div class="snw-onboarding-hero">🍃</div>
+                <h2>${t('onboarding.firstBreezeTitle', '처음 만나는 바람')}</h2>
+                <p class="snw-onboarding-desc">${t('onboarding.firstBreezeDesc', '원하시는 기분의 자연 바람을 선택해보세요.')}</p>
+                <div class="snw-onboarding-breeze-choices">
+                    ${choices.map((c, i) => `
+                        <button type="button" class="snw-breeze-choice" data-idx="${i}">
+                            <div class="snw-breeze-choice__icon">${c.icon}</div>
+                            <div class="snw-breeze-choice__title">${c.title}</div>
+                            <div class="snw-breeze-choice__desc">${c.desc}</div>
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+
+            return new Promise(resolve => {
+                let modalRef = null;
+                content.querySelectorAll('[data-idx]').forEach(btn => {
+                    btn.onclick = () => {
+                        const idx = Number(btn.getAttribute('data-idx'));
+                        resolve(choices[idx]);
+                        if (modalRef && typeof modalRef.close === 'function') {
+                            modalRef.close();
+                        }
+                    };
+                });
+                modalRef = SNW.UI.modal(
+                    t('onboarding.step3', '단계 3: 첫 바람 선택'),
+                    content, null, null,
+                    { hideOk: true, hideCancel: true, width: '480px' }
+                );
+            });
+        },
+
+        // =========================================================
+        // 4) 지금 시작?
+        // =========================================================
+        _stepStartNow(choice) {
+            const t = (k, fb, vars) => {
+                if (SNW.I18n && typeof SNW.I18n.t === 'function') {
+                    return SNW.I18n.t(k, vars);
+                }
+                return fb;
+            };
+            const content = document.createElement('div');
+            content.className = 'snw-onboarding-step';
+            content.innerHTML = `
+                <div class="snw-onboarding-hero">${choice.icon || '🍃'}</div>
+                <h2>${t('onboarding.startNowTitle', '바람 시작하기')}</h2>
+                <p class="snw-onboarding-desc">
+                    ${t('onboarding.startNowDesc', `선택하신 '${choice.title}'을(를) 지금 즉시 재생할까요?`, { name: choice.title })}
+                </p>
+            `;
+
+            return new Promise(resolve => {
+                SNW.UI.modal(
+                    t('onboarding.step4', '단계 4: 시작 확인'),
+                    content,
+                    () => { resolve(true); return true; },
+                    () => { resolve(false); },
+                    {
+                        okLabel: t('onboarding.startNow', '지금 시작'),
+                        cancelLabel: t('onboarding.later', '나중에'),
+                        width: '400px',
+                    }
+                );
+            });
+        },
+    };
+})(window.SNW);
+
+
+
+/* ---- 999.app.js (13247 bytes) ---- */
 // =========================================================
 // 999.app.js — 부트스트랩 (최종 로드)
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     // [P0-5] 모달
@@ -8655,21 +10219,21 @@ window.SNW = window.SNW || {};
         overlay.innerHTML = '';
         overlay.style.display = 'flex';
         overlay.classList.remove('is-open');
-        
+
         const box = document.createElement('div');
         box.className = 'snw-modal-box';
         if (opts.width) box.style.maxWidth = opts.width;
-        
+
         const h = document.createElement('h3');
         h.className = 'snw-modal-title';
         h.textContent = title;
         box.appendChild(h);
-        
+
         const body = document.createElement('div');
         body.className = 'snw-modal-body';
         if (contentEl) body.appendChild(contentEl);
         box.appendChild(body);
-        
+
         let closed = false;
         const close = (confirmed) => {
             if (closed) return;
@@ -8680,18 +10244,18 @@ window.SNW = window.SNW || {};
                 overlay.innerHTML = '';
                 overlay.style.display = 'none';
                 if (!confirmed && typeof onCancel === 'function') {
-                    try { onCancel(); } catch (e) {}
+                    try { onCancel(); } catch (e) { }
                 }
             }, 150);
         };
-        
+
         const _onEsc = (e) => { if (e.key === 'Escape') close(false); };
         document.addEventListener('keydown', _onEsc);
         overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
-        
+
         const actions = document.createElement('div');
         actions.className = 'snw-modal-actions';
-        
+
         if (!opts.hideCancel) {
             const btnCancel = document.createElement('button');
             btnCancel.className = 'snw-btn';
@@ -8699,7 +10263,7 @@ window.SNW = window.SNW || {};
             btnCancel.onclick = () => close(false);
             actions.appendChild(btnCancel);
         }
-        
+
         if (!opts.hideOk) {
             const btnOk = document.createElement('button');
             btnOk.className = 'snw-btn snw-btn-primary';
@@ -8710,7 +10274,7 @@ window.SNW = window.SNW || {};
                 try {
                     const ok = await onConfirm();
                     if (ok !== false) close(true);
-                } catch (e) {} finally { btnOk.disabled = false; }
+                } catch (e) { } finally { btnOk.disabled = false; }
             };
             actions.appendChild(btnOk);
         }
@@ -8813,7 +10377,7 @@ window.SNW = window.SNW || {};
         SNW.Store.watch('connection', render);
         render(SNW.Store.get().connection);
     }
-    
+
     function _bindLastUpdate() {
         const el = document.getElementById('footer-lastUpdate');
         if (!el) return;
@@ -8825,7 +10389,7 @@ window.SNW = window.SNW || {};
         SNW.Store.watch('lastUpdateMs', render);
         setInterval(() => render(SNW.Store.get().lastUpdateMs), 1000);
     }
-    
+
     function _bindLangToggle() {
         const btn = document.getElementById('btn-lang');
         if (!btn) return;
@@ -8894,10 +10458,10 @@ window.SNW = window.SNW || {};
         });
     }
 
-    window.SNW_BOOT = async function() {
+    window.SNW_BOOT = async function () {
         if (window.SNW_BOOT_CALLED) return;
         window.SNW_BOOT_CALLED = true;
-        
+
         try {
             if (window.SNW_OFFLINE) {
                 let waitCount = 0;
@@ -8915,50 +10479,39 @@ window.SNW = window.SNW || {};
                     SNW.LevelUtil.atLeast = () => true;
                 }
             }
-            
+
             SNW.I18n.applyTo(document);
             if (typeof SNW.LevelUtil !== 'undefined' && SNW.LevelUtil.applyTo) {
                 SNW.LevelUtil.applyTo(document.body);
             }
-            
+
             _bindConnectionStatus();
             _bindLastUpdate();
-            _bindSidebarToggle(); 
+            _bindSidebarToggle();
             SNW.WsManager.initByLevel();
             SNW.StoreBridge.start();
             _bindLangToggle();
+            if (SNW.NowPlaying && typeof SNW.NowPlaying.init === 'function') {
+                SNW.NowPlaying.init();
+            }
             SNW.Router.init();
             SNW.LogUtil.info('App bootstrap complete');
+
+            // [Stage 7] 첫 방문 온보딩 4단계
+            setTimeout(() => {
+                if (SNW.Onboarding && typeof SNW.Onboarding.start === 'function') {
+                    SNW.Onboarding.start();
+                }
+            }, 500);
         } catch (e) {
             SNW.LogUtil.error('bootstrap failed', e);
         }
     };
-    
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => { window.SNW_BOOT(); });
     } else {
         window.SNW_BOOT();
-    }
-
-    // [U-B5] 첫 방문 온보딩
-    function _maybeShowOnboarding() {
-        if (localStorage.getItem('snw.onboarded') === '1') return;
-        const content = document.createElement('div');
-        content.innerHTML = `
-            <div class="snw-onboarding" style="text-align:center;padding:12px;">
-                <h3 style="color:var(--snw-primary);margin-bottom:8px;">🌿 Smart Nature Wind</h3>
-                <p style="font-size:13px;line-height:1.5;">실제 자연의 바람을 재현하는 스마트 선풍기입니다.</p>
-                <p style="color:var(--snw-text-dim);font-size:12px;margin-top:6px;">
-                    일반 선풍기와 달리 파도, 숲, 산바람 등 10가지 자연풍을 재현합니다.
-                </p>
-            </div>
-            <div style="text-align:right;font-size:11px;color:var(--snw-text-faint);margin-top:12px;">
-                💡 언제든지 우측 상단 🌐로 언어를 바꿀 수 있습니다.
-            </div>`;
-        SNW.UI.modal('환영합니다', content, () => {
-            localStorage.setItem('snw.onboarded', '1');
-            return true;
-        }, null, { okLabel: '시작하기', hideCancel: true, width: '440px' });
     }
 
     // [U-B8] 야간 자동 감광
@@ -8969,7 +10522,313 @@ window.SNW = window.SNW || {};
     }
     _applyNightMode();
     setInterval(_applyNightMode, 60000);
-    setTimeout(_maybeShowOnboarding, 1500);
 
 })(window.SNW);
+
+
+/* ---- 999a.nowplaying.js (11340 bytes) ---- */
+// =========================================================
+// 999a.nowplaying.js — 전역 Now Playing Bar
+// Layer 3 (애플리케이션 전역 컴포넌트)
+// =========================================================
+window.SNW = window.SNW || {};
+(function (SNW) {
+    'use strict';
+
+    const barEl = {
+        root: null,
+        eq: null,
+        title: null,
+        step: null,
+        time: null,
+        pending: null,
+        btnPause: null,
+        btnStop: null,
+        // 로컬 상태
+        _eqAnimId: null,
+        _eqBuffer: [],
+    };
+
+    function $(sel, root) { return (root || document).querySelector(sel); }
+
+    function getSession() {
+        return (SNW.Store && SNW.Store.get) ? SNW.Store.get().session : null;
+    }
+
+    function parseType(t) {
+        if (typeof t === 'number') return t;
+        const m = { NONE: 0, PLAYLIST: 1, PRESET: 2, FIXED: 3 };
+        return m[t] != null ? m[t] : 0;
+    }
+
+    function isSessionVisible() {
+        const s = getSession();
+        if (!s) return false;
+        const type = parseType(s.type);
+        return (type !== 0 && s.active !== false);
+    }
+
+    function formatTime(sec) {
+        if (!sec || sec < 0) return '0:00';
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    // =========================================================
+    // 렌더링
+    // =========================================================
+    function render() {
+        if (!barEl.root) return;
+
+        const s = getSession();
+        if (!s || !isSessionVisible()) {
+            barEl.root.hidden = true;
+            stopEq();
+            return;
+        }
+        barEl.root.hidden = false;
+
+        const type = parseType(s.type);
+        const stateStr = (typeof s.state === 'string') ? s.state : (s.state === 1 ? 'PAUSED' : 'RUNNING');
+        const isPaused = (stateStr === 'PAUSED');
+
+        // 1) 타이틀
+        let title = '';
+        if (type === 1) {
+            title = s.profileName || (s.profileNo ? `프로필 #${s.profileNo}` : '플레이리스트');
+        } else if (type === 2) {
+            title = `${s.presetCode || '자연풍'} · ${s.styleCode || '표준'}`;
+        } else if (type === 3) {
+            title = `일반 선풍기 (${Math.round(s.percent || 0)}%)`;
+        } else {
+            title = '재생 중';
+        }
+        barEl.title.textContent = title;
+
+        // 2) 서브 정보 (스텝, 남은 시간)
+        if (type === 1) {
+            barEl.step.textContent = `Step ${s.currentStep || 1}/${s.totalSteps || 1}`;
+            const remainSec = s.stepRemainSec || 0;
+            barEl.time.textContent = isPaused
+                ? `일시정지 (${formatTime(remainSec)})`
+                : (remainSec > 0 ? formatTime(remainSec) : '가동 중');
+        } else if (type === 3) {
+            barEl.step.textContent = `${Math.round(s.percent || 0)}%`;
+            barEl.time.textContent = isPaused ? '일시정지' : '가동 중';
+        } else {
+            barEl.step.textContent = '';
+            barEl.time.textContent = isPaused ? '일시정지' : '가동 중';
+        }
+
+        // 3) 일시정지 / 재개 버튼 아이콘
+        barEl.btnPause.textContent = isPaused ? '▶' : '⏸';
+        barEl.btnPause.setAttribute('aria-label', isPaused ? '재개' : '일시정지');
+
+        // 4) Pending Schedule 충돌 배지
+        const ctl = (SNW.Store && SNW.Store.get) ? SNW.Store.get().control : null;
+        const ps = ctl && ctl.pendingSchedule;
+        if (ps && ps.active && ps.inactiveDueToManual) {
+            barEl.pending.hidden = false;
+            const remain = ps.remainMin || 0;
+            const isActive = (remain === 0);
+            const label = isActive
+                ? `⏰ ${ps.startTime || ''}`
+                : `⏰ ${remain}분 후`;
+
+            barEl.pending.innerHTML = `<span class="strike" title="수동 재생 중 · ${SNW.DomUtil ? SNW.DomUtil.escape(ps.name || '') : ''} 스케줄 대기">${label}</span>`;
+            barEl.pending.style.cursor = 'pointer';
+            barEl.pending.onclick = (e) => {
+                e.stopPropagation();
+                showScheduleConflictModal(ps);
+            };
+        } else {
+            barEl.pending.hidden = true;
+            barEl.pending.onclick = null;
+        }
+
+        // 5) EQ 애니메이션
+        if (isPaused) {
+            stopEq();
+            renderEqStatic();
+        } else {
+            startEq();
+        }
+    }
+
+    // =========================================================
+    // 이퀄라이저 애니메이션
+    // =========================================================
+    function startEq() {
+        if (barEl._eqAnimId || !barEl.eq) return;
+        const ctx = barEl.eq.getContext('2d');
+        const w = barEl.eq.width;
+        const h = barEl.eq.height;
+
+        const tick = () => {
+            const store = SNW.Store ? SNW.Store.get() : {};
+            const sim = store.sim || {};
+            const v = (sim.windSpeed != null) ? sim.windSpeed : (Math.random() * 8 + 2);
+            barEl._eqBuffer.push(v);
+            if (barEl._eqBuffer.length > 5) barEl._eqBuffer.shift();
+
+            ctx.clearRect(0, 0, w, h);
+            const bars = barEl._eqBuffer.length;
+            const bw = w / Math.max(bars, 1);
+            for (let i = 0; i < bars; i++) {
+                const val = barEl._eqBuffer[i] || 0;
+                const bh = Math.max(2, Math.min(h, (val / 12.0) * h));
+                ctx.fillStyle = val > 7 ? '#f0883e' : val > 3 ? '#3fb950' : '#4a9eff';
+                ctx.fillRect(i * bw + 1, h - bh, bw - 2, bh);
+            }
+            barEl._eqAnimId = requestAnimationFrame(tick);
+        };
+        tick();
+    }
+
+    function stopEq() {
+        if (barEl._eqAnimId) {
+            cancelAnimationFrame(barEl._eqAnimId);
+            barEl._eqAnimId = null;
+        }
+    }
+
+    function renderEqStatic() {
+        if (!barEl.eq) return;
+        const ctx = barEl.eq.getContext('2d');
+        const w = barEl.eq.width;
+        const h = barEl.eq.height;
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#59636e';
+        for (let i = 0; i < 4; i++) {
+            ctx.fillRect(i * (w / 4) + 1, h / 2 - 1, w / 4 - 2, 2);
+        }
+    }
+
+    // =========================================================
+    // 액션 핸들러
+    // =========================================================
+    async function onPauseOrResume(e) {
+        if (e) e.stopPropagation();
+        const s = getSession();
+        if (!s) return;
+        try {
+            const stateStr = (typeof s.state === 'string') ? s.state : (s.state === 1 ? 'PAUSED' : 'RUNNING');
+            if (stateStr === 'PAUSED') {
+                await SNW.Api.resumeSession();
+                if (SNW.ToastUtil) SNW.ToastUtil.success('바람이 재개되었습니다.');
+            } else {
+                await SNW.Api.pauseSession();
+                if (SNW.ToastUtil) SNW.ToastUtil.info('바람이 일시정지되었습니다.');
+            }
+        } catch (err) {
+            if (SNW.ToastUtil) SNW.ToastUtil.error(err.message || '세션 제어 실패');
+        }
+    }
+
+    async function onStop(e) {
+        if (e) e.stopPropagation();
+        try {
+            await SNW.Api.stopSession();
+            if (SNW.ToastUtil) SNW.ToastUtil.info('바람이 정지되었습니다.');
+        } catch (err) {
+            if (SNW.ToastUtil) SNW.ToastUtil.error(err.message || '세션 정지 실패');
+        }
+    }
+
+    function onExpand() {
+        const s = getSession();
+        if (!s) return;
+        const type = parseType(s.type);
+        if (type === 1) {
+            location.hash = '/profiles';
+        } else if (type === 2) {
+            location.hash = '/dashboard';
+        } else if (type === 3) {
+            location.hash = '/dashboard';
+        }
+    }
+
+    // =========================================================
+    // 초기화
+    // =========================================================
+    function init() {
+        barEl.root = document.getElementById('now-playing-bar');
+        if (!barEl.root) return;
+
+        barEl.eq = $('.snw-nowplaying__eq', barEl.root);
+        barEl.title = $('.snw-nowplaying__title', barEl.root);
+        barEl.step = $('[data-slot="np-step"]', barEl.root);
+        barEl.time = $('[data-slot="np-time"]', barEl.root);
+        barEl.pending = $('[data-slot="np-pending"]', barEl.root);
+        barEl.btnPause = $('[data-action="pause"]', barEl.root);
+        barEl.btnStop = $('[data-action="stop"]', barEl.root);
+
+        if (barEl.btnPause) barEl.btnPause.addEventListener('click', onPauseOrResume);
+        if (barEl.btnStop) barEl.btnStop.addEventListener('click', onStop);
+
+        const leftEl = $('[data-action="expand"]', barEl.root);
+        if (leftEl) leftEl.addEventListener('click', onExpand);
+
+        // Store 구독
+        if (SNW.Store && typeof SNW.Store.subscribe === 'function') {
+            SNW.Store.subscribe(() => render());
+        }
+        render();
+        SNW.LogUtil.info('[NowPlaying] Bar initialized');
+    }
+
+    SNW.NowPlaying = {
+        init,
+        render,
+        getSession
+    };
+
+
+    // =========================================================
+    // 스케줄 충돌 모달
+    // =========================================================
+    function showScheduleConflictModal(ps) {
+        if (!SNW.UI || !SNW.UI.modal) return;
+        const content = document.createElement('div');
+        content.innerHTML = `
+            <div class="snw-schedule-conflict">
+                <p style="margin-bottom:12px;">
+                    현재 <b>수동 재생 중</b>입니다.
+                </p>
+                <div class="snw-schedule-conflict__info" style="padding:12px;background:var(--snw-surface-2,#12161c);border-radius:var(--snw-radius,8px);font-size:13px;display:flex;flex-direction:column;gap:6px;">
+                    <div><b>다음 스케줄:</b> ${SNW.DomUtil ? SNW.DomUtil.escape(ps.name || '-') : (ps.name || '-')}</div>
+                    <div><b>시간:</b> ${ps.startTime || '-'}
+                        ${ps.remainMin > 0 ? ` (${ps.remainMin}분 후)` : ' (지금 활성)'}
+                    </div>
+                    <div><b>프로필 #:</b> ${ps.profileNo || '-'}</div>
+                </div>
+                <p style="margin-top:12px;font-size:12px;color:var(--snw-text-dim,#8b949e);">
+                    수동 재생을 종료하지 않으면 스케줄이 실행되지 않습니다.
+                    어떻게 하시겠어요?
+                </p>
+            </div>`;
+
+        SNW.UI.modal('⏰ 스케줄 충돌 안내', content,
+            async () => {
+                try {
+                    await SNW.Api.stopSession();
+                    if (SNW.ToastUtil) SNW.ToastUtil.success('수동 재생 종료 · 다음 스케줄 대기');
+                    return true;
+                } catch (e) {
+                    if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '실패');
+                    return false;
+                }
+            },
+            null,
+            {
+                okLabel: '⏹ 수동 정지',
+                cancelLabel: '계속 수동 유지',
+                width: '400px'
+            }
+        );
+    }
+
+})(window.SNW);
+
 

@@ -98,4 +98,153 @@ window.SNW = window.SNW || {};
         };
     };
     
+
+    // =========================================================
+    // [Stage 6] Snap 슬라이더 (일반 선풍기용 + Haptic 연동)
+    // =========================================================
+    SNW.UI.snapSlider = function(container, opts = {}) {
+        const {
+            min        = 0,
+            max        = 100,
+            value      = 0,
+            snapPoints = [0, 20, 40, 60, 80, 100],
+            snapRadius = 8,
+            label      = '',
+            format     = (v) => `${v}%`,
+            onChange   = null,
+        } = opts;
+
+        if (!container) return { set: () => {}, get: () => value };
+
+        container.innerHTML = `
+            <div class="snw-snapslider">
+                <div class="snw-snapslider__head">
+                    <span class="snw-snapslider__label">${SNW.DomUtil ? SNW.DomUtil.escape(label) : label}</span>
+                    <span class="snw-snapslider__value" data-slot="val">${format(value)}</span>
+                </div>
+                <div class="snw-snapslider__track-wrap">
+                    <input type="range"
+                           class="snw-snapslider__input"
+                           min="${min}" max="${max}" step="1"
+                           value="${value}"
+                           data-slot="input">
+                    <div class="snw-snapslider__ticks">
+                        ${snapPoints.map(p =>
+                            `<span class="snw-snapslider__tick"
+                                   style="left:${((p - min) / (max - min) * 100).toFixed(1)}%"></span>`
+                        ).join('')}
+                    </div>
+                </div>
+                <div class="snw-snapslider__stops">
+                    ${snapPoints.map(p =>
+                        `<button type="button"
+                                 class="snw-snapslider__stop"
+                                 data-snap="${p}">${format(p)}</button>`
+                    ).join('')}
+                </div>
+            </div>`;
+
+        const input   = container.querySelector('[data-slot="input"]');
+        const valEl   = container.querySelector('[data-slot="val"]');
+        const stopEls = container.querySelectorAll('[data-snap]');
+
+        let currentValue = Number(value) || 0;
+        let dragging = false;
+        let lastSnapFired = currentValue;
+
+        function snapToNearest(raw) {
+            const v = Number(raw);
+            if (!snapPoints || snapPoints.length === 0) return v;
+
+            let nearest = snapPoints[0];
+            let minDist = Math.abs(nearest - v);
+            for (const p of snapPoints) {
+                const d = Math.abs(p - v);
+                if (d < minDist) { minDist = d; nearest = p; }
+            }
+            if (minDist <= snapRadius) return nearest;
+            return v;
+        }
+
+        function updateUI(v) {
+            if (valEl) valEl.textContent = format(v);
+            stopEls.forEach(el => {
+                const sp = Number(el.getAttribute('data-snap'));
+                el.classList.toggle('is-active', sp === v);
+            });
+        }
+
+        input.addEventListener('input', () => {
+            dragging = true;
+            const raw = Number(input.value);
+            if (valEl) valEl.textContent = format(raw);
+        });
+
+        function finalize() {
+            if (!dragging) return;
+            dragging = false;
+
+            const raw = Number(input.value);
+            const snapped = snapToNearest(raw);
+
+            if (snapped !== raw) {
+                input.value = snapped;
+            }
+
+            if (snapped !== lastSnapFired) {
+                if (snapPoints.includes(snapped)) {
+                    if (SNW.Haptic && typeof SNW.Haptic.snap === 'function') SNW.Haptic.snap();
+                }
+                lastSnapFired = snapped;
+            }
+
+            currentValue = snapped;
+            updateUI(snapped);
+
+            if (typeof onChange === 'function') {
+                try { onChange(snapped); } catch (e) { if (SNW.LogUtil) SNW.LogUtil.error(e); }
+            }
+        }
+
+        input.addEventListener('pointerup', finalize);
+        input.addEventListener('pointercancel', finalize);
+        input.addEventListener('touchend', finalize);
+        input.addEventListener('change', () => {
+            if (!dragging) finalize();
+        });
+
+        stopEls.forEach(el => {
+            el.addEventListener('click', () => {
+                const target = Number(el.getAttribute('data-snap'));
+                if (target === currentValue) return;
+
+                currentValue = target;
+                input.value = target;
+                lastSnapFired = target;
+                updateUI(target);
+
+                if (snapPoints.includes(target)) {
+                    if (SNW.Haptic && typeof SNW.Haptic.snap === 'function') SNW.Haptic.snap();
+                }
+
+                if (typeof onChange === 'function') {
+                    try { onChange(target); } catch (e) { if (SNW.LogUtil) SNW.LogUtil.error(e); }
+                }
+            });
+        });
+
+        updateUI(currentValue);
+
+        return {
+            set(v) {
+                const n = Math.max(min, Math.min(max, Number(v) || 0));
+                if (n === currentValue) return;
+                currentValue = n;
+                input.value = n;
+                updateUI(n);
+            },
+            get() { return currentValue; },
+        };
+    };
+
 })(window.SNW);

@@ -2,7 +2,7 @@
 // 999.app.js — 부트스트랩 (최종 로드)
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     // [P0-5] 모달
@@ -19,21 +19,21 @@ window.SNW = window.SNW || {};
         overlay.innerHTML = '';
         overlay.style.display = 'flex';
         overlay.classList.remove('is-open');
-        
+
         const box = document.createElement('div');
         box.className = 'snw-modal-box';
         if (opts.width) box.style.maxWidth = opts.width;
-        
+
         const h = document.createElement('h3');
         h.className = 'snw-modal-title';
         h.textContent = title;
         box.appendChild(h);
-        
+
         const body = document.createElement('div');
         body.className = 'snw-modal-body';
         if (contentEl) body.appendChild(contentEl);
         box.appendChild(body);
-        
+
         let closed = false;
         const close = (confirmed) => {
             if (closed) return;
@@ -44,18 +44,18 @@ window.SNW = window.SNW || {};
                 overlay.innerHTML = '';
                 overlay.style.display = 'none';
                 if (!confirmed && typeof onCancel === 'function') {
-                    try { onCancel(); } catch (e) {}
+                    try { onCancel(); } catch (e) { }
                 }
             }, 150);
         };
-        
+
         const _onEsc = (e) => { if (e.key === 'Escape') close(false); };
         document.addEventListener('keydown', _onEsc);
         overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
-        
+
         const actions = document.createElement('div');
         actions.className = 'snw-modal-actions';
-        
+
         if (!opts.hideCancel) {
             const btnCancel = document.createElement('button');
             btnCancel.className = 'snw-btn';
@@ -63,7 +63,7 @@ window.SNW = window.SNW || {};
             btnCancel.onclick = () => close(false);
             actions.appendChild(btnCancel);
         }
-        
+
         if (!opts.hideOk) {
             const btnOk = document.createElement('button');
             btnOk.className = 'snw-btn snw-btn-primary';
@@ -74,7 +74,7 @@ window.SNW = window.SNW || {};
                 try {
                     const ok = await onConfirm();
                     if (ok !== false) close(true);
-                } catch (e) {} finally { btnOk.disabled = false; }
+                } catch (e) { } finally { btnOk.disabled = false; }
             };
             actions.appendChild(btnOk);
         }
@@ -177,7 +177,7 @@ window.SNW = window.SNW || {};
         SNW.Store.watch('connection', render);
         render(SNW.Store.get().connection);
     }
-    
+
     function _bindLastUpdate() {
         const el = document.getElementById('footer-lastUpdate');
         if (!el) return;
@@ -189,7 +189,7 @@ window.SNW = window.SNW || {};
         SNW.Store.watch('lastUpdateMs', render);
         setInterval(() => render(SNW.Store.get().lastUpdateMs), 1000);
     }
-    
+
     function _bindLangToggle() {
         const btn = document.getElementById('btn-lang');
         if (!btn) return;
@@ -258,10 +258,10 @@ window.SNW = window.SNW || {};
         });
     }
 
-    window.SNW_BOOT = async function() {
+    window.SNW_BOOT = async function () {
         if (window.SNW_BOOT_CALLED) return;
         window.SNW_BOOT_CALLED = true;
-        
+
         try {
             if (window.SNW_OFFLINE) {
                 let waitCount = 0;
@@ -279,50 +279,39 @@ window.SNW = window.SNW || {};
                     SNW.LevelUtil.atLeast = () => true;
                 }
             }
-            
+
             SNW.I18n.applyTo(document);
             if (typeof SNW.LevelUtil !== 'undefined' && SNW.LevelUtil.applyTo) {
                 SNW.LevelUtil.applyTo(document.body);
             }
-            
+
             _bindConnectionStatus();
             _bindLastUpdate();
-            _bindSidebarToggle(); 
+            _bindSidebarToggle();
             SNW.WsManager.initByLevel();
             SNW.StoreBridge.start();
             _bindLangToggle();
+            if (SNW.NowPlaying && typeof SNW.NowPlaying.init === 'function') {
+                SNW.NowPlaying.init();
+            }
             SNW.Router.init();
             SNW.LogUtil.info('App bootstrap complete');
+
+            // [Stage 7] 첫 방문 온보딩 4단계
+            setTimeout(() => {
+                if (SNW.Onboarding && typeof SNW.Onboarding.start === 'function') {
+                    SNW.Onboarding.start();
+                }
+            }, 500);
         } catch (e) {
             SNW.LogUtil.error('bootstrap failed', e);
         }
     };
-    
+
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => { window.SNW_BOOT(); });
     } else {
         window.SNW_BOOT();
-    }
-
-    // [U-B5] 첫 방문 온보딩
-    function _maybeShowOnboarding() {
-        if (localStorage.getItem('snw.onboarded') === '1') return;
-        const content = document.createElement('div');
-        content.innerHTML = `
-            <div class="snw-onboarding" style="text-align:center;padding:12px;">
-                <h3 style="color:var(--snw-primary);margin-bottom:8px;">🌿 Smart Nature Wind</h3>
-                <p style="font-size:13px;line-height:1.5;">실제 자연의 바람을 재현하는 스마트 선풍기입니다.</p>
-                <p style="color:var(--snw-text-dim);font-size:12px;margin-top:6px;">
-                    일반 선풍기와 달리 파도, 숲, 산바람 등 10가지 자연풍을 재현합니다.
-                </p>
-            </div>
-            <div style="text-align:right;font-size:11px;color:var(--snw-text-faint);margin-top:12px;">
-                💡 언제든지 우측 상단 🌐로 언어를 바꿀 수 있습니다.
-            </div>`;
-        SNW.UI.modal('환영합니다', content, () => {
-            localStorage.setItem('snw.onboarded', '1');
-            return true;
-        }, null, { okLabel: '시작하기', hideCancel: true, width: '440px' });
     }
 
     // [U-B8] 야간 자동 감광
@@ -333,6 +322,5 @@ window.SNW = window.SNW || {};
     }
     _applyNightMode();
     setInterval(_applyNightMode, 60000);
-    setTimeout(_maybeShowOnboarding, 1500);
 
 })(window.SNW);

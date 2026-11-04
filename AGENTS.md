@@ -12,7 +12,7 @@ Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
 | **기본 타깃 MCU** | **ESP32-S3-N16R8** (16MB Flash / 8MB OPI PSRAM, dual-core Xtensa @ 240MHz) |
 | **프레임워크 / 빌드** | Arduino-ESP32 (`-std=gnu++17`) on FreeRTOS / PlatformIO IDE |
 | **파일 시스템** | LittleFS (`./src/v0203/data_v0203`) |
-| **정적 에셋 파이프라인** | SPA 번들 (`P010_bundle_0203.js`, `P000_common_0203.css`, `index.html`) + Level 9 Gzip (`tools_0203/pio_gzip_0203.py`, 총 75 KB) |
+| **정적 에셋 파이프라인** | SPA 번들 (47개 JS `P010_bundle_0203.js`, 18개 CSS `P000_common_0203.css`, `index.html`) + Level 9 Gzip (`tools_0203/pio_gzip_0203.py`, Gzip 총 115.9 KB) |
 | **활성 버전 / 접미사** | **v0203 (FW_Ver_2.0.3)** (C++ 백엔드 소스 `_0203` 접미사 / LittleFS 에셋 `_0203`) |
 
 ---
@@ -23,14 +23,14 @@ Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
 
 | 계약 문서명 | 담당 영역 및 핵심 SSOT 내용 | 상세 링크 |
 |---|---|:---:|
-| **SPEC_0203.md** (v2.10) | 시스템 최상위 기술 사양 (하드웨어 핀맵, 25kHz PWM 타이밍, C++ 모듈 구성 및 파일 매핑, JSON 스키마, REST/WebSocket API 전체 명세, 프론트엔드 에셋 번들 규격) | [SPEC_0203.md](src/v0203/contract_doc_0203/SPEC_0203.md) |
-| **CONTRACT_0203.md** (v2.8) | FreeRTOS 태스크 경계, 뮤텍스 소유권, 데드락 방지, 감사 해결 규약(A-1~G-3), 바람 물리 Override 계약(OVR-1~4), 프론트엔드 데이터 동기화 및 오프라인 계약(SYNC-1~3) | [CONTRACT_0203.md](src/v0203/contract_doc_0203/CONTRACT_0203.md) |
-| **STATE_0203.md** (v2.5) | 런타임 상태 변수 단일 Writer/Reader 소유권 매트릭스, CT10 메인 제어 상태머신(7-State FSM) 전이표, S10 물리 엔진 상태, 위임 플래그 수명주기 | [STATE_0203.md](src/v0203/contract_doc_0203/STATE_0203.md) |
-| **FLOW_0203.md** (v2.8) | 부팅 시퀀스, HTTP/WS 처리 루프, 센서 샘플링/물리 연산 파이프라인, WindSolver 파라미터 직접 치환 흐름, `pio_gzip_0203.py` 빌드 전처리/오프라인 부트스트랩 시퀀스 | [FLOW_0203.md](src/v0203/contract_doc_0203/FLOW_0203.md) |
-| **BUDGET_0203.md** (v2.7) | SRAM/PSRAM/Flash 메모리 버짓, 태스크별 최악 실행 시간(WCET), 블로킹 시간 한도, 프론트엔드 Gzip 예산 (75 KB / 100 KB 한도, RAM 33.1%, Flash 23.3%) | [BUDGET_0203.md](src/v0203/contract_doc_0203/BUDGET_0203.md) |
-| **TEST_PLAN_0203.md** (v2.7) | 단위/통합/스트레스 회귀 테스트 절차 (T-1~T-73), 29대 필수 릴리스 차단 게이트, 트러블슈팅 매트릭스 | [TEST_PLAN_0203.md](src/v0203/contract_doc_0203/TEST_PLAN_0203.md) |
-| **README_0203.md** (v2.8) | CBD 계약 체계 총괄 안내, 배치별 마일스톤 감사 요약, CBD 변경 워크플로, 커밋 및 검증 스크립트 | [README_0203.md](src/v0203/contract_doc_0203/README_0203.md) |
-| **UserManual_0203_002.md** (v2.7) | 12대 웹 UI 화면 조작 가이드, 대시보드 3대 슬라이더 연동, 오프라인 접이식 데모 툴바, 10종 프리셋 상세 해설 | [UserManual_0203_002.md](src/v0203/User_Manual_0203/UserManual_0203_002.md) |
+| **SPEC_0203.md** (v2.12) | 시스템 최상위 기술 사양 (하드웨어 핀맵, 25kHz PWM 타이밍, C++ 모듈 구성 및 파일 매핑, JSON 스키마, REST/WebSocket API 전체 명세, 프론트엔드 47 JS + 18 CSS 번들 규격) | [SPEC_0203.md](src/v0203/contract_doc_0203/SPEC_0203.md) |
+| **CONTRACT_0203.md** (v2.9) | FreeRTOS 태스크 경계, 뮤텍스 소유권, 데드락 방지, 감사 해결 규약(A-1~G-3), 바람 물리 Override 계약(OVR-1~4), 프론트엔드 데이터 동기화 및 오프라인 계약(SYNC-1~3) | [CONTRACT_0203.md](src/v0203/contract_doc_0203/CONTRACT_0203.md) |
+| **STATE_0203.md** (v2.6) | 런타임 상태 변수 단일 Writer/Reader 소유권 매트릭스, CT10 메인 제어 상태머신(7-State FSM) 및 Session 3-State FSM 전이표, S10 물리 엔진 상태, 위임 플래그 수명주기 | [STATE_0203.md](src/v0203/contract_doc_0203/STATE_0203.md) |
+| **FLOW_0203.md** (v2.9) | 부팅 시퀀스, HTTP/WS 처리 루프, 센서 샘플링/물리 연산 파이프라인, WindSolver 파라미터 직접 치환 흐름, `pio_gzip_0203.py` 빌드 전처리/오프라인 부트스트랩 시퀀스 | [FLOW_0203.md](src/v0203/contract_doc_0203/FLOW_0203.md) |
+| **BUDGET_0203.md** (v2.8) | SRAM/PSRAM/Flash 메모리 버짓, 태스크별 최악 실행 시간(WCET), 블로킹 시간 한도, 프론트엔드 Gzip 예산 (115.9 KB / 1MB LittleFS 한도, RAM 33.1%, Flash 23.3%) | [BUDGET_0203.md](src/v0203/contract_doc_0203/BUDGET_0203.md) |
+| **TEST_PLAN_0203.md** (v2.8) | 단위/통합/스트레스 회귀 테스트 절차 (T-1~T-73), 29대 필수 릴리스 차단 게이트, 트러블슈팅 매트릭스 | [TEST_PLAN_0203.md](src/v0203/contract_doc_0203/TEST_PLAN_0203.md) |
+| **README_0203.md** (v2.10) | CBD 계약 체계 총괄 안내, 배치별 마일스톤 감사 요약(Stage 1~7 반영), CBD 변경 워크플로, 커밋 및 검증 스크립트 | [README_0203.md](src/v0203/contract_doc_0203/README_0203.md) |
+| **UserManual_0203_002.md** (v2.8) | 12대 웹 UI 화면 조작 가이드, 대시보드 3대 슬라이더 연동, 오프라인 접이식 데모 툴바, 10종 프리셋 상세 해설, 첫 방문 온보딩 4단계 안내 | [UserManual_0203_002.md](src/v0203/User_Manual_0203/UserManual_0203_002.md) |
 
 ---
 
@@ -81,12 +81,15 @@ Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
 2. **로깅**: 항상 `CL_D10_Logger::log(EN_L10_LOG_..., "[모듈] 메시지", ...)` 사용.
 3. **메모리/문자열**: 안전한 버퍼 관리를 위해 `memset` + `strlcpy` 패턴 준수. 물리량 계산 시 `float` 상수 `1.0f` 표기.
 4. **동시성 보호**: `async_tcp` 컨텍스트에서 `g_A20_config_root` 직접 접근 절대 금지 (`getRootSnapshot` 필수 경유).
+5. **세션 FSM & 링 버퍼**: 세션 라이프사이클 이벤트(`pushSessionEvent`)는 메모리 버짓 보호를 위해 64개 고정 링 버퍼(`ST_MON_TimelineEvent_t s_timeline[64]`)로 캡슐화.
+6. **센서 캐시 재사용**: 실시간 Comfort(불쾌지수 DI) 계산 시 파일 스코프 DHT 센서 캐시(`s_dhtCache`)를 재사용하여 I2C 블로킹 시간 0ms 유지.
 
 ### 4.3 프론트엔드 (Web UI) 구현 규칙
 1. **널리시 폴백 (NEW-C1)**: 폼 필드 렌더링 시 `||` 연산자 금지, `nz(v, fallback)` 사용 (`0`, `''`, `false` 유효값 보존).
 2. **불리언 명시 판정 (NEW-U4)**: 문자열 `"false"` 오판 방지를 위해 `asBool(v)` 사용.
 3. **XSS 방어 (B-3/NEW-C2)**: 사용자 입력/표시 텍스트는 반드시 `SNW.DomUtil.escape()` 처리.
 4. **모달 오버레이 격리**: 모달 닫기 시 `.snw-modal-overlay`에 `pointer-events: none; visibility: hidden;` 및 `display: 'none'` 적용으로 메뉴 먹통 방지.
+5. **컴포넌트 라이프사이클 보호**: Canvas 이퀄라이저(`SNW.UI.equalizer`), 실시간 뷰 unmount 시 이벤트 구독(`_unsubs`) 및 애니메이션 루프(`stop()`) 반드시 해제.
 
 ---
 

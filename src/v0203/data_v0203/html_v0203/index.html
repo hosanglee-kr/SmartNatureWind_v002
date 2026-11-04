@@ -32,6 +32,27 @@
         <div class="snw-loading" data-i18n="common.loading">Loading...</div>
     </main>
 
+    <!-- ★ Now Playing Bar (v0203 Stage 3 신규) -->
+    <div id="now-playing-bar" class="snw-nowplaying" hidden>
+        <div class="snw-nowplaying__left" data-action="expand">
+            <canvas class="snw-nowplaying__eq" width="20" height="16"></canvas>
+            <div class="snw-nowplaying__info">
+                <div class="snw-nowplaying__title">-</div>
+                <div class="snw-nowplaying__sub">
+                    <span data-slot="np-step">-</span>
+                    <span data-slot="np-time">-</span>
+                </div>
+            </div>
+            <div class="snw-nowplaying__badge" data-slot="np-pending" hidden>
+                <span class="strike">⏰</span>
+            </div>
+        </div>
+        <div class="snw-nowplaying__controls">
+            <button class="snw-np-btn" data-action="pause" aria-label="일시정지">⏸</button>
+            <button class="snw-np-btn" data-action="stop"  aria-label="정지">⏹</button>
+        </div>
+    </div>
+
     <!-- 👇 모바일 하단 탭 바 추가 -->
     <nav class="snw-bottom-nav" id="mobile-bottom-nav">
         <a href="#/dashboard" data-route="/dashboard" class="snw-bottom-nav__item">

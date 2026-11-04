@@ -30,9 +30,9 @@ typedef struct {
 } ST_A20_WindPhase_t;
 
 inline constexpr ST_A20_WindPhase_t G_A20_WindPhase_Arr[EN_A20_WIND_PHASE_COUNT] = {
-    { EN_A20_WIND_PHASE_CALM,   "CALM",   "Calm" },
-    { EN_A20_WIND_PHASE_NORMAL, "NORMAL", "Normal" },
-    { EN_A20_WIND_PHASE_STRONG, "STRONG", "Strong" },
+    {  EN_A20_WIND_PHASE_CALM,   "CALM",   "Calm"},
+    {EN_A20_WIND_PHASE_NORMAL, "NORMAL", "Normal"},
+    {EN_A20_WIND_PHASE_STRONG, "STRONG", "Strong"},
 };
 
 /* ======================================================
@@ -54,22 +54,22 @@ typedef enum : uint8_t {
 } EN_A20_WindPreset_t;
 
 typedef struct {
-    EN_A20_WindPreset_t       idx;
-    const char*               code;
-    const char*               name;
+    EN_A20_WindPreset_t idx;
+    const char*         code;
+    const char*         name;
 } ST_A20_WindPreset_t;
 
 inline constexpr ST_A20_WindPreset_t G_A20_WindPreset_Arr[EN_A20_WINDPRESET_COUNT] = {
-    { EN_A20_WINDPRESET_OCEAN,          "OCEAN",          "Ocean"          },
-    { EN_A20_WINDPRESET_COUNTRY_BREEZE, "COUNTRY_BREEZE", "Country Breeze" },
-    { EN_A20_WINDPRESET_MEDITERRANEAN,  "MEDITERRANEAN",  "Mediterranean"  },
-    { EN_A20_WINDPRESET_MOUNTAIN,       "MOUNTAIN",       "Mountain"       },
-    { EN_A20_WINDPRESET_PLAINS,         "PLAINS",         "Plains"         },
-    { EN_A20_WINDPRESET_HARBOR_BREEZE,  "HARBOR_BREEZE",  "Harbor Breeze"  },
-    { EN_A20_WINDPRESET_FOREST_CANOPY,  "FOREST_CANOPY",  "Forest Canopy"  },
-    { EN_A20_WINDPRESET_URBAN_SUNSET,   "URBAN_SUNSET",   "Urban Sunset"   },
-    { EN_A20_WINDPRESET_TROPICAL_RAIN,  "TROPICAL_RAIN",  "Tropical Rain"  },
-    { EN_A20_WINDPRESET_DESERT_NIGHT,   "DESERT_NIGHT",   "Desert Night"   },
+    {         EN_A20_WINDPRESET_OCEAN,          "OCEAN",          "Ocean"},
+    {EN_A20_WINDPRESET_COUNTRY_BREEZE, "COUNTRY_BREEZE", "Country Breeze"},
+    { EN_A20_WINDPRESET_MEDITERRANEAN,  "MEDITERRANEAN",  "Mediterranean"},
+    {      EN_A20_WINDPRESET_MOUNTAIN,       "MOUNTAIN",       "Mountain"},
+    {        EN_A20_WINDPRESET_PLAINS,         "PLAINS",         "Plains"},
+    { EN_A20_WINDPRESET_HARBOR_BREEZE,  "HARBOR_BREEZE",  "Harbor Breeze"},
+    { EN_A20_WINDPRESET_FOREST_CANOPY,  "FOREST_CANOPY",  "Forest Canopy"},
+    {  EN_A20_WINDPRESET_URBAN_SUNSET,   "URBAN_SUNSET",   "Urban Sunset"},
+    { EN_A20_WINDPRESET_TROPICAL_RAIN,  "TROPICAL_RAIN",  "Tropical Rain"},
+    {  EN_A20_WINDPRESET_DESERT_NIGHT,   "DESERT_NIGHT",   "Desert Night"},
 };
 
 /* ======================================================
@@ -91,11 +91,11 @@ typedef struct {
 } ST_A20_WindStyles_t;
 
 inline constexpr ST_A20_WindStyles_t G_A20_WindStyle_Arr[EN_A20_WINDSTYLE_COUNT] = {
-    { EN_A20_WINDSTYLE_BALANCE, "BALANCE", "Balance" },
-    { EN_A20_WINDSTYLE_ACTIVE,  "ACTIVE",  "Active"  },
-    { EN_A20_WINDSTYLE_FOCUS,   "FOCUS",   "Focus"   },
-    { EN_A20_WINDSTYLE_RELAX,   "RELAX",   "Relax"   },
-    { EN_A20_WINDSTYLE_SLEEP,   "SLEEP",   "Sleep"   },
+    {EN_A20_WINDSTYLE_BALANCE, "BALANCE", "Balance"},
+    { EN_A20_WINDSTYLE_ACTIVE,  "ACTIVE",  "Active"},
+    {  EN_A20_WINDSTYLE_FOCUS,   "FOCUS",   "Focus"},
+    {  EN_A20_WINDSTYLE_RELAX,   "RELAX",   "Relax"},
+    {  EN_A20_WINDSTYLE_SLEEP,   "SLEEP",   "Sleep"},
 };
 
 /* ======================================================
@@ -120,8 +120,8 @@ typedef struct {
 } ST_A20_WindPresetFactors_t;
 
 typedef struct {
-    char                      code[A20_Const::MAX_CODE_LEN];
-    char                      name[A20_Const::MAX_NAME_LEN];
+    char                       code[A20_Const::MAX_CODE_LEN];
+    char                       name[A20_Const::MAX_NAME_LEN];
     ST_A20_WindPresetFactors_t factors;
 } ST_A20_PresetEntry_t;
 
@@ -133,8 +133,8 @@ typedef struct {
 } ST_A20_StyleFactors_t;
 
 typedef struct {
-    char                code[A20_Const::MAX_CODE_LEN];
-    char                name[A20_Const::MAX_NAME_LEN];
+    char                  code[A20_Const::MAX_CODE_LEN];
+    char                  name[A20_Const::MAX_NAME_LEN];
     ST_A20_StyleFactors_t factors;
 } ST_A20_StyleEntry_t;
 
@@ -144,6 +144,28 @@ typedef struct {
     ST_A20_PresetEntry_t presets[EN_A20_WINDPRESET_COUNT];
     ST_A20_StyleEntry_t  styles[EN_A20_WINDSTYLE_COUNT];
 } ST_A20_WindDict_t;
+
+/* ======================================================
+ * Step Type (v0203 신규)
+ * ====================================================== */
+typedef enum : uint8_t {
+    EN_A20_STEP_TYPE_PRESET = 0, // 프리셋+스타일 재생
+    EN_A20_STEP_TYPE_FIXED  = 1, // PWM 고정
+    EN_A20_STEP_TYPE_REST   = 2, // 팬 정지 (휴지)
+    EN_A20_STEP_TYPE_COUNT
+} EN_A20_step_type_t;
+
+typedef struct {
+    const EN_A20_step_type_t idx;
+    const char*              code;
+    const char*              name;
+} ST_A20_StepType_t;
+
+inline constexpr ST_A20_StepType_t G_A20_StepType_Arr[EN_A20_STEP_TYPE_COUNT] = {
+    {EN_A20_STEP_TYPE_PRESET, "PRESET", "Preset"},
+    { EN_A20_STEP_TYPE_FIXED,  "FIXED",  "Fixed"},
+    {  EN_A20_STEP_TYPE_REST,   "REST",   "Rest"},
+};
 
 /* ======================================================
  * Enum/Code: Segment Mode
@@ -161,8 +183,8 @@ typedef struct {
 } ST_A20_SegmentMode_t;
 
 inline constexpr ST_A20_SegmentMode_t G_A20_SegmentMode_Arr[EN_A20_SEG_MODE_COUNT] = {
-    { EN_A20_SEG_MODE_PRESET, "PRESET", "Preset" },
-    { EN_A20_SEG_MODE_FIXED,  "FIXED",  "Fixed"  },
+    {EN_A20_SEG_MODE_PRESET, "PRESET", "Preset"},
+    { EN_A20_SEG_MODE_FIXED,  "FIXED",  "Fixed"},
 };
 
 /* ======================================================
@@ -187,7 +209,7 @@ typedef struct {
  * Motion (userProfiles/schedules 공통) : camelCase 정합
  * ====================================================== */
 typedef struct {
-    bool    enabled = false;
+    bool     enabled = false;
     uint16_t holdSec = 0;
 } ST_A20_PIR_t;
 
@@ -209,28 +231,56 @@ typedef struct {
 } ST_A20_SegmentOverride_t;
 
 /* ======================================================
+ * Step (원자 블록, v0203 신규)
+ * ====================================================== */
+typedef struct {
+    uint8_t            stepNo      = 1;
+    uint16_t           durationMin = 20;
+    EN_A20_step_type_t type        = EN_A20_STEP_TYPE_PRESET;
+
+    // type=PRESET
+    char presetCode[A20_Const::MAX_CODE_LEN] = {0};
+    char styleCode[A20_Const::MAX_CODE_LEN]  = {0};
+
+    // type=FIXED
+    float fixedSpeed = 0.0f;
+
+    // 공통
+    ST_A20_SegmentOverride_t override;
+
+    // [Stage 1 호환 브릿지] 기존 세그먼트 멤버 매핑
+    uint8_t               segId      = 0;
+    uint16_t              segNo      = 0;
+    uint16_t              onMinutes  = 0;
+    uint16_t              offMinutes = 0;
+    EN_A20_segment_mode_t mode       = EN_A20_SEG_MODE_PRESET;
+} ST_A20_Step_t;
+
+typedef ST_A20_SegmentOverride_t ST_A20_StepOverride_t;
+
+/* ======================================================
  * Schedule JSON 구조
  * ====================================================== */
 typedef struct {
-    bool    enabled = true;
+    bool    enabled      = true;
     uint8_t days[7]      = {1, 1, 1, 1, 1, 1, 1};
     char    startTime[6] = {0};
     char    endTime[6]   = {0};
 } ST_A20_SchedulePeriod_t;
 
 typedef struct {
-    uint8_t                  segId      = 0;
-    uint16_t                 segNo      = 0;
-    uint16_t                 onMinutes  = 0;
-    uint16_t                 offMinutes = 0;
+    uint8_t  segId      = 0;
+    uint16_t segNo      = 0;
+    uint16_t onMinutes  = 0;
+    uint16_t offMinutes = 0;
 
-    EN_A20_segment_mode_t    mode       = EN_A20_SEG_MODE_PRESET;
+    EN_A20_segment_mode_t mode = EN_A20_SEG_MODE_PRESET;
 
     char                     presetCode[A20_Const::MAX_CODE_LEN] = {0};
     char                     styleCode[A20_Const::MAX_CODE_LEN]  = {0};
     ST_A20_SegmentOverride_t override;
 
-    float                    fixedSpeed = 0.0f;
+    float fixedSpeed = 0.0f;
 } ST_A20_ScheduleSegment_t;
 
 typedef struct {
@@ -240,7 +290,9 @@ typedef struct {
     bool     enabled                       = true;
 
     ST_A20_SchedulePeriod_t  period;
-    uint8_t                  segCount = 0;
+    // [v0203 신규] Schedule -> Profile 참조 ID
+    uint8_t                  profileId = 0;
+    uint8_t                  segCount  = 0;
     ST_A20_ScheduleSegment_t segments[A20_Const::MAX_SEGMENTS_PER_SCHEDULE];
 
     bool    repeatSegments = true;
@@ -256,33 +308,20 @@ typedef struct {
 } ST_A20_SchedulesRoot_t;
 
 /* ======================================================
- * UserProfiles JSON 구조
+ * UserProfiles JSON 구조 (Step 모델과 통합)
  * ====================================================== */
-typedef struct {
-    uint8_t                  segId      = 0;
-    uint16_t                 segNo      = 0;
-    uint16_t                 onMinutes  = 0;
-    uint16_t                 offMinutes = 0;
-
-    EN_A20_segment_mode_t    mode       = EN_A20_SEG_MODE_PRESET;
-
-    char                     presetCode[A20_Const::MAX_CODE_LEN] = {0};
-    char                     styleCode[A20_Const::MAX_CODE_LEN]  = {0};
-    ST_A20_SegmentOverride_t override;
-
-    float                    fixedSpeed = 0.0f;
-} ST_A20_UserProfileSegment_t;
+typedef ST_A20_Step_t ST_A20_UserProfileSegment_t;
 
 typedef struct {
-    uint8_t profileId                     = 0;
-    uint16_t profileNo                    = 0;
-    char    name[A20_Const::MAX_NAME_LEN] = {0};
-    bool    enabled                       = true;
+    uint8_t  profileId                     = 0;
+    uint16_t profileNo                     = 0;
+    char     name[A20_Const::MAX_NAME_LEN] = {0};
+    bool     enabled                       = true;
 
     bool    repeatSegments = true;
     uint8_t repeatCount    = 0;
 
-    uint8_t                    segCount = 0;
+    uint8_t                     segCount = 0;
     ST_A20_UserProfileSegment_t segments[A20_Const::MAX_SEGMENTS_PER_PROFILE];
 
     ST_A20_AutoOff_t autoOff;
@@ -295,11 +334,18 @@ typedef struct {
 } ST_A20_UserProfilesRoot_t;
 
 /* ======================================================
+ * [Stage 1 점진적 빌드 호환 브릿지 별칭]
+ * ====================================================== */
+typedef ST_A20_Step_t            ST_A20_ScheduleSegment_t_alias;
+typedef ST_A20_UserProfileItem_t ST_A20_Profile_t;
+typedef ST_A20_ScheduleItem_t    ST_A20_Schedule_t;
+
+/* ======================================================
  * 시뮬레이션에 전달할 해석된 파라미터
  * ====================================================== */
 typedef struct {
     char presetCode[A20_Const::MAX_CODE_LEN] = {0};
-    char styleCode[A20_Const::MAX_CODE_LEN] = {0};
+    char styleCode[A20_Const::MAX_CODE_LEN]  = {0};
 
     bool  valid      = false;
     bool  fixedMode  = false;
@@ -336,4 +382,3 @@ static_assert((sizeof(G_A20_WindStyle_Arr) / sizeof(G_A20_WindStyle_Arr[0])) == 
 
 static_assert((sizeof(G_A20_SegmentMode_Arr) / sizeof(G_A20_SegmentMode_Arr[0])) == EN_A20_SEG_MODE_COUNT,
               "G_A20_SegmentMode_Arr size mismatch with EN_A20_SEG_MODE_COUNT");
-              

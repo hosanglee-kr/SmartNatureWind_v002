@@ -66,4 +66,33 @@ void CL_W10_WebAPI::routeMonitor() {
         resp->addHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
         p_request->send(resp);
     });
+
+    // 4. [Stage 7] GET /api/v001/monitor/timeline?since=<epoch>
+    s_server->on(W10_Const::HTTP_API_MONITOR_TIMELINE, HTTP_GET, [](AsyncWebServerRequest* p_request) {
+        if (!checkApiKey(p_request)) {
+            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            return;
+        }
+        uint32_t since = 0;
+        if (p_request->hasParam("since")) {
+            since = (uint32_t)p_request->getParam("since")->value().toInt();
+        }
+        JsonDocument doc;
+        CL_MON_Monitor::queryTimeline(since, doc);
+        sendJson(p_request, doc);
+    });
+
+    // 5. [Stage 7] GET /api/v001/monitor/session-summary?from=<epoch>&to=<epoch>
+    s_server->on(W10_Const::HTTP_API_MONITOR_SESSION_SUMMARY, HTTP_GET, [](AsyncWebServerRequest* p_request) {
+        if (!checkApiKey(p_request)) {
+            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            return;
+        }
+        uint32_t from = 0, to = 0;
+        if (p_request->hasParam("from")) from = (uint32_t)p_request->getParam("from")->value().toInt();
+        if (p_request->hasParam("to"))   to   = (uint32_t)p_request->getParam("to")->value().toInt();
+        JsonDocument doc;
+        CL_MON_Monitor::querySessionSummary(from, to, doc);
+        sendJson(p_request, doc);
+    });
 }

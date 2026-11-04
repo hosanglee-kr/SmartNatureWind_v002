@@ -12,7 +12,7 @@
 .snw-dashboard {
     display: grid;
     grid-template-columns: 1fr;
-    gap: var(--snw-spacing-lg);
+    gap: var(--snw-spacing-lg, 16px);
 }
 
 /* 데스크톱 (≥ 1024) */
@@ -69,7 +69,7 @@
 /* 큰 숫자 강조 (풍속) */
 .snw-card--state .snw-kv b[data-slot="cur-wind"] {
     font-size: 24px;
-    color: var(--snw-primary);
+    color: var(--snw-primary, #4a9eff);
 }
 
 .snw-card--state .snw-kv b[data-slot="target-wind"] {
@@ -101,4 +101,173 @@
         grid-template-columns: repeat(4, 1fr);
         gap: 6px;
     }
+}
+
+/* ============================================================
+ * [Stage 6] Dashboard v0203 - Playlist Grid & Snap Slider
+ * ============================================================ */
+.snw-playlist-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+@media (min-width: 768px) {
+    .snw-playlist-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+.snw-playlist-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    background: var(--snw-surface-2, #12161c);
+    border: 1px solid var(--snw-border, #2f3844);
+    border-radius: var(--snw-radius, 8px);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+}
+.snw-playlist-card:hover {
+    border-color: var(--snw-primary, #4a9eff);
+    transform: translateY(-2px);
+}
+.snw-playlist-card:active {
+    transform: scale(0.96);
+}
+.snw-playlist-card__icon {
+    font-size: 24px;
+}
+.snw-playlist-card__name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--snw-text, #e6edf3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+.snw-playlist-card__meta {
+    font-size: 11px;
+    color: var(--snw-text-dim, #8b949e);
+}
+
+/* ============================================================
+ * Snap 슬라이더
+ * ============================================================ */
+.snw-snapslider {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.snw-snapslider__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 13px;
+}
+.snw-snapslider__label {
+    color: var(--snw-text-dim, #8b949e);
+}
+.snw-snapslider__value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--snw-primary, #4a9eff);
+    font-variant-numeric: tabular-nums;
+}
+
+.snw-snapslider__track-wrap {
+    position: relative;
+    padding: 8px 0;
+}
+
+.snw-snapslider__input {
+    width: 100%;
+    height: 8px;
+    background: var(--snw-surface-2, #12161c);
+    border-radius: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+}
+
+.snw-snapslider__input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 28px;
+    height: 28px;
+    background: var(--snw-primary, #4a9eff);
+    border: 3px solid #fff;
+    border-radius: 50%;
+    cursor: grab;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    transition: transform 0.1s;
+}
+.snw-snapslider__input::-webkit-slider-thumb:active {
+    cursor: grabbing;
+    transform: scale(1.15);
+}
+
+.snw-snapslider__input::-moz-range-thumb {
+    width: 26px;
+    height: 26px;
+    background: var(--snw-primary, #4a9eff);
+    border: 3px solid #fff;
+    border-radius: 50%;
+    cursor: grab;
+}
+
+/* Snap 마커 (자석 지점) */
+.snw-snapslider__ticks {
+    position: absolute;
+    inset: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    z-index: 1;
+}
+.snw-snapslider__tick {
+    position: absolute;
+    top: 0;
+    width: 2px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateX(-50%);
+    border-radius: 1px;
+}
+
+/* 스톱 버튼 (원터치 5단) */
+.snw-snapslider__stops {
+    display: flex;
+    gap: 4px;
+    justify-content: space-between;
+}
+.snw-snapslider__stop {
+    flex: 1;
+    min-height: 40px;
+    padding: 6px 4px;
+    background: var(--snw-surface-2, #12161c);
+    border: 1.5px solid var(--snw-border, #2f3844);
+    border-radius: var(--snw-radius-sm, 4px);
+    color: var(--snw-text-dim, #8b949e);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.snw-snapslider__stop:hover {
+    border-color: var(--snw-border-hi, #4f5b66);
+}
+.snw-snapslider__stop.is-active {
+    background: var(--snw-primary, #4a9eff);
+    border-color: var(--snw-primary, #4a9eff);
+    color: white;
+}
+.snw-snapslider__stop:active {
+    transform: scale(0.94);
 }

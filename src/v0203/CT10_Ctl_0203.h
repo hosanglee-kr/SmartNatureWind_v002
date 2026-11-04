@@ -34,6 +34,68 @@
 // ------------------------------------------------------
 // 런타임 상태 구조체
 // ------------------------------------------------------
+/* ======================================================
+ * [v0203 신규] Session Type / Trigger / Runtime State
+ * ====================================================== */
+typedef enum : uint8_t {
+    EN_CT10_SESSION_NONE     = 0,
+    EN_CT10_SESSION_PLAYLIST = 1,   // Profile 재생 (Step 시퀀스)
+    EN_CT10_SESSION_PRESET   = 2,   // 프리셋 1개 즉시 실행
+    EN_CT10_SESSION_FIXED    = 3,   // PWM 고정 (일반 선풍기)
+} EN_CT10_session_type_t;
+
+typedef enum : uint8_t {
+    EN_CT10_TRIGGER_NONE     = 0,
+    EN_CT10_TRIGGER_MANUAL   = 1,   // 사용자 "▶ 재생" / 1~5단
+    EN_CT10_TRIGGER_SCHEDULE = 2,   // 시간 윈도우 진입
+} EN_CT10_trigger_t;
+
+typedef enum : uint8_t {
+    EN_SESSION_ACTIVE    = 0,
+    EN_SESSION_PAUSED    = 1,
+    EN_SESSION_COMPLETED = 2,
+} EN_SESSION_runtime_t;
+
+/* ======================================================
+ * [v0203 신규] Session Context (Manual + Schedule 통합)
+ * ====================================================== */
+typedef struct ST_CT10_SessionContext_t {
+    EN_CT10_session_type_t  type;
+    EN_CT10_trigger_t       trigger;
+    EN_SESSION_runtime_t    state;
+
+    struct {
+        struct {
+            uint8_t  profileId;
+            uint16_t profileNo;
+            uint8_t  currentStepIdx;
+            uint8_t  totalSteps;
+            uint8_t  loopCount;
+        } playlist;
+        struct {
+            char presetCode[A20_Const::MAX_CODE_LEN];
+            char styleCode[A20_Const::MAX_CODE_LEN];
+            ST_A20_SegmentOverride_t override;
+        } preset;
+        struct {
+            float percent;
+        } fixed;
+    } payload;
+
+    uint32_t startedAt;
+    uint32_t pausedAtMs;
+    uint32_t pausedAccumMs;
+    uint32_t currentStepStartMs;
+    uint32_t endsAt;
+
+    uint8_t  activeSchId;
+    uint16_t activeSchNo;
+
+    ST_CT10_SessionContext_t() {
+        memset(this, 0, sizeof(*this));
+    }
+} ST_CT10_SessionContext_t;
+
 typedef enum : uint8_t {
     EN_CT10_RUN_NONE         = 0,
     EN_CT10_RUN_SCHEDULE     = 1,
@@ -88,6 +150,15 @@ typedef struct {
     uint8_t  activeSegId;
     uint16_t activeSegNo;
     uint16_t activeProfileNo;
+    // [Stage 5 신규] Pending Schedule (수동 재생 중 스케줄 대기 상태)
+    bool     pendingScheduleActive;
+    uint8_t  pendingSchId;
+    uint16_t pendingSchNo;
+    char     pendingSchName[32];
+    char     pendingSchStart[8];
+    uint8_t  pendingProfileNo;
+    uint16_t pendingRemainMin;
+    bool     manualOverrideSchedule;
 } ST_CT10_RunContext_t;
 
 typedef struct {
@@ -143,10 +214,37 @@ class CL_CT10_ControlManager {
     static void setMode(bool p_profileMode);
     static bool setActiveUserProfile(uint16_t p_profileNo);
 
+    // ======================================================
+    // [v0203 신규] Session API
+    // ======================================================
+    static bool startSession(EN_CT10_session_type_t p_type,
+                             EN_CT10_trigger_t      p_trigger,
+                             const JsonDocument&    p_payloadDoc);
+    static bool startPlaylistManual(uint8_t p_profileId);
+    static bool startPresetManual(const char* p_presetCode, const char* p_styleCode);
+    static bool startFixedManual(float p_percent);
+
+    static bool pauseSession();
+    static bool resumeSession();
+    static bool stopSession();
+
+    static bool isSessionActive();
+    static bool isSessionPaused();
+    static ST_CT10_SessionContext_t getSessionSnapshot();
+
     static void applyManual(const ST_A20_ResolvedWind_t& p_wind);
     static void clearManual();
 
     static bool reloadAll();
+
+    // ======================================================
+    // [Stage 6] Comfort API
+    // ======================================================
+    static float       getDiscomfortIndex();
+    static uint8_t     getComfortLevel();          // 0~3
+    static uint8_t     getRecommendedProfileId();  // 0이면 없음
+    static const char* getRecommendedPresetCode();   // "OCEAN" 등
+    static const char* getRecommendedStyleCode();    // "ACTIVE" 등
 
     // ======================================================
     // [F-05] Pending reload (atomic CAS)
@@ -267,6 +365,8 @@ class CL_CT10_ControlManager {
     static constexpr uint32_t S_METRICS_PUSH_INTERVAL_MS = 1500UL;
     static constexpr uint32_t S_EVENT_HOLD_MS            = 3000UL;
     static constexpr uint32_t S_OVERRIDE_DEFAULT_SEC     = 1200UL;
+    static constexpr uint32_t S_PAUSE_CONTINUE_MS        = 300000UL;   // 5분 (스마트 Resume)
+    static constexpr uint32_t S_PAUSE_STEP_RESET_MS     = 1800000UL;  // 30분 (스텝 1 리셋)
 
     // [F-05] pending reload flag
     inline static std::atomic<bool> s_pendingReload{false};
@@ -287,6 +387,7 @@ class CL_CT10_ControlManager {
     bool _dirtySummary = false;
 
     ST_CT10_RunContext_t runCtx;
+    ST_CT10_SessionContext_t _session; // [Stage 2] 세션 FSM 컨텍스트
 
     // [A-2] offTime 재트리거 방지
     int16_t _persistOffTimeLastYday = -1;
@@ -343,6 +444,7 @@ class CL_CT10_ControlManager {
     void updateRunCtxOnSegmentOn_Schedule(const ST_A20_ScheduleItem_t& p_s, const ST_A20_ScheduleSegment_t& p_seg);
     void updateRunCtxOnSegmentOn_Profile(const ST_A20_UserProfileItem_t& p_p, const ST_A20_UserProfileSegment_t& p_seg);
     void updateRunCtxOnSegmentOff();
+    void updatePendingScheduleInfo(); // [Stage 5 신규]
 
   private:
     ST_CT10_Decision_t decideRunSource();

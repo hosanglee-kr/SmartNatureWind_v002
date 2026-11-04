@@ -56,6 +56,7 @@ window.SNW = window.SNW || {};
 		sim: null, // /state.sim
 		time: null, // control.time
 		system: null, // control.system (uptimeMs/epochNowMs)
+		session: null, // [v0203 Stage 3] Session 스냅샷
 		
 		// 파생 상태
 		lastUpdateMs: 0,
@@ -99,6 +100,7 @@ window.SNW = window.SNW || {};
 					patch.system = ctl.system || null;
 					patch.fsmState = (ctl.stateCode != null) ? ctl.stateCode : 0;
 					patch.fsmReason = (ctl.reasonCode != null) ? ctl.reasonCode : 0;
+					patch.session = ctl.session || null; // [v0203 Stage 3] Session 연결
 				}
 				if (sim) {
 					patch.sim = sim;

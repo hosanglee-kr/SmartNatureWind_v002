@@ -102,6 +102,7 @@ void CL_W10_WebAPI::begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_co
     routeChartHistory();   // [U-002]
     routeMonitor();        // [MON-B] Phase 1
     routeControl();
+    routeSession();        // [v0203 Stage 3] Session API
     routeControlSummary();
 
     // 3. 설정 관리 (W10_Web_Routes_Config_0203.cpp)
@@ -112,6 +113,8 @@ void CL_W10_WebAPI::begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_co
     // 4~6. CRUD (W10_Web_Routes_CRUD_0203.cpp)
     routeWindProfile();
     routeWindProfileID();
+    routeWindDict();        // [v0203 Stage 4] WindDict API
+    routeComfort();         // [v0203 Stage 6] Comfort API
     routeSchedules();
     routeSchedulesID();
     routeUserProfiles();

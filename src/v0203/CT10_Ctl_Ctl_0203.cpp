@@ -25,6 +25,7 @@
 
 #include "A40_Com_Utils_0203.h"     // A40_ComFunc / CL_A40_MutexGuard_Semaphore
 #include "N10_NvsManager_0203.h"
+#include "CT10_Monitor_0203.h"
 
 // 외부 전역(프로젝트 기존 전역 PWM)
 extern CL_P10_PWM g_P10_pwm;
@@ -39,6 +40,7 @@ bool CL_CT10_ControlManager::begin() {
 
 void CL_CT10_ControlManager::tick() {
     instance().tickLoop();
+    instance().updatePendingScheduleInfo();
 }
 
 void CL_CT10_ControlManager::setMode(bool p_profileMode) {
@@ -335,4 +337,303 @@ void CL_CT10_ControlManager::exportSimJson(JsonDocument& p_doc) {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return;
     sim.toJson(p_doc);
+}
+
+
+// ======================================================
+// [v0203 신규] Session 엔진 진입점 (start/stop/pause/resume)
+// ======================================================
+bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
+                                          EN_CT10_trigger_t      p_trigger,
+                                          const JsonDocument&    p_payloadDoc) {
+    auto& self = instance();
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+
+    // 기존 Session 종료 및 물리 엔진 리셋
+    if (self._session.type != EN_CT10_SESSION_NONE) {
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] startSession: replacing existing (type=%u)", (unsigned)self._session.type);
+        self.sim.stop();
+        if (self.pwm) self.pwm->setDutyPercent(0.0f);
+    }
+
+    memset(&self._session, 0, sizeof(self._session));
+    self._session.type    = p_type;
+    self._session.trigger = p_trigger;
+    self._session.state   = EN_SESSION_ACTIVE;
+    self._session.startedAt = millis();
+    self._session.currentStepStartMs = millis();
+
+    switch (p_type) {
+        case EN_CT10_SESSION_PLAYLIST: {
+            uint16_t v_profileId = A40_ComFunc::Json_getNum<uint16_t>(p_payloadDoc.as<JsonObjectConst>(), "profileId", 0);
+            if (v_profileId == 0 || v_profileId > 255) return false;
+
+            self._session.payload.playlist.profileId      = (uint8_t)v_profileId;
+            self._session.payload.playlist.profileNo      = (uint16_t)v_profileId;
+            self._session.payload.playlist.totalSteps     = A20_Const::MAX_STEPS_PER_PROFILE;
+            self._session.payload.playlist.currentStepIdx = 0;
+            self._session.payload.playlist.loopCount      = 0;
+            break;
+        }
+
+        case EN_CT10_SESSION_PRESET: {
+            JsonObjectConst p = p_payloadDoc.as<JsonObjectConst>();
+            const char* pc = A40_ComFunc::Json_getStr(p, "presetCode", A20_Const::DEFAULT_PRESET_CODE);
+            const char* sc = A40_ComFunc::Json_getStr(p, "styleCode",  A20_Const::DEFAULT_STYLE_CODE);
+            if (!pc[0] || !sc[0]) return false;
+
+            A40_ComFunc::copyStr2Buffer_safe(self._session.payload.preset.presetCode, pc, sizeof(self._session.payload.preset.presetCode));
+            A40_ComFunc::copyStr2Buffer_safe(self._session.payload.preset.styleCode,  sc, sizeof(self._session.payload.preset.styleCode));
+            self._session.payload.preset.override.enabled = false;
+            self._session.payload.preset.override.windIntensity   = -1.0f;
+            self._session.payload.preset.override.windVariability = -1.0f;
+            self._session.payload.preset.override.gustFrequency   = -1.0f;
+            break;
+        }
+
+        case EN_CT10_SESSION_FIXED: {
+            float pct = A40_ComFunc::Json_getNum<float>(p_payloadDoc.as<JsonObjectConst>(), "percent", 50.0f);
+            if (pct < 0.0f) pct = 0.0f;
+            if (pct > 100.0f) pct = 100.0f;
+            self._session.payload.fixed.percent = pct;
+            break;
+        }
+
+        default:
+            return false;
+    }
+
+    self._autoOffLatched = false;
+
+    if (p_type == EN_CT10_SESSION_PLAYLIST && p_trigger == EN_CT10_TRIGGER_MANUAL) {
+        CL_N10_NvsManager::setManualSession(self._session.payload.playlist.profileNo, true);
+    } else {
+        CL_N10_NvsManager::setManualSession(0, false);
+    }
+
+    self.markDirty("state");
+    self.markDirty("metrics");
+    self.markDirty("summary");
+
+    CL_MON_Monitor::pushSessionEvent(
+        EN_MON_EVENT_SESSION_START,
+        (p_type == EN_CT10_SESSION_PLAYLIST) ? "재생 시작" :
+        (p_type == EN_CT10_SESSION_PRESET)   ? "프리셋 재생" : "일반 선풍기",
+        (uint8_t)p_type, (uint8_t)p_trigger,
+        0, 0, self._session.payload.playlist.profileNo, 0);
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] startSession: type=%u trigger=%u", (unsigned)p_type, (unsigned)p_trigger);
+    return true;
+}
+
+bool CL_CT10_ControlManager::startPlaylistManual(uint8_t p_profileId) {
+    JsonDocument d;
+    d["profileId"] = p_profileId;
+    return startSession(EN_CT10_SESSION_PLAYLIST, EN_CT10_TRIGGER_MANUAL, d);
+}
+
+bool CL_CT10_ControlManager::startPresetManual(const char* p_presetCode, const char* p_styleCode) {
+    JsonDocument d;
+    d["presetCode"] = p_presetCode;
+    d["styleCode"]  = p_styleCode;
+    return startSession(EN_CT10_SESSION_PRESET, EN_CT10_TRIGGER_MANUAL, d);
+}
+
+bool CL_CT10_ControlManager::startFixedManual(float p_percent) {
+    JsonDocument d;
+    d["percent"] = p_percent;
+    return startSession(EN_CT10_SESSION_FIXED, EN_CT10_TRIGGER_MANUAL, d);
+}
+
+bool CL_CT10_ControlManager::pauseSession() {
+    auto& self = instance();
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+
+    if (self._session.type == EN_CT10_SESSION_NONE || self._session.state != EN_SESSION_ACTIVE) {
+        return false;
+    }
+
+    self._session.state = EN_SESSION_PAUSED;
+    self._session.pausedAtMs = millis();
+
+    self.sim.stop();
+    if (self.pwm) self.pwm->setDutyPercent(0.0f);
+
+    self.markDirty("state");
+    CL_MON_Monitor::pushSessionEvent(
+        EN_MON_EVENT_PAUSE, "일시정지",
+        (uint8_t)self._session.type, (uint8_t)self._session.trigger,
+        self._session.payload.playlist.currentStepIdx,
+        self._session.payload.playlist.totalSteps, 0, 0);
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] pauseSession()");
+    return true;
+}
+
+bool CL_CT10_ControlManager::resumeSession() {
+    auto& self = instance();
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+
+    if (self._session.type == EN_CT10_SESSION_NONE || self._session.state != EN_SESSION_PAUSED) {
+        return false;
+    }
+
+    uint32_t v_pauseDuration = millis() - self._session.pausedAtMs;
+    self._session.pausedAccumMs += v_pauseDuration;
+    self._session.pausedAtMs = 0;
+    self._session.state = EN_SESSION_ACTIVE;
+
+    // 스마트 Resume 정책 (5분 / 30분)
+    if (v_pauseDuration > S_PAUSE_STEP_RESET_MS) {
+        self._session.payload.playlist.currentStepIdx = 0;
+        self._session.currentStepStartMs = millis();
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] resumeSession: >30min -> restart from beginning");
+    } else if (v_pauseDuration > S_PAUSE_CONTINUE_MS) {
+        self._session.currentStepStartMs = millis();
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] resumeSession: 5~30min -> step reset");
+    } else {
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] resumeSession: <5min -> continuous resume");
+    }
+
+    CL_MON_Monitor::pushSessionEvent(
+        EN_MON_EVENT_RESUME, "재개",
+        (uint8_t)self._session.type, (uint8_t)self._session.trigger,
+        self._session.payload.playlist.currentStepIdx,
+        self._session.payload.playlist.totalSteps, 0, 0);
+
+    self.markDirty("state");
+    return true;
+}
+
+bool CL_CT10_ControlManager::stopSession() {
+    auto& self = instance();
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+
+    if (self._session.type == EN_CT10_SESSION_NONE) return false;
+
+    self.sim.stop();
+    if (self.pwm) self.pwm->setDutyPercent(0.0f);
+
+    memset(&self._session, 0, sizeof(self._session));
+    self._session.type  = EN_CT10_SESSION_NONE;
+    self._session.state = EN_SESSION_COMPLETED;
+
+    CL_N10_NvsManager::setManualSession(0, false);
+    if (CL_N10_NvsManager::isManualOvrSchedule()) {
+        CL_N10_NvsManager::setManualOvrSchedule(false);
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Manual override released on stop");
+    }
+
+    self.markDirty("state");
+    self.markDirty("metrics");
+    self.markDirty("summary");
+
+    CL_MON_Monitor::pushSessionEvent(
+        EN_MON_EVENT_SESSION_END, "세션 종료",
+        (uint8_t)self._session.type, (uint8_t)self._session.trigger,
+        0, 0, 0, 0);
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] stopSession()");
+    return true;
+}
+
+bool CL_CT10_ControlManager::isSessionActive() {
+    auto& self = instance();
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+    return self._session.type != EN_CT10_SESSION_NONE && self._session.state == EN_SESSION_ACTIVE;
+}
+
+bool CL_CT10_ControlManager::isSessionPaused() {
+    auto& self = instance();
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+    return self._session.state == EN_SESSION_PAUSED;
+}
+
+ST_CT10_SessionContext_t CL_CT10_ControlManager::getSessionSnapshot() {
+    auto& self = instance();
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    ST_CT10_SessionContext_t v_empty = {};
+    if (!v_guard.isAcquired()) return v_empty;
+    return self._session;
+}
+
+void CL_CT10_ControlManager::updatePendingScheduleInfo() {
+    runCtx.pendingScheduleActive = false;
+    runCtx.pendingSchId          = 0;
+    runCtx.pendingSchNo          = 0;
+    runCtx.pendingProfileNo      = 0;
+    runCtx.pendingRemainMin      = 0;
+    memset(runCtx.pendingSchName,  0, sizeof(runCtx.pendingSchName));
+    memset(runCtx.pendingSchStart, 0, sizeof(runCtx.pendingSchStart));
+
+    // Manual Session 중일 때만 연산
+    if (_session.type == EN_CT10_SESSION_NONE) return;
+    if (_session.trigger != EN_CT10_TRIGGER_MANUAL) return;
+    if (!g_A20_config_root.schedules) return;
+
+    auto& cfg = *g_A20_config_root.schedules;
+    struct tm tm;
+    if (!CL_TM10_TimeManager::getLocalTime(tm)) return;
+
+    uint8_t today = (tm.tm_wday == 0) ? 6 : (uint8_t)(tm.tm_wday - 1);
+    uint16_t curMin = (uint16_t)tm.tm_hour * 60 + tm.tm_min;
+
+    uint16_t nearest = 0xFFFF;
+    int nearestIdx = -1;
+
+    for (uint8_t i = 0; i < cfg.count; i++) {
+        const auto& s = cfg.items[i];
+        if (!s.enabled || s.profileId == 0) continue;
+
+        uint16_t start = A40_parseHHMMtoMin_24h(s.period.startTime);
+        uint16_t end   = A40_parseHHMMtoMin_24h(s.period.endTime);
+
+        bool isActive = false;
+        if (start == end) {
+            isActive = s.period.days[today];
+        } else if (start < end) {
+            if (s.period.days[today]) isActive = (curMin >= start && curMin < end);
+        } else {
+            if (curMin >= start) isActive = s.period.days[today];
+            else if (curMin < end) isActive = s.period.days[today == 0 ? 6 : today - 1];
+        }
+
+        if (isActive) {
+            runCtx.pendingScheduleActive = true;
+            runCtx.pendingSchId     = s.schId;
+            runCtx.pendingSchNo     = s.schNo;
+            A40_ComFunc::copyStr2Buffer_safe(runCtx.pendingSchName, s.name, sizeof(runCtx.pendingSchName));
+            A40_ComFunc::copyStr2Buffer_safe(runCtx.pendingSchStart, s.period.startTime, sizeof(runCtx.pendingSchStart));
+            runCtx.pendingRemainMin = 0;
+            runCtx.pendingProfileNo = (uint8_t)s.profileId;
+            return;
+        }
+
+        if (!s.period.days[today]) continue;
+        if (start <= curMin) continue;
+        uint16_t remain = start - curMin;
+        if (remain < nearest) {
+            nearest = remain;
+            nearestIdx = i;
+        }
+    }
+
+    if (nearestIdx >= 0 && nearest <= 60) {
+        const auto& s = cfg.items[nearestIdx];
+        runCtx.pendingScheduleActive = true;
+        runCtx.pendingSchId     = s.schId;
+        runCtx.pendingSchNo     = s.schNo;
+        runCtx.pendingRemainMin = nearest;
+        A40_ComFunc::copyStr2Buffer_safe(runCtx.pendingSchName, s.name, sizeof(runCtx.pendingSchName));
+        A40_ComFunc::copyStr2Buffer_safe(runCtx.pendingSchStart, s.period.startTime, sizeof(runCtx.pendingSchStart));
+        runCtx.pendingProfileNo = (uint8_t)s.profileId;
+    }
+
+    runCtx.manualOverrideSchedule = CL_N10_NvsManager::isManualOvrSchedule();
 }

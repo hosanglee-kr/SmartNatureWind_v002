@@ -256,6 +256,43 @@ void CL_N10_NvsManager::clearOverride() {
 	s_dirty.runtime				  = true;
 }
 
+void CL_N10_NvsManager::setManualSession(int16_t p_profileNo, bool p_active) {
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
+    if (!s_initialized) begin();
+    s_state.manualProfileNo = p_profileNo;
+    s_state.manualActive    = p_active;
+    s_dirty.runtime         = true;
+}
+
+int16_t CL_N10_NvsManager::getManualProfileNo() {
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return 0;
+    return s_state.manualProfileNo;
+}
+
+bool CL_N10_NvsManager::isManualActive() {
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+    return s_state.manualActive;
+}
+
+void CL_N10_NvsManager::setManualOvrSchedule(bool p_ovr) {
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
+    if (!s_initialized) begin();
+    s_state.manualOvrSchedule = p_ovr;
+    s_dirty.runtime           = true;
+}
+
+bool CL_N10_NvsManager::isManualOvrSchedule() {
+    CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+    return s_state.manualOvrSchedule;
+}
+
 void CL_N10_NvsManager::resetRuntime() {
 	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return;
@@ -278,6 +315,10 @@ void CL_N10_NvsManager::loadRuntimeFromNvs() {
 	s_state.runSource			 = s_prefs.getUChar(G_N10_KEY_RUN_SOURCE, 0);
 	s_state.lastScheduleNo		 = s_prefs.getShort(G_N10_KEY_LAST_SCHEDULE, -1);
 	s_state.lastUserProfileNo	 = s_prefs.getShort(G_N10_KEY_LAST_PROFILE, -1);
+
+	s_state.manualActive          = s_prefs.getUChar(G_N10_KEY_MANUAL_ACTIVE, 0) != 0;
+	s_state.manualProfileNo       = s_prefs.getShort(G_N10_KEY_MANUAL_PROFILE, 0);
+	s_state.manualOvrSchedule     = s_prefs.getUChar(G_N10_KEY_MANUAL_OVR_SCH, 0) != 0;
 
 	s_state.autoOffEnabled		 = s_prefs.getUChar(G_N10_KEY_AUTOOFF_ENABLED, 0) != 0;
 	s_state.autoOffMinutes		 = s_prefs.getULong(G_N10_KEY_AUTOOFF_MINUTES, 0);
@@ -333,6 +374,9 @@ void CL_N10_NvsManager::flush(bool p_force) {
     if (nvs_set_blob(v_handle, G_N10_KEY_OVERRIDE_FIXED,   &s_state.overrideFixedPercent, sizeof(float))    != ESP_OK) v_setFail = true;
     if (nvs_set_str (v_handle, G_N10_KEY_OVERRIDE_PRESET,  s_state.overridePresetCode)                      != ESP_OK) v_setFail = true;
     if (nvs_set_str (v_handle, G_N10_KEY_OVERRIDE_STYLE,   s_state.overrideStyleCode)                       != ESP_OK) v_setFail = true;
+    if (nvs_set_u8  (v_handle, G_N10_KEY_MANUAL_ACTIVE,    s_state.manualActive ? 1 : 0)                     != ESP_OK) v_setFail = true;
+    if (nvs_set_i16 (v_handle, G_N10_KEY_MANUAL_PROFILE,   s_state.manualProfileNo)                         != ESP_OK) v_setFail = true;
+    if (nvs_set_u8  (v_handle, G_N10_KEY_MANUAL_OVR_SCH,   s_state.manualOvrSchedule ? 1 : 0)               != ESP_OK) v_setFail = true;
 
     esp_err_t v_commitErr = nvs_commit(v_handle);
     nvs_close(v_handle);

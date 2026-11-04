@@ -88,43 +88,47 @@ bool C10_fromJson_UserProfileItem(const JsonObjectConst&    p_jp,
     p_up.repeatCount    = (uint16_t)(p_jp["repeatCount"] | 0u);
 
     p_up.segCount = 0;
-    if (p_jp["segments"].is<JsonArrayConst>()) {
-        JsonArrayConst v_sArr = p_jp["segments"].as<JsonArrayConst>();
-        for (JsonObjectConst jseg : v_sArr) {
-            if (p_up.segCount >= A20_Const::MAX_SEGMENTS_PER_PROFILE) break;
+    // [v0203] steps[] 우선 검사, 없으면 segments[] 폴백 지원
+    JsonArrayConst v_sArr = p_jp["steps"].is<JsonArrayConst>() 
+                                ? p_jp["steps"].as<JsonArrayConst>() 
+                                : p_jp["segments"].as<JsonArrayConst>();
 
-            ST_A20_UserProfileSegment_t& sg = p_up.segments[p_up.segCount];
+    if (!v_sArr.isNull()) {
+        for (JsonObjectConst jseg : v_sArr) {
+            if (p_up.segCount >= A20_Const::MAX_STEPS_PER_PROFILE) break;
+
+            ST_A20_Step_t& sg = p_up.segments[p_up.segCount];
             memset(&sg, 0, sizeof(sg));
 
-            if (!p_forceReissueSegId && p_allowIdRead) {
-                uint16_t v_segIdIn = (uint16_t)(jseg["segId"] | 0u);
-                if (v_segIdIn == 0u || v_segIdIn > 255u) {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: invalid segId=%u", v_caller, (unsigned)v_segIdIn);
-                    return false;
-                }
-                sg.segId = v_segIdIn;
+            // 1. stepNo (또는 segNo)
+            uint16_t v_stepNoIn = (uint16_t)(jseg["stepNo"] | jseg["segNo"] | (uint32_t)(p_up.segCount + 1));
+            sg.stepNo = (uint8_t)(v_stepNoIn > 255u ? 255u : v_stepNoIn);
+            sg.segNo  = v_stepNoIn;
+            sg.segId  = (uint8_t)sg.stepNo;
+
+            // 2. durationMin (또는 onMinutes + offMinutes)
+            if (jseg["durationMin"].is<uint16_t>()) {
+                sg.durationMin = jseg["durationMin"].as<uint16_t>();
+                sg.onMinutes   = sg.durationMin;
+                sg.offMinutes  = 0;
             } else {
-                sg.segId = 0;
+                sg.onMinutes   = (uint16_t)(jseg["onMinutes"] | 20u);
+                sg.offMinutes  = (uint16_t)(jseg["offMinutes"] | 0u);
+                sg.durationMin = sg.onMinutes + sg.offMinutes;
             }
+            if (sg.durationMin < A20_Const::MIN_STEP_DURATION_MIN) sg.durationMin = A20_Const::MIN_STEP_DURATION_MIN;
+            if (sg.durationMin > A20_Const::MAX_STEP_DURATION_MIN) sg.durationMin = A20_Const::MAX_STEP_DURATION_MIN;
 
-            {
-                uint32_t v_segNoIn = (uint32_t)(jseg["segNo"] | 0u);
-                if (v_segNoIn == 0u || v_segNoIn > 65535u) {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: invalid segNo=%u", v_caller, (unsigned)v_segNoIn);
-                    return false;
-                }
-                sg.segNo = (uint16_t)v_segNoIn;
-            }
+            // 3. type (또는 mode)
+            const char* v_typeStr = jseg["type"] | jseg["mode"] | "PRESET";
+            sg.type = A20_stepTypeFromString(v_typeStr);
+            sg.mode = (sg.type == EN_A20_STEP_TYPE_FIXED) ? EN_A20_SEG_MODE_FIXED : EN_A20_SEG_MODE_PRESET;
 
-            sg.onMinutes  = (uint16_t)(jseg["onMinutes"] | 10u);
-            sg.offMinutes = (uint16_t)(jseg["offMinutes"] | 0u);
+            // 4. 프리셋/스타일 코드
+            A40_ComFunc::Json_copyStr(jseg, "presetCode", sg.presetCode, sizeof(sg.presetCode), A20_Const::DEFAULT_PRESET_CODE, v_caller);
+            A40_ComFunc::Json_copyStr(jseg, "styleCode",  sg.styleCode,  sizeof(sg.styleCode),  A20_Const::DEFAULT_STYLE_CODE,  v_caller);
 
-            const char* v_mode = A40_ComFunc::Json_getStr(jseg, "mode", "PRESET");
-            sg.mode            = A20_modeFromString(v_mode);
-
-            A40_ComFunc::Json_copyStr(jseg, "presetCode", sg.presetCode, sizeof(sg.presetCode), "", v_caller);
-            A40_ComFunc::Json_copyStr(jseg, "styleCode",  sg.styleCode,  sizeof(sg.styleCode),  "", v_caller);
-
+            // 5. 물리 Override
             memset(&sg.override, 0, sizeof(sg.override));
             sg.override.windIntensity   = -1.0f;
             sg.override.windVariability = -1.0f;
@@ -144,7 +148,8 @@ bool C10_fromJson_UserProfileItem(const JsonObjectConst&    p_jp,
                 }
             }
 
-            sg.fixedSpeed = A40_ComFunc::Json_getNum<float>(jseg, "fixedSpeed", 0.0f);
+            // 6. fixedSpeed
+            sg.fixedSpeed = A40_ComFunc::Json_getNum<float>(jseg, "fixedSpeed", 50.0f);
             p_up.segCount++;
         }
     }

@@ -25,7 +25,7 @@ src/v0203/
 ├── User_Manual_0203/              # 사용자 매뉴얼
 ├── tools_0203/                    # v0203 빌드/계약 도구 (pio_gzip_0203.py, commit_contracts_0203.py)
 │
-├── data_v0203_src/                # [웹 개발 원본] (35 번들 JS + 10 CSS + HTML Shell + 998.offline)
+├── data_v0203_src/                # [웹 개발 원본] (47 번들 JS + 18 CSS + HTML Shell + 998.offline_data + 998.offline)
 ├── data_v0203/                    # [배포 스테이징] LittleFS 이미지 대상 (json 9개 + html_v0203 3개 번들 자산)
 │
 └── [C++ 소스군, v0203 접미사]      # 상세 모듈 매핑 및 파일 목록은 SPEC_0203.md §3 참조
@@ -71,6 +71,7 @@ src/v0203/
 | **Batch H** | UI-1~4, LOAD-1~3 | 모달 Header/Footer 고정, 세그먼트 2열 그리드, Undo 복원, 오프라인 어댑터 선행 로드 | [CONTRACT §7.6](CONTRACT_0203.md#76-batch-h-프론트엔드-오프라인-로딩-계약-load-1load-2) |
 | **Batch I** | OVR-1~4 | 바람 물리 0~100% 절대값 `override` 모델 도입, 3대 슬라이더 연동, 한/영 완전 다국어 | [CONTRACT §7.7](CONTRACT_0203.md#77-batch-i-바람-물리-파라미터-직접-지정-override-계약-ovr-1ovr-4) |
 | **0203_008** | OFFLINE, SYNC-1~3 | C++ Enum ➔ `000.const.js` 동기화, 오프라인 모듈 2분할, 대시보드 슬라이더 연동 | [CONTRACT §7.8~7.9](CONTRACT_0203.md#79-프론트엔드-백엔드-데이터-동기화-및-오프라인-모듈-분리-계약-sync-1sync-3) |
+| **0203_010** | STAGE-1~7 | 8스텝 작곡기, Session FSM(스마트 Resume), Wind Studio/Playlist, Comfort DI 추천, 20바 Canvas EQ, 64-event 타임라인 회고, 4단계 온보딩 | [SPEC §5.4](SPEC_0203.md#54-프론트엔드-자산-규격-v24-신규) |
 
 ---
 
@@ -212,13 +213,13 @@ git push origin v0203-release-2026-10-26
 
 ---
 
-## 7. 실측 자원 사용량 (2026-10-28 Batch I 빌드 결과)
+## 7. 실측 자원 사용량 (2026-11-04 Stage 1~7 빌드 결과)
 
 | 자원 | 사용 | 총량 | 여유 | 판정 |
 |---|---|---|---|---|
 | **RAM** | 108,612 B (33.1%) | 327,680 B | 219,068 B (66.9%) | ✅ BUDGET §6 >100KB 통과 |
 | **Flash** | 1,525,937 B (23.3%) | 6,553,600 B | 5,027,663 B (76.7%) | ✅ 여유 충분 |
-| **littlefs.bin** | 114.4 KB (프론트 gz 85.4 KB) | 1,048,576 B (1MB) | 934,176 B (89.1%) | ✅ BUDGET §6 <100KB 통과 |
+| **littlefs.bin** | 142.8 KB (프론트 gz 115.9 KB + JSON 26.9 KB) | 1,048,576 B (1MB) | 905,776 B (86.4%) | ✅ BUDGET §6 <200KB 통과 |
 
 ---
 
@@ -226,7 +227,8 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| **2026-10-30** | **v2.9** | **웹 라우팅 안정화 및 빌드 툴체인/환경 규격화**: REST API 정규식 의존성 제거(`/:id`), `onNotFound` 기반 Gzip 정적 서빙 안정화, ArduinoJson v7 `.is<T>()` 타입 안전성 강화, PlatformIO `espressif32 @ 7.1.3` 고정 및 `-j 12` 병렬 빌드 규격화 | Antigravity AI |
+| **2026-11-04** | **v2.10** | **Stage 1~7 구현 완료 및 프론트/백엔드 풀스택 아키텍처 완성 (0203_010)**: Step 기반 작곡 데이터 모델, Session FSM 엔진(3-State & 스마트 Resume), Now Playing Bar, Wind Studio/Playlist, Profile 스케줄러 & 충돌 감지, 일본 기상청 표준 DI Comfort 기상 추천, 20바 Canvas EQ & Haptic 피드백, 5축 감성 레이더 & A/B 시뮬레이션, 64-링버퍼 세션 회고 타임라인, 첫 방문 4단계 온보딩, ko/en 완전 다국어화, 47 JS + 18 CSS 번들링 현행화 | Antigravity AI |
+| 2026-10-30 | v2.9 | **웹 라우팅 안정화 및 빌드 툴체인/환경 규격화**: REST API 정규식 의존성 제거(`/:id`), `onNotFound` 기반 Gzip 정적 서빙 안정화, ArduinoJson v7 `.is<T>()` 타입 안전성 강화, PlatformIO `espressif32 @ 7.1.3` 고정 및 `-j 12` 병렬 빌드 규격화 | Antigravity AI |
 | 2026-10-28 | v2.8 | 계약 문서 간 중복 통폐합 및 마일스톤 정리 (0203_008): C++ 소스 목록 SPEC §3 위임, 감사 이력 상세 CONTRACT §7 단일 SSOT화 및 마일스톤 요약표 전환, 오프라인 2분할/동기화 반영 | Antigravity AI |
 | 2026-10-28 | v2.7 | **웹 오프라인 어댑터 및 한/영 다국어 연동 검증 반영**: Mock 데이터 10개 프리셋/5개 스타일 factors 동기화, `/control/override` 인터셉트, 스케줄/프로필 한/영 병기 표기, 프리셋 관리 화면 실시간 i18n 번역 연동 및 T-73 회귀 절차 수립 | Antigravity AI |
 | 2026-10-28 | v2.6 | **Batch I — 바람 물리 파라미터 직접 지정 (Override) 모델 전면 개편 및 UI 고도화 (0203_007)**: adjust Delta 완전 폐기 및 0~100% 절대값 `override` 모델 도입(OVR-1), 대시보드 3대 물리 슬라이더 및 SLEEP 모드 연동(OVR-2), 세그먼트 편집 모달 Override 아코디언 및 순서 이동(▲/▼)(OVR-3), 물리 수치별 정량 가이드 및 35종 JS 번들링/완전 다국어화(OVR-4) | Antigravity AI |

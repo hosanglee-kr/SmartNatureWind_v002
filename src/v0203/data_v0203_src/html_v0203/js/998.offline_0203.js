@@ -50,7 +50,22 @@ window.SNW = window.SNW || {};
             override: { active: false, useFixed: false, remainSec: 0, fixedPercent: 0, presetCode: '', styleCode: '' },
             dirty: { state: false, metrics: false, chart: false, summary: false },
             pendingReload: false,
-            lastReloadOk: true
+            lastReloadOk: true,
+            session: {
+                active: true,
+                type: 1,
+                typeName: 'PLAYLIST',
+                trigger: 1,
+                state: 'RUNNING',
+                profileId: 1,
+                profileNo: 1,
+                profileName: '숙면 자연풍 (오프라인)',
+                currentStep: 1,
+                totalSteps: 3,
+                stepRemainSec: 540,
+                loopCount: 0,
+                pausedAccumMs: 0
+            }
         },
         sim: {
             active: true,
@@ -302,6 +317,74 @@ window.SNW = window.SNW || {};
         A.stopProfile = async () => { runtime.control.state = 'IDLE';
             runtime.control.stateCode = 0;
             runtime.control.profile.profileNo = 0; return { result: 'ok' }; };
+        
+        // Session (Stage 3 신규)
+        A.sessionStart = async (type, payload, trigger = 'MANUAL') => {
+            const isPlaylist = (type === 'PLAYLIST' || type === 1);
+            runtime.control.session = {
+                active: true,
+                type: isPlaylist ? 1 : (type === 'PRESET' || type === 2 ? 2 : 3),
+                typeName: type,
+                trigger: trigger === 'SCHEDULE' ? 2 : 1,
+                state: 'RUNNING',
+                profileId: (payload && payload.profileId) || 1,
+                profileNo: (payload && payload.profileId) || 1,
+                profileName: isPlaylist ? '사용자 프로필' : '',
+                presetCode: (payload && payload.presetCode) || 'OCEAN',
+                styleCode: (payload && payload.styleCode) || 'BALANCE',
+                percent: (payload && payload.percent) || 50,
+                currentStep: 1,
+                totalSteps: 3,
+                stepRemainSec: 600,
+                loopCount: 0,
+                pausedAccumMs: 0
+            };
+            return { ok: true, result: 'session_started' };
+        };
+        A.startPlaylist = async (profileId) => A.sessionStart('PLAYLIST', { profileId });
+        A.startPreset = async (p, s) => A.sessionStart('PRESET', { presetCode: p, styleCode: s });
+        A.startFixed = async (percent) => A.sessionStart('FIXED', { percent });
+        A.pauseSession = async () => {
+            if (runtime.control.session) runtime.control.session.state = 'PAUSED';
+            return { ok: true, result: 'session_paused' };
+        };
+        A.resumeSession = async () => {
+            if (runtime.control.session) runtime.control.session.state = 'RUNNING';
+            return { ok: true, result: 'session_resumed' };
+        };
+        A.stopSession = async () => {
+            if (runtime.control.session) runtime.control.session.active = false;
+            return { ok: true, result: 'session_stopped' };
+        };
+        A.getCurrentSession = async () => (runtime.control.session || { active: false, type: 0 });
+        A.setScheduleOverride = async (override) => {
+            runtime.control.manualOverrideSchedule = !!override;
+            return { ok: true, override: !!override };
+        };
+        A.getComfort = async () => ({
+            di: 71.5,
+            level: 1,
+            levelText: "약간 덥네요",
+            tempC: 25.5,
+            humidity: 60.0,
+            recommend: {
+                profileId: 1,
+                presetCode: "COUNTRY_BREEZE",
+                styleCode: "BALANCE"
+            }
+        });
+        A.getMonitorTimeline = async (since = 0) => ({
+            events: [
+                { t: Math.floor(Date.now() / 1000) - 300, eventType: 2, sessionType: 1, trigger: 1, stepIdx: 0, totalSteps: 3, profileNo: 1, schNo: 0, label: "재생 시작" },
+                { t: Math.floor(Date.now() / 1000) - 120, eventType: 1, sessionType: 1, trigger: 1, stepIdx: 1, totalSteps: 3, profileNo: 1, schNo: 0, label: "Step 전환" },
+            ]
+        });
+        A.getSessionSummary = async (from = 0, to = 0) => ({
+            totalEvents: 2,
+            sessionStarts: 1,
+            sessionEnds: 0,
+            stepChanges: 1
+        });
         A.scanWifi = async () => ({
             wifi: {
                 scan: [

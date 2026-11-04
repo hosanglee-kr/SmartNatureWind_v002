@@ -93,6 +93,9 @@ bool C10_fromJson_ScheduleItem(const JsonObjectConst& p_js,
     p_s.repeatSegments = p_js["repeatSegments"] | true;
     p_s.repeatCount    = p_js["repeatCount"] | 0;
 
+    // [v0203] profileId 참조 디코딩
+    p_s.profileId = (uint8_t)(p_js["profileId"] | 0u);
+
     // period
     p_s.period.enabled = A40_ComFunc::Json_getBool(p_js["period"], "enabled", true);
 

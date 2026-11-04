@@ -84,6 +84,11 @@ namespace A20_Const {
 	constexpr uint8_t MAX_SEGMENTS_PER_SCHEDULE = 8;
 	constexpr uint8_t MAX_USER_PROFILES         = 6;
 	constexpr uint8_t MAX_SEGMENTS_PER_PROFILE  = 8;
+	// [v0203 신규 Step 모델 상수]
+	constexpr uint8_t  MAX_STEPS_PER_PROFILE    = 8;
+	constexpr uint8_t  MAX_PROFILES             = 6;
+	constexpr uint16_t MIN_STEP_DURATION_MIN    = 1;
+	constexpr uint16_t MAX_STEP_DURATION_MIN    = 1440;
 
 	// 문자열 길이 제한
 	constexpr size_t MAX_NAME_LEN 				= 32;

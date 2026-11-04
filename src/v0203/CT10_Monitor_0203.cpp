@@ -38,6 +38,12 @@ uint8_t CL_MON_Monitor::s_prevPreset = 255, CL_MON_Monitor::s_prevStyle = 255;
 
 CL_MON_Monitor::ST_COLD_Aggregator CL_MON_Monitor::s_agg = {};
 
+// [Stage 7 신규] Timeline 링 버퍼 정적 정의
+ST_MON_TimelineEvent_t CL_MON_Monitor::s_timeline[CL_MON_Monitor::TIMELINE_CAP] = {};
+uint8_t CL_MON_Monitor::s_timelineHead = 0;
+uint8_t CL_MON_Monitor::s_timelineCount = 0;
+
+
 template <typename T>
 static T* _allocPsram(size_t p_n) {
     T* p = (T*)heap_caps_malloc(p_n * sizeof(T), MALLOC_CAP_SPIRAM);
@@ -766,4 +772,87 @@ void CL_MON_Monitor::exportCsv(const char* p_type, const char* p_range, bool p_a
             }
         }
     }
+}
+
+
+// =========================================================
+// [Stage 7 신규] Timeline 이벤트 캡처 및 쿼리
+// =========================================================
+void CL_MON_Monitor::pushSessionEvent(EN_MON_EventType_t type,
+                                     const char* label,
+                                     uint8_t sessionType,
+                                     uint8_t trigger,
+                                     uint8_t stepIdx,
+                                     uint8_t totalSteps,
+                                     uint16_t profileNo,
+                                     uint16_t schNo) {
+    CL_A40_MutexGuard_Semaphore v_guard(s_monitorMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
+    ST_MON_TimelineEvent_t& e = s_timeline[s_timelineHead];
+    _nowEpoch(e.t);
+    e.eventType   = (uint8_t)type;
+    e.sessionType = sessionType;
+    e.trigger     = trigger;
+    e.stepIdx     = stepIdx;
+    e.totalSteps  = totalSteps;
+    e.profileNo   = profileNo;
+    e.schNo       = schNo;
+    memset(e.label, 0, sizeof(e.label));
+    if (label) strlcpy(e.label, label, sizeof(e.label));
+
+    s_timelineHead = (s_timelineHead + 1) % TIMELINE_CAP;
+    if (s_timelineCount < TIMELINE_CAP) s_timelineCount++;
+}
+
+void CL_MON_Monitor::queryTimeline(uint32_t since, JsonDocument& p_doc) {
+    CL_A40_MutexGuard_Semaphore v_guard(s_monitorMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
+    JsonArray arr = p_doc["events"].to<JsonArray>();
+    uint8_t start = (s_timelineHead + TIMELINE_CAP - s_timelineCount) % TIMELINE_CAP;
+    for (uint8_t i = 0; i < s_timelineCount; i++) {
+        uint8_t idx = (start + i) % TIMELINE_CAP;
+        const auto& e = s_timeline[idx];
+        if (since > 0 && e.t <= since) continue;
+
+        JsonObject obj = arr.add<JsonObject>();
+        obj["t"]           = e.t;
+        obj["eventType"]   = e.eventType;
+        obj["sessionType"] = e.sessionType;
+        obj["trigger"]     = e.trigger;
+        obj["stepIdx"]     = e.stepIdx;
+        obj["totalSteps"]  = e.totalSteps;
+        obj["profileNo"]   = e.profileNo;
+        obj["schNo"]       = e.schNo;
+        obj["label"]       = e.label;
+    }
+}
+
+void CL_MON_Monitor::querySessionSummary(uint32_t from, uint32_t to, JsonDocument& p_doc) {
+    CL_A40_MutexGuard_Semaphore v_guard(s_monitorMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
+    uint32_t totalEvents = 0;
+    uint32_t sessionStarts = 0;
+    uint32_t sessionEnds = 0;
+    uint32_t stepChanges = 0;
+
+    uint8_t start = (s_timelineHead + TIMELINE_CAP - s_timelineCount) % TIMELINE_CAP;
+    for (uint8_t i = 0; i < s_timelineCount; i++) {
+        uint8_t idx = (start + i) % TIMELINE_CAP;
+        const auto& e = s_timeline[idx];
+        if (from > 0 && e.t < from) continue;
+        if (to > 0 && e.t > to) continue;
+
+        totalEvents++;
+        if (e.eventType == EN_MON_EVENT_SESSION_START) sessionStarts++;
+        else if (e.eventType == EN_MON_EVENT_SESSION_END) sessionEnds++;
+        else if (e.eventType == EN_MON_EVENT_STEP_CHANGE) stepChanges++;
+    }
+
+    p_doc["totalEvents"]   = totalEvents;
+    p_doc["sessionStarts"] = sessionStarts;
+    p_doc["sessionEnds"]   = sessionEnds;
+    p_doc["stepChanges"]   = stepChanges;
 }

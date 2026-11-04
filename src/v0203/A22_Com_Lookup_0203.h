@@ -58,6 +58,26 @@
 
 
 // ======================================================
+// 1-1) [v0203 신규] Step Type <-> String 매핑 유틸
+// ======================================================
+
+inline EN_A20_step_type_t A20_stepTypeFromString(const char* p_str) {
+    if (!p_str || !p_str[0]) return EN_A20_STEP_TYPE_PRESET;
+
+    for (uint8_t v_i = 0; v_i < EN_A20_STEP_TYPE_COUNT; v_i++) {
+        if (strcasecmp(p_str, G_A20_StepType_Arr[v_i].code) == 0) {
+            return G_A20_StepType_Arr[v_i].idx;
+        }
+    }
+    return EN_A20_STEP_TYPE_PRESET;
+}
+
+inline const char* A20_stepTypeToString(EN_A20_step_type_t p_type) {
+    if (p_type >= EN_A20_STEP_TYPE_COUNT) return G_A20_StepType_Arr[EN_A20_STEP_TYPE_PRESET].code;
+    return G_A20_StepType_Arr[p_type].code;
+}
+
+// ======================================================
 // 2) Segment Mode <-> String 매핑 유틸
 // ======================================================
 

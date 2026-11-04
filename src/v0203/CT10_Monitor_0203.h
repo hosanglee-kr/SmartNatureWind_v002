@@ -98,7 +98,34 @@ typedef struct {
                     } ST_MON_SystemEvent_t;
 
                     // ======================================================
-                    // [MON-D] Cold (LittleFS) 파일 구조체
+                    
+// ======================================================
+// [Stage 7 신규] 세션 타임라인 이벤트
+// ======================================================
+typedef enum : uint8_t {
+    EN_MON_EVENT_STATE_CHANGE    = 0,   // FSM 변경
+    EN_MON_EVENT_STEP_CHANGE     = 1,   // Step 전환
+    EN_MON_EVENT_SESSION_START   = 2,   // 세션 시작
+    EN_MON_EVENT_SESSION_END     = 3,   // 세션 종료
+    EN_MON_EVENT_MANUAL_OVERRIDE = 4,   // 수동 개입
+    EN_MON_EVENT_AUTOOFF         = 5,   // AutoOff 발동
+    EN_MON_EVENT_PAUSE           = 6,   // 일시정지
+    EN_MON_EVENT_RESUME          = 7,   // 재개
+} EN_MON_EventType_t;
+
+typedef struct {
+    uint32_t t;             // epoch sec
+    uint8_t  eventType;     // EN_MON_EventType_t
+    uint8_t  sessionType;   // EN_CT10_session_type_t
+    uint8_t  trigger;       // EN_CT10_trigger_t
+    uint8_t  stepIdx;       // 현재 Step (PLAYLIST)
+    uint8_t  totalSteps;
+    uint16_t profileNo;
+    uint16_t schNo;
+    char     label[32];     // "Step 1→2", "재생 시작", 등
+} ST_MON_TimelineEvent_t;
+
+// [MON-D] Cold (LittleFS) 파일 구조체
                     // ======================================================
                     typedef struct {      // 64B 파일 헤더
                         uint32_t magic;   // "MNW1"
@@ -147,6 +174,19 @@ typedef struct {
                         static void queryConfig(const char* p_range, JsonDocument& p_doc);
                         static void querySensor(const char* p_range, JsonDocument& p_doc);
                         static void querySystem(const char* p_range, JsonDocument& p_doc);
+
+
+                        // [Stage 7 신규] 세션 타임라인 이벤트 캡처 및 조회
+                        static void pushSessionEvent(EN_MON_EventType_t type,
+                                                     const char* label,
+                                                     uint8_t sessionType,
+                                                     uint8_t trigger,
+                                                     uint8_t stepIdx,
+                                                     uint8_t totalSteps,
+                                                     uint16_t profileNo,
+                                                     uint16_t schNo);
+                        static void queryTimeline(uint32_t since, JsonDocument& p_doc);
+                        static void querySessionSummary(uint32_t from, uint32_t to, JsonDocument& p_doc);
 
                       private:
                         static ST_MON_WindRaw_t*     s_wind;
@@ -201,6 +241,12 @@ typedef struct {
                             uint32_t lastSystemEpochFlushed;
                         };
                         static ST_COLD_Aggregator s_agg;
+
+                        // [Stage 7 신규] Timeline 링 버퍼
+                        static constexpr uint8_t TIMELINE_CAP = 64;
+                        static ST_MON_TimelineEvent_t s_timeline[TIMELINE_CAP];
+                        static uint8_t s_timelineHead;
+                        static uint8_t s_timelineCount;
 
                         static void _captureWind(const ST_MON_Snapshot_t& p);
                         static void _captureSensor(const ST_MON_Snapshot_t& p);

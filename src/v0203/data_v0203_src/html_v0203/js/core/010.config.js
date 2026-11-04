@@ -31,6 +31,13 @@ window.SNW = window.SNW || {};
 			state: '/api/v001/state',
 			metrics: '/api/v001/metrics',
 			controlSummary: '/api/v001/control/summary',
+			// Session (Stage 3 신규)
+			sessionStart: '/api/v001/session/start',
+			sessionPause: '/api/v001/session/pause',
+			sessionResume: '/api/v001/session/resume',
+			sessionStop: '/api/v001/session/stop',
+			sessionCurrent: '/api/v001/session/current',
+			sessionSchOverride: '/api/v001/session/schedule-override',
 			overrideFixed: '/api/v001/control/override/fixed',
 			overridePreset: '/api/v001/control/override/preset',
 			overrideClear: '/api/v001/control/override/clear',
@@ -42,6 +49,10 @@ window.SNW = window.SNW || {};
 			chartHistory: '/api/v001/sim/chart',
 			monitor: '/api/v001/monitor',
 			windProfile: '/api/v001/windProfile',
+			windDict: '/api/v001/windDict', // [v0203 Stage 4]
+			comfort: '/api/v001/comfort', // [v0203 Stage 6]
+			monitorTimeline: '/api/v001/monitor/timeline', // [v0203 Stage 7]
+			monitorSessionSummary: '/api/v001/monitor/session-summary', // [v0203 Stage 7]
 			schedules: '/api/v001/schedules',
 			userProfiles: '/api/v001/user_profiles',
 			userProfilesPatch: '/api/v001/user_profiles/patch',

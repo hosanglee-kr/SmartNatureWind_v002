@@ -51,13 +51,65 @@
           }
         ],
         "autoOff": {
-          "timer": { "enabled": true, "minutes": 240 },
-          "offTime": { "enabled": true, "time": "05:00" },
-          "offTemp": { "enabled": true, "temp": 26.0 }
+          "timer": {
+            "enabled": true,
+            "minutes": 240
+          },
+          "offTime": {
+            "enabled": true,
+            "time": "05:00"
+          },
+          "offTemp": {
+            "enabled": true,
+            "temp": 26.0
+          }
         },
         "motion": {
-          "pir": { "enabled": false }
-        }
+          "pir": {
+            "enabled": false
+          }
+        },
+        "steps": [
+          {
+            "stepNo": 10,
+            "durationMin": 40,
+            "type": "PRESET",
+            "presetCode": "OCEAN",
+            "styleCode": "SLEEP",
+            "fixedSpeed": 50.0,
+            "override": {
+              "enabled": true,
+              "windIntensity": 35.0,
+              "windVariability": 20.0,
+              "gustFrequency": 15.0
+            }
+          },
+          {
+            "stepNo": 20,
+            "durationMin": 120,
+            "type": "PRESET",
+            "presetCode": "FOREST_CANOPY",
+            "styleCode": "SLEEP",
+            "fixedSpeed": 50.0,
+            "override": {
+              "enabled": true,
+              "windIntensity": 25.0,
+              "windVariability": 15.0,
+              "gustFrequency": 10.0
+            }
+          },
+          {
+            "stepNo": 30,
+            "durationMin": 90,
+            "type": "FIXED",
+            "presetCode": "OCEAN",
+            "styleCode": "BALANCE",
+            "fixedSpeed": 45.0,
+            "override": {
+              "enabled": false
+            }
+          }
+        ]
       },
       {
         "profileId": 2,
@@ -84,13 +136,39 @@
           }
         ],
         "autoOff": {
-          "timer": { "enabled": true, "minutes": 180 },
-          "offTime": { "enabled": false },
-          "offTemp": { "enabled": false }
+          "timer": {
+            "enabled": true,
+            "minutes": 180
+          },
+          "offTime": {
+            "enabled": false
+          },
+          "offTemp": {
+            "enabled": false
+          }
         },
         "motion": {
-          "pir": { "enabled": true, "holdSec": 300 }
-        }
+          "pir": {
+            "enabled": true,
+            "holdSec": 300
+          }
+        },
+        "steps": [
+          {
+            "stepNo": 10,
+            "durationMin": 60,
+            "type": "PRESET",
+            "presetCode": "URBAN_SUNSET",
+            "styleCode": "FOCUS",
+            "fixedSpeed": 50.0,
+            "override": {
+              "enabled": true,
+              "windIntensity": 55.0,
+              "windVariability": 30.0,
+              "gustFrequency": 25.0
+            }
+          }
+        ]
       },
       {
         "profileId": 3,
@@ -117,13 +195,39 @@
           }
         ],
         "autoOff": {
-          "timer": { "enabled": false, "minutes": 0 },
-          "offTime": { "enabled": false },
-          "offTemp": { "enabled": false }
+          "timer": {
+            "enabled": false,
+            "minutes": 0
+          },
+          "offTime": {
+            "enabled": false
+          },
+          "offTemp": {
+            "enabled": false
+          }
         },
         "motion": {
-          "pir": { "enabled": true, "holdSec": 180 }
-        }
+          "pir": {
+            "enabled": true,
+            "holdSec": 180
+          }
+        },
+        "steps": [
+          {
+            "stepNo": 10,
+            "durationMin": 60,
+            "type": "PRESET",
+            "presetCode": "HARBOR_BREEZE",
+            "styleCode": "RELAX",
+            "fixedSpeed": 50.0,
+            "override": {
+              "enabled": true,
+              "windIntensity": 45.0,
+              "windVariability": 35.0,
+              "gustFrequency": 20.0
+            }
+          }
+        ]
       },
       {
         "profileId": 4,
@@ -150,13 +254,38 @@
           }
         ],
         "autoOff": {
-          "timer": { "enabled": false, "minutes": 0 },
-          "offTime": { "enabled": false },
-          "offTemp": { "enabled": false }
+          "timer": {
+            "enabled": false,
+            "minutes": 0
+          },
+          "offTime": {
+            "enabled": false
+          },
+          "offTemp": {
+            "enabled": false
+          }
         },
         "motion": {
-          "pir": { "enabled": false }
-        }
+          "pir": {
+            "enabled": false
+          }
+        },
+        "steps": [
+          {
+            "stepNo": 10,
+            "durationMin": 25,
+            "type": "PRESET",
+            "presetCode": "PLAINS",
+            "styleCode": "BALANCE",
+            "fixedSpeed": 50.0,
+            "override": {
+              "enabled": true,
+              "windIntensity": 60.0,
+              "windVariability": 50.0,
+              "gustFrequency": 40.0
+            }
+          }
+        ]
       },
       {
         "profileId": 5,
@@ -183,13 +312,39 @@
           }
         ],
         "autoOff": {
-          "timer": { "enabled": false, "minutes": 0 },
-          "offTime": { "enabled": false },
-          "offTemp": { "enabled": false }
+          "timer": {
+            "enabled": false,
+            "minutes": 0
+          },
+          "offTime": {
+            "enabled": false
+          },
+          "offTemp": {
+            "enabled": false
+          }
         },
         "motion": {
-          "pir": { "enabled": true, "holdSec": 150 }
-        }
+          "pir": {
+            "enabled": true,
+            "holdSec": 150
+          }
+        },
+        "steps": [
+          {
+            "stepNo": 10,
+            "durationMin": 40,
+            "type": "PRESET",
+            "presetCode": "MOUNTAIN",
+            "styleCode": "ACTIVE",
+            "fixedSpeed": 50.0,
+            "override": {
+              "enabled": true,
+              "windIntensity": 85.0,
+              "windVariability": 70.0,
+              "gustFrequency": 65.0
+            }
+          }
+        ]
       },
       {
         "profileId": 6,
@@ -200,13 +355,23 @@
         "repeatCount": 0,
         "segments": [],
         "autoOff": {
-          "timer": { "enabled": false, "minutes": 0 },
-          "offTime": { "enabled": false },
-          "offTemp": { "enabled": false }
+          "timer": {
+            "enabled": false,
+            "minutes": 0
+          },
+          "offTime": {
+            "enabled": false
+          },
+          "offTemp": {
+            "enabled": false
+          }
         },
         "motion": {
-          "pir": { "enabled": false }
-        }
+          "pir": {
+            "enabled": false
+          }
+        },
+        "steps": []
       }
     ]
   }

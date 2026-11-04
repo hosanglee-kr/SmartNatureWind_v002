@@ -125,6 +125,24 @@ static inline void A20_resetScheduleSegmentDefault(ST_A20_ScheduleSegment_t& p_s
     p_seg.fixedSpeed = 0.0f;
 }
 
+// [v0203 신규] Step 기본값 초기화
+static inline void A20_resetStepDefault(ST_A20_Step_t& p_step, uint8_t p_no = 1) {
+    p_step.stepNo      = p_no;
+    p_step.durationMin = 20;
+    p_step.type        = EN_A20_STEP_TYPE_PRESET;
+    strlcpy(p_step.presetCode, A20_Const::DEFAULT_PRESET_CODE, sizeof(p_step.presetCode));
+    strlcpy(p_step.styleCode,  A20_Const::DEFAULT_STYLE_CODE,  sizeof(p_step.styleCode));
+    p_step.fixedSpeed  = 50.0f;
+    A20_resetSegmentOverrideDefault(p_step.override);
+
+    // 하위 호환 멤버 초기화
+    p_step.segId      = p_no;
+    p_step.segNo      = p_no;
+    p_step.onMinutes  = 20;
+    p_step.offMinutes = 0;
+    p_step.mode       = EN_A20_SEG_MODE_PRESET;
+}
+
 static inline void A20_resetUserProfileSegmentDefault(ST_A20_UserProfileSegment_t& p_seg) {
     memset(&p_seg, 0, sizeof(p_seg));
 

@@ -43,27 +43,25 @@ void CL_C10_ConfigManager::toJson_UserProfiles(const ST_A20_UserProfilesRoot_t& 
         jp["repeatSegments"] = up.repeatSegments;
         jp["repeatCount"]    = up.repeatCount;
 
-        for (uint8_t v_k = 0; v_k < up.segCount && v_k < A20_Const::MAX_SEGMENTS_PER_PROFILE; v_k++) {
-            const ST_A20_UserProfileSegment_t& sg   = up.segments[v_k];
-            JsonObject                         jseg = jp["segments"][v_k].to<JsonObject>();
+        // [v0203] steps[] 배열 생성 (단일 JsonDocument 규격)
+        for (uint8_t v_k = 0; v_k < up.segCount && v_k < A20_Const::MAX_STEPS_PER_PROFILE; v_k++) {
+            const ST_A20_Step_t& sg   = up.segments[v_k];
+            JsonObject           jstep = jp["steps"][v_k].to<JsonObject>();
 
-            jseg["segId"]      = sg.segId;
-            jseg["segNo"]      = sg.segNo;
-            jseg["onMinutes"]  = sg.onMinutes;
-            jseg["offMinutes"] = sg.offMinutes;
-            jseg["mode"]       = A20_modeToString(sg.mode);
-            jseg["presetCode"] = sg.presetCode;
-            jseg["styleCode"]  = sg.styleCode;
+            jstep["stepNo"]      = sg.stepNo ? sg.stepNo : (v_k + 1);
+            jstep["durationMin"] = sg.durationMin ? sg.durationMin : (sg.onMinutes + sg.offMinutes);
+            jstep["type"]        = A20_stepTypeToString(sg.type);
+            jstep["presetCode"]  = sg.presetCode;
+            jstep["styleCode"]   = sg.styleCode;
+            jstep["fixedSpeed"]  = sg.fixedSpeed;
 
-            JsonObject ovr                  = jseg["override"].to<JsonObject>();
-            ovr["enabled"]                  = sg.override.enabled;
+            JsonObject ovr       = jstep["override"].to<JsonObject>();
+            ovr["enabled"]       = sg.override.enabled;
             if (sg.override.enabled) {
                 ovr["windIntensity"]   = sg.override.windIntensity;
                 ovr["windVariability"] = sg.override.windVariability;
                 ovr["gustFrequency"]   = sg.override.gustFrequency;
             }
-
-            jseg["fixedSpeed"] = sg.fixedSpeed;
         }
 
         A40_ComFunc::Json_writeAutoOff(jp["autoOff"].to<JsonObject>(), up.autoOff);

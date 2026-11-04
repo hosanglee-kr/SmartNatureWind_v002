@@ -1,7 +1,7 @@
 # 🌌
 Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
 
-이 문서는 **Smart Nature Wind (v0202)** 프로젝트의 개발 환경, 시스템 아키텍처, 코딩 컨벤션, CBD 계약 및 AI 에이전트 작업 원칙을 총망라한 **단일 진실 공급원(SSOT)** 마스터 가이드입니다.
+이 문서는 **SmartNatureWind (v0203)** 프로젝트의 개발 환경, 시스템 아키텍처, 코딩 컨벤션, CBD 계약 및 AI 에이전트 작업 원칙을 총망라한 **단일 진실 공급원(SSOT)** 마스터 가이드입니다.
 
 ---
 
@@ -11,26 +11,26 @@ Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
 |---|---|
 | **기본 타깃 MCU** | **ESP32-S3-N16R8** (16MB Flash / 8MB OPI PSRAM, dual-core Xtensa @ 240MHz) |
 | **프레임워크 / 빌드** | Arduino-ESP32 (`-std=gnu++17`) on FreeRTOS / PlatformIO IDE |
-| **파일 시스템** | LittleFS (`./src/v0202/data_v0202`) |
-| **정적 에셋 파이프라인** | SPA 번들 (`P010_bundle_0202.js`, `P000_common_0202.css`, `index.html`) + Level 9 Gzip (`tools_0202/pio_gzip_0202.py`, 총 75 KB) |
-| **활성 버전 / 접미사** | **v0202 (FW_Ver_2.0.2)** (C++ 백엔드 소스 `_0202` 접미사 / LittleFS 에셋 `_0202`) |
+| **파일 시스템** | LittleFS (`./src/v0203/data_v0203`) |
+| **정적 에셋 파이프라인** | SPA 번들 (`P010_bundle_0203.js`, `P000_common_0203.css`, `index.html`) + Level 9 Gzip (`tools_0203/pio_gzip_0203.py`, 총 75 KB) |
+| **활성 버전 / 접미사** | **v0203 (FW_Ver_2.0.3)** (C++ 백엔드 소스 `_0203` 접미사 / LittleFS 에셋 `_0203`) |
 
 ---
 
 ## 📚 2. 단일 진실 공급원 (SSOT) 계약 문서 맵
 
-모든 세부 엔지니어링 명세와 계약 규약은 `src/v0202/contract_doc_0202/` 내 전문 문서를 참조하며, 에이전트는 중복 작성 없이 아래 문서의 규정을 엄격히 준수합니다.
+모든 세부 엔지니어링 명세와 계약 규약은 `src/v0203/contract_doc_0203/` 내 전문 문서를 참조하며, 에이전트는 중복 작성 없이 아래 문서의 규정을 엄격히 준수합니다.
 
 | 계약 문서명 | 담당 영역 및 핵심 SSOT 내용 | 상세 링크 |
 |---|---|:---:|
-| **SPEC_0202.md** (v2.10) | 시스템 최상위 기술 사양 (하드웨어 핀맵, 25kHz PWM 타이밍, C++ 모듈 구성 및 파일 매핑, JSON 스키마, REST/WebSocket API 전체 명세, 프론트엔드 에셋 번들 규격) | [SPEC_0202.md](src/v0202/contract_doc_0202/SPEC_0202.md) |
-| **CONTRACT_0202.md** (v2.8) | FreeRTOS 태스크 경계, 뮤텍스 소유권, 데드락 방지, 감사 해결 규약(A-1~G-3), 바람 물리 Override 계약(OVR-1~4), 프론트엔드 데이터 동기화 및 오프라인 계약(SYNC-1~3) | [CONTRACT_0202.md](src/v0202/contract_doc_0202/CONTRACT_0202.md) |
-| **STATE_0202.md** (v2.5) | 런타임 상태 변수 단일 Writer/Reader 소유권 매트릭스, CT10 메인 제어 상태머신(7-State FSM) 전이표, S10 물리 엔진 상태, 위임 플래그 수명주기 | [STATE_0202.md](src/v0202/contract_doc_0202/STATE_0202.md) |
-| **FLOW_0202.md** (v2.8) | 부팅 시퀀스, HTTP/WS 처리 루프, 센서 샘플링/물리 연산 파이프라인, WindSolver 파라미터 직접 치환 흐름, `pio_gzip_0202.py` 빌드 전처리/오프라인 부트스트랩 시퀀스 | [FLOW_0202.md](src/v0202/contract_doc_0202/FLOW_0202.md) |
-| **BUDGET_0202.md** (v2.7) | SRAM/PSRAM/Flash 메모리 버짓, 태스크별 최악 실행 시간(WCET), 블로킹 시간 한도, 프론트엔드 Gzip 예산 (75 KB / 100 KB 한도, RAM 33.1%, Flash 23.3%) | [BUDGET_0202.md](src/v0202/contract_doc_0202/BUDGET_0202.md) |
-| **TEST_PLAN_0202.md** (v2.7) | 단위/통합/스트레스 회귀 테스트 절차 (T-1~T-73), 29대 필수 릴리스 차단 게이트, 트러블슈팅 매트릭스 | [TEST_PLAN_0202.md](src/v0202/contract_doc_0202/TEST_PLAN_0202.md) |
-| **README_0202.md** (v2.8) | CBD 계약 체계 총괄 안내, 배치별 마일스톤 감사 요약, CBD 변경 워크플로, 커밋 및 검증 스크립트 | [README_0202.md](src/v0202/contract_doc_0202/README_0202.md) |
-| **UserManual_0202_002.md** (v2.7) | 12대 웹 UI 화면 조작 가이드, 대시보드 3대 슬라이더 연동, 오프라인 접이식 데모 툴바, 10종 프리셋 상세 해설 | [UserManual_0202_002.md](src/v0202/User_Manual_0202/UserManual_0202_002.md) |
+| **SPEC_0203.md** (v2.10) | 시스템 최상위 기술 사양 (하드웨어 핀맵, 25kHz PWM 타이밍, C++ 모듈 구성 및 파일 매핑, JSON 스키마, REST/WebSocket API 전체 명세, 프론트엔드 에셋 번들 규격) | [SPEC_0203.md](src/v0203/contract_doc_0203/SPEC_0203.md) |
+| **CONTRACT_0203.md** (v2.8) | FreeRTOS 태스크 경계, 뮤텍스 소유권, 데드락 방지, 감사 해결 규약(A-1~G-3), 바람 물리 Override 계약(OVR-1~4), 프론트엔드 데이터 동기화 및 오프라인 계약(SYNC-1~3) | [CONTRACT_0203.md](src/v0203/contract_doc_0203/CONTRACT_0203.md) |
+| **STATE_0203.md** (v2.5) | 런타임 상태 변수 단일 Writer/Reader 소유권 매트릭스, CT10 메인 제어 상태머신(7-State FSM) 전이표, S10 물리 엔진 상태, 위임 플래그 수명주기 | [STATE_0203.md](src/v0203/contract_doc_0203/STATE_0203.md) |
+| **FLOW_0203.md** (v2.8) | 부팅 시퀀스, HTTP/WS 처리 루프, 센서 샘플링/물리 연산 파이프라인, WindSolver 파라미터 직접 치환 흐름, `pio_gzip_0203.py` 빌드 전처리/오프라인 부트스트랩 시퀀스 | [FLOW_0203.md](src/v0203/contract_doc_0203/FLOW_0203.md) |
+| **BUDGET_0203.md** (v2.7) | SRAM/PSRAM/Flash 메모리 버짓, 태스크별 최악 실행 시간(WCET), 블로킹 시간 한도, 프론트엔드 Gzip 예산 (75 KB / 100 KB 한도, RAM 33.1%, Flash 23.3%) | [BUDGET_0203.md](src/v0203/contract_doc_0203/BUDGET_0203.md) |
+| **TEST_PLAN_0203.md** (v2.7) | 단위/통합/스트레스 회귀 테스트 절차 (T-1~T-73), 29대 필수 릴리스 차단 게이트, 트러블슈팅 매트릭스 | [TEST_PLAN_0203.md](src/v0203/contract_doc_0203/TEST_PLAN_0203.md) |
+| **README_0203.md** (v2.8) | CBD 계약 체계 총괄 안내, 배치별 마일스톤 감사 요약, CBD 변경 워크플로, 커밋 및 검증 스크립트 | [README_0203.md](src/v0203/contract_doc_0203/README_0203.md) |
+| **UserManual_0203_002.md** (v2.7) | 12대 웹 UI 화면 조작 가이드, 대시보드 3대 슬라이더 연동, 오프라인 접이식 데모 툴바, 10종 프리셋 상세 해설 | [UserManual_0203_002.md](src/v0203/User_Manual_0203/UserManual_0203_002.md) |
 
 ---
 
@@ -41,7 +41,7 @@ Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
 
 ### 원칙 1: C++ 백엔드 수정필요 시 목적, 기능변화 명확하게 정리해서 승인 후 수정 원칙 
 - 프론트엔드(Web UI), 오프라인 어댑터, 스타일/프리셋 연동, 문서 현행화 작업 시 **C++ 임베디드 백엔드 소스(`.h`, `.cpp`) 수정이 핗요하면 수정 이유(기능 작동관점의 차이점 등)를 명확히 설명하고 나에게 확인후 수정**
-- 백엔드와 프론트엔드 간의 데이터 정합성은 `pio_gzip_0202.py` 자동 동기화 파이프라인(C++ Enum ➔ `000.const.js`, JSON ➔ `998.offline_data_0202.js`)을 통해서만 유지합니다.
+- 백엔드와 프론트엔드 간의 데이터 정합성은 `pio_gzip_0203.py` 자동 동기화 파이프라인(C++ Enum ➔ `000.const.js`, JSON ➔ `998.offline_data_0203.js`)을 통해서만 유지합니다.
 
 ### 원칙 2: 지식 그래프 (Graphify) 선행 질의 원칙 (Graph-First Rule)
 - 소스 코드나 문서를 열기 전 무차별 검색(`grep_search`)이나 무작위 파일 열람(`view_file`)을 엄격히 금지합니다.
@@ -51,16 +51,16 @@ Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
   3. **코드/설계 변경 후 최신화**: 작업 후 `graphify update .`를 실행하여 지식 그래프를 갱신.
 
 ### 원칙 3: 정적 에셋 파이프라인 및 오프라인 모듈 분리 규약 (Pipeline Rule)
-- 웹 프론트엔드(`data_v0202_src/html_v0202/`) 수정 시 반드시 `python src/v0202/tools_0202/pio_gzip_0202.py`를 실행하여 번들링 및 동기화를 수행해야 합니다.
+- 웹 프론트엔드(`data_v0203_src/html_v0203/`) 수정 시 반드시 `python src/v0203/tools_0203/pio_gzip_0203.py`를 실행하여 번들링 및 동기화를 수행해야 합니다.
 - **오프라인 2분할 규약 준수**:
-  - `998.offline_data_0202.js`: 9개 환경설정 JSON Mock 캐시 전담 (배포 제외).
-  - `998.offline_0202.js`: 520줄 경량 시뮬레이터 및 API/WebSocket 가상 인터셉터 (배포 제외).
+  - `998.offline_data_0203.js`: 9개 환경설정 JSON Mock 캐시 전담 (배포 제외).
+  - `998.offline_0203.js`: 520줄 경량 시뮬레이터 및 API/WebSocket 가상 인터셉터 (배포 제외).
   - 오프라인 모듈 2종은 LittleFS 플래시 배포 번들에서 100% 영구 제외되어 기기 플래시 오버헤드를 발생시키지 않아야 합니다.
 
 ### 원칙 4: 계약 기반 변경 및 상대 경로 링크 원칙 (CBD Rule)
 - 모듈 인터페이스, FSM 전이, 데이터 스키마 수정 시 관련 계약 문서(`SPEC`, `CONTRACT`, `STATE`, `FLOW` 등)를 동일 커밋으로 동시 갱신합니다.
-- 프로젝트 내 모든 문서 간 상호 참조 링크는 반드시 **프로젝트 루트 기준의 상대 경로**(`src/v0202/...`, `agent.md` 등)로 표기합니다.
-- 문서 작업 완료 후 `python src/v0202/tools_0202/commit_contracts_0202.py --dry-run --strict` 검증을 통과해야 합니다.
+- 프로젝트 내 모든 문서 간 상호 참조 링크는 반드시 **프로젝트 루트 기준의 상대 경로**(`src/v0203/...`, `agent.md` 등)로 표기합니다.
+- 문서 작업 완료 후 `python src/v0203/tools_0203/commit_contracts_0203.py --dry-run --strict` 검증을 통과해야 합니다.
 
 ---
 
@@ -94,10 +94,10 @@ Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
 
 ```bash
 # 1. 프론트엔드 에셋 번들링, C++/JSON 자동 동기화 및 Gzip 압축
-python src/v0202/tools_0202/pio_gzip_0202.py
+python src/v0203/tools_0203/pio_gzip_0203.py
 
 # 2. CBD 계약 무결성 엄격 검증 (Dry-run)
-python src/v0202/tools_0202/commit_contracts_0202.py --dry-run --strict
+python src/v0203/tools_0203/commit_contracts_0203.py --dry-run --strict
 
 # 3. PlatformIO 펌웨어 빌드 / 파일시스템 플래시 업로드 (멀티코어 병렬 빌드 필수: -j 12)
 pio run -e esp32-s3-n16r8 -j 12

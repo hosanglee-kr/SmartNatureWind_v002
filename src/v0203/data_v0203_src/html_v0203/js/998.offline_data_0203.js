@@ -7,9 +7,9 @@ window.SNW = window.SNW || {};
     const DEFAULT_CACHE = {
         "system": {
                 "meta": {
-                        "version": "FW_2.0.1",
-                        "deviceName": "WindScape_2540_v001",
-                        "lastUpdate": "2025-10-24T13:00:00+09:00"
+                        "version": "FW_Ver_2.0.3",
+                        "deviceName": "SmartNatureWind_v0203",
+                        "lastUpdate": "2026-11-04T20:50:00+09:00"
                 },
                 "system": {
                         "logging": {
@@ -1069,6 +1069,21 @@ window.SNW = window.SNW || {};
                                         "key": "ovr_style",
                                         "type": "string",
                                         "defaultValue": ""
+                                },
+                                {
+                                        "key": "man_active",
+                                        "type": "uint8",
+                                        "defaultValue": "0"
+                                },
+                                {
+                                        "key": "man_prof",
+                                        "type": "int16",
+                                        "defaultValue": "-1"
+                                },
+                                {
+                                        "key": "man_ovr_sch",
+                                        "type": "uint8",
+                                        "defaultValue": "0"
                                 }
                         ]
                 }
@@ -1118,6 +1133,18 @@ window.SNW = window.SNW || {};
                         {
                                 "uriFrom": "/sensors",
                                 "uriTo": "/index.html#/sensors"
+                        },
+                        {
+                                "uriFrom": "/simulation",
+                                "uriTo": "/index.html#/simulation"
+                        },
+                        {
+                                "uriFrom": "/windprofile",
+                                "uriTo": "/index.html#/windprofile"
+                        },
+                        {
+                                "uriFrom": "/automation",
+                                "uriTo": "/index.html#/automation"
                         },
                         {
                                 "uriFrom": "/settings",

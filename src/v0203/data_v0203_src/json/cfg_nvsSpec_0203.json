@@ -1,4 +1,3 @@
-
 {
   "nvsSpec": {
     "version": "0203",
@@ -15,7 +14,10 @@
       { "key": "ovr_mode", "type": "uint8", "defaultValue": "0" },
       { "key": "ovr_fixed", "type": "float", "defaultValue": "0.0" },
       { "key": "ovr_preset", "type": "string", "defaultValue": "" },
-      { "key": "ovr_style", "type": "string", "defaultValue": "" }
+      { "key": "ovr_style", "type": "string", "defaultValue": "" },
+      { "key": "man_active", "type": "uint8", "defaultValue": "0" },
+      { "key": "man_prof", "type": "int16", "defaultValue": "-1" },
+      { "key": "man_ovr_sch", "type": "uint8", "defaultValue": "0" }
     ]
   }
 }

@@ -522,10 +522,20 @@ window.SNW = window.SNW || {};
         A.uploadFile = async () => { throw new SNW.Api.ApiError(503); };
         A.uploadFirmware = async () => { throw new SNW.Api.ApiError(503); };
         
+        // ======================================================
+        // [Phase4 ADR-2] body unwrap: {profile|schedule: {...}} 또는 root 모두 수용
+        //  - C++는 p_doc["profile"] ?? root 폴백 처리
+        //  - offline은 이전에 b.profile / b.schedule만 봐서
+        //    Studio(291) / SchedulePanel(293)의 root body가 유실됨
+        // ======================================================
+        const _unwrap = (b, key) => (b && b[key]) ? b[key] : (b || {});
+        
         // CRUD
         A.addSchedule = async (b) => {
+            const body = _unwrap(b, 'schedule');
             const list = cache.schedules.schedules || [];
-            const id = list.length + 1;
+            const maxId = list.reduce((m, s) => Math.max(m, s.schId || 0), 0);
+            const id = maxId + 1;
             const newSch = Object.assign({
                 schId: id,
                 enabled: true,
@@ -542,26 +552,29 @@ window.SNW = window.SNW || {};
                 }],
                 autoOff: {},
                 motion: {}
-            }, b.schedule || {});
+            }, body);
             list.push(newSch);
             persistCache('schedules');
             return { result: 'created', id };
         };
-        A.deleteSchedule = async (id) => { 
-            cache.schedules.schedules = (cache.schedules.schedules || []).filter(s => s.schId !== id); 
+        A.deleteSchedule = async (id) => {
+            cache.schedules.schedules = (cache.schedules.schedules || []).filter(s => s.schId !== id);
             persistCache('schedules');
-            return { deleted: true }; 
+            return { deleted: true };
         };
         A.updateSchedule = async (id, b) => {
+            const body = _unwrap(b, 'schedule');
             const list = cache.schedules.schedules || [];
             const idx = list.findIndex(s => s.schId === id);
-            if (idx >= 0) Object.assign(list[idx], b.schedule || {});
+            if (idx >= 0) Object.assign(list[idx], body);
             persistCache('schedules');
             return { updated: true };
         };
         A.addProfile = async (b) => {
+            const body = _unwrap(b, 'profile');
             const list = (cache.userProfiles && cache.userProfiles.userProfiles && cache.userProfiles.userProfiles.profiles) || [];
-            const id = list.length + 1;
+            const maxId = list.reduce((m, p) => Math.max(m, p.profileId || 0), 0);
+            const id = maxId + 1;
             const newProf = Object.assign({
                 profileId: id,
                 enabled: true,
@@ -577,25 +590,31 @@ window.SNW = window.SNW || {};
                 }],
                 autoOff: {},
                 motion: {}
-            }, b.profile || {});
+            }, body);
+            if (Array.isArray(newProf.steps)) newProf.segCount = newProf.steps.length;
             list.push(newProf);
             persistCache('userProfiles');
             return { result: 'created', id };
         };
-        A.deleteProfile = async (id) => { 
+        A.deleteProfile = async (id) => {
             if (cache.userProfiles && cache.userProfiles.userProfiles && cache.userProfiles.userProfiles.profiles) {
-                cache.userProfiles.userProfiles.profiles = cache.userProfiles.userProfiles.profiles.filter(p => p.profileId !== id); 
+                cache.userProfiles.userProfiles.profiles = cache.userProfiles.userProfiles.profiles.filter(p => p.profileId !== id);
                 persistCache('userProfiles');
             }
-            return { deleted: true }; 
+            return { deleted: true };
         };
         A.updateProfile = async (id, b) => {
+            const body = _unwrap(b, 'profile');
             const list = (cache.userProfiles && cache.userProfiles.userProfiles && cache.userProfiles.userProfiles.profiles) || [];
             const idx = list.findIndex(p => p.profileId === id);
-            if (idx >= 0) Object.assign(list[idx], b.profile || {});
+            if (idx >= 0) {
+                Object.assign(list[idx], body);
+                if (Array.isArray(body.steps)) list[idx].segCount = body.steps.length;
+            }
             persistCache('userProfiles');
             return { updated: true };
         };
+        
         A.addWindProfile = async (b) => {
             const list = (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.presets) || [];
             list.push(Object.assign({ idx: list.length }, b.preset || {}));

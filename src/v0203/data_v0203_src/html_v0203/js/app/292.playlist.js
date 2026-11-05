@@ -152,10 +152,22 @@ window.SNW = window.SNW || {};
             return card;
         }
 
+        
         _fmtTotal(profile) {
-            if (!profile.steps) return '0분';
+            // [ADR-2] steps[] canonical + legacy segments[] fallback
+            const steps = (profile.steps && profile.steps.length > 0) ?
+                profile.steps :
+                (profile.segments || []);
+            if (!steps.length) return '0분';
+            
             let total = 0;
-            for (const s of profile.steps) total += Number(s.durationMin) || 0;
+            for (const s of steps) {
+                const dur = (s.durationMin != null) ?
+                    Number(s.durationMin) :
+                    (Number(s.onMinutes || 0) + Number(s.offMinutes || 0));
+                total += dur || 0;
+            }
+            
             if (profile.repeatSegments && profile.repeatCount > 0) {
                 total *= profile.repeatCount;
             }

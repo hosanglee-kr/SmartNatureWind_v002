@@ -646,7 +646,7 @@ window.SNW = window.SNW || {};
             'msg.reloadPending':  '재적용 대기 중...',
             'msg.timeout':        '요청 시간이 초과되었습니다',
 
-},
+        },
 
         en: {
             // =====================================================
@@ -918,7 +918,6 @@ window.SNW = window.SNW || {};
             'msg.durationRange': 'Duration must be 1~1440 min',
             'msg.selectProfile': 'Please select a playlist',
             'msg.timeOrder': 'End time must be after start time',
-        },
     
             // Nav
             'nav.dashboard':   'Dashboard',
@@ -1238,8 +1237,9 @@ window.SNW = window.SNW || {};
             'msg.apiKeyRequired': 'API key is required',
             'msg.reloadPending':  'Reload pending...',
             'msg.timeout':        'Request timed out',
+        }
 
-};
+    };
 
     const SUPPORTED_LANGS = ['ko', 'en'];
 

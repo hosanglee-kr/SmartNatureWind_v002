@@ -163,12 +163,11 @@ SNW.Page = SNW.Page || {};
 		//  - diffOnly: { sim: { windSpeed, targetWind, pwmDuty, ... } }
 		//  - full dump: { chart: [...], sim: {...} }
 		// -------------------------------------------------
-
 		_switchTab(tab) {
 			if (!this.chart) return;
 			this.chart.clear();
 			this._buffer = [];
-
+			
 			if (tab === 'live') {
 				// 실제: S-2 이력 + WS 라이브
 				SNW.Api.getChartHistory().then(hist => {
@@ -185,22 +184,29 @@ SNW.Page = SNW.Page || {};
 				}).catch(() => {});
 			} else {
 				// 예상: 현재 프리셋 × 스타일로 생성
+				// [Phase5 5.5] ADR-5 이후 generate는 async → IIFE로 fire-and-forget
 				const sim = SNW.Store.get().sim || {};
-				if (SNW.Preview && SNW.Preview.generate) {
-					const preview = SNW.Preview.generate(
-						sim.presetCode || 'OCEAN',
-						sim.styleCode || 'BALANCE',
-						null
-					);
-					if (preview && preview.points) {
-						this._buffer = preview.points.map(p => ({
-							t: p.t,
-							windSpeed: p.wind,
-							targetWind: p.avg,
-							pwmDuty: 0
-						}));
-						this._redrawRange();
-					}
+				if (SNW.Preview && typeof SNW.Preview.generate === 'function') {
+					(async () => {
+						try {
+							const preview = await SNW.Preview.generate(
+								sim.presetCode || 'OCEAN',
+								sim.styleCode || 'BALANCE',
+								null
+							);
+							if (preview && preview.points && this._active) {
+								this._buffer = preview.points.map(p => ({
+									t: p.t,
+									windSpeed: p.wind,
+									targetWind: p.avg,
+									pwmDuty: 0,
+								}));
+								this._redrawRange();
+							}
+						} catch (e) {
+							if (SNW.LogUtil) SNW.LogUtil.warn('[Chart] preview fail', e);
+						}
+					})();
 				}
 			}
 		}
@@ -269,31 +275,126 @@ SNW.Page = SNW.Page || {};
 		// -------------------------------------------------
 		// CSV 내보내기 (현재 buffer)
 		// -------------------------------------------------
-		_exportCsv() {
-			if (!this._buffer.length) {
-				SNW.ToastUtil.info(SNW.I18n.t('common.noData'));
-				return;
-			}
-			const header = 'timestamp,windSpeed,targetWind,pwmDuty\n';
-			const rows = this._buffer.map(r => [
-				SNW.TimeUtil.epochToTimeStr(r.t),
-				r.windSpeed.toFixed(3),
-				r.targetWind.toFixed(3),
-				r.pwmDuty.toFixed(1)
-			].join(',')).join('\n');
-			
-			const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8' });
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = `snw_chart_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
-			document.body.appendChild(a);
-			a.click();
-			a.remove();
-			URL.revokeObjectURL(url);
-			
-			SNW.ToastUtil.success(SNW.I18n.t('common.success'));
-		}
-	};
-	
+        _exportCsv() {
+            if (!this._buffer.length) {
+                SNW.ToastUtil.info(SNW.I18n.t('common.noData'));
+                return;
+            }
+            const header = 'timestamp,windSpeed,targetWind,pwmDuty\n';
+            const rows = this._buffer.map(r => [
+                SNW.TimeUtil.epochToTimeStr(r.t),
+                r.windSpeed.toFixed(3),
+                r.targetWind.toFixed(3),
+                r.pwmDuty.toFixed(1)
+            ].join(',')).join('\n');
+            
+            const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `snw_chart_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            
+            SNW.ToastUtil.success(SNW.I18n.t('common.success'));
+        }
+
+        // ======================================================
+        // [Phase5 5.5] 예상 파형 오버레이 (ADR-5 이후 신규)
+        //
+        //  [설계]
+        //   - 차트 캔버스 위에 반투명 캔버스를 절대 위치로 삽입
+        //   - 실측 데이터(_buffer)의 min/max 범위에 예상 파형을 매핑
+        //   - 점선 + 돌풍 마커로 시각 구분
+        //   - _showOverlay=false면 즉시 제거
+        // ======================================================
+        async _ensurePreviewBuffer() {
+            if (this._previewBuffer) return;
+            if (!SNW.Preview || typeof SNW.Preview.generate !== 'function') return;
+
+            const sim = SNW.Store.get().sim || {};
+            try {
+                const wave = await SNW.Preview.generate(
+                    sim.presetCode || 'OCEAN',
+                    sim.styleCode || 'BALANCE',
+                    null
+                );
+                if (wave && wave.points) this._previewBuffer = wave.points;
+            } catch (e) {
+                if (SNW.LogUtil) SNW.LogUtil.warn('[Chart] overlay preview fail', e);
+            }
+        }
+
+        _drawOverlay() {
+            // 기존 오버레이 제거
+            const existing = this.el.querySelector('.snw-overlay-canvas');
+            if (existing) existing.remove();
+
+            // 조건 확인
+            if (!this._showOverlay)         return;
+            if (!this._previewBuffer)       return;
+            if (this._activeTab !== 'live') return;   // 예상 탭에서는 이미 실측이 예상이므로 오버레이 불필요
+            if (!this._buffer || this._buffer.length < 2) return;
+
+            const chartSlot = this.el.querySelector('[data-slot="chart"]');
+            if (!chartSlot) return;
+
+            if (getComputedStyle(chartSlot).position === 'static') {
+                chartSlot.style.position = 'relative';
+            }
+
+            const ovl = document.createElement('canvas');
+            ovl.className = 'snw-overlay-canvas';
+            ovl.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;';
+            chartSlot.appendChild(ovl);
+
+            requestAnimationFrame(() => {
+                const rect = chartSlot.getBoundingClientRect();
+                if (rect.width < 10 || rect.height < 10) return;
+                if (!ovl.isConnected) return;
+
+                ovl.width  = Math.floor(rect.width);
+                ovl.height = Math.floor(rect.height);
+
+                // 실측 + 예상 통합 min/max
+                let mn = Infinity, mx = -Infinity;
+                this._buffer.forEach(p => {
+                    const v = Number(p.windSpeed);
+                    if (!Number.isFinite(v)) return;
+                    if (v < mn) mn = v;
+                    if (v > mx) mx = v;
+                });
+                this._previewBuffer.forEach(p => {
+                    const v = Number(p.wind);
+                    if (!Number.isFinite(v)) return;
+                    if (v < mn) mn = v;
+                    if (v > mx) mx = v;
+                });
+                if (!Number.isFinite(mn) || !Number.isFinite(mx) || mx <= mn) return;
+
+                const ctx = ovl.getContext('2d');
+                const pad = 6;
+                const innerH = ovl.height - pad * 2;
+                const n = this._previewBuffer.length;
+                if (n < 2) return;
+
+                // 점선 오버레이
+                ctx.strokeStyle = 'rgba(240,136,62,0.75)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([5, 4]);
+                ctx.beginPath();
+                for (let i = 0; i < n; i++) {
+                    const x = (i / (n - 1)) * ovl.width;
+                    const y = pad + ((mx - this._previewBuffer[i].wind) / (mx - mn)) * innerH;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else         ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            });
+        }
+    };
+    
 })(window.SNW);

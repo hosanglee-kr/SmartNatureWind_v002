@@ -478,7 +478,7 @@ window.SNW = window.SNW || {};
             });
             return { ok: true, result: 'session_stopped' };
         };
-        };
+
         A.getCurrentSession = async () => (runtime.control.session || { active: false, type: 0 });
         A.setScheduleOverride = async (override) => {
             runtime.control.manualOverrideSchedule = !!override;
@@ -861,7 +861,7 @@ window.SNW = window.SNW || {};
             });
         }
     }
-
+    
     function renderOfflineToolbar() {
         if (document.getElementById('snw-offline-toolbar')) return;
         const bar = document.createElement('div');
@@ -871,10 +871,10 @@ window.SNW = window.SNW || {};
             background: #151b23; color: #e6edf3; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             border-bottom: 1px solid #30363d; z-index: 900; position: relative; width: 100%; transition: all 0.2s ease;
         `;
-
+        
         const isMobile = (window.innerWidth <= 767);
         let isCollapsed = isMobile || (localStorage.getItem('snw.offline.toolbar_collapsed') === '1');
-
+        
         function updateLayout() {
             if (isCollapsed) {
                 bar.innerHTML = `
@@ -890,7 +890,60 @@ window.SNW = window.SNW || {};
                     isCollapsed = false;
                     localStorage.setItem('snw.offline.toolbar_collapsed', '0');
                     updateLayout();
-
+                };
+            } else {
+                bar.innerHTML = `
+                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; padding:6px 12px;">
+                        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
+                            <span style="background:#238636; color:#fff; padding:2px 6px; border-radius:10px; font-weight:bold; font-size:10px;">🌿 OFFLINE</span>
+                            <label style="color:#8b949e; font-size:11px;">시나리오:
+                                <select id="snw-offline-scenario" style="background:#21262d; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:2px 4px; font-size:11px; margin-left:3px;">
+                                    <option value="NATURAL">자연 산들바람 (기본)</option>
+                                    <option value="SLEEP">취침/수면풍 (약풍 30%)</option>
+                                    <option value="GALE">바닷바람/돌풍 (강풍 85%)</option>
+                                    <option value="PIR_BLOCK">모션 감지 차단 (PIR=OFF)</option>
+                                    <option value="AUTOOFF">자동 종료 래치 (AutoOff)</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:4px;">
+                            <button id="btn-offline-export" style="background:#21262d; color:#58a6ff; border:1px solid #30363d; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:10px;">📥 백업</button>
+                            <button id="btn-offline-import" style="background:#21262d; color:#58a6ff; border:1px solid #30363d; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:10px;">📤 복원</button>
+                            <button id="btn-offline-reset" style="background:#21262d; color:#f85149; border:1px solid #30363d; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:10px;">🔄 리셋</button>
+                            <button id="btn-collapse-toolbar" style="background:transparent; color:#8b949e; border:none; cursor:pointer; font-size:10px; padding:0 4px; margin-left:4px;" title="접기">접기 ▲</button>
+                            <input type="file" id="offline-import-file" accept=".json" style="display:none;" />
+                        </div>
+                    </div>
+                `;
+                bar.querySelector('#snw-offline-scenario').onchange = (e) => applyScenario(e.target.value);
+                bar.querySelector('#btn-offline-export').onclick = () => exportBackup();
+                const fileInput = bar.querySelector('#offline-import-file');
+                bar.querySelector('#btn-offline-import').onclick = () => fileInput.click();
+                fileInput.onchange = (e) => {
+                    const file = e.target.files && e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => importBackup(ev.target.result);
+                    reader.readAsText(file, 'utf-8');
+                };
+                bar.querySelector('#btn-offline-reset').onclick = () => {
+                    if (confirm('오프라인 로컬 저장소를 모두 초기화하시겠습니까?')) {
+                        Object.keys(localStorage).forEach(k => {
+                            if (k.startsWith('snw.offline.')) localStorage.removeItem(k);
+                        });
+                        location.reload();
+                    }
+                };
+                bar.querySelector('#btn-collapse-toolbar').onclick = () => {
+                    isCollapsed = true;
+                    localStorage.setItem('snw.offline.toolbar_collapsed', '1');
+                    updateLayout();
+                };
+            }
+        }
+        
+        updateLayout();
+        
         // ======================================================
         // [Phase6 6.6 N-14] 삽입 위치 수정
         //  - 이전: #app.firstChild → .snw-app grid row 1 점유
@@ -902,7 +955,7 @@ window.SNW = window.SNW || {};
         //    (dev/demo 도구 특성상 sticky 불필요)
         // ======================================================
         document.body.insertBefore(bar, document.body.firstChild);
-
+        
         if (isMobile) {
             const main = document.getElementById('snw-main');
             if (main) main.style.paddingBottom = '80px';

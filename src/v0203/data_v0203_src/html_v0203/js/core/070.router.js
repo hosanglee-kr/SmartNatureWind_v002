@@ -2,64 +2,77 @@
 // 070.router.js — SNW.Router (해시 SPA 라우터)
 // =========================================================
 window.SNW = window.SNW || {};
-(function (SNW) {
+(function(SNW) {
     'use strict';
     
     const ROUTES = {
-        '/dashboard':   { page:'dashboard',   level:'L1' },
-        '/automation':          { page:'automation', params:{ tab:'studio' }, level:'L1' },
-        '/automation/studio':   { page:'automation', params:{ tab:'studio' }, level:'L1' },
-        '/automation/playlist': { page:'automation', params:{ tab:'playlist' }, level:'L1' },
-        '/automation/schedule': { page:'automation', params:{ tab:'schedule' }, level:'L1' },
-        '/automation/timer':    { page:'automation', params:{ tab:'timer' }, level:'L1' },
-        '/chart':       { page:'chart',       level:'L2' },
-        '/schedule':    { page:'schedule',    level:'L2' },
-        '/profiles':    { page:'profiles',    level:'L2' },
-        '/sensors':     { page:'sensors',     level:'L2' },
-        '/monitor':     { page:'monitor',     level:'L2' },   // [Phase5 5.8]
-        '/simulation':  { page:'simulation',  level:'L2' },
-        '/windprofile': { page:'windprofile', level:'L3' },
-        '/settings':    { page:'settings',    level:'L3' },
-        '/network':     { page:'network',     level:'L3' },
-        '/logs':        { page:'logs',        level:'L3' },
-        '/diagnostics': { page:'diagnostics', level:'L4' },
-        '/firmware':    { page:'firmware',    level:'L4' },
-        '/ai':          { page:'ai',          level:'L4' },
-        '/info':        { page:'info',        level:'L1' }
+        '/dashboard': { page: 'dashboard', level: 'L1' },
+        '/automation': { page: 'automation', params: { tab: 'studio' }, level: 'L1' },
+        '/automation/studio': { page: 'automation', params: { tab: 'studio' }, level: 'L1' },
+        '/automation/playlist': { page: 'automation', params: { tab: 'playlist' }, level: 'L1' },
+        '/automation/schedule': { page: 'automation', params: { tab: 'schedule' }, level: 'L1' },
+        '/automation/timer': { page: 'automation', params: { tab: 'timer' }, level: 'L1' },
+        '/chart': { page: 'chart', level: 'L2' },
+        '/schedule': { page: 'schedule', level: 'L2' },
+        '/profiles': { page: 'profiles', level: 'L2' },
+        '/sensors': { page: 'sensors', level: 'L2' },
+        '/monitor': { page: 'monitor', level: 'L2' }, // [Phase5 5.8]
+        '/simulation': { page: 'simulation', level: 'L2' },
+        '/windprofile': { page: 'windprofile', level: 'L3' },
+        '/settings': { page: 'settings', level: 'L3' },
+        '/network': { page: 'network', level: 'L3' },
+        '/logs': { page: 'logs', level: 'L3' },
+        '/diagnostics': { page: 'diagnostics', level: 'L4' },
+        '/firmware': { page: 'firmware', level: 'L4' },
+        '/ai': { page: 'ai', level: 'L4' },
+        '/info': { page: 'info', level: 'L1' }
     };
     
+    
+        
     const NAV_GROUPS = [
-        {
-            key: 'nav.groupControl',
-            items: [
-                { path:'/dashboard',   key:'nav.dashboard',   icon:'📊', minLevel:'L1' },
-                { path:'/chart',       key:'nav.chart',       icon:'📈', minLevel:'L2' },
-                { path:'/schedule',    key:'nav.schedule',    icon:'📅', minLevel:'L2' },
-                { path:'/profiles',    key:'nav.profiles',    icon:'👤', minLevel:'L2' },
-                { path:'/sensors',     key:'nav.sensors',     icon:'🌡', minLevel:'L2' },
-                { path:'/monitor',     key:'nav.monitor',     icon:'📺', minLevel:'L2' }   // [Phase5 5.8]
-            ]
-        },
-        {
-            key: 'nav.groupSettings',
-            items: [
-                { path:'/simulation',  key:'nav.simulation',  icon:'🌊', minLevel:'L2' },
-                { path:'/windprofile', key:'nav.windprofile', icon:'🌬', minLevel:'L3' },
-                { path:'/settings',    key:'nav.settings',    icon:'⚙',  minLevel:'L3' },
-                { path:'/network',     key:'nav.network',     icon:'📶', minLevel:'L3' }
-            ]
-        },
-        {
-            key: 'nav.groupSystem',
-            items: [
-                { path:'/logs',        key:'nav.logs',        icon:'📜', minLevel:'L3' },
-                { path:'/diagnostics', key:'nav.diagnostics', icon:'🔧', minLevel:'L4' },
-                { path:'/firmware',    key:'nav.firmware',    icon:'💾', minLevel:'L4' },
-                { path:'/ai',          key:'nav.ai',          icon:'🤖', minLevel:'L4' },
-                { path:'/info',        key:'nav.info',        icon:'ℹ',  minLevel:'L1' }
-            ]
-        }
-    ];
+    {
+        key: 'nav.groupControl',
+        items: [
+            { path: '/dashboard', key: 'nav.dashboard', icon: '📊', minLevel: 'L1' },
+            { path: '/chart', key: 'nav.chart', icon: '📈', minLevel: 'L2' },
+            { path: '/automation', key: 'nav.automation', icon: '🎨', minLevel: 'L2' }, // ← 신규
+            { path: '/schedule', key: 'nav.schedule', icon: '📅', minLevel: 'L2' },
+            { path: '/profiles', key: 'nav.profiles', icon: '👤', minLevel: 'L2' },
+            { path: '/sensors', key: 'nav.sensors', icon: '🌡', minLevel: 'L2' },
+            { path: '/monitor', key: 'nav.monitor', icon: '📺', minLevel: 'L2' }
+        ]
+        /*
+        key: 'nav.groupControl',
+        items: [
+            { path: '/dashboard', key: 'nav.dashboard', icon: '📊', minLevel: 'L1' },
+            { path: '/chart', key: 'nav.chart', icon: '📈', minLevel: 'L2' },
+            { path: '/schedule', key: 'nav.schedule', icon: '📅', minLevel: 'L2' },
+            { path: '/profiles', key: 'nav.profiles', icon: '👤', minLevel: 'L2' },
+            { path: '/sensors', key: 'nav.sensors', icon: '🌡', minLevel: 'L2' },
+            { path: '/monitor', key: 'nav.monitor', icon: '📺', minLevel: 'L2' } // [Phase5 5.8]
+        ]
+        */
+    },
+    {
+        key: 'nav.groupSettings',
+        items: [
+            { path: '/simulation', key: 'nav.simulation', icon: '🌊', minLevel: 'L2' },
+            { path: '/windprofile', key: 'nav.windprofile', icon: '🌬', minLevel: 'L3' },
+            { path: '/settings', key: 'nav.settings', icon: '⚙', minLevel: 'L3' },
+            { path: '/network', key: 'nav.network', icon: '📶', minLevel: 'L3' }
+        ]
+    },
+    {
+        key: 'nav.groupSystem',
+        items: [
+            { path: '/logs', key: 'nav.logs', icon: '📜', minLevel: 'L3' },
+            { path: '/diagnostics', key: 'nav.diagnostics', icon: '🔧', minLevel: 'L4' },
+            { path: '/firmware', key: 'nav.firmware', icon: '💾', minLevel: 'L4' },
+            { path: '/ai', key: 'nav.ai', icon: '🤖', minLevel: 'L4' },
+            { path: '/info', key: 'nav.info', icon: 'ℹ', minLevel: 'L1' }
+        ]
+    }];
     
     let currentPage = null;
     let currentPath = null;
@@ -70,42 +83,45 @@ window.SNW = window.SNW || {};
         if (s === 'windprofile') return 'Windprofile';
         return s.charAt(0).toUpperCase() + s.slice(1);
     }
-
+    
     function parseHash() {
         const raw = location.hash.replace(/^#/, '').split('?')[0] || '/dashboard';
         return ROUTES[raw] ? raw : '/dashboard';
     }
+    
     function _clearMain() {
         const main = document.getElementById('snw-main');
         if (!main) return null;
         main.innerHTML = '';
         return main;
     }
+    
     function _showLoading(main) {
         if (!main) return;
         main.appendChild(SNW.DomUtil.html`<div class="snw-loading">${SNW.I18n.t('common.loading')}</div>`);
     }
+    
     function _showError(main, msg) {
         if (!main) return;
         main.innerHTML = '';
         main.appendChild(SNW.DomUtil.html`<div class="snw-error">${msg}</div>`);
     }
-
+    
     // 페이지 이동 시 사이드바 닫기 (오직 클래스만 제거)
     function _closeSidebarOnMobile() {
         document.body.classList.remove('snw-sidebar-open');
     }
-
+    
     async function dispatch() {
         if (_dispatching) return;
-
+        
         const path = parseHash();
         if (path === currentPath) return;
-
+        
         _dispatching = true;
         try {
             _closeSidebarOnMobile();
-
+            
             const route = ROUTES[path];
             if (!SNW.LevelUtil.atLeast(route.level)) {
                 SNW.ToastUtil.warn(SNW.I18n.t('msg.accessDenied'));
@@ -137,7 +153,7 @@ window.SNW = window.SNW || {};
                 _showError(main, `Page not implemented: ${route.page}`);
                 return;
             }
-
+            
             const params = Object.assign({}, route.params || {});
             const qIdx = location.hash.indexOf('?');
             if (qIdx >= 0) {
@@ -156,7 +172,7 @@ window.SNW = window.SNW || {};
             document.querySelectorAll('.snw-bottom-nav__item').forEach(a => {
                 a.classList.toggle('is-active', a.getAttribute('data-route') === path);
             });
-
+            
         } catch (e) {
             SNW.ErrorHandler.handle(e, `page.${ROUTES[parseHash()]?.page || 'unknown'}`);
             _showError(document.getElementById('snw-main'), SNW.I18n.t('msg.unknown'));
@@ -197,7 +213,7 @@ window.SNW = window.SNW || {};
             nav.appendChild(section);
         });
     }
-
+    
     SNW.Router = {
         ROUTES,
         init() {

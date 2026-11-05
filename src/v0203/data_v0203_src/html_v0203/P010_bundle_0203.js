@@ -3177,6 +3177,17 @@ window.SNW = window.SNW || {};
         {
             key: 'nav.groupControl',
             items: [
+                { path: '/dashboard', key: 'nav.dashboard', icon: '📊', minLevel: 'L1' },
+                { path: '/chart', key: 'nav.chart', icon: '📈', minLevel: 'L2' },
+                { path: '/automation', key: 'nav.automation', icon: '🎨', minLevel: 'L2' }, // ← 신규
+                { path: '/schedule', key: 'nav.schedule', icon: '📅', minLevel: 'L2' },
+                { path: '/profiles', key: 'nav.profiles', icon: '👤', minLevel: 'L2' },
+                { path: '/sensors', key: 'nav.sensors', icon: '🌡', minLevel: 'L2' },
+                { path: '/monitor', key: 'nav.monitor', icon: '📺', minLevel: 'L2' }
+            ]
+            /*
+            key: 'nav.groupControl',
+            items: [
                 { path:'/dashboard',   key:'nav.dashboard',   icon:'📊', minLevel:'L1' },
                 { path:'/chart',       key:'nav.chart',       icon:'📈', minLevel:'L2' },
                 { path:'/schedule',    key:'nav.schedule',    icon:'📅', minLevel:'L2' },
@@ -3184,6 +3195,7 @@ window.SNW = window.SNW || {};
                 { path:'/sensors',     key:'nav.sensors',     icon:'🌡', minLevel:'L2' },
                 { path:'/monitor',     key:'nav.monitor',     icon:'📺', minLevel:'L2' }   // [Phase5 5.8]
             ]
+            */
         },
         {
             key: 'nav.groupSettings',

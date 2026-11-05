@@ -98,6 +98,9 @@ bool CL_CT10_ControlManager::tickUserProfile() {
 // --------------------------------------------------
 // schedule tick
 // --------------------------------------------------
+// ======================================================
+// [Phase3 N-1] tickSchedule (ADR-3 profileId 단일 실행, 하위 호환성 제외)
+// ======================================================
 bool CL_CT10_ControlManager::tickSchedule() {
     if (runSource != EN_CT10_RUN_SCHEDULE) return false;
     if (!g_A20_config_root.schedules) return false;
@@ -107,20 +110,41 @@ bool CL_CT10_ControlManager::tickSchedule() {
     if ((uint8_t)curScheduleIndex >= v_cfg.count) return false;
 
     ST_A20_ScheduleItem_t& v_schedule = v_cfg.items[(uint8_t)curScheduleIndex];
-    if (!v_schedule.enabled || v_schedule.segCount == 0) return false;
+    if (!v_schedule.enabled) return false;
 
+    // AutoOff 검사
     EN_CT10_reason_t v_reason = EN_CT10_REASON_NONE;
     if (checkAutoOff(&v_reason)) {
         onAutoOffTriggered(v_reason);
         return true;
     }
 
-    return tickSegmentSequence(
-        v_schedule.repeatSegments,
-        v_schedule.repeatCount,
-        v_schedule.segments,
-        v_schedule.segCount,
-        scheduleSegRt);
+    // [단일 규격] profileId 참조 실행 (하위 호환 fallback 제외)
+    if (v_schedule.profileId > 0 && g_A20_config_root.userProfiles) {
+        auto& v_profiles = *g_A20_config_root.userProfiles;
+        for (uint8_t v_i = 0; v_i < v_profiles.count; v_i++) {
+            if (v_profiles.items[v_i].profileId == v_schedule.profileId) {
+                ST_A20_UserProfileItem_t& v_prof = v_profiles.items[v_i];
+                if (!v_prof.enabled || v_prof.segCount == 0) {
+                    CL_D10_Logger::log(EN_L10_LOG_WARN,
+                                       "[CT10] tickSchedule: profile invalid (id=%u)",
+                                       (unsigned)v_schedule.profileId);
+                    return false;
+                }
+                return tickSegmentSequence(
+                    v_prof.repeatSegments,
+                    v_prof.repeatCount,
+                    v_prof.segments,
+                    v_prof.segCount,
+                    scheduleSegRt);
+            }
+        }
+        CL_D10_Logger::log(EN_L10_LOG_WARN,
+                           "[CT10] tickSchedule: profile not found (id=%u)",
+                           (unsigned)v_schedule.profileId);
+    }
+
+    return false;
 }
 
 // --------------------------------------------------

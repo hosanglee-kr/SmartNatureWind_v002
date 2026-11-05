@@ -368,46 +368,6 @@ window.SNW = window.SNW || {};
                                         "enabled": true,
                                         "repeatSegments": true,
                                         "repeatCount": 1,
-                                        "segments": [
-                                                {
-                                                        "segId": 1,
-                                                        "segNo": 10,
-                                                        "onMinutes": 40,
-                                                        "offMinutes": 0,
-                                                        "mode": "PRESET",
-                                                        "presetCode": "OCEAN",
-                                                        "styleCode": "SLEEP",
-                                                        "override": {
-                                                                "enabled": true,
-                                                                "windIntensity": 35.0,
-                                                                "windVariability": 20.0,
-                                                                "gustFrequency": 15.0
-                                                        }
-                                                },
-                                                {
-                                                        "segId": 2,
-                                                        "segNo": 20,
-                                                        "onMinutes": 120,
-                                                        "offMinutes": 0,
-                                                        "mode": "PRESET",
-                                                        "presetCode": "FOREST_CANOPY",
-                                                        "styleCode": "SLEEP",
-                                                        "override": {
-                                                                "enabled": true,
-                                                                "windIntensity": 25.0,
-                                                                "windVariability": 15.0,
-                                                                "gustFrequency": 10.0
-                                                        }
-                                                },
-                                                {
-                                                        "segId": 3,
-                                                        "segNo": 30,
-                                                        "onMinutes": 90,
-                                                        "offMinutes": 0,
-                                                        "mode": "FIXED",
-                                                        "fixedSpeed": 45.0
-                                                }
-                                        ],
                                         "autoOff": {
                                                 "timer": {
                                                         "enabled": true,
@@ -476,23 +436,6 @@ window.SNW = window.SNW || {};
                                         "enabled": true,
                                         "repeatSegments": true,
                                         "repeatCount": 2,
-                                        "segments": [
-                                                {
-                                                        "segId": 1,
-                                                        "segNo": 10,
-                                                        "onMinutes": 60,
-                                                        "offMinutes": 0,
-                                                        "mode": "PRESET",
-                                                        "presetCode": "URBAN_SUNSET",
-                                                        "styleCode": "FOCUS",
-                                                        "override": {
-                                                                "enabled": true,
-                                                                "windIntensity": 55.0,
-                                                                "windVariability": 30.0,
-                                                                "gustFrequency": 25.0
-                                                        }
-                                                }
-                                        ],
                                         "autoOff": {
                                                 "timer": {
                                                         "enabled": true,
@@ -535,23 +478,6 @@ window.SNW = window.SNW || {};
                                         "enabled": true,
                                         "repeatSegments": true,
                                         "repeatCount": 2,
-                                        "segments": [
-                                                {
-                                                        "segId": 1,
-                                                        "segNo": 10,
-                                                        "onMinutes": 45,
-                                                        "offMinutes": 15,
-                                                        "mode": "PRESET",
-                                                        "presetCode": "HARBOR_BREEZE",
-                                                        "styleCode": "RELAX",
-                                                        "override": {
-                                                                "enabled": true,
-                                                                "windIntensity": 45.0,
-                                                                "windVariability": 35.0,
-                                                                "gustFrequency": 20.0
-                                                        }
-                                                }
-                                        ],
                                         "autoOff": {
                                                 "timer": {
                                                         "enabled": false,
@@ -594,23 +520,6 @@ window.SNW = window.SNW || {};
                                         "enabled": true,
                                         "repeatSegments": false,
                                         "repeatCount": 0,
-                                        "segments": [
-                                                {
-                                                        "segId": 1,
-                                                        "segNo": 10,
-                                                        "onMinutes": 20,
-                                                        "offMinutes": 5,
-                                                        "mode": "PRESET",
-                                                        "presetCode": "PLAINS",
-                                                        "styleCode": "BALANCE",
-                                                        "override": {
-                                                                "enabled": true,
-                                                                "windIntensity": 60.0,
-                                                                "windVariability": 50.0,
-                                                                "gustFrequency": 40.0
-                                                        }
-                                                }
-                                        ],
                                         "autoOff": {
                                                 "timer": {
                                                         "enabled": false,
@@ -652,23 +561,6 @@ window.SNW = window.SNW || {};
                                         "enabled": true,
                                         "repeatSegments": true,
                                         "repeatCount": 3,
-                                        "segments": [
-                                                {
-                                                        "segId": 1,
-                                                        "segNo": 10,
-                                                        "onMinutes": 30,
-                                                        "offMinutes": 10,
-                                                        "mode": "PRESET",
-                                                        "presetCode": "MOUNTAIN",
-                                                        "styleCode": "ACTIVE",
-                                                        "override": {
-                                                                "enabled": true,
-                                                                "windIntensity": 85.0,
-                                                                "windVariability": 70.0,
-                                                                "gustFrequency": 65.0
-                                                        }
-                                                }
-                                        ],
                                         "autoOff": {
                                                 "timer": {
                                                         "enabled": false,
@@ -711,7 +603,6 @@ window.SNW = window.SNW || {};
                                         "enabled": false,
                                         "repeatSegments": false,
                                         "repeatCount": 0,
-                                        "segments": [],
                                         "autoOff": {
                                                 "timer": {
                                                         "enabled": false,

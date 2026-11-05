@@ -210,7 +210,10 @@ SNW.Page = SNW.Page || {};
             if (!sim) return;
 
             const s = store.session;
-            const isActive = s && s.type && s.type !== 'NONE' && s.state === 'ACTIVE';
+
+            // [Phase3 N-1] 명시적 숫자 판정
+            const typeNum  = s ? Number(s.type) : 0;
+            const isActive = (typeNum > 0) && (s.state === 'ACTIVE');
 
             if (this._eq && isActive) {
                 this._eq.push(sim.windSpeed || 0);

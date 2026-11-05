@@ -16,6 +16,7 @@ window.SNW = window.SNW || {};
         '/schedule':    { page:'schedule',    level:'L2' },
         '/profiles':    { page:'profiles',    level:'L2' },
         '/sensors':     { page:'sensors',     level:'L2' },
+        '/monitor':     { page:'monitor',     level:'L2' },   // [Phase5 5.8]
         '/simulation':  { page:'simulation',  level:'L2' },
         '/windprofile': { page:'windprofile', level:'L3' },
         '/settings':    { page:'settings',    level:'L3' },
@@ -35,7 +36,8 @@ window.SNW = window.SNW || {};
                 { path:'/chart',       key:'nav.chart',       icon:'📈', minLevel:'L2' },
                 { path:'/schedule',    key:'nav.schedule',    icon:'📅', minLevel:'L2' },
                 { path:'/profiles',    key:'nav.profiles',    icon:'👤', minLevel:'L2' },
-                { path:'/sensors',     key:'nav.sensors',     icon:'🌡', minLevel:'L2' }
+                { path:'/sensors',     key:'nav.sensors',     icon:'🌡', minLevel:'L2' },
+                { path:'/monitor',     key:'nav.monitor',     icon:'📺', minLevel:'L2' }   // [Phase5 5.8]
             ]
         },
         {

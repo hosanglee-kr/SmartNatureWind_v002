@@ -68,8 +68,14 @@ typedef struct ST_CT10_SessionContext_t {
         struct {
             uint8_t  profileId;
             uint16_t profileNo;
+            // ======================================================
+            // [Phase3 N-1] NowPlaying Bar / Session export 표시용 확장
+            // ======================================================
+            char     profileName[32];
             uint8_t  currentStepIdx;
             uint8_t  totalSteps;
+            uint32_t currentStepDurationMs;
+            uint32_t currentStepStartMs;
             uint8_t  loopCount;
         } playlist;
         struct {
@@ -387,6 +393,19 @@ class CL_CT10_ControlManager {
     bool _dirtyMetrics = false;
     bool _dirtyChart   = false;
     bool _dirtySummary = false;
+
+    // ======================================================
+    // [Phase3 N-1] Session pause 시 실행 컨텍스트 백업
+    // ======================================================
+    struct ST_CT10_PausedExec {
+        bool                     valid         = false;
+        EN_CT10_run_source_t     runSource     = EN_CT10_RUN_NONE;
+        int8_t                   profileIndex  = -1;
+        ST_CT10_Override_t       override      = {};
+        ST_CT10_SegmentRuntime_t profileSegRt  = {-1, true, 0, 0};
+        ST_CT10_AutoOffRuntime_t autoOffRt     = {};
+    };
+    ST_CT10_PausedExec _pausedExec;
 
     ST_CT10_RunContext_t runCtx;
     ST_CT10_SessionContext_t _session; // [Stage 2] 세션 FSM 컨텍스트

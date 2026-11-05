@@ -346,7 +346,7 @@ window.SNW = window.SNW || {};
                 this._profileId = target.profileId || target.profileNo;
                 this._profileNo = target.profileNo;
                 this._name = target.name;
-                this._repeat = !!target.repeat;
+                this._repeat = !!target.repeatSegments;
                 this._repeatCount = target.repeatCount || 0;
                 this._steps = (target.steps && target.steps.length > 0) ? target.steps : [this._defaultStep()];
             } catch (e) {
@@ -512,7 +512,7 @@ window.SNW = window.SNW || {};
                 profileNo: this._profileNo,
                 name: this._name.trim(),
                 enabled: true,
-                repeat: this._repeat,
+                repeatSegments: this._repeat,
                 repeatCount: this._repeatCount,
                 stepCount: this._steps.length,
                 steps: this._steps,

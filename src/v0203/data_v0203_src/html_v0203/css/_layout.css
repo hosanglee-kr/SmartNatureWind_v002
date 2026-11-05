@@ -91,7 +91,7 @@ body.snw-sidebar-open .snw-sidebar {
     right: 0;
     bottom: var(--snw-footer-h);
     background: rgba(0, 0, 0, 0.6);
-    z-index: 1040; /* 사이드바(1050)보다 낮게 */
+    z-index: var(--snw-z-overlay); /* 사이드바(1050)보다 낮게 */
     display: none;
 }
 
@@ -160,7 +160,7 @@ body.snw-sidebar-open .snw-sidebar-overlay {
         height: 60px;
         background: var(--snw-surface);
         border-top: 1px solid var(--snw-border);
-        z-index: 1000;
+        z-index: var(--snw-z-bottom);
         justify-content: space-around;
         align-items: center;
         padding-bottom: env(safe-area-inset-bottom); /* iOS 노치 대응 */

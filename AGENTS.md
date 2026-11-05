@@ -1,5 +1,4 @@
-# 🌌
-Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
+# 🌌 Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
 
 이 문서는 **SmartNatureWind (v0203)** 프로젝트의 개발 환경, 시스템 아키텍처, 코딩 컨벤션, CBD 계약 및 AI 에이전트 작업 원칙을 총망라한 **단일 진실 공급원(SSOT)** 마스터 가이드입니다.
 
@@ -23,14 +22,14 @@ Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
 
 | 계약 문서명 | 담당 영역 및 핵심 SSOT 내용 | 상세 링크 |
 |---|---|:---:|
-| **SPEC_0203.md** (v2.12) | 시스템 최상위 기술 사양 (하드웨어 핀맵, 25kHz PWM 타이밍, C++ 모듈 구성 및 파일 매핑, JSON 스키마, REST/WebSocket API 전체 명세, 프론트엔드 47 JS + 18 CSS 번들 규격) | [SPEC_0203.md](src/v0203/contract_doc_0203/SPEC_0203.md) |
-| **CONTRACT_0203.md** (v2.9) | FreeRTOS 태스크 경계, 뮤텍스 소유권, 데드락 방지, 감사 해결 규약(A-1~G-3), 바람 물리 Override 계약(OVR-1~4), 프론트엔드 데이터 동기화 및 오프라인 계약(SYNC-1~3) | [CONTRACT_0203.md](src/v0203/contract_doc_0203/CONTRACT_0203.md) |
-| **STATE_0203.md** (v2.6) | 런타임 상태 변수 단일 Writer/Reader 소유권 매트릭스, CT10 메인 제어 상태머신(7-State FSM) 및 Session 3-State FSM 전이표, S10 물리 엔진 상태, 위임 플래그 수명주기 | [STATE_0203.md](src/v0203/contract_doc_0203/STATE_0203.md) |
-| **FLOW_0203.md** (v2.9) | 부팅 시퀀스, HTTP/WS 처리 루프, 센서 샘플링/물리 연산 파이프라인, WindSolver 파라미터 직접 치환 흐름, `pio_gzip_0203.py` 빌드 전처리/오프라인 부트스트랩 시퀀스 | [FLOW_0203.md](src/v0203/contract_doc_0203/FLOW_0203.md) |
-| **BUDGET_0203.md** (v2.8) | SRAM/PSRAM/Flash 메모리 버짓, 태스크별 최악 실행 시간(WCET), 블로킹 시간 한도, 프론트엔드 Gzip 예산 (115.9 KB / 1MB LittleFS 한도, RAM 33.1%, Flash 23.3%) | [BUDGET_0203.md](src/v0203/contract_doc_0203/BUDGET_0203.md) |
-| **TEST_PLAN_0203.md** (v2.8) | 단위/통합/스트레스 회귀 테스트 절차 (T-1~T-73), 29대 필수 릴리스 차단 게이트, 트러블슈팅 매트릭스 | [TEST_PLAN_0203.md](src/v0203/contract_doc_0203/TEST_PLAN_0203.md) |
-| **README_0203.md** (v2.10) | CBD 계약 체계 총괄 안내, 배치별 마일스톤 감사 요약(Stage 1~7 반영), CBD 변경 워크플로, 커밋 및 검증 스크립트 | [README_0203.md](src/v0203/contract_doc_0203/README_0203.md) |
-| **UserManual_0203_002.md** (v2.8) | 12대 웹 UI 화면 조작 가이드, 대시보드 3대 슬라이더 연동, 오프라인 접이식 데모 툴바, 10종 프리셋 상세 해설, 첫 방문 온보딩 4단계 안내 | [UserManual_0203_002.md](src/v0203/User_Manual_0203/UserManual_0203_002.md) |
+| **SPEC_0203.md** (v2.13) | 시스템 최상위 기술 사양 (하드웨어 핀맵, 25kHz PWM 타이밍, C++ 모듈 구성 및 파일 매핑, JSON 스키마, REST/WebSocket API 전체 명세, §5.1.1 Session 응답 확장(`profileName`/`stepRemainSec`), §5.1.2 Runtime(NVS) top-level, §5.1.3 `/control/override` 폐지, §6.1 ADR 1~6, 프론트엔드 47 JS + 18 CSS 번들 규격) | [SPEC_0203.md](src/v0203/contract_doc_0203/SPEC_0203.md) |
+| **CONTRACT_0203.md** (v3.0) | FreeRTOS 태스크 경계, 뮤텍스 소유권, 데드락 방지, §3.2 Session 위임 락 순서, §4 Session 매트릭스 5행, §7.10 Phase 1~6 감사 이력(46건), Batch I 물리 Override 계약(OVR-1~4), SYNC-1~3 | [CONTRACT_0203.md](src/v0203/contract_doc_0203/CONTRACT_0203.md) |
+| **STATE_0203.md** (v3.0) | 상태 소유권 매트릭스(§1 5행 확장: `_session`/`_pausedExec`), §2.5 Session FSM ↔ runCtx FSM 관계(ADR-1), §6.4 Pause/Resume/Stop 위임 라이프사이클, S10 물리 엔진 상태, 위임 플래그 수명주기 | [STATE_0203.md](src/v0203/contract_doc_0203/STATE_0203.md) |
+| **FLOW_0203.md** (v2.9) | §4.1 Session Start/Pause/Resume/Stop 시퀀스(ADR-1), §4.2 Schedule profileId 단일 실행(ADR-3), §4.3 Runtime(NVS) Export, §4.4 Settings→TM10 재적용(N-2), `pio_gzip_0203.py` 빌드 전처리/오프라인 부트스트랩 시퀀스 | [FLOW_0203.md](src/v0203/contract_doc_0203/FLOW_0203.md) |
+| **BUDGET_0203.md** (v2.8) | SRAM/PSRAM/Flash 메모리 버짓, 태스크별 WCET, §8.2.1 i18n 확장(+2.3KB gzip), §10.3 Phase 1~6 예산 영향표, 프론트엔드 Gzip 예산 (115.9 KB / 1MB LittleFS, RAM 33.3%, Flash 23.3%) | [BUDGET_0203.md](src/v0203/contract_doc_0203/BUDGET_0203.md) |
+| **TEST_PLAN_0203.md** (v3.0) | 회귀 절차 (§3.4 T-90~T-112 Phase 1~6 신규 23건, 총 39건 릴리스 차단 게이트), §8 트러블슈팅 매트릭스 20건 확장, 29대 필수 릴리스 게이트 | [TEST_PLAN_0203.md](src/v0203/contract_doc_0203/TEST_PLAN_0203.md) |
+| **README_0203.md** (v2.11) | CBD 계약 체계 총괄, §3 마일스톤 v0203_011(Phase 1~6) 추가, §7 실측 자원 (RAM 109,124 B / Flash 1,528,102 B / littlefs 152.4 KB), 커밋 및 검증 스크립트 | [README_0203.md](src/v0203/contract_doc_0203/README_0203.md) |
+| **UserManual_0203_002.md** (v2.8) | v0203 사용자 매뉴얼 — Session FSM/Now Playing/Wind Studio/Comfort DI/Monitor 회고/4단계 온보딩 반영, 12대 웹 UI 화면 조작 가이드, 대시보드 3대 슬라이더 연동, 오프라인 접이식 데모 툴바 | [UserManual_0203_002.md](src/v0203/User_Manual_0203/UserManual_0203_002.md) |
 
 ---
 
@@ -40,7 +39,7 @@ Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
 > AI 에이전트는 코드 작성, 리팩토링, 디버깅 및 문서화 수행 시 아래 4대 원칙을 단 하나의 예외 없이 준수해야 합니다.
 
 ### 원칙 1: C++ 백엔드 수정필요 시 목적, 기능변화 명확하게 정리해서 승인 후 수정 원칙 
-- 프론트엔드(Web UI), 오프라인 어댑터, 스타일/프리셋 연동, 문서 현행화 작업 시 **C++ 임베디드 백엔드 소스(`.h`, `.cpp`) 수정이 핗요하면 수정 이유(기능 작동관점의 차이점 등)를 명확히 설명하고 나에게 확인후 수정**
+- 프론트엔드(Web UI), 오프라인 어댑터, 스타일/프리셋 연동, 문서 현행화 작업 시 **C++ 임베디드 백엔드 소스(`.h`, `.cpp`) 수정이 필요하면 수정 이유(기능 작동관점의 차이점 등)를 명확히 설명하고 나에게 확인 후 수정**
 - 백엔드와 프론트엔드 간의 데이터 정합성은 `pio_gzip_0203.py` 자동 동기화 파이프라인(C++ Enum ➔ `000.const.js`, JSON ➔ `998.offline_data_0203.js`)을 통해서만 유지합니다.
 
 ### 원칙 2: 지식 그래프 (Graphify) 선행 질의 원칙 (Graph-First Rule)
@@ -56,6 +55,7 @@ Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
   - `998.offline_data_0203.js`: 9개 환경설정 JSON Mock 캐시 전담 (배포 제외).
   - `998.offline_0203.js`: 520줄 경량 시뮬레이터 및 API/WebSocket 가상 인터셉터 (배포 제외).
   - 오프라인 모듈 2종은 LittleFS 플래시 배포 번들에서 100% 영구 제외되어 기기 플래시 오버헤드를 발생시키지 않아야 합니다.
+- **i18n CI Gate (Phase 5.7+)**: `pio_gzip_0203.py` staging 진입부에서 `check_i18n.py --strict`가 자동 실행되며, 미정의 키 발견 시 staging을 중단합니다. 긴급 배포 시 `--no-i18n-check` 또는 `platformio.ini`의 `custom_no_i18n_check = true`로 스킵 가능합니다.
 
 ### 원칙 4: 계약 기반 변경 및 상대 경로 링크 원칙 (CBD Rule)
 - 모듈 인터페이스, FSM 전이, 데이터 스키마 수정 시 관련 계약 문서(`SPEC`, `CONTRACT`, `STATE`, `FLOW` 등)를 동일 커밋으로 동시 갱신합니다.
@@ -83,6 +83,7 @@ Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
 4. **동시성 보호**: `async_tcp` 컨텍스트에서 `g_A20_config_root` 직접 접근 절대 금지 (`getRootSnapshot` 필수 경유).
 5. **세션 FSM & 링 버퍼**: 세션 라이프사이클 이벤트(`pushSessionEvent`)는 메모리 버짓 보호를 위해 64개 고정 링 버퍼(`ST_MON_TimelineEvent_t s_timeline[64]`)로 캡슐화.
 6. **센서 캐시 재사용**: 실시간 Comfort(불쾌지수 DI) 계산 시 파일 스코프 DHT 센서 캐시(`s_dhtCache`)를 재사용하여 I2C 블로킹 시간 0ms 유지.
+7. **Session 위임 (ADR-1)**: `startSession`/`pauseSession`/`resumeSession`/`stopSession`은 내부 검증 경로(`startUserProfileByNo`/`startOverridePreset`/`startOverrideFixed`)에 위임. `_session`은 export 전용 mirror이며 `decideRunSource`에 참여 금지.
 
 ### 4.3 프론트엔드 (Web UI) 구현 규칙
 1. **널리시 폴백 (NEW-C1)**: 폼 필드 렌더링 시 `||` 연산자 금지, `nz(v, fallback)` 사용 (`0`, `''`, `false` 유효값 보존).
@@ -90,23 +91,33 @@ Antigravity & Claude Code 개발 협업 가이드 (AGENTS.md)
 3. **XSS 방어 (B-3/NEW-C2)**: 사용자 입력/표시 텍스트는 반드시 `SNW.DomUtil.escape()` 처리.
 4. **모달 오버레이 격리**: 모달 닫기 시 `.snw-modal-overlay`에 `pointer-events: none; visibility: hidden;` 및 `display: 'none'` 적용으로 메뉴 먹통 방지.
 5. **컴포넌트 라이프사이클 보호**: Canvas 이퀄라이저(`SNW.UI.equalizer`), 실시간 뷰 unmount 시 이벤트 구독(`_unsubs`) 및 애니메이션 루프(`stop()`) 반드시 해제.
+6. **Session state 스펙 (S-6)**: C++ 반환값은 `'ACTIVE'`/`'PAUSED'`/`'COMPLETED'` (프론트에서 `'RUNNING'` 사용 금지).
+7. **Preview 파사드 (ADR-5)**: `SNW.Preview.showModal/generate/_animate` 파사드 사용. 실구현은 `140.ui.simulation.js` 위임.
+8. **i18n 완전성 (P-2)**: `SNW.I18n.t('key')` 참조 전 반드시 `check_i18n.py --strict` 통과. 신규 키는 ko/en 양쪽 DICT에 추가.
 
 ---
 
 ## 🛠️ 5. 필수 CLI 명령어 치트시트
 
 ```bash
-# 1. 프론트엔드 에셋 번들링, C++/JSON 자동 동기화 및 Gzip 압축
+# 1. i18n DICT 완전성 사전 검증 (CI Gate, staging 진입부 자동 실행)
+python src/v0203/tools_0203/check_i18n.py --strict
+
+# 2. 프론트엔드 에셋 번들링, C++/JSON 자동 동기화 및 Gzip 압축
+#    (내부에서 check_i18n.py --strict 자동 실행)
 python src/v0203/tools_0203/pio_gzip_0203.py
 
-# 2. CBD 계약 무결성 엄격 검증 (Dry-run)
+# 3. 긴급 배포 시 i18n gate 스킵
+python src/v0203/tools_0203/pio_gzip_0203.py --no-i18n-check
+
+# 4. CBD 계약 무결성 엄격 검증 (Dry-run)
 python src/v0203/tools_0203/commit_contracts_0203.py --dry-run --strict
 
-# 3. PlatformIO 펌웨어 빌드 / 파일시스템 플래시 업로드 (멀티코어 병렬 빌드 필수: -j 12)
+# 5. PlatformIO 펌웨어 빌드 / 파일시스템 플래시 업로드 (멀티코어 병렬 빌드 필수: -j 12)
 pio run -e esp32-s3-n16r8 -j 12
 pio run -e esp32-s3-n16r8 -j 12 --target uploadfs
 
-# 4. Graphify 지식 그래프 질의 및 갱신 (LLM 비용 없음, AST 전용)
+# 6. Graphify 지식 그래프 질의 및 갱신 (LLM 비용 없음, AST 전용)
 graphify query "<질문/심볼명>"
 graphify path "<출발노드>" "<도착노드>"
 graphify explain "<클래스/함수명>"
@@ -115,5 +126,3 @@ graphify update .
 
 ---
 *모든 기술 설명과 사용자 답변은 명확하고 정중한 **한국어**로 작성합니다.*
-
-

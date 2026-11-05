@@ -76,12 +76,19 @@
     --snw-transition: 0.2s ease;
     --snw-transition-fast: 0.1s ease;
     
-    /* z-index */
-    --snw-z-sidebar: 100;
-    --snw-z-header: 50;
-    --snw-z-np: 90;
-    --snw-z-toast: 1000;
-    --snw-z-modal: 900;
+    /* =====================================================
+     * [N-6] z-index 계층 (ADR-4 확정)
+     *  - header(50) < nowplaying(95) < bottom-nav(1000)
+     *    < sidebar-overlay(1040) < sidebar(1050)
+     *    < modal(1100) < toast(1200)
+     * ===================================================== */
+    --snw-z-header:  50;
+    --snw-z-np:      95;
+    --snw-z-bottom:  1000;
+    --snw-z-overlay: 1040;
+    --snw-z-sidebar: 1050;
+    --snw-z-modal:   1100;   /* [N-6] 900 → 1100 */
+    --snw-z-toast:   1200;   /* [N-6] 1000 → 1200 */
 }
 
 /* 라이트 모드 자동 전환 */

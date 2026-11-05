@@ -346,19 +346,51 @@ class CL_A40_MutexGuard_Semaphore {
     bool isAcquired() const { return _acquired; }
 
   private:
+    // ======================================================
+    // [N-16] Lazy-init 재설계: heap alloc을 critical section 밖으로 이관
+    //  - ESP-IDF portENTER_CRITICAL 내부 힙 할당 금지 규약 준수
+    //  - Fast path + Critical Section 내 Double-check CAS
+    // ======================================================
     void _internalInitAndTake(TickType_t p_timeout) {
         if (!_mutexPtr) return;
-        if (*_mutexPtr == nullptr) {
-            static portMUX_TYPE s_initMux = portMUX_INITIALIZER_UNLOCKED;
-            portENTER_CRITICAL(&s_initMux);
-            if (*_mutexPtr == nullptr) {
-                *_mutexPtr = xSemaphoreCreateRecursiveMutex();
-                if (*_mutexPtr == nullptr)
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] CreateRecursiveMutex failed", _caller);
+
+        // ① Fast path (이미 초기화 완료)
+        if (*_mutexPtr != nullptr) {
+            if (xSemaphoreTakeRecursive(*_mutexPtr, p_timeout) == pdTRUE) {
+                _acquired = true;
             }
-            portEXIT_CRITICAL(&s_initMux);
+            return;
         }
-        if (*_mutexPtr && xSemaphoreTakeRecursive(*_mutexPtr, p_timeout) == pdTRUE) _acquired = true;
+
+        // ② Slow path: critical section "밖"에서 mutex 생성 (heap alloc 안전)
+        SemaphoreHandle_t v_newMutex = xSemaphoreCreateRecursiveMutex();
+        if (v_newMutex == nullptr) {
+            CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                               "[A40][%s] CreateRecursiveMutex failed (heap exhausted?)",
+                               _caller);
+            return;
+        }
+
+        // ③ Critical section 안에서는 포인터 비교/대입만 수행
+        static portMUX_TYPE s_initMux = portMUX_INITIALIZER_UNLOCKED;
+        bool v_owned = false;
+
+        portENTER_CRITICAL(&s_initMux);
+        if (*_mutexPtr == nullptr) {
+            *_mutexPtr = v_newMutex;
+            v_owned    = true;
+        }
+        portEXIT_CRITICAL(&s_initMux);
+
+        // 경합 패배 시 중복 생성된 mutex 즉시 폐기
+        if (!v_owned) {
+            vSemaphoreDelete(v_newMutex);
+        }
+
+        // 최종 mutex 획득
+        if (*_mutexPtr && xSemaphoreTakeRecursive(*_mutexPtr, p_timeout) == pdTRUE) {
+            _acquired = true;
+        }
     }
 
     SemaphoreHandle_t* _mutexPtr = nullptr;

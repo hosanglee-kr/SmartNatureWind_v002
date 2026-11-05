@@ -151,7 +151,7 @@ SNW.UI = SNW.UI || {};
         modalRef = SNW.UI.modal(
             '🎬 바람 스튜디오 (Simulation)', content,
             null,
-            null,
+            () => { close(null); },                    // [Phase5 5.4 N-19] onCancel → Promise resolve(null)
             { hideOk: true, hideCancel: true, width: '560px' }
         );
 

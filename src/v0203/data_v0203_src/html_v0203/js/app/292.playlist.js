@@ -156,7 +156,7 @@ window.SNW = window.SNW || {};
             if (!profile.steps) return '0분';
             let total = 0;
             for (const s of profile.steps) total += Number(s.durationMin) || 0;
-            if (profile.repeat && profile.repeatCount > 0) {
+            if (profile.repeatSegments && profile.repeatCount > 0) {
                 total *= profile.repeatCount;
             }
             const h = Math.floor(total / 60);

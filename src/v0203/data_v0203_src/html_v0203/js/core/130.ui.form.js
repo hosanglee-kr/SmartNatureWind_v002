@@ -200,17 +200,22 @@ window.SNW = window.SNW || {};
                     };
                 }
 
-                card.addEventListener('mouseenter', () => {
+                card.addEventListener('mouseenter', async () => {
                     const cv = card.querySelector('.snw-preset-card__spark');
                     if (!cv) return;
                     if (cv.dataset.drawn === '1') { cv.style.display = 'block'; return; }
+
                     const styleCode = SNW.Store.get().sim?.styleCode || 'BALANCE';
-                    if (SNW.Preview && SNW.Preview.generate) {
-                        const preview = SNW.Preview.generate(it.code, styleCode, null);
-                        if (preview && preview.points) {
-                            _drawSpark(cv, preview.points);
-                            cv.dataset.drawn = '1';
-                            cv.style.display = 'block';
+                    if (SNW.Preview && typeof SNW.Preview.generate === 'function') {
+                        try {
+                            const preview = await SNW.Preview.generate(it.code, styleCode, null);
+                            if (preview && preview.points) {
+                                _drawSpark(cv, preview.points);
+                                cv.dataset.drawn = '1';
+                                cv.style.display = 'block';
+                            }
+                        } catch (e) {
+                            if (SNW.LogUtil) SNW.LogUtil.warn('[presetGrid] preview fail', e);
                         }
                     }
                 });

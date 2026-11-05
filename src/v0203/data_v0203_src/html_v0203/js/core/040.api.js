@@ -240,7 +240,18 @@ window.SNW = window.SNW || {};
 			return _fetch(SNW.CFG.API.overrideClear, { method: 'POST' });
 		},
 		overrideParams(body) {
-			return _fetch(SNW.CFG.API.overrideParams, { method: 'POST', body });
+			// ======================================================
+			// [N-3] Deprecated: /control/override 라우트 부재(404) 해소
+			//  - /simulation + override 객체로 변환하여 전송
+			// ======================================================
+			if (SNW.LogUtil) {
+				SNW.LogUtil.warn('[API] overrideParams is deprecated. Use patchSim({override}) instead.');
+			}
+			const ovr = { enabled: true };
+			if (body && body.windIntensity   != null) ovr.windIntensity   = body.windIntensity;
+			if (body && body.windVariability != null) ovr.windVariability = body.windVariability;
+			if (body && body.gustFrequency   != null) ovr.gustFrequency   = body.gustFrequency;
+			return _fetch(SNW.CFG.API.simulation, { method: 'POST', body: { sim: { override: ovr } } });
 		},
 		ackEvent() {
 			return _fetch(SNW.CFG.API.ack, { method: 'POST' });

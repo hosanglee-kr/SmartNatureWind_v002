@@ -486,7 +486,15 @@ SNW.Page = SNW.Page || {};
                             enabled: content.querySelector('#prof-enabled').checked,
                             repeatSegments: content.querySelector('#prof-repeat').checked,
                             repeatCount: Number(content.querySelector('#prof-repeat-count').value),
-                            segments: newSegs,
+                            steps: newSegs.map((s, idx) => ({
+                                stepNo: s.stepNo || (idx + 1),
+                                durationMin: s.durationMin || ((s.onMinutes || 0) + (s.offMinutes || 0)) || 20,
+                                type: s.type || s.mode || 'PRESET',
+                                presetCode: s.presetCode,
+                                styleCode: s.styleCode,
+                                fixedSpeed: s.fixedSpeed,
+                                override: s.override
+                            })),
                             autoOff: {
                                 timer: {
                                     enabled: Number(content.querySelector('#prof-ao-timer').value) > 0,

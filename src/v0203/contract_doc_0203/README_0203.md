@@ -72,6 +72,7 @@ src/v0203/
 | **Batch I** | OVR-1~4 | 바람 물리 0~100% 절대값 `override` 모델 도입, 3대 슬라이더 연동, 한/영 완전 다국어 | [CONTRACT §7.7](CONTRACT_0203.md#77-batch-i-바람-물리-파라미터-직접-지정-override-계약-ovr-1ovr-4) |
 | **0203_008** | OFFLINE, SYNC-1~3 | C++ Enum ➔ `000.const.js` 동기화, 오프라인 모듈 2분할, 대시보드 슬라이더 연동 | [CONTRACT §7.8~7.9](CONTRACT_0203.md#79-프론트엔드-백엔드-데이터-동기화-및-오프라인-모듈-분리-계약-sync-1sync-3) |
 | **0203_010** | STAGE-1~7 | 8스텝 작곡기, Session FSM(스마트 Resume), Wind Studio/Playlist, Comfort DI 추천, 20바 Canvas EQ, 64-event 타임라인 회고, 4단계 온보딩 | [SPEC §5.4](SPEC_0203.md#54-프론트엔드-자산-규격-v24-신규) |
+| **v0203_011** | **Phase 1~6** | **Session 위임 엔진 + Preview 파사드 + i18n 100% + 오프라인 정합**: ADR-1(위임 모델), ADR-2(steps[] 단일 규격), ADR-3(Schedule profileId 단일 참조), ADR-5(Preview 파사드), 46건 이슈 해결 | [CONTRACT §7.10](CONTRACT_0203.md#710-v0203_011--phase-16-감사-이력-46건) |
 
 ---
 
@@ -219,7 +220,7 @@ git push origin v0203-release-2026-10-26
 |---|---|---|---|---|
 | **RAM** | 108,612 B (33.1%) | 327,680 B | 219,068 B (66.9%) | ✅ BUDGET §6 >100KB 통과 |
 | **Flash** | 1,525,937 B (23.3%) | 6,553,600 B | 5,027,663 B (76.7%) | ✅ 여유 충분 |
-| **littlefs.bin** | 142.8 KB (프론트 gz 115.9 KB + JSON 26.9 KB) | 1,048,576 B (1MB) | 905,776 B (86.4%) | ✅ BUDGET §6 <200KB 통과 |
+| **littlefs.bin** | 149.5 KB (프론트 gz 125.3 KB + JSON 24.2 KB) | 1,048,576 B (1MB) | 899,076 B (85.7%) | ✅ BUDGET §6 <200KB 통과 |
 
 ---
 
@@ -227,7 +228,8 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| **2026-11-04** | **v2.10** | **Stage 1~7 구현 완료 및 프론트/백엔드 풀스택 아키텍처 완성 (0203_010)**: Step 기반 작곡 데이터 모델, Session FSM 엔진(3-State & 스마트 Resume), Now Playing Bar, Wind Studio/Playlist, Profile 스케줄러 & 충돌 감지, 일본 기상청 표준 DI Comfort 기상 추천, 20바 Canvas EQ & Haptic 피드백, 5축 감성 레이더 & A/B 시뮬레이션, 64-링버퍼 세션 회고 타임라인, 첫 방문 4단계 온보딩, ko/en 완전 다국어화, 47 JS + 18 CSS 번들링 현행화 | Antigravity AI |
+| **2026-11-05** | **v2.11** | **Phase 1~6 구현 완료 및 전면 단일 규격화 (0203_010/011)**: 세션 위임 엔진(Session Delegation Model, 물리 백업/복원), 하위 호환성 전면 배제 및 UserProfile/Schedule 단일 규격(`steps[]`, `repeatSegments`, `profileId`) 일원화, i18n 475키 DICT 완성 및 `check_i18n.py` CI Gate 파이프라인 통합, Preview 파사드 단일화(ADR-5), 오프라인 어댑터 정합(N-11~N-14, N-28), B-2 스냅샷 규약 철저 준수 | Antigravity AI |
+| 2026-11-04 | v2.10 | **Stage 1~7 구현 완료 및 프론트/백엔드 풀스택 아키텍처 완성 (0203_010)**: Step 기반 작곡 데이터 모델, Session FSM 엔진(3-State & 스마트 Resume), Now Playing Bar, Wind Studio/Playlist, Profile 스케줄러 & 충돌 감지, 일본 기상청 표준 DI Comfort 기상 추천, 20바 Canvas EQ & Haptic 피드백, 5축 감성 레이더 & A/B 시뮬레이션, 64-링버퍼 세션 회고 타임라인, 첫 방문 4단계 온보딩, ko/en 완전 다국어화, 47 JS + 18 CSS 번들링 현행화 | Antigravity AI |
 | 2026-10-30 | v2.9 | **웹 라우팅 안정화 및 빌드 툴체인/환경 규격화**: REST API 정규식 의존성 제거(`/:id`), `onNotFound` 기반 Gzip 정적 서빙 안정화, ArduinoJson v7 `.is<T>()` 타입 안전성 강화, PlatformIO `espressif32 @ 7.1.3` 고정 및 `-j 12` 병렬 빌드 규격화 | Antigravity AI |
 | 2026-10-28 | v2.8 | 계약 문서 간 중복 통폐합 및 마일스톤 정리 (0203_008): C++ 소스 목록 SPEC §3 위임, 감사 이력 상세 CONTRACT §7 단일 SSOT화 및 마일스톤 요약표 전환, 오프라인 2분할/동기화 반영 | Antigravity AI |
 | 2026-10-28 | v2.7 | **웹 오프라인 어댑터 및 한/영 다국어 연동 검증 반영**: Mock 데이터 10개 프리셋/5개 스타일 factors 동기화, `/control/override` 인터셉트, 스케줄/프로필 한/영 병기 표기, 프리셋 관리 화면 실시간 i18n 번역 연동 및 T-73 회귀 절차 수립 | Antigravity AI |

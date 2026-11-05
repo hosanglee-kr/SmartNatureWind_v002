@@ -214,5 +214,94 @@ window.SNW = window.SNW || {};
                 freshness:  clamp((intensity + gustFreq) / 40),       // 청량감
             };
         },
+
+        // =========================================================
+        // [ADR-5] 파사드 API (Studio / Schedule / Simulation 통합)
+        // =========================================================
+        async showModal(config) {
+            if (!SNW.UI || typeof SNW.UI.simulationModal !== 'function') {
+                if (SNW.LogUtil) SNW.LogUtil.warn('[Preview] simulationModal 미로드');
+                return null;
+            }
+
+            const isSegmentForm = config && config.presetCode && !config.a && !config.mode;
+            const normalized = isSegmentForm
+                ? {
+                    mode: 'single',
+                    a: {
+                        presetCode: config.presetCode || 'OCEAN',
+                        styleCode:  config.styleCode  || 'BALANCE',
+                        override:   config.override   || { enabled: false },
+                    },
+                }
+                : config;
+
+            return SNW.UI.simulationModal(normalized);
+        },
+
+        async generate(presetCode, styleCode, override) {
+            return this.generateStep({
+                type:       'PRESET',
+                presetCode: presetCode || 'OCEAN',
+                styleCode:  styleCode  || 'BALANCE',
+                override:   override   || { enabled: false },
+            });
+        },
+
+        _animate(canvas, points) {
+            if (!canvas || !points || points.length === 0) return;
+
+            const ctx = canvas.getContext('2d');
+            const w   = canvas.width;
+            const h   = canvas.height;
+
+            let minV = Infinity, maxV = -Infinity;
+            for (const p of points) {
+                const v = Number(p.wind) || 0;
+                if (v < minV) minV = v;
+                if (v > maxV) maxV = v;
+            }
+            if (!Number.isFinite(minV) || !Number.isFinite(maxV) || maxV <= minV) {
+                minV = 0; maxV = 1;
+            }
+
+            ctx.clearRect(0, 0, w, h);
+
+            ctx.strokeStyle = 'rgba(139,148,158,0.1)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = (h / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+
+            const pad = 10;
+            const innerH = h - pad * 2;
+            const n = points.length;
+
+            ctx.strokeStyle = '#4a9eff';
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            for (let i = 0; i < n; i++) {
+                const x = (i / (n - 1)) * w;
+                const y = pad + (h - pad * 2) - ((points[i].wind - minV) / (maxV - minV)) * innerH;
+                if (i === 0) ctx.moveTo(x, y);
+                else         ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(240,136,62,0.9)';
+            for (let i = 0; i < n; i++) {
+                if (!points[i].gust) continue;
+                const x = (i / (n - 1)) * w;
+                const y = pad + (h - pad * 2) - ((points[i].wind - minV) / (maxV - minV)) * innerH;
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        },
     };
 })(window.SNW);

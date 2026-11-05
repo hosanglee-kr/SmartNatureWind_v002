@@ -68,9 +68,20 @@ bool CL_W10_WebAPI::checkApiKey(AsyncWebServerRequest* p_request) {
     // [A-3] null 방어 (Null Deref → Core Dump 방지)
     if (!p_request) return false;
 
+    // ======================================================
+    // [N-10] B-2 규약 준수: async_tcp 컨텍스트에서 g_A20_config_root
+    //         직접 참조 금지 → getRootSnapshot 원자 스냅샷 사용
+    // ======================================================
+    ST_A20_ConfigRoot_t v_snap;
+    CL_C10_ConfigManager::getRootSnapshot(v_snap);
+
+    char v_keyBuf[64];
+    memset(v_keyBuf, 0, sizeof(v_keyBuf));
+
     const char* v_key = nullptr;
-    if (g_A20_config_root.system && g_A20_config_root.system->security.apiKey[0] != '\0') {
-        v_key = g_A20_config_root.system->security.apiKey;
+    if (v_snap.system && v_snap.system->security.apiKey[0] != '\0') {
+        strlcpy(v_keyBuf, v_snap.system->security.apiKey, sizeof(v_keyBuf));
+        v_key = v_keyBuf;
     }
 
     if (!v_key || v_key[0] == '\0') {

@@ -56,13 +56,15 @@ window.SNW = window.SNW || {};
                 type: 1,
                 typeName: 'PLAYLIST',
                 trigger: 1,
-                state: 'RUNNING',
+                state: 'ACTIVE',                                   // [6.3 N-13]
                 profileId: 1,
                 profileNo: 1,
                 profileName: '숙면 자연풍 (오프라인)',
                 currentStep: 1,
                 totalSteps: 3,
                 stepRemainSec: 540,
+                currentStepStartMs:    Date.now(),                 // [6.4 신규]
+                currentStepDurationMs: 540000,                     // [6.4 신규]
                 loopCount: 0,
                 pausedAccumMs: 0
             }
@@ -212,26 +214,31 @@ window.SNW = window.SNW || {};
             if (SNW.Store) SNW.Store.set({ control: runtime.control, sim: runtime.sim, fsmState: 0, fsmReason: 0 });
             return { result: 'ok' };
         };
+        // ======================================================
+        // [Phase6 6.1 N-12] resolvePreset 재작성
+        //  - 이전: target.params.* (C++/JSON 모두 factors 사용 → 항상 undefined)
+        //  - 이후: target.factors.* + 스타일 factors 곱연산 (S20 미러)
+        //  - REFRESH/WAVE는 실존하지 않는 스타일 → ACTIVE/RELAX로 매핑
+        // ======================================================
         function resolvePreset(presetCode, styleCode) {
             const presets = (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.presets) || [];
-            const target = presets.find(p => p.code === presetCode);
-            let intensity = target?.params?.windIntensity ?? 50;
-            let variability = target?.params?.windVariability ?? 40;
-            let gustFreq = target?.params?.gustFrequency ?? 30;
+            const styles  = (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.styles)  || [];
 
-            const style = styleCode || runtime.sim.styleCode || 'BALANCE';
-            if (style === 'REFRESH') {
-                intensity = Math.min(100, Math.round(intensity * 1.1));
-                variability = Math.min(100, variability + 15);
-                gustFreq = Math.min(100, gustFreq + 15);
-            } else if (style === 'WAVE') {
-                variability = Math.min(100, variability + 20);
-                gustFreq = Math.min(100, gustFreq + 10);
-            } else if (style === 'SLEEP') {
-                intensity = Math.min(intensity, 30);
-                variability = 15;
-                gustFreq = 5;
-            }
+            const target = presets.find(p => p.code === presetCode);
+            const pf     = target?.factors || {};
+
+            let intensity   = pf.windIntensity   ?? 50;
+            let variability = pf.windVariability ?? 40;
+            let gustFreq    = pf.gustFrequency   ?? 30;
+
+            // [S20 미러] 스타일 factor 적용 (곱연산)
+            const sf = (styles.find(s => s.code === styleCode)?.factors) || {
+                intensityFactor: 1, variabilityFactor: 1, gustFactor: 1,
+            };
+            intensity   = Math.max(0, Math.min(100, Math.round(intensity   * (sf.intensityFactor   ?? 1))));
+            variability = Math.max(0, Math.min(100, Math.round(variability * (sf.variabilityFactor ?? 1))));
+            gustFreq    = Math.max(0, Math.min(100, Math.round(gustFreq    * (sf.gustFactor        ?? 1))));
+
             return { intensity, variability, gustFreq };
         }
 
@@ -249,14 +256,15 @@ window.SNW = window.SNW || {};
             if (SNW.Store) SNW.Store.set({ control: runtime.control, sim: runtime.sim, lastUpdateMs: Date.now() });
             return { result: 'ok' };
         };
+        // ======================================================
+        // [N-3] Deprecated: 온라인 patchSim과 동일 시맨틱으로 통일
+        // ======================================================
         A.overrideParams = async (b) => {
-            if (b) {
-                if (b.windIntensity != null) runtime.sim.intensity = b.windIntensity;
-                if (b.windVariability != null) runtime.sim.variability = b.windVariability;
-                if (b.gustFrequency != null) runtime.sim.gustFreq = b.gustFrequency;
-            }
-            if (SNW.Store) SNW.Store.set({ control: runtime.control, sim: runtime.sim, lastUpdateMs: Date.now() });
-            return { result: 'ok', updated: true };
+            const ovr = { enabled: true };
+            if (b && b.windIntensity   != null) ovr.windIntensity   = b.windIntensity;
+            if (b && b.windVariability != null) ovr.windVariability = b.windVariability;
+            if (b && b.gustFrequency   != null) ovr.gustFrequency   = b.gustFrequency;
+            return A.patchSim({ override: ovr });
         };
 
         A.patchSim = async (p) => {
@@ -319,42 +327,157 @@ window.SNW = window.SNW || {};
             runtime.control.profile.profileNo = 0; return { result: 'ok' }; };
         
         // Session (Stage 3 신규)
+        // ======================================================
+        // [Phase6 6.3 N-13] sessionStart 재작성
+        //  - state: 'RUNNING' → 'ACTIVE' (C++ 스펙)
+        //  - physics 반영: intensity/variability/gustFreq
+        //  - PLAYLIST: profile 조회 → profileName/steps/stepDuration 설정
+        //  - PRESET: resolvePreset → sim 반영
+        //  - FIXED: percent → intensity 반영
+        //  - sim.active = true (stopSession 이후 복귀 대응)
+        // ======================================================
         A.sessionStart = async (type, payload, trigger = 'MANUAL') => {
             const isPlaylist = (type === 'PLAYLIST' || type === 1);
+            const isPreset   = (type === 'PRESET'   || type === 2);
+            const isFixed    = (type === 'FIXED'    || type === 3);
+            const now = Date.now();
+
+            // ─────────── ① physics 반영 ───────────
+            runtime.sim.active     = true;
+            runtime.control.active = true;
+
+            if (isPreset) {
+                const pc = (payload && payload.presetCode) || 'OCEAN';
+                const sc = (payload && payload.styleCode)  || 'BALANCE';
+                const r  = resolvePreset(pc, sc);
+                runtime.sim.presetCode  = pc;
+                runtime.sim.styleCode   = sc;
+                runtime.sim.intensity   = r.intensity;
+                runtime.sim.variability = r.variability;
+                runtime.sim.gustFreq    = r.gustFreq;
+            } else if (isFixed) {
+                const pct = (payload && payload.percent) || 50;
+                runtime.sim.intensity   = Math.max(0, Math.min(100, pct));
+                runtime.sim.variability = 0;
+                runtime.sim.gustFreq    = 0;
+            }
+
+            // ─────────── ② 세션 컨텍스트 ───────────
+            let profileId   = 0;
+            let profileNo   = 0;
+            let profileName = '';
+            let totalSteps  = 1;
+            let stepDurationMs = 20 * 60000;   // 기본 20분
+
+            if (isPlaylist && payload && payload.profileId) {
+                profileId = payload.profileId;
+                const profiles = (cache.userProfiles?.userProfiles?.profiles) || [];
+                const profile  = profiles.find(p => p.profileId === profileId);
+                if (profile) {
+                    profileNo   = profile.profileNo || profileId;
+                    profileName = profile.name || '';
+                    const steps = profile.steps || profile.segments || [];
+                    totalSteps  = steps.length || 1;
+                    if (steps.length > 0) {
+                        const s0 = steps[0];
+                        const durMin = s0.durationMin
+                            ?? ((s0.onMinutes || 20) + (s0.offMinutes || 0));
+                        stepDurationMs = (durMin || 20) * 60000;
+                    }
+                }
+            }
+
             runtime.control.session = {
                 active: true,
-                type: isPlaylist ? 1 : (type === 'PRESET' || type === 2 ? 2 : 3),
-                typeName: type,
-                trigger: trigger === 'SCHEDULE' ? 2 : 1,
-                state: 'RUNNING',
-                profileId: (payload && payload.profileId) || 1,
-                profileNo: (payload && payload.profileId) || 1,
-                profileName: isPlaylist ? '사용자 프로필' : '',
+                type:     isPlaylist ? 1 : (isPreset ? 2 : 3),
+                typeName: isPlaylist ? 'PLAYLIST' : (isPreset ? 'PRESET' : 'FIXED'),
+                trigger:  trigger === 'SCHEDULE' ? 2 : 1,
+                state:    'ACTIVE',                                    // [6.3 N-13]
+                profileId, profileNo, profileName,
                 presetCode: (payload && payload.presetCode) || 'OCEAN',
-                styleCode: (payload && payload.styleCode) || 'BALANCE',
-                percent: (payload && payload.percent) || 50,
-                currentStep: 1,
-                totalSteps: 3,
-                stepRemainSec: 600,
-                loopCount: 0,
-                pausedAccumMs: 0
+                styleCode:  (payload && payload.styleCode)  || 'BALANCE',
+                percent:    (payload && payload.percent)    || 50,
+                currentStep:   1,
+                totalSteps,
+                stepRemainSec: Math.floor(stepDurationMs / 1000),
+                currentStepStartMs:   now,                             // [6.3 신규]
+                currentStepDurationMs: stepDurationMs,                 // [6.3 신규]
+                loopCount:    0,
+                pausedAccumMs: 0,
             };
+
+            if (SNW.Store) {
+                SNW.Store.set({
+                    control: runtime.control,
+                    sim:     runtime.sim,
+                    session: runtime.control.session,
+                    lastUpdateMs: now,
+                });
+            }
+
             return { ok: true, result: 'session_started' };
         };
         A.startPlaylist = async (profileId) => A.sessionStart('PLAYLIST', { profileId });
         A.startPreset = async (p, s) => A.sessionStart('PRESET', { presetCode: p, styleCode: s });
         A.startFixed = async (percent) => A.sessionStart('FIXED', { percent });
+
+        // ======================================================
+        // [Phase6 6.3b] pause/resume/stop — sim.active 동기 + 상태값 정합
+        // ======================================================
         A.pauseSession = async () => {
-            if (runtime.control.session) runtime.control.session.state = 'PAUSED';
+            const sess = runtime.control.session;
+            if (sess && sess.state === 'ACTIVE') {
+                sess.state      = 'PAUSED';
+                sess.pausedAtMs = Date.now();
+                runtime.sim.active = false;      // 물리 정지
+            }
+            if (SNW.Store) SNW.Store.set({
+                control: runtime.control, sim: runtime.sim, session: sess,
+                lastUpdateMs: Date.now(),
+            });
             return { ok: true, result: 'session_paused' };
         };
+
         A.resumeSession = async () => {
-            if (runtime.control.session) runtime.control.session.state = 'RUNNING';
+            const sess = runtime.control.session;
+            if (sess && sess.state === 'PAUSED') {
+                // step 시계 시프트 (일시정지 시간만큼)
+                const pausedMs = Date.now() - (sess.pausedAtMs || Date.now());
+                if (sess.currentStepStartMs) {
+                    sess.currentStepStartMs += pausedMs;
+                }
+                sess.pausedAccumMs = (sess.pausedAccumMs || 0) + pausedMs;
+                sess.state         = 'ACTIVE';
+                sess.pausedAtMs    = 0;
+                runtime.sim.active = true;       // 물리 재개
+            }
+            if (SNW.Store) SNW.Store.set({
+                control: runtime.control, sim: runtime.sim, session: sess,
+                lastUpdateMs: Date.now(),
+            });
             return { ok: true, result: 'session_resumed' };
         };
+
         A.stopSession = async () => {
-            if (runtime.control.session) runtime.control.session.active = false;
+            const sess = runtime.control.session;
+            if (sess) {
+                sess.active = false;
+                sess.state  = 'COMPLETED';
+            }
+            runtime.sim.active     = false;
+            runtime.control.active = false;
+            runtime.control.state     = 'IDLE';
+            runtime.control.stateCode = 0;
+            runtime.control.reason     = 'NONE';
+            runtime.control.reasonCode = 0;
+
+            if (SNW.Store) SNW.Store.set({
+                control: runtime.control, sim: runtime.sim, session: sess,
+                fsmState: 0, fsmReason: 0,
+                lastUpdateMs: Date.now(),
+            });
             return { ok: true, result: 'session_stopped' };
+        };
         };
         A.getCurrentSession = async () => (runtime.control.session || { active: false, type: 0 });
         A.setScheduleOverride = async (override) => {
@@ -520,47 +643,106 @@ window.SNW = window.SNW || {};
         }
     }
     
+    // ======================================================
+    // [Phase6 6.5 N-28] startSimulator 확장
+    //  - sim 물리 엔진 + 세션 step 진행 동시 갱신
+    //  - 세션 step 진행은 sim.active와 독립 (paused여도 stepRemainSec 갱신 필요)
+    //    → 다만 PAUSED 상태에서는 step 시계 정지 (resumeSession에서 시프트)
+    // ======================================================
     function startSimulator() {
         if (window._snw_sim_timer) return;
         window._snw_sim_timer = setInterval(() => {
-            if (!runtime.sim.active) return;
-            const intensity = runtime.sim.intensity != null ? runtime.sim.intensity : 50;
-            const variability = runtime.sim.variability != null ? runtime.sim.variability : 40;
-            const baseSpeed = Math.max(0.4, intensity * 0.055);
-            const varAmp = variability * 0.025;
-            runtime.sim.targetWind = Number(baseSpeed.toFixed(1));
-            runtime.sim.windSpeed = Math.max(0.2, Number((baseSpeed + (Math.random() - 0.5) * varAmp).toFixed(1)));
-            runtime.sim.pwmDuty = Math.min(100, Math.max(15, Math.round(runtime.sim.windSpeed * 12 + 10)));
-            runtime.control.sensor.tempC = Number((24 + Math.sin(Date.now() / 60000) * 1.5).toFixed(1));
-            runtime.control.sensor.humidity = Math.round(55 + Math.cos(Date.now() / 90000) * 5);
-            runtime.control.sensor.motionActive = (Math.floor(Date.now() / 20000) % 2) === 0;
-            
-            const chartPoint = {
-                t: Date.now(),
-                wind: runtime.sim.windSpeed,
-                targetWind: runtime.sim.targetWind,
-                pwm: runtime.sim.pwmDuty,
-                gust: 0,
-                thermal: 0
-            };
-            runtime.chart.push(chartPoint);
-            if (runtime.chart.length > 120) runtime.chart.shift();
-            
-            // WS 에뮬레이션 브로드캐스트
-            if (wsSubscribers.chart) {
-                wsSubscribers.chart.forEach(fn => { try { fn(chartPoint); } catch (e) {} });
+            // ─────────── ① 세션 step 진행 (N-28) ───────────
+            const sess = runtime.control.session;
+            if (sess && sess.active && sess.state === 'ACTIVE') {
+                // Lazy init (구 데이터 호환)
+                if (!sess.currentStepStartMs || !sess.currentStepDurationMs) {
+                    sess.currentStepStartMs    = Date.now();
+                    sess.currentStepDurationMs = (sess.stepRemainSec || 540) * 1000;
+                }
+
+                const elapsed  = Date.now() - sess.currentStepStartMs;
+                const remainMs = Math.max(0, sess.currentStepDurationMs - elapsed);
+                sess.stepRemainSec = Math.floor(remainMs / 1000);
+
+                if (remainMs <= 0) {
+                    // Step 전환
+                    if (sess.currentStep < sess.totalSteps) {
+                        sess.currentStep++;
+                    } else {
+                        sess.loopCount   = (sess.loopCount || 0) + 1;
+                        sess.currentStep = 1;
+                    }
+                    sess.currentStepStartMs = Date.now();
+
+                    // 프로필에서 다음 step duration 조회
+                    let nextDurMin = 20;
+                    const profiles = (cache.userProfiles?.userProfiles?.profiles) || [];
+                    const profile  = profiles.find(p => p.profileId === sess.profileId);
+                    if (profile) {
+                        const steps = profile.steps || profile.segments || [];
+                        if (steps.length > 0) {
+                            const step = steps[Math.min(sess.currentStep - 1, steps.length - 1)];
+                            nextDurMin = step.durationMin
+                                ?? ((step.onMinutes || 20) + (step.offMinutes || 0));
+                        }
+                    }
+                    sess.currentStepDurationMs = (nextDurMin || 20) * 60000;
+                    sess.stepRemainSec = Math.floor(sess.currentStepDurationMs / 1000);
+                }
             }
+
+            // ─────────── ② 물리 시뮬레이션 ───────────
+            if (runtime.sim.active) {
+                const intensity   = runtime.sim.intensity   != null ? runtime.sim.intensity   : 50;
+                const variability = runtime.sim.variability != null ? runtime.sim.variability : 40;
+
+                const baseSpeed = Math.max(0.4, intensity * 0.055);
+                const varAmp    = variability * 0.025;
+
+                runtime.sim.targetWind = Number(baseSpeed.toFixed(1));
+                runtime.sim.windSpeed  = Math.max(0.2,
+                    Number((baseSpeed + (Math.random() - 0.5) * varAmp).toFixed(1)));
+                runtime.sim.pwmDuty    = Math.min(100, Math.max(15,
+                    Math.round(runtime.sim.windSpeed * 12 + 10)));
+
+                runtime.control.sensor.tempC    = Number((24 + Math.sin(Date.now() / 60000) * 1.5).toFixed(1));
+                runtime.control.sensor.humidity = Math.round(55 + Math.cos(Date.now() / 90000) * 5);
+                runtime.control.sensor.motionActive = (Math.floor(Date.now() / 20000) % 2) === 0;
+
+                const chartPoint = {
+                    t: Date.now(),
+                    wind: runtime.sim.windSpeed,
+                    targetWind: runtime.sim.targetWind,
+                    pwm: runtime.sim.pwmDuty,
+                    gust: 0,
+                    thermal: 0,
+                };
+                runtime.chart.push(chartPoint);
+                if (runtime.chart.length > 120) runtime.chart.shift();
+
+                if (wsSubscribers.chart) {
+                    wsSubscribers.chart.forEach(fn => { try { fn(chartPoint); } catch (e) {} });
+                }
+            }
+
+            // ─────────── ③ 상태 브로드캐스트 (sim 또는 session 변경 시) ───────────
             if (wsSubscribers.state) {
-                const stateData = { control: runtime.control, sim: runtime.sim, runtime: runtime.runtime };
+                const stateData = {
+                    control: runtime.control,
+                    sim:     runtime.sim,
+                    runtime: runtime.runtime,
+                };
                 wsSubscribers.state.forEach(fn => { try { fn(stateData); } catch (e) {} });
             }
-            
+
             if (SNW.Store) {
                 SNW.Store.set({
-                    control: runtime.control,
-                    sim: runtime.sim,
+                    control:    runtime.control,
+                    sim:        runtime.sim,
+                    session:    runtime.control.session,
                     connection: 'online',
-                    lastUpdateMs: Date.now()
+                    lastUpdateMs: Date.now(),
                 });
             }
         }, 1000);
@@ -601,55 +783,81 @@ window.SNW = window.SNW || {};
         return false;
     }
 
+    // ======================================================
+    // [Phase6 6.2 N-11] applyScenario 재작성
+    //  - 프리셋 코드: SLEEP/FOREST → OCEAN/FOREST_CANOPY (windDict 실존)
+    //  - 스타일 코드: REFRESH → ACTIVE (존재 코드)
+    //  - resolvePreset 활용 → 프리셋별 실제 강도 반영
+    //  - PIR_BLOCK/AUTOOFF는 sim.active=false (팬 정지) + control.active=false
+    // ======================================================
     function applyScenario(type) {
-        if (type === 'SLEEP') {
-            runtime.sim.presetCode = 'SLEEP';
-            runtime.sim.styleCode = 'SLEEP';
-            runtime.sim.intensity = 30;
-            runtime.sim.variability = 15;
-            runtime.sim.gustFreq = 0;
-            runtime.control.active = true;
-            runtime.control.stateCode = 3;
-            runtime.control.sensor.motionActive = true;
-        } else if (type === 'GALE') {
-            runtime.sim.presetCode = 'OCEAN';
-            runtime.sim.styleCode = 'REFRESH';
-            runtime.sim.intensity = 85;
-            runtime.sim.variability = 70;
-            runtime.sim.gustFreq = 75;
-            runtime.control.active = true;
-            runtime.control.stateCode = 3;
-            runtime.control.sensor.motionActive = true;
-        } else if (type === 'PIR_BLOCK') {
-            runtime.control.sensor.motionActive = false;
-            runtime.control.state = 'MOTION_BLOCKED';
-            runtime.control.stateCode = 4;
-            runtime.control.reason = 'MOTION_TIMEOUT';
-            runtime.control.reasonCode = 2;
-        } else if (type === 'AUTOOFF') {
-            runtime.control.active = false;
-            runtime.control.state = 'AUTOOFF_STOPPED';
-            runtime.control.stateCode = 5;
-            runtime.control.reason = 'AUTOOFF_TIMER';
-            runtime.control.reasonCode = 3;
-        } else { // NATURAL
-            runtime.sim.presetCode = 'FOREST';
-            runtime.sim.styleCode = 'BALANCE';
-            runtime.sim.intensity = 55;
-            runtime.sim.variability = 40;
-            runtime.sim.gustFreq = 30;
-            runtime.control.active = true;
-            runtime.control.stateCode = 3;
-            runtime.control.state = 'SCHEDULE_RUN';
-            runtime.control.sensor.motionActive = true;
+        const scenarios = {
+            NATURAL: {
+                preset: 'FOREST_CANOPY', style: 'BALANCE',
+                state: 'SCHEDULE_RUN', stateCode: 3,
+                reason: 'SCHEDULE_ACTIVE', reasonCode: 4,
+                active: true, motionActive: true,
+            },
+            SLEEP: {
+                preset: 'OCEAN', style: 'SLEEP',
+                state: 'SCHEDULE_RUN', stateCode: 3,
+                reason: 'SCHEDULE_ACTIVE', reasonCode: 4,
+                active: true, motionActive: true,
+                override: { intensity: 30, variability: 15, gustFreq: 0 },
+            },
+            GALE: {
+                preset: 'OCEAN', style: 'ACTIVE',
+                state: 'SCHEDULE_RUN', stateCode: 3,
+                reason: 'SCHEDULE_ACTIVE', reasonCode: 4,
+                active: true, motionActive: true,
+                override: { intensity: 85, variability: 70, gustFreq: 75 },
+            },
+            PIR_BLOCK: {
+                state: 'MOTION_BLOCKED', stateCode: 4,
+                reason: 'MOTION_NO_PRESENCE', reasonCode: 8,
+                active: false, motionActive: false,
+            },
+            AUTOOFF: {
+                state: 'AUTOOFF_STOPPED', stateCode: 5,
+                reason: 'AUTOOFF_TIMER', reasonCode: 9,
+                active: false,
+            },
+        };
+
+        const cfg = scenarios[type] || scenarios.NATURAL;
+
+        // ① 프리셋/스타일 적용 (NATURAL 계열만)
+        if (cfg.preset) {
+            runtime.sim.presetCode = cfg.preset;
+            runtime.sim.styleCode  = cfg.style;
+
+            const r = resolvePreset(cfg.preset, cfg.style);
+            runtime.sim.intensity   = cfg.override?.intensity   ?? r.intensity;
+            runtime.sim.variability = cfg.override?.variability ?? r.variability;
+            runtime.sim.gustFreq    = cfg.override?.gustFreq    ?? r.gustFreq;
         }
+
+        // ② 실행/제어 상태
+        runtime.sim.active     = cfg.active;
+        runtime.control.active = cfg.active;
+        runtime.control.state     = cfg.state;
+        runtime.control.stateCode = cfg.stateCode;
+        if (cfg.reason) {
+            runtime.control.reason     = cfg.reason;
+            runtime.control.reasonCode = cfg.reasonCode;
+        }
+        if (cfg.motionActive !== undefined) {
+            runtime.control.sensor.motionActive = cfg.motionActive;
+        }
+
+        // ③ Store 브로드캐스트
         if (SNW.Store) {
             SNW.Store.set({
                 control: runtime.control,
                 sim: runtime.sim,
                 fsmState: runtime.control.stateCode,
                 fsmReason: runtime.control.reasonCode,
-                lastUpdateMs: Date.now()
+                lastUpdateMs: Date.now(),
             });
         }
     }
@@ -682,63 +890,19 @@ window.SNW = window.SNW || {};
                     isCollapsed = false;
                     localStorage.setItem('snw.offline.toolbar_collapsed', '0');
                     updateLayout();
-                };
-            } else {
-                bar.innerHTML = `
-                    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px; padding:6px 12px;">
-                        <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px;">
-                            <span style="background:#238636; color:#fff; padding:2px 6px; border-radius:10px; font-weight:bold; font-size:10px;">🌿 OFFLINE</span>
-                            <label style="color:#8b949e; font-size:11px;">시나리오:
-                                <select id="snw-offline-scenario" style="background:#21262d; color:#e6edf3; border:1px solid #30363d; border-radius:4px; padding:2px 4px; font-size:11px; margin-left:3px;">
-                                    <option value="NATURAL">자연 산들바람 (기본)</option>
-                                    <option value="SLEEP">취침/수면풍 (약풍 30%)</option>
-                                    <option value="GALE">바닷바람/돌풍 (강풍 85%)</option>
-                                    <option value="PIR_BLOCK">모션 감지 차단 (PIR=OFF)</option>
-                                    <option value="AUTOOFF">자동 종료 래치 (AutoOff)</option>
-                                </select>
-                            </label>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:4px;">
-                            <button id="btn-offline-export" style="background:#21262d; color:#58a6ff; border:1px solid #30363d; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:10px;">📥 백업</button>
-                            <button id="btn-offline-import" style="background:#21262d; color:#58a6ff; border:1px solid #30363d; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:10px;">📤 복원</button>
-                            <button id="btn-offline-reset" style="background:#21262d; color:#f85149; border:1px solid #30363d; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:10px;">🔄 리셋</button>
-                            <button id="btn-collapse-toolbar" style="background:transparent; color:#8b949e; border:none; cursor:pointer; font-size:10px; padding:0 4px; margin-left:4px;" title="접기">접기 ▲</button>
-                            <input type="file" id="offline-import-file" accept=".json" style="display:none;" />
-                        </div>
-                    </div>
-                `;
-                bar.querySelector('#snw-offline-scenario').onchange = (e) => applyScenario(e.target.value);
-                bar.querySelector('#btn-offline-export').onclick = () => exportBackup();
-                const fileInput = bar.querySelector('#offline-import-file');
-                bar.querySelector('#btn-offline-import').onclick = () => fileInput.click();
-                fileInput.onchange = (e) => {
-                    const file = e.target.files && e.target.files[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = (ev) => importBackup(ev.target.result);
-                    reader.readAsText(file, 'utf-8');
-                };
-                bar.querySelector('#btn-offline-reset').onclick = () => {
-                    if (confirm('오프라인 로컬 저장소를 모두 초기화하시겠습니까?')) {
-                        Object.keys(localStorage).forEach(k => {
-                            if (k.startsWith('snw.offline.')) localStorage.removeItem(k);
-                        });
-                        location.reload();
-                    }
-                };
-                bar.querySelector('#btn-collapse-toolbar').onclick = () => {
-                    isCollapsed = true;
-                    localStorage.setItem('snw.offline.toolbar_collapsed', '1');
-                    updateLayout();
-                };
-            }
-        }
 
-        updateLayout();
-        const app = document.getElementById('app') || document.body;
-        app.insertBefore(bar, app.firstChild);
+        // ======================================================
+        // [Phase6 6.6 N-14] 삽입 위치 수정
+        //  - 이전: #app.firstChild → .snw-app grid row 1 점유
+        //          (grid-template-rows: 56px 1fr 40px → toolbar가 56px 점유)
+        //          → header/main/footer가 아래로 밀림 (레이아웃 완전 붕괴)
+        //  - 이후: document.body.firstChild → app 앞에 flow 정상 삽입
+        //          (body는 grid 아님, toolbar는 자연스럽게 상단 배치)
+        //  - 툴바 position: relative 유지 → 스크롤 시 함께 사라짐
+        //    (dev/demo 도구 특성상 sticky 불필요)
+        // ======================================================
+        document.body.insertBefore(bar, document.body.firstChild);
 
-        // 모바일 하단 탭 바(60px)와 본문 겹침 방지 여백 보장
         if (isMobile) {
             const main = document.getElementById('snw-main');
             if (main) main.style.paddingBottom = '80px';

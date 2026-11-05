@@ -47,6 +47,7 @@ import gzip
 import json
 import re
 import shutil
+import subprocess          # [Phase 5.7+] i18n CI gate
 import sys
 import zipfile
 from datetime import datetime
@@ -110,6 +111,34 @@ def _log(msg: str, tag: str = "") -> None:
 # ============================================================
 # [0/6] 데이터 동기화 & 인젝션 (C++ Enum -> JS 상수, JSON -> 오프라인 Mock)
 # ============================================================
+# ============================================================
+# [Phase 5.7+] i18n CI Gate
+#  - check_i18n.py --strict 서브프로세스 실행
+#  - 파일 부재 시 WARN 후 통과 (개발 초기 허용)
+# ============================================================
+def _run_i18n_check(project_root: Path) -> int:
+    script = project_root / "src" / "v0203" / "tools_0203" / "check_i18n.py"
+    if not script.is_file():
+        _log("[WARN] check_i18n.py 없음 → i18n gate 스킵", tag="i18n")
+        return 0
+
+    _log("[i18n] check_i18n.py --strict 실행", tag="i18n")
+    try:
+        rc = subprocess.run(
+            [sys.executable, str(script), "--strict"],
+            cwd=str(project_root),
+        ).returncode
+    except Exception as e:
+        _log(f"[ERROR] i18n 검증 실행 실패: {e}", tag="i18n")
+        return 1
+
+    if rc != 0:
+        _log(f"[FAIL] i18n 검증 실패 (exit={rc}) → staging 중단", tag="i18n")
+    else:
+        _log("[OK] i18n 검증 통과", tag="i18n")
+    return rc
+
+
 def sync_cpp_to_frontend(project_root: Path) -> int:
     """C++ 헤더(CT10_Ctl_0203.h 등)에서 Enum을 파싱하여 000.const.js에 동기화"""
     h_file = project_root / "src" / "v0203" / "CT10_Ctl_0203.h"
@@ -495,6 +524,7 @@ def run_staging(
     make_zip: bool = True,
     include_gz: bool = True,
     skip_stage: bool = False,
+    no_i18n_check: bool = False,   # [Phase 5.7+] 신규
 ) -> int:
     html_src = project_root / "src" / "v0203" / "data_v0203_src" / "html_v0203"
     html_dst = project_root / "src" / "v0203" / "data_v0203" / "html_v0203"
@@ -502,6 +532,16 @@ def run_staging(
     if not skip_stage and not html_src.is_dir():
         print(f"[ERROR] HTML Source dir 없음: {html_src}", file=sys.stderr)
         return 1
+
+    # ======================================================
+    # [Phase 5.7+] i18n CI gate (P-2 회귀 방지)
+    #  - skip_stage(--zip-only)는 이미 검증된 staging 상태 → 스킵
+    #  - --no-i18n-check 또는 custom_no_i18n_check=true로 스킵
+    # ======================================================
+    if not skip_stage and not no_i18n_check:
+        rc_i18n = _run_i18n_check(project_root)
+        if rc_i18n != 0:
+            return rc_i18n
 
     if not skip_stage:
         html_dst.mkdir(parents=True, exist_ok=True)
@@ -578,12 +618,14 @@ elif __name__ == "__main__":
     ap.add_argument("--no-zip",   action="store_true", help="zip 생성 스킵")
     ap.add_argument("--no-gz",    action="store_true", help="zip에서 .gz 파일 제외")
     ap.add_argument("--zip-only", action="store_true", help="스테이징 스킵, zip만 생성")
+    ap.add_argument("--no-i18n-check", action="store_true", help="i18n CI gate 검증 스킵")
     args = ap.parse_args()
 
     sys.exit(run_staging(
         find_project_root(),
-        make_zip   = not args.no_zip,
-        include_gz = not args.no_gz,
-        skip_stage = args.zip_only,
+        make_zip      = not args.no_zip,
+        include_gz    = not args.no_gz,
+        skip_stage    = args.zip_only,
+        no_i18n_check = args.no_i18n_check,
     ))
     

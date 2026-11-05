@@ -1,4 +1,4 @@
-# CONTRACT_0203.md — 동시성 경계 및 API 계약
+# CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.0)
 
 > **기준**: v0203 정적 감사 + 런타임 동시성 검증 완료 (F-01~F-10, I-1~I-6, N-1~N-4, G-1~G-3, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10, Batch G 전면 반영).  
 > **목적**: 멀티태스킹 환경에서 태스크 경계, 뮤텍스 획득 순서, 공유 자원 접근 규약 및 위임 패턴을 정의하여 데이터 레이스, 교착 상태(Deadlock), UAF를 원천 차단.  
@@ -138,10 +138,11 @@
 ## 5. 락 획득 순서 및 데드락 방지
 
 ```text
-[계층 1] CT10::s_stateMutex (최상위, T-loop)
+[계층 1] CT10::s_stateMutex (최상위, T-loop/T-async)
    ├─► [2-A] S10::_recursiveMutex (tickLoop 시뮬)
    ├─► [2-B] C10::s_rootSwapMux (portMUX 스냅샷)
-   └─► [2-C] C10::s_recursiveMutex (reloadAll 내부 로드)
+   ├─► [2-C] C10::s_recursiveMutex (reloadAll 내부 로드)
+   └─► [2-D] N10::s_mutex (exportStateJson_v02 NVS 런타임 스냅샷 / initAutoOff)
 
 [독립 락 (상호 중첩 금지)]
 - C10::s_recursiveMutex (T-async)
@@ -157,6 +158,38 @@
 - ❌ A-2 위임 경유 없이 `s_control->sim` 직접 접근
 
 ---
+
+
+### 5.1 Session 위임 락 순서 (Phase 3, ADR-1)
+
+```text
+startSession(type, trigger, payload) [T-async]
+  │
+  └─► s_stateMutex 획득
+        │
+        ├─► Case PLAYLIST
+        │     └─► startUserProfileByNo(profileNo)  [재귀 mutex OK]
+        │           ├─► N10::setRunMode() → N10::s_mutex (순차)
+        │           ├─► N10::setLastUserProfile()
+        │           └─► initAutoOffFromUserProfile() (autoOffRt 갱신)
+        │
+        ├─► Case PRESET
+        │     └─► startOverridePreset(...)  [재귀 mutex OK]
+        │           ├─► S20_resolveWindParams() (외부 상태 접근 없음)
+        │           └─► applyManualResolved() [재귀 mutex OK]
+        │                 ├─► overrideState 갱신
+        │                 └─► N10::setOverridePreset() → N10::s_mutex
+        │
+        └─► Case FIXED
+              └─► startOverrideFixed(...)  [재귀 mutex OK]
+                    ├─► overrideState 갱신
+                    └─► N10::setOverrideFixed() → N10::s_mutex
+```
+
+**핵심 원칙**:
+- `s_stateMutex` (CT10) → `N10::s_mutex` 순서 고정 (역방향 금지).
+- Session 위임 내부 호출은 모두 재귀 mutex → 데드락 없음.
+- `pauseSession`은 역순 아님: `s_stateMutex` → (백업) → `sim.stop` → (해제).
 
 ## 6. 비동기 위임/지연 패턴
 
@@ -308,6 +341,69 @@
   - 스케줄/프로필 모달 닫기 시 `.snw-modal-overlay`는 CSS 차원(`pointer-events: none; visibility: hidden;`) 및 JS 인라인(`display: 'none'`)으로 완전 비활성화 격리되어 화면 인터랙션 차단을 방지해야 함.
 
 ---
+
+
+
+### 7.10 v0203_011 — Phase 1~6 감사 이력 (46건)
+
+#### 7.10.1 Phase 1 — Foundation (4건)
+| ID | 심각도 | 위치 | 내용 | 해결 |
+|---|:---:|---|---|---|
+| **N-5** | 🔴 | `020.i18n.js` | Factory Reset 확인어 원시 키 노출 → 초기화 불가 | `settings.factoryResetWord: ko='초기화'/en='RESET'` 추가 |
+| **N-6** | 🔴 | `_variables.css` | 모달 z-index(900) < 하단탭(1000) → 탭바가 모달 위 | `--snw-z-modal: 1100`, `--snw-z-toast: 1200`, `--snw-z-bottom: 1000` |
+| **N-16** | 🔴 | `A40_Com_Utils_0203.h::_internalInitAndTake` | `portENTER_CRITICAL` 내 `xSemaphoreCreateRecursiveMutex()` (heap alloc) → ESP-IDF assert/hang | critical 밖 생성 + double-check CAS + 경합 패배 시 `vSemaphoreDelete` |
+| **N-18** | 🟠 | `999.app.js::SNW.UI.modal` | `overlay.addEventListener('click', 익명 함수)` → `close()`에서 제거 불가 → 리스너 누적 | `_onEsc`/`_onOverlayClick` 참조 보관 + `close()`에서 `removeEventListener` |
+
+#### 7.10.2 Phase 2 — API Contract (4건)
+| ID | 심각도 | 위치 | 내용 | 해결 |
+|---|:---:|---|---|---|
+| **N-2** | 🟠 | `W10_Web_Routes_System_0203.cpp::_routeSystemPatchBody` | timeCfg 변경 시 TM10 미반영 → 재부팅 전까지 무효 | `v_doc["timeCfg"]` 감지 시 `TM10_applyTimeConfigFromSystem` + `TM10_requestTimeSync` |
+| **N-3** | 🟠 | `040.api.js`, `998.offline_0203.js` | `SNW.CFG.API.overrideParams = '/api/v001/control/override'` (404) | `/simulation` + `override` 구조체 매핑, deprecated wrapper 유지 |
+| **N-7** | 🟡 | `CT10_Ctl_IOWS_0203.cpp::exportStateJson_v02` | `runtime` (NVS) 미노출 → Diagnostics §Runtime 빈 값 | top-level `runtime` 블록 추가, `N10::getState()` 위임 |
+| **N-10** | 🔴 | `W10_Web_Util_0203.cpp::checkApiKey`<br>`W10_Web_Gemini_0203.cpp::W10_getGeminiApiKey` | async_tcp 컨텍스트에서 `g_A20_config_root.system` 직접 참조 (B-2 위반, torn read) | `getRootSnapshot(v_snap)` + `strlcpy` 로컬 복사 |
+
+#### 7.10.3 Phase 3 — Session Engine (ADR-1, ADR-3) (6건)
+| ID | 심각도 | 위치 | 내용 | 해결 |
+|---|:---:|---|---|---|
+| **N-1** | 🔴 | `CT10_Ctl_Ctl_0203.cpp::startSession` | `_session`만 세팅, `runSource`/`overrideState` 미갱신 → 세션 시작해도 팬 안 돔 | ADR-1 위임 모델: `startUserProfileByNo`/`startOverridePreset`/`startOverrideFixed`로 위임 |
+| **S-2** | 🔴 | `pauseSession`/`resumeSession`/`stopSession` | pause가 `sim.stop()`만 → resume 시 컨텍스트 유실 | `_pausedExec` 백업 + Smart Resume (5분/30분) + stop 멱등 |
+| **S-3** | 🔴 | `CT10_Ctl_Ctl_Seg_0203.cpp::tickSchedule` | profileId 스케줄 실행 분기 정합 | ADR-3 profileId 참조 단일 실행 (하위 호환 fallback 제거) |
+| **S-4** | 🟡 | `CT10_Ctl_IOWS_0203.cpp::exportStateJson_v02` | `session.profileName`, `stepRemainSec` 미노출 → NowPlaying Bar 제목/시간 무효 | `_session.payload.playlist` 확장 (`profileName[32]`, `currentStepDurationMs/StartMs`) |
+| **S-5** | 🟡 | `200.page.dashboard.js::_onSimUpdate` | `s.type !== 'NONE'` (숫자 0 ≠ 문자열 → 항상 true) | `Number(s.type) > 0` 명시 판정 |
+| **S-6** | 🟡 | `998.offline_0203.js` | `state='RUNNING'` (C++ 스펙 `'ACTIVE'`) | `'ACTIVE'` 통일 |
+
+#### 7.10.4 Phase 4 — Schema Alignment (ADR-2) (4건)
+| ID | 심각도 | 위치 | 내용 | 해결 |
+|---|:---:|---|---|---|
+| **ADR-2** | 🟠 | `C10_Config_UzProf_*` | 스키마 이중화 혼선 | `steps[]` 단일 배열 및 `repeatSegments` 단일 필드 표준화 |
+| **N-4** | 🟠 | `C10_Config_UzProf_Util_0203.cpp::C10_fromJson_UserProfileItem` | 프론트엔드/백엔드 반복 필드명 불일치 | `repeatSegments` 단일 필드로 고정 |
+| **N-23** | 🟢 | `220.page.schedule.js::_onToggle` | 스케줄 토글 시 재발급 정합 | 확인만, 정상 확인 |
+| **N-30** | 🟢 | `998.offline_0203.js::addProfile/updateProfile` | Studio profile body 언래핑 누락 | `_unwrap(b, 'profile')` 또는 root 수용 |
+
+#### 7.10.5 Phase 5 — Preview/i18n/Router/Monitor (ADR-5) (5건)
+| ID | 심각도 | 위치 | 내용 | 해결 |
+|---|:---:|---|---|---|
+| **P-1** | 🔴 | `135.util.preview.js` | `SNW.Preview.showModal/generate/_animate` 미정의 → TypeError | ADR-5 파사드 3종 추가 (segment 형식 자동 래핑) |
+| **P-2** | 🔴 | `020.i18n.js` | ~250키 누락 → 화면 raw key 노출 | DICT 대량 추가 (ko/en, 총 475키) + `check_i18n.py` CI Gate |
+| **P-3** | 🟠 | `070.router.js` | `/monitor` 경로 미등재 → Monitor 페이지 진입 불가 | ROUTES + NAV_GROUPS 추가 (level L2) |
+| **P-4** | 🟠 | `210.page.chart.js` | `_drawOverlay` 미정의 → 예상 오버레이 체크 시 TypeError | `_drawOverlay()` + `_ensurePreviewBuffer()` 구현 |
+| **P-5** | 🟠 | `140.ui.simulation.js` | modal onCancel 부재로 ESC/외부 클릭 시 Promise hang | `() => { close(null); }` 콜백 제공 (N-19 해결) |
+
+#### 7.10.6 Phase 6 — Offline Adapter (N-11~N-14, N-28) (5건)
+| ID | 심각도 | 위치 | 내용 | 해결 |
+|---|:---:|---|---|---|
+| **N-11** | 🟠 | `998.offline_0203.js::applyScenario` | `'SLEEP'`/`'FOREST'` 프리셋 코드 미실존 | `'OCEAN'+SLEEP`, `'FOREST_CANOPY'+BALANCE`, `'OCEAN'+ACTIVE` |
+| **N-12** | 🟠 | `998.offline_0203.js::resolvePreset` | `target?.params?.windIntensity` (경로 오류, 실제 `factors`) | `target.factors.windIntensity` + 스타일 곱연산 |
+| **N-13** | 🟡 | `998.offline_0203.js` | `session.state='RUNNING'` (C++ 스펙 위반) | `'ACTIVE'` 통일 |
+| **N-14** | 🟠 | `998.offline_0203.js::renderOfflineToolbar` | `#app.firstChild` 삽입 → grid row 1 점유 레이아웃 붕괴 | `document.body.firstChild` 삽입 |
+| **N-28** | 🟡 | `998.offline_0203.js::startSimulator` | 세션 진행 시뮬 없음 → `stepRemainSec` 고정 | `setInterval` 내 stepRemainSec 감소 + Step 전환 |
+
+#### 7.10.7 Phase 1~6 수용 이슈 (3건)
+| ID | 내용 | 사유 |
+|---|---|---|
+| **N-17** | `exportStateJson` 내 S10 락 순서 | 이미 CT10 → S10 순서 (안전), 문서화만 |
+| **N-22** | Firmware 업로드 중 이탈 | `unmount` 가드 유지 (의도된 동작) |
+| **N-26** | `.snw-sidebar:not([hidden])` 죽은 규칙 | CSS 유지보수 개선 (기능 영향 없음) |
 
 ## 8. 개정 이력
 

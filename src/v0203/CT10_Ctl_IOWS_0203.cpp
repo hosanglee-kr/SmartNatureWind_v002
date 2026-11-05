@@ -618,6 +618,23 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     // [B-N-1] 마지막 reloadAll 결과
     v_ctl["lastReloadOk"] = CL_CT10_ControlManager::isLastReloadOk();
 
+    // ======================================================
+    // [N-7] Runtime (NVS) 스냅샷 노출 (/diagnostics 연동)
+    // ======================================================
+    {
+        JsonObject v_rt = A40_ComFunc::Json_ensureObject(v_root["runtime"]);
+        ST_N10_RuntimeState_t v_st = CL_N10_NvsManager::getState();
+
+        v_rt["runMode"]           = v_st.runMode;
+        v_rt["runSource"]         = v_st.runSource;
+        v_rt["lastScheduleNo"]    = v_st.lastScheduleNo;
+        v_rt["lastUserProfileNo"] = v_st.lastUserProfileNo;
+        v_rt["autoOffEnabled"]    = v_st.autoOffEnabled;
+        v_rt["autoOffMinutes"]    = v_st.autoOffMinutes;
+        v_rt["overrideEnabled"]   = v_st.overrideEnabled;
+        v_rt["overrideMode"]      = v_st.overrideMode;
+    }
+
     // 9-1) [v0203 Stage 3] Session runtime snapshot
     {
         JsonObject v_sess = A40_ComFunc::Json_ensureObject(v_ctl["session"]);
@@ -633,9 +650,25 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
             v_sess["typeName"]    = "PLAYLIST";
             v_sess["profileId"]   = s.payload.playlist.profileId;
             v_sess["profileNo"]   = s.payload.playlist.profileNo;
+            v_sess["profileName"] = s.payload.playlist.profileName;   // [Phase3 신규]
             v_sess["currentStep"] = s.payload.playlist.currentStepIdx + 1;
             v_sess["totalSteps"]  = s.payload.playlist.totalSteps;
             v_sess["loopCount"]   = s.payload.playlist.loopCount;
+
+            // [Phase3 신규] stepRemainSec 계산
+            uint32_t v_remain = 0;
+            if (s.payload.playlist.currentStepDurationMs > 0) {
+                uint32_t v_elapsed = 0;
+                if (s.state == EN_SESSION_ACTIVE) {
+                    v_elapsed = (uint32_t)millis() - s.payload.playlist.currentStepStartMs;
+                } else if (s.state == EN_SESSION_PAUSED && s.pausedAtMs > 0) {
+                    v_elapsed = s.pausedAtMs - s.payload.playlist.currentStepStartMs;
+                }
+                if (v_elapsed < s.payload.playlist.currentStepDurationMs) {
+                    v_remain = (s.payload.playlist.currentStepDurationMs - v_elapsed) / 1000UL;
+                }
+            }
+            v_sess["stepRemainSec"] = v_remain;
         } else if (s.type == EN_CT10_SESSION_PRESET) {
             v_sess["typeName"]   = "PRESET";
             v_sess["presetCode"] = s.payload.preset.presetCode;

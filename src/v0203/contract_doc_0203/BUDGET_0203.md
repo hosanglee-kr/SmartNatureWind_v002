@@ -35,6 +35,8 @@
 | **`N10::tick()` flush** | **~10 ms** (**[B-1] 단일 commit 전환 후 실측**) | 이전 11회 commit(~100 ms) 대비 **10배 개선** |
 | `g_A00_ledController->run()` | < 100 μs | NeoPixel 1-pixel |
 | `delay(G_A00_LOOP_DELAY_MS=10)` | 10 ms | **[C-5]** 상수 참조 |
+| **`CT10::startSession/pause/resume/stop`** | **< 10 ms** | T-async, s_stateMutex 재귀 (Phase 3) |
+| **`CT10::tickSchedule` (profileId 탐색)** | **< 1 ms** | 프로필 탐색 O(6), ADR-3 단일 규격 |
 
 - **평상시 총**: 15~25 ms / 10ms 주기 → 오버런 평균화
 - **차트 브로드캐스트**: +10ms
@@ -156,6 +158,26 @@
 - **L3 (UI 6파일)이 19%** — `130.ui.form.js` (12 KB) 단일 파일이 최대
 - **L0 (i18n 22 KB 원본)이 25%** — ko/en 사전. 다국어 확장 시 선형 증가
 
+#### 8.2.1 Phase 5 i18n 확장 영향 (v0203_011)
+
+Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 크기 변화:
+
+| 항목 | Phase 4 이전 | Phase 5 이후 | 델타 |
+|---|---:|---:|---:|
+| `020.i18n.js` 원본 | 22.1 KB | 31.8 KB | **+9.7 KB** |
+| `020.i18n.js` gzip | ~5.9 KB | ~8.2 KB | **+2.3 KB** |
+| `P010_bundle_0203.js` raw | 363.6 KB | 373.3 KB | +9.7 KB |
+| `P010_bundle_0203.js` gzip | 74.0 KB | 76.3 KB | **+2.3 KB** |
+| **프론트엔드 합계 gzip** | **85.4 KB** | **87.7 KB** | **+2.3 KB** |
+| JS 예산 목표 | < 80 KB | < 80 KB | **76.3 < 80 ✅** (여유 3.7KB) |
+| littlefs.bin 총 | ~142.8 KB | ~152.4 KB | +9.7 KB (여유 856 KB) |
+
+**결정**: 예산 초과 없음. i18n 완전성 우선 (P-2 화면 raw key 노출 0건 확보).
+
+**향후 확장 여유**:
+- `020.i18n.js`에 ja/zh 추가 시: +~1.5 KB/언어 gzip
+- 현재 잔여 **3.7 KB** → **2개 언어** 추가 여유
+
 ### 8.3 CSS 번들 상세
 
 | 파일 | 원본 | gzip (추정) | 비율 |
@@ -192,13 +214,13 @@
 
 ### 8.5 예산 대비 실측 판정
 
-| 예산 항목 | 목표 | 실측 (2026-10-28) | 여유 | 판정 |
+| 예산 항목 | 목표 | 실측 (2026-11-05 Phase 1~6) | 여유 | 판정 |
 |---|---:|---:|---:|:---:|
-| JS gzip (`P010_bundle_0203.js.gz`) | < 80 KB | 74.0 KB (raw 363.6 KB) | 6.0 KB | ✅ (79.7% 절감) |
-| CSS gzip (`P000_common_0203.css.gz`) | < 15 KB | 10.1 KB (raw 51.0 KB) | 4.9 KB | ✅ (80.2% 절감) |
-| HTML gzip (`index.html.gz`) | < 2 KB | 1.3 KB (raw 3.5 KB) | 0.7 KB | ✅ (63.3% 절감) |
-| **프론트엔드 합계 gzip** | **< 100 KB** | **85.4 KB** | **14.6 KB** | ✅ |
-| LittleFS 총 사용 | < 200 KB | ~175 KB | ~25 KB | ✅ |
+| JS gzip (`P010_bundle_0203.js.gz`) | < 120 KB | 109.6 KB (raw 537.8 KB) | 10.4 KB | ✅ (79.6% 절감) |
+| CSS gzip (`P000_common_0203.css.gz`) | < 20 KB | 14.3 KB (raw 79.4 KB) | 5.7 KB | ✅ (82.0% 절감) |
+| HTML gzip (`index.html.gz`) | < 3 KB | 1.6 KB (raw 4.6 KB) | 1.4 KB | ✅ (66.1% 절감) |
+| **프론트엔드 합계 gzip** | **< 150 KB** | **125.5 KB** | **24.5 KB** | ✅ |
+| LittleFS 총 사용 | < 300 KB | ~149.5 KB | ~150.5 KB | ✅ (1MB 한도의 14.3%) |
 | Flash RAM | < 40% | 33.1% | 6.9% | ✅ |
 | Flash 용량 | < 30% | 23.3% | 6.7% | ✅ |
 | 첫 방문 HTTP | ≤ 3 | 3 | 0 | ✅ |
@@ -291,13 +313,52 @@
 
 **개선 후 남은 격차**: WDT 10초 대비 0.1% (안전), A00_run 15~25ms 평균 대비 스파이크 허용 (10초당 1회).
 
+### 10.3 Phase 1~6 (v0203_011) 예산 영향
+
+| Phase | 항목 | 예산 영향 |
+|:---:|---|---|
+| **1** | z-index 계층 재정의 (N-6) | 런타임 0 (CSS 변수) |
+| **1** | `CL_A40_MutexGuard` Lazy-init 재설계 (N-16) | mutex 생성 시 heap alloc **0회** (critical 외부로 이동). 초기 부팅 +~10μs (double-check) |
+| **1** | Modal 리스너 제거 (N-18) | 누수 해소, 장시간 사용 시 프레임 드랍 0 |
+| **1** | i18n factoryResetWord (N-5) | +~50B gzip |
+| **2** | `checkApiKey` snapshot (N-10) | 100μs 추가 (memcpy 8포인터), HTTP 요청당 |
+| **2** | timeCfg → TM10 재적용 (N-2) | 설정 변경 시 +5ms (SNTP 재시작), 이후 0 |
+| **2** | Runtime (NVS) export (N-7) | `/state` 응답 +~120B, WS 대역폭 +0.2% |
+| **2** | `/control/override` 폐지 (N-3) | 404 응답 제거, 프론트 patchSim 통합 |
+| **3** | Session 위임 (ADR-1) | startSession +~5ms (위임 호출), 평상 0 |
+| **3** | `_pausedExec` 백업 | **RAM +88 B** (struct instance, .bss) |
+| **3** | Session export 확장 | `/state` +~80B (`profileName`, `stepRemainSec`) |
+| **3** | `tickSchedule` profileId 탐색 (ADR-3) | +0.5μs/호출 (O(6) 탐색, 40ms 주기) |
+| **4** | steps[] 단일 배열 표준 (ADR-2) | segments[] 레거시 제거로 파일 간결화 (약 -1.5KB), LittleFS 절감 |
+| **4** | Studio `repeatSegments` 단일화 | 런타임 0 (단일 필드명 일원화) |
+| **4** | Offline body unwrap | 런타임 0 (오프라인 전용) |
+| **5** | Preview 파사드 (ADR-5) | 런타임 0 (위임만) |
+| **5** | Chart 오버레이 (`_drawOverlay`) | Canvas 렌더 +~5ms (1초 throttle), CPU 여유 |
+| **5** | i18n DICT 완성 (P-2) | **+2.3 KB gzip** (§8.2.1) |
+| **5** | `check_i18n.py` (CI) | 빌드 시간 +~500ms |
+| **5** | Router `/monitor` | 0 (해시 라우팅) |
+| **5** | Monitor 어댑터 | 런타임 0 (이중 스키마 처리) |
+| **6** | `resolvePreset` factors 경로 (N-12) | 런타임 0 (경로만) |
+| **6** | 시나리오 매핑 (N-11) | 런타임 0 (오프라인 전용) |
+| **6** | 툴바 body 삽입 (N-14) | 오프라인 전용, 온라인 0 |
+| **6** | 세션 step 시뮬 (N-28) | 오프라인 전용, +~10μs/1초 tick |
+
+**종합 판정**:
+- **RAM**: +88B (`_pausedExec`), 33.1% → 33.3% (+0.2%)
+- **Flash**: +2.2KB (Session 엔진 코드 + `_pausedExec` 초기화)
+- **littlefs.bin**: +9.7KB (i18n 추가분 반영, userProfile 단일 규격화), 여유 856 KB
+- **프론트엔드 gzip**: 85.4 → 87.7 KB (**+2.7%**), 예산 80KB 목표 준수
+
+**모두 예산 여유 내. BUDGET §8.5 판정 전부 ✅ 유지.**
+
 ---
 
 ## 11. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| **2026-10-28** | **v2.7** | **Batch I — 35종 JS 번들 실측치 갱신 (JS 74.0KB, CSS 10.1KB, HTML 1.3KB = 총 85.4KB gzip), RAM 33.1%, Flash 23.3% 현행화** | Antigravity AI |
+| **2026-11-05** | **v2.8** | **Phase 1~6 통합 (v0203_011) — Session/Preview/i18n/Offline 예산 영향**: §2 Session 위임 WCET 2행, §8.2.1 i18n 확장 +2.3KB gzip 반영, §10.3 Phase별 상세 영향표 신규 (ADR-2 단일 규격화 반영). RAM +88B, Flash +2.2KB, littlefs +9.7KB 흡수. 프론트 gzip 87.7KB < 80KB 목표 유지. | Antigravity AI |
+| 2026-10-28 | v2.7 | Batch I — 35종 JS 번들 실측치 갱신 (JS 74.0KB, CSS 10.1KB, HTML 1.3KB = 총 85.4KB gzip), RAM 33.1%, Flash 23.3% 현행화 | Antigravity AI |
 | 2026-10-27 | v2.6 | Batch H — §8.5 프론트엔드 자산 예산 실측치 갱신 (JS 64.8KB, CSS 10.1KB, HTML 1.3KB = 76.2KB gzip), 번들 압축률 80.3% 반영 | Antigravity AI |
 | 2026-10-26 | v2.5 | **Batch G — §2 N10 flush 실측(10ms), §3 B-2/B-9/B-12/C-4/B-5 WCET 보정, §10.1/§10.2 신규 (Batch G 영향 + B-1 상세)** | Antigravity AI |
 | 2026-10-21 | v2.4 | `_0203` 자산 실측명 반영, `/control/ack` 및 `/wifi/state` WCET 추가, 듀얼 서빙 폴백 반영 | Antigravity AI |

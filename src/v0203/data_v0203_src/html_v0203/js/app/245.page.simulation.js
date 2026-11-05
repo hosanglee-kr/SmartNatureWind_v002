@@ -87,37 +87,68 @@ SNW.Page = SNW.Page || {};
                         styleTabs.appendChild(btn);
                     });
 
+                    // [Phase5 5.3] async 메서드 호출 (fire-and-forget)
                     this._updatePreview();
-                    this._renderAdvanced(data);
+                    this._renderAdvanced();
                 } catch (e) { SNW.LogUtil.warn('[Sim] load 실패', e); }
             }
 
-        _updatePreview() {
-                                const pc = this.el.querySelector('#sim-presets .is-selected')?.dataset.code || 'OCEAN';
-                                const sc = this.el.querySelector('#sim-styles .is-active')?.dataset.style || 'BALANCE';
-                                if (!SNW.Preview || !SNW.Preview.generate) return;
-                                const pv = SNW.Preview.generate(pc, sc, null);
-                                if (!pv) return;
-                                const cv = this.el.querySelector('[data-pv-canvas]');
-                                if (cv) SNW.Preview._animate(cv, pv.points);
-                                const f = SNW.Preview.toFeelings(pv.intensity, pv.variability, pv.gustFreq);
-                                const infoEl = this.el.querySelector('[data-pv-info]');
-                                if (infoEl) {
-                                    infoEl.innerHTML = `
+        // ======================================================
+        // [Phase5 5.3] async 전환 (ADR-5: generate 반환 Promise)
+        //  - 기존: sync 호출 → preview가 Promise → preview.points undefined
+        //  - 이후: await → 실제 파형 데이터 사용
+        // ======================================================
+        async _updatePreview() {
+            const pc = this.el.querySelector('#sim-presets .is-selected')?.dataset.code || 'OCEAN';
+            const sc = this.el.querySelector('#sim-styles .is-active')?.dataset.style || 'BALANCE';
+
+            if (!SNW.Preview || typeof SNW.Preview.generate !== 'function') return;
+
+            let pv = null;
+            try {
+                pv = await SNW.Preview.generate(pc, sc, null);
+            } catch (e) {
+                if (SNW.LogUtil) SNW.LogUtil.warn('[Sim] preview fail', e);
+                return;
+            }
+            if (!pv) return;
+
+            const cv = this.el.querySelector('[data-pv-canvas]');
+            if (cv && typeof SNW.Preview._animate === 'function') {
+                SNW.Preview._animate(cv, pv.points);
+            }
+
+            const f = SNW.Preview.toFeelings(pv.intensity, pv.variability, pv.gustFreq);
+            const infoEl = this.el.querySelector('[data-pv-info]');
+            if (infoEl) {
+                infoEl.innerHTML = `
                     평균 <b>${pv.avg} m/s</b> ·
                     시원함 ${'●'.repeat(f.coolness)}${'○'.repeat(5 - f.coolness)} ·
                     부드러움 ${'●'.repeat(f.smoothness)}${'○'.repeat(5 - f.smoothness)} ·
                     역동성 ${'●'.repeat(f.dynamism)}${'○'.repeat(5 - f.dynamism)}`;
-                                }
-                            }
+            }
+        }
 
-        _renderAdvanced(data) {
-                                const slot = this.el.querySelector('[data-slot="advanced"]');
-                                if (!slot) return;
-                                const m = data?.motion?.motion || SNW.Store.get()._motionCache || {};
-                                const t = m.timing || {};
-                                const s = m.sim || {};
-                                slot.innerHTML = `
+        // ======================================================
+        // [Phase5 5.3] motion 소스 수정
+        //  - 이전: data?.motion?.motion (data=windDict → 항상 undefined)
+        //  - 이후: SNW.Api.getMotion() 비동기 fetch
+        // ======================================================
+        async _renderAdvanced() {
+            const slot = this.el.querySelector('[data-slot="advanced"]');
+            if (!slot) return;
+
+            let motion = {};
+            try {
+                const data = await SNW.Api.getMotion();
+                motion = (data && data.motion) || {};
+            } catch (e) {
+                if (SNW.LogUtil) SNW.LogUtil.warn('[Sim] motion fetch fail', e);
+            }
+
+            const t = motion.timing || {};
+            const s = motion.sim || {};
+            slot.innerHTML = `
                 <div class="snw-form-row" style="margin-bottom:8px;"><label>Sim Interval (ms)</label>
                     <input type="number" id="sim-interval" value="${t.simIntervalMs ?? 500}"
                            style="padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);width:100%;border-radius:4px;"></div>
@@ -128,7 +159,7 @@ SNW.Page = SNW.Page || {};
                     <input type="number" step="0.01" id="sim-turbsigma" value="${s.turbSigma ?? 0.5}"
                            style="padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);width:100%;border-radius:4px;"></div>
                 <button type="button" class="snw-btn" data-action="save-adv" style="margin-top:8px;">고급 저장</button>`;
-                            }
+        }
 
         _bindEvents() {
                                 this.el.querySelectorAll('[data-mode]').forEach(btn => {

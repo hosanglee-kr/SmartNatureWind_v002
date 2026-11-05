@@ -182,6 +182,8 @@ SNW.Page = SNW.Page || {};
             const durMap = { '1h': 3600, '24h': 86400, '7d': 604800 };
             const since = now - (durMap[range] || 86400);
 
+            slot.innerHTML = '<div class="snw-loading">로딩 중...</div>';   // [Phase5 5.9] 로딩 표시
+
             try {
                 const getTlFn = (SNW.Api && (SNW.Api.getTimeline || SNW.Api.getMonitorTimeline)) ?
                     (SNW.Api.getTimeline || SNW.Api.getMonitorTimeline).bind(SNW.Api) : () => Promise.resolve({ events: [] });
@@ -189,9 +191,11 @@ SNW.Page = SNW.Page || {};
                     SNW.Api.getSessionSummary.bind(SNW.Api) : () => Promise.resolve(null);
 
                 const [timeline, summary] = await Promise.all([
-                    getTlFn(since),
+                    getTlFn(since).catch(() => ({ events: [] })),
                     getSumFn(since, now).catch(() => null),
                 ]);
+
+                if (!this._active) return;
 
                 slot.innerHTML = '';
                 slot.appendChild(this._renderSummary(summary));
@@ -202,29 +206,90 @@ SNW.Page = SNW.Page || {};
             }
         }
 
+        // ======================================================
+        // [Phase5 5.9] 이중 스키마 수용
+        //  - 신 스키마: summary.stats.{totalSessions, totalActiveSec, ...}
+        //  - 구 스키마: {totalEvents, sessionStarts, sessionEnds, stepChanges}
+        //  - 후자는 C++ querySessionSummary() 현 구현과 일치
+        //  - 구 스키마에서는 파생 가능한 필드만 표시
+        // ======================================================
         _renderSummary(summary) {
             const div = document.createElement('div');
             div.className = 'snw-retro-summary';
-            if (!summary || !summary.sessions) {
+
+            if (!summary) {
                 div.innerHTML = '<div class="snw-empty">세션 데이터 없음</div>';
                 return div;
             }
 
-            const stats = summary.stats || {};
+            // 신 스키마 우선, 없으면 구 스키마에서 파생
+            let stats = summary.stats || null;
+
+            if (!stats) {
+                const starts = Number(summary.sessionStarts || 0);
+                const ends   = Number(summary.sessionEnds   || 0);
+                const total  = Number(summary.totalEvents   || 0);
+
+                if (total === 0 && starts === 0) {
+                    div.innerHTML = '<div class="snw-empty">세션 데이터 없음</div>';
+                    return div;
+                }
+
+                stats = {
+                    totalSessions:  starts,
+                    totalActiveSec: 0,    // 구 스키마에 시간 필드 없음
+                    avgWindSpeed:   0,
+                    maxWindSpeed:   0,
+                    avgTempC:       0,
+                    presenceRatio:  0,
+                    _legacy:        true,
+                };
+            }
+
             div.innerHTML = `
                 <div class="snw-retro-summary__title">세션 요약</div>
                 <div class="snw-retro-summary__grid">
                     <div><span>총 세션</span><b>${stats.totalSessions || 0}회</b></div>
-                    <div><span>총 가동</span><b>${this._fmtDuration(stats.totalActiveSec || 0)}</b></div>
-                    <div><span>평균 풍속</span><b>${(stats.avgWindSpeed || 0).toFixed(1)} m/s</b></div>
-                    <div><span>최고 풍속</span><b>${(stats.maxWindSpeed || 0).toFixed(1)} m/s</b></div>
-                    <div><span>평균 온도</span><b>${(stats.avgTempC || 0).toFixed(1)}°C</b></div>
-                    <div><span>재실 비율</span><b>${Math.round((stats.presenceRatio || 0) * 100)}%</b></div>
+                    <div><span>총 가동</span><b>${
+                        stats._legacy
+                            ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
+                            : this._fmtDuration(stats.totalActiveSec || 0)
+                    }</b></div>
+                    <div><span>평균 풍속</span><b>${
+                        stats._legacy
+                            ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
+                            : (stats.avgWindSpeed || 0).toFixed(1) + ' m/s'
+                    }</b></div>
+                    <div><span>최고 풍속</span><b>${
+                        stats._legacy
+                            ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
+                            : (stats.maxWindSpeed || 0).toFixed(1) + ' m/s'
+                    }</b></div>
+                    <div><span>평균 온도</span><b>${
+                        stats._legacy
+                            ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
+                            : (stats.avgTempC || 0).toFixed(1) + '°C'
+                    }</b></div>
+                    <div><span>재실 비율</span><b>${
+                        stats._legacy
+                            ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
+                            : Math.round((stats.presenceRatio || 0) * 100) + '%'
+                    }</b></div>
                 </div>
+                ${stats._legacy
+                    ? `<div style="font-size:11px;color:var(--snw-text-dim);margin-top:8px;">
+                        ※ 상세 통계는 서버 업데이트 후 제공됩니다.
+                    </div>`
+                    : ''}
             `;
             return div;
         }
 
+        // ======================================================
+        // [Phase5 5.9] timeline.from/to 폴백
+        //  - C++ queryTimeline()은 from/to를 반환하지 않음
+        //  - events의 첫/마지막 t로 자동 계산
+        // ======================================================
         _renderTimeline(timeline) {
             const div = document.createElement('div');
             div.className = 'snw-retro-timeline';
@@ -234,11 +299,21 @@ SNW.Page = SNW.Page || {};
                 return div;
             }
 
-            // 이벤트 마커
+            const events = timeline.events;
+            // from/to 폴백 (C++ 응답에 없는 경우 계산)
+            const fromTs = (timeline.from != null)
+                ? timeline.from
+                : (events[0]?.t ?? 0);
+            const toTs   = (timeline.to != null)
+                ? timeline.to
+                : (events[events.length - 1]?.t ?? Math.floor(Date.now() / 1000));
+
+            const normalized = { ...timeline, from: fromTs, to: toTs, events };
+
             div.innerHTML = `
                 <div class="snw-retro-timeline__title">이벤트 타임라인</div>
                 <div class="snw-retro-timeline__bar">
-                    ${timeline.events.map(e => this._eventMarker(e, timeline)).join('')}
+                    ${events.map(e => this._eventMarker(e, normalized)).join('')}
                 </div>
             `;
             return div;

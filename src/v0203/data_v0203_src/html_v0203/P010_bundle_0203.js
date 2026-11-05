@@ -370,7 +370,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 020.i18n.js (27163 bytes) ---- */
+/* ---- 020.i18n.js (63398 bytes) ---- */
 // =========================================================
 // 020.i18n.js — 다국어 완전판 (ko/en)
 // =========================================================
@@ -609,6 +609,17 @@ window.SNW = window.SNW || {};
             'settings.advanced': '⚠️ 고급 설정',
 
             // =====================================================
+            // [N-5] Factory Reset 확인어 및 관련 문구
+            // =====================================================
+            'settings.factoryResetTitle':       '공장 초기화',
+            'settings.factoryResetItems':       '다음 항목이 삭제됩니다:',
+            'settings.factoryResetConfirmWord': '계속하려면 아래에 "초기화"를 입력하세요',
+            'settings.factoryResetWord':        '초기화',
+            'settings.factoryResetSuccess':     '공장 초기화 완료. 기기가 재부팅됩니다.',
+            'settings.deleteApiKey':            'API Key 삭제',
+            'settings.deleteGeminiKey':         'Gemini Key 삭제',
+
+            // =====================================================
             // Header / Nav
             // =====================================================
             'nav.home': '홈',
@@ -638,7 +649,377 @@ window.SNW = window.SNW || {};
             'msg.durationRange': 'Step 지속 시간은 1~1440분이어야 합니다',
             'msg.selectProfile': '실행할 플레이리스트를 선택하세요',
             'msg.timeOrder': '종료 시각이 시작 시각보다 빨라야 합니다',
-        },
+        
+            // =====================================================
+            // [Phase5 5.6] 네비게이션 완전판
+            // =====================================================
+            'nav.dashboard':   '대시보드',
+            'nav.chart':       '차트',
+            'nav.schedule':    '스케줄',
+            'nav.profiles':    '프로필',
+            'nav.sensors':     '센서',
+            'nav.monitor':     '모니터',
+            'nav.simulation':  '시뮬레이션',
+            'nav.windprofile': '바람 프리셋',
+            'nav.network':     '네트워크',
+            'nav.logs':        '시스템 로그',
+            'nav.diagnostics': '진단',
+            'nav.firmware':    '펌웨어',
+            'nav.ai':          'AI 어시스턴트',
+            'nav.info':        '정보',
+            'nav.groupControl':  '제어',
+            'nav.groupSettings': '설정',
+            'nav.groupSystem':   '시스템',
+
+            // =====================================================
+            // [Phase5 5.6] 공통
+            // =====================================================
+            'common.start':   '시작',
+            'common.stop':    '정지',
+            'common.add':     '추가',
+            'common.warning': '경고',
+
+            // =====================================================
+            // [Phase5 5.6] Footer / 상태
+            // =====================================================
+            'footer.online':  '🟢 온라인',
+            'footer.offline': '🔴 오프라인',
+            'footer.polling': '🟡 폴링',
+
+            // =====================================================
+            // [Phase5 5.6] Dashboard
+            // =====================================================
+            'dashboard.modeTitle':        '작동 모드 설정',
+            'dashboard.modeSchedule':     '◻ 스케줄 자동 모드',
+            'dashboard.modeProfile':      '◼ 프로필 수동 모드',
+            'dashboard.realtimeState':    '실시간 상태',
+            'dashboard.currentWind':      '현재 풍속',
+            'dashboard.targetWind':       '목표 풍속',
+            'dashboard.phase':            'Phase',
+            'dashboard.pwm':              'PWM',
+            'dashboard.sch':              '스케줄',
+            'dashboard.prof':             '프로필',
+            'dashboard.powerTitle':       '전원 제어',
+            'dashboard.sensorTitle':      '센서',
+            'dashboard.styleTitle':       '바람 스타일',
+            'dashboard.presetTitle':      '자연풍 프리셋',
+            'dashboard.physicsTitle':     '바람 세부 조절 (3대 물리 제어)',
+            'dashboard.powerOn':          '전원 켜기',
+            'dashboard.powerOff':         '전원 끄기',
+            'dashboard.temp':             '온도',
+            'dashboard.humidity':         '습도',
+            'dashboard.motion':           '인체감지',
+            'dashboard.motionDetected':   '감지됨',
+            'dashboard.motionAbsent':     '부재',
+            'dashboard.modeSwitchedProfile': '프로필 모드로 전환되었습니다',
+            'dashboard.fanStop':          '끔',
+            'dashboard.fanStage':         '{n}단',
+
+            // =====================================================
+            // [Phase5 5.6] Chart
+            // =====================================================
+            'chart.title':       '실시간 물리 차트',
+            'chart.tab.live':    '실제 작동 중',
+            'chart.tab.preview': '예상 파형',
+            'chart.range5s':     '5초',
+            'chart.range30s':    '30초',
+            'chart.range120s':   '120초',
+            'chart.overlay':     '예상 오버레이',
+            'chart.exportCsv':   'CSV 내보내기',
+            'chart.wind':        '풍속',
+            'chart.target':      '목표',
+            'chart.pwm':         'PWM',
+
+            // =====================================================
+            // [Phase5 5.6] Settings (필드 라벨 대량)
+            // =====================================================
+            'settings.secMeta':        '메타 정보',
+            'settings.secFanPwm':      '팬 PWM 설정',
+            'settings.secFanCurve':    '팬 커브 (3구간)',
+            'settings.secPir':         'PIR 설정',
+            'settings.secDht':         '온습도 센서',
+            'settings.secLed':         'NeoPixel LED',
+            'settings.tabComm':        '통신 / WS',
+
+            'settings.fieldDeviceName':  '기기 이름',
+            'settings.fieldLogLevel':    '로그 레벨',
+            'settings.fieldLogMax':      '로그 최대 개수',
+            'settings.fieldRange':       '범위: {min}~{max}',
+            'settings.fieldRecommended': '권장: {range}',
+            'settings.fieldPinPwm':      'PWM 핀',
+            'settings.fieldChannel':     'LEDC 채널',
+            'settings.fieldFreq':        '주파수 (Hz)',
+            'settings.fieldRes':         '분해능 (bit)',
+            'settings.fieldStart':       '시동 최소 (%)',
+            'settings.fieldComfortMin':  '편안 시작 (%)',
+            'settings.fieldComfortMax':  '편안 끝 (%)',
+            'settings.fieldHardMax':     '최대 상한 (%)',
+            'settings.fieldEnabled':     '활성화',
+            'settings.fieldPinPir':      'PIR 핀',
+            'settings.fieldDebounce':    '디바운스 (초)',
+            'settings.fieldHold':        '유지 시간 (초)',
+            'settings.fieldPinDht':      'DHT 핀',
+            'settings.fieldType':        '센서 타입',
+            'settings.fieldInterval':    '읽기 주기 (초)',
+            'settings.fieldPinLed':      'LED 핀',
+            'settings.fieldNumPixels':   '픽셀 개수',
+            'settings.fieldBrightness':  '기본 밝기',
+
+            'settings.configured':       '설정됨',
+            'settings.notConfigured':    '미설정',
+            'settings.keyPlaceholderChange': '변경하려면 새 키 입력 (비우면 유지)',
+            'settings.keyPlaceholderInput':  'API Key 입력',
+            'settings.testApiKey':       'API Key 테스트',
+            'settings.testApiSuccess':   '✓ 인증 성공',
+            'settings.testApiFail':      '✗ 인증 실패: {msg}',
+
+            'settings.wsChannelConfig':  'WebSocket 채널 설정',
+            'settings.saveAndReload':    '저장 후 재적용',
+            'settings.save':             '저장',
+            'settings.reload':           '재적용',
+
+            'settings.dirtyWarning':       '저장되지 않은 변경 사항이 있습니다.\n재적용하면 저장되지 않은 변경 사항이 소실됩니다. 계속하시겠습니까?',
+            'settings.offlineReloadNotice':'오프라인 모드에서는 재적용이 지원되지 않습니다.',
+            'settings.reloadRequested':    '재적용 요청됨 ({status})',
+            'settings.reloadInProgress':   '재적용 진행 중...',
+            'settings.reloadFailed':       '재적용 실패',
+            'settings.reloadComplete':     '재적용 완료',
+            'settings.saveAndReloadSuccess': '저장 후 재적용되었습니다',
+
+            // =====================================================
+            // [Phase5 5.6] Sensors
+            // =====================================================
+            'sensors.title':        '실시간 센서 상태',
+            'sensors.temp':         '온도',
+            'sensors.hum':          '습도',
+            'sensors.motion':       '인체감지',
+            'sensors.feedPir':      'PIR 강제 감지 테스트',
+            'sensors.feedPirSuccess': '감지 신호 전송됨',
+            'sensors.motionConfig': '모션 로직 설정',
+            'sensors.pirEnabled':   'PIR 활성화',
+            'sensors.pirHoldSec':   'PIR 유지 시간 (초)',
+            'sensors.saveMotionSuccess': '모션 설정 저장 완료',
+
+            // =====================================================
+            // [Phase5 5.6] Diagnostics
+            // =====================================================
+            'diagnostics.allJson':          '전체 설정 JSON',
+            'diagnostics.saveDirty':        'Dirty 설정 저장',
+            'diagnostics.saveDirtySuccess': 'Dirty 설정 저장 완료',
+            'diagnostics.fetchFail':        '설정 조회 실패',
+            'diagnostics.metricsRealtime':  '실시간 메트릭',
+
+            // =====================================================
+            // [Phase5 5.6] Log / AI / Firmware
+            // =====================================================
+            'log.filterAll':   '전체 레벨',
+            'log.clear':       '지우기',
+            'log.export':      'JSON 내보내기',
+            'log.none':        '없음',
+            'log.error':       '에러',
+            'log.warn':        '경고',
+            'log.info':        '정보',
+            'log.debug':       '디버그',
+
+            'ai.title':       'AI 어시스턴트',
+            'ai.placeholder': '바람에 대해 궁금한 것을 물어보세요...',
+            'ai.example1':    '오늘 날씨에 어울리는 바람은?',
+            'ai.example2':    '수면에 좋은 설정 추천해줘',
+            'ai.example3':    '자연풍 프리셋의 차이를 알려줘',
+            'ai.send':        '전송',
+            'ai.thinking':    '생각 중...',
+
+            'firmware.otaUpdate':  '펌웨어 업데이트 (OTA)',
+            'firmware.uploadBtn':  '업로드',
+            'firmware.otaSuccess': '펌웨어 업로드 완료',
+            'firmware.fileUpload': '일반 파일 업로드',
+
+            // =====================================================
+            // [Phase5 5.6] Segment (Studio/Profile/Schedule 공통)
+            // =====================================================
+            'segment.onMinutes':          '작동 시간(분)',
+            'segment.offMinutes':         '정지 시간(분)',
+            'segment.mode':               '모드',
+            'segment.modePreset':         '프리셋 모드',
+            'segment.modeFixed':          '고정풍속 모드',
+            'segment.presetSelect':       '프리셋 선택',
+            'segment.styleSelect':        '스타일 선택',
+            'segment.fixedSpeed':         '고정 풍속(%)',
+            'segment.overrideTitle':      '⚙️ 고급 물리 설정 (Override 직접 지정)',
+            'segment.overrideDesc':       '이 세그먼트에서 바람 세부 설정 직접 지정',
+            'segment.overrideIntensity':  '바람 강도 (%)',
+            'segment.overrideVariability':'바람 변동성 (%)',
+            'segment.overrideGust':       '돌풍 빈도 (%)',
+            'segment.moveUp':             '위로',
+            'segment.moveDown':           '아래로',
+            'segment.deleted':            '세그먼트가 삭제되었습니다',
+            'segment.summaryPrefix':      '세그먼트',
+
+            // =====================================================
+            // [Phase5 5.6] Schedule 추가
+            // =====================================================
+            'schedule.secBasic':      '기본 정보',
+            'schedule.secSegments':   '세그먼트',
+            'schedule.secSmart':      '스마트 종료',
+            'schedule.add':           '스케줄 추가',
+            'schedule.addSegmentBtn': '세그먼트 추가',
+            'schedule.segment':       '세그먼트',
+            'schedule.segmentRepeat': '세그먼트 반복',
+            'schedule.repeatCount':   '반복 횟수',
+            'schedule.startTime':     '시작 시각',
+            'schedule.endTime':       '종료 시각',
+            'scheduler.title':         '스케줄 예약',
+            'scheduler.day':           '요일',
+            'scheduler.segment':       '세그먼트',
+            'scheduler.scheduledOff':  '예약 종료',
+            'scheduler.tempOff':       '온도 도달 종료',
+
+            // =====================================================
+            // [Phase5 5.6] Profiles 추가
+            // =====================================================
+            'profiles.add':           '프로필 추가',
+            'profiles.no':            '프로필 번호',
+            'profiles.enabled':       '활성화',
+            'profiles.name':          '프로필 이름',
+            'profiles.addSegmentBtn': '세그먼트 추가',
+            'profiles.autoOffTimer':  '자동 종료 (분)',
+            'profile.title':          '사용자 프로필',
+            'profile.active':         '활성',
+
+            // =====================================================
+            // [Phase5 5.6] Network
+            // =====================================================
+            'network.title':        '네트워크 상태',
+            'network.wifiConfig':   'Wi-Fi 설정',
+            'network.timeConfig':   '시간 설정',
+            'network.wifiMode':     'Wi-Fi 모드',
+            'network.apSettings':   'AP 설정',
+            'network.staSettings':  'STA 네트워크 목록',
+            'network.status':       '연결 상태',
+            'network.ip':           'IP 주소',
+            'network.mac':          'MAC 주소',
+            'network.timeSynced':   '시간 동기화',
+            'network.synced':       '완료',
+            'network.notSynced':    '미완료',
+            'network.scanWifi':     'Wi-Fi 스캔',
+            'network.connect':      '연결',
+            'network.saveWifi':     'Wi-Fi 설정 저장',
+            'network.saveTime':     '시간 설정 저장',
+            'network.noStaNotice':  '등록된 STA 네트워크가 없습니다',
+
+            // =====================================================
+            // [Phase5 5.6] Windprofile
+            // =====================================================
+            'windprofile.title':        '바람 프리셋 관리',
+            'windprofile.add':          '프리셋 추가',
+            'windprofile.code':         '코드 (영문)',
+            'windprofile.intensity':    '강도',
+            'windprofile.variability':  '변동성',
+            'windprofile.gust':         '돌풍',
+            'windprofile.fanLimit':     '팬 한계',
+            'windprofile.factorsTitle': '기본 바람 파라미터',
+
+            // =====================================================
+            // [Phase5 5.6] PIR
+            // =====================================================
+            'pir.testSuccess': '✓ PIR 감지 성공',
+            'pir.testFail':    '✗ PIR 감지 실패 (센서 확인 필요)',
+
+            // =====================================================
+            // [Phase5 5.6] 단위
+            // =====================================================
+            'unit.celsius':   '°C',
+            'unit.humidity':  '%',
+            'unit.seconds':   '초',
+            'unit.windSpeed': 'm/s',
+
+            // =====================================================
+            // [Phase5 5.6] 검증 메시지
+            // =====================================================
+            'validate.required':    '{field}을(를) 입력하세요',
+            'validate.range':       '{field}: {min}~{max} 범위여야 합니다',
+            'validate.timeOrder':   '종료 시각이 시작 시각보다 빨라야 합니다',
+            'validate.multiErrors': '{count}개 항목에 오류가 있습니다',
+            'validate.segmentMin':  '최소 1개의 세그먼트가 필요합니다',
+
+            // =====================================================
+            // [Phase5 5.6] 추가 메시지
+            // =====================================================
+            'msg.unknown':       '알 수 없는 오류',
+            'msg.accessDenied':  '접근 권한이 없습니다',
+            'msg.deleteConfirm': '정말 삭제하시겠습니까?',
+            'msg.saveAndReloadSuccess': '저장 후 재적용되었습니다',
+
+            // =====================================================
+            // [Phase5 5.6] FSM 상태 배지
+            // =====================================================
+            'fsm.idle':           '대기',
+            'fsm.override':       '수동 제어',
+            'fsm.profileRun':     '프로필 실행',
+            'fsm.scheduleRun':    '스케줄 실행',
+            'fsm.motionBlocked':  '모션 차단',
+            'fsm.autoOffStopped': '자동 종료',
+            'fsm.timeInvalid':    '시간 미동기',
+
+            // =====================================================
+            // [Phase5 5.6] FSM Reason
+            // =====================================================
+            'reason.none':              '없음',
+            'reason.overrideActive':    '수동 개입 중',
+            'reason.profileMode':       '프로필 모드',
+            'reason.userProfileActive': '사용자 프로필 실행 중',
+            'reason.scheduleActive':    '스케줄 활성',
+            'reason.noActiveSchedule':  '활성 스케줄 없음',
+            'reason.noSchedules':       '스케줄 없음',
+            'reason.timeNotValid':      '시간 미동기',
+            'reason.motionNoPresence':  '재실 감지 안됨',
+            'reason.autoOffTimer':      '자동 종료 타이머',
+            'reason.autoOffTime':       '자동 종료 시각',
+            'reason.autoOffTemp':       '자동 종료 온도',
+
+            // =====================================================
+            // [Phase5 5.6] Wind Phase
+            // =====================================================
+            'phase.calm':   '잔잔',
+            'phase.normal': '보통',
+            'phase.strong': '강풍',
+
+            // =====================================================
+            // [Phase5 5.6] AutoOff
+            // =====================================================
+            'autoOff.timer': '타이머 종료',
+            'autoOff.time':  '예약 종료',
+            'autoOff.temp':  '온도 종료',
+
+            // =====================================================
+            // [Phase5 5.6] 프리셋 이름 (10종)
+            // =====================================================
+            'preset.OCEAN':          '바다 바람',
+            'preset.COUNTRY_BREEZE': '시골 바람',
+            'preset.MEDITERRANEAN':  '지중해 바람',
+            'preset.MOUNTAIN':       '산바람',
+            'preset.PLAINS':         '들판 바람',
+            'preset.HARBOR_BREEZE':  '항구 바람',
+            'preset.FOREST_CANOPY':  '숲속 바람',
+            'preset.URBAN_SUNSET':   '도시 노을',
+            'preset.TROPICAL_RAIN':  '열대 비',
+            'preset.DESERT_NIGHT':   '사막 밤',
+
+            // =====================================================
+            // [Phase5 5.6] 스타일 이름 (5종)
+            // =====================================================
+            'style.BALANCE': '균형',
+            'style.ACTIVE':  '활동',
+            'style.FOCUS':   '집중',
+            'style.RELAX':   '휴식',
+            'style.SLEEP':   '수면',
+            'msg.success':        '성공적으로 처리되었습니다',
+            'reconnect.body':     '기기와의 연결이 끊어졌습니다. 다시 연결을 시도합니다...',
+            'msg.apiKeyRequired': 'API 키가 필요합니다',
+            'msg.reloadPending':  '재적용 대기 중...',
+            'msg.timeout':        '요청 시간이 초과되었습니다',
+
+},
 
         en: {
             // =====================================================
@@ -870,6 +1251,17 @@ window.SNW = window.SNW || {};
             'settings.advanced': '⚠️ Advanced',
 
             // =====================================================
+            // [N-5] Factory Reset 확인어 및 관련 문구
+            // =====================================================
+            'settings.factoryResetTitle':       'Factory Reset',
+            'settings.factoryResetItems':       'The following will be deleted:',
+            'settings.factoryResetConfirmWord': 'Type "RESET" below to confirm',
+            'settings.factoryResetWord':        'RESET',
+            'settings.factoryResetSuccess':     'Factory reset complete. Device will reboot.',
+            'settings.deleteApiKey':            'Delete API Key',
+            'settings.deleteGeminiKey':         'Delete Gemini Key',
+
+            // =====================================================
             // Header / Nav
             // =====================================================
             'nav.home': 'Home',
@@ -900,7 +1292,327 @@ window.SNW = window.SNW || {};
             'msg.selectProfile': 'Please select a playlist',
             'msg.timeOrder': 'End time must be after start time',
         },
-    };
+    
+            // Nav
+            'nav.dashboard':   'Dashboard',
+            'nav.chart':       'Chart',
+            'nav.schedule':    'Schedule',
+            'nav.profiles':    'Profiles',
+            'nav.sensors':     'Sensors',
+            'nav.monitor':     'Monitor',
+            'nav.simulation':  'Simulation',
+            'nav.windprofile': 'Wind Presets',
+            'nav.network':     'Network',
+            'nav.logs':        'System Logs',
+            'nav.diagnostics': 'Diagnostics',
+            'nav.firmware':    'Firmware',
+            'nav.ai':          'AI Assistant',
+            'nav.info':        'Info',
+            'nav.groupControl':  'Control',
+            'nav.groupSettings': 'Settings',
+            'nav.groupSystem':   'System',
+
+            'common.start':   'Start',
+            'common.stop':    'Stop',
+            'common.add':     'Add',
+            'common.warning': 'Warning',
+
+            'footer.online':  '🟢 Online',
+            'footer.offline': '🔴 Offline',
+            'footer.polling': '🟡 Polling',
+
+            // Dashboard
+            'dashboard.modeTitle':        'Operation Mode',
+            'dashboard.modeSchedule':     '◻ Schedule Auto Mode',
+            'dashboard.modeProfile':      '◼ Profile Manual Mode',
+            'dashboard.realtimeState':    'Real-time State',
+            'dashboard.currentWind':      'Current Wind',
+            'dashboard.targetWind':       'Target Wind',
+            'dashboard.phase':            'Phase',
+            'dashboard.pwm':              'PWM',
+            'dashboard.sch':              'Schedule',
+            'dashboard.prof':             'Profile',
+            'dashboard.powerTitle':       'Power Control',
+            'dashboard.sensorTitle':      'Sensors',
+            'dashboard.styleTitle':       'Wind Style',
+            'dashboard.presetTitle':      'Nature Presets',
+            'dashboard.physicsTitle':     'Physics Fine Tuning (3 params)',
+            'dashboard.powerOn':          'Power On',
+            'dashboard.powerOff':         'Power Off',
+            'dashboard.temp':             'Temp',
+            'dashboard.humidity':         'Humidity',
+            'dashboard.motion':           'Motion',
+            'dashboard.motionDetected':   'Detected',
+            'dashboard.motionAbsent':     'Absent',
+            'dashboard.modeSwitchedProfile': 'Switched to Profile mode',
+            'dashboard.fanStop':          'Off',
+            'dashboard.fanStage':         'Stage {n}',
+
+            // Chart
+            'chart.title':       'Live Physics Chart',
+            'chart.tab.live':    'Live Running',
+            'chart.tab.preview': 'Preview Waveform',
+            'chart.range5s':     '5s',
+            'chart.range30s':    '30s',
+            'chart.range120s':   '120s',
+            'chart.overlay':     'Preview Overlay',
+            'chart.exportCsv':   'Export CSV',
+            'chart.wind':        'Wind',
+            'chart.target':      'Target',
+            'chart.pwm':         'PWM',
+
+            // Settings
+            'settings.secMeta':        'Meta Info',
+            'settings.secFanPwm':      'Fan PWM',
+            'settings.secFanCurve':    'Fan Curve (3-segment)',
+            'settings.secPir':         'PIR Sensor',
+            'settings.secDht':         'DHT Sensor',
+            'settings.secLed':         'NeoPixel LED',
+            'settings.tabComm':        'Network / WS',
+
+            'settings.fieldDeviceName':  'Device Name',
+            'settings.fieldLogLevel':    'Log Level',
+            'settings.fieldLogMax':      'Max Log Entries',
+            'settings.fieldRange':       'Range: {min}~{max}',
+            'settings.fieldRecommended': 'Recommended: {range}',
+            'settings.fieldPinPwm':      'PWM Pin',
+            'settings.fieldChannel':     'LEDC Channel',
+            'settings.fieldFreq':        'Frequency (Hz)',
+            'settings.fieldRes':         'Resolution (bit)',
+            'settings.fieldStart':       'Start Min (%)',
+            'settings.fieldComfortMin':  'Comfort Start (%)',
+            'settings.fieldComfortMax':  'Comfort End (%)',
+            'settings.fieldHardMax':     'Hard Max (%)',
+            'settings.fieldEnabled':     'Enabled',
+            'settings.fieldPinPir':      'PIR Pin',
+            'settings.fieldDebounce':    'Debounce (sec)',
+            'settings.fieldHold':        'Hold (sec)',
+            'settings.fieldPinDht':      'DHT Pin',
+            'settings.fieldType':        'Sensor Type',
+            'settings.fieldInterval':    'Interval (sec)',
+            'settings.fieldPinLed':      'LED Pin',
+            'settings.fieldNumPixels':   'Num Pixels',
+            'settings.fieldBrightness':  'Default Brightness',
+
+            'settings.configured':       'Configured',
+            'settings.notConfigured':    'Not Configured',
+            'settings.keyPlaceholderChange': 'Enter new key to change (empty = keep)',
+            'settings.keyPlaceholderInput':  'Enter API Key',
+            'settings.testApiKey':       'Test API Key',
+            'settings.testApiSuccess':   '✓ Auth success',
+            'settings.testApiFail':      '✗ Auth failed: {msg}',
+
+            'settings.wsChannelConfig':  'WebSocket Channel Config',
+            'settings.saveAndReload':    'Save & Reload',
+            'settings.save':             'Save',
+            'settings.reload':           'Reload',
+
+            'settings.dirtyWarning':       'Unsaved changes exist.\nReloading will discard unsaved changes. Continue?',
+            'settings.offlineReloadNotice':'Reload is not supported in offline mode.',
+            'settings.reloadRequested':    'Reload requested ({status})',
+            'settings.reloadInProgress':   'Reload in progress...',
+            'settings.reloadFailed':       'Reload failed',
+            'settings.reloadComplete':     'Reload complete',
+            'settings.saveAndReloadSuccess': 'Saved and reloaded',
+
+            // Sensors
+            'sensors.title':        'Live Sensors',
+            'sensors.temp':         'Temp',
+            'sensors.hum':          'Humidity',
+            'sensors.motion':       'Motion',
+            'sensors.feedPir':      'Test PIR Trigger',
+            'sensors.feedPirSuccess': 'Trigger signal sent',
+            'sensors.motionConfig': 'Motion Config',
+            'sensors.pirEnabled':   'Enable PIR',
+            'sensors.pirHoldSec':   'PIR Hold (sec)',
+            'sensors.saveMotionSuccess': 'Motion config saved',
+
+            // Diagnostics
+            'diagnostics.allJson':          'All Config JSON',
+            'diagnostics.saveDirty':        'Save Dirty Config',
+            'diagnostics.saveDirtySuccess': 'Dirty config saved',
+            'diagnostics.fetchFail':        'Config fetch failed',
+            'diagnostics.metricsRealtime':  'Realtime Metrics',
+
+            // Log / AI / Firmware
+            'log.filterAll':   'All Levels',
+            'log.clear':       'Clear',
+            'log.export':      'Export JSON',
+            'log.none':        'None',
+            'log.error':       'Error',
+            'log.warn':        'Warn',
+            'log.info':        'Info',
+            'log.debug':       'Debug',
+
+            'ai.title':       'AI Assistant',
+            'ai.placeholder': 'Ask anything about wind...',
+            'ai.example1':    'What wind suits today\'s weather?',
+            'ai.example2':    'Recommend a sleep-friendly setting',
+            'ai.example3':    'Explain the nature preset differences',
+            'ai.send':        'Send',
+            'ai.thinking':    'Thinking...',
+
+            'firmware.otaUpdate':  'Firmware Update (OTA)',
+            'firmware.uploadBtn':  'Upload',
+            'firmware.otaSuccess': 'Firmware upload complete',
+            'firmware.fileUpload': 'File Upload',
+
+            // Segment
+            'segment.onMinutes':          'On (min)',
+            'segment.offMinutes':         'Off (min)',
+            'segment.mode':               'Mode',
+            'segment.modePreset':         'Preset Mode',
+            'segment.modeFixed':          'Fixed Speed Mode',
+            'segment.presetSelect':       'Preset',
+            'segment.styleSelect':        'Style',
+            'segment.fixedSpeed':         'Fixed Speed (%)',
+            'segment.overrideTitle':      '⚙️ Advanced Physics (Override)',
+            'segment.overrideDesc':       'Override wind physics for this segment',
+            'segment.overrideIntensity':  'Wind Intensity (%)',
+            'segment.overrideVariability':'Wind Variability (%)',
+            'segment.overrideGust':       'Gust Frequency (%)',
+            'segment.moveUp':             'Up',
+            'segment.moveDown':           'Down',
+            'segment.deleted':            'Segment deleted',
+            'segment.summaryPrefix':      'Segments',
+
+            // Schedule additions
+            'schedule.secBasic':      'Basic Info',
+            'schedule.secSegments':   'Segments',
+            'schedule.secSmart':      'Smart Off',
+            'schedule.add':           'Add Schedule',
+            'schedule.addSegmentBtn': 'Add Segment',
+            'schedule.segment':       'Segment',
+            'schedule.segmentRepeat': 'Segment Repeat',
+            'schedule.repeatCount':   'Repeat Count',
+            'schedule.startTime':     'Start Time',
+            'schedule.endTime':       'End Time',
+            'scheduler.title':         'Schedule',
+            'scheduler.day':           'Days',
+            'scheduler.segment':       'Segment',
+            'scheduler.scheduledOff':  'Scheduled Off',
+            'scheduler.tempOff':       'Temp Threshold Off',
+
+            // Profiles additions
+            'profiles.add':           'Add Profile',
+            'profiles.no':            'Profile No.',
+            'profiles.enabled':       'Enabled',
+            'profiles.name':          'Profile Name',
+            'profiles.addSegmentBtn': 'Add Segment',
+            'profiles.autoOffTimer':  'Auto Off (min)',
+            'profile.title':          'User Profiles',
+            'profile.active':         'Active',
+
+            // Network
+            'network.title':        'Network Status',
+            'network.wifiConfig':   'Wi-Fi Config',
+            'network.timeConfig':   'Time Config',
+            'network.wifiMode':     'Wi-Fi Mode',
+            'network.apSettings':   'AP Settings',
+            'network.staSettings':  'STA Networks',
+            'network.status':       'Status',
+            'network.ip':           'IP Address',
+            'network.mac':          'MAC Address',
+            'network.timeSynced':   'Time Sync',
+            'network.synced':       'Synced',
+            'network.notSynced':    'Not Synced',
+            'network.scanWifi':     'Scan Wi-Fi',
+            'network.connect':      'Connect',
+            'network.saveWifi':     'Save Wi-Fi',
+            'network.saveTime':     'Save Time',
+            'network.noStaNotice':  'No STA networks registered',
+
+            // Windprofile
+            'windprofile.title':        'Wind Preset Manager',
+            'windprofile.add':          'Add Preset',
+            'windprofile.code':         'Code (English)',
+            'windprofile.intensity':    'Intensity',
+            'windprofile.variability':  'Variability',
+            'windprofile.gust':         'Gust',
+            'windprofile.fanLimit':     'Fan Limit',
+            'windprofile.factorsTitle': 'Base Wind Parameters',
+
+            // PIR
+            'pir.testSuccess': '✓ PIR detected',
+            'pir.testFail':    '✗ PIR not detected (check sensor)',
+
+            // Units
+            'unit.celsius':   '°C',
+            'unit.humidity':  '%',
+            'unit.seconds':   's',
+            'unit.windSpeed': 'm/s',
+
+            // Validation
+            'validate.required':    '{field} is required',
+            'validate.range':       '{field}: must be {min}~{max}',
+            'validate.timeOrder':   'End time must be after start time',
+            'validate.multiErrors': '{count} field(s) have errors',
+            'validate.segmentMin':  'At least 1 segment required',
+
+            // Messages
+            'msg.unknown':       'Unknown error',
+            'msg.accessDenied':  'Access denied',
+            'msg.deleteConfirm': 'Delete this item?',
+            'msg.saveAndReloadSuccess': 'Saved and reloaded',
+
+            // FSM
+            'fsm.idle':           'Idle',
+            'fsm.override':       'Manual',
+            'fsm.profileRun':     'Profile',
+            'fsm.scheduleRun':    'Schedule',
+            'fsm.motionBlocked':  'Motion Blocked',
+            'fsm.autoOffStopped': 'AutoOff',
+            'fsm.timeInvalid':    'Time Invalid',
+
+            // Reason
+            'reason.none':              'None',
+            'reason.overrideActive':    'Manual override',
+            'reason.profileMode':       'Profile mode',
+            'reason.userProfileActive': 'User profile active',
+            'reason.scheduleActive':    'Schedule active',
+            'reason.noActiveSchedule':  'No active schedule',
+            'reason.noSchedules':       'No schedules',
+            'reason.timeNotValid':      'Time not valid',
+            'reason.motionNoPresence':  'No presence',
+            'reason.autoOffTimer':      'AutoOff timer',
+            'reason.autoOffTime':       'AutoOff time',
+            'reason.autoOffTemp':       'AutoOff temp',
+
+            // Wind Phase
+            'phase.calm':   'Calm',
+            'phase.normal': 'Normal',
+            'phase.strong': 'Strong',
+
+            // AutoOff
+            'autoOff.timer': 'Timer',
+            'autoOff.time':  'Scheduled Off',
+            'autoOff.temp':  'Temperature Off',
+
+            // Presets (10)
+            'preset.OCEAN':          'Ocean Breeze',
+            'preset.COUNTRY_BREEZE': 'Country Breeze',
+            'preset.MEDITERRANEAN':  'Mediterranean',
+            'preset.MOUNTAIN':       'Mountain',
+            'preset.PLAINS':         'Plains',
+            'preset.HARBOR_BREEZE':  'Harbor Breeze',
+            'preset.FOREST_CANOPY':  'Forest Canopy',
+            'preset.URBAN_SUNSET':   'Urban Sunset',
+            'preset.TROPICAL_RAIN':  'Tropical Rain',
+            'preset.DESERT_NIGHT':   'Desert Night',
+
+            // Styles (5)
+            'style.BALANCE': 'Balance',
+            'style.ACTIVE':  'Active',
+            'style.FOCUS':   'Focus',
+            'style.RELAX':   'Relax',
+            'style.SLEEP':   'Sleep',
+            'msg.success':        'Operation completed successfully',
+            'reconnect.body':     'Connection to device lost. Reconnecting...',
+            'msg.apiKeyRequired': 'API key is required',
+            'msg.reloadPending':  'Reload pending...',
+            'msg.timeout':        'Request timed out',
+
+};
 
     const SUPPORTED_LANGS = ['ko', 'en'];
 
@@ -1714,7 +2426,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 040.api.js (15051 bytes) ---- */
+/* ---- 040.api.js (15749 bytes) ---- */
 // =========================================================
 // 040.api.js — SNW.Api (REST 클라이언트)
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -1957,7 +2669,18 @@ window.SNW = window.SNW || {};
 			return _fetch(SNW.CFG.API.overrideClear, { method: 'POST' });
 		},
 		overrideParams(body) {
-			return _fetch(SNW.CFG.API.overrideParams, { method: 'POST', body });
+			// ======================================================
+			// [N-3] Deprecated: /control/override 라우트 부재(404) 해소
+			//  - /simulation + override 객체로 변환하여 전송
+			// ======================================================
+			if (SNW.LogUtil) {
+				SNW.LogUtil.warn('[API] overrideParams is deprecated. Use patchSim({override}) instead.');
+			}
+			const ovr = { enabled: true };
+			if (body && body.windIntensity   != null) ovr.windIntensity   = body.windIntensity;
+			if (body && body.windVariability != null) ovr.windVariability = body.windVariability;
+			if (body && body.gustFrequency   != null) ovr.gustFrequency   = body.gustFrequency;
+			return _fetch(SNW.CFG.API.simulation, { method: 'POST', body: { sim: { override: ovr } } });
 		},
 		ackEvent() {
 			return _fetch(SNW.CFG.API.ack, { method: 'POST' });
@@ -2419,7 +3142,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 070.router.js (8709 bytes) ---- */
+/* ---- 070.router.js (8897 bytes) ---- */
 // =========================================================
 // 070.router.js — SNW.Router (해시 SPA 라우터)
 // =========================================================
@@ -2438,6 +3161,7 @@ window.SNW = window.SNW || {};
         '/schedule':    { page:'schedule',    level:'L2' },
         '/profiles':    { page:'profiles',    level:'L2' },
         '/sensors':     { page:'sensors',     level:'L2' },
+        '/monitor':     { page:'monitor',     level:'L2' },   // [Phase5 5.8]
         '/simulation':  { page:'simulation',  level:'L2' },
         '/windprofile': { page:'windprofile', level:'L3' },
         '/settings':    { page:'settings',    level:'L3' },
@@ -2457,7 +3181,8 @@ window.SNW = window.SNW || {};
                 { path:'/chart',       key:'nav.chart',       icon:'📈', minLevel:'L2' },
                 { path:'/schedule',    key:'nav.schedule',    icon:'📅', minLevel:'L2' },
                 { path:'/profiles',    key:'nav.profiles',    icon:'👤', minLevel:'L2' },
-                { path:'/sensors',     key:'nav.sensors',     icon:'🌡', minLevel:'L2' }
+                { path:'/sensors',     key:'nav.sensors',     icon:'🌡', minLevel:'L2' },
+                { path:'/monitor',     key:'nav.monitor',     icon:'📺', minLevel:'L2' }   // [Phase5 5.8]
             ]
         },
         {
@@ -3609,7 +4334,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 130.ui.form.js (17133 bytes) ---- */
+/* ---- 130.ui.form.js (17381 bytes) ---- */
 // =========================================================
 // 130.ui.form.js — SNW.UI.form + presetGrid + sensorCards + logViewer
 // Layer 3 (UI 컴포넌트)
@@ -3812,17 +4537,22 @@ window.SNW = window.SNW || {};
                     };
                 }
 
-                card.addEventListener('mouseenter', () => {
+                card.addEventListener('mouseenter', async () => {
                     const cv = card.querySelector('.snw-preset-card__spark');
                     if (!cv) return;
                     if (cv.dataset.drawn === '1') { cv.style.display = 'block'; return; }
+
                     const styleCode = SNW.Store.get().sim?.styleCode || 'BALANCE';
-                    if (SNW.Preview && SNW.Preview.generate) {
-                        const preview = SNW.Preview.generate(it.code, styleCode, null);
-                        if (preview && preview.points) {
-                            _drawSpark(cv, preview.points);
-                            cv.dataset.drawn = '1';
-                            cv.style.display = 'block';
+                    if (SNW.Preview && typeof SNW.Preview.generate === 'function') {
+                        try {
+                            const preview = await SNW.Preview.generate(it.code, styleCode, null);
+                            if (preview && preview.points) {
+                                _drawSpark(cv, preview.points);
+                                cv.dataset.drawn = '1';
+                                cv.style.display = 'block';
+                            }
+                        } catch (e) {
+                            if (SNW.LogUtil) SNW.LogUtil.warn('[presetGrid] preview fail', e);
                         }
                     }
                 });
@@ -3997,7 +4727,7 @@ window.SNW = window.SNW || {};
     
 })(window.SNW);
 
-/* ---- 135.util.preview.js (8072 bytes) ---- */
+/* ---- 135.util.preview.js (11356 bytes) ---- */
 // =========================================================
 // 135.util.preview.js — 물리 파형 미리보기 (S20 미러)
 // Layer 1 (유틸리티 엔진)
@@ -4214,11 +4944,100 @@ window.SNW = window.SNW || {};
                 freshness:  clamp((intensity + gustFreq) / 40),       // 청량감
             };
         },
+
+        // =========================================================
+        // [ADR-5] 파사드 API (Studio / Schedule / Simulation 통합)
+        // =========================================================
+        async showModal(config) {
+            if (!SNW.UI || typeof SNW.UI.simulationModal !== 'function') {
+                if (SNW.LogUtil) SNW.LogUtil.warn('[Preview] simulationModal 미로드');
+                return null;
+            }
+
+            const isSegmentForm = config && config.presetCode && !config.a && !config.mode;
+            const normalized = isSegmentForm
+                ? {
+                    mode: 'single',
+                    a: {
+                        presetCode: config.presetCode || 'OCEAN',
+                        styleCode:  config.styleCode  || 'BALANCE',
+                        override:   config.override   || { enabled: false },
+                    },
+                }
+                : config;
+
+            return SNW.UI.simulationModal(normalized);
+        },
+
+        async generate(presetCode, styleCode, override) {
+            return this.generateStep({
+                type:       'PRESET',
+                presetCode: presetCode || 'OCEAN',
+                styleCode:  styleCode  || 'BALANCE',
+                override:   override   || { enabled: false },
+            });
+        },
+
+        _animate(canvas, points) {
+            if (!canvas || !points || points.length === 0) return;
+
+            const ctx = canvas.getContext('2d');
+            const w   = canvas.width;
+            const h   = canvas.height;
+
+            let minV = Infinity, maxV = -Infinity;
+            for (const p of points) {
+                const v = Number(p.wind) || 0;
+                if (v < minV) minV = v;
+                if (v > maxV) maxV = v;
+            }
+            if (!Number.isFinite(minV) || !Number.isFinite(maxV) || maxV <= minV) {
+                minV = 0; maxV = 1;
+            }
+
+            ctx.clearRect(0, 0, w, h);
+
+            ctx.strokeStyle = 'rgba(139,148,158,0.1)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = (h / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+
+            const pad = 10;
+            const innerH = h - pad * 2;
+            const n = points.length;
+
+            ctx.strokeStyle = '#4a9eff';
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            for (let i = 0; i < n; i++) {
+                const x = (i / (n - 1)) * w;
+                const y = pad + (h - pad * 2) - ((points[i].wind - minV) / (maxV - minV)) * innerH;
+                if (i === 0) ctx.moveTo(x, y);
+                else         ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(240,136,62,0.9)';
+            for (let i = 0; i < n; i++) {
+                if (!points[i].gust) continue;
+                const x = (i / (n - 1)) * w;
+                const y = pad + (h - pad * 2) - ((points[i].wind - minV) / (maxV - minV)) * innerH;
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        },
     };
 })(window.SNW);
 
 
-/* ---- 140.ui.simulation.js (15994 bytes) ---- */
+/* ---- 140.ui.simulation.js (16087 bytes) ---- */
 // =========================================================
 // 140.ui.simulation.js — Simulation 모달 (5축 레이더 + A/B 비교)
 // Layer 3 (UI 시뮬레이션 컴포넌트)
@@ -4372,7 +5191,7 @@ SNW.UI = SNW.UI || {};
         modalRef = SNW.UI.modal(
             '🎬 바람 스튜디오 (Simulation)', content,
             null,
-            null,
+            () => { close(null); },                    // [Phase5 5.4 N-19] onCancel → Promise resolve(null)
             { hideOk: true, hideCancel: true, width: '560px' }
         );
 
@@ -4579,7 +5398,7 @@ SNW.UI = SNW.UI || {};
 
 /* ===== LAYER 2 ===== */
 
-/* ---- 200.page.dashboard.js (17334 bytes) ---- */
+/* ---- 200.page.dashboard.js (17423 bytes) ---- */
 // =========================================================
 // 200.page.dashboard.js — 홈 (Stage 6 감성 UX 완성형)
 // Layer 4 (페이지 로직)
@@ -4792,7 +5611,10 @@ SNW.Page = SNW.Page || {};
             if (!sim) return;
 
             const s = store.session;
-            const isActive = s && s.type && s.type !== 'NONE' && s.state === 'ACTIVE';
+
+            // [Phase3 N-1] 명시적 숫자 판정
+            const typeNum  = s ? Number(s.type) : 0;
+            const isActive = (typeNum > 0) && (s.state === 'ACTIVE');
 
             if (this._eq && isActive) {
                 this._eq.push(sim.windSpeed || 0);
@@ -6023,7 +6845,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 230.page.profiles.js (34871 bytes) ---- */
+/* ---- 230.page.profiles.js (35387 bytes) ---- */
 // =========================================================
 // 230.page.profiles.js — SNW.Page.Profiles
 // Layer 4 (페이지 로직)
@@ -6512,7 +7334,15 @@ SNW.Page = SNW.Page || {};
                             enabled: content.querySelector('#prof-enabled').checked,
                             repeatSegments: content.querySelector('#prof-repeat').checked,
                             repeatCount: Number(content.querySelector('#prof-repeat-count').value),
-                            segments: newSegs,
+                            steps: newSegs.map((s, idx) => ({
+                                stepNo: s.stepNo || (idx + 1),
+                                durationMin: s.durationMin || ((s.onMinutes || 0) + (s.offMinutes || 0)) || 20,
+                                type: s.type || s.mode || 'PRESET',
+                                presetCode: s.presetCode,
+                                styleCode: s.styleCode,
+                                fixedSpeed: s.fixedSpeed,
+                                override: s.override
+                            })),
                             autoOff: {
                                 timer: {
                                     enabled: Number(content.querySelector('#prof-ao-timer').value) > 0,
@@ -7192,7 +8022,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 245.page.simulation.js (11493 bytes) ---- */
+/* ---- 245.page.simulation.js (12340 bytes) ---- */
 // =========================================================
 // 245.page.simulation.js — SNW.Page.Simulation (SIM-6 재설계)
 // 파라미터 덤프 → 바람 체험실
@@ -7282,37 +8112,68 @@ SNW.Page = SNW.Page || {};
                         styleTabs.appendChild(btn);
                     });
 
+                    // [Phase5 5.3] async 메서드 호출 (fire-and-forget)
                     this._updatePreview();
-                    this._renderAdvanced(data);
+                    this._renderAdvanced();
                 } catch (e) { SNW.LogUtil.warn('[Sim] load 실패', e); }
             }
 
-        _updatePreview() {
-                                const pc = this.el.querySelector('#sim-presets .is-selected')?.dataset.code || 'OCEAN';
-                                const sc = this.el.querySelector('#sim-styles .is-active')?.dataset.style || 'BALANCE';
-                                if (!SNW.Preview || !SNW.Preview.generate) return;
-                                const pv = SNW.Preview.generate(pc, sc, null);
-                                if (!pv) return;
-                                const cv = this.el.querySelector('[data-pv-canvas]');
-                                if (cv) SNW.Preview._animate(cv, pv.points);
-                                const f = SNW.Preview.toFeelings(pv.intensity, pv.variability, pv.gustFreq);
-                                const infoEl = this.el.querySelector('[data-pv-info]');
-                                if (infoEl) {
-                                    infoEl.innerHTML = `
+        // ======================================================
+        // [Phase5 5.3] async 전환 (ADR-5: generate 반환 Promise)
+        //  - 기존: sync 호출 → preview가 Promise → preview.points undefined
+        //  - 이후: await → 실제 파형 데이터 사용
+        // ======================================================
+        async _updatePreview() {
+            const pc = this.el.querySelector('#sim-presets .is-selected')?.dataset.code || 'OCEAN';
+            const sc = this.el.querySelector('#sim-styles .is-active')?.dataset.style || 'BALANCE';
+
+            if (!SNW.Preview || typeof SNW.Preview.generate !== 'function') return;
+
+            let pv = null;
+            try {
+                pv = await SNW.Preview.generate(pc, sc, null);
+            } catch (e) {
+                if (SNW.LogUtil) SNW.LogUtil.warn('[Sim] preview fail', e);
+                return;
+            }
+            if (!pv) return;
+
+            const cv = this.el.querySelector('[data-pv-canvas]');
+            if (cv && typeof SNW.Preview._animate === 'function') {
+                SNW.Preview._animate(cv, pv.points);
+            }
+
+            const f = SNW.Preview.toFeelings(pv.intensity, pv.variability, pv.gustFreq);
+            const infoEl = this.el.querySelector('[data-pv-info]');
+            if (infoEl) {
+                infoEl.innerHTML = `
                     평균 <b>${pv.avg} m/s</b> ·
                     시원함 ${'●'.repeat(f.coolness)}${'○'.repeat(5 - f.coolness)} ·
                     부드러움 ${'●'.repeat(f.smoothness)}${'○'.repeat(5 - f.smoothness)} ·
                     역동성 ${'●'.repeat(f.dynamism)}${'○'.repeat(5 - f.dynamism)}`;
-                                }
-                            }
+            }
+        }
 
-        _renderAdvanced(data) {
-                                const slot = this.el.querySelector('[data-slot="advanced"]');
-                                if (!slot) return;
-                                const m = data?.motion?.motion || SNW.Store.get()._motionCache || {};
-                                const t = m.timing || {};
-                                const s = m.sim || {};
-                                slot.innerHTML = `
+        // ======================================================
+        // [Phase5 5.3] motion 소스 수정
+        //  - 이전: data?.motion?.motion (data=windDict → 항상 undefined)
+        //  - 이후: SNW.Api.getMotion() 비동기 fetch
+        // ======================================================
+        async _renderAdvanced() {
+            const slot = this.el.querySelector('[data-slot="advanced"]');
+            if (!slot) return;
+
+            let motion = {};
+            try {
+                const data = await SNW.Api.getMotion();
+                motion = (data && data.motion) || {};
+            } catch (e) {
+                if (SNW.LogUtil) SNW.LogUtil.warn('[Sim] motion fetch fail', e);
+            }
+
+            const t = motion.timing || {};
+            const s = motion.sim || {};
+            slot.innerHTML = `
                 <div class="snw-form-row" style="margin-bottom:8px;"><label>Sim Interval (ms)</label>
                     <input type="number" id="sim-interval" value="${t.simIntervalMs ?? 500}"
                            style="padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);width:100%;border-radius:4px;"></div>
@@ -7323,7 +8184,7 @@ SNW.Page = SNW.Page || {};
                     <input type="number" step="0.01" id="sim-turbsigma" value="${s.turbSigma ?? 0.5}"
                            style="padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);width:100%;border-radius:4px;"></div>
                 <button type="button" class="snw-btn" data-action="save-adv" style="margin-top:8px;">고급 저장</button>`;
-                            }
+        }
 
         _bindEvents() {
                                 this.el.querySelectorAll('[data-mode]').forEach(btn => {
@@ -7634,7 +8495,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 260.page.monitor.js (15556 bytes) ---- */
+/* ---- 260.page.monitor.js (19062 bytes) ---- */
 // =========================================================
 // 260.page.monitor.js — SNW.Page.Monitor (Stage 7 회고 + 실시간 EQ)
 // =========================================================
@@ -7819,6 +8680,8 @@ SNW.Page = SNW.Page || {};
             const durMap = { '1h': 3600, '24h': 86400, '7d': 604800 };
             const since = now - (durMap[range] || 86400);
 
+            slot.innerHTML = '<div class="snw-loading">로딩 중...</div>';   // [Phase5 5.9] 로딩 표시
+
             try {
                 const getTlFn = (SNW.Api && (SNW.Api.getTimeline || SNW.Api.getMonitorTimeline)) ?
                     (SNW.Api.getTimeline || SNW.Api.getMonitorTimeline).bind(SNW.Api) : () => Promise.resolve({ events: [] });
@@ -7826,9 +8689,11 @@ SNW.Page = SNW.Page || {};
                     SNW.Api.getSessionSummary.bind(SNW.Api) : () => Promise.resolve(null);
 
                 const [timeline, summary] = await Promise.all([
-                    getTlFn(since),
+                    getTlFn(since).catch(() => ({ events: [] })),
                     getSumFn(since, now).catch(() => null),
                 ]);
+
+                if (!this._active) return;
 
                 slot.innerHTML = '';
                 slot.appendChild(this._renderSummary(summary));
@@ -7839,29 +8704,90 @@ SNW.Page = SNW.Page || {};
             }
         }
 
+        // ======================================================
+        // [Phase5 5.9] 이중 스키마 수용
+        //  - 신 스키마: summary.stats.{totalSessions, totalActiveSec, ...}
+        //  - 구 스키마: {totalEvents, sessionStarts, sessionEnds, stepChanges}
+        //  - 후자는 C++ querySessionSummary() 현 구현과 일치
+        //  - 구 스키마에서는 파생 가능한 필드만 표시
+        // ======================================================
         _renderSummary(summary) {
             const div = document.createElement('div');
             div.className = 'snw-retro-summary';
-            if (!summary || !summary.sessions) {
+
+            if (!summary) {
                 div.innerHTML = '<div class="snw-empty">세션 데이터 없음</div>';
                 return div;
             }
 
-            const stats = summary.stats || {};
+            // 신 스키마 우선, 없으면 구 스키마에서 파생
+            let stats = summary.stats || null;
+
+            if (!stats) {
+                const starts = Number(summary.sessionStarts || 0);
+                const ends   = Number(summary.sessionEnds   || 0);
+                const total  = Number(summary.totalEvents   || 0);
+
+                if (total === 0 && starts === 0) {
+                    div.innerHTML = '<div class="snw-empty">세션 데이터 없음</div>';
+                    return div;
+                }
+
+                stats = {
+                    totalSessions:  starts,
+                    totalActiveSec: 0,    // 구 스키마에 시간 필드 없음
+                    avgWindSpeed:   0,
+                    maxWindSpeed:   0,
+                    avgTempC:       0,
+                    presenceRatio:  0,
+                    _legacy:        true,
+                };
+            }
+
             div.innerHTML = `
                 <div class="snw-retro-summary__title">세션 요약</div>
                 <div class="snw-retro-summary__grid">
                     <div><span>총 세션</span><b>${stats.totalSessions || 0}회</b></div>
-                    <div><span>총 가동</span><b>${this._fmtDuration(stats.totalActiveSec || 0)}</b></div>
-                    <div><span>평균 풍속</span><b>${(stats.avgWindSpeed || 0).toFixed(1)} m/s</b></div>
-                    <div><span>최고 풍속</span><b>${(stats.maxWindSpeed || 0).toFixed(1)} m/s</b></div>
-                    <div><span>평균 온도</span><b>${(stats.avgTempC || 0).toFixed(1)}°C</b></div>
-                    <div><span>재실 비율</span><b>${Math.round((stats.presenceRatio || 0) * 100)}%</b></div>
+                    <div><span>총 가동</span><b>${
+                        stats._legacy
+                            ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
+                            : this._fmtDuration(stats.totalActiveSec || 0)
+                    }</b></div>
+                    <div><span>평균 풍속</span><b>${
+                        stats._legacy
+                            ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
+                            : (stats.avgWindSpeed || 0).toFixed(1) + ' m/s'
+                    }</b></div>
+                    <div><span>최고 풍속</span><b>${
+                        stats._legacy
+                            ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
+                            : (stats.maxWindSpeed || 0).toFixed(1) + ' m/s'
+                    }</b></div>
+                    <div><span>평균 온도</span><b>${
+                        stats._legacy
+                            ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
+                            : (stats.avgTempC || 0).toFixed(1) + '°C'
+                    }</b></div>
+                    <div><span>재실 비율</span><b>${
+                        stats._legacy
+                            ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
+                            : Math.round((stats.presenceRatio || 0) * 100) + '%'
+                    }</b></div>
                 </div>
+                ${stats._legacy
+                    ? `<div style="font-size:11px;color:var(--snw-text-dim);margin-top:8px;">
+                        ※ 상세 통계는 서버 업데이트 후 제공됩니다.
+                    </div>`
+                    : ''}
             `;
             return div;
         }
 
+        // ======================================================
+        // [Phase5 5.9] timeline.from/to 폴백
+        //  - C++ queryTimeline()은 from/to를 반환하지 않음
+        //  - events의 첫/마지막 t로 자동 계산
+        // ======================================================
         _renderTimeline(timeline) {
             const div = document.createElement('div');
             div.className = 'snw-retro-timeline';
@@ -7871,11 +8797,21 @@ SNW.Page = SNW.Page || {};
                 return div;
             }
 
-            // 이벤트 마커
+            const events = timeline.events;
+            // from/to 폴백 (C++ 응답에 없는 경우 계산)
+            const fromTs = (timeline.from != null)
+                ? timeline.from
+                : (events[0]?.t ?? 0);
+            const toTs   = (timeline.to != null)
+                ? timeline.to
+                : (events[events.length - 1]?.t ?? Math.floor(Date.now() / 1000));
+
+            const normalized = { ...timeline, from: fromTs, to: toTs, events };
+
             div.innerHTML = `
                 <div class="snw-retro-timeline__title">이벤트 타임라인</div>
                 <div class="snw-retro-timeline__bar">
-                    ${timeline.events.map(e => this._eventMarker(e, timeline)).join('')}
+                    ${events.map(e => this._eventMarker(e, normalized)).join('')}
                 </div>
             `;
             return div;
@@ -8656,7 +9592,7 @@ SNW.Page = SNW.Page || {};
 
 
 
-/* ---- 291.studio.js (26729 bytes) ---- */
+/* ---- 291.studio.js (26745 bytes) ---- */
 // =========================================================
 // 291.studio.js — Wind Design Studio (작곡)
 // Layer 3 (Studio 패널 컴포넌트)
@@ -9005,7 +9941,7 @@ window.SNW = window.SNW || {};
                 this._profileId = target.profileId || target.profileNo;
                 this._profileNo = target.profileNo;
                 this._name = target.name;
-                this._repeat = !!target.repeat;
+                this._repeat = !!target.repeatSegments;
                 this._repeatCount = target.repeatCount || 0;
                 this._steps = (target.steps && target.steps.length > 0) ? target.steps : [this._defaultStep()];
             } catch (e) {
@@ -9171,7 +10107,7 @@ window.SNW = window.SNW || {};
                 profileNo: this._profileNo,
                 name: this._name.trim(),
                 enabled: true,
-                repeat: this._repeat,
+                repeatSegments: this._repeat,
                 repeatCount: this._repeatCount,
                 stepCount: this._steps.length,
                 steps: this._steps,
@@ -9214,7 +10150,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 292.playlist.js (10011 bytes) ---- */
+/* ---- 292.playlist.js (10019 bytes) ---- */
 // =========================================================
 // 292.playlist.js — Wind Playlist (재생 목록)
 // Layer 3 (Playlist 패널 컴포넌트)
@@ -9373,7 +10309,7 @@ window.SNW = window.SNW || {};
             if (!profile.steps) return '0분';
             let total = 0;
             for (const s of profile.steps) total += Number(s.durationMin) || 0;
-            if (profile.repeat && profile.repeatCount > 0) {
+            if (profile.repeatSegments && profile.repeatCount > 0) {
                 total *= profile.repeatCount;
             }
             const h = Math.floor(total / 60);
@@ -10197,7 +11133,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 999.app.js (13247 bytes) ---- */
+/* ---- 999.app.js (13758 bytes) ---- */
 // =========================================================
 // 999.app.js — 부트스트랩 (최종 로드)
 // =========================================================
@@ -10234,11 +11170,22 @@ window.SNW = window.SNW || {};
         if (contentEl) body.appendChild(contentEl);
         box.appendChild(body);
 
+        // ======================================================
+        // [N-18] 리스너 참조 보관 → close()에서 반드시 제거 (이벤트 누수 방지)
+        // ======================================================
         let closed = false;
+        let _onEsc = null;
+        let _onOverlayClick = null;
+
         const close = (confirmed) => {
             if (closed) return;
             closed = true;
-            document.removeEventListener('keydown', _onEsc);
+
+            if (_onEsc)          document.removeEventListener('keydown', _onEsc);
+            if (_onOverlayClick) overlay.removeEventListener('click', _onOverlayClick);
+            _onEsc = null;
+            _onOverlayClick = null;
+
             overlay.classList.remove('is-open');
             setTimeout(() => {
                 overlay.innerHTML = '';
@@ -10249,9 +11196,11 @@ window.SNW = window.SNW || {};
             }, 150);
         };
 
-        const _onEsc = (e) => { if (e.key === 'Escape') close(false); };
+        _onEsc = (e) => { if (e.key === 'Escape') close(false); };
         document.addEventListener('keydown', _onEsc);
-        overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
+
+        _onOverlayClick = (e) => { if (e.target === overlay) close(false); };
+        overlay.addEventListener('click', _onOverlayClick);
 
         const actions = document.createElement('div');
         actions.className = 'snw-modal-actions';

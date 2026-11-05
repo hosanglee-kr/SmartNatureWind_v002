@@ -48,14 +48,27 @@ static unsigned long s_lastGeminiCallMs = 0;
 // Gemini API Key 조회 (전용 필드 사용)
 // ------------------------------------------------------
 static const char* W10_getGeminiApiKey() {
-    if (g_A20_config_root.system) {
+    // ======================================================
+    // [N-10] B-2 규약 준수: async_tcp 컨텍스트 snapshot 필수
+    //  - g_A20_config_root.system 직접 참조 제거 (torn read 방지)
+    //  - getRootSnapshot + static buffer 복사
+    // ======================================================
+    ST_A20_ConfigRoot_t v_snap;
+    CL_C10_ConfigManager::getRootSnapshot(v_snap);
+
+    static char s_keyBuf[64];
+    memset(s_keyBuf, 0, sizeof(s_keyBuf));
+
+    if (v_snap.system) {
         // 1순위: Gemini 전용 키
-        if (g_A20_config_root.system->security.geminiApiKey[0] != '\0') {
-            return g_A20_config_root.system->security.geminiApiKey;
+        if (v_snap.system->security.geminiApiKey[0] != '\0') {
+            strlcpy(s_keyBuf, v_snap.system->security.geminiApiKey, sizeof(s_keyBuf));
+            return s_keyBuf;
         }
-        // 2순위: 일반 API Key로 폴백 (geminiApiKey가 비어있을 경우)
-        if (g_A20_config_root.system->security.apiKey[0] != '\0') {
-            return g_A20_config_root.system->security.apiKey;
+        // 2순위: 일반 API Key (geminiApiKey가 비어 있을 때)
+        if (v_snap.system->security.apiKey[0] != '\0') {
+            strlcpy(s_keyBuf, v_snap.system->security.apiKey, sizeof(s_keyBuf));
+            return s_keyBuf;
         }
     }
     return nullptr;

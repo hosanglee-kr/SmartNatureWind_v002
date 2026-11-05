@@ -34,11 +34,22 @@ window.SNW = window.SNW || {};
         if (contentEl) body.appendChild(contentEl);
         box.appendChild(body);
 
+        // ======================================================
+        // [N-18] 리스너 참조 보관 → close()에서 반드시 제거 (이벤트 누수 방지)
+        // ======================================================
         let closed = false;
+        let _onEsc = null;
+        let _onOverlayClick = null;
+
         const close = (confirmed) => {
             if (closed) return;
             closed = true;
-            document.removeEventListener('keydown', _onEsc);
+
+            if (_onEsc)          document.removeEventListener('keydown', _onEsc);
+            if (_onOverlayClick) overlay.removeEventListener('click', _onOverlayClick);
+            _onEsc = null;
+            _onOverlayClick = null;
+
             overlay.classList.remove('is-open');
             setTimeout(() => {
                 overlay.innerHTML = '';
@@ -49,9 +60,11 @@ window.SNW = window.SNW || {};
             }, 150);
         };
 
-        const _onEsc = (e) => { if (e.key === 'Escape') close(false); };
+        _onEsc = (e) => { if (e.key === 'Escape') close(false); };
         document.addEventListener('keydown', _onEsc);
-        overlay.addEventListener('click', (e) => { if (e.target === overlay) close(false); });
+
+        _onOverlayClick = (e) => { if (e.target === overlay) close(false); };
+        overlay.addEventListener('click', _onOverlayClick);
 
         const actions = document.createElement('div');
         actions.className = 'snw-modal-actions';

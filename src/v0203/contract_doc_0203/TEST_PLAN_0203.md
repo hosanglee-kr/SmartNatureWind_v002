@@ -51,6 +51,9 @@ L6 Batch G 코드 재검토 (22건) ─── P0 필수 5건 / P1 필수 8건
 
 L7 Batch I 물리 Override 및 UI 고도화 (3건) ─── 릴리스 차단 조건
     T-70 (물리 Override 절대값 직접 지정), T-71 (대시보드 3슬라이더/SLEEP), T-72 (순서이동/다국어)
+
+L8 Phase 1~6 통합 회귀 (23건) ─── 릴리스 차단 필수 10건 (T-90, T-91, T-94, T-97, T-98, T-99, T-101, T-103, T-105, T-106)
+    T-90 ~ T-112
 ```
 
 ### 1.2 검증 환경
@@ -1674,6 +1677,371 @@ console.log(dict.windDict.styles.length);  // 기대: 5 (SLEEP 포함)
 
 ---
 
+## 3.4 Phase 1~6 통합 회귀 (v0203_011, T-90 ~ T-112)
+
+### T-90. [Phase 1 N-5] Factory Reset 확인어
+**목적**: Factory Reset 확인어 원시 키 노출(N-5) 방지.
+**검증 절차**:
+```bash
+# 1. Settings 진입 → 공장 초기화 클릭
+# 2. 확인어 표시 확인 (ko: "초기화", en: "RESET")
+# 3. "초기화" 입력 → 확인 → 재부팅
+# 브라우저 Console:
+document.querySelector('#confirm-word').placeholder;
+# 기대: "계속하려면 아래에 "초기화"를 입력하세요" (raw key 아님)
+```
+**합격 판정**:
+- [ ] 확인어 문구 정상 표시
+- [ ] "초기화" 입력 시 초기화 성공
+- [ ] 잘못된 입력 시 경고 + 실행 안 됨
+
+---
+
+### T-91. [Phase 1 N-6] 모달 z-index 계층
+**목적**: 모달 z-index(900) < 하단탭(1000) 문제 해결 검증.
+**검증 절차**:
+```bash
+# 1. 모바일 뷰포트 (375×667) 진입
+# 2. Settings → 저장 클릭 (모달 열림)
+# 3. 모달이 하단 탭바와 사이드바 위에 표시되는지 확인
+```
+**합격 판정**:
+- [ ] 모달이 하단탭 위에 덮임
+- [ ] 토스트 발생 시 모달 위에 표시 (z-index 1200)
+
+---
+
+### T-92. [Phase 1 N-16] Mutex Lazy-init 크래시 없음
+**목적**: critical section 내 heap alloc 제거(N-16) 검증.
+**검증 절차**:
+```bash
+# 1. 10회 콜드 부팅 (전원 차단 후 재인가)
+# 2. 매 부팅 후 30초간 안정성 관찰
+```
+**합격 판정**:
+- [ ] 10회 모두 정상 부팅
+- [ ] WDT 리셋 0회
+- [ ] [A40] CreateRecursiveMutex failed 로그 0건
+
+---
+
+### T-93. [Phase 1 N-18] Modal 리스너 누수
+**목적**: Modal 리스너 누수(N-18) 방지.
+**검증 절차**:
+```javascript
+// 브라우저 Console
+const overlay = document.getElementById('snw-modal-overlay');
+for (let i = 0; i < 10; i++) {
+    document.querySelector('[data-action="save"]').click();
+    await new Promise(r => setTimeout(r, 300));
+    document.querySelector('.snw-btn:not(.snw-btn-primary)').click();
+    await new Promise(r => setTimeout(r, 300));
+}
+getEventListeners(overlay).click?.length; // 기대: 1 (누적 없음)
+```
+**합격 판정**:
+- [ ] click 리스너 1개 유지
+- [ ] keydown 리스너 0~1개
+
+---
+
+### T-94. [Phase 2 N-2] Settings timeCfg → TM10 즉시 반영
+**목적**: NTP 서버 변경 시 재부팅 없이 반영 검증.
+**검증 절차**:
+```bash
+# 1. 현재 서버 확인
+curl -s http://$IP/api/v001/state | jq .time.activeServer # 기대: "pool.ntp.org"
+# 2. NTP 서버 변경
+curl -X PATCH http://$IP/api/v001/system -H "X-API-Key: $KEY" -d '{"timeCfg":{"ntpServer":"time.google.com"}}'
+# 3. 5초 후 재조회
+sleep 5
+curl -s http://$IP/api/v001/state | jq .time.activeServer # 기대: "time.google.com" (재부팅 없이)
+# 4. SNTP 동기화 확인
+curl -s http://$IP/api/v001/state | jq .time.timeValid # 기대: true
+```
+**합격 판정**:
+- [ ] 3단계: 새 서버 반영
+- [ ] 4단계: SNTP 재동기화 성공
+
+---
+
+### T-95. [Phase 2 N-3] /control/override 404 소멸
+**목적**: 프론트의 /control/override 호출이 /simulation으로 통합 검증.
+**검증 절차**:
+```bash
+# 1. 브라우저 DevTools Network 관찰
+# 2. Dashboard 슬라이더 조작 (강도 변경)
+# 3. 관찰: POST /api/v001/control/override 요청 없음, POST /api/v001/simulation 요청 존재
+# 4. 콘솔 경고 확인: [API] overrideParams is deprecated. Use patchSim({override}) instead.
+```
+**합격 판정**:
+- [ ] 404 요청 0건
+- [ ] deprecated 경고 1건
+
+---
+
+### T-96. [Phase 2 N-7] Runtime (NVS) 노출
+**목적**: Diagnostics §Runtime 정상 표시(N-7) 검증.
+**검증 절차**:
+```bash
+# 1. state 응답에 runtime top-level 확인
+curl -s http://$IP/api/v001/state | jq .runtime
+# 2. Diagnostics 페이지 진입 (#/diagnostics)
+# 3. Runtime (NVS) 섹션 확인: 실제 runMode 등 값 표시
+```
+**합격 판정**:
+- [ ] runtime 객체 존재
+- [ ] Diagnostics 섹션 정상 표시
+
+---
+
+### T-97. [Phase 2 N-10] B-2 규약 준수 재검증
+**목적**: checkApiKey/getGeminiApiKey snapshot 전환(N-10) 검증.
+**검증 절차**:
+```bash
+# 1. 정적 grep: g_A20_config_root 직접 접근 0건 확인
+# 2. API Key 인증 및 Gemini 프록시 인증 정상 동작 확인
+```
+**합격 판정**:
+- [ ] 직접 접근 0건
+- [ ] API 인증 authorized 정상 반환
+
+---
+
+### T-98. [Phase 3 N-1] Dashboard 플레이리스트 재생 (핵심)
+**목적**: Session API가 제어 루프와 단절된 N-1 해결 검증.
+**검증 절차**:
+```bash
+# 1. Dashboard → 플레이리스트 카드 클릭
+# 2. 팬 실회전 확인
+# 3. 상태 확인
+curl -s http://$IP/api/v001/state | jq '{sessionType: .control.session.type, sessionState: .control.session.state, runSource: .control.runSource, simActive: .sim.active}'
+# 기대: {sessionType:1, sessionState:"ACTIVE", runSource:2, simActive:true}
+```
+**합격 판정**:
+- [ ] 팬 실회전 (PWM > 0)
+- [ ] runSource == 2 (USER_PROFILE)
+- [ ] session.state == "ACTIVE"
+
+---
+
+### T-99. [Phase 3 N-1] Session pause/resume (Smart Resume)
+**목적**: pause/resume 상태 보존 + Smart Resume 검증.
+**검증 절차**:
+```bash
+# 1. 재생 시작 → 5초 대기
+# 2. pause: POST /api/v001/session/pause → stepRemainSec 고정 확인
+# 3. 10초 대기 후 재조회: stepRemainSec 유지 확인
+# 4. resume: POST /api/v001/session/resume → stepRemainSec 감소 재개 확인
+```
+**합격 판정**:
+- [ ] pause 후 stepRemainSec 고정
+- [ ] resume 후 감소 재개
+- [ ] pausedAccumMs 정상 누적
+
+---
+
+### T-100. [Phase 3 N-1] Session stop 멱등성
+**목적**: stop 2회 호출 시 안전성(N-1) 검증.
+**검증 절차**:
+```bash
+# 1. 재생 시작
+# 2. stop 1회: POST /api/v001/session/stop → {ok: true, "session_stopped"}
+# 3. stop 2회 즉시: POST /api/v001/session/stop → {ok: false} (멱등)
+```
+**합격 판정**:
+- [ ] 1회: 성공
+- [ ] 2회: no-op (에러 없음)
+
+---
+
+### T-101. [Phase 3 ADR-3] Schedule profileId 단일 실행
+**목적**: profileId 참조 단일 스케줄 재생(ADR-3) 검증.
+**검증 절차**:
+```bash
+# 1. profileId 참조 스케줄 생성
+curl -X POST http://$IP/api/v001/schedules -H "X-API-Key: $KEY" -d '{"schedule": {"schNo": 200, "name": "ProfileRefTest", "enabled": true, "profileId": 1, "period": {"enabled":true,"days":[1,1,1,1,1,1,1],"startTime":"00:00","endTime":"23:59"}}}'
+# 2. 활성 시간 도달 시 상태 확인
+curl -s http://$IP/api/v001/state | jq '{runSource: .control.runSource, schName: .control.schedule.name, profName: .control.profile.name}'
+# 기대: {runSource:1, schName:"ProfileRefTest", profName:"수면모드"}
+```
+**합격 판정**:
+- [ ] runSource == 1 (SCHEDULE)
+- [ ] profile.name 표시 (프로필 참조 단일 실행)
+
+---
+
+### T-102. [Phase 3 S-4] NowPlaying Bar 정상 표시
+**목적**: profileName, stepRemainSec 노출(S-4) 검증.
+**검증 절차**:
+```bash
+# 1. Dashboard 재생
+# 2. NowPlaying Bar 확인
+# DevTools Console:
+const sess = SNW.Store.get().session;
+console.log({name: sess.profileName, step: sess.currentStep, remain: sess.stepRemainSec, state: sess.state});
+```
+**합격 판정**:
+- [ ] profileName 실제 프로필 이름
+- [ ] stepRemainSec 숫자 감소
+- [ ] Bar 제목/시간 정상 표시
+
+---
+
+### T-103. [Phase 4 ADR-2] steps[] 단일 배열 표준 (하위 호환 배제)
+**목적**: 단일 표준 스키마(`steps[]` 및 `repeatSegments`) 적용 및 레거시 `segments[]` 제거 검증.
+**검증 절차**:
+```bash
+# 1. 현재 userProfiles 조회
+curl -s http://$IP/api/v001/user_profiles | jq '.userProfiles.profiles[0]'
+# 기대: steps[] 단일 배열 존재, segments[] 필드 배제됨
+# 2. Studio 편집 진입 및 Step 수정 후 저장
+# 3. 재조회 시 steps[] 데이터 round-trip 정상 보존 확인
+```
+**합격 판정**:
+- [ ] steps[] 단일 배열 표준 출력
+- [ ] round-trip 시 Step 및 on/off 보존
+- [ ] 편집기 정상 표시
+
+---
+
+### T-104. [Phase 4 N-4] repeatSegments 필드 통일
+**목적**: Studio repeat → repeatSegments 필드 단일화(N-4) 검증.
+**검증 절차**:
+```bash
+# 1. Studio에서 반복=2 설정 → 저장
+# 2. 서버 응답 확인: repeatSegments: true, repeatCount: 2
+# 3. Playlist 카드 총 시간: Step 시간 합 × 2 확인
+```
+**합격 판정**:
+- [ ] repeatSegments 필드 존재
+- [ ] Playlist 총 시간 × 2 반영
+
+---
+
+### T-105. [Phase 5 ADR-5] Studio 🎬 미리보기
+**목적**: Preview 파사드(ADR-5) 통합 검증.
+**검증 절차**:
+```bash
+# 1. Studio (#/automation/studio) 진입
+# 2. Step 편집기 → 🎬 클릭
+# 3. 모달 정상 표시 및 파형 애니메이션 확인
+# 4. ESC로 닫기 → 콘솔 경고 없음, 정상 종료
+```
+**합격 판정**:
+- [ ] 모달 표시
+- [ ] 파형 애니메이션
+- [ ] ESC 정상 (Promise resolve)
+
+---
+
+### T-106. [Phase 5 P-2] i18n 완전성
+**목적**: i18n DICT 완성(P-2) 검증.
+**검증 절차**:
+```bash
+# 1. CI 도구 실행
+python src/v0203/tools_0203/check_i18n.py --strict
+# 기대: exit 0, "모든 N개 키가 정의되어 있습니다"
+# 2. 12개 전체 화면 순회 시 raw key 노출 0건
+# 3. 언어 토글 (ko ↔ en) 시 실시간 전체 반영
+```
+**합격 판정**:
+- [ ] check_i18n.py exit 0
+- [ ] raw key 노출 0건
+- [ ] 언어 전환 완전
+
+---
+
+### T-107. [Phase 5 P-3] /monitor 라우트
+**목적**: Router /monitor 등재(P-3) 검증.
+**검증 절차**:
+```bash
+# 1. URL 직접 입력: http://$IP/#/monitor
+# 2. 사이드바 "모니터" 메뉴 표시 및 클릭 진입
+# 3. 회고 탭 24h 선택 시 타임라인 마커 분산 확인
+```
+**합격 판정**:
+- [ ] URL 직접 진입 성공
+- [ ] 사이드바 표시
+- [ ] 회고 탭 정상 렌더
+
+---
+
+### T-108. [Phase 5 P-4] Chart 예상 오버레이
+**목적**: _drawOverlay(P-4) 구현 검증.
+**검증 절차**:
+```bash
+# 1. Chart 페이지 (#/chart)
+# 2. "예상 오버레이" 체크박스 ON
+# 3. 실측 파형 위에 점선 예상 파형 표시 확인
+```
+**합격 판정**:
+- [ ] 점선 오버레이 표시
+- [ ] 1초 주기 재렌더
+- [ ] 예상 탭 전환 시 오버레이 제거
+
+---
+
+### T-109. [Phase 6 N-12] Offline resolvePreset 정확성
+**목적**: factors 경로 수정(N-12) 검증.
+**검증 절차**:
+```bash
+# 오프라인 모드에서 시나리오별 강도 차이 확인
+# NATURAL (FOREST_CANOPY ~40%), SLEEP (OCEAN+SLEEP ~30%), GALE (OCEAN+ACTIVE ~85%)
+```
+**합격 판정**:
+- [ ] 프리셋별 강도 차이 발생
+- [ ] 폴백(50%) 무효화
+
+---
+
+### T-110. [Phase 6 N-14] Offline 툴바 레이아웃
+**목적**: 툴바 삽입 위치(N-14) 검증.
+**검증 절차**:
+```bash
+# 오프라인 모드 진입 시:
+# 1. header/main/footer 정상 배치 확인
+# 2. 툴바가 최상단 (body firstChild)
+# 3. 모바일 뷰포트 하단 탭바 겹침 없음
+```
+**합격 판정**:
+- [ ] grid row 1 붕괴 없음
+- [ ] 툴바 최상단 (body firstChild)
+- [ ] 하단 탭바 겹침 없음
+
+---
+
+### T-111. [Phase 6 N-28] Offline 세션 진행
+**목적**: startSimulator step 진행(N-28) 검증.
+**검증 절차**:
+```bash
+# 오프라인 재생 시작 후 5초 대기 → stepRemainSec 실시간 감소 및 Step 전환 확인
+```
+**합격 판정**:
+- [ ] stepRemainSec 실시간 감소
+- [ ] Step 전환 동작
+- [ ] pause 시 시계 정지
+
+---
+
+### T-112. [Phase 1~6 통합] 전체 회귀 스모크
+**목적**: Phase 1~6 완료 후 전체 시스템 종합 회귀.
+**검증 절차**:
+```bash
+# 1. 콜드 부팅 10회
+# 2. Dashboard 재생 → 5분 유지 → 정지
+# 3. 12 페이지 순회
+# 4. 언어 토글 × 10회
+# 5. 오프라인/온라인 전환 × 3회
+# 6. Heap 안정성 5분 샘플링
+```
+**합격 판정**:
+- [ ] 크래시 0건
+- [ ] Heap 누수 없음
+- [ ] 모든 페이지 정상
+
+---
+
 ## 4. 프론트엔드 v0203 SPA
 
 ### T-29. 초기 로드 — SPA Shell 3자산
@@ -2038,6 +2406,7 @@ done
 | **L6 Batch G P0** | **T-46 ~ T-50 (5건)** | **40분** | **5/5 필수** |
 | **L6 Batch G P1** | **T-51 ~ T-67 (17건)** | **120분** | **8건 필수** (T-51, T-52, T-53, T-54, T-57, T-58, T-61, T-65) |
 | **L7 Batch I OVR** | **T-70 ~ T-72 (3건)** | **30분** | **3/3 필수** (T-70, T-71, T-72) |
+| **L8 Phase 1~6 통합** | **T-90 ~ T-112 (23건)** | **4시간** | **10건 필수** (T-90, T-91, T-94, T-97, T-98, T-99, T-101, T-103, T-105, T-106) |
 
 ### 릴리스 차단 필수 세트 (최소 29건)
 
@@ -2072,6 +2441,16 @@ done
 | **27** | **T-70 (OVR-1 세그먼트 물리 Override)** | **L7** | **OVR-1** |
 | **28** | **T-71 (OVR-2 대시보드 3슬라이더/SLEEP)** | **L7** | **OVR-2** |
 | **29** | **T-72 (OVR-3/4 순서이동/다국어)** | **L7** | **OVR-3/4** |
+| 30 | T-90 (Phase 1 i18n factoryReset) | L8 | N-5 |
+| 31 | T-91 (Phase 1 z-index) | L8 | N-6 |
+| 32 | T-94 (Phase 2 timeCfg→TM10) | L8 | N-2 |
+| 33 | T-97 (Phase 2 B-2 준수) | L8 | N-10 |
+| 34 | T-98 (Phase 3 Dashboard 재생) | L8 | N-1/ADR-1 |
+| 35 | T-99 (Phase 3 Smart Resume) | L8 | N-1 |
+| 36 | T-101 (Phase 3 Schedule profileId) | L8 | ADR-3 |
+| 37 | T-103 (Phase 4 steps 단일 표준) | L8 | ADR-2 |
+| 38 | T-105 (Phase 5 Preview 파사드) | L8 | ADR-5 |
+| 39 | T-106 (Phase 5 i18n 완전성) | L8 | P-2 |
 
 ---
 
@@ -2120,6 +2499,26 @@ done
 | **T-71 슬라이더 렉/네트워크 폭주** | **debounce 미적용** | **100ms 디바운스 타이머 로직 확인** |
 | **T-72 세그먼트 order 불일치** | **삭제/이동 후 재인덱싱 누락** | **`_reindexSegments` 자동 호출 확인** |
 | **T-73 오프라인 다국어 미반영** | **`preset.<CODE>` 키 미조회 / 병기 누락** | **`300.page.windprofile.js` i18n 래핑 및 `998.offline_0203.js` 병기 명칭 확인** |
+| **T-90 확인어 raw key** | `settings.factoryResetWord` 미정의 | DICT 추가 확인 |
+| **T-91 모달 하단탭 위 노출** | `--snw-z-modal` 하향 | `_variables.css` 확인 |
+| **T-92 부팅 크래시** | critical 내 `xSemaphoreCreate*` | `_internalInitAndTake` 확인 |
+| **T-93 리스너 누적** | 익명 `addEventListener` | `_onOverlayClick` 참조 확인 |
+| **T-94 timeCfg 미반영** | TM10 재적용 누락 | `_routeSystemPatchBody` 확인 |
+| **T-95 404 잔존** | `overrideParams` 경로 | `CFG.API.simulation` 매핑 확인 |
+| **T-96 Runtime 빈 값** | `runtime` export 누락 | `exportStateJson_v02` 확인 |
+| **T-97 B-2 위반** | `g_A20_config_root.` 직접 | `getRootSnapshot` 경유 |
+| **T-98 Dashboard 무반응** | `startSession` 위임 누락 | ADR-1 위임 경로 확인 |
+| **T-99 resume 컨텍스트 유실** | `_pausedExec` 백업 누락 | pauseSession 백업 확인 |
+| **T-101 profileId 스케줄 무반영** | `tickSchedule` profileId 참조 오류 | ADR-3 단일 규격 확인 |
+| **T-103 steps[] 데이터 유실** | 스키마 불일치 | steps[] 단일 표준 확인 |
+| **T-104 repeat 무시** | 프론트 `repeat` vs C++ `repeatSegments` | 필드명 통일 확인 |
+| **T-105 Studio 🎬 TypeError** | `SNW.Preview.showModal` 미정의 | ADR-5 파사드 확인 |
+| **T-106 raw key 노출** | DICT 키 누락 | `check_i18n.py --strict` |
+| **T-107 /monitor 진입 안 됨** | ROUTES 미등재 | `070.router.js` 확인 |
+| **T-108 오버레이 미표시** | `_drawOverlay` 미구현 | `210.page.chart.js` 확인 |
+| **T-109 Offline 강도 동일** | `params` 경로 | `factors` 경로 확인 |
+| **T-110 Offline 레이아웃 붕괴** | `#app` 삽입 | `document.body.firstChild` 확인 |
+| **T-111 Offline step 고정** | 시뮬 미구현 | `startSimulator` step 로직 확인 |
 
 ---
 
@@ -2183,7 +2582,8 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| **2026-10-28** | **v2.8** | **웹 오프라인 어댑터 및 한/영 다국어 연동 검증 반영**: §3.3 T-73 (1건) 신규, §8 트러블슈팅 매트릭스 T-73 추가, §9.1 G-9.2 릴리스 게이트 추가 | Antigravity AI |
+| **2026-11-05** | **v3.0** | **Phase 1~6 통합 (v0203_011) 회귀 절차 신설**: §3.4 T-90~T-112 (23건) 신규, §1.1 L8 계층 추가, §7 회귀 매트릭스 확장 (L8 행 + 필수 세트 29→39건), §8 트러블슈팅 20건 추가 (ADR-2 단일 규격 반영). | Antigravity AI |
+| 2026-10-28 | v2.8 | 웹 오프라인 어댑터 및 한/영 다국어 연동 검증 반영: §3.3 T-73 (1건) 신규, §8 트러블슈팅 매트릭스 T-73 추가, §9.1 G-9.2 릴리스 게이트 추가 | Antigravity AI |
 | 2026-10-28 | v2.7 | **Batch I 바람 물리 파라미터 직접 지정 (Override) 모델 및 UI 고도화 반영**: §3.3 T-70~T-72 (3건) 신규, §1.1 L7 계층 추가, §7 회귀 매트릭스 확장(필수 26→29건), §8 트러블슈팅 매트릭스 T-70~T-72 추가, §9.1 G-9.1 릴리스 게이트 추가 | Antigravity AI |
 | 2026-10-27 | v2.6 | **Batch H 웹 UI/오프라인 로더 반영**: §8 트러블슈팅 매트릭스 T-68(모달/세그먼트 2열 그리드 및 Undo 복원 검증), T-69(로컬 오프라인 감지 및 동기 로드 가드 검증) 신규 추가 | Antigravity AI |
 | 2026-10-26 | v2.5 | **Batch G 코드 재검토 반영**: §3.1 T-46~T-50 (C-1~C-5 P0 5건) 신규, §3.2 T-51~T-67 (B-1~B-13, NEW-C1~U4 P1 17건) 신규. §1.1 L6 계층 추가. T-1/T-3/T-9 판정 기준 보강(C-3/B-1/B-5 영향). §7 매트릭스 확장(필수 13→26건). §8 트러블슈팅 16건 추가. §9 G-8 게이트 신규 | Antigravity AI |
@@ -2197,19 +2597,4 @@ git push origin v0203-release-2026-10-26
 | (초기) | v1.0 | T-1~T-8 | 개발팀 |
 
 
-### T-90 ~ T-115 신규 통합 검증 항목 (v3.2)
-- **T-90**: 대시보드 50조합(10 프리셋 × 5 스타일) 정밀 계산 검증 (50/50 PASS).
-- **T-91**: 차트 버퍼 덮어쓰기 방지 및 실시간 append 검증.
-- **T-92**: 프리셋 아이콘 10종 1:1 매칭 검증.
-- **T-100**: 가상 미리보기 300점 파형 및 정성 감성 지표 4종 검증.
-- **T-101**: 실시간 차트 실제/예상 탭 및 안내 배너 동작 검증.
-- **T-102**: 모니터링 Warm 링버퍼 및 다운샘플링 쿼리(5m/30m/1h) 검증.
-- **T-103**: 지난 이벤트 7일 통합 조회 검증.
-- **T-104**: 실시간 wind CSV 및 7일 전체 CSV 내보내기 검증.
-- **T-105**: LittleFS 5개 바이너리 파일 헤더 및 Pre-allocation 무결성 검증.
-- **T-110**: 시뮬레이션 페이지 바람 체험실 렌더링 검증.
-- **T-111**: 실시간 차트 예상 파형 오버레이(점선) 검증.
-- **T-112**: 맛보기 투어 5개 프리셋 자동 시연 및 중단 검증.
-- **T-113**: 수면 모드 원클릭(120분 타이머) 검증.
-- **T-114**: 첫 방문 온보딩 팝업 검증.
-- **T-115**: 야간 시간대 감광 및 소음 알림 검증.
+

@@ -22,6 +22,7 @@
  */
 
 #include "W10_Web_0203.h"
+#include "TM10_TimeMg_0203.h"
 
 // ======================================================
 // [F-2] routeSystem POST/PATCH 공통 헬퍼
@@ -49,6 +50,16 @@ static void _routeSystemPatchBody(AsyncWebServerRequest* p_request,
         if (v_changed) {
             CL_W10_WebAPI::applySystemRuntimeFromConfig(*g_A20_config_root.system);
         }
+    }
+
+    // ======================================================
+    // [N-2] timeCfg 변경 시 TM10 재적용 (재부팅 없이 반영)
+    // ======================================================
+    if (v_changed && !v_doc["timeCfg"].isNull() && g_A20_config_root.system) {
+        TM10_applyTimeConfigFromSystem(*g_A20_config_root.system);
+        TM10_requestTimeSync();
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
+                           "[W10] timeCfg changed → TM10 reapplied (NTP sync requested)");
     }
 
     JsonDocument v_res;

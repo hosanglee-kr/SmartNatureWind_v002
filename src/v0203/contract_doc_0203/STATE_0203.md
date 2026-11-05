@@ -27,6 +27,11 @@
 | `s_timeValid`, `s_wifiUp` (TM10) | T-sys_evt, T-wf, T-loop (`tick`) | 모든 태스크 | `TM10::s_mutex` | **F-01** NTP |
 | `g_A20_config_root` | T-loop (`reloadAll` 스왑) | 모든 태스크 (`getRootSnapshot`) | `s_rootSwapMux` | LittleFS 루트 |
 | `_dirtyState/Metrics/Chart/Summary` (CT10) | T-loop (`markDirty`), T-loop (`consumeAllDirty` 소비) | T-loop (`CT10_WS_tick`) | `CT10::s_stateMutex` (**D-1** 배치) | WS 채널 dirty |
+| `_session` | T-async (start/pause/resume/stop) | T-async (`exportStateJson_v02`), T-loop | `CT10::s_stateMutex` | **mirror 전용** — FSM 결정 미참여 (ADR-1) |
+| `_pausedExec` | T-async (`pauseSession`) | T-async (`resumeSession`) | `CT10::s_stateMutex` | Pause 시 실행 컨텍스트 백업 |
+| `_session.payload.playlist.profileName` | T-async (`startSession` PLAYLIST) | T-async (`exportStateJson_v02`) | `CT10::s_stateMutex` | NowPlaying Bar 제목 (Phase 3) |
+| `_session.payload.playlist.currentStepStartMs` | T-loop (startSession), T-async (pause/resume 시 시프트) | T-async (`exportStateJson_v02`) | `CT10::s_stateMutex` | stepRemainSec 계산 기준점 |
+| `runCtx.state` | T-loop (`applyDecision`) | T-async (`exportStateJson_v02`), T-loop | `CT10::s_stateMutex` | FSM 실제 상태 (session과 별개) |
 
 ---
 
@@ -93,6 +98,58 @@
 - **근거**: 사용자가 profile 모드를 선택했다면 schedule 실행은 UX 위반
 
 ---
+
+
+## 2.5 Session FSM ↔ runCtx FSM 관계 (ADR-1 확정)
+
+### 2.5.1 이중 상태의 명확한 분리
+
+| 계층 | 상태 | 소유 | 목적 |
+|---|---|---|---|
+| **`runCtx.state`** | `EN_CT10_STATE_*` (7종) | T-loop (`applyDecision`) | **제어 로직 판단** — 팬 on/off, override/schedule 결정 |
+| **`_session.state`** | `EN_SESSION_runtime_t` (3종) | T-async (`start/pause/resume/stop`) | **API 응답 계층** — 프론트 NowPlaying Bar |
+
+### 2.5.2 핵심 계약
+1. `decideRunSource()`는 **절대 `_session`을 참조하지 않음**.
+2. `_session`은 `startSession`에서 위임된 실행 컨텍스트(`runSource`/`overrideState`/`curProfileIndex`)의 "사용자 명시 세션 여부"만 미러링.
+3. 따라서 **FSM이 IDLE이어도 `_session.state=PAUSED`일 수 있음** (pause 시 실행 상태 해제 → FSM IDLE, 하지만 _session은 PAUSED 유지).
+4. **resume 시**:
+   - `_pausedExec.valid == true` → 실행 컨텍스트 복원 → 다음 tick에서 FSM이 OVERRIDE/PROFILE_RUN 진입
+   - `_session.state = ACTIVE`
+
+### 2.5.3 세션 전이 매트릭스
+```text
+[IDLE/COMPLETED] ── startSession() ──► [ACTIVE]
+                       │                  ▲
+                 pauseSession()      resumeSession()
+                 (물리정지+백업)     (백업복원+Smart Resume)
+                       ▼                  │
+                   [PAUSED] ──────────────┘
+                       │
+                  stopSession()
+                  (물리정지+초기화)
+                       ▼
+               [IDLE/COMPLETED]
+```
+
+### 2.5.4 타임라인 예시 (PLAYLIST)
+```text
+t=0    : startSession(PLAYLIST) → startUserProfileByNo 위임
+         _session.state=ACTIVE, runCtx.state=IDLE (다음 tick에서 PROFILE_RUN)
+t=10ms : tickLoop → decideRunSource → PROFILE_RUN
+         runCtx.state=PROFILE_RUN, sim.active=true
+t=60s  : pauseSession() → 백업(_pausedExec) + sim.stop + overrideState 해제
+         _session.state=PAUSED, runCtx.state=IDLE (다음 tick)
+t=65s  : resumeSession() → 백업 복원 + Smart Resume (<5min: phaseStart 시프트)
+         _session.state=ACTIVE, runCtx.state=IDLE (다음 tick)
+t=65ms : tickLoop → decideRunSource → PROFILE_RUN
+         runCtx.state=PROFILE_RUN, sim.active=true, phaseStart 재개
+```
+
+### 2.5.5 금지 패턴
+- ❌ `decideRunSource`에서 `_session.state` 조건 분기
+- ❌ `_session.state == ACTIVE`일 때 `overrideState.active` 자동 설정 (이미 위임 시점에 설정됨)
+- ❌ `_session` 직접 쓰기 (반드시 startSession/pauseSession 경유)
 
 ## 3. S10 시뮬레이션 물리 엔진 상태
 
@@ -225,6 +282,58 @@ CT10_WS_tick (T-loop)
     각 pending 채널 true로 적립
 ```
 
+### 6.4 Session Pause/Resume/Stop 위임 라이프사이클
+
+#### 6.4.1 Pause (T-async, `s_stateMutex` 보유)
+```text
+pauseSession()
+  ├─ ① 검증: _session.type != NONE, _session.state == ACTIVE
+  ├─ ② 백업 (_pausedExec):
+  │     valid=true, runSource, profileIndex, override, profileSegRt, autoOffRt
+  ├─ ③ 물리 정지: sim.stop() + pwm 0%
+  ├─ ④ 실행 상태 해제:
+  │     overrideState = 0, runSource = NONE, curProfileIndex = -1, profileSegRt.index = -1
+  │     (→ 다음 tick에서 decideRunSource = IDLE)
+  ├─ ⑤ 세션 상태: _session.state = PAUSED, pausedAtMs = millis()
+  └─ ⑥ Dirty: state/metrics
+```
+
+#### 6.4.2 Resume (T-async, `s_stateMutex` 보유)
+```text
+resumeSession()
+  ├─ ① 검증: _session.state == PAUSED, _pausedExec.valid == true
+  ├─ ② 일시정지 시간 계산: pauseDuration = millis() - pausedAtMs
+  ├─ ③ 백업 복원: runSource, curProfileIndex, overrideState, profileSegRt, autoOffRt
+  ├─ ④ Smart Resume (PLAYLIST만):
+  │     ├─ > 30분 (S_PAUSE_STEP_RESET_MS):  step=1, phaseStart=millis()
+  │     ├─ 5~30분 (S_PAUSE_CONTINUE_MS):    phaseStart=millis() (step 유지)
+  │     └─ < 5분:                            phaseStart += pauseDuration (연속 재개)
+  ├─ ⑤ 세션 상태: _session.state = ACTIVE, _pausedExec.valid = false
+  └─ ⑥ Dirty: state
+```
+
+#### 6.4.3 Stop (T-async, `s_stateMutex` 보유)
+```text
+stopSession()
+  ├─ ① 멱등 확인: 이미 모든 상태가 NONE/IDLE이면 return false (no-op)
+  ├─ ② 물리 정지: sim.stop() + pwm 0%
+  ├─ ③ 위임 경로 정리 (재귀 mutex):
+  │     ├─ overrideState.active → stopOverride()
+  │     └─ runSource == USER_PROFILE → stopUserProfile()
+  ├─ ④ 실행 상태 전체 리셋
+  ├─ ⑤ 세션 리셋: _session = 0, _session.type = NONE
+  ├─ ⑥ NVS 해제: setManualSession(0, false) + setManualOvrSchedule(false)
+  └─ ⑦ Monitor 로그 + Dirty: state/metrics/summary
+```
+
+**Safe Resume 정책 (S-2)**:
+
+| 일시정지 시간 | 정책 | 재개 시점 |
+|---|---|---|
+| `< 5분` | 연속 재개 | phaseStart 시프트 (일시정지 시간만큼) |
+| `5~30분` | Step 유지, phase 재시작 | Step은 유지, 현재 Step 처음부터 |
+| `> 30분` | Step 1 리셋 | Step 1 처음부터 |
+
 ---
 
 ## 7. AutoOff 래치 및 이벤트 상태
@@ -275,7 +384,8 @@ CT10_WS_tick (T-loop)
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
-| **2026-10-27** | **v2.5** | **Batch H 웹 UI 고도화/오프라인 로더 동기화 상태 무결성 확인 (C++ FSM 변경 없음)** | Antigravity AI |
+| **2026-11-05** | **v3.0** | **Phase 1~6 통합 (v0203_011) — Session 위임 엔진 반영**: §1 5행 확장 (`_session`, `_pausedExec`, `profileName`, `currentStepStartMs`, `runCtx.state` vs `_session.state`), §2.5 신규 (Session FSM ↔ runCtx FSM 관계, ADR-1), §6.4 신규 (Pause/Resume/Stop 위임 라이프사이클, Smart Resume). | Antigravity AI |
+| 2026-10-27 | v2.5 | Batch H 웹 UI 고도화/오프라인 로더 동기화 상태 무결성 확인 (C++ FSM 변경 없음) | Antigravity AI |
 | 2026-10-26 | v2.4 | **Batch G — §1 M10 `_state.pirActive` 판정 규약 명시, §3.1 신규 (C-3 타임라인)** | Antigravity AI |
 | 2026-10-21 | v2.3 | AutoOff 래치 해제 엔드포인트 `/control/ack` (`HTTP_API_CTL_ACK`) 명시 및 현행화 | Antigravity AI |
 | 2026-10-20 | v2.2 | Batch A~F 반영: §1 `_dirty*`/`s_staConnected` atomic 명시, §2.4 F-5 profile fall-through, §3 S10 상수, §4 WF10 C-7/C-8/D-4, §6.3 D-1 배치, §7 AutoOff, §8 E-2 분할 상태 소유권 신규 | Antigravity AI |

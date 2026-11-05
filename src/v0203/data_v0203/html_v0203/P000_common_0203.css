@@ -1045,7 +1045,7 @@ body.snw-night-mode {
 
 
 
-/* ---- _layout.css (8061 bytes) ---- */
+/* ---- _layout.css (8092 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : _layout.css
@@ -1139,7 +1139,7 @@ body.snw-sidebar-open .snw-sidebar {
     right: 0;
     bottom: var(--snw-footer-h);
     background: rgba(0, 0, 0, 0.6);
-    z-index: 1040; /* 사이드바(1050)보다 낮게 */
+    z-index: var(--snw-z-overlay); /* 사이드바(1050)보다 낮게 */
     display: none;
 }
 
@@ -1208,7 +1208,7 @@ body.snw-sidebar-open .snw-sidebar-overlay {
         height: 60px;
         background: var(--snw-surface);
         border-top: 1px solid var(--snw-border);
-        z-index: 1000;
+        z-index: var(--snw-z-bottom);
         justify-content: space-around;
         align-items: center;
         padding-bottom: env(safe-area-inset-bottom); /* iOS 노치 대응 */
@@ -2661,7 +2661,7 @@ a {
 
 
 
-/* ---- _variables.css (2956 bytes) ---- */
+/* ---- _variables.css (3372 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : _variables.css
@@ -2740,12 +2740,19 @@ a {
     --snw-transition: 0.2s ease;
     --snw-transition-fast: 0.1s ease;
     
-    /* z-index */
-    --snw-z-sidebar: 100;
-    --snw-z-header: 50;
-    --snw-z-np: 90;
-    --snw-z-toast: 1000;
-    --snw-z-modal: 900;
+    /* =====================================================
+     * [N-6] z-index 계층 (ADR-4 확정)
+     *  - header(50) < nowplaying(95) < bottom-nav(1000)
+     *    < sidebar-overlay(1040) < sidebar(1050)
+     *    < modal(1100) < toast(1200)
+     * ===================================================== */
+    --snw-z-header:  50;
+    --snw-z-np:      95;
+    --snw-z-bottom:  1000;
+    --snw-z-overlay: 1040;
+    --snw-z-sidebar: 1050;
+    --snw-z-modal:   1100;   /* [N-6] 900 → 1100 */
+    --snw-z-toast:   1200;   /* [N-6] 1000 → 1200 */
 }
 
 /* 라이트 모드 자동 전환 */

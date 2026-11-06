@@ -290,16 +290,8 @@ typedef struct {
     bool     enabled                       = true;
 
     ST_A20_SchedulePeriod_t  period;
-    // [v0203 신규] Schedule -> Profile 참조 ID
+    // [v0203 단일 규격] Schedule -> Profile 참조 ID (트리거만 유지)
     uint8_t                  profileId = 0;
-    uint8_t                  segCount  = 0;
-    ST_A20_ScheduleSegment_t segments[A20_Const::MAX_SEGMENTS_PER_SCHEDULE];
-
-    bool    repeatSegments = true;
-    uint8_t repeatCount    = 0;
-
-    ST_A20_AutoOff_t autoOff;
-    ST_A20_Motion_t  motion;
 } ST_A20_ScheduleItem_t;
 
 typedef struct {

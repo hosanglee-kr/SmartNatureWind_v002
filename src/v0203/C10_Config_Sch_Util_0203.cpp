@@ -12,12 +12,11 @@
 
 #include "C10_Config_Sch_Internal_0203.h"
 
-#include "A40_Com_Utils_0203.h"     // A40_ComFunc / CL_A40_MutexGuard_Semaphore
-#include "A22_Com_Lookup_0203.h"    // A20_modeFromString
-#include "A23_Com_ResetCfg_0203.h"  // A20_resetXxxDefault
+#include "A40_Com_Utils_0203.h"    // A40_ComFunc / CL_A40_MutexGuard_Semaphore
+#include "A22_Com_Lookup_0203.h"   // A20_modeFromString
+#include "A23_Com_ResetCfg_0203.h" // A20_resetXxxDefault
 
 #include <string.h>
-
 
 // =====================================================
 // Helper 구현
@@ -90,10 +89,7 @@ bool C10_fromJson_ScheduleItem(const JsonObjectConst& p_js,
     A40_ComFunc::Json_copyStr_LogPolicy(p_js, "name", p_s.name, sizeof(p_s.name), "", p_callerForLog);
     p_s.enabled = p_js["enabled"] | true;
 
-    p_s.repeatSegments = p_js["repeatSegments"] | true;
-    p_s.repeatCount    = p_js["repeatCount"] | 0;
-
-    // [v0203] profileId 참조 디코딩
+    // [v0203 단일 규격] profileId 참조 디코딩 (트리거만 유지)
     p_s.profileId = (uint8_t)(p_js["profileId"] | 0u);
 
     // period
@@ -105,8 +101,10 @@ bool C10_fromJson_ScheduleItem(const JsonObjectConst& p_js,
             uint8_t v_val = 1;
             if (!jDays.isNull() && v_d < jDays.size()) {
                 JsonVariantConst vv = jDays[v_d];
-                if (vv.is<bool>())     v_val = vv.as<bool>() ? 1 : 0;
-                else if (vv.is<int>()) v_val = (vv.as<int>() != 0) ? 1 : 0;
+                if (vv.is<bool>())
+                    v_val = vv.as<bool>() ? 1 : 0;
+                else if (vv.is<int>())
+                    v_val = (vv.as<int>() != 0) ? 1 : 0;
             }
             p_s.period.days[v_d] = v_val;
         }
@@ -114,132 +112,22 @@ bool C10_fromJson_ScheduleItem(const JsonObjectConst& p_js,
 
     A40_ComFunc::copyStr2Buffer_safe(p_s.period.startTime,
                                      p_js["period"]["startTime"] | "00:00",
-                                     sizeof(p_s.period.startTime), p_callerForLog);
+                                     sizeof(p_s.period.startTime),
+                                     p_callerForLog);
     A40_ComFunc::copyStr2Buffer_safe(p_s.period.endTime,
                                      p_js["period"]["endTime"] | "23:59",
-                                     sizeof(p_s.period.endTime), p_callerForLog);
-
-    // segments
-    p_s.segCount = 0;
-    if (p_js["segments"].is<JsonArrayConst>()) {
-        JsonArrayConst v_segArr = p_js["segments"].as<JsonArrayConst>();
-        for (JsonObjectConst jseg : v_segArr) {
-            if (p_s.segCount >= A20_Const::MAX_SEGMENTS_PER_SCHEDULE) break;
-
-            ST_A20_ScheduleSegment_t& sg = p_s.segments[p_s.segCount];
-            memset(&sg, 0, sizeof(sg));
-
-            if (!p_forceReissueSegId && p_allowIdRead) {
-                uint16_t v_segIdIn = (uint16_t)(jseg["segId"] | 0);
-                if (v_segIdIn == 0u || v_segIdIn > 255u) {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: invalid segId=%u", v_caller, (unsigned)v_segIdIn);
-                    return false;
-                }
-                sg.segId = (uint8_t)v_segIdIn;
-            } else {
-                sg.segId = 0;
-            }
-
-            {
-                uint32_t v_segNoIn = (uint32_t)(jseg["segNo"] | 0u);
-                if (v_segNoIn == 0u || v_segNoIn > 65535u) {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: invalid segNo=%u", v_caller, (unsigned)v_segNoIn);
-                    return false;
-                }
-                sg.segNo = (uint16_t)v_segNoIn;
-            }
-
-            sg.onMinutes  = (uint16_t)(jseg["onMinutes"] | 10);
-            sg.offMinutes = (uint16_t)(jseg["offMinutes"] | 0);
-
-            const char* v_mode = jseg["mode"] | "PRESET";
-            sg.mode            = A20_modeFromString(v_mode);
-
-            A40_ComFunc::copyStr2Buffer_safe(sg.presetCode, jseg["presetCode"] | "", sizeof(sg.presetCode), p_callerForLog);
-            A40_ComFunc::copyStr2Buffer_safe(sg.styleCode,  jseg["styleCode"]  | "", sizeof(sg.styleCode),  p_callerForLog);
-
-            memset(&sg.override, 0, sizeof(sg.override));
-            sg.override.windIntensity   = -1.0f;
-            sg.override.windVariability = -1.0f;
-            sg.override.gustFrequency   = -1.0f;
-
-            if (jseg["override"].is<JsonObjectConst>()) {
-                JsonObjectConst ovr         = jseg["override"].as<JsonObjectConst>();
-                sg.override.enabled         = ovr["enabled"] | false;
-                if (ovr["windIntensity"].is<float>()) {
-                    sg.override.windIntensity = ovr["windIntensity"].as<float>();
-                }
-                if (ovr["windVariability"].is<float>()) {
-                    sg.override.windVariability = ovr["windVariability"].as<float>();
-                }
-                if (ovr["gustFrequency"].is<float>()) {
-                    sg.override.gustFrequency = ovr["gustFrequency"].as<float>();
-                }
-            }
-
-            sg.fixedSpeed = A40_ComFunc::Json_getNum<float>(jseg, "fixedSpeed", 0.0f);
-            p_s.segCount++;
-        }
-    }
-
-    // autoOff
-    memset(&p_s.autoOff, 0, sizeof(p_s.autoOff));
-    if (p_js["autoOff"].is<JsonObjectConst>()) {
-        JsonObjectConst ao          = p_js["autoOff"].as<JsonObjectConst>();
-        p_s.autoOff.timer.enabled   = ao["timer"]["enabled"] | false;
-        p_s.autoOff.timer.minutes   = ao["timer"]["minutes"] | 0;
-        p_s.autoOff.offTime.enabled = ao["offTime"]["enabled"] | false;
-        A40_ComFunc::copyStr2Buffer_safe(p_s.autoOff.offTime.time,
-                                         ao["offTime"]["time"] | "",
-                                         sizeof(p_s.autoOff.offTime.time), p_callerForLog);
-        p_s.autoOff.offTemp.enabled = ao["offTemp"]["enabled"] | false;
-        p_s.autoOff.offTemp.temp    = (float)(ao["offTemp"]["temp"] | 0.0);
-    }
-
-    // motion
-    p_s.motion.pir.enabled = p_js["motion"]["pir"]["enabled"] | false;
-    p_s.motion.pir.holdSec = p_js["motion"]["pir"]["holdSec"] | 0;
+                                     sizeof(p_s.period.endTime),
+                                     p_callerForLog);
 
     return true;
 }
 
 // -----------------------------------------------------
-// segId 재발급 + segNo 필수/중복 검증
+// segId 재발급 + segNo 필수/중복 검증 (단일 규격: No-op)
 // -----------------------------------------------------
 bool C10_reissueSegIdsAndValidateSegNos(ST_A20_ScheduleItem_t& p_s, const char* p_callerForLog) {
-    const char* v_caller = (p_callerForLog ? p_callerForLog : "?");
-
-    for (uint8_t v_i = 0; v_i < p_s.segCount && v_i < A20_Const::MAX_SEGMENTS_PER_SCHEDULE; v_i++) {
-        if (p_s.segments[v_i].segNo == 0) {
-            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: segNo is 0 (idx=%u)", v_caller, (unsigned)v_i);
-            return false;
-        }
-        for (uint8_t v_j = (uint8_t)(v_i + 1); v_j < p_s.segCount && v_j < A20_Const::MAX_SEGMENTS_PER_SCHEDULE; v_j++) {
-            if (p_s.segments[v_i].segNo == p_s.segments[v_j].segNo) {
-                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: duplicated segNo=%u", v_caller, (unsigned)p_s.segments[v_i].segNo);
-                return false;
-            }
-        }
-    }
-
-    uint8_t v_nextId = (uint8_t)G_C10_SEG_ID_START;
-    for (uint8_t v_i = 0; v_i < p_s.segCount && v_i < A20_Const::MAX_SEGMENTS_PER_SCHEDULE; v_i++) {
-        p_s.segments[v_i].segId = v_nextId;
-
-        uint16_t v_tmp = (uint16_t)v_nextId + (uint16_t)G_C10_SEG_ID_STEP;
-        if (v_tmp == 0u || v_tmp > 255u) v_tmp = (uint16_t)G_C10_SEG_ID_START;
-        v_nextId = (uint8_t)v_tmp;
-    }
-
-    for (uint8_t v_i = 0; v_i < p_s.segCount && v_i < A20_Const::MAX_SEGMENTS_PER_SCHEDULE; v_i++) {
-        if (p_s.segments[v_i].segId == 0) return false;
-        for (uint8_t v_j = (uint8_t)(v_i + 1); v_j < p_s.segCount && v_j < A20_Const::MAX_SEGMENTS_PER_SCHEDULE; v_j++) {
-            if (p_s.segments[v_i].segId == p_s.segments[v_j].segId) {
-                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: duplicated segId=%u after reissue", v_caller, (unsigned)p_s.segments[v_i].segId);
-                return false;
-            }
-        }
-    }
+    (void)p_s;
+    (void)p_callerForLog;
     return true;
 }
 
@@ -276,40 +164,6 @@ bool C10_validateSchedulesLoaded(const ST_A20_SchedulesRoot_t& p_root, const cha
                 return false;
             }
         }
-
-        if (v_s.segCount > A20_Const::MAX_SEGMENTS_PER_SCHEDULE) {
-            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: segCount overflow(schId=%u, segCount=%u)",
-                               v_caller, (unsigned)v_s.schId, (unsigned)v_s.segCount);
-            return false;
-        }
-
-        for (uint8_t v_k = 0; v_k < v_s.segCount && v_k < A20_Const::MAX_SEGMENTS_PER_SCHEDULE; v_k++) {
-            const ST_A20_ScheduleSegment_t& sg = v_s.segments[v_k];
-            if (sg.segId == 0) {
-                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: segId is 0 (schId=%u, idx=%u)",
-                                   v_caller, (unsigned)v_s.schId, (unsigned)v_k);
-                return false;
-            }
-            if (sg.segNo == 0) {
-                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: segNo is 0 (schId=%u, idx=%u)",
-                                   v_caller, (unsigned)v_s.schId, (unsigned)v_k);
-                return false;
-            }
-
-            for (uint8_t v_m = (uint8_t)(v_k + 1); v_m < v_s.segCount && v_m < A20_Const::MAX_SEGMENTS_PER_SCHEDULE; v_m++) {
-                const ST_A20_ScheduleSegment_t& sg2 = v_s.segments[v_m];
-                if (sg.segId == sg2.segId) {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: duplicated segId=%u (schId=%u)",
-                                       v_caller, (unsigned)sg.segId, (unsigned)v_s.schId);
-                    return false;
-                }
-                if (sg.segNo == sg2.segNo) {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: duplicated segNo=%u (schId=%u)",
-                                       v_caller, (unsigned)sg.segNo, (unsigned)v_s.schId);
-                    return false;
-                }
-            }
-        }
     }
     return true;
 }
@@ -321,9 +175,7 @@ bool C10_validateSchedulesBeforeSave(const ST_A20_SchedulesRoot_t& p_cfg, const 
 // -----------------------------------------------------
 // NoOverlap 검증 (cross-midnight 분해)
 // -----------------------------------------------------
-bool C10_validateNoOverlapByDay(const ST_A20_SchedulesRoot_t& p_root,
-                                bool                          p_failOnOverlap,
-                                const char*                   p_callerFunc) {
+bool C10_validateNoOverlapByDay(const ST_A20_SchedulesRoot_t& p_root, bool p_failOnOverlap, const char* p_callerFunc) {
     const char* v_caller = p_callerFunc ? p_callerFunc : "?";
 
     typedef struct {
@@ -351,27 +203,27 @@ bool C10_validateNoOverlapByDay(const ST_A20_SchedulesRoot_t& p_root,
                 uint16_t& v_cnt = v_counts[v_day];
                 if (v_cnt < (A20_Const::MAX_SCHEDULES * 2)) {
                     ST_C10_Range_t& r = v_ranges[v_day][v_cnt++];
-                    r.startMin = v_start;
-                    r.endMin   = v_end;
-                    r.itemIdx  = v_i;
+                    r.startMin        = v_start;
+                    r.endMin          = v_end;
+                    r.itemIdx         = v_i;
                 }
             } else {
                 {
                     uint16_t& v_cnt = v_counts[v_day];
                     if (v_cnt < (A20_Const::MAX_SCHEDULES * 2)) {
                         ST_C10_Range_t& r = v_ranges[v_day][v_cnt++];
-                        r.startMin = v_start;
-                        r.endMin   = 1440;
-                        r.itemIdx  = v_i;
+                        r.startMin        = v_start;
+                        r.endMin          = 1440;
+                        r.itemIdx         = v_i;
                     }
                 }
                 {
                     uint16_t& v_cnt = v_counts[v_day];
                     if (v_cnt < (A20_Const::MAX_SCHEDULES * 2)) {
                         ST_C10_Range_t& r = v_ranges[v_day][v_cnt++];
-                        r.startMin = 0;
-                        r.endMin   = v_end;
-                        r.itemIdx  = v_i;
+                        r.startMin        = 0;
+                        r.endMin          = v_end;
+                        r.itemIdx         = v_i;
                     }
                 }
             }
@@ -412,19 +264,26 @@ bool C10_validateNoOverlapByDay(const ST_A20_SchedulesRoot_t& p_root,
             if (r2.startMin < r1.endMin) {
                 v_anyOverlap = true;
 
-                static const char* s_dayName[7] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
-                const ST_A20_ScheduleItem_t& v_s1 = p_root.items[r1.itemIdx];
-                const ST_A20_ScheduleItem_t& v_s2 = p_root.items[r2.itemIdx];
+                static const char*           s_dayName[7] = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+                const ST_A20_ScheduleItem_t& v_s1         = p_root.items[r1.itemIdx];
+                const ST_A20_ScheduleItem_t& v_s2         = p_root.items[r2.itemIdx];
 
                 CL_D10_Logger::log(EN_L10_LOG_WARN,
                                    "[C10][%s] Overlap detected day=%s: "
                                    "A(schId=%u schNo=%u name=%s %u-%u) vs "
                                    "B(schId=%u schNo=%u name=%s %u-%u)",
-                                   v_caller, s_dayName[v_day],
-                                   (unsigned)v_s1.schId, (unsigned)v_s1.schNo, v_s1.name,
-                                   (unsigned)r1.startMin, (unsigned)r1.endMin,
-                                   (unsigned)v_s2.schId, (unsigned)v_s2.schNo, v_s2.name,
-                                   (unsigned)r2.startMin, (unsigned)r2.endMin);
+                                   v_caller,
+                                   s_dayName[v_day],
+                                   (unsigned)v_s1.schId,
+                                   (unsigned)v_s1.schNo,
+                                   v_s1.name,
+                                   (unsigned)r1.startMin,
+                                   (unsigned)r1.endMin,
+                                   (unsigned)v_s2.schId,
+                                   (unsigned)v_s2.schNo,
+                                   v_s2.name,
+                                   (unsigned)r2.startMin,
+                                   (unsigned)r2.endMin);
 
                 if (p_failOnOverlap) return false;
             }
@@ -453,7 +312,8 @@ void C10_sortSchedulesBySchNoDesc(ST_A20_SchedulesRoot_t& p_root) {
             const ST_A20_ScheduleItem_t& cur = p_root.items[(uint8_t)j];
 
             bool move = false;
-            if (cur.schNo < key.schNo) move = true;
+            if (cur.schNo < key.schNo)
+                move = true;
             else if (cur.schNo == key.schNo) {
                 if (cur.schId < key.schId) move = true;
             }

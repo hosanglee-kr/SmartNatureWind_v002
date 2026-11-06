@@ -1,7 +1,7 @@
 #pragma once
 /*
  * ------------------------------------------------------
- * 소스명 : A23_Com_ResetCfg_0203.h 
+ * 소스명 : A23_Com_ResetCfg_0203.h
  * 모듈약어 : A20
  * 모듈명 : Smart Nature Wind 공용 헬퍼/기본값 함수 구현 전용 헤더
  * ------------------------------------------------------
@@ -111,15 +111,13 @@ static inline void A20_resetScheduleSegmentDefault(ST_A20_ScheduleSegment_t& p_s
     p_seg.mode = EN_A20_SEG_MODE_PRESET;
 
     // 기본 프리셋/스타일 (정적 테이블 사용, B-6 대상 아님 - enum 이미 사용)
-    A40_ComFunc::copyStr2Buffer_safe(
-        p_seg.presetCode,
-        G_A20_WindPreset_Arr[EN_A20_WINDPRESET_OCEAN].code,
-        sizeof(p_seg.presetCode));
+    A40_ComFunc::copyStr2Buffer_safe(p_seg.presetCode,
+                                     G_A20_WindPreset_Arr[EN_A20_WINDPRESET_OCEAN].code,
+                                     sizeof(p_seg.presetCode));
 
-    A40_ComFunc::copyStr2Buffer_safe(
-        p_seg.styleCode,
-        G_A20_WindStyle_Arr[EN_A20_WINDSTYLE_BALANCE].code,
-        sizeof(p_seg.styleCode));
+    A40_ComFunc::copyStr2Buffer_safe(p_seg.styleCode,
+                                     G_A20_WindStyle_Arr[EN_A20_WINDSTYLE_BALANCE].code,
+                                     sizeof(p_seg.styleCode));
 
     A20_resetSegmentOverrideDefault(p_seg.override);
     p_seg.fixedSpeed = 0.0f;
@@ -131,8 +129,8 @@ static inline void A20_resetStepDefault(ST_A20_Step_t& p_step, uint8_t p_no = 1)
     p_step.durationMin = 20;
     p_step.type        = EN_A20_STEP_TYPE_PRESET;
     strlcpy(p_step.presetCode, A20_Const::DEFAULT_PRESET_CODE, sizeof(p_step.presetCode));
-    strlcpy(p_step.styleCode,  A20_Const::DEFAULT_STYLE_CODE,  sizeof(p_step.styleCode));
-    p_step.fixedSpeed  = 50.0f;
+    strlcpy(p_step.styleCode, A20_Const::DEFAULT_STYLE_CODE, sizeof(p_step.styleCode));
+    p_step.fixedSpeed = 50.0f;
     A20_resetSegmentOverrideDefault(p_step.override);
 
     // 하위 호환 멤버 초기화
@@ -237,15 +235,15 @@ static inline void A20_resetStyleEntryDefault(ST_A20_StyleEntry_t& p_s) {
 // -------------------------
 static inline void A20_resetPageAssetDefault(ST_A20_PageAsset_t& p_a) {
     memset(&p_a, 0, sizeof(p_a));
-    memset(p_a.uri,  0, sizeof(p_a.uri));
+    memset(p_a.uri, 0, sizeof(p_a.uri));
     memset(p_a.path, 0, sizeof(p_a.path));
 }
 
 static inline void A20_resetPageItemDefault(ST_A20_PageItem_t& p_p) {
     memset(&p_p, 0, sizeof(p_p));
 
-    memset(p_p.uri,   0, sizeof(p_p.uri));
-    memset(p_p.path,  0, sizeof(p_p.path));
+    memset(p_p.uri, 0, sizeof(p_p.uri));
+    memset(p_p.path, 0, sizeof(p_p.path));
     memset(p_p.label, 0, sizeof(p_p.label));
 
     p_p.enable = true;
@@ -261,12 +259,12 @@ static inline void A20_resetPageItemDefault(ST_A20_PageItem_t& p_p) {
 static inline void A20_resetRedirectItemDefault(ST_A20_ReDirectItem_t& p_r) {
     memset(&p_r, 0, sizeof(p_r));
     memset(p_r.uriFrom, 0, sizeof(p_r.uriFrom));
-    memset(p_r.uriTo,   0, sizeof(p_r.uriTo));
+    memset(p_r.uriTo, 0, sizeof(p_r.uriTo));
 }
 
 static inline void A20_resetCommonAssetDefault(ST_A20_CommonAsset_t& p_a) {
     memset(&p_a, 0, sizeof(p_a));
-    memset(p_a.uri,  0, sizeof(p_a.uri));
+    memset(p_a.uri, 0, sizeof(p_a.uri));
     memset(p_a.path, 0, sizeof(p_a.path));
     p_a.isCommon = false;
 }
@@ -281,9 +279,9 @@ static inline void A20_resetCommonAssetDefault(ST_A20_CommonAsset_t& p_a) {
 inline void A20_resetSystemDefault(ST_A20_SystemConfig_t& p_cfg) {
     memset(&p_cfg, 0, sizeof(p_cfg));
 
-    A40_ComFunc::copyStr2Buffer_safe(p_cfg.meta.version,    A20_Const::FW_VERSION, sizeof(p_cfg.meta.version));
-    A40_ComFunc::copyStr2Buffer_safe(p_cfg.meta.deviceName, "SmartNatureWind",     sizeof(p_cfg.meta.deviceName));
-    A40_ComFunc::copyStr2Buffer_safe(p_cfg.meta.lastUpdate, "",                    sizeof(p_cfg.meta.lastUpdate));
+    A40_ComFunc::copyStr2Buffer_safe(p_cfg.meta.version, A20_Const::FW_VERSION, sizeof(p_cfg.meta.version));
+    A40_ComFunc::copyStr2Buffer_safe(p_cfg.meta.deviceName, "SmartNatureWind", sizeof(p_cfg.meta.deviceName));
+    A40_ComFunc::copyStr2Buffer_safe(p_cfg.meta.lastUpdate, "", sizeof(p_cfg.meta.lastUpdate));
 
     A40_ComFunc::copyStr2Buffer_safe(p_cfg.system.logging.level, "INFO", sizeof(p_cfg.system.logging.level));
     p_cfg.system.logging.maxEntries = 300;
@@ -318,7 +316,7 @@ inline void A20_resetSystemDefault(ST_A20_SystemConfig_t& p_cfg) {
     A40_ComFunc::copyStr2Buffer_safe(p_cfg.security.geminiApiKey, "", sizeof(p_cfg.security.geminiApiKey));
 
     A40_ComFunc::copyStr2Buffer_safe(p_cfg.timeCfg.ntpServer, "pool.ntp.org", sizeof(p_cfg.timeCfg.ntpServer));
-    A40_ComFunc::copyStr2Buffer_safe(p_cfg.timeCfg.timezone,  "Asia/Seoul",   sizeof(p_cfg.timeCfg.timezone));
+    A40_ComFunc::copyStr2Buffer_safe(p_cfg.timeCfg.timezone, "Asia/Seoul", sizeof(p_cfg.timeCfg.timezone));
     p_cfg.timeCfg.syncIntervalMin = 60;
 }
 
@@ -332,7 +330,7 @@ inline void A20_resetWifiDefault(ST_A20_WifiConfig_t& p_cfg) {
     A40_ComFunc::copyStr2Buffer_safe(p_cfg.wifiModeDesc, "0=AP,1=STA,2=AP+STA", sizeof(p_cfg.wifiModeDesc));
 
     A40_ComFunc::copyStr2Buffer_safe(p_cfg.ap.ssid, "NatureWind", sizeof(p_cfg.ap.ssid));
-    A40_ComFunc::copyStr2Buffer_safe(p_cfg.ap.pass, "2540",       sizeof(p_cfg.ap.pass));
+    A40_ComFunc::copyStr2Buffer_safe(p_cfg.ap.pass, "2540", sizeof(p_cfg.ap.pass));
 
     for (uint8_t v_i = 0; v_i < A20_Const::MAX_STA_NETWORKS; v_i++) {
         memset(&p_cfg.sta[v_i], 0, sizeof(p_cfg.sta[v_i]));
@@ -354,12 +352,8 @@ inline void A20_resetMotionDefault(ST_A20_MotionConfig_t& p_cfg) {
     p_cfg.timing.thermalIntervalMs = 3000;
 
     // sim 기본값 (B-6: A20_Const::DEFAULT_* 사용)
-    A40_ComFunc::copyStr2Buffer_safe(p_cfg.sim.presetCode,
-        A20_Const::DEFAULT_PRESET_CODE,
-        sizeof(p_cfg.sim.presetCode));
-    A40_ComFunc::copyStr2Buffer_safe(p_cfg.sim.styleCode,
-        A20_Const::DEFAULT_STYLE_CODE,
-        sizeof(p_cfg.sim.styleCode));
+    A40_ComFunc::copyStr2Buffer_safe(p_cfg.sim.presetCode, A20_Const::DEFAULT_PRESET_CODE, sizeof(p_cfg.sim.presetCode));
+    A40_ComFunc::copyStr2Buffer_safe(p_cfg.sim.styleCode, A20_Const::DEFAULT_STYLE_CODE, sizeof(p_cfg.sim.styleCode));
 
     p_cfg.sim.fanPowerEnabled = true;
     p_cfg.sim.intensity       = 70.0f;
@@ -388,22 +382,14 @@ inline void A20_resetWindDictDefault(ST_A20_WindDict_t& p_dict) {
 
     // [B-6] 샘플 기본 1개 (SSOT: A20_Const::DEFAULT_*)
     p_dict.presetCount = 1;
-    A40_ComFunc::copyStr2Buffer_safe(p_dict.presets[0].code,
-                                     A20_Const::DEFAULT_PRESET_CODE,
-                                     sizeof(p_dict.presets[0].code));
-    A40_ComFunc::copyStr2Buffer_safe(p_dict.presets[0].name,
-                                     A20_Const::DEFAULT_PRESET_NAME,
-                                     sizeof(p_dict.presets[0].name));
+    A40_ComFunc::copyStr2Buffer_safe(p_dict.presets[0].code, A20_Const::DEFAULT_PRESET_CODE, sizeof(p_dict.presets[0].code));
+    A40_ComFunc::copyStr2Buffer_safe(p_dict.presets[0].name, A20_Const::DEFAULT_PRESET_NAME, sizeof(p_dict.presets[0].name));
     p_dict.presets[0].factors.gustFrequency = 45.0f;
     p_dict.presets[0].factors.fanLimit      = 90.0f;
 
     p_dict.styleCount = 1;
-    A40_ComFunc::copyStr2Buffer_safe(p_dict.styles[0].code,
-                                     A20_Const::DEFAULT_STYLE_CODE,
-                                     sizeof(p_dict.styles[0].code));
-    A40_ComFunc::copyStr2Buffer_safe(p_dict.styles[0].name,
-                                     A20_Const::DEFAULT_STYLE_NAME,
-                                     sizeof(p_dict.styles[0].name));
+    A40_ComFunc::copyStr2Buffer_safe(p_dict.styles[0].code, A20_Const::DEFAULT_STYLE_CODE, sizeof(p_dict.styles[0].code));
+    A40_ComFunc::copyStr2Buffer_safe(p_dict.styles[0].name, A20_Const::DEFAULT_STYLE_NAME, sizeof(p_dict.styles[0].name));
     A20_resetStyleFactorsDefault(p_dict.styles[0].factors);
 }
 
@@ -413,23 +399,13 @@ inline void A20_resetWindDictDefault(ST_A20_WindDict_t& p_dict) {
 static inline void A20_resetScheduleItemDefault(ST_A20_ScheduleItem_t& p_s) {
     memset(&p_s, 0, sizeof(p_s));
 
-    p_s.schId   = 0;
-    p_s.schNo   = 0;
+    p_s.schId = 0;
+    p_s.schNo = 0;
     A40_ComFunc::copyStr2Buffer_safe(p_s.name, "", sizeof(p_s.name));
-    p_s.enabled = true;
+    p_s.enabled   = true;
+    p_s.profileId = 0;
 
     A20_resetSchedulePeriodDefault(p_s.period);
-
-    p_s.segCount = 0;
-    for (uint8_t v_i = 0; v_i < A20_Const::MAX_SEGMENTS_PER_SCHEDULE; v_i++) {
-        A20_resetScheduleSegmentDefault(p_s.segments[v_i]);
-    }
-
-    p_s.repeatSegments = true;
-    p_s.repeatCount    = 0;
-
-    A20_resetSchAutoOffDefault(p_s.autoOff);
-    A20_resetMotionCommonDefault(p_s.motion);
 }
 
 inline void A20_resetSchedulesDefault(ST_A20_SchedulesRoot_t& p_cfg) {
@@ -488,19 +464,19 @@ inline void A20_resetNvsSpecDefault(ST_A20_NvsSpecConfig_t& p_cfg) {
         ST_A20_NvsEntry_t& v_e = p_cfg.entries[p_cfg.entryCount];
         memset(&v_e, 0, sizeof(v_e));
 
-        A40_ComFunc::copyStr2Buffer_safe(v_e.key,          p_key,  sizeof(v_e.key));
-        A40_ComFunc::copyStr2Buffer_safe(v_e.type,         p_type, sizeof(v_e.type));
-        A40_ComFunc::copyStr2Buffer_safe(v_e.defaultValue, p_def,  sizeof(v_e.defaultValue));
+        A40_ComFunc::copyStr2Buffer_safe(v_e.key, p_key, sizeof(v_e.key));
+        A40_ComFunc::copyStr2Buffer_safe(v_e.type, p_type, sizeof(v_e.type));
+        A40_ComFunc::copyStr2Buffer_safe(v_e.defaultValue, p_def, sizeof(v_e.defaultValue));
 
         p_cfg.entryCount++;
     };
 
-    v_addEntry("runMode",      "uint8",  "0");
-    v_addEntry("actProfileNo", "uint8",  "0");
-    v_addEntry("actSegmentNo", "uint8",  "0");
-    v_addEntry("presetCode",   "string", "");
-    v_addEntry("styleCode",    "string", "");
-    v_addEntry("wifiConnected","bool",   "false");
+    v_addEntry("runMode", "uint8", "0");
+    v_addEntry("actProfileNo", "uint8", "0");
+    v_addEntry("actSegmentNo", "uint8", "0");
+    v_addEntry("presetCode", "string", "");
+    v_addEntry("styleCode", "string", "");
+    v_addEntry("wifiConnected", "bool", "false");
 }
 
 // -------------------------
@@ -528,50 +504,50 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
         p_cfg.pageCount = 1;
 
         ST_A20_PageItem_t& v_p = p_cfg.pages[0];
-        A40_ComFunc::copyStr2Buffer_safe(v_p.uri,   "/P010_main_0200.html",       sizeof(v_p.uri));
-        A40_ComFunc::copyStr2Buffer_safe(v_p.path,  "/html_v3/P010_main_0200.html", sizeof(v_p.path));
-        A40_ComFunc::copyStr2Buffer_safe(v_p.label, "Main",                     sizeof(v_p.label));
+        A40_ComFunc::copyStr2Buffer_safe(v_p.uri, "/P010_main_0200.html", sizeof(v_p.uri));
+        A40_ComFunc::copyStr2Buffer_safe(v_p.path, "/html_v3/P010_main_0200.html", sizeof(v_p.path));
+        A40_ComFunc::copyStr2Buffer_safe(v_p.label, "Main", sizeof(v_p.label));
         v_p.enable = true;
         v_p.isMain = true;
         v_p.order  = 10;
 
-        v_p.pageAssetCount = 0;
+        v_p.pageAssetCount  = 0;
         auto v_addPageAsset = [&](const char* p_uri, const char* p_path) {
             if (v_p.pageAssetCount >= A20_Const::MAX_PAGE_ASSETS) return;
             ST_A20_PageAsset_t& v_a = v_p.pageAssets[v_p.pageAssetCount++];
-            A40_ComFunc::copyStr2Buffer_safe(v_a.uri,  p_uri,  sizeof(v_a.uri));
+            A40_ComFunc::copyStr2Buffer_safe(v_a.uri, p_uri, sizeof(v_a.uri));
             A40_ComFunc::copyStr2Buffer_safe(v_a.path, p_path, sizeof(v_a.path));
         };
-        v_addPageAsset("/P010_main_0200.css",        "/html_v3/P010_main_0200.css");
-        v_addPageAsset("/P010_main_core_071.js",   "/html_v3/P010_main_core_071.js");
+        v_addPageAsset("/P010_main_0200.css", "/html_v3/P010_main_0200.css");
+        v_addPageAsset("/P010_main_core_071.js", "/html_v3/P010_main_core_071.js");
         v_addPageAsset("/P010_main_preset_071.js", "/html_v3/P010_main_preset_071.js");
-        v_addPageAsset("/P010_main_ws_071.js",     "/html_v3/P010_main_ws_071.js");
-        v_addPageAsset("/P010_main_wifi_071.js",   "/html_v3/P010_main_wifi_071.js");
-        v_addPageAsset("/P010_main_misc_071.js",   "/html_v3/P010_main_misc_071.js");
-        v_addPageAsset("/P010_main_0200.js",        "/html_v3/P010_main_0200.js");
+        v_addPageAsset("/P010_main_ws_071.js", "/html_v3/P010_main_ws_071.js");
+        v_addPageAsset("/P010_main_wifi_071.js", "/html_v3/P010_main_wifi_071.js");
+        v_addPageAsset("/P010_main_misc_071.js", "/html_v3/P010_main_misc_071.js");
+        v_addPageAsset("/P010_main_0200.js", "/html_v3/P010_main_0200.js");
     }
 
     auto v_addRedirect = [&](const char* p_from, const char* p_to) {
         if (p_cfg.reDirectCount >= A20_Const::MAX_REDIRECTS) return;
         ST_A20_ReDirectItem_t& v_r = p_cfg.reDirect[p_cfg.reDirectCount++];
         A40_ComFunc::copyStr2Buffer_safe(v_r.uriFrom, p_from, sizeof(v_r.uriFrom));
-        A40_ComFunc::copyStr2Buffer_safe(v_r.uriTo,   p_to,   sizeof(v_r.uriTo));
+        A40_ComFunc::copyStr2Buffer_safe(v_r.uriTo, p_to, sizeof(v_r.uriTo));
     };
 
-    v_addRedirect("/",          "/P010_main_0200.html");
-    v_addRedirect("/index.html","/P010_main_0200.html");
+    v_addRedirect("/", "/P010_main_0200.html");
+    v_addRedirect("/index.html", "/P010_main_0200.html");
     v_addRedirect("/P010_main", "/P010_main_0200.html");
 
     auto v_addCommonAsset = [&](const char* p_uri, const char* p_path, bool p_isCommon) {
         if (p_cfg.assetCount >= A20_Const::MAX_COMMON_ASSETS) return;
         ST_A20_CommonAsset_t& v_c = p_cfg.assets[p_cfg.assetCount++];
-        A40_ComFunc::copyStr2Buffer_safe(v_c.uri,  p_uri,  sizeof(v_c.uri));
+        A40_ComFunc::copyStr2Buffer_safe(v_c.uri, p_uri, sizeof(v_c.uri));
         A40_ComFunc::copyStr2Buffer_safe(v_c.path, p_path, sizeof(v_c.path));
         v_c.isCommon = p_isCommon;
     };
 
     v_addCommonAsset("/P000_common_071.css", "/html_v3/P000_common_071.css", true);
-    v_addCommonAsset("/P000_common_071.js",  "/html_v3/P000_common_071.js",  true);
+    v_addCommonAsset("/P000_common_071.js", "/html_v3/P000_common_071.js", true);
     v_addCommonAsset("/P001_comm_API_071.js", "/html_v3/P001_comm_API_071.js", true);
 }
 
@@ -579,12 +555,12 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
 // 5) Default Reset - Config Root
 // ======================================================
 inline void A20_resetToDefault(ST_A20_ConfigRoot_t& p_root) {
-    if (p_root.system)       A20_resetSystemDefault(*p_root.system);
-    if (p_root.wifi)         A20_resetWifiDefault(*p_root.wifi);
-    if (p_root.motion)       A20_resetMotionDefault(*p_root.motion);
-    if (p_root.nvsSpec)      A20_resetNvsSpecDefault(*p_root.nvsSpec);
-    if (p_root.windDict)     A20_resetWindDictDefault(*p_root.windDict);
-    if (p_root.schedules)    A20_resetSchedulesDefault(*p_root.schedules);
+    if (p_root.system) A20_resetSystemDefault(*p_root.system);
+    if (p_root.wifi) A20_resetWifiDefault(*p_root.wifi);
+    if (p_root.motion) A20_resetMotionDefault(*p_root.motion);
+    if (p_root.nvsSpec) A20_resetNvsSpecDefault(*p_root.nvsSpec);
+    if (p_root.windDict) A20_resetWindDictDefault(*p_root.windDict);
+    if (p_root.schedules) A20_resetSchedulesDefault(*p_root.schedules);
     if (p_root.userProfiles) A20_resetUserProfilesDefault(*p_root.userProfiles);
-    if (p_root.webPage)      A20_resetWebPageDefault(*p_root.webPage);
+    if (p_root.webPage) A20_resetWebPageDefault(*p_root.webPage);
 }

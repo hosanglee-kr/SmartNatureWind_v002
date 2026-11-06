@@ -12,7 +12,7 @@
 #include "C10_Config_Sch_Internal_0203.h"
 
 #include "A40_Com_Utils_0203.h"
-#include "A22_Com_Lookup_0203.h"    // [FIX] A20_modeToString
+#include "A22_Com_Lookup_0203.h" // [FIX] A20_modeToString
 #include "A23_Com_ResetCfg_0203.h"
 
 #include <string.h>
@@ -43,40 +43,12 @@ void CL_C10_ConfigManager::toJson_Schedules(const ST_A20_SchedulesRoot_t& p_cfg,
         js["name"]           = s.name;
         js["enabled"]        = s.enabled;
         js["profileId"]      = s.profileId;
-        js["repeatSegments"] = s.repeatSegments;
-        js["repeatCount"]    = s.repeatCount;
 
         for (uint8_t v_d = 0; v_d < 7; v_d++) {
             js["period"]["days"][v_d] = (uint8_t)(s.period.days[v_d] ? 1 : 0);
         }
         js["period"]["startTime"] = s.period.startTime;
         js["period"]["endTime"]   = s.period.endTime;
-
-        for (uint8_t v_k = 0; v_k < s.segCount && v_k < A20_Const::MAX_SEGMENTS_PER_SCHEDULE; v_k++) {
-            const ST_A20_ScheduleSegment_t& sg   = s.segments[v_k];
-            JsonObject                      jseg = js["segments"][v_k].to<JsonObject>();
-
-            jseg["segId"]      = sg.segId;
-            jseg["segNo"]      = sg.segNo;
-            jseg["onMinutes"]  = sg.onMinutes;
-            jseg["offMinutes"] = sg.offMinutes;
-            jseg["mode"]       = A20_modeToString(sg.mode);
-            jseg["presetCode"] = sg.presetCode;
-            jseg["styleCode"]  = sg.styleCode;
-
-            JsonObject ovr                  = jseg["override"].to<JsonObject>();
-            ovr["enabled"]                  = sg.override.enabled;
-            if (sg.override.enabled) {
-                ovr["windIntensity"]   = sg.override.windIntensity;
-                ovr["windVariability"] = sg.override.windVariability;
-                ovr["gustFrequency"]   = sg.override.gustFrequency;
-            }
-
-            jseg["fixedSpeed"] = sg.fixedSpeed;
-        }
-
-        A40_ComFunc::Json_writeAutoOff(js["autoOff"].to<JsonObject>(), s.autoOff);
-        A40_ComFunc::Json_writeMotion(js, s.motion);
     }
 }
 

@@ -12,7 +12,7 @@
 #include "C10_Config_Sch_Internal_0203.h"
 
 #include "A40_Com_Utils_0203.h"
-#include "A22_Com_Lookup_0203.h"    // [FIX] A20_modeToString
+#include "A22_Com_Lookup_0203.h" // [FIX] A20_modeToString
 #include "A23_Com_ResetCfg_0203.h"
 
 #include <string.h>
@@ -28,7 +28,7 @@ bool CL_C10_ConfigManager::loadSchedules(ST_A20_SchedulesRoot_t& p_cfg) {
     }
 
     JsonDocument d;
-    const char* v_cfgJsonPath = nullptr;
+    const char*  v_cfgJsonPath = nullptr;
     if (s_cfgJsonFileMap.schedules[0] != '\0') v_cfgJsonPath = s_cfgJsonFileMap.schedules;
 
     if (!v_cfgJsonPath) {
@@ -58,8 +58,10 @@ bool CL_C10_ConfigManager::loadSchedules(ST_A20_SchedulesRoot_t& p_cfg) {
         memset(&s, 0, sizeof(s));
 
         if (!C10_fromJson_ScheduleItem(js, s, true, false, false, __func__)) {
-            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: schedule decode failed (idx=%u). Load rejected.",
-                               __func__, (unsigned)p_cfg.count);
+            CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                               "[C10] %s: schedule decode failed (idx=%u). Load rejected.",
+                               __func__,
+                               (unsigned)p_cfg.count);
             A20_resetSchedulesDefault(p_cfg);
             return false;
         }
@@ -113,25 +115,24 @@ bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg, bo
     //   (예: "/json/cfg_schedules_0200.json" → "cfg_schedules_0200.json")
     // - 효과: 파일명 변경 시 10_cfg_jsonFile.json만 수정하면 자동 반영
     // ======================================================
-    v_root["version"] = A20_Const::G_JSON_VERSION;
+    v_root["version"]   = A20_Const::G_JSON_VERSION;
 
     const char* v_path  = s_cfgJsonFileMap.schedules;
     const char* v_slash = strrchr(v_path, '/');
     v_root["jsonFile"]  = (v_slash ? (v_slash + 1) : v_path);
 
-    JsonArray v_jsSchedules = v_root["schedules"].to<JsonArray>();
+    JsonArray     v_jsSchedules = v_root["schedules"].to<JsonArray>();
     const uint8_t v_maxSch = (v_sorted.count < A20_Const::MAX_SCHEDULES) ? v_sorted.count : A20_Const::MAX_SCHEDULES;
 
     for (uint8_t v_i = 0; v_i < v_maxSch; v_i++) {
-        const ST_A20_ScheduleItem_t& s = v_sorted.items[v_i];
-        JsonObject js = v_jsSchedules.add<JsonObject>();
+        const ST_A20_ScheduleItem_t& s  = v_sorted.items[v_i];
+        JsonObject                   js = v_jsSchedules.add<JsonObject>();
 
         js["schId"]          = s.schId;
         js["schNo"]          = s.schNo;
         js["name"]           = s.name;
         js["enabled"]        = s.enabled;
-        js["repeatSegments"] = s.repeatSegments;
-        js["repeatCount"]    = s.repeatCount;
+        js["profileId"]      = s.profileId;
 
         JsonObject jp = js["period"].to<JsonObject>();
         JsonArray  jd = jp["days"].to<JsonArray>();
@@ -140,36 +141,6 @@ bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg, bo
         }
         jp["startTime"] = s.period.startTime;
         jp["endTime"]   = s.period.endTime;
-
-        JsonArray v_jsSegs = js["segments"].to<JsonArray>();
-        const uint8_t v_maxSeg =
-            (s.segCount < A20_Const::MAX_SEGMENTS_PER_SCHEDULE) ? s.segCount : A20_Const::MAX_SEGMENTS_PER_SCHEDULE;
-
-        for (uint8_t v_k = 0; v_k < v_maxSeg; v_k++) {
-            const ST_A20_ScheduleSegment_t& sg = s.segments[v_k];
-            JsonObject jseg = v_jsSegs.add<JsonObject>();
-
-            jseg["segId"]      = sg.segId;
-            jseg["segNo"]      = sg.segNo;
-            jseg["onMinutes"]  = sg.onMinutes;
-            jseg["offMinutes"] = sg.offMinutes;
-            jseg["mode"]       = A20_modeToString(sg.mode);
-            jseg["presetCode"] = sg.presetCode;
-            jseg["styleCode"]  = sg.styleCode;
-
-            JsonObject ovr                  = jseg["override"].to<JsonObject>();
-            ovr["enabled"]                  = sg.override.enabled;
-            if (sg.override.enabled) {
-                ovr["windIntensity"]   = sg.override.windIntensity;
-                ovr["windVariability"] = sg.override.windVariability;
-                ovr["gustFrequency"]   = sg.override.gustFrequency;
-            }
-
-            jseg["fixedSpeed"] = sg.fixedSpeed;
-        }
-
-        A40_ComFunc::Json_writeAutoOff(js["autoOff"].to<JsonObject>(), s.autoOff);
-        A40_ComFunc::Json_writeMotion(js, s.motion);
     }
 
     return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.schedules, d, true, true, __func__);

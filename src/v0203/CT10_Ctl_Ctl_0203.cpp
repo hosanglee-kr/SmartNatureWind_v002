@@ -267,6 +267,21 @@ void CL_CT10_ControlManager::tickLoop() {
     if (v_nowMs - lastTickMs < S_TICK_MIN_INTERVAL_MS) return;
     lastTickMs = v_nowMs;
 
+    // [Stage 8 신규] AI set_timer 연동 런타임 AutoOff 만료 검사
+    if (_session.runtimeAutoOffMin > 0 &&
+        _session.type != EN_CT10_SESSION_NONE &&
+        _session.state == EN_SESSION_ACTIVE) {
+        if (v_nowMs - _session.runtimeAutoOffStartMs >= (_session.runtimeAutoOffMin * 60000UL)) {
+            CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Runtime AutoOff expired (%u min)", (unsigned)_session.runtimeAutoOffMin);
+            _session.runtimeAutoOffMin = 0;
+            _session.runtimeAutoOffStartMs = 0;
+            _autoOffLatched = true;
+            runCtx.reason = EN_CT10_REASON_AUTOOFF_TIMER;
+            stopSession();
+            return;
+        }
+    }
+
     // 0) 이벤트 상태 hold/ack 유지
     if (!overrideState.active && shouldHoldEventState()) {
         maybePushMetricsDirty();
@@ -702,6 +717,46 @@ bool CL_CT10_ControlManager::stopSession() {
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] stopSession()");
     return true;
+}
+
+// ======================================================
+// [Stage 8 신규] AI set_timer 연동 런타임 AutoOff 제어
+// ======================================================
+bool CL_CT10_ControlManager::setSessionAutoOff(uint32_t p_minutes) {
+    if (p_minutes == 0 || p_minutes > 1440) return false;
+    auto& self = instance();
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+
+    self._session.runtimeAutoOffStartMs = millis();
+    self._session.runtimeAutoOffMin     = p_minutes;
+    self.markDirty("state");
+    self.markDirty("metrics");
+
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] setSessionAutoOff(%u min)", (unsigned)p_minutes);
+    return true;
+}
+
+void CL_CT10_ControlManager::clearSessionAutoOff() {
+    auto& self = instance();
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
+    self._session.runtimeAutoOffStartMs = 0;
+    self._session.runtimeAutoOffMin     = 0;
+    self.markDirty("state");
+    self.markDirty("metrics");
+}
+
+uint32_t CL_CT10_ControlManager::getSessionAutoOffRemainSec() {
+    auto& self = instance();
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return 0;
+    if (self._session.runtimeAutoOffMin == 0) return 0;
+
+    uint32_t v_elapsedSec = (millis() - self._session.runtimeAutoOffStartMs) / 1000;
+    uint32_t v_totalSec   = self._session.runtimeAutoOffMin * 60;
+    return (v_elapsedSec < v_totalSec) ? (v_totalSec - v_elapsedSec) : 0;
 }
 
 bool CL_CT10_ControlManager::isSessionActive() {

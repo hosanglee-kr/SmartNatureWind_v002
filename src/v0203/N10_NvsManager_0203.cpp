@@ -19,6 +19,7 @@
 Preferences			  CL_N10_NvsManager::s_prefs;
 bool				  CL_N10_NvsManager::s_initialized = false;
 ST_N10_RuntimeState_t CL_N10_NvsManager::s_state;
+ST_N10_AIDailyUsage_t CL_N10_NvsManager::s_aiUsage;
 ST_N10_DirtyFlags_t	  CL_N10_NvsManager::s_dirty	  = { false };
 uint32_t			  CL_N10_NvsManager::s_lastSaveMs = 0;
 
@@ -44,6 +45,7 @@ bool CL_N10_NvsManager::begin() {
 	}
 
 	memset(&s_state, 0, sizeof(s_state));
+	memset(&s_aiUsage, 0, sizeof(s_aiUsage));
 	memset(&s_dirty, 0, sizeof(s_dirty));
 
 	s_state.lastScheduleNo	  = -1;
@@ -335,6 +337,13 @@ void CL_N10_NvsManager::loadRuntimeFromNvs() {
 	s_prefs.getString(G_N10_KEY_OVERRIDE_STYLE, v_buf, sizeof(v_buf));
 	strlcpy(s_state.overrideStyleCode, v_buf, sizeof(s_state.overrideStyleCode));
 
+	// [Phase 2] AI 일일 사용량 로드
+	memset(s_aiUsage.resetDate, 0, sizeof(s_aiUsage.resetDate));
+	s_prefs.getString(G_N10_KEY_AI_RESET_DATE, s_aiUsage.resetDate, sizeof(s_aiUsage.resetDate));
+	s_aiUsage.audioSec        = s_prefs.getUInt(G_N10_KEY_AI_AUDIO_SEC, 0);
+	s_aiUsage.turnCount       = s_prefs.getUShort(G_N10_KEY_AI_TURN_COUNT, 0);
+	s_aiUsage.estCostUsdX1000 = s_prefs.getUInt(G_N10_KEY_AI_COST, 0);
+
 	s_dirty.runtime = false;
 	CL_D10_Logger::log(EN_L10_LOG_INFO, "[N10] Load runtime: mode=%u src=%u sch=%d up=%d autoOff(%d,%lu) ovr_en=%d",
 		s_state.runMode, s_state.runSource, (int)s_state.lastScheduleNo, (int)s_state.lastUserProfileNo,
@@ -392,4 +401,72 @@ void CL_N10_NvsManager::flush(bool p_force) {
 	s_lastSaveMs	= millis();
 
 	CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[N10] Runtime flushed (single commit)");
+}
+
+// ==================================================
+// [Phase 2] AI 일일 사용량 관리 API
+// ==================================================
+void CL_N10_NvsManager::saveAIDailyUsageInternal() {
+	nvs_handle_t v_handle;
+	if (nvs_open(G_N10_NS_RUNTIME, NVS_READWRITE, &v_handle) == ESP_OK) {
+		nvs_set_str(v_handle, G_N10_KEY_AI_RESET_DATE, s_aiUsage.resetDate);
+		nvs_set_u32(v_handle, G_N10_KEY_AI_AUDIO_SEC, s_aiUsage.audioSec);
+		nvs_set_u16(v_handle, G_N10_KEY_AI_TURN_COUNT, s_aiUsage.turnCount);
+		nvs_set_u32(v_handle, G_N10_KEY_AI_COST, s_aiUsage.estCostUsdX1000);
+		nvs_commit(v_handle);
+		nvs_close(v_handle);
+	}
+}
+
+ST_N10_AIDailyUsage_t CL_N10_NvsManager::getAIDailyUsage() {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+	if (!v_guard.isAcquired()) {
+		ST_N10_AIDailyUsage_t v_empty;
+		memset(&v_empty, 0, sizeof(v_empty));
+		return v_empty;
+	}
+	return s_aiUsage;
+}
+
+bool CL_N10_NvsManager::addAIAudioUsage(uint32_t p_sec, uint16_t p_turns, uint32_t p_costUsdX1000) {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+	if (!v_guard.isAcquired()) return false;
+	s_aiUsage.audioSec += p_sec;
+	s_aiUsage.turnCount += p_turns;
+	s_aiUsage.estCostUsdX1000 += p_costUsdX1000;
+	saveAIDailyUsageInternal();
+	CL_D10_Logger::log(EN_L10_LOG_INFO, "[N10] AI usage updated: audioSec=%lu turns=%u costX1000=%lu",
+		(unsigned long)s_aiUsage.audioSec, (unsigned int)s_aiUsage.turnCount, (unsigned long)s_aiUsage.estCostUsdX1000);
+	return true;
+}
+
+bool CL_N10_NvsManager::resetAIDailyUsageIfNeeded(const char* p_todayDate) {
+	if (!p_todayDate || !p_todayDate[0]) return false;
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+	if (!v_guard.isAcquired()) return false;
+	if (strncmp(s_aiUsage.resetDate, p_todayDate, 10) != 0) {
+		strlcpy(s_aiUsage.resetDate, p_todayDate, sizeof(s_aiUsage.resetDate));
+		s_aiUsage.audioSec = 0;
+		s_aiUsage.turnCount = 0;
+		s_aiUsage.estCostUsdX1000 = 0;
+		saveAIDailyUsageInternal();
+		CL_D10_Logger::log(EN_L10_LOG_INFO, "[N10] AI daily usage reset for new date: %s", p_todayDate);
+		return true;
+	}
+	return false;
+}
+
+void CL_N10_NvsManager::forceResetAIDailyUsage(const char* p_todayDate) {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+	if (!v_guard.isAcquired()) return;
+	if (p_todayDate && p_todayDate[0]) {
+		strlcpy(s_aiUsage.resetDate, p_todayDate, sizeof(s_aiUsage.resetDate));
+	} else {
+		memset(s_aiUsage.resetDate, 0, sizeof(s_aiUsage.resetDate));
+	}
+	s_aiUsage.audioSec = 0;
+	s_aiUsage.turnCount = 0;
+	s_aiUsage.estCostUsdX1000 = 0;
+	saveAIDailyUsageInternal();
+	CL_D10_Logger::log(EN_L10_LOG_INFO, "[N10] AI daily usage force reset");
 }

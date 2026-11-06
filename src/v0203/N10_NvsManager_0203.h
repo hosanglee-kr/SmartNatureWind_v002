@@ -44,6 +44,14 @@ typedef struct {
 	bool	 manualOvrSchedule;
 } ST_N10_RuntimeState_t;
 
+// [v0203 신규 Phase 2] AI 일일 사용량 구조체
+typedef struct {
+	char	 resetDate[12];       // "YYYY-MM-DD"
+	uint32_t audioSec;           // 오늘 누적 오디오 초 (상한 1800초 = 30분)
+	uint16_t turnCount;          // 오늘 누적 Live 턴 수
+	uint32_t estCostUsdX1000;    // 추정 비용 ($ * 1000)
+} ST_N10_AIDailyUsage_t;
+
 typedef struct {
 	bool runtime;
 } ST_N10_DirtyFlags_t;
@@ -76,6 +84,12 @@ class CL_N10_NvsManager {
 	static constexpr const char* G_N10_KEY_MANUAL_ACTIVE    = "man_active";   // uint8(bool)
 	static constexpr const char* G_N10_KEY_MANUAL_PROFILE   = "man_prof";     // int16
 	static constexpr const char* G_N10_KEY_MANUAL_OVR_SCH   = "man_ovr_sch";  // uint8(bool)
+
+	// [v0203 신규 Phase 2] AI 일일 사용량 NVS 키 (<= 15 byte)
+	static constexpr const char* G_N10_KEY_AI_RESET_DATE = "ai_rst_dt";
+	static constexpr const char* G_N10_KEY_AI_AUDIO_SEC  = "ai_a_s";
+	static constexpr const char* G_N10_KEY_AI_TURN_COUNT = "ai_t_c";
+	static constexpr const char* G_N10_KEY_AI_COST       = "ai_cos";
 
   public:
 	// ==================================================
@@ -123,10 +137,19 @@ class CL_N10_NvsManager {
 	static void clearOverride();
 	static void resetRuntime();
 
+	// ==================================================
+	// [Phase 2] AI 일일 사용량 관리 API
+	// ==================================================
+	static ST_N10_AIDailyUsage_t getAIDailyUsage();
+	static bool addAIAudioUsage(uint32_t p_sec, uint16_t p_turns, uint32_t p_costUsdX1000);
+	static bool resetAIDailyUsageIfNeeded(const char* p_todayDate);
+	static void forceResetAIDailyUsage(const char* p_todayDate);
+
   private:
 	static Preferences			 s_prefs;
 	static bool					 s_initialized;
 	static ST_N10_RuntimeState_t s_state;
+	static ST_N10_AIDailyUsage_t s_aiUsage;
 	static ST_N10_DirtyFlags_t	 s_dirty;
 	static uint32_t				 s_lastSaveMs;
 
@@ -135,4 +158,5 @@ class CL_N10_NvsManager {
 
 	static void loadRuntimeFromNvs();
 	static void flush(bool p_force);
+	static void saveAIDailyUsageInternal();
 };

@@ -43,6 +43,17 @@
 
 #include <vector>
 
+// ======================================================
+// [v0203 Stage 8] AI 제어 한도 규격 (Limits)
+// ======================================================
+namespace W10_AI_Limits {
+    constexpr size_t   G_MAX_REQUEST_BODY      = 12288; // 12KB
+    constexpr size_t   G_MAX_RESPONSE_BYTES    = 8192;  // 8KB
+    constexpr uint32_t G_RATE_LIMIT_MS         = 5000;  // 5초
+    constexpr uint32_t G_GEMINI_TIMEOUT_MS     = 20000; // 20초
+    constexpr uint32_t G_LIVE_TOKEN_TIMEOUT_MS = 10000; // 10초
+}
+
 #include "A20_Const_0203.h"
 #include "C10_Config_0203.h"
 #include "CT10_Ctl_0203.h"
@@ -170,8 +181,10 @@ class CL_W10_WebAPI {
     static void routeUpload();        // POST /api/v001/fileUpload
     static void routeUpdate();        // POST /api/v001/fwUpdate
     
-    // 4-1. AI 프록시
-    static void routeGeminiProxy(); // POST /api/v001/ai/gemini
+    // 4-1. AI 프록시 및 제어
+    static void routeGeminiProxy();     // POST /api/v001/ai/gemini
+    static void routeAIExecuteAction(); // POST /api/v001/ai/execute-action
+    static void routeAILive();          // POST/GET /api/v001/ai/live-* & /cost-*
     
     // 5. 제어 및 상태 요약 (POST/GET)
     static void routeSession();        // [v0203 Stage 3] Session API /api/v001/session/*

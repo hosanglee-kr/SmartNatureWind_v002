@@ -125,8 +125,10 @@ void CL_W10_WebAPI::begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_co
     routeMetrics();
     routeLogs();
 
-    // 7-1. AI 프록시 (W10_Web_Gemini_0203.cpp)
+    // 7-1. AI 프록시 (W10_Web_Gemini_0203.cpp / W10_Web_Routes_AILive_0203.cpp)
     routeGeminiProxy();
+    routeAIExecuteAction();
+    routeAILive();
 
     // 8. 피드/Static/Upload/OTA/WS
     routeMotionFeed();      // Control

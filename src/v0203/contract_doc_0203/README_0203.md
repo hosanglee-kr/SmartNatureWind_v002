@@ -1,4 +1,4 @@
-# README_0203.md — 계약 기반 설계 문서 체계 (CBD)
+# README_0203.md — 계약 기반 설계 문서 체계 (CBD) (v2.13)
 
 > **목적**: 본 디렉토리는 Smart Nature Wind v0203 펌웨어의 계약 기반 설계(Contract-Based Design) 문서를 관리한다.  
 > 동시성 경계, 상태 소유권, 메모리/시간 예산, 회귀 테스트 절차를 체계화하여 멀티태스크 펌웨어의 안정성과 일관성을 보장한다.  
@@ -25,18 +25,18 @@ src/v0203/
 ├── User_Manual_0203/              # 사용자 매뉴얼
 ├── tools_0203/                    # v0203 빌드/계약 도구 (pio_gzip_0203.py, commit_contracts_0203.py)
 │
-├── data_v0203_src/                # [웹 개발 원본] (47 번들 JS + 18 CSS + HTML Shell + 998.offline_data + 998.offline)
+├── data_v0203_src/                # [웹 개발 원본] (54 번들 JS + 18 CSS + HTML Shell + 998.offline_data + 998.offline)
 ├── data_v0203/                    # [배포 스테이징] LittleFS 이미지 대상 (json 9개 + html_v0203 3개 번들 자산)
 │
 └── [C++ 소스군, v0203 접미사]      # 상세 모듈 매핑 및 파일 목록은 SPEC_0203.md §3 참조
     ├── main.cpp, A00_Main_0203.* (부팅 엔트리)
     ├── A20~A40 (상수, 룩업, NeoPixel, 유틸/IO)
     ├── C10_Config_* (환경설정 로드/저장/검증 분할 소스)
-    ├── CT10_Ctl_* (장치 제어, FSM 상태, 세그먼트, WS 분할 소스)
-    ├── D10 (로거), M10 (모션), N10 (NVS), P10 (PWM)
+    ├── CT10_Ctl_* (장치 제어, FSM 상태, 세그먼트, WS, AIPrompt/AIAction 분할 소스)
+    ├── D10 (로거), M10 (모션), N10 (NVS 및 AI 일일 사용량), P10 (PWM)
     ├── S10/S20 (물리 시뮬레이션, 자연풍 솔버)
     ├── TM10 (시간/NTP), WF10 (Wi-Fi 매니저)
-    └── W10_Web_* (비동기 웹서버 Core, 라우트 분할 소스)
+    └── W10_Web_* (비동기 웹서버 Core, 라우트 분할 소스, Routes_AILive, Gemini 프록시)
 ```
 
 > 💡 **C++ 소스 파일 상세 매핑 SSOT**: 각 모듈별 C++ 헤더/구현 파일 30여 종의 상세 목록 및 단일 책임 분할 명세는 **[SPEC_0203.md §3](SPEC_0203.md#3-모듈-구성-및-파일-매핑-v0203-접미사)**에 단일 정의되어 있습니다.
@@ -214,13 +214,13 @@ git push origin v0203-release-2026-10-26
 
 ---
 
-## 7. 실측 자원 사용량 (2026-11-06 Stage 1~7 최종 실측)
+## 7. 실측 자원 사용량 (2026-11-06 Stage 8 최종 실측)
 
 | 자원 | 사용 | 총량 | 여유 | 판정 |
 |---|---|---|---|---|
-| **RAM** | 100,436 B (30.7%) | 327,680 B | 227,244 B (69.3%) | ✅ BUDGET §6 >100KB 통과 |
-| **Flash** | 1,319,013 B (20.1%) | 6,553,600 B | 5,234,587 B (79.9%) | ✅ 여유 충분 |
-| **littlefs.bin** | 139.5 KB (프론트 gz 118.7 KB + JSON 20.8 KB) | 1,048,576 B (1MB) | 909,076 B (86.7%) | ✅ BUDGET §6 <200KB 통과 |
+| **RAM** | 100,468 B (30.7%) | 327,680 B | 227,212 B (69.3%) | ✅ BUDGET §6 >100KB 통과 |
+| **Flash** | 1,324,913 B (20.2%) | 6,553,600 B | 5,228,687 B (79.8%) | ✅ 여유 충분 |
+| **littlefs.bin** | 148.8 KB (프론트 gz 118.1 KB + JSON 30.7 KB) | 1,048,576 B (1MB) | 899,776 B (85.8%) | ✅ BUDGET §6 <200KB 통과 |
 
 ---
 
@@ -228,6 +228,7 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-06** | **v2.13** | **Stage 8 AI 제어 체계 및 Gemini Live 실시간 음성·비용 가드레일 반영 (v0203_011)**: REST 2-turn 프록시(`/ai/gemini`), Gemini Live 웹소켓 도구 위임 브리지 및 비용 API 8종 등록, 12대 안전 제어 도구 및 15종 위험 명령 차단, 30분 상한(403) 및 일일 $0.50 NVS 가드레일, AudioWorklet 16k 송신/24k 저지연 재생 Barge-in Flush, 전역 플로팅 AI 바텀시트, 54개 JS 번들링 및 실측치 갱신 | Antigravity AI |
 | **2026-11-06** | **v2.12** | **Schedule 단일 규격 정합 & 레거시 슬림화 및 TimerPanel 신규 구현 (v0203_011)**: Schedule 트리거 단일 규격화(`segments`, `repeat*`, `autoOff`, `motion` 완전 제거 및 Profile 위임 상속), 자동화 4번째 탭 세션 타이머(`SNW.TimerPanel` & `SNW.TimerManager`) 신규 구현, 구버전 스케줄/프로파일 페이지(`220`, `230`) 경량 파사드 전환(75KB 번들 절감), PlatformIO 펌웨어 클린 빌드 검증(RAM 100.4KB / Flash 1.32MB 실측 최적화) | Antigravity AI |
 | 2026-11-05 | v2.11 | **Phase 1~6 구현 완료 및 전면 단일 규격화 (0203_010/011)**: 세션 위임 엔진(Session Delegation Model, 물리 백업/복원), 하위 호환성 전면 배제 및 UserProfile/Schedule 단일 규격(`steps[]`, `repeatSegments`, `profileId`) 일원화, i18n 475키 DICT 완성 및 `check_i18n.py` CI Gate 파이프라인 통합, Preview 파사드 단일화(ADR-5), 오프라인 어댑터 정합(N-11~N-14, N-28), B-2 스냅샷 규약 철저 준수 | Antigravity AI |
 | 2026-11-04 | v2.10 | **Stage 1~7 구현 완료 및 프론트/백엔드 풀스택 아키텍처 완성 (0203_010)**: Step 기반 작곡 데이터 모델, Session FSM 엔진(3-State & 스마트 Resume), Now Playing Bar, Wind Studio/Playlist, Profile 스케줄러 & 충돌 감지, 일본 기상청 표준 DI Comfort 기상 추천, 20바 Canvas EQ & Haptic 피드백, 5축 감성 레이더 & A/B 시뮬레이션, 64-링버퍼 세션 회고 타임라인, 첫 방문 4단계 온보딩, ko/en 완전 다국어화, 47 JS + 18 CSS 번들링 현행화 | Antigravity AI |

@@ -1,4 +1,4 @@
-# CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.0)
+# CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.1)
 
 > **기준**: v0203 정적 감사 + 런타임 동시성 검증 완료 (F-01~F-10, I-1~I-6, N-1~N-4, G-1~G-3, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10, Batch G 전면 반영).  
 > **목적**: 멀티태스킹 환경에서 태스크 경계, 뮤텍스 획득 순서, 공유 자원 접근 규약 및 위임 패턴을 정의하여 데이터 레이스, 교착 상태(Deadlock), UAF를 원천 차단.  
@@ -23,13 +23,13 @@
 
 | 심볼 | 타입 | 초기화 | 타임아웃 | 보호 대상 |
 |---|---|---|---|---|
-| `CT10::s_stateMutex` | Recursive Mutex | Lazy-init | 100 ms | `runCtx`, FSM, override, 런타임 |
+| `CT10::s_stateMutex` | Recursive Mutex | Lazy-init | 100 ms | `runCtx`, FSM, override, 런타임, AI 프롬프트 캐시, AutoOff |
 | `C10::s_recursiveMutex` | Recursive Mutex | `C10::begin()` | 100 ms | 파일 I/O, 설정 CRUD |
 | `C10::s_rootSwapMux` | portMUX | 정적 | Critical | `g_A20_config_root` 8포인터 스냅샷/스왑 |
 | `C10::s_dirtyflagSpinlock` | portMUX | 정적 | Critical | 8섹션 dirty 플래그 |
 | `C10::s_pendingFreeMux` | portMUX | 정적 | Critical | `s_pendingFree` 2-슬롯 큐 |
 | `M10::s_stateMutex` | Recursive Mutex | Lazy-init | 100 ms | `_pir`, `_state` |
-| `N10::s_mutex` | Recursive Mutex | Lazy-init | 100 ms | `s_state`, Flush 큐 |
+| `N10::s_mutex` | Recursive Mutex | Lazy-init | 100 ms | `s_state`, Flush 큐, AI 일일 사용량(`s_aiDailyUsage`) |
 | `WF10::s_wifiMutex` | Recursive Mutex | Lazy-init | 100 ms | Wi-Fi 상태, 재연결 태스크 생성 |
 | `TM10::s_mutex` | Recursive Mutex | Lazy-init | 100 ms | SNTP 상태, fallback 인덱스 |
 | `S10::_recursiveMutex` | Recursive Mutex | `S10::begin()` | 100 ms | 시뮬 파라미터, 120-샘플 링버퍼 |
@@ -405,25 +405,6 @@ startSession(type, trigger, payload) [T-async]
 | **N-22** | Firmware 업로드 중 이탈 | `unmount` 가드 유지 (의도된 동작) |
 | **N-26** | `.snw-sidebar:not([hidden])` 죽은 규칙 | CSS 유지보수 개선 (기능 영향 없음) |
 
-## 8. 개정 이력
-
-| 날짜 | 버전 | 변경 내용 | 작성자 |
-|---|---|---|---|
-| **2026-10-30** | **v2.9** | **W10 REST 라우팅 Regex 의존성 제거, onNotFound Gzip 서빙 및 ArduinoJson v7 파싱 계약 (§7.14 ROUTE-1~3)**: `/:id` 기반 REST 라우팅 통일, `onNotFound` 핸들러 기반 `/html_v0203/` Gzip 정적 서빙, ArduinoJson v7 `.is<T>()` 타입 안전성 계약 명시 | Antigravity AI |
-| 2026-10-28 | v2.8 | 프론트엔드-백엔드 동기화 및 오프라인 2분할 계약 추가 (§7.9 SYNC-1~SYNC-3): `CT10_Ctl_0203.h` Enum ➔ `000.const.js` 자동 주입, `998.offline_data_0203.js` 분리 및 플래시 제외, 대시보드 프리셋/스타일 슬라이더 동기화, 모달 오버레이 격리 | Antigravity AI |
-| 2026-10-28 | v2.7 | 웹 오프라인 어댑터 및 한/영 다국어 연동 규약 추가 (§7.8 OFFLINE-1~OFFLINE-3): Mock 데이터 10개 프리셋/5개 스타일 factors 동기화, `/control/override` 인터셉트, 스케줄/프로필 한/영 병기 표기, 프리셋 관리 목록 실시간 i18n 반영 | Antigravity AI |
-| 2026-10-28 | v2.6 | Batch I — §7.7 바람 물리 제어 Override 전면 개편 (OVR-1~OVR-4), adjust 폐기, 3대 물리 제어 슬라이더 및 한/영 다국어 정합성 현행화 | Antigravity AI |
-| 2026-10-27 | v2.5 | Batch H — §7.6 프론트엔드 오프라인 로딩 및 부트스트랩 동기화 계약 추가 (LOAD-1~LOAD-2) | Antigravity AI |
-| 2026-10-26 | v2.4 | Batch G — §4 3행 추가, §7.4 27건 감사 신규, §7.5 B-2 위반 수정 화이트리스트 확정, index.html 통일 및 레거시 호환 제거 | Antigravity AI |
-| 2026-10-21 | v2.3 | 정규식 라우트(`html_v0203|html_v3`), 듀얼 폴백 서빙, `P010_bundle_0203.js`, `CT10::ackEventState` 일괄 현행화 | Antigravity AI |
-| 2026-10-20 | v2.2 | Batch A~F 반영: §2.1 D-4 atomic, §4 A-2/F-2/F-3/D-1 매트릭스, §4.2~§4.4 신규, §7.3 A-1~F-10 통합 | Antigravity AI |
-| 2026-10-19 | v2.1 | N-1~N-4, G-1~G-3 현행화 | Antigravity AI |
-| 2026-10-19 | v2.0 | v0203 승격 + (v1.2의 Gzip 서빙 계약 유지) | Antigravity AI |
-| 2026-10-19 | v1.2 | W10 Gzip 서빙, I-6 번들 | Antigravity AI |
-| 2026-10-19 | v1.1 | 심볼/시그니처 동기화 | Antigravity AI |
-| (초기) | v1.0 | 최초 정적 감사 기반 계약서 | 개발팀 |
-
-
 ### 7.10 대시보드·세그먼트·스타일 통합 물리 파이프라인 (PHY-1~PHY-4)
 - **[PHY-1] 단일 정본**: `S20_resolveWindParams`가 모든 풍속 파라미터(강도/변동/돌풍/난류/열기포)를 결정.
 - **[PHY-2] 스타일 정규화**: 5종 스타일(BALANCE/ACTIVE/FOCUS/RELAX/SLEEP) multipliers가 10개 프리셋에 100% 동일하게 작용.
@@ -448,3 +429,32 @@ startSession(type, trigger, payload) [T-async]
 - **[ROUTE-1] REST API ID 매핑**: 정규식 라우트 대신 `/:id` 라우트 패턴을 사용하며, `p_request->hasParam("id")` 유효성 검사 후 `p_request->getParam("id")->value().toInt()`로 안전하게 ID를 추출한다.
 - **[ROUTE-2] 정적 Gzip 호스팅**: 정규식 라우트 대신 `s_server->onNotFound` 핸들러에서 URL의 `PATH_STATIC_HTML` 접두사 일치 여부를 검사하고 `.gz` 우선 서빙을 수행하여 `ASYNCWEBSERVER_REGEX` 매크로 비활성화 환경에서도 안전하게 정적 자산을 제공한다.
 - **[ROUTE-3] ArduinoJson v7 역직렬화 타입 안전성**: `containsKey` 비권장 API를 배제하고, `obj["field"].is<T>()`를 통한 타입 검사 및 `obj["field"].as<T>()` / `A40_ComFunc::Json_getNum` 헬퍼를 통해 누락 필드 및 타입 불일치 크래시를 원천 방지한다.
+
+### 7.15 AI 제어 및 실시간 음성 안전 계약 (AI-1~AI-6) (Stage 8 신규)
+- **[AI-1] 위험 명령 격리 및 15종 원천 차단**: AI 자연어 도구 실행 시 재부팅(`reboot`), 와이파이 변경(`wifi_modify`), 공장 초기화(`factory_reset`), 파일시스템 포맷(`format_fs`), 직접 메모리 쓰기 등 15종 파괴 명령은 C++ `CT10_AI::isDangerousAction()`에서 100% 거부(400 Bad Request)된다.
+- **[AI-2] Tool Calling 실행의 FSM 위임 원칙**: AI 액션(`turn_on`, `start_preset`, `add_schedule` 등)은 `CT10` 공개 제어 함수(`startOverridePreset`, `addScheduleItem` 등)를 경유하며, `runCtx` FSM 상태나 하드웨어 PWM을 직통 조작하지 않는다.
+- **[AI-3] Live 세션 30분 상한 및 403 Forbidden 강제 차단**: Gemini Live 실시간 음성 연결은 세션당 최대 30분(1800초)으로 강제 제한되며, 상한 도달 시 클라이언트는 REST 모드로 자동 복귀하고 신규 Live 토큰 발급은 403 Forbidden으로 차단된다.
+- **[AI-4] 일일 비용 가드레일 및 NVS 4키 영구 누적**: 금일 누적 비용($0.50 초과 방지)과 세션 초는 NVS 키(`ai_rst_dt`, `ai_a_s`, `ai_t_c`, `ai_cos`)에 기록되며, 날짜 변경 시 자동 자정 리셋된다.
+- **[AI-5] 오디오 인라인 Blob AudioWorklet 및 Barge-in Flush**: 마이크 캡처는 별도 파일 없이 인라인 Blob AudioWorklet(16kHz PCM16)으로 전송되며, Gemini 응답 음성(24kHz PCM16) 수신 중 사용자 발화(Interruption) 발생 시 오디오 버퍼 큐를 즉시 Flush하여 음성 겹침을 방지한다.
+- **[AI-6] 프롬프트 캐싱 (30초 만료)을 통한 자원 보호**: 시스템 프롬프트 생성(`buildAIPromptStrict`)은 30초 파일 스코프 캐시를 유지하여 빈번한 AI 요청 중에도 I2C 센서 블로킹 및 힙 파편화를 0으로 억제한다.
+
+---
+
+## 8. 개정 이력
+
+| 날짜 | 버전 | 변경 내용 | 작성자 |
+|---|---|---|---|
+| **2026-11-06** | **v3.1** | **Stage 8 AI 제어 및 Gemini Live 실시간 음성 안전 계약 (§7.15 AI-1~AI-6)**: 15종 위험 명령 원천 차단, Tool Calling FSM 위임, 30분 세션 상한 및 403 차단, NVS 4키 일일 비용 가드레일, AudioWorklet 16k/24k 인라인 스트리밍 및 Barge-in Flush, 30초 프롬프트 캐싱 계약 명시, 개정 이력 위치 정상화 | Antigravity AI |
+| **2026-10-30** | **v2.9** | **W10 REST 라우팅 Regex 의존성 제거, onNotFound Gzip 서빙 및 ArduinoJson v7 파싱 계약 (§7.14 ROUTE-1~3)**: `/:id` 기반 REST 라우팅 통일, `onNotFound` 핸들러 기반 `/html_v0203/` Gzip 정적 서빙, ArduinoJson v7 `.is<T>()` 타입 안전성 계약 명시 | Antigravity AI |
+| 2026-10-28 | v2.8 | 프론트엔드-백엔드 동기화 및 오프라인 2분할 계약 추가 (§7.9 SYNC-1~SYNC-3): `CT10_Ctl_0203.h` Enum ➔ `000.const.js` 자동 주입, `998.offline_data_0203.js` 분리 및 플래시 제외, 대시보드 프리셋/스타일 슬라이더 동기화, 모달 오버레이 격리 | Antigravity AI |
+| 2026-10-28 | v2.7 | 웹 오프라인 어댑터 및 한/영 다국어 연동 규약 추가 (§7.8 OFFLINE-1~OFFLINE-3): Mock 데이터 10개 프리셋/5개 스타일 factors 동기화, `/control/override` 인터셉트, 스케줄/프로필 한/영 병기 표기, 프리셋 관리 목록 실시간 i18n 반영 | Antigravity AI |
+| 2026-10-28 | v2.6 | Batch I — §7.7 바람 물리 제어 Override 전면 개편 (OVR-1~OVR-4), adjust 폐기, 3대 물리 제어 슬라이더 및 한/영 다국어 정합성 현행화 | Antigravity AI |
+| 2026-10-27 | v2.5 | Batch H — §7.6 프론트엔드 오프라인 로딩 및 부트스트랩 동기화 계약 추가 (LOAD-1~LOAD-2) | Antigravity AI |
+| 2026-10-26 | v2.4 | Batch G — §4 3행 추가, §7.4 27건 감사 신규, §7.5 B-2 위반 수정 화이트리스트 확정, index.html 통일 및 레거시 호환 제거 | Antigravity AI |
+| 2026-10-21 | v2.3 | 정규식 라우트(`html_v0203|html_v3`), 듀얼 폴백 서빙, `P010_bundle_0203.js`, `CT10::ackEventState` 일괄 현행화 | Antigravity AI |
+| 2026-10-20 | v2.2 | Batch A~F 반영: §2.1 D-4 atomic, §4 A-2/F-2/F-3/D-1 매트릭스, §4.2~§4.4 신규, §7.3 A-1~F-10 통합 | Antigravity AI |
+| 2026-10-19 | v2.1 | N-1~N-4, G-1~G-3 현행화 | Antigravity AI |
+| 2026-10-19 | v2.0 | v0203 승격 + (v1.2의 Gzip 서빙 계약 유지) | Antigravity AI |
+| 2026-10-19 | v1.2 | W10 Gzip 서빙, I-6 번들 | Antigravity AI |
+| 2026-10-19 | v1.1 | 심볼/시그니처 동기화 | Antigravity AI |
+| (초기) | v1.0 | 최초 정적 감사 기반 계약서 | 개발팀 |

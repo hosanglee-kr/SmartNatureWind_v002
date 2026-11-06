@@ -1,4 +1,4 @@
-# TEST_PLAN_0203.md — 회귀 테스트 절차서 (v3.1)
+# TEST_PLAN_0203.md — 회귀 테스트 절차서 (v3.2)
 
 > **검증 대상**: Smart Nature Wind v0203 펌웨어 + v0203 SPA 프론트엔드  
 > **기준선**: Batch A~F 백엔드 리팩토링 + Phase 0~7 프론트엔드 재설계 + Batch G 코드 재검토(P0/P1) + Batch H UI 고도화 + Batch I 물리 Override 및 다국어 고도화 완료  
@@ -54,6 +54,9 @@ L7 Batch I 물리 Override 및 UI 고도화 (3건) ─── 릴리스 차단 �
 
 L8 Phase 1~6 통합 회귀 (24건) ─── 릴리스 차단 필수 10건 (T-90, T-91, T-94, T-97, T-98, T-99, T-101, T-103, T-105, T-106)
     T-90 ~ T-113
+
+L9 Stage 8 AI 제어 및 Live 실시간 음성 회귀 (7건) ─── 릴리스 차단 필수 7건
+    T-114 ~ T-120 (자동화 E2E 스크립트: test/e2e_stage8_4.py)
 ```
 
 ### 1.2 검증 환경
@@ -2062,6 +2065,57 @@ python src/v0203/tools_0203/check_i18n.py --strict
 
 ---
 
+### 3.5 Stage 8 AI 제어 및 Gemini Live 실시간 음성 회귀 (T-114 ~ T-120)
+
+> **자동화 E2E 스크립트 제공**: `python test/e2e_stage8_4.py <DEVICE_IP>`를 실행하면 T-114 ~ T-120 7대 시나리오가 일괄 자동 검증됩니다.
+
+#### T-114. REST 2-turn 대화 및 프록시 스트리밍 (`/api/v001/ai/gemini`)
+**목적**: Google Gemini REST API 2-turn 프록시 호출, Strict 시스템 프롬프트(캐시 30s) 주입 및 답변 생성 검증.
+**합격 판정**:
+- [ ] 자연어 입력 ("선풍기 켜줘") 시 200 OK 응답 및 텍스트 반환
+- [ ] 요청 크기 8KB 초과 시 413 Payload Too Large 차단
+- [ ] 분당 10회 초과 시 429 Too Many Requests 제한
+
+#### T-115. 15종 위험 시스템 제어 명령 원천 차단
+**목적**: 재부팅, 와이파이 재설정, 공장 초기화, 파일시스템 포맷 등 15종 파괴 명령 차단 검증.
+**합격 판정**:
+- [ ] `/api/v001/ai/execute-action` 에 `system_reboot` 또는 `factory_reset` 전달 시 400 Bad Request 차단
+- [ ] FSM 상태 및 기기 작동 영향 0건 유지
+
+#### T-116. Live 임시 토큰 발급 및 30분 상한(403) 가드레일
+**목적**: Gemini Live 연결 전 토큰 검증, 세션당 30분(1800초) 상한 도달 시 403 Forbidden 반환 검증.
+**합격 판정**:
+- [ ] 정상 상태에서 `/api/v001/ai/live-token` POST 시 `token` 및 `limitSec: 1800` 반환
+- [ ] 일일 비용 한도($0.50) 초과 상태에서 요청 시 403 Forbidden 반환
+
+#### T-117. 12대 안전 Tool Calling 위임 브리지 및 FSM 반영
+**목적**: Gemini 도구 호출(`turn_on`, `start_preset`, `add_schedule`, `get_environment` 등)이 CT10 공개 함수를 통해 FSM에 안전하게 반영되는지 검증.
+**합격 판정**:
+- [ ] `turn_on` 도구 실행 시 팬 가동 및 `/state` 에 ACTIVE 상태 반영
+- [ ] `start_preset` 실행 시 지정된 presetCode/styleCode로 바람 전환
+- [ ] `get_environment` 실행 시 현재 DHT 온습도 및 DI 지수 정상 반환
+
+#### T-118. NVS 4키 일일 사용량 누적 및 자정 자동 리셋
+**목적**: Gemini Live 세션 사용 시간 및 비용이 NVS(`ai_rst_dt`, `ai_a_s`, `ai_t_c`, `ai_cos`)에 기록되고 자정 리셋되는지 검증.
+**합격 판정**:
+- [ ] `/api/v001/ai/usage` 호출 후 `/api/v001/ai/cost-status` 에서 누적 초 및 비용 반영 확인
+- [ ] `/api/v001/ai/cost-reset` 호출 시 당일 누적치 0으로 리셋
+
+#### T-119. AudioWorklet 16k 송신 / 24k PCM16 저지연 재생 및 Barge-in Flush
+**목적**: 마이크 PCM16 인라인 Worklet 캡처 및 수신 오디오 큐 재생, 사용자 끼어들기 시 즉시 Flush 검증.
+**합격 판정**:
+- [ ] AudioWorklet 16kHz PCM16 오디오 청크 정상 생성 및 WebSocket 전송
+- [ ] 24kHz PCM16 청크 수신 시 스피커 정상 재생 및 Audio Orb 펄스 시각화
+- [ ] 사용자가 말하기 시작할 때 `playback.flush()` 호출되어 이전 답변 재생 즉시 중단
+
+#### T-120. 오프라인 모드 AI Mock 인터셉터 동작
+**목적**: ESP32 기기가 없는 로컬 브라우저 환경에서 `998.offline_0203.js` AI Mock 인터셉터 동작 검증.
+**합격 판정**:
+- [ ] 오프라인 모드에서 AI Studio 및 AI Sheet 진입 시 가상 응답 정상 수신
+- [ ] 가상 도구 실행 시 대시보드 상태 및 차트 정상 연동
+
+---
+
 ## 4. 프론트엔드 v0203 SPA
 
 ### T-29. 초기 로드 — SPA Shell 3자산
@@ -2602,6 +2656,7 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-06** | **v3.2** | **Stage 8 AI 제어 및 Gemini Live 실시간 음성 회귀 절차 신설 (§3.5 T-114~T-120)**: REST 2-turn, 15종 위험 명령 차단, Live 토큰/30분 상한, Tool Calling 위임, 일일 비용 NVS 누적, AudioWorklet/Barge-in, 오프라인 Mock 검증 절차 및 자동화 E2E 스크립트(`test/e2e_stage8_4.py`) 연계 명시 | Antigravity AI |
 | **2026-11-06** | **v3.1** | **Schedule 단일 규격 정합 & 세션 타이머 회귀 절차 신설 (v0203_011)**: §3.4 T-113 (세션 타이머 SNW.TimerPanel 동작 및 NowPlaying 연동) 신규 추가, Schedule의 profileId 단일 실행 재검증, L8 회귀 세트 24건 확장. | Antigravity AI |
 | 2026-11-05 | v3.0 | **Phase 1~6 통합 (v0203_011) 회귀 절차 신설**: §3.4 T-90~T-112 (23건) 신규, §1.1 L8 계층 추가, §7 회귀 매트릭스 확장 (L8 행 + 필수 세트 29→39건), §8 트러블슈팅 20건 추가 (ADR-2 단일 규격 반영). | Antigravity AI |
 | 2026-10-28 | v2.8 | 웹 오프라인 어댑터 및 한/영 다국어 연동 검증 반영: §3.3 T-73 (1건) 신규, §8 트러블슈팅 매트릭스 T-73 추가, §9.1 G-9.2 릴리스 게이트 추가 | Antigravity AI |

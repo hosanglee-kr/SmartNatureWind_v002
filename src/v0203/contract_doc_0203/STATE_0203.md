@@ -1,4 +1,4 @@
-# STATE_0203.md — 상태 소유권 및 FSM 명세
+# STATE_0203.md — 상태 소유권 및 FSM 명세 (v3.1)
 
 > **단일 기록자 원칙**: 각 런타임 상태 변수는 원칙적으로 단 하나의 태스크만 쓰기 권한을 가진다. 다중 태스크 쓰기 시 전용 뮤텍스 또는 `std::atomic`으로 격리.  
 > F-01~F-10, I-1~I-6, N-1~N-4, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10, Batch G 반영.  
@@ -32,6 +32,9 @@
 | `_session.payload.playlist.profileName` | T-async (`startSession` PLAYLIST) | T-async (`exportStateJson_v02`) | `CT10::s_stateMutex` | NowPlaying Bar 제목 (Phase 3) |
 | `_session.payload.playlist.currentStepStartMs` | T-loop (startSession), T-async (pause/resume 시 시프트) | T-async (`exportStateJson_v02`) | `CT10::s_stateMutex` | stepRemainSec 계산 기준점 |
 | `runCtx.state` | T-loop (`applyDecision`) | T-async (`exportStateJson_v02`), T-loop | `CT10::s_stateMutex` | FSM 실제 상태 (session과 별개) |
+| `s_aiDailyUsage` (N10) | T-async (`reportAIUsage`, `resetAICost`) | T-async (`getAIDailyUsage`) | `N10::s_mutex` | 당일 비용 누적 및 자정 자동 리셋 (NVS 4키 영구화) |
+| `s_promptCache` (CT10_AI) | T-async (`buildAIPromptStrict`) | T-async | 30초 유효 타임스탬프 | I2C 센서 블로킹 및 힙 파편화 방지 |
+| `runtimeAutoOff` (CT10) | T-loop (`tickLoop`) | T-loop, T-async | `CT10::s_stateMutex` | AI 명령 실행 시 동적 AutoOff 감쇠 및 자동 종료 |
 
 ---
 
@@ -375,6 +378,9 @@ stopSession()
 | `C10_Config_UzProf_*` | 프로파일 CRUD | `G_C10_PROFILE_*` (Internal 헤더, **F-10**) |
 | `C10_Config_WindDc_*` | 프리셋 CRUD | - |
 | `TM10_TimeMg_0203.cpp` | SNTP 상태 | (모두 헤더 inline static) |
+| `CT10_Ctl_AIPrompt_0203.cpp` | `s_promptCache`, `s_promptCacheValidUntil` (30초 캐시) | - |
+| `CT10_Ctl_AIAction_0203.cpp` | 12개 안전 도구 디스패처 (소유 상태 없음, CT10 공개 함수 위임) | - |
+| `W10_Web_Routes_AILive_0203.cpp` | Live 토큰 / 30분 상한 판정 및 일일 비용 라우팅 핸들러 | - |
 
 > **F-10 계약**: 분할 .cpp 간 공유 매크로는 `*_Internal_0203.h` 승격 필수. 파일 스코프 정의 금지.
 
@@ -384,6 +390,7 @@ stopSession()
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-06** | **v3.1** | **Stage 8 AI 제어 및 Live 음성 상태 소유권 반영**: §1 3행 확장(`s_aiDailyUsage`, `s_promptCache`, `runtimeAutoOff`), §8 분할 소유권에 AI 프롬프트/액션/라우트 모듈 3종 추가, 자정 리셋 및 30분 상한 상태 수명주기 명시 | Antigravity AI |
 | **2026-11-05** | **v3.0** | **Phase 1~6 통합 (v0203_011) — Session 위임 엔진 반영**: §1 5행 확장 (`_session`, `_pausedExec`, `profileName`, `currentStepStartMs`, `runCtx.state` vs `_session.state`), §2.5 신규 (Session FSM ↔ runCtx FSM 관계, ADR-1), §6.4 신규 (Pause/Resume/Stop 위임 라이프사이클, Smart Resume). | Antigravity AI |
 | 2026-10-27 | v2.5 | Batch H 웹 UI 고도화/오프라인 로더 동기화 상태 무결성 확인 (C++ FSM 변경 없음) | Antigravity AI |
 | 2026-10-26 | v2.4 | **Batch G — §1 M10 `_state.pirActive` 판정 규약 명시, §3.1 신규 (C-3 타임라인)** | Antigravity AI |

@@ -13,6 +13,8 @@ window.SNW = window.SNW || {};
         step: null,
         time: null,
         pending: null,
+        timerBadge: null,
+        timerVal: null,
         btnPause: null,
         btnStop: null,
         // 로컬 상태
@@ -116,6 +118,24 @@ window.SNW = window.SNW || {};
         } else {
             barEl.pending.hidden = true;
             barEl.pending.onclick = null;
+        }
+
+        // 4-1) Timer 배지
+        const timerStatus = (SNW.TimerManager && typeof SNW.TimerManager.getStatus === 'function')
+            ? SNW.TimerManager.getStatus()
+            : null;
+        if (barEl.timerBadge && timerStatus && timerStatus.active) {
+            barEl.timerBadge.hidden = false;
+            const min = timerStatus.remainMin;
+            const text = min > 60 ? `${Math.floor(min / 60)}h${min % 60}m` : `${min}m`;
+            if (barEl.timerVal) barEl.timerVal.textContent = text;
+            barEl.timerBadge.onclick = (e) => {
+                e.stopPropagation();
+                location.hash = '/automation/timer';
+            };
+        } else if (barEl.timerBadge) {
+            barEl.timerBadge.hidden = true;
+            barEl.timerBadge.onclick = null;
         }
 
         // 5) EQ 애니메이션
@@ -232,6 +252,8 @@ window.SNW = window.SNW || {};
         barEl.step = $('[data-slot="np-step"]', barEl.root);
         barEl.time = $('[data-slot="np-time"]', barEl.root);
         barEl.pending = $('[data-slot="np-pending"]', barEl.root);
+        barEl.timerBadge = $('[data-slot="np-timer"]', barEl.root);
+        barEl.timerVal = $('[data-slot="np-timer-val"]', barEl.root);
         barEl.btnPause = $('[data-action="pause"]', barEl.root);
         barEl.btnStop = $('[data-action="stop"]', barEl.root);
 
@@ -245,6 +267,7 @@ window.SNW = window.SNW || {};
         if (SNW.Store && typeof SNW.Store.subscribe === 'function') {
             SNW.Store.subscribe(() => render());
         }
+        document.addEventListener('snw:timerchange', () => render());
         render();
         SNW.LogUtil.info('[NowPlaying] Bar initialized');
     }

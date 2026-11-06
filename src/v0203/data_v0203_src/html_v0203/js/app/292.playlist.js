@@ -3,7 +3,7 @@
 // Layer 3 (Playlist 패널 컴포넌트)
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     SNW.Playlist = class Playlist {
@@ -93,8 +93,8 @@ window.SNW = window.SNW || {};
                     <div class="snw-playlist-item__sparkline" data-slot="spark" style="height:44px;margin:4px 0;"></div>
                     <div class="snw-playlist-item__refs" style="font-size:11px;color:var(--snw-text-faint,#6e7a87);">
                         ${refCount > 0
-                            ? `<span style="color:var(--snw-warn,#d29922);">⏰ 스케줄 ${refCount}개에서 사용 중</span>`
-                            : `<span class="snw-playlist-item__noref">스케줄 미참조</span>`}
+                    ? `<span style="color:var(--snw-warn,#d29922);">⏰ 스케줄 ${refCount}개에서 사용 중</span>`
+                    : `<span class="snw-playlist-item__noref">스케줄 미참조</span>`}
                     </div>
                 </div>
                 <div class="snw-playlist-item__actions" style="display:flex;gap:8px;justify-content:flex-end;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">
@@ -152,14 +152,14 @@ window.SNW = window.SNW || {};
             return card;
         }
 
-        
+
         _fmtTotal(profile) {
             // [ADR-2] steps[] canonical + legacy segments[] fallback
             const steps = (profile.steps && profile.steps.length > 0) ?
                 profile.steps :
                 (profile.segments || []);
             if (!steps.length) return '0분';
-            
+
             let total = 0;
             for (const s of steps) {
                 const dur = (s.durationMin != null) ?
@@ -167,7 +167,7 @@ window.SNW = window.SNW || {};
                     (Number(s.onMinutes || 0) + Number(s.offMinutes || 0));
                 total += dur || 0;
             }
-            
+
             if (profile.repeatSegments && profile.repeatCount > 0) {
                 total *= profile.repeatCount;
             }
@@ -175,19 +175,6 @@ window.SNW = window.SNW || {};
             const m = total % 60;
             return h > 0 ? `${h}시간 ${m}분` : `${m}분`;
         }
-    };
-
-    // =========================================================
-    // 타이머 placeholder (Stage 7 예정)
-    // =========================================================
-    // SNW.SchedulePanel은 293.schedule_panel.js에서 구현
-
-    SNW.TimerPanel = class TimerPanel {
-        constructor(el) { this.el = el; }
-        async mount() {
-            this.el.innerHTML = '<div class="snw-empty" style="text-align:center;padding:32px;color:var(--snw-text-dim,#8b949e);">Stage 7에서 구현됩니다</div>';
-        }
-        unmount() {}
     };
 })(window.SNW);
 

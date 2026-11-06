@@ -370,7 +370,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 020.i18n.js (63398 bytes) ---- */
+/* ---- 020.i18n.js (63543 bytes) ---- */
 // =========================================================
 // 020.i18n.js — 다국어 완전판 (ko/en)
 // =========================================================
@@ -611,13 +611,13 @@ window.SNW = window.SNW || {};
             // =====================================================
             // [N-5] Factory Reset 확인어 및 관련 문구
             // =====================================================
-            'settings.factoryResetTitle':       '공장 초기화',
-            'settings.factoryResetItems':       '다음 항목이 삭제됩니다:',
+            'settings.factoryResetTitle': '공장 초기화',
+            'settings.factoryResetItems': '다음 항목이 삭제됩니다:',
             'settings.factoryResetConfirmWord': '계속하려면 아래에 "초기화"를 입력하세요',
-            'settings.factoryResetWord':        '초기화',
-            'settings.factoryResetSuccess':     '공장 초기화 완료. 기기가 재부팅됩니다.',
-            'settings.deleteApiKey':            'API Key 삭제',
-            'settings.deleteGeminiKey':         'Gemini Key 삭제',
+            'settings.factoryResetWord': '초기화',
+            'settings.factoryResetSuccess': '공장 초기화 완료. 기기가 재부팅됩니다.',
+            'settings.deleteApiKey': 'API Key 삭제',
+            'settings.deleteGeminiKey': 'Gemini Key 삭제',
 
             // =====================================================
             // Header / Nav
@@ -649,338 +649,338 @@ window.SNW = window.SNW || {};
             'msg.durationRange': 'Step 지속 시간은 1~1440분이어야 합니다',
             'msg.selectProfile': '실행할 플레이리스트를 선택하세요',
             'msg.timeOrder': '종료 시각이 시작 시각보다 빨라야 합니다',
-        
+
             // =====================================================
             // [Phase5 5.6] 네비게이션 완전판
             // =====================================================
-            'nav.dashboard':   '대시보드',
-            'nav.chart':       '차트',
-            'nav.schedule':    '스케줄',
-            'nav.profiles':    '프로필',
-            'nav.sensors':     '센서',
-            'nav.monitor':     '모니터',
-            'nav.simulation':  '시뮬레이션',
+            'nav.dashboard': '대시보드',
+            'nav.chart': '차트',
+            'nav.schedule': '스케줄',
+            'nav.profiles': '프로필',
+            'nav.sensors': '센서',
+            'nav.monitor': '모니터',
+            'nav.simulation': '시뮬레이션',
             'nav.windprofile': '바람 프리셋',
-            'nav.network':     '네트워크',
-            'nav.logs':        '시스템 로그',
+            'nav.network': '네트워크',
+            'nav.logs': '시스템 로그',
             'nav.diagnostics': '진단',
-            'nav.firmware':    '펌웨어',
-            'nav.ai':          'AI 어시스턴트',
-            'nav.info':        '정보',
-            'nav.groupControl':  '제어',
+            'nav.firmware': '펌웨어',
+            'nav.ai': 'AI 어시스턴트',
+            'nav.info': '정보',
+            'nav.groupControl': '제어',
             'nav.groupSettings': '설정',
-            'nav.groupSystem':   '시스템',
+            'nav.groupSystem': '시스템',
 
             // =====================================================
             // [Phase5 5.6] 공통
             // =====================================================
-            'common.start':   '시작',
-            'common.stop':    '정지',
-            'common.add':     '추가',
+            'common.start': '시작',
+            'common.stop': '정지',
+            'common.add': '추가',
             'common.warning': '경고',
 
             // =====================================================
             // [Phase5 5.6] Footer / 상태
             // =====================================================
-            'footer.online':  '🟢 온라인',
+            'footer.online': '🟢 온라인',
             'footer.offline': '🔴 오프라인',
             'footer.polling': '🟡 폴링',
 
             // =====================================================
             // [Phase5 5.6] Dashboard
             // =====================================================
-            'dashboard.modeTitle':        '작동 모드 설정',
-            'dashboard.modeSchedule':     '◻ 스케줄 자동 모드',
-            'dashboard.modeProfile':      '◼ 프로필 수동 모드',
-            'dashboard.realtimeState':    '실시간 상태',
-            'dashboard.currentWind':      '현재 풍속',
-            'dashboard.targetWind':       '목표 풍속',
-            'dashboard.phase':            'Phase',
-            'dashboard.pwm':              'PWM',
-            'dashboard.sch':              '스케줄',
-            'dashboard.prof':             '프로필',
-            'dashboard.powerTitle':       '전원 제어',
-            'dashboard.sensorTitle':      '센서',
-            'dashboard.styleTitle':       '바람 스타일',
-            'dashboard.presetTitle':      '자연풍 프리셋',
-            'dashboard.physicsTitle':     '바람 세부 조절 (3대 물리 제어)',
-            'dashboard.powerOn':          '전원 켜기',
-            'dashboard.powerOff':         '전원 끄기',
-            'dashboard.temp':             '온도',
-            'dashboard.humidity':         '습도',
-            'dashboard.motion':           '인체감지',
-            'dashboard.motionDetected':   '감지됨',
-            'dashboard.motionAbsent':     '부재',
+            'dashboard.modeTitle': '작동 모드 설정',
+            'dashboard.modeSchedule': '◻ 스케줄 자동 모드',
+            'dashboard.modeProfile': '◼ 프로필 수동 모드',
+            'dashboard.realtimeState': '실시간 상태',
+            'dashboard.currentWind': '현재 풍속',
+            'dashboard.targetWind': '목표 풍속',
+            'dashboard.phase': 'Phase',
+            'dashboard.pwm': 'PWM',
+            'dashboard.sch': '스케줄',
+            'dashboard.prof': '프로필',
+            'dashboard.powerTitle': '전원 제어',
+            'dashboard.sensorTitle': '센서',
+            'dashboard.styleTitle': '바람 스타일',
+            'dashboard.presetTitle': '자연풍 프리셋',
+            'dashboard.physicsTitle': '바람 세부 조절 (3대 물리 제어)',
+            'dashboard.powerOn': '전원 켜기',
+            'dashboard.powerOff': '전원 끄기',
+            'dashboard.temp': '온도',
+            'dashboard.humidity': '습도',
+            'dashboard.motion': '인체감지',
+            'dashboard.motionDetected': '감지됨',
+            'dashboard.motionAbsent': '부재',
             'dashboard.modeSwitchedProfile': '프로필 모드로 전환되었습니다',
-            'dashboard.fanStop':          '끔',
-            'dashboard.fanStage':         '{n}단',
+            'dashboard.fanStop': '끔',
+            'dashboard.fanStage': '{n}단',
 
             // =====================================================
             // [Phase5 5.6] Chart
             // =====================================================
-            'chart.title':       '실시간 물리 차트',
-            'chart.tab.live':    '실제 작동 중',
+            'chart.title': '실시간 물리 차트',
+            'chart.tab.live': '실제 작동 중',
             'chart.tab.preview': '예상 파형',
-            'chart.range5s':     '5초',
-            'chart.range30s':    '30초',
-            'chart.range120s':   '120초',
-            'chart.overlay':     '예상 오버레이',
-            'chart.exportCsv':   'CSV 내보내기',
-            'chart.wind':        '풍속',
-            'chart.target':      '목표',
-            'chart.pwm':         'PWM',
+            'chart.range5s': '5초',
+            'chart.range30s': '30초',
+            'chart.range120s': '120초',
+            'chart.overlay': '예상 오버레이',
+            'chart.exportCsv': 'CSV 내보내기',
+            'chart.wind': '풍속',
+            'chart.target': '목표',
+            'chart.pwm': 'PWM',
 
             // =====================================================
             // [Phase5 5.6] Settings (필드 라벨 대량)
             // =====================================================
-            'settings.secMeta':        '메타 정보',
-            'settings.secFanPwm':      '팬 PWM 설정',
-            'settings.secFanCurve':    '팬 커브 (3구간)',
-            'settings.secPir':         'PIR 설정',
-            'settings.secDht':         '온습도 센서',
-            'settings.secLed':         'NeoPixel LED',
-            'settings.tabComm':        '통신 / WS',
+            'settings.secMeta': '메타 정보',
+            'settings.secFanPwm': '팬 PWM 설정',
+            'settings.secFanCurve': '팬 커브 (3구간)',
+            'settings.secPir': 'PIR 설정',
+            'settings.secDht': '온습도 센서',
+            'settings.secLed': 'NeoPixel LED',
+            'settings.tabComm': '통신 / WS',
 
-            'settings.fieldDeviceName':  '기기 이름',
-            'settings.fieldLogLevel':    '로그 레벨',
-            'settings.fieldLogMax':      '로그 최대 개수',
-            'settings.fieldRange':       '범위: {min}~{max}',
+            'settings.fieldDeviceName': '기기 이름',
+            'settings.fieldLogLevel': '로그 레벨',
+            'settings.fieldLogMax': '로그 최대 개수',
+            'settings.fieldRange': '범위: {min}~{max}',
             'settings.fieldRecommended': '권장: {range}',
-            'settings.fieldPinPwm':      'PWM 핀',
-            'settings.fieldChannel':     'LEDC 채널',
-            'settings.fieldFreq':        '주파수 (Hz)',
-            'settings.fieldRes':         '분해능 (bit)',
-            'settings.fieldStart':       '시동 최소 (%)',
-            'settings.fieldComfortMin':  '편안 시작 (%)',
-            'settings.fieldComfortMax':  '편안 끝 (%)',
-            'settings.fieldHardMax':     '최대 상한 (%)',
-            'settings.fieldEnabled':     '활성화',
-            'settings.fieldPinPir':      'PIR 핀',
-            'settings.fieldDebounce':    '디바운스 (초)',
-            'settings.fieldHold':        '유지 시간 (초)',
-            'settings.fieldPinDht':      'DHT 핀',
-            'settings.fieldType':        '센서 타입',
-            'settings.fieldInterval':    '읽기 주기 (초)',
-            'settings.fieldPinLed':      'LED 핀',
-            'settings.fieldNumPixels':   '픽셀 개수',
-            'settings.fieldBrightness':  '기본 밝기',
+            'settings.fieldPinPwm': 'PWM 핀',
+            'settings.fieldChannel': 'LEDC 채널',
+            'settings.fieldFreq': '주파수 (Hz)',
+            'settings.fieldRes': '분해능 (bit)',
+            'settings.fieldStart': '시동 최소 (%)',
+            'settings.fieldComfortMin': '편안 시작 (%)',
+            'settings.fieldComfortMax': '편안 끝 (%)',
+            'settings.fieldHardMax': '최대 상한 (%)',
+            'settings.fieldEnabled': '활성화',
+            'settings.fieldPinPir': 'PIR 핀',
+            'settings.fieldDebounce': '디바운스 (초)',
+            'settings.fieldHold': '유지 시간 (초)',
+            'settings.fieldPinDht': 'DHT 핀',
+            'settings.fieldType': '센서 타입',
+            'settings.fieldInterval': '읽기 주기 (초)',
+            'settings.fieldPinLed': 'LED 핀',
+            'settings.fieldNumPixels': '픽셀 개수',
+            'settings.fieldBrightness': '기본 밝기',
 
-            'settings.configured':       '설정됨',
-            'settings.notConfigured':    '미설정',
+            'settings.configured': '설정됨',
+            'settings.notConfigured': '미설정',
             'settings.keyPlaceholderChange': '변경하려면 새 키 입력 (비우면 유지)',
-            'settings.keyPlaceholderInput':  'API Key 입력',
-            'settings.testApiKey':       'API Key 테스트',
-            'settings.testApiSuccess':   '✓ 인증 성공',
-            'settings.testApiFail':      '✗ 인증 실패: {msg}',
+            'settings.keyPlaceholderInput': 'API Key 입력',
+            'settings.testApiKey': 'API Key 테스트',
+            'settings.testApiSuccess': '✓ 인증 성공',
+            'settings.testApiFail': '✗ 인증 실패: {msg}',
 
-            'settings.wsChannelConfig':  'WebSocket 채널 설정',
-            'settings.saveAndReload':    '저장 후 재적용',
-            'settings.save':             '저장',
-            'settings.reload':           '재적용',
+            'settings.wsChannelConfig': 'WebSocket 채널 설정',
+            'settings.saveAndReload': '저장 후 재적용',
+            'settings.save': '저장',
+            'settings.reload': '재적용',
 
-            'settings.dirtyWarning':       '저장되지 않은 변경 사항이 있습니다.\n재적용하면 저장되지 않은 변경 사항이 소실됩니다. 계속하시겠습니까?',
-            'settings.offlineReloadNotice':'오프라인 모드에서는 재적용이 지원되지 않습니다.',
-            'settings.reloadRequested':    '재적용 요청됨 ({status})',
-            'settings.reloadInProgress':   '재적용 진행 중...',
-            'settings.reloadFailed':       '재적용 실패',
-            'settings.reloadComplete':     '재적용 완료',
+            'settings.dirtyWarning': '저장되지 않은 변경 사항이 있습니다.\n재적용하면 저장되지 않은 변경 사항이 소실됩니다. 계속하시겠습니까?',
+            'settings.offlineReloadNotice': '오프라인 모드에서는 재적용이 지원되지 않습니다.',
+            'settings.reloadRequested': '재적용 요청됨 ({status})',
+            'settings.reloadInProgress': '재적용 진행 중...',
+            'settings.reloadFailed': '재적용 실패',
+            'settings.reloadComplete': '재적용 완료',
             'settings.saveAndReloadSuccess': '저장 후 재적용되었습니다',
 
             // =====================================================
             // [Phase5 5.6] Sensors
             // =====================================================
-            'sensors.title':        '실시간 센서 상태',
-            'sensors.temp':         '온도',
-            'sensors.hum':          '습도',
-            'sensors.motion':       '인체감지',
-            'sensors.feedPir':      'PIR 강제 감지 테스트',
+            'sensors.title': '실시간 센서 상태',
+            'sensors.temp': '온도',
+            'sensors.hum': '습도',
+            'sensors.motion': '인체감지',
+            'sensors.feedPir': 'PIR 강제 감지 테스트',
             'sensors.feedPirSuccess': '감지 신호 전송됨',
             'sensors.motionConfig': '모션 로직 설정',
-            'sensors.pirEnabled':   'PIR 활성화',
-            'sensors.pirHoldSec':   'PIR 유지 시간 (초)',
+            'sensors.pirEnabled': 'PIR 활성화',
+            'sensors.pirHoldSec': 'PIR 유지 시간 (초)',
             'sensors.saveMotionSuccess': '모션 설정 저장 완료',
 
             // =====================================================
             // [Phase5 5.6] Diagnostics
             // =====================================================
-            'diagnostics.allJson':          '전체 설정 JSON',
-            'diagnostics.saveDirty':        'Dirty 설정 저장',
+            'diagnostics.allJson': '전체 설정 JSON',
+            'diagnostics.saveDirty': 'Dirty 설정 저장',
             'diagnostics.saveDirtySuccess': 'Dirty 설정 저장 완료',
-            'diagnostics.fetchFail':        '설정 조회 실패',
-            'diagnostics.metricsRealtime':  '실시간 메트릭',
+            'diagnostics.fetchFail': '설정 조회 실패',
+            'diagnostics.metricsRealtime': '실시간 메트릭',
 
             // =====================================================
             // [Phase5 5.6] Log / AI / Firmware
             // =====================================================
-            'log.filterAll':   '전체 레벨',
-            'log.clear':       '지우기',
-            'log.export':      'JSON 내보내기',
-            'log.none':        '없음',
-            'log.error':       '에러',
-            'log.warn':        '경고',
-            'log.info':        '정보',
-            'log.debug':       '디버그',
+            'log.filterAll': '전체 레벨',
+            'log.clear': '지우기',
+            'log.export': 'JSON 내보내기',
+            'log.none': '없음',
+            'log.error': '에러',
+            'log.warn': '경고',
+            'log.info': '정보',
+            'log.debug': '디버그',
 
-            'ai.title':       'AI 어시스턴트',
+            'ai.title': 'AI 어시스턴트',
             'ai.placeholder': '바람에 대해 궁금한 것을 물어보세요...',
-            'ai.example1':    '오늘 날씨에 어울리는 바람은?',
-            'ai.example2':    '수면에 좋은 설정 추천해줘',
-            'ai.example3':    '자연풍 프리셋의 차이를 알려줘',
-            'ai.send':        '전송',
-            'ai.thinking':    '생각 중...',
+            'ai.example1': '오늘 날씨에 어울리는 바람은?',
+            'ai.example2': '수면에 좋은 설정 추천해줘',
+            'ai.example3': '자연풍 프리셋의 차이를 알려줘',
+            'ai.send': '전송',
+            'ai.thinking': '생각 중...',
 
-            'firmware.otaUpdate':  '펌웨어 업데이트 (OTA)',
-            'firmware.uploadBtn':  '업로드',
+            'firmware.otaUpdate': '펌웨어 업데이트 (OTA)',
+            'firmware.uploadBtn': '업로드',
             'firmware.otaSuccess': '펌웨어 업로드 완료',
             'firmware.fileUpload': '일반 파일 업로드',
 
             // =====================================================
             // [Phase5 5.6] Segment (Studio/Profile/Schedule 공통)
             // =====================================================
-            'segment.onMinutes':          '작동 시간(분)',
-            'segment.offMinutes':         '정지 시간(분)',
-            'segment.mode':               '모드',
-            'segment.modePreset':         '프리셋 모드',
-            'segment.modeFixed':          '고정풍속 모드',
-            'segment.presetSelect':       '프리셋 선택',
-            'segment.styleSelect':        '스타일 선택',
-            'segment.fixedSpeed':         '고정 풍속(%)',
-            'segment.overrideTitle':      '⚙️ 고급 물리 설정 (Override 직접 지정)',
-            'segment.overrideDesc':       '이 세그먼트에서 바람 세부 설정 직접 지정',
-            'segment.overrideIntensity':  '바람 강도 (%)',
-            'segment.overrideVariability':'바람 변동성 (%)',
-            'segment.overrideGust':       '돌풍 빈도 (%)',
-            'segment.moveUp':             '위로',
-            'segment.moveDown':           '아래로',
-            'segment.deleted':            '세그먼트가 삭제되었습니다',
-            'segment.summaryPrefix':      '세그먼트',
+            'segment.onMinutes': '작동 시간(분)',
+            'segment.offMinutes': '정지 시간(분)',
+            'segment.mode': '모드',
+            'segment.modePreset': '프리셋 모드',
+            'segment.modeFixed': '고정풍속 모드',
+            'segment.presetSelect': '프리셋 선택',
+            'segment.styleSelect': '스타일 선택',
+            'segment.fixedSpeed': '고정 풍속(%)',
+            'segment.overrideTitle': '⚙️ 고급 물리 설정 (Override 직접 지정)',
+            'segment.overrideDesc': '이 세그먼트에서 바람 세부 설정 직접 지정',
+            'segment.overrideIntensity': '바람 강도 (%)',
+            'segment.overrideVariability': '바람 변동성 (%)',
+            'segment.overrideGust': '돌풍 빈도 (%)',
+            'segment.moveUp': '위로',
+            'segment.moveDown': '아래로',
+            'segment.deleted': '세그먼트가 삭제되었습니다',
+            'segment.summaryPrefix': '세그먼트',
 
             // =====================================================
             // [Phase5 5.6] Schedule 추가
             // =====================================================
-            'schedule.secBasic':      '기본 정보',
-            'schedule.secSegments':   '세그먼트',
-            'schedule.secSmart':      '스마트 종료',
-            'schedule.add':           '스케줄 추가',
+            'schedule.secBasic': '기본 정보',
+            'schedule.secSegments': '세그먼트',
+            'schedule.secSmart': '스마트 종료',
+            'schedule.add': '스케줄 추가',
             'schedule.addSegmentBtn': '세그먼트 추가',
-            'schedule.segment':       '세그먼트',
+            'schedule.segment': '세그먼트',
             'schedule.segmentRepeat': '세그먼트 반복',
-            'schedule.repeatCount':   '반복 횟수',
-            'schedule.startTime':     '시작 시각',
-            'schedule.endTime':       '종료 시각',
-            'scheduler.title':         '스케줄 예약',
-            'scheduler.day':           '요일',
-            'scheduler.segment':       '세그먼트',
-            'scheduler.scheduledOff':  '예약 종료',
-            'scheduler.tempOff':       '온도 도달 종료',
+            'schedule.repeatCount': '반복 횟수',
+            'schedule.startTime': '시작 시각',
+            'schedule.endTime': '종료 시각',
+            'scheduler.title': '스케줄 예약',
+            'scheduler.day': '요일',
+            'scheduler.segment': '세그먼트',
+            'scheduler.scheduledOff': '예약 종료',
+            'scheduler.tempOff': '온도 도달 종료',
 
             // =====================================================
             // [Phase5 5.6] Profiles 추가
             // =====================================================
-            'profiles.add':           '프로필 추가',
-            'profiles.no':            '프로필 번호',
-            'profiles.enabled':       '활성화',
-            'profiles.name':          '프로필 이름',
+            'profiles.add': '프로필 추가',
+            'profiles.no': '프로필 번호',
+            'profiles.enabled': '활성화',
+            'profiles.name': '프로필 이름',
             'profiles.addSegmentBtn': '세그먼트 추가',
-            'profiles.autoOffTimer':  '자동 종료 (분)',
-            'profile.title':          '사용자 프로필',
-            'profile.active':         '활성',
+            'profiles.autoOffTimer': '자동 종료 (분)',
+            'profile.title': '사용자 프로필',
+            'profile.active': '활성',
 
             // =====================================================
             // [Phase5 5.6] Network
             // =====================================================
-            'network.title':        '네트워크 상태',
-            'network.wifiConfig':   'Wi-Fi 설정',
-            'network.timeConfig':   '시간 설정',
-            'network.wifiMode':     'Wi-Fi 모드',
-            'network.apSettings':   'AP 설정',
-            'network.staSettings':  'STA 네트워크 목록',
-            'network.status':       '연결 상태',
-            'network.ip':           'IP 주소',
-            'network.mac':          'MAC 주소',
-            'network.timeSynced':   '시간 동기화',
-            'network.synced':       '완료',
-            'network.notSynced':    '미완료',
-            'network.scanWifi':     'Wi-Fi 스캔',
-            'network.connect':      '연결',
-            'network.saveWifi':     'Wi-Fi 설정 저장',
-            'network.saveTime':     '시간 설정 저장',
-            'network.noStaNotice':  '등록된 STA 네트워크가 없습니다',
+            'network.title': '네트워크 상태',
+            'network.wifiConfig': 'Wi-Fi 설정',
+            'network.timeConfig': '시간 설정',
+            'network.wifiMode': 'Wi-Fi 모드',
+            'network.apSettings': 'AP 설정',
+            'network.staSettings': 'STA 네트워크 목록',
+            'network.status': '연결 상태',
+            'network.ip': 'IP 주소',
+            'network.mac': 'MAC 주소',
+            'network.timeSynced': '시간 동기화',
+            'network.synced': '완료',
+            'network.notSynced': '미완료',
+            'network.scanWifi': 'Wi-Fi 스캔',
+            'network.connect': '연결',
+            'network.saveWifi': 'Wi-Fi 설정 저장',
+            'network.saveTime': '시간 설정 저장',
+            'network.noStaNotice': '등록된 STA 네트워크가 없습니다',
 
             // =====================================================
             // [Phase5 5.6] Windprofile
             // =====================================================
-            'windprofile.title':        '바람 프리셋 관리',
-            'windprofile.add':          '프리셋 추가',
-            'windprofile.code':         '코드 (영문)',
-            'windprofile.intensity':    '강도',
-            'windprofile.variability':  '변동성',
-            'windprofile.gust':         '돌풍',
-            'windprofile.fanLimit':     '팬 한계',
+            'windprofile.title': '바람 프리셋 관리',
+            'windprofile.add': '프리셋 추가',
+            'windprofile.code': '코드 (영문)',
+            'windprofile.intensity': '강도',
+            'windprofile.variability': '변동성',
+            'windprofile.gust': '돌풍',
+            'windprofile.fanLimit': '팬 한계',
             'windprofile.factorsTitle': '기본 바람 파라미터',
 
             // =====================================================
             // [Phase5 5.6] PIR
             // =====================================================
             'pir.testSuccess': '✓ PIR 감지 성공',
-            'pir.testFail':    '✗ PIR 감지 실패 (센서 확인 필요)',
+            'pir.testFail': '✗ PIR 감지 실패 (센서 확인 필요)',
 
             // =====================================================
             // [Phase5 5.6] 단위
             // =====================================================
-            'unit.celsius':   '°C',
-            'unit.humidity':  '%',
-            'unit.seconds':   '초',
+            'unit.celsius': '°C',
+            'unit.humidity': '%',
+            'unit.seconds': '초',
             'unit.windSpeed': 'm/s',
 
             // =====================================================
             // [Phase5 5.6] 검증 메시지
             // =====================================================
-            'validate.required':    '{field}을(를) 입력하세요',
-            'validate.range':       '{field}: {min}~{max} 범위여야 합니다',
-            'validate.timeOrder':   '종료 시각이 시작 시각보다 빨라야 합니다',
+            'validate.required': '{field}을(를) 입력하세요',
+            'validate.range': '{field}: {min}~{max} 범위여야 합니다',
+            'validate.timeOrder': '종료 시각이 시작 시각보다 빨라야 합니다',
             'validate.multiErrors': '{count}개 항목에 오류가 있습니다',
-            'validate.segmentMin':  '최소 1개의 세그먼트가 필요합니다',
+            'validate.segmentMin': '최소 1개의 세그먼트가 필요합니다',
 
             // =====================================================
             // [Phase5 5.6] 추가 메시지
             // =====================================================
-            'msg.unknown':       '알 수 없는 오류',
-            'msg.accessDenied':  '접근 권한이 없습니다',
+            'msg.unknown': '알 수 없는 오류',
+            'msg.accessDenied': '접근 권한이 없습니다',
             'msg.deleteConfirm': '정말 삭제하시겠습니까?',
             'msg.saveAndReloadSuccess': '저장 후 재적용되었습니다',
 
             // =====================================================
             // [Phase5 5.6] FSM 상태 배지
             // =====================================================
-            'fsm.idle':           '대기',
-            'fsm.override':       '수동 제어',
-            'fsm.profileRun':     '프로필 실행',
-            'fsm.scheduleRun':    '스케줄 실행',
-            'fsm.motionBlocked':  '모션 차단',
+            'fsm.idle': '대기',
+            'fsm.override': '수동 제어',
+            'fsm.profileRun': '프로필 실행',
+            'fsm.scheduleRun': '스케줄 실행',
+            'fsm.motionBlocked': '모션 차단',
             'fsm.autoOffStopped': '자동 종료',
-            'fsm.timeInvalid':    '시간 미동기',
+            'fsm.timeInvalid': '시간 미동기',
 
             // =====================================================
             // [Phase5 5.6] FSM Reason
             // =====================================================
-            'reason.none':              '없음',
-            'reason.overrideActive':    '수동 개입 중',
-            'reason.profileMode':       '프로필 모드',
+            'reason.none': '없음',
+            'reason.overrideActive': '수동 개입 중',
+            'reason.profileMode': '프로필 모드',
             'reason.userProfileActive': '사용자 프로필 실행 중',
-            'reason.scheduleActive':    '스케줄 활성',
-            'reason.noActiveSchedule':  '활성 스케줄 없음',
-            'reason.noSchedules':       '스케줄 없음',
-            'reason.timeNotValid':      '시간 미동기',
-            'reason.motionNoPresence':  '재실 감지 안됨',
-            'reason.autoOffTimer':      '자동 종료 타이머',
-            'reason.autoOffTime':       '자동 종료 시각',
-            'reason.autoOffTemp':       '자동 종료 온도',
+            'reason.scheduleActive': '스케줄 활성',
+            'reason.noActiveSchedule': '활성 스케줄 없음',
+            'reason.noSchedules': '스케줄 없음',
+            'reason.timeNotValid': '시간 미동기',
+            'reason.motionNoPresence': '재실 감지 안됨',
+            'reason.autoOffTimer': '자동 종료 타이머',
+            'reason.autoOffTime': '자동 종료 시각',
+            'reason.autoOffTemp': '자동 종료 온도',
 
             // =====================================================
             // [Phase5 5.6] Wind Phase
             // =====================================================
-            'phase.calm':   '잔잔',
+            'phase.calm': '잔잔',
             'phase.normal': '보통',
             'phase.strong': '강풍',
 
@@ -988,38 +988,62 @@ window.SNW = window.SNW || {};
             // [Phase5 5.6] AutoOff
             // =====================================================
             'autoOff.timer': '타이머 종료',
-            'autoOff.time':  '예약 종료',
-            'autoOff.temp':  '온도 종료',
+            'autoOff.time': '예약 종료',
+            'autoOff.temp': '온도 종료',
 
             // =====================================================
             // [Phase5 5.6] 프리셋 이름 (10종)
             // =====================================================
-            'preset.OCEAN':          '바다 바람',
+            'preset.OCEAN': '바다 바람',
             'preset.COUNTRY_BREEZE': '시골 바람',
-            'preset.MEDITERRANEAN':  '지중해 바람',
-            'preset.MOUNTAIN':       '산바람',
-            'preset.PLAINS':         '들판 바람',
-            'preset.HARBOR_BREEZE':  '항구 바람',
-            'preset.FOREST_CANOPY':  '숲속 바람',
-            'preset.URBAN_SUNSET':   '도시 노을',
-            'preset.TROPICAL_RAIN':  '열대 비',
-            'preset.DESERT_NIGHT':   '사막 밤',
+            'preset.MEDITERRANEAN': '지중해 바람',
+            'preset.MOUNTAIN': '산바람',
+            'preset.PLAINS': '들판 바람',
+            'preset.HARBOR_BREEZE': '항구 바람',
+            'preset.FOREST_CANOPY': '숲속 바람',
+            'preset.URBAN_SUNSET': '도시 노을',
+            'preset.TROPICAL_RAIN': '열대 비',
+            'preset.DESERT_NIGHT': '사막 밤',
 
             // =====================================================
             // [Phase5 5.6] 스타일 이름 (5종)
             // =====================================================
             'style.BALANCE': '균형',
-            'style.ACTIVE':  '활동',
-            'style.FOCUS':   '집중',
-            'style.RELAX':   '휴식',
-            'style.SLEEP':   '수면',
-            'msg.success':        '성공적으로 처리되었습니다',
-            'reconnect.body':     '기기와의 연결이 끊어졌습니다. 다시 연결을 시도합니다...',
+            'style.ACTIVE': '활동',
+            'style.FOCUS': '집중',
+            'style.RELAX': '휴식',
+            'style.SLEEP': '수면',
+            'msg.success': '성공적으로 처리되었습니다',
+            'reconnect.body': '기기와의 연결이 끊어졌습니다. 다시 연결을 시도합니다...',
             'msg.apiKeyRequired': 'API 키가 필요합니다',
-            'msg.reloadPending':  '재적용 대기 중...',
-            'msg.timeout':        '요청 시간이 초과되었습니다',
+            'msg.reloadPending': '재적용 대기 중...',
+            'msg.timeout': '요청 시간이 초과되었습니다',
 
-},
+            // =====================================================
+            // Automation Timer Panel
+            // =====================================================
+            'timer.title': '⏱️ 세션 타이머',
+            'timer.subtitle': '지금 재생 중인 세션을 얼마 후 종료할까요?',
+            'timer.noSession': '현재 재생 중인 세션이 없습니다.',
+            'timer.noSessionTip': '바람을 먼저 재생하면 타이머를 설정할 수 있습니다.',
+            'timer.sessionActive': '세션 재생 중',
+            'timer.min15': '15분',
+            'timer.min30': '30분',
+            'timer.hour1': '1시간',
+            'timer.hour2': '2시간',
+            'timer.custom': '직접 설정',
+            'timer.off': '타이머 끄기',
+            'timer.cancel': '타이머 취소',
+            'timer.set': '타이머 시작',
+            'timer.remaining': '남은 시간',
+            'timer.endsAt': '종료 예정',
+            'timer.expired': '⏱️ 타이머가 완료되어 세션을 종료했습니다.',
+            'timer.canceled': '타이머가 취소되었습니다.',
+            'timer.setSuccess': '⏱️ {m}분 후 세션이 자동 종료됩니다.',
+            'timer.gotoPlaylist': '🎵 Playlist로 이동',
+            'timer.gotoHome': '🏠 홈으로 이동',
+
+        },
 
         en: {
             // =====================================================
@@ -1253,13 +1277,13 @@ window.SNW = window.SNW || {};
             // =====================================================
             // [N-5] Factory Reset 확인어 및 관련 문구
             // =====================================================
-            'settings.factoryResetTitle':       'Factory Reset',
-            'settings.factoryResetItems':       'The following will be deleted:',
+            'settings.factoryResetTitle': 'Factory Reset',
+            'settings.factoryResetItems': 'The following will be deleted:',
             'settings.factoryResetConfirmWord': 'Type "RESET" below to confirm',
-            'settings.factoryResetWord':        'RESET',
-            'settings.factoryResetSuccess':     'Factory reset complete. Device will reboot.',
-            'settings.deleteApiKey':            'Delete API Key',
-            'settings.deleteGeminiKey':         'Delete Gemini Key',
+            'settings.factoryResetWord': 'RESET',
+            'settings.factoryResetSuccess': 'Factory reset complete. Device will reboot.',
+            'settings.deleteApiKey': 'Delete API Key',
+            'settings.deleteGeminiKey': 'Delete Gemini Key',
 
             // =====================================================
             // Header / Nav
@@ -1291,328 +1315,352 @@ window.SNW = window.SNW || {};
             'msg.durationRange': 'Duration must be 1~1440 min',
             'msg.selectProfile': 'Please select a playlist',
             'msg.timeOrder': 'End time must be after start time',
-        },
-    
-            // Nav
-            'nav.dashboard':   'Dashboard',
-            'nav.chart':       'Chart',
-            'nav.schedule':    'Schedule',
-            'nav.profiles':    'Profiles',
-            'nav.sensors':     'Sensors',
-            'nav.monitor':     'Monitor',
-            'nav.simulation':  'Simulation',
-            'nav.windprofile': 'Wind Presets',
-            'nav.network':     'Network',
-            'nav.logs':        'System Logs',
-            'nav.diagnostics': 'Diagnostics',
-            'nav.firmware':    'Firmware',
-            'nav.ai':          'AI Assistant',
-            'nav.info':        'Info',
-            'nav.groupControl':  'Control',
-            'nav.groupSettings': 'Settings',
-            'nav.groupSystem':   'System',
 
-            'common.start':   'Start',
-            'common.stop':    'Stop',
-            'common.add':     'Add',
+            // Nav
+            'nav.dashboard': 'Dashboard',
+            'nav.chart': 'Chart',
+            'nav.schedule': 'Schedule',
+            'nav.profiles': 'Profiles',
+            'nav.sensors': 'Sensors',
+            'nav.monitor': 'Monitor',
+            'nav.simulation': 'Simulation',
+            'nav.windprofile': 'Wind Presets',
+            'nav.network': 'Network',
+            'nav.logs': 'System Logs',
+            'nav.diagnostics': 'Diagnostics',
+            'nav.firmware': 'Firmware',
+            'nav.ai': 'AI Assistant',
+            'nav.info': 'Info',
+            'nav.groupControl': 'Control',
+            'nav.groupSettings': 'Settings',
+            'nav.groupSystem': 'System',
+
+            'common.start': 'Start',
+            'common.stop': 'Stop',
+            'common.add': 'Add',
             'common.warning': 'Warning',
 
-            'footer.online':  '🟢 Online',
+            'footer.online': '🟢 Online',
             'footer.offline': '🔴 Offline',
             'footer.polling': '🟡 Polling',
 
             // Dashboard
-            'dashboard.modeTitle':        'Operation Mode',
-            'dashboard.modeSchedule':     '◻ Schedule Auto Mode',
-            'dashboard.modeProfile':      '◼ Profile Manual Mode',
-            'dashboard.realtimeState':    'Real-time State',
-            'dashboard.currentWind':      'Current Wind',
-            'dashboard.targetWind':       'Target Wind',
-            'dashboard.phase':            'Phase',
-            'dashboard.pwm':              'PWM',
-            'dashboard.sch':              'Schedule',
-            'dashboard.prof':             'Profile',
-            'dashboard.powerTitle':       'Power Control',
-            'dashboard.sensorTitle':      'Sensors',
-            'dashboard.styleTitle':       'Wind Style',
-            'dashboard.presetTitle':      'Nature Presets',
-            'dashboard.physicsTitle':     'Physics Fine Tuning (3 params)',
-            'dashboard.powerOn':          'Power On',
-            'dashboard.powerOff':         'Power Off',
-            'dashboard.temp':             'Temp',
-            'dashboard.humidity':         'Humidity',
-            'dashboard.motion':           'Motion',
-            'dashboard.motionDetected':   'Detected',
-            'dashboard.motionAbsent':     'Absent',
+            'dashboard.modeTitle': 'Operation Mode',
+            'dashboard.modeSchedule': '◻ Schedule Auto Mode',
+            'dashboard.modeProfile': '◼ Profile Manual Mode',
+            'dashboard.realtimeState': 'Real-time State',
+            'dashboard.currentWind': 'Current Wind',
+            'dashboard.targetWind': 'Target Wind',
+            'dashboard.phase': 'Phase',
+            'dashboard.pwm': 'PWM',
+            'dashboard.sch': 'Schedule',
+            'dashboard.prof': 'Profile',
+            'dashboard.powerTitle': 'Power Control',
+            'dashboard.sensorTitle': 'Sensors',
+            'dashboard.styleTitle': 'Wind Style',
+            'dashboard.presetTitle': 'Nature Presets',
+            'dashboard.physicsTitle': 'Physics Fine Tuning (3 params)',
+            'dashboard.powerOn': 'Power On',
+            'dashboard.powerOff': 'Power Off',
+            'dashboard.temp': 'Temp',
+            'dashboard.humidity': 'Humidity',
+            'dashboard.motion': 'Motion',
+            'dashboard.motionDetected': 'Detected',
+            'dashboard.motionAbsent': 'Absent',
             'dashboard.modeSwitchedProfile': 'Switched to Profile mode',
-            'dashboard.fanStop':          'Off',
-            'dashboard.fanStage':         'Stage {n}',
+            'dashboard.fanStop': 'Off',
+            'dashboard.fanStage': 'Stage {n}',
 
             // Chart
-            'chart.title':       'Live Physics Chart',
-            'chart.tab.live':    'Live Running',
+            'chart.title': 'Live Physics Chart',
+            'chart.tab.live': 'Live Running',
             'chart.tab.preview': 'Preview Waveform',
-            'chart.range5s':     '5s',
-            'chart.range30s':    '30s',
-            'chart.range120s':   '120s',
-            'chart.overlay':     'Preview Overlay',
-            'chart.exportCsv':   'Export CSV',
-            'chart.wind':        'Wind',
-            'chart.target':      'Target',
-            'chart.pwm':         'PWM',
+            'chart.range5s': '5s',
+            'chart.range30s': '30s',
+            'chart.range120s': '120s',
+            'chart.overlay': 'Preview Overlay',
+            'chart.exportCsv': 'Export CSV',
+            'chart.wind': 'Wind',
+            'chart.target': 'Target',
+            'chart.pwm': 'PWM',
 
             // Settings
-            'settings.secMeta':        'Meta Info',
-            'settings.secFanPwm':      'Fan PWM',
-            'settings.secFanCurve':    'Fan Curve (3-segment)',
-            'settings.secPir':         'PIR Sensor',
-            'settings.secDht':         'DHT Sensor',
-            'settings.secLed':         'NeoPixel LED',
-            'settings.tabComm':        'Network / WS',
+            'settings.secMeta': 'Meta Info',
+            'settings.secFanPwm': 'Fan PWM',
+            'settings.secFanCurve': 'Fan Curve (3-segment)',
+            'settings.secPir': 'PIR Sensor',
+            'settings.secDht': 'DHT Sensor',
+            'settings.secLed': 'NeoPixel LED',
+            'settings.tabComm': 'Network / WS',
 
-            'settings.fieldDeviceName':  'Device Name',
-            'settings.fieldLogLevel':    'Log Level',
-            'settings.fieldLogMax':      'Max Log Entries',
-            'settings.fieldRange':       'Range: {min}~{max}',
+            'settings.fieldDeviceName': 'Device Name',
+            'settings.fieldLogLevel': 'Log Level',
+            'settings.fieldLogMax': 'Max Log Entries',
+            'settings.fieldRange': 'Range: {min}~{max}',
             'settings.fieldRecommended': 'Recommended: {range}',
-            'settings.fieldPinPwm':      'PWM Pin',
-            'settings.fieldChannel':     'LEDC Channel',
-            'settings.fieldFreq':        'Frequency (Hz)',
-            'settings.fieldRes':         'Resolution (bit)',
-            'settings.fieldStart':       'Start Min (%)',
-            'settings.fieldComfortMin':  'Comfort Start (%)',
-            'settings.fieldComfortMax':  'Comfort End (%)',
-            'settings.fieldHardMax':     'Hard Max (%)',
-            'settings.fieldEnabled':     'Enabled',
-            'settings.fieldPinPir':      'PIR Pin',
-            'settings.fieldDebounce':    'Debounce (sec)',
-            'settings.fieldHold':        'Hold (sec)',
-            'settings.fieldPinDht':      'DHT Pin',
-            'settings.fieldType':        'Sensor Type',
-            'settings.fieldInterval':    'Interval (sec)',
-            'settings.fieldPinLed':      'LED Pin',
-            'settings.fieldNumPixels':   'Num Pixels',
-            'settings.fieldBrightness':  'Default Brightness',
+            'settings.fieldPinPwm': 'PWM Pin',
+            'settings.fieldChannel': 'LEDC Channel',
+            'settings.fieldFreq': 'Frequency (Hz)',
+            'settings.fieldRes': 'Resolution (bit)',
+            'settings.fieldStart': 'Start Min (%)',
+            'settings.fieldComfortMin': 'Comfort Start (%)',
+            'settings.fieldComfortMax': 'Comfort End (%)',
+            'settings.fieldHardMax': 'Hard Max (%)',
+            'settings.fieldEnabled': 'Enabled',
+            'settings.fieldPinPir': 'PIR Pin',
+            'settings.fieldDebounce': 'Debounce (sec)',
+            'settings.fieldHold': 'Hold (sec)',
+            'settings.fieldPinDht': 'DHT Pin',
+            'settings.fieldType': 'Sensor Type',
+            'settings.fieldInterval': 'Interval (sec)',
+            'settings.fieldPinLed': 'LED Pin',
+            'settings.fieldNumPixels': 'Num Pixels',
+            'settings.fieldBrightness': 'Default Brightness',
 
-            'settings.configured':       'Configured',
-            'settings.notConfigured':    'Not Configured',
+            'settings.configured': 'Configured',
+            'settings.notConfigured': 'Not Configured',
             'settings.keyPlaceholderChange': 'Enter new key to change (empty = keep)',
-            'settings.keyPlaceholderInput':  'Enter API Key',
-            'settings.testApiKey':       'Test API Key',
-            'settings.testApiSuccess':   '✓ Auth success',
-            'settings.testApiFail':      '✗ Auth failed: {msg}',
+            'settings.keyPlaceholderInput': 'Enter API Key',
+            'settings.testApiKey': 'Test API Key',
+            'settings.testApiSuccess': '✓ Auth success',
+            'settings.testApiFail': '✗ Auth failed: {msg}',
 
-            'settings.wsChannelConfig':  'WebSocket Channel Config',
-            'settings.saveAndReload':    'Save & Reload',
-            'settings.save':             'Save',
-            'settings.reload':           'Reload',
+            'settings.wsChannelConfig': 'WebSocket Channel Config',
+            'settings.saveAndReload': 'Save & Reload',
+            'settings.save': 'Save',
+            'settings.reload': 'Reload',
 
-            'settings.dirtyWarning':       'Unsaved changes exist.\nReloading will discard unsaved changes. Continue?',
-            'settings.offlineReloadNotice':'Reload is not supported in offline mode.',
-            'settings.reloadRequested':    'Reload requested ({status})',
-            'settings.reloadInProgress':   'Reload in progress...',
-            'settings.reloadFailed':       'Reload failed',
-            'settings.reloadComplete':     'Reload complete',
+            'settings.dirtyWarning': 'Unsaved changes exist.\nReloading will discard unsaved changes. Continue?',
+            'settings.offlineReloadNotice': 'Reload is not supported in offline mode.',
+            'settings.reloadRequested': 'Reload requested ({status})',
+            'settings.reloadInProgress': 'Reload in progress...',
+            'settings.reloadFailed': 'Reload failed',
+            'settings.reloadComplete': 'Reload complete',
             'settings.saveAndReloadSuccess': 'Saved and reloaded',
 
             // Sensors
-            'sensors.title':        'Live Sensors',
-            'sensors.temp':         'Temp',
-            'sensors.hum':          'Humidity',
-            'sensors.motion':       'Motion',
-            'sensors.feedPir':      'Test PIR Trigger',
+            'sensors.title': 'Live Sensors',
+            'sensors.temp': 'Temp',
+            'sensors.hum': 'Humidity',
+            'sensors.motion': 'Motion',
+            'sensors.feedPir': 'Test PIR Trigger',
             'sensors.feedPirSuccess': 'Trigger signal sent',
             'sensors.motionConfig': 'Motion Config',
-            'sensors.pirEnabled':   'Enable PIR',
-            'sensors.pirHoldSec':   'PIR Hold (sec)',
+            'sensors.pirEnabled': 'Enable PIR',
+            'sensors.pirHoldSec': 'PIR Hold (sec)',
             'sensors.saveMotionSuccess': 'Motion config saved',
 
             // Diagnostics
-            'diagnostics.allJson':          'All Config JSON',
-            'diagnostics.saveDirty':        'Save Dirty Config',
+            'diagnostics.allJson': 'All Config JSON',
+            'diagnostics.saveDirty': 'Save Dirty Config',
             'diagnostics.saveDirtySuccess': 'Dirty config saved',
-            'diagnostics.fetchFail':        'Config fetch failed',
-            'diagnostics.metricsRealtime':  'Realtime Metrics',
+            'diagnostics.fetchFail': 'Config fetch failed',
+            'diagnostics.metricsRealtime': 'Realtime Metrics',
 
             // Log / AI / Firmware
-            'log.filterAll':   'All Levels',
-            'log.clear':       'Clear',
-            'log.export':      'Export JSON',
-            'log.none':        'None',
-            'log.error':       'Error',
-            'log.warn':        'Warn',
-            'log.info':        'Info',
-            'log.debug':       'Debug',
+            'log.filterAll': 'All Levels',
+            'log.clear': 'Clear',
+            'log.export': 'Export JSON',
+            'log.none': 'None',
+            'log.error': 'Error',
+            'log.warn': 'Warn',
+            'log.info': 'Info',
+            'log.debug': 'Debug',
 
-            'ai.title':       'AI Assistant',
+            'ai.title': 'AI Assistant',
             'ai.placeholder': 'Ask anything about wind...',
-            'ai.example1':    'What wind suits today\'s weather?',
-            'ai.example2':    'Recommend a sleep-friendly setting',
-            'ai.example3':    'Explain the nature preset differences',
-            'ai.send':        'Send',
-            'ai.thinking':    'Thinking...',
+            'ai.example1': 'What wind suits today\'s weather?',
+            'ai.example2': 'Recommend a sleep-friendly setting',
+            'ai.example3': 'Explain the nature preset differences',
+            'ai.send': 'Send',
+            'ai.thinking': 'Thinking...',
 
-            'firmware.otaUpdate':  'Firmware Update (OTA)',
-            'firmware.uploadBtn':  'Upload',
+            'firmware.otaUpdate': 'Firmware Update (OTA)',
+            'firmware.uploadBtn': 'Upload',
             'firmware.otaSuccess': 'Firmware upload complete',
             'firmware.fileUpload': 'File Upload',
 
             // Segment
-            'segment.onMinutes':          'On (min)',
-            'segment.offMinutes':         'Off (min)',
-            'segment.mode':               'Mode',
-            'segment.modePreset':         'Preset Mode',
-            'segment.modeFixed':          'Fixed Speed Mode',
-            'segment.presetSelect':       'Preset',
-            'segment.styleSelect':        'Style',
-            'segment.fixedSpeed':         'Fixed Speed (%)',
-            'segment.overrideTitle':      '⚙️ Advanced Physics (Override)',
-            'segment.overrideDesc':       'Override wind physics for this segment',
-            'segment.overrideIntensity':  'Wind Intensity (%)',
-            'segment.overrideVariability':'Wind Variability (%)',
-            'segment.overrideGust':       'Gust Frequency (%)',
-            'segment.moveUp':             'Up',
-            'segment.moveDown':           'Down',
-            'segment.deleted':            'Segment deleted',
-            'segment.summaryPrefix':      'Segments',
+            'segment.onMinutes': 'On (min)',
+            'segment.offMinutes': 'Off (min)',
+            'segment.mode': 'Mode',
+            'segment.modePreset': 'Preset Mode',
+            'segment.modeFixed': 'Fixed Speed Mode',
+            'segment.presetSelect': 'Preset',
+            'segment.styleSelect': 'Style',
+            'segment.fixedSpeed': 'Fixed Speed (%)',
+            'segment.overrideTitle': '⚙️ Advanced Physics (Override)',
+            'segment.overrideDesc': 'Override wind physics for this segment',
+            'segment.overrideIntensity': 'Wind Intensity (%)',
+            'segment.overrideVariability': 'Wind Variability (%)',
+            'segment.overrideGust': 'Gust Frequency (%)',
+            'segment.moveUp': 'Up',
+            'segment.moveDown': 'Down',
+            'segment.deleted': 'Segment deleted',
+            'segment.summaryPrefix': 'Segments',
 
             // Schedule additions
-            'schedule.secBasic':      'Basic Info',
-            'schedule.secSegments':   'Segments',
-            'schedule.secSmart':      'Smart Off',
-            'schedule.add':           'Add Schedule',
+            'schedule.secBasic': 'Basic Info',
+            'schedule.secSegments': 'Segments',
+            'schedule.secSmart': 'Smart Off',
+            'schedule.add': 'Add Schedule',
             'schedule.addSegmentBtn': 'Add Segment',
-            'schedule.segment':       'Segment',
+            'schedule.segment': 'Segment',
             'schedule.segmentRepeat': 'Segment Repeat',
-            'schedule.repeatCount':   'Repeat Count',
-            'schedule.startTime':     'Start Time',
-            'schedule.endTime':       'End Time',
-            'scheduler.title':         'Schedule',
-            'scheduler.day':           'Days',
-            'scheduler.segment':       'Segment',
-            'scheduler.scheduledOff':  'Scheduled Off',
-            'scheduler.tempOff':       'Temp Threshold Off',
+            'schedule.repeatCount': 'Repeat Count',
+            'schedule.startTime': 'Start Time',
+            'schedule.endTime': 'End Time',
+            'scheduler.title': 'Schedule',
+            'scheduler.day': 'Days',
+            'scheduler.segment': 'Segment',
+            'scheduler.scheduledOff': 'Scheduled Off',
+            'scheduler.tempOff': 'Temp Threshold Off',
 
             // Profiles additions
-            'profiles.add':           'Add Profile',
-            'profiles.no':            'Profile No.',
-            'profiles.enabled':       'Enabled',
-            'profiles.name':          'Profile Name',
+            'profiles.add': 'Add Profile',
+            'profiles.no': 'Profile No.',
+            'profiles.enabled': 'Enabled',
+            'profiles.name': 'Profile Name',
             'profiles.addSegmentBtn': 'Add Segment',
-            'profiles.autoOffTimer':  'Auto Off (min)',
-            'profile.title':          'User Profiles',
-            'profile.active':         'Active',
+            'profiles.autoOffTimer': 'Auto Off (min)',
+            'profile.title': 'User Profiles',
+            'profile.active': 'Active',
 
             // Network
-            'network.title':        'Network Status',
-            'network.wifiConfig':   'Wi-Fi Config',
-            'network.timeConfig':   'Time Config',
-            'network.wifiMode':     'Wi-Fi Mode',
-            'network.apSettings':   'AP Settings',
-            'network.staSettings':  'STA Networks',
-            'network.status':       'Status',
-            'network.ip':           'IP Address',
-            'network.mac':          'MAC Address',
-            'network.timeSynced':   'Time Sync',
-            'network.synced':       'Synced',
-            'network.notSynced':    'Not Synced',
-            'network.scanWifi':     'Scan Wi-Fi',
-            'network.connect':      'Connect',
-            'network.saveWifi':     'Save Wi-Fi',
-            'network.saveTime':     'Save Time',
-            'network.noStaNotice':  'No STA networks registered',
+            'network.title': 'Network Status',
+            'network.wifiConfig': 'Wi-Fi Config',
+            'network.timeConfig': 'Time Config',
+            'network.wifiMode': 'Wi-Fi Mode',
+            'network.apSettings': 'AP Settings',
+            'network.staSettings': 'STA Networks',
+            'network.status': 'Status',
+            'network.ip': 'IP Address',
+            'network.mac': 'MAC Address',
+            'network.timeSynced': 'Time Sync',
+            'network.synced': 'Synced',
+            'network.notSynced': 'Not Synced',
+            'network.scanWifi': 'Scan Wi-Fi',
+            'network.connect': 'Connect',
+            'network.saveWifi': 'Save Wi-Fi',
+            'network.saveTime': 'Save Time',
+            'network.noStaNotice': 'No STA networks registered',
 
             // Windprofile
-            'windprofile.title':        'Wind Preset Manager',
-            'windprofile.add':          'Add Preset',
-            'windprofile.code':         'Code (English)',
-            'windprofile.intensity':    'Intensity',
-            'windprofile.variability':  'Variability',
-            'windprofile.gust':         'Gust',
-            'windprofile.fanLimit':     'Fan Limit',
+            'windprofile.title': 'Wind Preset Manager',
+            'windprofile.add': 'Add Preset',
+            'windprofile.code': 'Code (English)',
+            'windprofile.intensity': 'Intensity',
+            'windprofile.variability': 'Variability',
+            'windprofile.gust': 'Gust',
+            'windprofile.fanLimit': 'Fan Limit',
             'windprofile.factorsTitle': 'Base Wind Parameters',
 
             // PIR
             'pir.testSuccess': '✓ PIR detected',
-            'pir.testFail':    '✗ PIR not detected (check sensor)',
+            'pir.testFail': '✗ PIR not detected (check sensor)',
 
             // Units
-            'unit.celsius':   '°C',
-            'unit.humidity':  '%',
-            'unit.seconds':   's',
+            'unit.celsius': '°C',
+            'unit.humidity': '%',
+            'unit.seconds': 's',
             'unit.windSpeed': 'm/s',
 
             // Validation
-            'validate.required':    '{field} is required',
-            'validate.range':       '{field}: must be {min}~{max}',
-            'validate.timeOrder':   'End time must be after start time',
+            'validate.required': '{field} is required',
+            'validate.range': '{field}: must be {min}~{max}',
+            'validate.timeOrder': 'End time must be after start time',
             'validate.multiErrors': '{count} field(s) have errors',
-            'validate.segmentMin':  'At least 1 segment required',
+            'validate.segmentMin': 'At least 1 segment required',
 
             // Messages
-            'msg.unknown':       'Unknown error',
-            'msg.accessDenied':  'Access denied',
+            'msg.unknown': 'Unknown error',
+            'msg.accessDenied': 'Access denied',
             'msg.deleteConfirm': 'Delete this item?',
             'msg.saveAndReloadSuccess': 'Saved and reloaded',
 
             // FSM
-            'fsm.idle':           'Idle',
-            'fsm.override':       'Manual',
-            'fsm.profileRun':     'Profile',
-            'fsm.scheduleRun':    'Schedule',
-            'fsm.motionBlocked':  'Motion Blocked',
+            'fsm.idle': 'Idle',
+            'fsm.override': 'Manual',
+            'fsm.profileRun': 'Profile',
+            'fsm.scheduleRun': 'Schedule',
+            'fsm.motionBlocked': 'Motion Blocked',
             'fsm.autoOffStopped': 'AutoOff',
-            'fsm.timeInvalid':    'Time Invalid',
+            'fsm.timeInvalid': 'Time Invalid',
 
             // Reason
-            'reason.none':              'None',
-            'reason.overrideActive':    'Manual override',
-            'reason.profileMode':       'Profile mode',
+            'reason.none': 'None',
+            'reason.overrideActive': 'Manual override',
+            'reason.profileMode': 'Profile mode',
             'reason.userProfileActive': 'User profile active',
-            'reason.scheduleActive':    'Schedule active',
-            'reason.noActiveSchedule':  'No active schedule',
-            'reason.noSchedules':       'No schedules',
-            'reason.timeNotValid':      'Time not valid',
-            'reason.motionNoPresence':  'No presence',
-            'reason.autoOffTimer':      'AutoOff timer',
-            'reason.autoOffTime':       'AutoOff time',
-            'reason.autoOffTemp':       'AutoOff temp',
+            'reason.scheduleActive': 'Schedule active',
+            'reason.noActiveSchedule': 'No active schedule',
+            'reason.noSchedules': 'No schedules',
+            'reason.timeNotValid': 'Time not valid',
+            'reason.motionNoPresence': 'No presence',
+            'reason.autoOffTimer': 'AutoOff timer',
+            'reason.autoOffTime': 'AutoOff time',
+            'reason.autoOffTemp': 'AutoOff temp',
 
             // Wind Phase
-            'phase.calm':   'Calm',
+            'phase.calm': 'Calm',
             'phase.normal': 'Normal',
             'phase.strong': 'Strong',
 
             // AutoOff
             'autoOff.timer': 'Timer',
-            'autoOff.time':  'Scheduled Off',
-            'autoOff.temp':  'Temperature Off',
+            'autoOff.time': 'Scheduled Off',
+            'autoOff.temp': 'Temperature Off',
 
             // Presets (10)
-            'preset.OCEAN':          'Ocean Breeze',
+            'preset.OCEAN': 'Ocean Breeze',
             'preset.COUNTRY_BREEZE': 'Country Breeze',
-            'preset.MEDITERRANEAN':  'Mediterranean',
-            'preset.MOUNTAIN':       'Mountain',
-            'preset.PLAINS':         'Plains',
-            'preset.HARBOR_BREEZE':  'Harbor Breeze',
-            'preset.FOREST_CANOPY':  'Forest Canopy',
-            'preset.URBAN_SUNSET':   'Urban Sunset',
-            'preset.TROPICAL_RAIN':  'Tropical Rain',
-            'preset.DESERT_NIGHT':   'Desert Night',
+            'preset.MEDITERRANEAN': 'Mediterranean',
+            'preset.MOUNTAIN': 'Mountain',
+            'preset.PLAINS': 'Plains',
+            'preset.HARBOR_BREEZE': 'Harbor Breeze',
+            'preset.FOREST_CANOPY': 'Forest Canopy',
+            'preset.URBAN_SUNSET': 'Urban Sunset',
+            'preset.TROPICAL_RAIN': 'Tropical Rain',
+            'preset.DESERT_NIGHT': 'Desert Night',
 
             // Styles (5)
             'style.BALANCE': 'Balance',
-            'style.ACTIVE':  'Active',
-            'style.FOCUS':   'Focus',
-            'style.RELAX':   'Relax',
-            'style.SLEEP':   'Sleep',
-            'msg.success':        'Operation completed successfully',
-            'reconnect.body':     'Connection to device lost. Reconnecting...',
+            'style.ACTIVE': 'Active',
+            'style.FOCUS': 'Focus',
+            'style.RELAX': 'Relax',
+            'style.SLEEP': 'Sleep',
+            'msg.success': 'Operation completed successfully',
+            'reconnect.body': 'Connection to device lost. Reconnecting...',
             'msg.apiKeyRequired': 'API key is required',
-            'msg.reloadPending':  'Reload pending...',
-            'msg.timeout':        'Request timed out',
+            'msg.reloadPending': 'Reload pending...',
+            'msg.timeout': 'Request timed out',
 
-};
+            // =====================================================
+            // Automation Timer Panel
+            // =====================================================
+            'timer.title': '⏱️ Session Timer',
+            'timer.subtitle': 'When should the current session stop?',
+            'timer.noSession': 'No active session running.',
+            'timer.noSessionTip': 'Start a breeze first to set an auto-off timer.',
+            'timer.sessionActive': 'Session Running',
+            'timer.min15': '15 min',
+            'timer.min30': '30 min',
+            'timer.hour1': '1 hour',
+            'timer.hour2': '2 hours',
+            'timer.custom': 'Custom',
+            'timer.off': 'Turn Off',
+            'timer.cancel': 'Cancel Timer',
+            'timer.set': 'Start Timer',
+            'timer.remaining': 'Remaining',
+            'timer.endsAt': 'Ends at',
+            'timer.expired': '⏱️ Timer completed. Session stopped.',
+            'timer.canceled': 'Timer canceled.',
+            'timer.setSuccess': '⏱️ Session will stop in {m} minutes.',
+            'timer.gotoPlaylist': '🎵 Go to Playlist',
+            'timer.gotoHome': '🏠 Go to Home',
+        }
+
+    };
 
     const SUPPORTED_LANGS = ['ko', 'en'];
 
@@ -3142,69 +3190,82 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 070.router.js (8897 bytes) ---- */
+/* ---- 070.router.js (9426 bytes) ---- */
 // =========================================================
 // 070.router.js — SNW.Router (해시 SPA 라우터)
 // =========================================================
 window.SNW = window.SNW || {};
-(function (SNW) {
+(function(SNW) {
     'use strict';
     
     const ROUTES = {
-        '/dashboard':   { page:'dashboard',   level:'L1' },
-        '/automation':          { page:'automation', params:{ tab:'studio' }, level:'L1' },
-        '/automation/studio':   { page:'automation', params:{ tab:'studio' }, level:'L1' },
-        '/automation/playlist': { page:'automation', params:{ tab:'playlist' }, level:'L1' },
-        '/automation/schedule': { page:'automation', params:{ tab:'schedule' }, level:'L1' },
-        '/automation/timer':    { page:'automation', params:{ tab:'timer' }, level:'L1' },
-        '/chart':       { page:'chart',       level:'L2' },
-        '/schedule':    { page:'schedule',    level:'L2' },
-        '/profiles':    { page:'profiles',    level:'L2' },
-        '/sensors':     { page:'sensors',     level:'L2' },
-        '/monitor':     { page:'monitor',     level:'L2' },   // [Phase5 5.8]
-        '/simulation':  { page:'simulation',  level:'L2' },
-        '/windprofile': { page:'windprofile', level:'L3' },
-        '/settings':    { page:'settings',    level:'L3' },
-        '/network':     { page:'network',     level:'L3' },
-        '/logs':        { page:'logs',        level:'L3' },
-        '/diagnostics': { page:'diagnostics', level:'L4' },
-        '/firmware':    { page:'firmware',    level:'L4' },
-        '/ai':          { page:'ai',          level:'L4' },
-        '/info':        { page:'info',        level:'L1' }
+        '/dashboard': { page: 'dashboard', level: 'L1' },
+        '/automation': { page: 'automation', params: { tab: 'studio' }, level: 'L1' },
+        '/automation/studio': { page: 'automation', params: { tab: 'studio' }, level: 'L1' },
+        '/automation/playlist': { page: 'automation', params: { tab: 'playlist' }, level: 'L1' },
+        '/automation/schedule': { page: 'automation', params: { tab: 'schedule' }, level: 'L1' },
+        '/automation/timer': { page: 'automation', params: { tab: 'timer' }, level: 'L1' },
+        '/chart': { page: 'chart', level: 'L2' },
+        '/schedule': { page: 'schedule', level: 'L2' },
+        '/profiles': { page: 'profiles', level: 'L2' },
+        '/sensors': { page: 'sensors', level: 'L2' },
+        '/monitor': { page: 'monitor', level: 'L2' }, // [Phase5 5.8]
+        '/simulation': { page: 'simulation', level: 'L2' },
+        '/windprofile': { page: 'windprofile', level: 'L3' },
+        '/settings': { page: 'settings', level: 'L3' },
+        '/network': { page: 'network', level: 'L3' },
+        '/logs': { page: 'logs', level: 'L3' },
+        '/diagnostics': { page: 'diagnostics', level: 'L4' },
+        '/firmware': { page: 'firmware', level: 'L4' },
+        '/ai': { page: 'ai', level: 'L4' },
+        '/info': { page: 'info', level: 'L1' }
     };
     
+    
+        
     const NAV_GROUPS = [
-        {
-            key: 'nav.groupControl',
-            items: [
-                { path:'/dashboard',   key:'nav.dashboard',   icon:'📊', minLevel:'L1' },
-                { path:'/chart',       key:'nav.chart',       icon:'📈', minLevel:'L2' },
-                { path:'/schedule',    key:'nav.schedule',    icon:'📅', minLevel:'L2' },
-                { path:'/profiles',    key:'nav.profiles',    icon:'👤', minLevel:'L2' },
-                { path:'/sensors',     key:'nav.sensors',     icon:'🌡', minLevel:'L2' },
-                { path:'/monitor',     key:'nav.monitor',     icon:'📺', minLevel:'L2' }   // [Phase5 5.8]
-            ]
-        },
-        {
-            key: 'nav.groupSettings',
-            items: [
-                { path:'/simulation',  key:'nav.simulation',  icon:'🌊', minLevel:'L2' },
-                { path:'/windprofile', key:'nav.windprofile', icon:'🌬', minLevel:'L3' },
-                { path:'/settings',    key:'nav.settings',    icon:'⚙',  minLevel:'L3' },
-                { path:'/network',     key:'nav.network',     icon:'📶', minLevel:'L3' }
-            ]
-        },
-        {
-            key: 'nav.groupSystem',
-            items: [
-                { path:'/logs',        key:'nav.logs',        icon:'📜', minLevel:'L3' },
-                { path:'/diagnostics', key:'nav.diagnostics', icon:'🔧', minLevel:'L4' },
-                { path:'/firmware',    key:'nav.firmware',    icon:'💾', minLevel:'L4' },
-                { path:'/ai',          key:'nav.ai',          icon:'🤖', minLevel:'L4' },
-                { path:'/info',        key:'nav.info',        icon:'ℹ',  minLevel:'L1' }
-            ]
-        }
-    ];
+    {
+        key: 'nav.groupControl',
+        items: [
+            { path: '/dashboard', key: 'nav.dashboard', icon: '📊', minLevel: 'L1' },
+            { path: '/chart', key: 'nav.chart', icon: '📈', minLevel: 'L2' },
+            { path: '/automation', key: 'nav.automation', icon: '🎨', minLevel: 'L2' }, // ← 신규
+            { path: '/schedule', key: 'nav.schedule', icon: '📅', minLevel: 'L2' },
+            { path: '/profiles', key: 'nav.profiles', icon: '👤', minLevel: 'L2' },
+            { path: '/sensors', key: 'nav.sensors', icon: '🌡', minLevel: 'L2' },
+            { path: '/monitor', key: 'nav.monitor', icon: '📺', minLevel: 'L2' }
+        ]
+        /*
+        key: 'nav.groupControl',
+        items: [
+            { path: '/dashboard', key: 'nav.dashboard', icon: '📊', minLevel: 'L1' },
+            { path: '/chart', key: 'nav.chart', icon: '📈', minLevel: 'L2' },
+            { path: '/schedule', key: 'nav.schedule', icon: '📅', minLevel: 'L2' },
+            { path: '/profiles', key: 'nav.profiles', icon: '👤', minLevel: 'L2' },
+            { path: '/sensors', key: 'nav.sensors', icon: '🌡', minLevel: 'L2' },
+            { path: '/monitor', key: 'nav.monitor', icon: '📺', minLevel: 'L2' } // [Phase5 5.8]
+        ]
+        */
+    },
+    {
+        key: 'nav.groupSettings',
+        items: [
+            { path: '/simulation', key: 'nav.simulation', icon: '🌊', minLevel: 'L2' },
+            { path: '/windprofile', key: 'nav.windprofile', icon: '🌬', minLevel: 'L3' },
+            { path: '/settings', key: 'nav.settings', icon: '⚙', minLevel: 'L3' },
+            { path: '/network', key: 'nav.network', icon: '📶', minLevel: 'L3' }
+        ]
+    },
+    {
+        key: 'nav.groupSystem',
+        items: [
+            { path: '/logs', key: 'nav.logs', icon: '📜', minLevel: 'L3' },
+            { path: '/diagnostics', key: 'nav.diagnostics', icon: '🔧', minLevel: 'L4' },
+            { path: '/firmware', key: 'nav.firmware', icon: '💾', minLevel: 'L4' },
+            { path: '/ai', key: 'nav.ai', icon: '🤖', minLevel: 'L4' },
+            { path: '/info', key: 'nav.info', icon: 'ℹ', minLevel: 'L1' }
+        ]
+    }];
     
     let currentPage = null;
     let currentPath = null;
@@ -3215,42 +3276,45 @@ window.SNW = window.SNW || {};
         if (s === 'windprofile') return 'Windprofile';
         return s.charAt(0).toUpperCase() + s.slice(1);
     }
-
+    
     function parseHash() {
         const raw = location.hash.replace(/^#/, '').split('?')[0] || '/dashboard';
         return ROUTES[raw] ? raw : '/dashboard';
     }
+    
     function _clearMain() {
         const main = document.getElementById('snw-main');
         if (!main) return null;
         main.innerHTML = '';
         return main;
     }
+    
     function _showLoading(main) {
         if (!main) return;
         main.appendChild(SNW.DomUtil.html`<div class="snw-loading">${SNW.I18n.t('common.loading')}</div>`);
     }
+    
     function _showError(main, msg) {
         if (!main) return;
         main.innerHTML = '';
         main.appendChild(SNW.DomUtil.html`<div class="snw-error">${msg}</div>`);
     }
-
+    
     // 페이지 이동 시 사이드바 닫기 (오직 클래스만 제거)
     function _closeSidebarOnMobile() {
         document.body.classList.remove('snw-sidebar-open');
     }
-
+    
     async function dispatch() {
         if (_dispatching) return;
-
+        
         const path = parseHash();
         if (path === currentPath) return;
-
+        
         _dispatching = true;
         try {
             _closeSidebarOnMobile();
-
+            
             const route = ROUTES[path];
             if (!SNW.LevelUtil.atLeast(route.level)) {
                 SNW.ToastUtil.warn(SNW.I18n.t('msg.accessDenied'));
@@ -3282,7 +3346,7 @@ window.SNW = window.SNW || {};
                 _showError(main, `Page not implemented: ${route.page}`);
                 return;
             }
-
+            
             const params = Object.assign({}, route.params || {});
             const qIdx = location.hash.indexOf('?');
             if (qIdx >= 0) {
@@ -3301,7 +3365,7 @@ window.SNW = window.SNW || {};
             document.querySelectorAll('.snw-bottom-nav__item').forEach(a => {
                 a.classList.toggle('is-active', a.getAttribute('data-route') === path);
             });
-
+            
         } catch (e) {
             SNW.ErrorHandler.handle(e, `page.${ROUTES[parseHash()]?.page || 'unknown'}`);
             _showError(document.getElementById('snw-main'), SNW.I18n.t('msg.unknown'));
@@ -3342,7 +3406,7 @@ window.SNW = window.SNW || {};
             nav.appendChild(section);
         });
     }
-
+    
     SNW.Router = {
         ROUTES,
         init() {
@@ -3359,7 +3423,6 @@ window.SNW = window.SNW || {};
         current() { return currentPath; }
     };
 })(window.SNW);
-
 
 /* ===== LAYER 1 ===== */
 
@@ -5791,7 +5854,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 210.page.chart.js (9487 bytes) ---- */
+/* ---- 210.page.chart.js (14079 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : 210.page.chart.js
@@ -5957,12 +6020,11 @@ SNW.Page = SNW.Page || {};
 		//  - diffOnly: { sim: { windSpeed, targetWind, pwmDuty, ... } }
 		//  - full dump: { chart: [...], sim: {...} }
 		// -------------------------------------------------
-
 		_switchTab(tab) {
 			if (!this.chart) return;
 			this.chart.clear();
 			this._buffer = [];
-
+			
 			if (tab === 'live') {
 				// 실제: S-2 이력 + WS 라이브
 				SNW.Api.getChartHistory().then(hist => {
@@ -5979,22 +6041,29 @@ SNW.Page = SNW.Page || {};
 				}).catch(() => {});
 			} else {
 				// 예상: 현재 프리셋 × 스타일로 생성
+				// [Phase5 5.5] ADR-5 이후 generate는 async → IIFE로 fire-and-forget
 				const sim = SNW.Store.get().sim || {};
-				if (SNW.Preview && SNW.Preview.generate) {
-					const preview = SNW.Preview.generate(
-						sim.presetCode || 'OCEAN',
-						sim.styleCode || 'BALANCE',
-						null
-					);
-					if (preview && preview.points) {
-						this._buffer = preview.points.map(p => ({
-							t: p.t,
-							windSpeed: p.wind,
-							targetWind: p.avg,
-							pwmDuty: 0
-						}));
-						this._redrawRange();
-					}
+				if (SNW.Preview && typeof SNW.Preview.generate === 'function') {
+					(async () => {
+						try {
+							const preview = await SNW.Preview.generate(
+								sim.presetCode || 'OCEAN',
+								sim.styleCode || 'BALANCE',
+								null
+							);
+							if (preview && preview.points && this._active) {
+								this._buffer = preview.points.map(p => ({
+									t: p.t,
+									windSpeed: p.wind,
+									targetWind: p.avg,
+									pwmDuty: 0,
+								}));
+								this._redrawRange();
+							}
+						} catch (e) {
+							if (SNW.LogUtil) SNW.LogUtil.warn('[Chart] preview fail', e);
+						}
+					})();
 				}
 			}
 		}
@@ -6063,658 +6132,167 @@ SNW.Page = SNW.Page || {};
 		// -------------------------------------------------
 		// CSV 내보내기 (현재 buffer)
 		// -------------------------------------------------
-		_exportCsv() {
-			if (!this._buffer.length) {
-				SNW.ToastUtil.info(SNW.I18n.t('common.noData'));
-				return;
-			}
-			const header = 'timestamp,windSpeed,targetWind,pwmDuty\n';
-			const rows = this._buffer.map(r => [
-				SNW.TimeUtil.epochToTimeStr(r.t),
-				r.windSpeed.toFixed(3),
-				r.targetWind.toFixed(3),
-				r.pwmDuty.toFixed(1)
-			].join(',')).join('\n');
-			
-			const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8' });
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = `snw_chart_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
-			document.body.appendChild(a);
-			a.click();
-			a.remove();
-			URL.revokeObjectURL(url);
-			
-			SNW.ToastUtil.success(SNW.I18n.t('common.success'));
-		}
-	};
-	
+        _exportCsv() {
+            if (!this._buffer.length) {
+                SNW.ToastUtil.info(SNW.I18n.t('common.noData'));
+                return;
+            }
+            const header = 'timestamp,windSpeed,targetWind,pwmDuty\n';
+            const rows = this._buffer.map(r => [
+                SNW.TimeUtil.epochToTimeStr(r.t),
+                r.windSpeed.toFixed(3),
+                r.targetWind.toFixed(3),
+                r.pwmDuty.toFixed(1)
+            ].join(',')).join('\n');
+            
+            const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `snw_chart_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            
+            SNW.ToastUtil.success(SNW.I18n.t('common.success'));
+        }
+
+        // ======================================================
+        // [Phase5 5.5] 예상 파형 오버레이 (ADR-5 이후 신규)
+        //
+        //  [설계]
+        //   - 차트 캔버스 위에 반투명 캔버스를 절대 위치로 삽입
+        //   - 실측 데이터(_buffer)의 min/max 범위에 예상 파형을 매핑
+        //   - 점선 + 돌풍 마커로 시각 구분
+        //   - _showOverlay=false면 즉시 제거
+        // ======================================================
+        async _ensurePreviewBuffer() {
+            if (this._previewBuffer) return;
+            if (!SNW.Preview || typeof SNW.Preview.generate !== 'function') return;
+
+            const sim = SNW.Store.get().sim || {};
+            try {
+                const wave = await SNW.Preview.generate(
+                    sim.presetCode || 'OCEAN',
+                    sim.styleCode || 'BALANCE',
+                    null
+                );
+                if (wave && wave.points) this._previewBuffer = wave.points;
+            } catch (e) {
+                if (SNW.LogUtil) SNW.LogUtil.warn('[Chart] overlay preview fail', e);
+            }
+        }
+
+        _drawOverlay() {
+            // 기존 오버레이 제거
+            const existing = this.el.querySelector('.snw-overlay-canvas');
+            if (existing) existing.remove();
+
+            // 조건 확인
+            if (!this._showOverlay)         return;
+            if (!this._previewBuffer)       return;
+            if (this._activeTab !== 'live') return;   // 예상 탭에서는 이미 실측이 예상이므로 오버레이 불필요
+            if (!this._buffer || this._buffer.length < 2) return;
+
+            const chartSlot = this.el.querySelector('[data-slot="chart"]');
+            if (!chartSlot) return;
+
+            if (getComputedStyle(chartSlot).position === 'static') {
+                chartSlot.style.position = 'relative';
+            }
+
+            const ovl = document.createElement('canvas');
+            ovl.className = 'snw-overlay-canvas';
+            ovl.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;';
+            chartSlot.appendChild(ovl);
+
+            requestAnimationFrame(() => {
+                const rect = chartSlot.getBoundingClientRect();
+                if (rect.width < 10 || rect.height < 10) return;
+                if (!ovl.isConnected) return;
+
+                ovl.width  = Math.floor(rect.width);
+                ovl.height = Math.floor(rect.height);
+
+                // 실측 + 예상 통합 min/max
+                let mn = Infinity, mx = -Infinity;
+                this._buffer.forEach(p => {
+                    const v = Number(p.windSpeed);
+                    if (!Number.isFinite(v)) return;
+                    if (v < mn) mn = v;
+                    if (v > mx) mx = v;
+                });
+                this._previewBuffer.forEach(p => {
+                    const v = Number(p.wind);
+                    if (!Number.isFinite(v)) return;
+                    if (v < mn) mn = v;
+                    if (v > mx) mx = v;
+                });
+                if (!Number.isFinite(mn) || !Number.isFinite(mx) || mx <= mn) return;
+
+                const ctx = ovl.getContext('2d');
+                const pad = 6;
+                const innerH = ovl.height - pad * 2;
+                const n = this._previewBuffer.length;
+                if (n < 2) return;
+
+                // 점선 오버레이
+                ctx.strokeStyle = 'rgba(240,136,62,0.75)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([5, 4]);
+                ctx.beginPath();
+                for (let i = 0; i < n; i++) {
+                    const x = (i / (n - 1)) * ovl.width;
+                    const y = pad + ((mx - this._previewBuffer[i].wind) / (mx - mn)) * innerH;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else         ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            });
+        }
+    };
+    
 })(window.SNW);
 
-
-/* ---- 220.page.schedule.js (39143 bytes) ---- */
+/* ---- 220.page.schedule.js (1503 bytes) ---- */
 // =========================================================
-// 220.page.schedule.js — SNW.Page.Schedule
-// Layer 4 (페이지 로직)
-// [O-7] 클라이언트 검증 (필드별 에러 표시 + 첫 오류로 스크롤)
-// [O-8] 세그먼트 삭제 Undo 토스트
+// 220.page.schedule.js — 스케줄 페이지 (단일 규격 일원화 파사드)
+// Layer 3 (페이지 컴포넌트)
+// [v0203 단일 규격] #/automation/schedule 패널(SNW.SchedulePanel)로 위임
 // =========================================================
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     SNW.Page.Schedule = class Schedule {
-        constructor(container) {
-            this.el = container;
-            this._active = true;
-            this._schedules = [];
-        }
+            constructor(container, params = {}) {
+                this.container = container;
+                this.params = params;
+                this.panel = null;
+            }
 
         async mount() {
-            this.el.innerHTML = '';
-            this.el.appendChild(SNW.Tpl.schedule());
-            SNW.I18n.applyTo(this.el);
-            await this._load();
-
-            SNW.DomUtil.delegate(this.el, '[data-action="add-schedule"]', 'click', () => this._onAdd());
-            SNW.DomUtil.delegate(this.el, '[data-action="edit-schedule"]', 'click', (e, el) => {
-                const id = Number(el.getAttribute('data-id'));
-                if (id) this._onEdit(id);
-            });
-            SNW.DomUtil.delegate(this.el, '[data-action="del-schedule"]', 'click', (e, el) => {
-                const id = Number(el.getAttribute('data-id'));
-                if (id) this._onDelete(id);
-            });
-            SNW.DomUtil.delegate(this.el, '[data-action="toggle-schedule"]', 'click', (e, el) => {
-                const id = Number(el.getAttribute('data-id'));
-                if (id) this._onToggle(id, el.checked);
-            });
-        }
-
-        unmount() { this._active = false; }
-
-        async _load() {
-            try {
-                const data = await SNW.Api.listSchedules();
-                if (!this._active) return;
-                this._schedules = (data && data.schedules) || [];
-                this._renderList();
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'schedule.load');
-            }
-        }
-
-        _renderList() {
-            const listSlot = this.el.querySelector('[data-slot="list"]');
-            if (!listSlot) return;
-            const t = (k, fb) => SNW.I18n ? SNW.I18n.t(k) : fb;
-            const tAdd = t('schedule.add', '스케줄 추가');
-            const tSegment = t('scheduler.segment', '세그먼트');
-            const dayKeys = ['days.mon','days.tue','days.wed','days.thu','days.fri','days.sat','days.sun'];
-            const dayLabels = dayKeys.map(k => t(k, k));
-
-            listSlot.innerHTML = `
-                <div class="snw-toolbar">
-                    <button type="button" class="snw-btn snw-btn-primary" data-action="add-schedule">${tAdd}</button>
-                </div>
-            `;
-            const wrap = document.createElement('div');
-            wrap.className = 'snw-schedule-list';
-
-            this._schedules.forEach(s => {
-                const days = s.period?.days || [0,0,0,0,0,0,0];
-                const daysStr = days.map((on, i) => on ? dayLabels[i] : '·').join('');
-                const segStr = (s.segments || [])
-                    .map(sg => `[${sg.mode}] ${sg.onMinutes}m/${sg.offMinutes}m`)
-                    .join(' | ');
-                const timeRange = `${s.period?.startTime || '--:--'}~${s.period?.endTime || '--:--'}`;
-                const repeatLabel = s.repeatSegments ? `${s.repeatCount}회` : 'Off';
-
-                wrap.appendChild(SNW.DomUtil.html`
-                    <div class="snw-schedule-item ${s.enabled ? 'is-enabled' : 'is-disabled'}">
-                        <div class="snw-schedule-head">
-                            <label class="snw-switch">
-                                <input type="checkbox" data-action="toggle-schedule" data-id="${s.schId}" ${s.enabled ? 'checked' : ''}>
-                                <span class="snw-switch__slider"></span>
-                            </label>
-                            <span class="snw-schedule-name">${SNW.DomUtil.escape(s.name)} (#${s.schNo})</span>
-                            <button class="snw-btn-icon" data-action="edit-schedule" data-id="${s.schId}">✏️</button>
-                            <button class="snw-btn-icon" data-action="del-schedule" data-id="${s.schId}">🗑</button>
-                        </div>
-                        <div class="snw-schedule-meta">${daysStr} ${timeRange} (Repeat: ${repeatLabel})</div>
-                        <div class="snw-schedule-details" style="font-size:11px;color:var(--snw-text-dim);margin-top:4px;">
-                            ${tSegment}: ${segStr}
-                        </div>
-                    </div>`);
-            });
-            listSlot.appendChild(wrap);
-        }
-
-        _onAdd() { this._openEditor(null); }
-        _onEdit(id) { this._openEditor(this._schedules.find(s => s.schId === id)); }
-
-        async _openEditor(target) {
-            const isEdit = !!target;
-            const maxSchNo = this._schedules.reduce((m, s) => Math.max(m, s.schNo || 0), 0);
-            const s = target || {
-                schId: 0, schNo: maxSchNo + 10, name: 'New Schedule', enabled: true,
-                repeatSegments: true, repeatCount: 1,
-                period: { enabled: true, days: [1,1,1,1,1,1,1], startTime: '08:00', endTime: '20:00' },
-                segments: [{
-                    segNo: 10, onMinutes: 20, offMinutes: 10, mode: 'PRESET',
-                    presetCode: 'HARBOR_BREEZE', styleCode: 'BALANCE',
-                    override: { enabled: false, windIntensity: 70, windVariability: 50, gustFrequency: 45 },
-                    fixedSpeed: 0
-                }],
-                autoOff: {
-                    timer:   { enabled: false, minutes: 0 },
-                    offTime: { enabled: false, time: '00:00' },
-                    offTemp: { enabled: false, temp: 0 }
+                    if (!this.container) return;
+                    // 자동화 스케줄 패널로 위임
+                    if (SNW.SchedulePanel) {
+                        this.panel = new SNW.SchedulePanel(this.container, this.params);
+                        await this.panel.mount();
+                    } else if (SNW.Router && typeof SNW.Router.navigate === 'function') {
+                        SNW.Router.navigate('/automation/schedule');
+                    }
                 }
-            };
-            const t = (k, fb) => SNW.I18n ? SNW.I18n.t(k) : fb;
-            const dayKeys = ['days.mon','days.tue','days.wed','days.thu','days.fri','days.sat','days.sun'];
 
-            const PRESET_CODES = [
-                'OCEAN', 'COUNTRY_BREEZE', 'MEDITERRANEAN', 'MOUNTAIN', 'PLAINS',
-                'HARBOR_BREEZE', 'FOREST_CANOPY', 'URBAN_SUNSET', 'TROPICAL_RAIN', 'DESERT_NIGHT'
-            ];
-
-            const STYLE_CODES = ['BALANCE', 'ACTIVE', 'FOCUS', 'RELAX', 'SLEEP'];
-
-            const content = document.createElement('div');
-            let daysHtml = `<div class="snw-form-row"><label>${t('scheduler.day', '요일')}</label><div style="display:flex;gap:4px;">`;
-            dayKeys.forEach((k, i) => {
-                daysHtml += `<label style="font-size:12px;">
-                    <input type="checkbox" data-day="${i}" ${(s.period?.days||[])[i] ? 'checked' : ''}>
-                    ${t(k, k)}
-                </label>`;
-            });
-            daysHtml += `</div></div>`;
-            
-            content.innerHTML = `
-                <div class="snw-form">
-                    <details class="snw-accordion" open>
-                        <summary>${SNW.I18n.t('schedule.secBasic')}</summary>
-                        <div class="snw-accordion__content">
-                            <div class="snw-form-row">
-                                <label>${SNW.I18n.t('schedule.name')}</label>
-                                <input type="text" id="sch-name" value="${SNW.DomUtil.escape(s.name)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                            </div>
-                            <div class="snw-form-row" style="display:flex;gap:8px;">
-                                <label style="flex:1;">${SNW.I18n.t('schedule.startTime')}
-                                    <input type="time" id="sch-start" value="${s.period?.startTime || '08:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                </label>
-                                <label style="flex:1;">${SNW.I18n.t('schedule.endTime')}
-                                    <input type="time" id="sch-end" value="${s.period?.endTime || '20:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                </label>
-                            </div>
-                            ${daysHtml}
-                            <div class="snw-form-row" style="display:flex;gap:8px;margin-top:8px;">
-                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.segmentRepeat')}
-                                    <input type="checkbox" id="sch-repeat" ${s.repeatSegments ? 'checked' : ''}>
-                                </label>
-                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.repeatCount')}
-                                    <input type="number" id="sch-repeat-count" min="0" value="${s.repeatCount}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                </label>
-                            </div>
-                        </div>
-                    </details>
-
-                    <details class="snw-accordion" open id="details-segs">
-                        <summary id="sch-seg-summary" style="cursor:pointer;font-weight:600;">${SNW.I18n.t('schedule.secSegments')}</summary>
-                        <div class="snw-accordion__content">
-                            <div id="sch-segs" style="display:flex;flex-direction:column;gap:12px;"></div>
-                            <button type="button" class="snw-btn snw-btn-secondary" id="btn-add-seg" style="margin-top:12px; width:100%; border: 1px dashed var(--snw-primary); color: var(--snw-primary); background: transparent;">
-                                + ${SNW.I18n.t('schedule.addSegmentBtn')}
-                            </button>
-                        </div>
-                    </details>
-
-                    <details class="snw-accordion">
-                        <summary>${SNW.I18n.t('schedule.secSmart')}</summary>
-                        <div class="snw-accordion__content">
-                            <div class="snw-form-row" style="display:flex;gap:8px; margin-top:8px;">
-                                <label style="flex:1;">${SNW.I18n.t('profiles.autoOffTimer')}
-                                    <input type="number" id="sch-ao-timer" min="0" value="${s.autoOff?.timer?.minutes || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                </label>
-                            </div>
-                            <div class="snw-form-row" style="display:flex;gap:8px;">
-                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.scheduledOff')}
-                                    <input type="checkbox" id="sch-ao-offtime-en" ${s.autoOff?.offTime?.enabled ? 'checked' : ''}>
-                                </label>
-                                <label style="flex:1;">${SNW.I18n.t('schedule.endTime')}
-                                    <input type="time" id="sch-ao-offtime" value="${s.autoOff?.offTime?.time || '00:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                </label>
-                            </div>
-                            <div class="snw-form-row" style="display:flex;gap:8px;">
-                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.tempOff')}
-                                    <input type="checkbox" id="sch-ao-offtemp-en" ${s.autoOff?.offTemp?.enabled ? 'checked' : ''}>
-                                </label>
-                                <label style="flex:1;">${SNW.I18n.t('dashboard.temp')}(°C)
-                                    <input type="number" step="0.1" id="sch-ao-offtemp" value="${s.autoOff?.offTemp?.temp || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                </label>
-                            </div>
-                            <div class="snw-form-row" style="display:flex;gap:8px;">
-                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('sensors.pirEnabled')}
-                                    <input type="checkbox" id="sch-pir-en" ${s.motion?.pir?.enabled ? 'checked' : ''}>
-                                </label>
-                                <label style="flex:1;">${SNW.I18n.t('sensors.pirHoldSec')}
-                                    <input type="number" id="sch-pir-hold" min="0" value="${s.motion?.pir?.holdSec || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                </label>
-                            </div>
-                        </div>
-                    </details>
-                </div>`;
-
-            // 조건부 비활성화 바인딩
-            const bindConditionals = () => {
-                const pairs = [
-                    { chk: '#sch-ao-offtime-en', target: '#sch-ao-offtime' },
-                    { chk: '#sch-ao-offtemp-en', target: '#sch-ao-offtemp' },
-                    { chk: '#sch-pir-en', target: '#sch-pir-hold' }
-                ];
-                pairs.forEach(({ chk, target }) => {
-                    const chkEl = content.querySelector(chk);
-                    const tgtEl = content.querySelector(target);
-                    if (chkEl && tgtEl) {
-                        const update = () => {
-                            tgtEl.disabled = !chkEl.checked;
-                            tgtEl.style.opacity = chkEl.checked ? '1' : '0.4';
-                        };
-                        chkEl.addEventListener('change', update);
-                        update();
-                    }
-                });
-            };
-            bindConditionals();
-
-            const segContainer = content.querySelector('#sch-segs');
-            const currentSegs = JSON.parse(JSON.stringify(s.segments || []));
-
-            const updateSummaryText = () => {
-                const sumEl = content.querySelector('#sch-seg-summary');
-                if (!sumEl) return;
-                if (!currentSegs.length) {
-                    sumEl.textContent = `${t('schedule.secSegments', '세그먼트')} (0)`;
-                    return;
-                }
-                const parts = currentSegs.map((sg, i) => {
-                    if (sg.mode === 'FIXED') return `${i+1}:${t('segment.modeFixed', '고정')}(${sg.fixedSpeed || 0}%) ${sg.onMinutes}m/${sg.offMinutes}m`;
-                    const pName = t('preset.' + sg.presetCode, sg.presetCode);
-                    return `${i+1}:${pName} ${sg.onMinutes}m/${sg.offMinutes}m`;
-                });
-                sumEl.textContent = `${t('segment.summaryPrefix', '세그먼트')} (${currentSegs.length}) · ${parts.join(' → ')}`;
-            };
-
-            const _moveSeg = (idx, dir) => {
-                const targetIdx = idx + dir;
-                if (targetIdx < 0 || targetIdx >= currentSegs.length) return;
-                const temp = currentSegs[idx];
-                currentSegs[idx] = currentSegs[targetIdx];
-                currentSegs[targetIdx] = temp;
-                currentSegs.forEach((sg, i) => { sg.segNo = (i + 1) * 10; });
-                renderSegs(currentSegs);
-            };
-
-            const _removeWithUndo = (idx) => {
-                if (currentSegs.length <= 1) {
-                    SNW.ToastUtil.warn(SNW.I18n.t('validate.segmentMin'));
-                    return;
-                }
-                const removed = currentSegs.splice(idx, 1)[0];
-                renderSegs(currentSegs);
-
-                const host = document.getElementById('toast-host');
-                if (host) {
-                    const tEl = document.createElement('div');
-                    tEl.className = 'snw-toast snw-toast--warn';
-                    tEl.style.cssText = 'display:flex;align-items:center;gap:12px;';
-                    tEl.innerHTML = `
-                        <span style="flex:1;">${SNW.I18n.t('segment.deleted')}</span>
-                        <button type="button" style="background:none;border:none;color:var(--snw-primary);cursor:pointer;font-weight:600;text-decoration:underline;padding:0;font-size:13px;">
-                            ${SNW.I18n.t('common.undo')}
-                        </button>`;
-                    tEl.querySelector('button').onclick = () => {
-                        currentSegs.splice(idx, 0, removed);
-                        renderSegs(currentSegs);
-                        tEl.remove();
-                    };
-                    host.appendChild(tEl);
-                    setTimeout(() => {
-                        tEl.classList.add('snw-toast--out');
-                        setTimeout(() => tEl.remove(), 300);
-                    }, 5000);
-                }
-            };
-
-            const renderSegs = (segs) => {
-                segContainer.innerHTML = '';
-                segs.forEach((seg, idx) => {
-                    const ovr = seg.override || { enabled: false, windIntensity: 70, windVariability: 50, gustFrequency: 40 };
-                    const segDiv = document.createElement('div');
-                    segDiv.className = 'snw-seg-card';
-                    segDiv.style.cssText = 'background:var(--snw-surface);border:1px solid var(--snw-border);border-radius:8px;padding:12px;';
-                    
-                    segDiv.innerHTML = `
-                        <div class="snw-seg-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                            <span class="snw-seg-title" style="font-weight:bold;color:var(--snw-primary);">${t('scheduler.segment', '세그먼트')} ${idx + 1}</span>
-                            <div style="display:flex;align-items:center;gap:4px;">
-                                <button type="button" class="snw-btn-icon btn-preview-seg" data-preview-seg="${idx}" title="미리보기">🎬</button>
-                                <button type="button" class="snw-btn-icon btn-move-up" data-move-up="${idx}" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} title="${t('segment.moveUp', '위로')}">▲</button>
-                                <button type="button" class="snw-btn-icon btn-move-down" data-move-down="${idx}" ${idx === segs.length - 1 ? 'disabled style="opacity:0.3;"' : ''} title="${t('segment.moveDown', '아래로')}">▼</button>
-                                <button type="button" class="snw-btn-icon btn-del-seg" data-remove-seg="${idx}" style="color:var(--snw-error);" title="${t('common.delete', '삭제')}">🗑</button>
-                            </div>
-                        </div>
-                        <div class="snw-seg-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                            <label style="font-size:12px;">${t('segment.onMinutes', '작동 시간(분)')}
-                                <input type="number" class="seg-on" min="0" max="1440" value="${seg.onMinutes}" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                            </label>
-                            <label style="font-size:12px;">${t('segment.offMinutes', '정지 시간(분)')}
-                                <input type="number" class="seg-off" min="0" max="1440" value="${seg.offMinutes}" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                            </label>
-                            <label style="grid-column: span 2; font-size:12px;">${t('segment.mode', '모드')}
-                                <select class="seg-mode" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                    <option value="PRESET" ${seg.mode === 'PRESET' ? 'selected' : ''}>${t('segment.modePreset', '프리셋 모드')}</option>
-                                    <option value="FIXED"  ${seg.mode === 'FIXED'  ? 'selected' : ''}>${t('segment.modeFixed', '고정풍속 모드')}</option>
-                                </select>
-                            </label>
-                            <div class="snw-seg-preset-area" style="grid-column: span 2; display: ${seg.mode === 'PRESET' ? 'grid' : 'none'}; grid-template-columns:1fr 1fr; gap:8px;">
-                                <label style="font-size:12px;">${t('segment.presetSelect', '프리셋 선택')}
-                                    <select class="seg-preset" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                        ${PRESET_CODES.map(c => `<option value="${c}" ${seg.presetCode === c ? 'selected' : ''}>${c} (${t('preset.' + c, c)})</option>`).join('')}
-                                    </select>
-                                </label>
-                                <label style="font-size:12px;">${t('segment.styleSelect', '스타일 선택')}
-                                    <select class="seg-style" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                        ${STYLE_CODES.map(c => `<option value="${c}" ${seg.styleCode === c ? 'selected' : ''}>${c} (${t('style.' + c, c)})</option>`).join('')}
-                                    </select>
-                                </label>
-                                <details class="snw-accordion snw-seg-override" style="grid-column: span 2; margin-top:4px; border: 1px dashed var(--snw-border); border-radius: 6px; padding: 6px 10px;">
-                                    <summary style="font-size:11.5px; font-weight:600; color:var(--snw-primary); cursor:pointer;">
-                                        ${t('segment.overrideTitle', '⚙️ 고급 물리 설정 (Override 직접 지정)')}
-                                    </summary>
-                                    <div class="snw-accordion__content" style="padding-top:8px;">
-                                        <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;margin-bottom:8px;cursor:pointer;">
-                                            <input type="checkbox" class="seg-ovr-en" ${ovr.enabled ? 'checked' : ''}>
-                                            <span>${t('segment.overrideDesc', '이 세그먼트에서 바람 세부 설정 직접 지정 (Override)')}</span>
-                                        </label>
-                                        <div class="seg-ovr-fields" style="${ovr.enabled ? '' : 'display:none;opacity:0.5;'}">
-                                            <div class="snw-form-row" style="margin-bottom:8px;">
-                                                <div style="display:flex;justify-content:space-between;font-size:11px;">
-                                                    <label>${t('segment.overrideIntensity', '바람 강도 (%)')}</label>
-                                                    <b class="val-int-txt">${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}%</b>
-                                                </div>
-                                                <input type="range" class="seg-ovr-int" min="0" max="100" value="${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}" style="width:100%;">
-                                                <div class="fb-int-txt" style="font-size:10.5px;color:var(--snw-text-dim);margin-top:2px;"></div>
-                                            </div>
-                                            <div class="snw-form-row" style="margin-bottom:8px;">
-                                                <div style="display:flex;justify-content:space-between;font-size:11px;">
-                                                    <label>${t('segment.overrideVariability', '바람 변동성 (%)')}</label>
-                                                    <b class="val-var-txt">${ovr.windVariability >= 0 ? ovr.windVariability : 50}%</b>
-                                                </div>
-                                                <input type="range" class="seg-ovr-var" min="0" max="100" value="${ovr.windVariability >= 0 ? ovr.windVariability : 50}" style="width:100%;">
-                                                <div class="fb-var-txt" style="font-size:10.5px;color:var(--snw-text-dim);margin-top:2px;"></div>
-                                            </div>
-                                            <div class="snw-form-row">
-                                                <div style="display:flex;justify-content:space-between;font-size:11px;">
-                                                    <label>${t('segment.overrideGust', '돌풍 빈도 (%)')}</label>
-                                                    <b class="val-gust-txt">${ovr.gustFrequency >= 0 ? ovr.gustFrequency : 40}%</b>
-                                                </div>
-                                                <input type="range" class="seg-ovr-gust" min="0" max="100" value="${ovr.gustFrequency >= 0 ? ovr.gustFrequency : 40}" style="width:100%;">
-                                                <div class="fb-gust-txt" style="font-size:10.5px;color:var(--snw-text-dim);margin-top:2px;"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </details>
-                            </div>
-                            <div class="snw-seg-fixed-area" style="grid-column: span 2; display: ${seg.mode === 'FIXED' ? 'block' : 'none'};">
-                                <label style="font-size:12px;">${t('segment.fixedSpeed', '고정 풍속(%)')}
-                                    <input type="number" class="seg-fixed" min="0" max="100" value="${seg.fixedSpeed || 0}" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                </label>
-                            </div>
-                        </div>`;
-
-                    // 모드 전환 바인딩
-                    const modeSel = segDiv.querySelector('.seg-mode');
-                    const presetArea = segDiv.querySelector('.snw-seg-preset-area');
-                    const fixedArea = segDiv.querySelector('.snw-seg-fixed-area');
-                    modeSel.addEventListener('change', (e) => {
-                        const isPreset = e.target.value === 'PRESET';
-                        presetArea.style.display = isPreset ? 'grid' : 'none';
-                        fixedArea.style.display  = isPreset ? 'none' : 'block';
-                        updateSummaryText();
-                    });
-
-                    // Override 토글 및 실시간 뱃지 연동
-                    const ovrEn = segDiv.querySelector('.seg-ovr-en');
-                    const ovrFields = segDiv.querySelector('.seg-ovr-fields');
-                    ovrEn.addEventListener('change', () => {
-                        ovrFields.style.display = ovrEn.checked ? 'block' : 'none';
-                    });
-
-                    const bindRange = (rangeSel, txtSel, fbSel, guideFn) => {
-                        const rEl = segDiv.querySelector(rangeSel);
-                        const tEl = segDiv.querySelector(txtSel);
-                        const fEl = segDiv.querySelector(fbSel);
-                        if (!rEl) return;
-                        const sync = () => {
-                            if (tEl) tEl.textContent = `${rEl.value}%`;
-                            if (fEl && guideFn) {
-                                const g = guideFn(Number(rEl.value));
-                                fEl.textContent = g ? `▶ ${g.title}` : '';
-                            }
-                        };
-                        rEl.addEventListener('input', sync);
-                        sync();
-                    };
-
-                    bindRange('.seg-ovr-int',  '.val-int-txt',  '.fb-int-txt',  val => SNW.Feedback?.getIntensityGuide(val));
-                    bindRange('.seg-ovr-var',  '.val-var-txt',  '.fb-var-txt',  val => SNW.Feedback?.getVariabilityGuide(val));
-                    bindRange('.seg-ovr-gust', '.val-gust-txt', '.fb-gust-txt', val => SNW.Feedback?.getGustGuide(val));
-
-                    // [SIM-5] 세그먼트 미리보기 바인딩
-                    const prevBtn = segDiv.querySelector('.btn-preview-seg');
-                    if (prevBtn) {
-                        prevBtn.onclick = () => {
-                            const segData = {
-                                mode: segDiv.querySelector('.seg-mode')?.value || 'PRESET',
-                                presetCode: segDiv.querySelector('.seg-preset')?.value || 'OCEAN',
-                                styleCode:  segDiv.querySelector('.seg-style')?.value  || 'BALANCE',
-                                fixedSpeed: Number(segDiv.querySelector('.seg-fixed')?.value || 0),
-                                override: {
-                                    enabled: segDiv.querySelector('.seg-ovr-en')?.checked || false,
-                                    windIntensity:   Number(segDiv.querySelector('.seg-ovr-int')?.value || -1),
-                                    windVariability: Number(segDiv.querySelector('.seg-ovr-var')?.value || -1),
-                                    gustFrequency:   Number(segDiv.querySelector('.seg-ovr-gust')?.value || -1)
-                                }
-                            };
-                            if (SNW.Preview && SNW.Preview.showModal) {
-                                SNW.Preview.showModal(segData);
-                            }
-                        };
-                    }
-
-                    // 순서 이동 및 삭제 버튼 바인딩
-                    const upBtn = segDiv.querySelector('.btn-move-up');
-                    const downBtn = segDiv.querySelector('.btn-move-down');
-                    if (upBtn) upBtn.onclick = () => _moveSeg(idx, -1);
-                    if (downBtn) downBtn.onclick = () => _moveSeg(idx, 1);
-                    segDiv.querySelector('.btn-del-seg').onclick = () => _removeWithUndo(idx);
-
-                    segContainer.appendChild(segDiv);
-                });
-                updateSummaryText();
-            };
-
-            renderSegs(currentSegs);
-
-            content.querySelector('#btn-add-seg').addEventListener('click', () => {
-                currentSegs.push({
-                    segNo: currentSegs.length * 10 + 10,
-                    onMinutes: 20, offMinutes: 10, mode: 'PRESET',
-                    presetCode: 'OCEAN', styleCode: 'BALANCE',
-                    override: { enabled: false, windIntensity: 70, windVariability: 50, gustFrequency: 40 },
-                    fixedSpeed: 0
-                });
-                renderSegs(currentSegs);
-            });
-
-            // =========================================================
-            // 저장 — [O-7] 필드별 검증 & Override 직결 수집
-            // =========================================================
-            SNW.UI.modal(
-                isEdit ? `스케줄 수정: ${SNW.DomUtil.escape(s.name)}` : t('schedule.add', '스케줄 추가'),
-                content,
-                async () => {
-                    const nameEl  = content.querySelector('#sch-name');
-                    const startEl = content.querySelector('#sch-start');
-                    const endEl   = content.querySelector('#sch-end');
-
-                    [nameEl, startEl, endEl].forEach(el => el.classList.remove('is-error'));
-
-                    const errors = [];
-                    if (!nameEl.value.trim()) {
-                        nameEl.classList.add('is-error');
-                        errors.push({ el: nameEl, msg: SNW.I18n.t('validate.required', { field: t('schedule.name', '이름') }) });
-                    }
-                    if (startEl.value >= endEl.value) {
-                        endEl.classList.add('is-error');
-                        errors.push({ el: endEl, msg: SNW.I18n.t('validate.timeOrder') });
-                    }
-
-                    const onInputs  = segContainer.querySelectorAll('.seg-on');
-                    const offInputs = segContainer.querySelectorAll('.seg-off');
-                    onInputs.forEach((el, i) => {
-                        el.classList.remove('is-error');
-                        const v = Number(el.value);
-                        if (isNaN(v) || v < 0 || v > 1440) {
-                            el.classList.add('is-error');
-                            errors.push({ el, msg: `세그먼트 ${i+1} 작동 시간: 0~1440분` });
-                        }
-                    });
-                    offInputs.forEach((el, i) => {
-                        el.classList.remove('is-error');
-                        const v = Number(el.value);
-                        if (isNaN(v) || v < 0 || v > 1440) {
-                            el.classList.add('is-error');
-                            errors.push({ el, msg: `세그먼트 ${i+1} 정지 시간: 0~1440분` });
-                        }
-                    });
-
-                    if (errors.length) {
-                        SNW.ToastUtil.error(SNW.I18n.t('validate.multiErrors', { count: errors.length }));
-                        const first = content.querySelector('.is-error');
-                        if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        return false;
-                    }
-
-                    // body 구성 (Override 직결 전송)
-                    const newSegs = [];
-                    segContainer.querySelectorAll('.snw-seg-card').forEach((card, idx) => {
-                        const on   = Number(card.querySelector('.seg-on').value);
-                        const off  = Number(card.querySelector('.seg-off').value);
-                        const mode = card.querySelector('.seg-mode').value;
-                        const seg = { segNo: idx * 10 + 10, onMinutes: on, offMinutes: off, mode };
-                        if (mode === 'PRESET') {
-                            seg.presetCode = card.querySelector('.seg-preset').value;
-                            seg.styleCode  = card.querySelector('.seg-style').value;
-                            const ovrEn = card.querySelector('.seg-ovr-en').checked;
-                            seg.override = {
-                                enabled: ovrEn,
-                                windIntensity:   ovrEn ? Number(card.querySelector('.seg-ovr-int').value) : -1.0,
-                                windVariability: ovrEn ? Number(card.querySelector('.seg-ovr-var').value) : -1.0,
-                                gustFrequency:   ovrEn ? Number(card.querySelector('.seg-ovr-gust').value) : -1.0
-                            };
-                        } else {
-                            seg.fixedSpeed = Number(card.querySelector('.seg-fixed').value);
-                        }
-                        newSegs.push(seg);
-                    });
-
-                    const days = Array.from(content.querySelectorAll('[data-day]')).map(cb => cb.checked ? 1 : 0);
-
-                    const body = {
-                        schedule: {
-                            schNo: s.schNo,
-                            name: nameEl.value,
-                            enabled: s.enabled,
-                            repeatSegments: content.querySelector('#sch-repeat').checked,
-                            repeatCount: Number(content.querySelector('#sch-repeat-count').value),
-                            period: {
-                                enabled: true, days,
-                                startTime: startEl.value, endTime: endEl.value
-                            },
-                            segments: newSegs,
-                            autoOff: {
-                                timer: {
-                                    enabled: Number(content.querySelector('#sch-ao-timer').value) > 0,
-                                    minutes: Number(content.querySelector('#sch-ao-timer').value)
-                                },
-                                offTime: {
-                                    enabled: content.querySelector('#sch-ao-offtime-en').checked,
-                                    time: content.querySelector('#sch-ao-offtime').value
-                                },
-                                offTemp: {
-                                    enabled: content.querySelector('#sch-ao-offtemp-en').checked,
-                                    temp: Number(content.querySelector('#sch-ao-offtemp').value)
-                                }
-                            },
-                            motion: {
-                                pir: {
-                                    enabled: content.querySelector('#sch-pir-en').checked,
-                                    holdSec: Number(content.querySelector('#sch-pir-hold').value)
-                                }
+                        unmount() {
+                            if (this.panel && typeof this.panel.unmount === 'function') {
+                                this.panel.unmount();
+                                this.panel = null;
                             }
                         }
                     };
-
-                    try {
-                        if (isEdit) await SNW.Api.updateSchedule(s.schId, body);
-                        else        await SNW.Api.addSchedule(body);
-                        await SNW.Api.saveConfig();
-                        SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
-                        await this._load();
-                        return true;
-                    } catch (e) {
-                        SNW.ErrorHandler.handle(e, 'schedule.save');
-                        return false;
-                    }
-                },
-                null,
-                { width: '560px' }
-            );
-        }
-
-        async _onDelete(id) {
-            if (!confirm(SNW.I18n.t('msg.deleteConfirm'))) return;
-            try {
-                await SNW.Api.deleteSchedule(id);
-                await SNW.Api.saveConfig();
-                await this._load();
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'schedule.delete');
-            }
-        }
-
-        async _onToggle(id, next) {
-            const target = this._schedules.find(s => s.schId === id);
-            if (!target) return;
-            const prevEnabled = target.enabled;
-            target.enabled = !!next;
-            try {
-                await SNW.Api.updateSchedule(id, { schedule: target });
-                this._renderList();
-            } catch (e) {
-                target.enabled = prevEnabled;
-                this._renderList();
-                SNW.ErrorHandler.handle(e, 'schedule.toggle');
-            }
-        }
-    };
-})(window.SNW);
+                }) (window.SNW);
 
 
 /* ---- 225.page.sensors.js (6057 bytes) ---- */
@@ -6845,574 +6423,44 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 230.page.profiles.js (35387 bytes) ---- */
+/* ---- 230.page.profiles.js (1382 bytes) ---- */
 // =========================================================
-// 230.page.profiles.js — SNW.Page.Profiles
-// Layer 4 (페이지 로직)
-// [O-16] 활성 프로필 표시 + start/stop 토글
-// [FIX] HTML 태그 텍스트 노출 버그 수정 (innerHTML + escape 조합)
+// 230.page.profiles.js — 프로필 페이지 (단일 규격 일원화 파사드)
+// Layer 3 (페이지 컴포넌트)
+// [v0203 단일 규격] #/automation/playlist 패널(SNW.Playlist)로 위임
 // =========================================================
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     SNW.Page.Profiles = class Profiles {
-        constructor(container) {
-            this.el = container;
-            this._active = true;
-            this._profiles = [];
-            this._unsubs = [];
-        }
+            constructor(container, params = {}) {
+                this.container = container;
+                this.params = params;
+                this.panel = null;
+            }
 
         async mount() {
-            this.el.innerHTML = '';
-            this.el.appendChild(SNW.Tpl.profiles());
-            SNW.I18n.applyTo(this.el);
-            await this._load();
-
-            // [O-16] control 구독 → 활성 상태 실시간 갱신
-            const unsub = SNW.Store.watch('control', () => {
-                if (this._active) this._renderList();
-            });
-            this._unsubs.push(unsub);
-
-            SNW.DomUtil.delegate(this.el, '[data-action="add-profile"]', 'click', () => this._onAdd());
-            SNW.DomUtil.delegate(this.el, '[data-action="edit-profile"]', 'click', (e, el) => {
-                const id = Number(el.getAttribute('data-id'));
-                if (id) this._onEdit(id);
-            });
-            SNW.DomUtil.delegate(this.el, '[data-action="del-profile"]', 'click', (e, el) => {
-                const id = Number(el.getAttribute('data-id'));
-                if (id) this._onDelete(id);
-            });
-            SNW.DomUtil.delegate(this.el, '[data-action="start-profile"]', 'click', (e, el) => {
-                const no = Number(el.getAttribute('data-no'));
-                if (no) this._onStart(no);
-            });
-            SNW.DomUtil.delegate(this.el, '[data-action="stop-profile"]', 'click', () => this._onStop());
-        }
-
-        unmount() {
-            this._active = false;
-            this._unsubs.forEach(fn => { try { fn(); } catch {} });
-            this._unsubs = [];
-        }
-
-        async _load() {
-            try {
-                const data = await SNW.Api.listProfiles();
-                if (!this._active) return;
-                this._profiles = (data && data.userProfiles && data.userProfiles.profiles) || [];
-                this._renderList();
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'profile.load');
-            }
-        }
-
-        _renderList() {
-            const listSlot = this.el.querySelector('[data-slot="list"]');
-            if (!listSlot) return;
-
-            const activeNo = SNW.Store.get().control?.profile?.profileNo;
-
-            listSlot.innerHTML = `
-                <div class="snw-toolbar">
-                    <button type="button" class="snw-btn snw-btn-primary" data-action="add-profile">
-                        ${SNW.I18n.t('profiles.add')}
-                    </button>
-                </div>
-            `;
-
-            const wrap = document.createElement('div');
-            wrap.className = 'snw-profile-list';
-
-            if (this._profiles.length === 0) {
-                wrap.innerHTML = `<div class="snw-empty">${SNW.I18n.t('common.noData')}</div>`;
-            }
-
-            this._profiles.forEach(p => {
-                const isActive   = (p.profileNo === activeNo);
-                const isDisabled = !p.enabled;
-                const safeName   = SNW.DomUtil.escape(p.name);
-
-                // [FIX] DomUtil.html 대신 innerHTML 사용 (태그 렌더링 보장 + 이름만 escape)
-                const item = document.createElement('div');
-                item.className = `snw-profile-item ${isDisabled ? 'is-disabled' : ''} ${isActive ? 'is-active' : ''}`;
-                
-                item.innerHTML = `
-                    <div class="snw-profile-head">
-                        <span class="snw-profile-no">#${p.profileNo}</span>
-                        <span class="snw-profile-name">${safeName}</span>
-                        ${isActive ? `<span class="snw-badge snw-badge--green">${SNW.I18n.t('profile.active')}</span>` : ''}
-                        <button class="snw-btn-icon" data-action="edit-profile" data-id="${p.profileId}">✏️</button>
-                        <button class="snw-btn-icon" data-action="del-profile" data-id="${p.profileId}">🗑</button>
-                    </div>
-                    <div class="snw-profile-actions" style="margin-top:8px;">
-                        ${isActive
-                            ? `<button class="snw-btn" data-action="stop-profile">
-                                   ⏹ ${SNW.I18n.t('common.stop')}
-                               </button>`
-                            : `<button class="snw-btn snw-btn-primary"
-                                       data-action="start-profile"
-                                       data-no="${p.profileNo}"
-                                       ${isDisabled ? 'disabled' : ''}>
-                                   ▶ ${SNW.I18n.t('common.start')}
-                               </button>`
-                        }
-                    </div>
-                `;
-                wrap.appendChild(item);
-            });
-
-            listSlot.appendChild(wrap);
-        }
-
-        _onAdd() { this._openEditor(null); }
-        _onEdit(id) { this._openEditor(this._profiles.find(p => p.profileId === id)); }
-
-        async _openEditor(target) {
-            const t = (k, fb) => SNW.I18n ? SNW.I18n.t(k) : fb;
-            const PRESET_CODES = [
-                'OCEAN', 'COUNTRY_BREEZE', 'MEDITERRANEAN', 'MOUNTAIN', 'PLAINS',
-                'HARBOR_BREEZE', 'FOREST_CANOPY', 'URBAN_SUNSET', 'TROPICAL_RAIN', 'DESERT_NIGHT'
-            ];
-
-            const STYLE_CODES = ['BALANCE', 'ACTIVE', 'FOCUS', 'RELAX', 'SLEEP'];
-
-            const isEdit = !!target;
-            const maxNo = this._profiles.reduce((m, x) => Math.max(m, x.profileNo || 0), 0);
-            const p = target || {
-                profileId: 0, profileNo: maxNo + 10, name: 'New Profile', enabled: true,
-                repeatSegments: false, repeatCount: 0,
-                segments: [{
-                    segNo: 10, onMinutes: 20, offMinutes: 0, mode: 'PRESET',
-                    presetCode: 'OCEAN', styleCode: 'BALANCE',
-                    override: { enabled: false, windIntensity: 70, windVariability: 50, gustFrequency: 40 },
-                    fixedSpeed: 0
-                }],
-                autoOff: {
-                    timer:   { enabled: false, minutes: 0 },
-                    offTime: { enabled: false, time: '00:00' },
-                    offTemp: { enabled: false, temp: 0 }
-                },
-                motion: { pir: { enabled: false, holdSec: 0 } }
-            };
-
-            const content = document.createElement('div');
-
-            content.innerHTML = `
-                <div class="snw-form">
-                    <details class="snw-accordion" open>
-                        <summary>${SNW.I18n.t('schedule.secBasic')}</summary>
-                        <div class="snw-accordion__content">
-                            <div class="snw-form-row">
-                                <label>${SNW.I18n.t('profiles.name')}</label>
-                                <input type="text" id="prof-name" value="${SNW.DomUtil.escape(p.name)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                            </div>
-                            <div class="snw-form-row" style="display:flex;gap:8px;">
-                                <label style="flex:1;">${SNW.I18n.t('profiles.no')}
-                                    <input type="number" id="prof-no" value="${p.profileNo}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                </label>
-                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('profiles.enabled')}
-                                    <input type="checkbox" id="prof-enabled" ${p.enabled ? 'checked' : ''}>
-                                </label>
-                            </div>
-                            <div class="snw-form-row" style="display:flex;gap:8px;margin-top:8px;">
-                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.segmentRepeat')}
-                                    <input type="checkbox" id="prof-repeat" ${p.repeatSegments ? 'checked' : ''}>
-                                </label>
-                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('schedule.repeatCount')}
-                                    <input type="number" id="prof-repeat-count" min="0" value="${p.repeatCount}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                </label>
-                            </div>
-                        </div>
-                    </details>
-            
-                    <details class="snw-accordion" open>
-                        <summary>${SNW.I18n.t('schedule.secSegments')}</summary>
-                        <div class="snw-accordion__content">
-                            <div id="prof-segs" style="display:flex;flex-direction:column;gap:12px;"></div>
-                            <button type="button" class="snw-btn snw-btn-primary" id="btn-add-prof-seg" style="margin-top:12px; width:100%;">
-                                + ${SNW.I18n.t('profiles.addSegmentBtn')}
-                            </button>
-                        </div>
-                    </details>
-            
-                    <details class="snw-accordion">
-                        <summary>${SNW.I18n.t('schedule.secSmart')}</summary>
-                        <div class="snw-accordion__content">
-                            <div class="snw-form-row" style="display:flex;gap:8px; margin-top:8px;">
-                                <label style="flex:1;">${SNW.I18n.t('profiles.autoOffTimer')}
-                                    <input type="number" id="prof-ao-timer" min="0" value="${p.autoOff?.timer?.minutes || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                </label>
-                            </div>
-                            <div class="snw-form-row" style="display:flex;gap:8px;">
-                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.scheduledOff')}
-                                    <input type="checkbox" id="prof-ao-offtime-en" ${p.autoOff?.offTime?.enabled ? 'checked' : ''}>
-                                </label>
-                                <label style="flex:1;">${SNW.I18n.t('schedule.endTime')}
-                                    <input type="time" id="prof-ao-offtime" value="${p.autoOff?.offTime?.time || '00:00'}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                </label>
-                            </div>
-                            <div class="snw-form-row" style="display:flex;gap:8px;">
-                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('scheduler.tempOff')}
-                                    <input type="checkbox" id="prof-ao-offtemp-en" ${p.autoOff?.offTemp?.enabled ? 'checked' : ''}>
-                                </label>
-                                <label style="flex:1;">${SNW.I18n.t('dashboard.temp')}(°C)
-                                    <input type="number" step="0.1" id="prof-ao-offtemp" value="${p.autoOff?.offTemp?.temp || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                </label>
-                            </div>
-                            <div class="snw-form-row" style="display:flex;gap:8px;">
-                                <label style="flex:1;font-size:12px;">${SNW.I18n.t('sensors.pirEnabled')}
-                                    <input type="checkbox" id="prof-pir-en" ${p.motion?.pir?.enabled ? 'checked' : ''}>
-                                </label>
-                                <label style="flex:1;">${SNW.I18n.t('sensors.pirHoldSec')}
-                                    <input type="number" id="prof-pir-hold" min="0" value="${p.motion?.pir?.holdSec || 0}" style="width:100%;padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                </label>
-                            </div>
-                        </div>
-                    </details>
-                </div>`;
-    
-            const segContainer = content.querySelector('#prof-segs');
-            const currentSegs = JSON.parse(JSON.stringify(p.segments || []));
-
-            // =========================================================
-            // 세그먼트 순서 이동
-            // =========================================================
-            const _moveSeg = (idx, dir) => {
-                const targetIdx = idx + dir;
-                if (targetIdx < 0 || targetIdx >= currentSegs.length) return;
-                const temp = currentSegs[idx];
-                currentSegs[idx] = currentSegs[targetIdx];
-                currentSegs[targetIdx] = temp;
-                currentSegs.forEach((seg, i) => { seg.segNo = i * 10 + 10; });
-                renderSegs(currentSegs);
-            };
-
-            // =========================================================
-            // 세그먼트 삭제 Undo 지원
-            // =========================================================
-            const _removeWithUndo = (idx) => {
-                if (currentSegs.length <= 1) {
-                    SNW.ToastUtil.warn(SNW.I18n.t('validate.segmentMin'));
-                    return;
+                if (!this.container) return;
+                // 자동화 Playlist 패널로 위임
+                if (SNW.Playlist) {
+                    this.panel = new SNW.Playlist(this.container, this.params);
+                    await this.panel.mount();
+                } else if (SNW.Router && typeof SNW.Router.navigate === 'function') {
+                    SNW.Router.navigate('/automation/playlist');
                 }
-                const removed = currentSegs.splice(idx, 1)[0];
-                renderSegs(currentSegs);
+            }
 
-                const host = document.getElementById('toast-host');
-                if (host) {
-                    const tEl = document.createElement('div');
-                    tEl.className = 'snw-toast snw-toast--warn';
-                    tEl.style.cssText = 'display:flex;align-items:center;gap:12px;';
-                    tEl.innerHTML = `
-                        <span style="flex:1;">${SNW.I18n.t('segment.deleted')}</span>
-                        <button type="button" style="background:none;border:none;color:var(--snw-primary);cursor:pointer;font-weight:600;text-decoration:underline;padding:0;font-size:13px;">
-                            ${SNW.I18n.t('common.undo')}
-                        </button>`;
-                    tEl.querySelector('button').onclick = () => {
-                        currentSegs.splice(idx, 0, removed);
-                        renderSegs(currentSegs);
-                        tEl.remove();
-                    };
-                    host.appendChild(tEl);
-                    setTimeout(() => {
-                        tEl.classList.add('snw-toast--out');
-                        setTimeout(() => tEl.remove(), 300);
-                    }, 5000);
+            unmount() {
+                    if (this.panel && typeof this.panel.unmount === 'function') {
+                        this.panel.unmount();
+                        this.panel = null;
+                    }
                 }
             };
+        })(window.SNW);
 
-            const renderSegs = (segs) => {
-                segContainer.innerHTML = '';
-                segs.forEach((seg, idx) => {
-                    const ovr = seg.override || { enabled: false, windIntensity: 70, windVariability: 50, gustFrequency: 40 };
-                    const segDiv = document.createElement('div');
-                    segDiv.className = 'snw-seg-card';
-                    segDiv.style.cssText = 'background:var(--snw-surface);border:1px solid var(--snw-border);border-radius:8px;padding:12px;';
-                    segDiv.innerHTML = `
-                        <div class="snw-seg-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                            <span class="snw-seg-title" style="font-weight:bold;color:var(--snw-primary);">${t('scheduler.segment', '세그먼트')} ${idx + 1}</span>
-                            <div style="display:flex;align-items:center;gap:4px;">
-                                <button type="button" class="snw-btn-icon btn-preview-seg" data-preview-seg="${idx}" title="미리보기">🎬</button>
-                                <button type="button" class="snw-btn-icon btn-move-up" data-move-up="${idx}" ${idx === 0 ? 'disabled style="opacity:0.3;"' : ''} title="${t('segment.moveUp', '위로')}">▲</button>
-                                <button type="button" class="snw-btn-icon btn-move-down" data-move-down="${idx}" ${idx === segs.length - 1 ? 'disabled style="opacity:0.3;"' : ''} title="${t('segment.moveDown', '아래로')}">▼</button>
-                                <button type="button" class="snw-btn-icon" data-remove-seg="${idx}" style="color:var(--snw-error);" title="${t('common.delete', '삭제')}">🗑</button>
-                            </div>
-                        </div>
-                        <div class="snw-seg-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                            <label style="font-size:12px;">${t('segment.onMinutes', '작동 시간(분)')}
-                                <input type="number" class="seg-on" min="0" max="1440" value="${seg.onMinutes}" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                            </label>
-                            <label style="font-size:12px;">${t('segment.offMinutes', '정지 시간(분)')}
-                                <input type="number" class="seg-off" min="0" max="1440" value="${seg.offMinutes}" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                            </label>
-                            <label style="grid-column: span 2; font-size:12px;">${t('segment.mode', '모드')}
-                                <select class="seg-mode" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                    <option value="PRESET" ${seg.mode === 'PRESET' ? 'selected' : ''}>${t('segment.modePreset', '프리셋 모드')}</option>
-                                    <option value="FIXED"  ${seg.mode === 'FIXED'  ? 'selected' : ''}>${t('segment.modeFixed', '고정풍속 모드')}</option>
-                                </select>
-                            </label>
-                            <div class="snw-seg-preset-area" style="grid-column: span 2; display: ${seg.mode === 'PRESET' ? 'grid' : 'none'}; grid-template-columns:1fr 1fr; gap:8px;">
-                                <label style="font-size:12px;">${t('segment.presetSelect', '프리셋 선택')}
-                                    <select class="seg-preset" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                        ${PRESET_CODES.map(c => `<option value="${c}" ${seg.presetCode === c ? 'selected' : ''}>${c} (${t('preset.' + c, c)})</option>`).join('')}
-                                    </select>
-                                </label>
-                                <label style="font-size:12px;">${t('segment.styleSelect', '스타일 선택')}
-                                    <select class="seg-style" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                        ${STYLE_CODES.map(c => `<option value="${c}" ${seg.styleCode === c ? 'selected' : ''}>${c} (${t('style.' + c, c)})</option>`).join('')}
-                                    </select>
-                                </label>
-                                <details class="snw-accordion snw-seg-override" style="grid-column: span 2; margin-top:4px; border: 1px dashed var(--snw-border); border-radius: 6px; padding: 6px 10px;">
-                                    <summary style="font-size:11.5px; font-weight:600; color:var(--snw-primary); cursor:pointer;">
-                                        ${t('segment.overrideTitle', '⚙️ 고급 물리 설정 (Override 직접 지정)')}
-                                    </summary>
-                                    <div class="snw-accordion__content" style="padding-top:8px;">
-                                        <label style="display:flex;align-items:center;gap:6px;font-size:11.5px;margin-bottom:8px;cursor:pointer;">
-                                            <input type="checkbox" class="seg-ovr-en" ${ovr.enabled ? 'checked' : ''}>
-                                            <span>${t('segment.overrideDesc', '이 세그먼트에서 바람 세부 설정 직접 지정 (Override)')}</span>
-                                        </label>
-                                        <div class="seg-ovr-fields" style="${ovr.enabled ? '' : 'display:none;opacity:0.5;'}">
-                                            <div class="snw-form-row" style="margin-bottom:8px;">
-                                                <div style="display:flex;justify-content:space-between;font-size:11px;">
-                                                    <label>${t('segment.overrideIntensity', '바람 강도 (%)')}</label>
-                                                    <b class="val-int-txt">${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}%</b>
-                                                </div>
-                                                <input type="range" class="seg-ovr-int" min="0" max="100" value="${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}" style="width:100%;">
-                                                <div class="fb-int-txt" style="font-size:10.5px;color:var(--snw-text-dim);margin-top:2px;"></div>
-                                            </div>
-                                            <div class="snw-form-row" style="margin-bottom:8px;">
-                                                <div style="display:flex;justify-content:space-between;font-size:11px;">
-                                                    <label>${t('segment.overrideVariability', '바람 변동성 (%)')}</label>
-                                                    <b class="val-var-txt">${ovr.windVariability >= 0 ? ovr.windVariability : 50}%</b>
-                                                </div>
-                                                <input type="range" class="seg-ovr-var" min="0" max="100" value="${ovr.windVariability >= 0 ? ovr.windVariability : 50}" style="width:100%;">
-                                                <div class="fb-var-txt" style="font-size:10.5px;color:var(--snw-text-dim);margin-top:2px;"></div>
-                                            </div>
-                                            <div class="snw-form-row">
-                                                <div style="display:flex;justify-content:space-between;font-size:11px;">
-                                                    <label>${t('segment.overrideGust', '돌풍 빈도 (%)')}</label>
-                                                    <b class="val-gust-txt">${ovr.gustFrequency >= 0 ? ovr.gustFrequency : 40}%</b>
-                                                </div>
-                                                <input type="range" class="seg-ovr-gust" min="0" max="100" value="${ovr.gustFrequency >= 0 ? ovr.gustFrequency : 40}" style="width:100%;">
-                                                <div class="fb-gust-txt" style="font-size:10.5px;color:var(--snw-text-dim);margin-top:2px;"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </details>
-                            </div>
-                            <div class="snw-seg-fixed-area" style="grid-column: span 2; display: ${seg.mode === 'FIXED' ? 'block' : 'none'};">
-                                <label style="font-size:12px;">${t('segment.fixedSpeed', '고정 풍속(%)')}
-                                    <input type="number" class="seg-fixed" min="0" max="100" value="${seg.fixedSpeed || 0}" style="width:100%;padding:6px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                                </label>
-                            </div>
-                        </div>`;
-
-                    const modeSel = segDiv.querySelector('.seg-mode');
-                    const presetArea = segDiv.querySelector('.snw-seg-preset-area');
-                    const fixedArea = segDiv.querySelector('.snw-seg-fixed-area');
-
-                    modeSel.addEventListener('change', (e) => {
-                        const isPreset = e.target.value === 'PRESET';
-                        presetArea.style.display = isPreset ? 'grid' : 'none';
-                        fixedArea.style.display  = isPreset ? 'none' : 'block';
-                    });
-
-                    // Override 토글 및 실시간 가이드 연동
-                    const ovrEn = segDiv.querySelector('.seg-ovr-en');
-                    const ovrFields = segDiv.querySelector('.seg-ovr-fields');
-                    ovrEn.addEventListener('change', () => {
-                        ovrFields.style.display = ovrEn.checked ? 'block' : 'none';
-                    });
-
-                    const bindRange = (rangeSel, txtSel, fbSel, guideFn) => {
-                        const rEl = segDiv.querySelector(rangeSel);
-                        const tEl = segDiv.querySelector(txtSel);
-                        const fEl = segDiv.querySelector(fbSel);
-                        if (!rEl) return;
-                        const sync = () => {
-                            if (tEl) tEl.textContent = `${rEl.value}%`;
-                            if (fEl && guideFn) {
-                                const g = guideFn(Number(rEl.value));
-                                fEl.textContent = g ? `▶ ${g.title}` : '';
-                            }
-                        };
-                        rEl.addEventListener('input', sync);
-                        sync();
-                    };
-
-                    bindRange('.seg-ovr-int',  '.val-int-txt',  '.fb-int-txt',  val => SNW.Feedback?.getIntensityGuide(val));
-                    bindRange('.seg-ovr-var',  '.val-var-txt',  '.fb-var-txt',  val => SNW.Feedback?.getVariabilityGuide(val));
-                    bindRange('.seg-ovr-gust', '.val-gust-txt', '.fb-gust-txt', val => SNW.Feedback?.getGustGuide(val));
-
-                    // [SIM-5] 세그먼트 미리보기 바인딩
-                    const prevBtn = segDiv.querySelector('.btn-preview-seg');
-                    if (prevBtn) {
-                        prevBtn.onclick = () => {
-                            const segData = {
-                                mode: segDiv.querySelector('.seg-mode')?.value || 'PRESET',
-                                presetCode: segDiv.querySelector('.seg-preset')?.value || 'OCEAN',
-                                styleCode:  segDiv.querySelector('.seg-style')?.value  || 'BALANCE',
-                                fixedSpeed: Number(segDiv.querySelector('.seg-fixed')?.value || 0),
-                                override: {
-                                    enabled: segDiv.querySelector('.seg-ovr-en')?.checked || false,
-                                    windIntensity:   Number(segDiv.querySelector('.seg-ovr-int')?.value || -1),
-                                    windVariability: Number(segDiv.querySelector('.seg-ovr-var')?.value || -1),
-                                    gustFrequency:   Number(segDiv.querySelector('.seg-ovr-gust')?.value || -1)
-                                }
-                            };
-                            if (SNW.Preview && SNW.Preview.showModal) {
-                                SNW.Preview.showModal(segData);
-                            }
-                        };
-                    }
-
-                    // 순서 이동 및 삭제 버튼 바인딩
-                    const upBtn = segDiv.querySelector('.btn-move-up');
-                    const downBtn = segDiv.querySelector('.btn-move-down');
-                    if (upBtn) upBtn.onclick = () => _moveSeg(idx, -1);
-                    if (downBtn) downBtn.onclick = () => _moveSeg(idx, 1);
-                    segDiv.querySelector('[data-remove-seg]').addEventListener('click', () => _removeWithUndo(idx));
-
-                    segContainer.appendChild(segDiv);
-                });
-            };
-            renderSegs(currentSegs);
-
-            content.querySelector('#btn-add-prof-seg').addEventListener('click', () => {
-                currentSegs.push({
-                    segNo: currentSegs.length * 10 + 10,
-                    onMinutes: 20, offMinutes: 0, mode: 'PRESET',
-                    presetCode: 'OCEAN', styleCode: 'BALANCE',
-                    override: { enabled: false, windIntensity: 70, windVariability: 50, gustFrequency: 40 },
-                    fixedSpeed: 0
-                });
-                renderSegs(currentSegs);
-            });
-
-            SNW.UI.modal(
-                isEdit ? SNW.I18n.t('common.edit') : SNW.I18n.t('profiles.add'),
-                content,
-                async () => {
-                    const nameEl = content.querySelector('#prof-name');
-                    nameEl.classList.remove('is-error');
-                    if (!nameEl.value.trim()) {
-                        nameEl.classList.add('is-error');
-                        SNW.ToastUtil.error(SNW.I18n.t('validate.required', { field: SNW.I18n.t('profiles.name') }));
-                        return false;
-                    }
-
-                    const newSegs = [];
-                    segContainer.querySelectorAll('.snw-seg-card').forEach((card, idx) => {
-                        const on   = Number(card.querySelector('.seg-on').value);
-                        const off  = Number(card.querySelector('.seg-off').value);
-                        const mode = card.querySelector('.seg-mode').value;
-                        const seg = { segNo: idx * 10 + 10, onMinutes: on, offMinutes: off, mode };
-                        if (mode === 'PRESET') {
-                            seg.presetCode = card.querySelector('.seg-preset').value;
-                            seg.styleCode  = card.querySelector('.seg-style').value;
-                            const ovrEn = card.querySelector('.seg-ovr-en').checked;
-                            seg.override = {
-                                enabled: ovrEn,
-                                windIntensity:   ovrEn ? Number(card.querySelector('.seg-ovr-int').value) : -1.0,
-                                windVariability: ovrEn ? Number(card.querySelector('.seg-ovr-var').value) : -1.0,
-                                gustFrequency:   ovrEn ? Number(card.querySelector('.seg-ovr-gust').value) : -1.0
-                            };
-                        } else {
-                            seg.fixedSpeed = Number(card.querySelector('.seg-fixed').value);
-                        }
-                        newSegs.push(seg);
-                    });
-
-                    const body = {
-                        profile: {
-                            profileNo: Number(content.querySelector('#prof-no').value),
-                            name: nameEl.value,
-                            enabled: content.querySelector('#prof-enabled').checked,
-                            repeatSegments: content.querySelector('#prof-repeat').checked,
-                            repeatCount: Number(content.querySelector('#prof-repeat-count').value),
-                            steps: newSegs.map((s, idx) => ({
-                                stepNo: s.stepNo || (idx + 1),
-                                durationMin: s.durationMin || ((s.onMinutes || 0) + (s.offMinutes || 0)) || 20,
-                                type: s.type || s.mode || 'PRESET',
-                                presetCode: s.presetCode,
-                                styleCode: s.styleCode,
-                                fixedSpeed: s.fixedSpeed,
-                                override: s.override
-                            })),
-                            autoOff: {
-                                timer: {
-                                    enabled: Number(content.querySelector('#prof-ao-timer').value) > 0,
-                                    minutes: Number(content.querySelector('#prof-ao-timer').value)
-                                },
-                                offTime: {
-                                    enabled: content.querySelector('#prof-ao-offtime-en').checked,
-                                    time: content.querySelector('#prof-ao-offtime').value
-                                },
-                                offTemp: {
-                                    enabled: content.querySelector('#prof-ao-offtemp-en').checked,
-                                    temp: Number(content.querySelector('#prof-ao-offtemp').value)
-                                }
-                            },
-                            motion: {
-                                pir: {
-                                    enabled: content.querySelector('#prof-pir-en').checked,
-                                    holdSec: Number(content.querySelector('#prof-pir-hold').value)
-                                }
-                            }
-                        }
-                    };
-
-                    try {
-                        if (isEdit) await SNW.Api.updateProfile(p.profileId, body);
-                        else        await SNW.Api.addProfile(body);
-                        await SNW.Api.saveConfig();
-                        SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
-                        await this._load();
-                        return true;
-                    } catch (e) {
-                        SNW.ErrorHandler.handle(e, 'profile.save');
-                        return false;
-                    }
-                },
-                null,
-                { width: '520px' }
-            );
-        }
-
-        async _onDelete(id) {
-            if (!confirm(SNW.I18n.t('msg.deleteConfirm'))) return;
-            try {
-                await SNW.Api.deleteProfile(id);
-                await SNW.Api.saveConfig();
-                await this._load();
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'profile.delete');
-            }
-        }
-
-        async _onStart(profileNo) {
-            try {
-                await SNW.Api.selectProfile(profileNo);
-                SNW.ToastUtil.success(SNW.I18n.t('dashboard.modeSwitchedProfile'));
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'profile.start');
-            }
-        }
-
-        async _onStop() {
-            try {
-                await SNW.Api.stopProfile();
-                SNW.ToastUtil.success(SNW.I18n.t('msg.success'));
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'profile.stop');
-            }
-        }
-    };
-})(window.SNW);
 
 /* ---- 240.page.settings.js (34717 bytes) ---- */
 // =========================================================
@@ -10150,13 +9198,13 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 292.playlist.js (10019 bytes) ---- */
+/* ---- 292.playlist.js (9849 bytes) ---- */
 // =========================================================
 // 292.playlist.js — Wind Playlist (재생 목록)
 // Layer 3 (Playlist 패널 컴포넌트)
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     SNW.Playlist = class Playlist {
@@ -10246,8 +9294,8 @@ window.SNW = window.SNW || {};
                     <div class="snw-playlist-item__sparkline" data-slot="spark" style="height:44px;margin:4px 0;"></div>
                     <div class="snw-playlist-item__refs" style="font-size:11px;color:var(--snw-text-faint,#6e7a87);">
                         ${refCount > 0
-                            ? `<span style="color:var(--snw-warn,#d29922);">⏰ 스케줄 ${refCount}개에서 사용 중</span>`
-                            : `<span class="snw-playlist-item__noref">스케줄 미참조</span>`}
+                    ? `<span style="color:var(--snw-warn,#d29922);">⏰ 스케줄 ${refCount}개에서 사용 중</span>`
+                    : `<span class="snw-playlist-item__noref">스케줄 미참조</span>`}
                     </div>
                 </div>
                 <div class="snw-playlist-item__actions" style="display:flex;gap:8px;justify-content:flex-end;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">
@@ -10305,10 +9353,22 @@ window.SNW = window.SNW || {};
             return card;
         }
 
+
         _fmtTotal(profile) {
-            if (!profile.steps) return '0분';
+            // [ADR-2] steps[] canonical + legacy segments[] fallback
+            const steps = (profile.steps && profile.steps.length > 0) ?
+                profile.steps :
+                (profile.segments || []);
+            if (!steps.length) return '0분';
+
             let total = 0;
-            for (const s of profile.steps) total += Number(s.durationMin) || 0;
+            for (const s of steps) {
+                const dur = (s.durationMin != null) ?
+                    Number(s.durationMin) :
+                    (Number(s.onMinutes || 0) + Number(s.offMinutes || 0));
+                total += dur || 0;
+            }
+
             if (profile.repeatSegments && profile.repeatCount > 0) {
                 total *= profile.repeatCount;
             }
@@ -10316,19 +9376,6 @@ window.SNW = window.SNW || {};
             const m = total % 60;
             return h > 0 ? `${h}시간 ${m}분` : `${m}분`;
         }
-    };
-
-    // =========================================================
-    // 타이머 placeholder (Stage 7 예정)
-    // =========================================================
-    // SNW.SchedulePanel은 293.schedule_panel.js에서 구현
-
-    SNW.TimerPanel = class TimerPanel {
-        constructor(el) { this.el = el; }
-        async mount() {
-            this.el.innerHTML = '<div class="snw-empty" style="text-align:center;padding:32px;color:var(--snw-text-dim,#8b949e);">Stage 7에서 구현됩니다</div>';
-        }
-        unmount() {}
     };
 })(window.SNW);
 
@@ -10658,6 +9705,462 @@ window.SNW = window.SNW || {};
             const h = Math.floor(total / 60);
             const m = total % 60;
             return h > 0 ? `${h}시간 ${m}분` : `${m}분`;
+        }
+    };
+})(window.SNW);
+
+
+
+/* ---- 294.timer_panel.js (20373 bytes) ---- */
+// =========================================================
+// 294.timer_panel.js — 자동화 세션 자동 종료 타이머 (TimerPanel)
+// Layer 3 (페이지 컴포넌트) & 전역 TimerManager
+// =========================================================
+window.SNW = window.SNW || {};
+(function(SNW) {
+    'use strict';
+
+    const LS_TIMER_KEY = 'snw_session_timer';
+
+    // =========================================================
+    // 1. SNW.TimerManager — 브라우저 전역 세션 타이머 엔진
+    // =========================================================
+    const TimerManager = {
+        _active: false,
+        _targetEndMs: 0,
+        _durationMin: 0,
+        _intervalId: null,
+        _listeners: new Set(),
+        _storeUnsub: null,
+
+        init() {
+            if (this._initialized) return;
+            this._initialized = true;
+
+            // 로컬 스토리지에서 이전 타이머 복원 시도
+            try {
+                const saved = localStorage.getItem(LS_TIMER_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    const now = Date.now();
+                    if (data && data.targetEndMs > now) {
+                        this._active = true;
+                        this._targetEndMs = data.targetEndMs;
+                        this._durationMin = data.durationMin || Math.round((data.targetEndMs - now) / 60000);
+                        this._startInterval();
+                    } else {
+                        localStorage.removeItem(LS_TIMER_KEY);
+                    }
+                }
+            } catch (e) {
+                // Ignore LS error
+            }
+
+            // 세션 종료 감지 시 타이머 자동 해제
+            if (SNW.Store && typeof SNW.Store.watch === 'function') {
+                this._storeUnsub = SNW.Store.watch('control', (ctl) => {
+                    if (!this._active) return;
+                    const sess = ctl && ctl.session;
+                    if (sess && (sess.state === 'COMPLETED' || sess.state === 'NONE' || !sess.active)) {
+                        this.cancel(false); // 세션이 이미 끝났으므로 조용히 해제
+                    }
+                });
+            }
+        },
+
+        subscribe(listener) {
+            this._listeners.add(listener);
+            return () => this._listeners.delete(listener);
+        },
+
+        _notify() {
+            const status = this.getStatus();
+            this._listeners.forEach(fn => {
+                try { fn(status); } catch (e) { /* ignore */ }
+            });
+            // 전역 이벤트 디스패치 (Now Playing Bar 등 연동용)
+            document.dispatchEvent(new CustomEvent('snw:timerchange', { detail: status }));
+        },
+
+        _startInterval() {
+            if (this._intervalId) clearInterval(this._intervalId);
+            this._intervalId = setInterval(() => {
+                const now = Date.now();
+                if (now >= this._targetEndMs) {
+                    this._onExpire();
+                } else {
+                    this._notify();
+                }
+            }, 1000);
+        },
+
+        async _onExpire() {
+            this.cancel(false);
+            try {
+                if (SNW.Api && SNW.Api.Session && typeof SNW.Api.Session.stop === 'function') {
+                    await SNW.Api.Session.stop();
+                }
+            } catch (err) {
+                console.error('[TimerManager] Session stop error on expire:', err);
+            }
+            if (SNW.ToastUtil && typeof SNW.ToastUtil.info === 'function') {
+                SNW.ToastUtil.info(SNW.I18n.t('timer.expired'));
+            }
+        },
+
+        start(minutes) {
+            const min = Number(minutes);
+            if (!min || min <= 0) {
+                this.cancel(true);
+                return;
+            }
+
+            this.init();
+            this._active = true;
+            this._durationMin = min;
+            this._targetEndMs = Date.now() + (min * 60 * 1000);
+
+            try {
+                localStorage.setItem(LS_TIMER_KEY, JSON.stringify({
+                    targetEndMs: this._targetEndMs,
+                    durationMin: this._durationMin
+                }));
+            } catch (e) {}
+
+            this._startInterval();
+            this._notify();
+
+            if (SNW.ToastUtil && typeof SNW.ToastUtil.success === 'function') {
+                SNW.ToastUtil.success(SNW.I18n.t('timer.setSuccess', { m: min }));
+            }
+        },
+
+        cancel(showToast = true) {
+            const wasActive = this._active;
+            this._active = false;
+            this._targetEndMs = 0;
+            this._durationMin = 0;
+
+            if (this._intervalId) {
+                clearInterval(this._intervalId);
+                this._intervalId = null;
+            }
+
+            try {
+                localStorage.removeItem(LS_TIMER_KEY);
+            } catch (e) {}
+
+            this._notify();
+
+            if (wasActive && showToast && SNW.ToastUtil && typeof SNW.ToastUtil.info === 'function') {
+                SNW.ToastUtil.info(SNW.I18n.t('timer.canceled'));
+            }
+        },
+
+        getStatus() {
+            const now = Date.now();
+            const remainSec = this._active ? Math.max(0, Math.ceil((this._targetEndMs - now) / 1000)) : 0;
+            return {
+                active: this._active && remainSec > 0,
+                durationMin: this._durationMin,
+                targetEndMs: this._targetEndMs,
+                remainSec: remainSec,
+                remainMin: Math.ceil(remainSec / 60)
+            };
+        }
+    };
+
+    // 전역 노출 및 초기화
+    SNW.TimerManager = TimerManager;
+    TimerManager.init();
+
+    // =========================================================
+    // 2. SNW.TimerPanel 컴포넌트
+    // =========================================================
+    SNW.TimerPanel = class TimerPanel {
+        constructor(container, params = {}) {
+            this.container = container;
+            this.params = params;
+            this.el = null;
+            this._unsubTimer = null;
+            this._unsubStore = null;
+            this._customMinutes = 45;
+        }
+
+        async mount() {
+            if (!this.container) return;
+
+            this.el = document.createElement('div');
+            this.el.className = 'snw-timer-panel';
+            this.container.appendChild(this.el);
+
+            this._render();
+            this._bindEvents();
+
+            // TimerManager 구독
+            this._unsubTimer = TimerManager.subscribe(() => {
+                this._updateCountdown();
+            });
+
+            // Store 구독 (세션 상태 실시간 갱신)
+            if (SNW.Store && typeof SNW.Store.watch === 'function') {
+                this._unsubStore = SNW.Store.watch('control', () => {
+                    this._updateSessionCard();
+                });
+            }
+        }
+
+        unmount() {
+            if (this._unsubTimer) {
+                this._unsubTimer();
+                this._unsubTimer = null;
+            }
+            if (this._unsubStore) {
+                this._unsubStore();
+                this._unsubStore = null;
+            }
+            if (this.el) {
+                this.el.remove();
+                this.el = null;
+            }
+        }
+
+        _formatTime(sec) {
+            const h = Math.floor(sec / 3600);
+            const m = Math.floor((sec % 3600) / 60);
+            const s = sec % 60;
+            const pad = (n) => String(n).padStart(2, '0');
+            if (h > 0) {
+                return `${pad(h)}:${pad(m)}:${pad(s)}`;
+            }
+            return `${pad(m)}:${pad(s)}`;
+        }
+
+        _formatEndTime(timestamp) {
+            if (!timestamp) return '';
+            const d = new Date(timestamp);
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        }
+
+        _render() {
+            const t = (k, p) => (SNW.I18n ? SNW.I18n.t(k, p) : k);
+            const status = TimerManager.getStatus();
+
+            this.el.innerHTML = `
+                <div class="snw-card snw-timer-card" style="margin-bottom:16px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                        <div>
+                            <h3 style="margin:0;font-size:1.15rem;display:flex;align-items:center;gap:8px;">
+                                ${t('timer.title')}
+                            </h3>
+                            <div style="font-size:0.85rem;color:var(--snw-text-dim,#8b949e);margin-top:4px;">
+                                ${t('timer.subtitle')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 1. 현재 세션 상태 -->
+                    <div class="snw-timer-session-slot" style="margin-bottom:16px;"></div>
+
+                    <!-- 2. 진행 중 카운트다운 (활성화 시 노출) -->
+                    <div class="snw-timer-countdown-slot" style="margin-bottom:16px;"></div>
+
+                    <!-- 3. 프리셋 버튼 그룹 (15분, 30분, 1시간, 2시간, 끔) -->
+                    <div style="margin-bottom:16px;">
+                        <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;color:var(--snw-text-dim,#8b949e);">
+                            ⚡ 빠른 시간 선택
+                        </div>
+                        <div class="snw-timer-preset-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:8px;">
+                            <button type="button" class="snw-btn snw-btn--secondary snw-timer-preset-btn ${status.active && status.durationMin === 15 ? 'is-active' : ''}" data-min="15">
+                                ${t('timer.min15')}
+                            </button>
+                            <button type="button" class="snw-btn snw-btn--secondary snw-timer-preset-btn ${status.active && status.durationMin === 30 ? 'is-active' : ''}" data-min="30">
+                                ${t('timer.min30')}
+                            </button>
+                            <button type="button" class="snw-btn snw-btn--secondary snw-timer-preset-btn ${status.active && status.durationMin === 60 ? 'is-active' : ''}" data-min="60">
+                                ${t('timer.hour1')}
+                            </button>
+                            <button type="button" class="snw-btn snw-btn--secondary snw-timer-preset-btn ${status.active && status.durationMin === 120 ? 'is-active' : ''}" data-min="120">
+                                ${t('timer.hour2')}
+                            </button>
+                            <button type="button" class="snw-btn snw-btn--secondary snw-timer-preset-btn ${!status.active ? 'is-active' : ''}" data-min="0" style="color:var(--snw-text-dim,#8b949e);">
+                                ${t('timer.off')}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 4. 직접 설정 슬라이더 -->
+                    <div style="padding-top:12px;border-top:1px solid var(--snw-border,#2f3844);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <span style="font-size:0.85rem;font-weight:600;color:var(--snw-text-dim,#8b949e);">
+                                🎛️ ${t('timer.custom')}
+                            </span>
+                            <span class="snw-timer-custom-label" style="font-size:0.95rem;font-weight:700;color:var(--snw-primary,#4ea8de);">
+                                ${this._customMinutes}분
+                            </span>
+                        </div>
+                        <div style="display:flex;gap:12px;align-items:center;">
+                            <input type="range" class="snw-slider snw-timer-slider" min="5" max="180" step="5" value="${this._customMinutes}" style="flex:1;">
+                            <button type="button" class="snw-btn snw-btn--primary snw-timer-start-btn" style="white-space:nowrap;padding:8px 16px;">
+                                ${t('timer.set')}
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+
+            this._updateSessionCard();
+            this._updateCountdown();
+        }
+
+        _updateSessionCard() {
+            const slot = this.el ? this.el.querySelector('.snw-timer-session-slot') : null;
+            if (!slot) return;
+
+            const t = (k, p) => (SNW.I18n ? SNW.I18n.t(k, p) : k);
+            const ctl = SNW.Store ? SNW.Store.get('control') : null;
+            const sess = ctl && ctl.session;
+            const isActive = sess && (sess.state === 'ACTIVE' || sess.state === 'PAUSED');
+
+            if (isActive) {
+                const name = (sess.profileName && sess.profileName.trim()) 
+                    ? sess.profileName 
+                    : (sess.typeName || '세션');
+                const escape = (s) => (SNW.DomUtil ? SNW.DomUtil.escape(s) : s);
+                slot.innerHTML = `
+                    <div style="background:var(--snw-surface,#1b2028);border:1px solid var(--snw-border,#2f3844);border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:space-between;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#3fb950;box-shadow:0 0 6px #3fb950;"></span>
+                            <div>
+                                <div style="font-weight:600;font-size:0.95rem;color:var(--snw-text-bright,#fff);">
+                                    ${escape(name)}
+                                </div>
+                                <div style="font-size:0.8rem;color:var(--snw-text-dim,#8b949e);">
+                                    ${escape(sess.typeName || 'PLAYLIST')} · ${t('timer.sessionActive')}
+                                </div>
+                            </div>
+                        </div>
+                        <span class="snw-badge snw-badge--success" style="font-size:0.75rem;">
+                            ${sess.state}
+                        </span>
+                    </div>`;
+            } else {
+                slot.innerHTML = `
+                    <div style="background:var(--snw-surface,#1b2028);border:1px dashed var(--snw-border,#2f3844);border-radius:8px;padding:14px;text-align:center;">
+                        <div style="font-size:0.9rem;color:var(--snw-text-dim,#8b949e);margin-bottom:8px;">
+                            ⚠️ ${t('timer.noSession')}
+                        </div>
+                        <div style="display:flex;justify-content:center;gap:8px;">
+                            <button type="button" class="snw-btn snw-btn--sm snw-btn--secondary" onclick="SNW.Router.navigate('/automation/playlist')">
+                                ${t('timer.gotoPlaylist')}
+                            </button>
+                            <button type="button" class="snw-btn snw-btn--sm snw-btn--secondary" onclick="SNW.Router.navigate('/dashboard')">
+                                ${t('timer.gotoHome')}
+                            </button>
+                        </div>
+                    </div>`;
+            }
+        }
+
+        _updateCountdown() {
+            const slot = this.el ? this.el.querySelector('.snw-timer-countdown-slot') : null;
+            if (!slot) return;
+
+            const t = (k, p) => (SNW.I18n ? SNW.I18n.t(k, p) : k);
+            const status = TimerManager.getStatus();
+
+            // 프리셋 버튼 활성 상태 갱신
+            if (this.el) {
+                this.el.querySelectorAll('.snw-timer-preset-btn').forEach(btn => {
+                    const min = Number(btn.getAttribute('data-min'));
+                    if (min === 0) {
+                        btn.classList.toggle('is-active', !status.active);
+                    } else {
+                        btn.classList.toggle('is-active', status.active && status.durationMin === min);
+                    }
+                });
+            }
+
+            if (!status.active) {
+                slot.innerHTML = '';
+                return;
+            }
+
+            const totalSec = status.durationMin * 60;
+            const elapsedSec = totalSec - status.remainSec;
+            const pct = Math.min(100, Math.max(0, Math.round((elapsedSec / totalSec) * 100)));
+            const timeStr = this._formatTime(status.remainSec);
+            const endStr = this._formatEndTime(status.targetEndMs);
+
+            slot.innerHTML = `
+                <div style="background:linear-gradient(135deg, rgba(78,168,222,0.15) 0%, rgba(27,32,40,0.8) 100%);border:1px solid var(--snw-primary,#4ea8de);border-radius:8px;padding:14px;">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div>
+                            <div style="font-size:0.8rem;color:var(--snw-primary,#4ea8de);font-weight:600;display:flex;align-items:center;gap:6px;">
+                                <span>⏱️</span> ${t('timer.remaining')}
+                            </div>
+                            <div style="font-size:1.8rem;font-weight:700;font-variant-numeric:tabular-nums;color:var(--snw-text-bright,#fff);margin:4px 0;">
+                                ${timeStr}
+                            </div>
+                            <div style="font-size:0.8rem;color:var(--snw-text-dim,#8b949e);">
+                                ${t('timer.endsAt')}: <b>${endStr}</b> (${status.durationMin}분 설정)
+                            </div>
+                        </div>
+                        <button type="button" class="snw-btn snw-btn--sm snw-btn--danger snw-timer-cancel-btn" style="margin-top:4px;">
+                            ${t('timer.cancel')}
+                        </button>
+                    </div>
+
+                    <!-- 프로그레스 바 -->
+                    <div style="background:var(--snw-surface,#1b2028);border-radius:4px;height:6px;overflow:hidden;margin-top:10px;">
+                        <div style="background:var(--snw-primary,#4ea8de);height:100%;width:${pct}%;transition:width 0.3s ease;"></div>
+                    </div>
+                </div>`;
+
+            // 취소 버튼 이벤트
+            const cancelBtn = slot.querySelector('.snw-timer-cancel-btn');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => {
+                    if (SNW.Haptic && typeof SNW.Haptic.tap === 'function') SNW.Haptic.tap();
+                    TimerManager.cancel(true);
+                });
+            }
+        }
+
+        _bindEvents() {
+            if (!this.el) return;
+
+            // 프리셋 버튼
+            this.el.querySelectorAll('.snw-timer-preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const min = Number(btn.getAttribute('data-min'));
+                    if (SNW.Haptic && typeof SNW.Haptic.tap === 'function') SNW.Haptic.tap();
+                    if (min === 0) {
+                        TimerManager.cancel(true);
+                    } else {
+                        TimerManager.start(min);
+                    }
+                });
+            });
+
+            // 슬라이더 변경
+            const slider = this.el.querySelector('.snw-timer-slider');
+            const label = this.el.querySelector('.snw-timer-custom-label');
+            if (slider && label) {
+                slider.addEventListener('input', () => {
+                    this._customMinutes = Number(slider.value);
+                    label.textContent = `${this._customMinutes}분`;
+                });
+            }
+
+            // 직접 설정 시작 버튼
+            const startBtn = this.el.querySelector('.snw-timer-start-btn');
+            if (startBtn) {
+                startBtn.addEventListener('click', () => {
+                    if (SNW.Haptic && typeof SNW.Haptic.tap === 'function') SNW.Haptic.tap();
+                    TimerManager.start(this._customMinutes);
+                });
+            }
         }
     };
 })(window.SNW);
@@ -11475,7 +10978,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 999a.nowplaying.js (11340 bytes) ---- */
+/* ---- 999a.nowplaying.js (12397 bytes) ---- */
 // =========================================================
 // 999a.nowplaying.js — 전역 Now Playing Bar
 // Layer 3 (애플리케이션 전역 컴포넌트)
@@ -11491,6 +10994,8 @@ window.SNW = window.SNW || {};
         step: null,
         time: null,
         pending: null,
+        timerBadge: null,
+        timerVal: null,
         btnPause: null,
         btnStop: null,
         // 로컬 상태
@@ -11594,6 +11099,24 @@ window.SNW = window.SNW || {};
         } else {
             barEl.pending.hidden = true;
             barEl.pending.onclick = null;
+        }
+
+        // 4-1) Timer 배지
+        const timerStatus = (SNW.TimerManager && typeof SNW.TimerManager.getStatus === 'function')
+            ? SNW.TimerManager.getStatus()
+            : null;
+        if (barEl.timerBadge && timerStatus && timerStatus.active) {
+            barEl.timerBadge.hidden = false;
+            const min = timerStatus.remainMin;
+            const text = min > 60 ? `${Math.floor(min / 60)}h${min % 60}m` : `${min}m`;
+            if (barEl.timerVal) barEl.timerVal.textContent = text;
+            barEl.timerBadge.onclick = (e) => {
+                e.stopPropagation();
+                location.hash = '/automation/timer';
+            };
+        } else if (barEl.timerBadge) {
+            barEl.timerBadge.hidden = true;
+            barEl.timerBadge.onclick = null;
         }
 
         // 5) EQ 애니메이션
@@ -11710,6 +11233,8 @@ window.SNW = window.SNW || {};
         barEl.step = $('[data-slot="np-step"]', barEl.root);
         barEl.time = $('[data-slot="np-time"]', barEl.root);
         barEl.pending = $('[data-slot="np-pending"]', barEl.root);
+        barEl.timerBadge = $('[data-slot="np-timer"]', barEl.root);
+        barEl.timerVal = $('[data-slot="np-timer-val"]', barEl.root);
         barEl.btnPause = $('[data-action="pause"]', barEl.root);
         barEl.btnStop = $('[data-action="stop"]', barEl.root);
 
@@ -11723,6 +11248,7 @@ window.SNW = window.SNW || {};
         if (SNW.Store && typeof SNW.Store.subscribe === 'function') {
             SNW.Store.subscribe(() => render());
         }
+        document.addEventListener('snw:timerchange', () => render());
         render();
         SNW.LogUtil.info('[NowPlaying] Bar initialized');
     }

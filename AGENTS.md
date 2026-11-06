@@ -11,7 +11,7 @@
 | **기본 타깃 MCU** | **ESP32-S3-N16R8** (16MB Flash / 8MB OPI PSRAM, dual-core Xtensa @ 240MHz) |
 | **프레임워크 / 빌드** | Arduino-ESP32 (`-std=gnu++17`) on FreeRTOS / PlatformIO IDE |
 | **파일 시스템** | LittleFS (`./src/v0203/data_v0203`) |
-| **정적 에셋 파이프라인** | SPA 번들 (47개 JS `P010_bundle_0203.js`, 18개 CSS `P000_common_0203.css`, `index.html`) + Level 9 Gzip (`tools_0203/pio_gzip_0203.py`, Gzip 총 115.9 KB) |
+| **정적 에셋 파이프라인** | SPA 번들 (48개 JS `P010_bundle_0203.js`, 18개 CSS `P000_common_0203.css`, `index.html`) + Level 9 Gzip (`tools_0203/pio_gzip_0203.py`, Gzip 총 115.9 KB) |
 | **활성 버전 / 접미사** | **v0203 (FW_Ver_2.0.3)** (C++ 백엔드 소스 `_0203` 접미사 / LittleFS 에셋 `_0203`) |
 
 ---
@@ -22,7 +22,7 @@
 
 | 계약 문서명 | 담당 영역 및 핵심 SSOT 내용 | 상세 링크 |
 |---|---|:---:|
-| **SPEC_0203.md** (v2.13) | 시스템 최상위 기술 사양 (하드웨어 핀맵, 25kHz PWM 타이밍, C++ 모듈 구성 및 파일 매핑, JSON 스키마, REST/WebSocket API 전체 명세, §5.1.1 Session 응답 확장(`profileName`/`stepRemainSec`), §5.1.2 Runtime(NVS) top-level, §5.1.3 `/control/override` 폐지, §6.1 ADR 1~6, 프론트엔드 47 JS + 18 CSS 번들 규격) | [SPEC_0203.md](src/v0203/contract_doc_0203/SPEC_0203.md) |
+| **SPEC_0203.md** (v2.13) | 시스템 최상위 기술 사양 (하드웨어 핀맵, 25kHz PWM 타이밍, C++ 모듈 구성 및 파일 매핑, JSON 스키마, REST/WebSocket API 전체 명세, §5.1.1 Session 응답 확장(`profileName`/`stepRemainSec`), §5.1.2 Runtime(NVS) top-level, §5.1.3 `/control/override` 폐지, §6.1 ADR 1~6, 프론트엔드 48 JS + 18 CSS 번들 규격) | [SPEC_0203.md](src/v0203/contract_doc_0203/SPEC_0203.md) |
 | **CONTRACT_0203.md** (v3.0) | FreeRTOS 태스크 경계, 뮤텍스 소유권, 데드락 방지, §3.2 Session 위임 락 순서, §4 Session 매트릭스 5행, §7.10 Phase 1~6 감사 이력(46건), Batch I 물리 Override 계약(OVR-1~4), SYNC-1~3 | [CONTRACT_0203.md](src/v0203/contract_doc_0203/CONTRACT_0203.md) |
 | **STATE_0203.md** (v3.0) | 상태 소유권 매트릭스(§1 5행 확장: `_session`/`_pausedExec`), §2.5 Session FSM ↔ runCtx FSM 관계(ADR-1), §6.4 Pause/Resume/Stop 위임 라이프사이클, S10 물리 엔진 상태, 위임 플래그 수명주기 | [STATE_0203.md](src/v0203/contract_doc_0203/STATE_0203.md) |
 | **FLOW_0203.md** (v2.9) | §4.1 Session Start/Pause/Resume/Stop 시퀀스(ADR-1), §4.2 Schedule profileId 단일 실행(ADR-3), §4.3 Runtime(NVS) Export, §4.4 Settings→TM10 재적용(N-2), `pio_gzip_0203.py` 빌드 전처리/오프라인 부트스트랩 시퀀스 | [FLOW_0203.md](src/v0203/contract_doc_0203/FLOW_0203.md) |

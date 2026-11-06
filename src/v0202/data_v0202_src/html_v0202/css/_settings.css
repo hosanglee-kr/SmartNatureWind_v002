@@ -1,0 +1,40 @@
+/*
+ * ------------------------------------------------------
+ * 소스명   : _settings.css
+ * 레이어   : CSS (빌드 시 P000_common_0200.css로 concat)
+ * 기능 요약:
+ *  - Settings 페이지 전용 스타일
+ *  - 폼 섹션 간격, 저장 액션 강조
+ * ------------------------------------------------------
+ */
+
+.snw-card [data-slot="form-log"],
+.snw-card [data-slot="form-api"] {
+    margin-bottom: var(--snw-spacing-lg);
+    padding-bottom: var(--snw-spacing-lg);
+    border-bottom: 1px solid var(--snw-border);
+}
+
+.snw-card [data-slot="form-api"] {
+    border-bottom: none;
+}
+
+.snw-card [data-slot="form-log"]::before {
+    content: "Logging";
+    display: block;
+    font-size: 11px;
+    color: var(--snw-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--snw-spacing-sm);
+}
+
+.snw-card [data-slot="form-api"]::before {
+    content: "Security";
+    display: block;
+    font-size: 11px;
+    color: var(--snw-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--snw-spacing-sm);
+}

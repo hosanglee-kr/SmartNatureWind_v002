@@ -1,0 +1,427 @@
+/*
+ * ------------------------------------------------------
+ * 소스명 : A40_Com_Utils_0202.h
+ * 모듈 약어 : A40
+ * 모듈명 : Smart Nature Wind - Common Utilities
+ * ------------------------------------------------------
+ * 기능 요약:
+ *  - 공통 수치/문자열 헬퍼: clampVal, 안전 복사(copyStr2Buffer_safe), 동적 복제(cloneStr2SharedStr_safe), 난수 생성
+ *  - ArduinoJson v7 안전 직렬화/역직렬화 헬퍼 (Json_getStr, Json_getNum, Json_getBool, Json_copyStr 등)
+ *  - FreeRTOS 동기화 헬퍼: CL_A40_MutexGuard_Semaphore (재귀 Mutex RAII 가드, Lazy Init)
+ *  - Critical Section 스핀락 가드: CL_A40_MuxGuard_Critical (인터럽트/원자적 상태 조작)
+ *  - Atomic Dirty Flag 제어 인라인 헬퍼 (Dirty_setAtomic, Dirty_clearAtomic, Dirty_readAtomic)
+ *  - A40_IO 파일시스템 입출력 및 A40_parseHHMMtoMin_24h 시간 변환 함수 선언
+ *
+ * [Policy] 주요 운영 정책 요약
+ *  - 문자열/메모리 안전성:
+ *    * 모든 문자열 버퍼 복사는 strlcpy 기반 copyStr2Buffer_safe 사용 (버퍼 오버런 방지)
+ *    * 동적 문자열 할당 시 std::nothrow 사용 및 std::shared_ptr<char[]> 기반 자동 수명 관리
+ *  - ArduinoJson v7 파싱 정책:
+ *    * containsKey 사용 금지, 타입 판별(is<T>()) 후 기본값(fallback) 반환 패턴 적용
+ *    * 필수 키(Json_copyStrReq) 검증 실패 시 WARN/ERROR 로깅 및 기본값 복사
+ *  - 동시성 및 스레드 세이프:
+ *    * 재귀 Mutex(xSemaphoreTakeRecursive)를 통해 동일 태스크 다중 락 시 데드락 방지
+ *    * 타임아웃 기본값 100ms(G_A40_MUTEX_TIMEOUT_100) 적용으로 무한 대기 차단
+ *    * 포트 레벨 크리티컬 섹션(portENTER_CRITICAL)을 통한 원자적 Dirty Flag 상태 보장
+ * ------------------------------------------------------
+ */
+#pragma once
+
+#include <Arduino.h>
+#include <string.h>
+#include <strings.h>
+
+#include <FS.h>
+#include <LittleFS.h>
+#include <ArduinoJson.h>
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+
+#include <memory>
+#include <new>
+
+#include "A20_Const_Const_0202.h"
+#include "A20_Const_Sch_0202.h" // [FIX] ST_A20_AutoOff_t, ST_A20_Motion_t (Json_writeAutoOff/Motion에서 사용)
+#include "D10_Logger_0202.h"
+
+// ======================================================
+// [A40 공통 로그 정책]
+// ======================================================
+static inline const char* _A40__callerOrUnknown(const char* p_callerFunc) {
+    return (p_callerFunc && p_callerFunc[0]) ? p_callerFunc : "?";
+}
+
+#define A40_LOGE(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
+#define A40_LOGW(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
+#define A40_LOGI(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_INFO, "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
+#define A40_LOGD(_fmt, ...) CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A40][%s] " _fmt, __func__, ##__VA_ARGS__)
+
+#define A40_LOGE_C(_caller, _fmt, ...) \
+    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] " _fmt, _A40__callerOrUnknown((_caller)), ##__VA_ARGS__)
+#define A40_LOGW_C(_caller, _fmt, ...) \
+    CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] " _fmt, _A40__callerOrUnknown((_caller)), ##__VA_ARGS__)
+#define A40_LOGI_C(_caller, _fmt, ...) \
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[A40][%s] " _fmt, _A40__callerOrUnknown((_caller)), ##__VA_ARGS__)
+#define A40_LOGD_C(_caller, _fmt, ...) \
+    CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[A40][%s] " _fmt, _A40__callerOrUnknown((_caller)), ##__VA_ARGS__)
+
+// ======================================================
+// 1) 공용 헬퍼 (A40_ComFunc)
+// ======================================================
+namespace A40_ComFunc {
+
+template <typename T>
+inline constexpr T clampVal(T p_value, T p_lowValue, T p_highValue) {
+    return (p_value < p_lowValue) ? p_lowValue : (p_value > p_highValue) ? p_highValue : p_value;
+}
+
+inline size_t copyStr2Buffer_safe(char* p_dst, const char* p_src, size_t p_n, const char* p_callerFunc = nullptr) {
+    const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
+
+    if (!p_dst || p_n == 0) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] copyStr2Buffer_safe: invalid dst/size", v_caller);
+        return 0;
+    }
+    if (!p_src) {
+        p_dst[0] = '\0';
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] copyStr2Buffer_safe: src is null", v_caller);
+        return 0;
+    }
+    return strlcpy(p_dst, p_src, p_n);
+}
+
+inline std::shared_ptr<char[]> cloneStr2SharedStr_safe(const char* p_src, const char* p_callerFunc = nullptr) {
+    const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
+
+    if (!p_src) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] cloneStr2SharedStr_safe: src is null", v_caller);
+        return nullptr;
+    }
+
+    const size_t            v_len = strlen(p_src) + 1;
+    std::shared_ptr<char[]> v_buf(new (std::nothrow) char[v_len], std::default_delete<char[]>());
+
+    if (!v_buf) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                           "[A40][%s] cloneStr2SharedStr_safe: alloc failed (%u bytes)",
+                           v_caller,
+                           (unsigned)v_len);
+        return nullptr;
+    }
+    strlcpy(v_buf.get(), p_src, v_len);
+    return v_buf;
+}
+
+inline float getRandom01() {
+    return static_cast<float>(esp_random()) / (static_cast<float>(UINT32_MAX) + 1.0f);
+}
+
+inline float getRandomRange(float p_min, float p_max) {
+    if (p_min >= p_max) return p_min;
+    return p_min + getRandom01() * (p_max - p_min);
+}
+
+// ======================================================
+// JSON Helper (containsKey 금지 정책)
+// ======================================================
+static inline const char* Json_getStr(JsonObjectConst p_obj, const char* p_key, const char* p_defaultVal) {
+    if (p_obj.isNull()) return p_defaultVal;
+    JsonVariantConst v = p_obj[p_key];
+    if (v.isNull() || !v.is<const char*>()) return p_defaultVal;
+    const char* s = v.as<const char*>();
+    return (s && s[0]) ? s : p_defaultVal;
+}
+
+template <typename T>
+static inline T Json_getNum(JsonObjectConst p_obj, const char* p_key, T p_defaultVal) {
+    if (p_obj.isNull()) return p_defaultVal;
+    JsonVariantConst v = p_obj[p_key];
+    if (v.isNull() || !v.is<T>()) return p_defaultVal;
+    return v.as<T>();
+}
+
+static inline bool Json_getBool(JsonObjectConst p_obj, const char* p_key, bool p_defaultVal) {
+    if (p_obj.isNull()) return p_defaultVal;
+    JsonVariantConst v = p_obj[p_key];
+    if (v.isNull() || !v.is<bool>()) return p_defaultVal;
+    return v.as<bool>();
+}
+
+static inline JsonArrayConst Json_getArr(JsonObjectConst p_obj, const char* p_key) {
+    if (p_obj.isNull()) return JsonArrayConst();
+    JsonVariantConst v = p_obj[p_key];
+    if (v.isNull() || !v.is<JsonArrayConst>()) return JsonArrayConst();
+    return v.as<JsonArrayConst>();
+}
+
+static inline JsonObjectConst Json_pickRootObject(JsonDocument& p_doc, const char* p_wrapKey) {
+    JsonObjectConst v = p_doc[p_wrapKey].as<JsonObjectConst>();
+    return v.isNull() ? p_doc.as<JsonObjectConst>() : v;
+}
+
+static inline JsonObjectConst Json_pickRootObject(const JsonDocument& p_doc, const char* p_wrapKey) {
+    JsonObjectConst v = p_doc[p_wrapKey].as<JsonObjectConst>();
+    return v.isNull() ? p_doc.as<JsonObjectConst>() : v;
+}
+
+static inline JsonObject Json_ensureObject(JsonVariant p_v) {
+    if (p_v.is<JsonObject>()) return p_v.as<JsonObject>();
+    return p_v.to<JsonObject>();
+}
+
+static inline bool Json_copyStr(JsonObjectConst p_obj,
+                                const char*     p_key,
+                                char*           p_dst,
+                                size_t          p_dstSize,
+                                const char*     p_defaultVal = "",
+                                const char*     p_callerFunc = nullptr) {
+    const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
+    if (!p_dst || p_dstSize == 0) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStr: invalid dst/size", v_caller);
+        return false;
+    }
+    memset(p_dst, 0, p_dstSize);
+    if (!p_key || !p_key[0]) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStr: invalid key", v_caller);
+        strlcpy(p_dst, (p_defaultVal ? p_defaultVal : ""), p_dstSize);
+        return false;
+    }
+    const char* v_src = A40_ComFunc::Json_getStr(p_obj, p_key, p_defaultVal ? p_defaultVal : "");
+    strlcpy(p_dst, (v_src ? v_src : ""), p_dstSize);
+    return true;
+}
+
+static inline bool Json_copyStr_LogPolicy(JsonObjectConst p_obj,
+                                          const char*     p_key,
+                                          char*           p_dst,
+                                          size_t          p_dstSize,
+                                          const char*     p_defaultVal = "",
+                                          const char*     p_callerFunc = nullptr) {
+    const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
+    if (!p_dst || p_dstSize == 0) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStr_LogPolicy: invalid dst/size", v_caller);
+        return false;
+    }
+    memset(p_dst, 0, p_dstSize);
+    if (!p_key || !p_key[0]) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStr_LogPolicy: invalid key", v_caller);
+        A40_ComFunc::copyStr2Buffer_safe(p_dst, (p_defaultVal ? p_defaultVal : ""), p_dstSize, v_caller);
+        return false;
+    }
+    const char* v_src    = A40_ComFunc::Json_getStr(p_obj, p_key, p_defaultVal ? p_defaultVal : "");
+    size_t      v_copied = A40_ComFunc::copyStr2Buffer_safe(p_dst, (v_src ? v_src : ""), p_dstSize, v_caller);
+    return (v_copied > 0);
+}
+
+static inline bool Json_copyStrReq(JsonObjectConst p_obj,
+                                   const char*     p_key,
+                                   char*           p_dst,
+                                   size_t          p_dstSize,
+                                   const char*     p_defaultVal = "",
+                                   const char*     p_callerFunc = nullptr) {
+    const char* v_caller = _A40__callerOrUnknown(p_callerFunc);
+    if (!p_dst || p_dstSize == 0) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStrReq: invalid dst/size", v_caller);
+        return false;
+    }
+    memset(p_dst, 0, p_dstSize);
+    if (!p_key || !p_key[0]) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] Json_copyStrReq: invalid key", v_caller);
+        A40_ComFunc::copyStr2Buffer_safe(p_dst, (p_defaultVal ? p_defaultVal : ""), p_dstSize, v_caller);
+        return false;
+    }
+    if (p_obj.isNull()) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStrReq: obj is null (key=%s)", v_caller, p_key);
+        A40_ComFunc::copyStr2Buffer_safe(p_dst, (p_defaultVal ? p_defaultVal : ""), p_dstSize, v_caller);
+        return false;
+    }
+    JsonVariantConst v = p_obj[p_key];
+    if (v.isNull()) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStrReq: missing key=%s", v_caller, p_key);
+        A40_ComFunc::copyStr2Buffer_safe(p_dst, (p_defaultVal ? p_defaultVal : ""), p_dstSize, v_caller);
+        return false;
+    }
+    if (!v.is<const char*>()) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStrReq: type mismatch (key=%s)", v_caller, p_key);
+        A40_ComFunc::copyStr2Buffer_safe(p_dst, (p_defaultVal ? p_defaultVal : ""), p_dstSize, v_caller);
+        return false;
+    }
+    const char* v_src = v.as<const char*>();
+    if (!v_src || !v_src[0]) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Json_copyStrReq: empty string (key=%s)", v_caller, p_key);
+        A40_ComFunc::copyStr2Buffer_safe(p_dst, (p_defaultVal ? p_defaultVal : ""), p_dstSize, v_caller);
+        return false;
+    }
+    A40_ComFunc::copyStr2Buffer_safe(p_dst, v_src, p_dstSize, v_caller);
+    return true;
+}
+
+static inline void Json_removeKey(JsonDocument& p_doc, const char* p_key) {
+    if (!p_key || p_key[0] == '\0') return;
+    JsonObject v_root = p_doc.as<JsonObject>();
+    if (v_root.isNull()) return;
+    v_root.remove(p_key);
+}
+
+static inline void Json_writeAutoOff(JsonObject p_ao, const ST_A20_AutoOff_t& p_src) {
+    p_ao["timer"]["enabled"]   = p_src.timer.enabled;
+    p_ao["timer"]["minutes"]   = p_src.timer.minutes;
+    p_ao["offTime"]["enabled"] = p_src.offTime.enabled;
+    p_ao["offTime"]["time"]    = p_src.offTime.time;
+    p_ao["offTemp"]["enabled"] = p_src.offTemp.enabled;
+    p_ao["offTemp"]["temp"]    = p_src.offTemp.temp;
+}
+
+static inline void Json_writeMotion(JsonObject p_root, const ST_A20_Motion_t& p_m) {
+    p_root["motion"]["pir"]["enabled"] = p_m.pir.enabled;
+    p_root["motion"]["pir"]["holdSec"] = p_m.pir.holdSec;
+}
+
+template <typename T>
+static inline void freeObject(T*& p_ptr, const char* p_callerFunc = nullptr) {
+    (void)p_callerFunc;
+    if (p_ptr) {
+        delete p_ptr;
+        p_ptr = nullptr;
+    }
+}
+
+template <typename T>
+static inline void freeArray(T*& p_ptr, const char* p_callerFunc = nullptr) {
+    (void)p_callerFunc;
+    if (p_ptr) {
+        delete[] p_ptr;
+        p_ptr = nullptr;
+    }
+}
+
+} // namespace A40_ComFunc
+
+// ======================================================
+// 2) Mutex Guard (Recursive, RAII, Lazy Init)
+// ======================================================
+#ifndef G_A40_MUTEX_TIMEOUT_100
+# define G_A40_MUTEX_TIMEOUT_100 pdMS_TO_TICKS(100)
+#endif
+
+class CL_A40_MutexGuard_Semaphore {
+  public:
+    explicit CL_A40_MutexGuard_Semaphore(SemaphoreHandle_t& p_mutex, TickType_t p_timeout, const char* p_caller)
+        : _mutexPtr(&p_mutex), _caller(_A40__callerOrUnknown(p_caller)) {
+        _internalInitAndTake(p_timeout);
+    }
+    ~CL_A40_MutexGuard_Semaphore() { unlock(); }
+
+    bool acquireTicks(TickType_t p_timeoutTicks) {
+        if (_acquired) return true;
+        if (!_mutexPtr || !*_mutexPtr) return false;
+        if (xSemaphoreTakeRecursive(*_mutexPtr, p_timeoutTicks) == pdTRUE) {
+            _acquired = true;
+            return true;
+        }
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Mutex acquire timeout (ticks=%u)", _caller, (unsigned)p_timeoutTicks);
+        return false;
+    }
+
+    bool acquireMs(uint32_t p_timeoutMs = UINT32_MAX) {
+        if (_acquired || !_mutexPtr || !*_mutexPtr) return _acquired;
+        TickType_t v_ticks = (p_timeoutMs == UINT32_MAX) ? portMAX_DELAY : pdMS_TO_TICKS(p_timeoutMs);
+        if (xSemaphoreTakeRecursive(*_mutexPtr, v_ticks) == pdTRUE) {
+            _acquired = true;
+            return true;
+        }
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A40][%s] Mutex acquire timeout", _caller);
+        return false;
+    }
+
+    void unlock() {
+        if (!_acquired || !_mutexPtr || !*_mutexPtr) return;
+        if (xSemaphoreGiveRecursive(*_mutexPtr) == pdTRUE)
+            _acquired = false;
+        else
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] Mutex unlock failed", _caller);
+    }
+
+    bool isAcquired() const { return _acquired; }
+
+  private:
+    void _internalInitAndTake(TickType_t p_timeout) {
+        if (!_mutexPtr) return;
+        if (*_mutexPtr == nullptr) {
+            static portMUX_TYPE s_initMux = portMUX_INITIALIZER_UNLOCKED;
+            portENTER_CRITICAL(&s_initMux);
+            if (*_mutexPtr == nullptr) {
+                *_mutexPtr = xSemaphoreCreateRecursiveMutex();
+                if (*_mutexPtr == nullptr)
+                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A40][%s] CreateRecursiveMutex failed", _caller);
+            }
+            portEXIT_CRITICAL(&s_initMux);
+        }
+        if (*_mutexPtr && xSemaphoreTakeRecursive(*_mutexPtr, p_timeout) == pdTRUE) _acquired = true;
+    }
+
+    SemaphoreHandle_t* _mutexPtr = nullptr;
+    const char*        _caller   = "?";
+    bool               _acquired = false;
+};
+
+// ======================================================
+// 3) Critical Section Guard
+// ======================================================
+class CL_A40_MuxGuard_Critical {
+  public:
+    explicit CL_A40_MuxGuard_Critical(portMUX_TYPE* p_flagSpinlock) : _flagSpinlock(p_flagSpinlock) {
+        if (_flagSpinlock) portENTER_CRITICAL(_flagSpinlock);
+    }
+    ~CL_A40_MuxGuard_Critical() {
+        if (_flagSpinlock) portEXIT_CRITICAL(_flagSpinlock);
+    }
+
+  private:
+    portMUX_TYPE* _flagSpinlock = nullptr;
+};
+using CL_A40_muxGuard_Critical = CL_A40_MuxGuard_Critical;
+
+// ======================================================
+// 4) Dirty Flag Atomic Helper
+// ======================================================
+namespace A40_ComFunc {
+
+static inline void Dirty_setAtomic(bool& p_flag, portMUX_TYPE& p_flagSpinlock) {
+    CL_A40_MuxGuard_Critical v_guard(&p_flagSpinlock);
+    p_flag = true;
+}
+
+static inline void Dirty_clearAtomic(bool& p_flag, portMUX_TYPE& p_flagSpinlock) {
+    CL_A40_MuxGuard_Critical v_guard(&p_flagSpinlock);
+    p_flag = false;
+}
+
+static inline bool Dirty_readAtomic(const bool& p_flag, portMUX_TYPE& p_flagSpinlock) {
+    CL_A40_MuxGuard_Critical v_guard(&p_flagSpinlock);
+    return p_flag;
+}
+
+} // namespace A40_ComFunc
+
+// ======================================================
+// 5) IO Utility (선언 전용)
+// ======================================================
+// [E-2.5] A40_Com_Utils_IO_0202.cpp로 이관 (인라인 → 외부 링크)
+//  - 파일 백업/복구, 원자적 저장
+namespace A40_IO {
+
+bool Load_File2JsonDoc_V21(const char* p_path, JsonDocument& p_doc, bool p_useBackup, const char* p_caller = nullptr);
+
+bool Save_JsonDoc2File_V21(
+    const char* p_path, const JsonDocument& p_doc, bool p_useBackup, bool p_pretty = true, const char* p_caller = nullptr);
+
+} // namespace A40_IO
+
+// ======================================================
+// [E-2.5] 헬퍼 승격: static → extern
+//  - 이관: A40_Com_Utils_IO_0202.cpp
+//  - 이점: 다중 TU 중복 컴파일 제거
+// ======================================================
+uint16_t A40_parseHHMMtoMin_24h(const char* p_time);

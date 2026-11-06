@@ -1,11 +1,11 @@
 # =====================================================================
 # .github/workflows/ci_2_report_008.yml
 # ---------------------------------------------------------------------
-# PR 빌드 실패 리포트 파이프라인 (에이전트 단일 컨텍스트 집약형)
+# Smart Nature Wind (v0202) PR 빌드 실패 리포트 파이프라인 (에이전트 단일 컨텍스트 집약형)
 #
 # [설계 원칙]
 #   1. 단일 본문 집약 (No Multi-Comment):
-#      - 에이전트 CLI(Claude Code, Antigravity)가 `gh issue view <No>` 단 1회
+#      - 에이전트 CLI(Antigravity, Claude Code)가 `gh issue view <No>` 단 1회
 #        호출로 전체 작업 지시, 대상 소스 파일, 재현 명령어를 수득하도록 설계.
 #   2. GitHub API 본문 상한(65,536자) 원천 방어:
 #      - 전체 예산(BODY_BUDGET: 55,000자)을 설정하고, 실패 환경 수에 따라
@@ -16,13 +16,16 @@
 #   4. 멱등성 보장 (Idempotent):
 #      - 마커(<!-- ci-fail-pr:<pr_number> -->) 기반으로 기존 이슈를 감지하여
 #        신규 코멘트 남발 없이 issues.update(본문 교체)로 갱신함 (알림 스팸 없음).
+#   5. 다중 PR 메타데이터 복원 & 조기 차단(Pre-build Gate) 식별:
+#      - 아티팩트 유실 시 commit_sha 기반 연계 PR 역추적 지원.
+#      - 계약 문서 검증 실패 등 빌드 전 단계 조기 차단 시 점검 가이드 자동 제공.
 # =====================================================================
 
 name: PR Report Failure
 
 on:
   workflow_run:
-    # ci_1_build_008.yml의 최상단 name과 일치 필수
+    # ci_1_build_009.yml의 최상단 name과 일치 필수
     workflows: ["PR Build"]
     types: [completed]
 
@@ -30,6 +33,11 @@ permissions:
   issues: write
   contents: read
   actions: read
+  pull-requests: read
+
+concurrency:
+  group: ci-2-report-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
 
 jobs:
   report:
@@ -85,7 +93,7 @@ jobs:
             const TITLE_LIMIT = 256;
 
             // ==========================================================
-            // 1. PR 메타데이터 복원
+            // 1. PR 메타데이터 복원 (3단계 계층 폴백)
             // ==========================================================
             let meta = null;
             const metaPath = 'pr-meta/pr_meta.json';
@@ -94,6 +102,7 @@ jobs:
               catch (e) { core.warning(`pr_meta.json 파싱 오류: ${e.message}`); }
             }
 
+            // 1-2. workflow_run payload 폴백
             if (!meta || !meta.pr_number) {
               const prs = context.payload.workflow_run.pull_requests || [];
               if (prs.length > 0) {
@@ -109,8 +118,35 @@ jobs:
               }
             }
 
+            // 1-3. commit SHA 기반 연관 PR 역추적 폴백 (Fork PR 등 대응)
             if (!meta || !meta.pr_number) {
-              core.setFailed('PR 메타데이터 복원 불가.');
+              const headSha = context.payload.workflow_run.head_sha;
+              if (headSha) {
+                try {
+                  const associated = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                    owner, repo, commit_sha: headSha
+                  });
+                  if (associated.data && associated.data.length > 0) {
+                    const pr0 = associated.data[0];
+                    meta = {
+                      pr_number: pr0.number,
+                      pr_title:  pr0.title || '(unknown)',
+                      pr_url:    pr0.html_url || '',
+                      pr_author: (pr0.user && pr0.user.login) || 'unknown',
+                      head_sha:  headSha,
+                      base_ref:  pr0.base && pr0.base.ref,
+                      is_fork:   pr0.head && pr0.head.repo && (pr0.head.repo.full_name !== `${owner}/${repo}`),
+                    };
+                    core.info(`커밋 SHA(${headSha.slice(0, 7)}) 기반으로 PR #${pr0.number} 식별 완료.`);
+                  }
+                } catch (err) {
+                  core.warning(`커밋 연관 PR 역추적 실패: ${err.message}`);
+                }
+              }
+            }
+
+            if (!meta || !meta.pr_number) {
+              core.setFailed('PR 메타데이터 복원 불가 (pr_meta.json 없음, 연계 PR 없음).');
               return;
             }
 
@@ -171,8 +207,8 @@ jobs:
             // ==========================================================
             // 3. 동적 본문 예산 배분
             // ==========================================================
-            const HEADER_BUDGET = 1800;
-            const FOOTER_BUDGET = 700;
+            const HEADER_BUDGET = 2000;
+            const FOOTER_BUDGET = 800;
             const envCount = Math.max(failures.length, 1);
             const envBudget = Math.max(
               1500,
@@ -188,7 +224,9 @@ jobs:
 
             const targetFilesMd = allPrj.length
               ? allPrj.map(f => `- [ ] \`${f}\``).join('\n')
-              : '- _(특정 소스 파일 식별 불가 — 컴파일러 진단 로그 직접 확인 요망)_';
+              : failures.length > 0
+                ? '- _(특정 소스 파일 식별 불가 — 컴파일러 진단 로그 직접 확인 요망)_'
+                : '- _(빌드 전 단계 실패로 수정 소스 파일이 추출되지 않음)_';
 
             const extFilesMd = allExt.length
               ? allExt.slice(0, 10).map(f => `- \`${f}\``).join('\n')
@@ -215,7 +253,7 @@ jobs:
 
               if (f.prjFiles.length) {
                 lines.push(`**수정 대상 소스 파일 (Project files):**`);
-                lines.push(f.prjFiles.map(x => `- \`${x}\``).join('\n'));
+                lines.push(f.prjFiles.map(x => `- [ ] \`${x}\``).join('\n'));
                 lines.push('');
               }
 
@@ -246,7 +284,23 @@ jobs:
 
             const envBlocksMd = failures.length
               ? failures.map(buildEnvBlock).join('\n\n---\n\n')
-              : '_(수집된 실패 마커가 없습니다)_';
+              : [
+                  `### ⚠️ 빌드 진입 전 조기 차단 (Pre-build Gate Failure)`,
+                  ``,
+                  `개별 타깃 환경 컴파일 단계에 진입하기 전에 파이프라인이 중단되었습니다.`,
+                  `가장 유력한 원인은 다음과 같습니다:`,
+                  ``,
+                  `1. **계약 문서 무결성 검증 실패 (Gate)**:`,
+                  `   - CBD v2.5 계약 문서 7종 무결성 또는 포맷 위반`,
+                  `   - **로컬 검증 커맨드**:`,
+                  `     \`\`\`bash`,
+                  `     python src/v0202/tools_0202/commit_contracts_0202.py --dry-run --strict`,
+                  `     \`\`\``,
+                  `2. **\`platformio.ini\` 설정 오류**:`,
+                  `   - 환경 구문 파싱 실패 또는 \`default_envs\` 미존재`,
+                  `3. **Git Checkout 또는 워크플로우 셋업 실패**:`,
+                  `   - 상세 로그는 하단 Actions Run 링크를 확인하십시오.`,
+                ].join('\n');
 
             // ==========================================================
             // 6. 폴백 로그 블록 (잔여 예산 한도 내 포함)
@@ -277,19 +331,21 @@ jobs:
             // 7. 최종 단일 이슈 본문 조립
             // ==========================================================
             const shortSha = (meta.head_sha || '').slice(0, 7);
-            const envNamesShort = failures.map(f => f.env).join(', ');
+            const envNamesShort = failures.length ? failures.map(f => f.env).join(', ') : 'Pre-build Gate';
 
             const quickContext = [
               `## ⚡ AI 에이전트 작업 가이드 (Quick Context)`,
               ``,
-              `- **실패 환경 (${failures.length}개)**: ${envNamesShort || '(없음)'}`,
-              `- **재현 커맨드**: \`pio run -e "<env>"\``,
-              `- **우선 수정 소스**: ${allPrj.length ? allPrj.slice(0, 5).map(f => `\`${f}\``).join(', ') + (allPrj.length > 5 ? ` … (+${allPrj.length - 5})` : '') : '_파일 특정 불가_'}`,
+              `- **활성 펌웨어 / 소스 버전**: \`v0202\` (C++ 백엔드 \`_0202\` 접미사 / LittleFS \`data_v0202\`)`,
+              `- **개발 규칙 SSOT**: [\`agent.md\`](https://github.com/${owner}/${repo}/blob/${meta.head_sha || 'main'}/agent.md)`,
+              `- **실패 환경 / 단계**: \`${envNamesShort}\``,
+              `- **로컬 재현 커맨드**: \`pio run -e esp32-s3-n16r8\` (또는 \`python src/v0202/tools_0202/commit_contracts_0202.py --dry-run --strict\`)`,
+              `- **우선 수정 소스**: ${allPrj.length ? allPrj.slice(0, 5).map(f => `\`${f}\``).join(', ') + (allPrj.length > 5 ? ` … (+${allPrj.length - 5})` : '') : '_파일 특정 불가 또는 사전 게이트 실패_'}`,
               `- **전체 로그 확인**: [Actions Run 링크](${process.env.RUN_URL}) (아티팩트 보존 기간: 7일)`,
               ``,
               `**🤖 에이전트 CLI 실행 가이드:**`,
               '```bash',
-              `gh issue view ${prNumber} | claude "이슈의 컴파일 에러와 대상 파일을 분석하여 소스코드를 수정한 후, 각 환경별 pio run 명령으로 로컬 빌드를 검증하십시오."`,
+              `gh issue view ${prNumber} | antigravity "agent.md와 contract_doc_0202 규칙을 준수하여 src/v0202/ 활성 소스의 에러를 분석 및 수정하고, pio run으로 로컬 빌드를 검증하십시오."`,
               '```',
               ``,
             ].join('\n');
@@ -301,7 +357,7 @@ jobs:
               `|:---|:---|`,
               `| PR 대상 | [#${prNumber}](${meta.pr_url}) - ${meta.pr_title} |`,
               `| 작성자 | @${meta.pr_author} |`,
-              `| 타깃 커밋 | \`${shortSha}\` (Base: \`${meta.base_ref}\`) |`,
+              `| 타깃 커밋 | \`${shortSha}\` (Base: \`${meta.base_ref || 'unknown'}\`) |`,
               `| 외부 Fork PR | \`${meta.is_fork ? 'Yes' : 'No'}\` |`,
               `| Actions Run | [워크플로우 결과 확인](${process.env.RUN_URL}) |`,
               ``,
@@ -316,7 +372,7 @@ jobs:
             ].join('\n');
 
             const errorsSection = [
-              `## 🔍 환경별 컴파일 에러 상세 (Compiler Diagnostics)`,
+              `## 🔍 컴파일 에러 상세 및 진단 (Diagnostics)`,
               ``,
               envBlocksMd,
               ``,
@@ -330,7 +386,7 @@ jobs:
               `- 정상 빌드 산출물 아티팩트: \`*-build-bundle\``,
               ``,
               `---`,
-              `_본 이슈는 CI 파이프라인에 의해 자동 관리되며, 재실패 시 최신 상태로 본문이 자동 갱신됩니다._`,
+              `_본 이슈는 CI 파이프라인에 의해 자동 관리되며, PR이 갱신되거나 해결 시 최신 상태로 본문이 자동 갱신됩니다._`,
             ].join('\n');
 
             let body = [
@@ -374,15 +430,31 @@ jobs:
               if (res.data.length < 100) break;
             }
 
+            const issuePayload = {
+              owner,
+              repo,
+              title,
+              body: `${marker}\n${body}`,
+            };
+
             if (existing) {
               await github.rest.issues.update({
-                owner, repo, issue_number: existing.number,
-                title, body: `${marker}\n${body}`,
+                ...issuePayload,
+                issue_number: existing.number,
               });
               core.info(`기존 이슈 갱신 완료: #${existing.number}`);
             } else {
-              const created = await github.rest.issues.create({
-                owner, repo, title, body: `${marker}\n${body}`,
-              });
+              const created = await github.rest.issues.create(issuePayload);
               core.info(`신규 이슈 생성 완료: #${created.data.number}`);
+
+              // 라벨 추가 시도 (실패해도 워크플로우 중단 방지)
+              try {
+                await github.rest.issues.addLabels({
+                  owner, repo,
+                  issue_number: created.data.number,
+                  labels: ['ci-failure', 'build-failed'],
+                });
+              } catch (lblErr) {
+                core.warning(`이슈 라벨 추가 생략 (라벨 미존재 가능): ${lblErr.message}`);
+              }
             }

@@ -1,0 +1,227 @@
+/* ============================================================
+ * 소스명   : _studio.css
+ * 모듈약어 : W10
+ * 모듈명   : Studio (프로필 작곡)
+ * ============================================================ */
+.snw-studio {
+    display: flex;
+    flex-direction: column;
+    gap: var(--snw-spacing-lg, 20px);
+    padding-bottom: 80px;   /* sticky bar 공간 */
+}
+
+.snw-studio__bar {
+    position: fixed;
+    bottom: calc(var(--snw-bottom-nav-h, 56px) + var(--snw-np-h, 48px));
+    left: 0; right: 0;
+    padding: 12px 16px;
+    background: var(--snw-surface, #1a2028);
+    border-top: 1px solid var(--snw-border, #2f3844);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    z-index: 100;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3);
+}
+
+@media (min-width: 768px) {
+    .snw-studio__bar {
+        bottom: var(--snw-np-h, 48px);
+    }
+}
+
+/* ============================================================
+ * Step 카드
+ * ============================================================ */
+.snw-step-card {
+    background: var(--snw-surface-2, #232b36);
+    border: 1px solid var(--snw-border, #2f3844);
+    border-radius: var(--snw-radius, 8px);
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.snw-step-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--snw-border, #2f3844);
+}
+.snw-step-card__title {
+    font-weight: 600;
+    color: var(--snw-primary, #4a9eff);
+    font-size: 14px;
+}
+.snw-step-card__actions {
+    display: flex;
+    gap: 4px;
+}
+
+.snw-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--snw-radius-sm, 4px);
+    background: var(--snw-surface-3, #2f3844);
+    color: var(--snw-text, #e6edf3);
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.15s;
+}
+.snw-icon-btn:hover:not(:disabled) { background: var(--snw-border-hi, #4a5563); }
+.snw-icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.snw-icon-btn--danger { color: var(--snw-error, #f85149); }
+
+/* Grid */
+.snw-step-card__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+@media (max-width: 480px) {
+    .snw-step-card__grid { grid-template-columns: 1fr; }
+}
+
+.snw-step-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--snw-text-dim, #8b949e);
+}
+.snw-step-field--full {
+    grid-column: span 2;
+}
+.snw-step-field > span {
+    font-weight: 500;
+}
+.snw-step-field input[type="number"],
+.snw-step-field input[type="text"],
+.snw-step-field select {
+    padding: 8px 10px;
+    background: var(--snw-surface, #1a2028);
+    border: 1px solid var(--snw-border, #2f3844);
+    border-radius: var(--snw-radius-sm, 4px);
+    color: var(--snw-text, #e6edf3);
+    font-size: 13px;
+    width: 100%;
+}
+.snw-step-field input[type="range"] {
+    width: 100%;
+    accent-color: var(--snw-primary, #4a9eff);
+}
+.snw-step-field__row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.snw-step-field__unit {
+    color: var(--snw-text-dim, #8b949e);
+    font-size: 12px;
+}
+
+/* Override */
+.snw-step-card__override {
+    margin-top: 8px;
+    border: 1px dashed var(--snw-border, #2f3844);
+    border-radius: var(--snw-radius-sm, 4px);
+    padding: 8px 10px;
+}
+.snw-step-card__override summary {
+    cursor: pointer;
+    font-size: 12px;
+    color: var(--snw-text-dim, #8b949e);
+}
+.snw-step-card__override-body {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.snw-step-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* Sparkline */
+.snw-step-card__sparkline {
+    margin-top: 10px;
+    height: 50px;
+    background: var(--snw-bg-2, #0a0f14);
+    border-radius: var(--snw-radius-sm, 4px);
+    overflow: hidden;
+    padding: 4px;
+}
+.snw-step-card__sparkline-meta {
+    font-size: 11px;
+    color: var(--snw-text-dim, #8b949e);
+    text-align: right;
+    margin-top: 4px;
+}
+
+/* Add step button */
+.snw-btn--add-step {
+    width: 100%;
+    margin-top: 8px;
+    border: 1px dashed var(--snw-primary, #4a9eff);
+    color: var(--snw-primary, #4a9eff);
+    background: transparent;
+    padding: 12px;
+}
+
+/* Automation tabs */
+.snw-automation__tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--snw-border, #2f3844);
+    margin-bottom: var(--snw-spacing, 12px);
+}
+.snw-automation__tabs::-webkit-scrollbar { display: none; }
+.snw-tab-btn {
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--snw-text-dim, #8b949e);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.snw-tab-btn.is-active {
+    color: var(--snw-primary, #4a9eff);
+    border-bottom-color: var(--snw-primary, #4a9eff);
+}
+
+/* Form row inline */
+.snw-form-row--inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.snw-form-hint {
+    font-size: 11px;
+    color: var(--snw-text-dim, #8b949e);
+}
+.snw-form-section {
+    font-size: 13px;
+    color: var(--snw-text-dim, #8b949e);
+    margin: 16px 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--snw-border, #2f3844);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+

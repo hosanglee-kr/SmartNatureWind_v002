@@ -1,0 +1,193 @@
+/*
+ * ------------------------------------------------------
+ * 소스명   : _responsive.css
+ * 레이어   : CSS (빌드 시 P000_common_0200.css로 concat)
+ * 기능 요약:
+ *  - 미디어 쿼리 (모바일/태블릿/데스크톱)
+ *  - 모바일에서 사이드바 오버레이 + 헤더 압축 + 터치 크기 확대
+ * ------------------------------------------------------
+ */
+
+/* =====================================================
+ * 모바일 (< 768px)
+ * ===================================================== */
+@media (max-width: 767px) {
+    :root {
+        --snw-spacing-lg: 12px;
+        --snw-sidebar-w: 260px;
+    }
+
+    .snw-header {
+        padding: 0 var(--snw-spacing);
+    }
+
+    .snw-main {
+        padding: var(--snw-spacing);
+    }
+
+    .snw-footer {
+        padding: 0 var(--snw-spacing);
+        font-size: 11px;
+    }
+
+    /* 사이드바 = 전체 오버레이 */
+    .snw-sidebar {
+        transform: translateX(-100%);
+        box-shadow: var(--snw-shadow-lg);
+    }
+    .snw-sidebar:not([hidden]) {
+        transform: translateX(0);
+    }
+
+    /* 토스트 전체 폭 */
+    .snw-toast-host {
+        bottom: 70px;
+        left: var(--snw-spacing);
+        right: var(--snw-spacing);
+        max-width: none;
+    }
+
+    /* 버튼 터치 크기 확대 */
+    .snw-btn {
+        min-height: 44px;
+        padding: 10px 18px;
+        font-size: 14px;
+    }
+
+    .snw-btn-icon {
+        width: 44px;
+        height: 44px;
+    }
+
+    /* 슬라이더 터치 확대 */
+    .snw-slider__input::-webkit-slider-thumb {
+        width: 24px;
+        height: 24px;
+    }
+
+    .snw-slider__input::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+    }
+
+    /* 프리셋 카드 터치 확대 */
+    .snw-preset-card {
+        min-height: 80px;
+        padding: var(--snw-spacing);
+    }
+
+    /* 스케줄/프로필 아이템 터치 확대 */
+    .snw-schedule-item,
+    .snw-profile-item {
+        padding: var(--snw-spacing-lg);
+    }
+
+    /* AI 채팅 높이 축소 */
+    .snw-ai-chat {
+        height: calc(100vh - 300px);
+        min-height: 350px;
+    }
+}
+
+/* =====================================================
+ * 태블릿 (768 ~ 1023)
+ * ===================================================== */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .snw-sidebar {
+        transform: translateX(-100%);
+        box-shadow: var(--snw-shadow-lg);
+    }
+    .snw-sidebar:not([hidden]) {
+        transform: translateX(0);
+    }
+
+    .snw-main {
+        padding: var(--snw-spacing);
+    }
+}
+
+/* =====================================================
+ * 데스크톱 (≥ 1024) — 사이드바 상시 표시 (선택)
+ * ===================================================== */
+@media (min-width: 1024px) {
+    /* body:has()는 _layout.css에서 처리 */
+}
+
+/* =====================================================
+ * 초대형 화면 (≥ 1440) — 최대 폭 제한
+ * ===================================================== */
+@media (min-width: 1440px) {
+    .snw-main {
+        max-width: 1400px;
+        margin: 0 auto;
+        width: 100%;
+    }
+}
+
+/* =====================================================
+ * 인쇄
+ * ===================================================== */
+@media print {
+    .snw-header,
+    .snw-sidebar,
+    .snw-footer,
+    .snw-toast-host,
+    .snw-btn,
+    .snw-btn-icon {
+        display: none !important;
+    }
+    .snw-main {
+        padding: 0;
+    }
+    .snw-card {
+        box-shadow: none;
+        border: 1px solid #ccc;
+        break-inside: avoid;
+    }
+}
+
+/* =====================================================
+ * 접근성 — 모션 감소
+ * ===================================================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+
+
+/* ============================================================
+ * [P1-7] 모바일 헤더 시계 숨김 (320px 대응)
+ * ============================================================ */
+@media (max-width: 480px) {
+    .snw-clock { display: none; }
+    .snw-brand { font-size: 13px; }
+}
+
+/* ============================================================
+ * [P1-12] 로그 모바일 1컬럼
+ * ============================================================ */
+@media (max-width: 480px) {
+    .snw-log-row {
+        grid-template-columns: 1fr;
+        gap: 2px;
+        padding: 4px 0;
+    }
+    .snw-log-ts { font-size: 10px; }
+    .snw-log-lv { display: inline; margin-right: 6px; }
+}
+
+/* ============================================================
+ * [P1-15] Footer 터치 확대
+ * ============================================================ */
+@media (max-width: 767px) {
+    :root { --snw-footer-h: 48px; }
+    .snw-footer { font-size: 12px; }
+    .snw-footer #footer-status { cursor: pointer; }
+}
+

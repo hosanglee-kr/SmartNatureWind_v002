@@ -1,0 +1,69 @@
+{
+  "version": "0203",
+  "jsonFile": "cfg_schedules_0203.json",
+  "schedules": [
+    {
+      "schId": 1,
+      "schNo": 10,
+      "name": "Morning Cool Breeze",
+      "enabled": true,
+      "period": {
+        "enabled": true,
+        "days": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "startTime": "08:00",
+        "endTime": "12:00"
+      },
+      "profileId": 1
+    },
+    {
+      "schId": 2,
+      "schNo": 20,
+      "name": "Evening Comfort",
+      "enabled": true,
+      "period": {
+        "enabled": true,
+        "days": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "startTime": "19:00",
+        "endTime": "23:00"
+      },
+      "profileId": 2
+    },
+    {
+      "schId": 3,
+      "schNo": 30,
+      "name": "Night Sleep",
+      "enabled": true,
+      "period": {
+        "enabled": true,
+        "days": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "startTime": "23:00",
+        "endTime": "07:00"
+      },
+      "profileId": 3
+    }
+  ]
+}

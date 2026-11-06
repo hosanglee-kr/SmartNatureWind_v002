@@ -1,0 +1,208 @@
+/* ============================================================
+ * _schedule.css — Schedule Panel & Card Style
+ * ============================================================ */
+.snw-schedule {
+    display: flex;
+    flex-direction: column;
+    gap: var(--snw-spacing, 12px);
+}
+
+.snw-schedule__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--snw-text-dim, #8b949e);
+}
+
+.snw-schedule__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--snw-spacing, 12px);
+}
+
+.snw-schedule__note {
+    padding: 12px;
+    background: var(--snw-surface-2, #12161c);
+    border-radius: var(--snw-radius, 8px);
+    font-size: 12px;
+    color: var(--snw-text-dim, #8b949e);
+    line-height: 1.5;
+}
+
+/* ============================================================
+ * Schedule Card
+ * ============================================================ */
+.snw-schedule-item {
+    background: var(--snw-surface, #1a2028);
+    border: 1px solid var(--snw-border, #2f3844);
+    border-radius: var(--snw-radius-lg, 10px);
+    padding: var(--snw-spacing, 12px);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: opacity 0.15s;
+}
+
+.snw-schedule-item.is-disabled {
+    opacity: 0.5;
+}
+
+.snw-schedule-item__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed var(--snw-border, #2f3844);
+}
+
+.snw-schedule-item__name {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--snw-text, #e6edf3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.snw-schedule-item__time {
+    font-size: 13px;
+    color: var(--snw-text, #e6edf3);
+    font-family: var(--snw-font-mono, monospace);
+}
+
+.snw-schedule-item__days {
+    font-size: 12px;
+    color: var(--snw-primary, #4a9eff);
+    font-family: var(--snw-font-mono, monospace);
+    letter-spacing: 2px;
+}
+
+.snw-schedule-item__ref {
+    font-size: 13px;
+    color: var(--snw-text-dim, #8b949e);
+    padding-top: 6px;
+    border-top: 1px solid var(--snw-border, #2f3844);
+}
+
+.snw-schedule-item__ref.is-missing {
+    color: var(--snw-error, #f85149);
+    font-style: italic;
+}
+
+/* ============================================================
+ * Schedule Editor (모달)
+ * ============================================================ */
+.snw-schedule-editor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--snw-spacing, 12px);
+}
+
+.snw-day-picker {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.snw-day-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--snw-radius, 8px);
+    background: var(--snw-surface-2, #12161c);
+    border: 1.5px solid var(--snw-border, #2f3844);
+    color: var(--snw-text-dim, #8b949e);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+}
+
+.snw-day-chip.is-active {
+    background: var(--snw-primary, #4a9eff);
+    border-color: var(--snw-primary, #4a9eff);
+    color: white;
+}
+
+.snw-day-chip input {
+    display: none;
+}
+
+/* ============================================================
+ * Profile Picker (라디오)
+ * ============================================================ */
+.snw-profile-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+}
+
+.snw-profile-radio {
+    display: block;
+    padding: 12px;
+    background: var(--snw-surface-2, #12161c);
+    border: 1.5px solid var(--snw-border, #2f3844);
+    border-radius: var(--snw-radius, 8px);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.snw-profile-radio:hover {
+    border-color: var(--snw-border-hi, #4f5b66);
+}
+
+.snw-profile-radio.is-selected {
+    border-color: var(--snw-primary, #4a9eff);
+    background: rgba(74, 158, 255, 0.08);
+}
+
+.snw-profile-radio input {
+    display: none;
+}
+
+.snw-profile-radio__content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.snw-profile-radio__name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--snw-text, #e6edf3);
+}
+
+.snw-profile-radio__meta {
+    font-size: 12px;
+    color: var(--snw-text-dim, #8b949e);
+}
+
+.snw-schedule-editor__hint {
+    padding: 8px 12px;
+    background: var(--snw-surface-2, #12161c);
+    border-radius: var(--snw-radius-sm, 4px);
+    font-size: 12px;
+    color: var(--snw-text-dim, #8b949e);
+}
+
+/* ============================================================
+ * Schedule Conflict Modal
+ * ============================================================ */
+.snw-schedule-conflict__info {
+    padding: 12px;
+    background: var(--snw-surface-2, #12161c);
+    border-radius: var(--snw-radius, 8px);
+    font-size: 13px;
+    color: var(--snw-text, #e6edf3);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}

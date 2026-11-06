@@ -3,11 +3,11 @@
 // Layer 0 (기반) — SNW.C 참조만 허용
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
 	'use strict';
-	
+
 	const LS_PREFIX = 'snw.';
-	
+
 	SNW.CFG = {
 		// =====================================================
 		// localStorage 키 (중앙 관리)
@@ -21,7 +21,7 @@ window.SNW = window.SNW || {};
 			LAST_PRESET: LS_PREFIX + 'lastPreset',
 			UI_THEME: LS_PREFIX + 'theme'
 		},
-		
+
 		// =====================================================
 		// API 경로 (버전 prefix 중앙 관리)
 		// =====================================================
@@ -76,9 +76,16 @@ window.SNW = window.SNW || {};
 			fwUpdate: '/api/v001/fwUpdate',
 			fileUpload: '/api/v001/fileUpload',
 			gemini: '/api/v001/ai/gemini',
+			aiExecute: '/api/v001/ai/execute-action',
+			aiLiveToken: '/api/v001/ai/live-token',
+			aiLiveFunc: '/api/v001/ai/live-function',
+			aiLiveCfg: '/api/v001/ai/live-config',
+			aiCostStatus: '/api/v001/ai/cost-status',
+			aiUsage: '/api/v001/ai/usage',
+			aiCostReset: '/api/v001/ai/cost-reset',
 			menu: '/api/v001/menu'
 		},
-		
+
 		// =====================================================
 		// WS 경로
 		// =====================================================
@@ -90,7 +97,7 @@ window.SNW = window.SNW || {};
 			summary: '/ws/summary',
 			log: '/ws/log'
 		},
-		
+
 		// =====================================================
 		// HTTP 타임아웃 (ms)
 		// =====================================================
@@ -100,7 +107,7 @@ window.SNW = window.SNW || {};
 			UPLOAD: 60000,
 			SCAN: 15000
 		},
-		
+
 		// =====================================================
 		// WS 재연결 (exponential backoff)
 		// =====================================================
@@ -109,7 +116,7 @@ window.SNW = window.SNW || {};
 			FAIL_THRESHOLD: 3,
 			FALLBACK_POLL_MS: 2000
 		},
-		
+
 		// =====================================================
 		// 시뮬레이션 기본값 (서버 미응답 시)
 		// =====================================================
@@ -121,12 +128,12 @@ window.SNW = window.SNW || {};
 			minFan: 10,
 			fanPowerEnabled: true
 		},
-		
+
 		// =====================================================
 		// 사용자 레벨 기본값
 		// =====================================================
 		DEFAULT_LEVEL: 'L4',
-		
+
 		// =====================================================
 		// UI 상수 (컴포넌트 공용)
 		// =====================================================
@@ -144,12 +151,35 @@ window.SNW = window.SNW || {};
 			],
 			LOG_MAX_LINES: 256
 		},
-		
+
+		// =====================================================
+		// AI Gemini Live & Cost 상수 (Stage 8)
+		// =====================================================
+		AI_LIVE: {
+			WS_URL: 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent',
+			RECONNECT_MS: [1000, 2000, 4000, 8000],
+			MAX_SESSION_MS: 14 * 60 * 1000,   // 14분 (15분 제약 대비 재연결)
+			SESSION_WARN_MS: 60 * 1000,       // 60초 경고
+			CONNECT_TIMEOUT_MS: 10000,
+			DEFAULT_VOICE: 'Aoede'
+		},
+		AI_COST: {
+			CAP_SEC: 30 * 60,  // 일일 30분 상한
+			WARN_SEC: 25 * 60, // 25분 경고
+			POLL_MS: 60000,
+			REPORT_MS: 30000
+		},
+		LS_KEY: {
+			AI_MODE: 'snw.ai.mode',
+			AI_LIVE_WARNED: 'snw.ai.liveWarned',
+			AI_HISTORY: 'snw.ai.history'
+		},
+
 		// =====================================================
 		// 개발 모드
 		// =====================================================
 		IS_DEV: (location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
-		
+
 		// =====================================================
 		// localStorage 오버라이드 헬퍼
 		// =====================================================
@@ -174,6 +204,6 @@ window.SNW = window.SNW || {};
 			localStorage.removeItem(LS_PREFIX + 'cfg.' + path);
 		}
 	};
-	
+
 })(window.SNW);
 

@@ -1,5 +1,5 @@
 
-/* ===== LAYER 0 ===== */
+/* ===== LAYER 0: Core (Constants, Config, I18n, Utilities) ===== */
 
 /* ---- 000.const.js (8445 bytes) ---- */
 // =========================================================
@@ -188,17 +188,17 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 010.config.js (5898 bytes) ---- */
+/* ---- 010.config.js (6974 bytes) ---- */
 // =========================================================
 // 010.config.js — 프론트엔드 런타임 설정
 // Layer 0 (기반) — SNW.C 참조만 허용
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
 	'use strict';
-	
+
 	const LS_PREFIX = 'snw.';
-	
+
 	SNW.CFG = {
 		// =====================================================
 		// localStorage 키 (중앙 관리)
@@ -212,7 +212,7 @@ window.SNW = window.SNW || {};
 			LAST_PRESET: LS_PREFIX + 'lastPreset',
 			UI_THEME: LS_PREFIX + 'theme'
 		},
-		
+
 		// =====================================================
 		// API 경로 (버전 prefix 중앙 관리)
 		// =====================================================
@@ -267,9 +267,16 @@ window.SNW = window.SNW || {};
 			fwUpdate: '/api/v001/fwUpdate',
 			fileUpload: '/api/v001/fileUpload',
 			gemini: '/api/v001/ai/gemini',
+			aiExecute: '/api/v001/ai/execute-action',
+			aiLiveToken: '/api/v001/ai/live-token',
+			aiLiveFunc: '/api/v001/ai/live-function',
+			aiLiveCfg: '/api/v001/ai/live-config',
+			aiCostStatus: '/api/v001/ai/cost-status',
+			aiUsage: '/api/v001/ai/usage',
+			aiCostReset: '/api/v001/ai/cost-reset',
 			menu: '/api/v001/menu'
 		},
-		
+
 		// =====================================================
 		// WS 경로
 		// =====================================================
@@ -281,7 +288,7 @@ window.SNW = window.SNW || {};
 			summary: '/ws/summary',
 			log: '/ws/log'
 		},
-		
+
 		// =====================================================
 		// HTTP 타임아웃 (ms)
 		// =====================================================
@@ -291,7 +298,7 @@ window.SNW = window.SNW || {};
 			UPLOAD: 60000,
 			SCAN: 15000
 		},
-		
+
 		// =====================================================
 		// WS 재연결 (exponential backoff)
 		// =====================================================
@@ -300,7 +307,7 @@ window.SNW = window.SNW || {};
 			FAIL_THRESHOLD: 3,
 			FALLBACK_POLL_MS: 2000
 		},
-		
+
 		// =====================================================
 		// 시뮬레이션 기본값 (서버 미응답 시)
 		// =====================================================
@@ -312,12 +319,12 @@ window.SNW = window.SNW || {};
 			minFan: 10,
 			fanPowerEnabled: true
 		},
-		
+
 		// =====================================================
 		// 사용자 레벨 기본값
 		// =====================================================
 		DEFAULT_LEVEL: 'L4',
-		
+
 		// =====================================================
 		// UI 상수 (컴포넌트 공용)
 		// =====================================================
@@ -335,12 +342,35 @@ window.SNW = window.SNW || {};
 			],
 			LOG_MAX_LINES: 256
 		},
-		
+
+		// =====================================================
+		// AI Gemini Live & Cost 상수 (Stage 8)
+		// =====================================================
+		AI_LIVE: {
+			WS_URL: 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent',
+			RECONNECT_MS: [1000, 2000, 4000, 8000],
+			MAX_SESSION_MS: 14 * 60 * 1000,   // 14분 (15분 제약 대비 재연결)
+			SESSION_WARN_MS: 60 * 1000,       // 60초 경고
+			CONNECT_TIMEOUT_MS: 10000,
+			DEFAULT_VOICE: 'Aoede'
+		},
+		AI_COST: {
+			CAP_SEC: 30 * 60,  // 일일 30분 상한
+			WARN_SEC: 25 * 60, // 25분 경고
+			POLL_MS: 60000,
+			REPORT_MS: 30000
+		},
+		LS_KEY: {
+			AI_MODE: 'snw.ai.mode',
+			AI_LIVE_WARNED: 'snw.ai.liveWarned',
+			AI_HISTORY: 'snw.ai.history'
+		},
+
 		// =====================================================
 		// 개발 모드
 		// =====================================================
 		IS_DEV: (location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
-		
+
 		// =====================================================
 		// localStorage 오버라이드 헬퍼
 		// =====================================================
@@ -365,12 +395,12 @@ window.SNW = window.SNW || {};
 			localStorage.removeItem(LS_PREFIX + 'cfg.' + path);
 		}
 	};
-	
+
 })(window.SNW);
 
 
 
-/* ---- 020.i18n.js (63543 bytes) ---- */
+/* ---- 020.i18n.js (65419 bytes) ---- */
 // =========================================================
 // 020.i18n.js — 다국어 완전판 (ko/en)
 // =========================================================
@@ -828,6 +858,21 @@ window.SNW = window.SNW || {};
             'ai.example3': '자연풍 프리셋의 차이를 알려줘',
             'ai.send': '전송',
             'ai.thinking': '생각 중...',
+            'ai.voiceListening': '듣고 있어요...',
+            'ai.voiceNotSupported': '음성 인식을 지원하지 않는 브라우저입니다.',
+            'ai.micError': '마이크 권한을 허용해주세요.',
+            'ai.modeRest': '자연어 제어 (REST)',
+            'ai.modeLive': '실시간 음성 (Live)',
+            'ai.actionDone': '명령 실행 완료',
+            'ai.clearHistory': '대화 초기화',
+            'ai.dailyCapReached': '일일 Live 음성 한도(30분)에 도달했습니다.',
+            'ai.liveCost': '오늘 Live: {min}분 / {cap}분 (${cost})',
+            'ai.liveConnecting': 'Live 연결 중...',
+            'ai.liveConnected': '실시간 대화 중 (말씀하세요)',
+            'ai.liveSpeaking': 'AI 응답 중...',
+            'ai.liveStart': '🎙️ Live 대화 시작',
+            'ai.liveStop': '⏹️ 통화 종료',
+            'ai.liveCapWarning': '⚠️ 일일 한도 접근 중 ({min}분 사용)',
 
             'firmware.otaUpdate': '펌웨어 업데이트 (OTA)',
             'firmware.uploadBtn': '업로드',
@@ -1474,6 +1519,21 @@ window.SNW = window.SNW || {};
             'ai.example3': 'Explain the nature preset differences',
             'ai.send': 'Send',
             'ai.thinking': 'Thinking...',
+            'ai.voiceListening': 'Listening...',
+            'ai.voiceNotSupported': 'Voice recognition is not supported in this browser.',
+            'ai.micError': 'Please allow microphone access.',
+            'ai.modeRest': 'Natural Control (REST)',
+            'ai.modeLive': 'Live Voice (Live)',
+            'ai.actionDone': 'Command executed',
+            'ai.clearHistory': 'Clear History',
+            'ai.dailyCapReached': 'Daily Live voice limit (30 min) reached.',
+            'ai.liveCost': 'Today Live: {min}m / {cap}m (${cost})',
+            'ai.liveConnecting': 'Connecting Live...',
+            'ai.liveConnected': 'Live connected (Talk freely)',
+            'ai.liveSpeaking': 'AI Speaking...',
+            'ai.liveStart': '🎙️ Start Live Voice',
+            'ai.liveStop': '⏹️ Stop Live',
+            'ai.liveCapWarning': '⚠️ Approaching daily limit ({min}m used)',
 
             'firmware.otaUpdate': 'Firmware Update (OTA)',
             'firmware.uploadBtn': 'Upload',
@@ -2474,7 +2534,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 040.api.js (15749 bytes) ---- */
+/* ---- 040.api.js (16144 bytes) ---- */
 // =========================================================
 // 040.api.js — SNW.Api (REST 클라이언트)
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -2483,11 +2543,11 @@ window.SNW = window.SNW || {};
 //  - 업로드 진행률 (XHR)
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
 	'use strict';
-	
+
 	const inflight = new Map(); // key → Promise (중복 요청 방지)
-	
+
 	// =====================================================
 	// API Key (localStorage)
 	// =====================================================
@@ -2495,14 +2555,14 @@ window.SNW = window.SNW || {};
 		try { return localStorage.getItem(SNW.CFG.LS_KEY.API_KEY) || ''; }
 		catch { return ''; }
 	}
-	
+
 	function setApiKey(k) {
 		try {
 			if (k) localStorage.setItem(SNW.CFG.LS_KEY.API_KEY, k);
 			else localStorage.removeItem(SNW.CFG.LS_KEY.API_KEY);
-		} catch {}
+		} catch { }
 	}
-	
+
 	// =====================================================
 	// Query string 빌더
 	// =====================================================
@@ -2515,7 +2575,7 @@ window.SNW = window.SNW || {};
 		const s = q.toString();
 		return s ? `?${s}` : '';
 	}
-	
+
 	// =====================================================
 	// ApiError
 	// =====================================================
@@ -2527,92 +2587,102 @@ window.SNW = window.SNW || {};
 			this.data = data;
 		}
 	}
-	
+
 	// =====================================================
 	// Core fetch (_fetch)
 	// =====================================================
 	async function _fetch(path, opts = {}) {
-	    // ======================================================
-	    // [OFFLINE 방어막] 오프라인일 때 정확한 데이터 반환
-	    // ======================================================
-	    if (window.SNW_OFFLINE) {
-	        console.log('[Offline Fetch] 요청 가로채기:', path);
-	        const rt = (SNW.Offline && SNW.Offline._runtime) ? SNW.Offline._runtime : {};
-	        const cache = (SNW.Offline && SNW.Offline._cache) ? SNW.Offline._cache : {};
-	
-	        // Wi-Fi 상태
-	        if (path.includes('/wifi/state')) {
-	            return { wifi: { state: {
-	                mode: 2, mode_name: 'AP+STA (Offline)', status: 'CONNECTED',
-	                ssid: '(offline)', ip: '192.168.4.1', mac: 'AA:BB:CC:DD:EE:FF',
-	                rssi: -50, hostname: 'naturewind-offline', connected: false,
-	                timeSynced: false, reconnectAttempts: 0
-	            }}};
-	        }
-	        // Wi-Fi 설정 (cache 우선)
-	        if (path.includes('/wifi/config')) {
-	            return cache.wifi || { wifi: {
-	                wifiMode: 2, ap: { ssid: "NatureWind", pass: "2540" },
-	                sta: [{ ssid: "HomeWiFi_5G", pass: "12345678" }, { ssid: "Office_AP", pass: "admin1234" }]
-	            }};
-	        }
-	        if (path.includes('/wifi/scan')) {
-	            return { wifi: { scan: [
-	                { ssid: "TestWiFi1", rssi: -45, enc: "WPA2" },
-	                { ssid: "TestWiFi2", rssi: -70, enc: "OPEN" }
-	            ]}};
-	        }
-	        // 시스템 (cache 우선)
-	        if (path.includes('/system') && (opts.method || 'GET') === 'GET') {
-	            return cache.system || {};
-	        }
-	        // 상태
-	        if (path.includes('/state')) {
-	            return { control: rt.control || {}, sim: rt.sim || {}, runtime: rt.runtime || {} };
-	        }
-	        if (path.includes('/motion')) {
-	            return cache.motion || { motion: {} };
-	        }
-	        if (path.includes('/schedules')) return cache.schedules || { schedules: [] };
-	        if (path.includes('/user_profiles')) return cache.userProfiles || { userProfiles: { profiles: [] } };
-	        if (path.includes('/windDict') || path.includes('/windProfile')) return (cache.windDict && cache.windDict.windDict) ? cache.windDict.windDict : (cache.windDict || { presets: [], styles: [] });
-	        if (path.includes('/logs')) return { logs: [{ ts:0, lv:3, msg:'[Offline]' }] };
-	        if (path.includes('/diag')) return { heap: 120000, fs_used: 160000, fs_total: 1000000 };
-	        if (path.includes('/version')) return { fw:'FW_Ver_2.0.3' };
-	        if (path.includes('/metrics')) return { metrics: {} };
-	        if (path.includes('/control/override')) {
-	            if (opts.body && rt.sim) {
-	                if (opts.body.windIntensity != null) rt.sim.intensity = opts.body.windIntensity;
-	                if (opts.body.windVariability != null) rt.sim.variability = opts.body.windVariability;
-	                if (opts.body.gustFrequency != null) rt.sim.gustFreq = opts.body.gustFrequency;
-	            }
-	            return { result: 'ok', updated: true };
-	        }
-	        if (path.includes('/config')) return cache;
-	        
-	        return { result: 'ok', updated: true };
-	    }
-	
+		// ======================================================
+		// [OFFLINE 방어막] 오프라인일 때 정확한 데이터 반환
+		// ======================================================
+		if (window.SNW_OFFLINE) {
+			console.log('[Offline Fetch] 요청 가로채기:', path);
+			const rt = (SNW.Offline && SNW.Offline._runtime) ? SNW.Offline._runtime : {};
+			const cache = (SNW.Offline && SNW.Offline._cache) ? SNW.Offline._cache : {};
+
+			// Wi-Fi 상태
+			if (path.includes('/wifi/state')) {
+				return {
+					wifi: {
+						state: {
+							mode: 2, mode_name: 'AP+STA (Offline)', status: 'CONNECTED',
+							ssid: '(offline)', ip: '192.168.4.1', mac: 'AA:BB:CC:DD:EE:FF',
+							rssi: -50, hostname: 'naturewind-offline', connected: false,
+							timeSynced: false, reconnectAttempts: 0
+						}
+					}
+				};
+			}
+			// Wi-Fi 설정 (cache 우선)
+			if (path.includes('/wifi/config')) {
+				return cache.wifi || {
+					wifi: {
+						wifiMode: 2, ap: { ssid: "NatureWind", pass: "2540" },
+						sta: [{ ssid: "HomeWiFi_5G", pass: "12345678" }, { ssid: "Office_AP", pass: "admin1234" }]
+					}
+				};
+			}
+			if (path.includes('/wifi/scan')) {
+				return {
+					wifi: {
+						scan: [
+							{ ssid: "TestWiFi1", rssi: -45, enc: "WPA2" },
+							{ ssid: "TestWiFi2", rssi: -70, enc: "OPEN" }
+						]
+					}
+				};
+			}
+			// 시스템 (cache 우선)
+			if (path.includes('/system') && (opts.method || 'GET') === 'GET') {
+				return cache.system || {};
+			}
+			// 상태
+			if (path.includes('/state')) {
+				return { control: rt.control || {}, sim: rt.sim || {}, runtime: rt.runtime || {} };
+			}
+			if (path.includes('/motion')) {
+				return cache.motion || { motion: {} };
+			}
+			if (path.includes('/schedules')) return cache.schedules || { schedules: [] };
+			if (path.includes('/user_profiles')) return cache.userProfiles || { userProfiles: { profiles: [] } };
+			if (path.includes('/windDict') || path.includes('/windProfile')) return (cache.windDict && cache.windDict.windDict) ? cache.windDict.windDict : (cache.windDict || { presets: [], styles: [] });
+			if (path.includes('/logs')) return { logs: [{ ts: 0, lv: 3, msg: '[Offline]' }] };
+			if (path.includes('/diag')) return { heap: 120000, fs_used: 160000, fs_total: 1000000 };
+			if (path.includes('/version')) return { fw: 'FW_Ver_2.0.3' };
+			if (path.includes('/metrics')) return { metrics: {} };
+			if (path.includes('/control/override')) {
+				if (opts.body && rt.sim) {
+					if (opts.body.windIntensity != null) rt.sim.intensity = opts.body.windIntensity;
+					if (opts.body.windVariability != null) rt.sim.variability = opts.body.windVariability;
+					if (opts.body.gustFrequency != null) rt.sim.gustFreq = opts.body.gustFrequency;
+				}
+				return { result: 'ok', updated: true };
+			}
+			if (path.includes('/config')) return cache;
+
+			return { result: 'ok', updated: true };
+		}
+
 		// GET 요청에 대해서만 in-flight dedupe
 		const dedupeKey = (opts.method || 'GET') === 'GET' ?
 			path + (opts.body ? JSON.stringify(opts.body) : '') :
 			null;
-		
+
 		if (dedupeKey && inflight.has(dedupeKey)) {
 			return inflight.get(dedupeKey);
 		}
-		
+
 		const promise = (async () => {
 			const controller = new AbortController();
 			const timeoutMs = opts.timeoutMs || SNW.CFG.TIMEOUT_MS.DEFAULT;
 			const timer = setTimeout(() => controller.abort(), timeoutMs);
-			
+
 			const headers = {
 				'X-API-Key': getApiKey(),
 				...(opts.body ? { 'Content-Type': 'application/json; charset=utf-8' } : {}),
 				...(opts.headers || {})
 			};
-			
+
 			try {
 				const res = await fetch(path, {
 					method: opts.method || 'GET',
@@ -2622,13 +2692,13 @@ window.SNW = window.SNW || {};
 					credentials: 'omit'
 				});
 				clearTimeout(timer);
-				
+
 				// 401 즉시 처리
 				if (res.status === SNW.C.HTTP.UNAUTHORIZED) {
 					SNW.LogUtil.warn(`[API] 401 ${path}`);
 					throw new ApiError(401, { error: 'unauthorized' });
 				}
-				
+
 				// 응답 파싱
 				let data = null;
 				const ct = res.headers.get('Content-Type') || '';
@@ -2637,12 +2707,12 @@ window.SNW = window.SNW || {};
 				} else {
 					data = await res.text();
 				}
-				
+
 				if (!res.ok) {
 					const msg = (data && data.error) || `HTTP ${res.status}`;
 					throw new ApiError(res.status, { error: msg });
 				}
-				
+
 				SNW.LogUtil.debug(`[API] ${opts.method || 'GET'} ${path} → ${res.status}`);
 				return data;
 			} catch (e) {
@@ -2653,14 +2723,14 @@ window.SNW = window.SNW || {};
 				throw e;
 			}
 		})();
-		
+
 		if (dedupeKey) {
 			inflight.set(dedupeKey, promise);
 			promise.finally(() => inflight.delete(dedupeKey));
 		}
 		return promise;
 	}
-	
+
 	// =====================================================
 	// Multipart 업로드 (진행률 지원)
 	// =====================================================
@@ -2670,7 +2740,7 @@ window.SNW = window.SNW || {};
 			xhr.open('POST', url);
 			xhr.setRequestHeader('X-API-Key', getApiKey());
 			xhr.timeout = timeoutMs || SNW.CFG.TIMEOUT_MS.UPLOAD;
-			
+
 			xhr.upload.onprogress = (e) => {
 				if (e.lengthComputable && typeof onProgress === 'function') {
 					onProgress(e.loaded / e.total);
@@ -2680,7 +2750,7 @@ window.SNW = window.SNW || {};
 				let data = null;
 				try { data = JSON.parse(xhr.responseText); }
 				catch { data = xhr.responseText; }
-				
+
 				if (xhr.status >= 200 && xhr.status < 300) resolve(data);
 				else reject(new ApiError(xhr.status, data || { error: xhr.statusText }));
 			};
@@ -2689,7 +2759,7 @@ window.SNW = window.SNW || {};
 			xhr.send(formData);
 		});
 	}
-	
+
 	// =====================================================
 	// SNW.Api — 도메인별 그룹
 	// =====================================================
@@ -2697,12 +2767,12 @@ window.SNW = window.SNW || {};
 		// --- 메타 ---
 		version() { return _fetch(SNW.CFG.API.version); },
 		diag() { return _fetch(SNW.CFG.API.diag); },
-		
+
 		// --- 상태 ---
 		getState() { return _fetch(SNW.CFG.API.state); },
 		getMetrics() { return _fetch(SNW.CFG.API.metrics); },
 		getSummary() { return _fetch(SNW.CFG.API.controlSummary); },
-		
+
 		// --- 제어 (v0203) ---
 		overrideFixed(percent, seconds = 0, forever = false) {
 			const params = { percent };
@@ -2725,9 +2795,9 @@ window.SNW = window.SNW || {};
 				SNW.LogUtil.warn('[API] overrideParams is deprecated. Use patchSim({override}) instead.');
 			}
 			const ovr = { enabled: true };
-			if (body && body.windIntensity   != null) ovr.windIntensity   = body.windIntensity;
+			if (body && body.windIntensity != null) ovr.windIntensity = body.windIntensity;
 			if (body && body.windVariability != null) ovr.windVariability = body.windVariability;
-			if (body && body.gustFrequency   != null) ovr.gustFrequency   = body.gustFrequency;
+			if (body && body.gustFrequency != null) ovr.gustFrequency = body.gustFrequency;
 			return _fetch(SNW.CFG.API.simulation, { method: 'POST', body: { sim: { override: ovr } } });
 		},
 		ackEvent() {
@@ -2742,7 +2812,7 @@ window.SNW = window.SNW || {};
 		getMode() {
 			return _fetch(SNW.CFG.API.controlMode);
 		},
-		
+
 		// --- 시뮬레이션 ---
 		patchSim(patch) {
 			return _fetch(SNW.CFG.API.simulation, { method: 'POST', body: { sim: patch } });
@@ -2756,7 +2826,7 @@ window.SNW = window.SNW || {};
 		getPastEvents(days) {
 			return _fetch(`${SNW.CFG.API.monitor}/events?days=${days || 7}`);
 		},
-		
+
 		// --- WindDict ---
 		listWindProfiles() { return _fetch(SNW.CFG.API.windProfile); },
 		getWindDict() {
@@ -2782,13 +2852,13 @@ window.SNW = window.SNW || {};
 		addWindProfile(body) { return _fetch(SNW.CFG.API.windProfile, { method: 'POST', body }); },
 		updateWindProfile(id, b) { return _fetch(`${SNW.CFG.API.windProfile}/${id}`, { method: 'PUT', body: b }); },
 		deleteWindProfile(id) { return _fetch(`${SNW.CFG.API.windProfile}/${id}`, { method: 'DELETE' }); },
-		
+
 		// --- Schedules ---
 		listSchedules() { return _fetch(SNW.CFG.API.schedules); },
 		addSchedule(body) { return _fetch(SNW.CFG.API.schedules, { method: 'POST', body }); },
 		updateSchedule(id, b) { return _fetch(`${SNW.CFG.API.schedules}/${id}`, { method: 'PUT', body: b }); },
 		deleteSchedule(id) { return _fetch(`${SNW.CFG.API.schedules}/${id}`, { method: 'DELETE' }); },
-		
+
 		// --- UserProfiles ---
 		listProfiles() { return _fetch(SNW.CFG.API.userProfiles); },
 		addProfile(body) { return _fetch(SNW.CFG.API.userProfiles, { method: 'POST', body }); },
@@ -2832,12 +2902,12 @@ window.SNW = window.SNW || {};
 				body: { override: !!override }
 			});
 		},
-		
+
 		// --- Motion ---
 		getMotion() { return _fetch(SNW.CFG.API.motion); },
 		patchMotion(b) { return _fetch(SNW.CFG.API.motion, { method: 'POST', body: b }); },
 		feedPir(fired) { return _fetch(SNW.CFG.API.motionPirFeed, { method: 'POST', body: { pir: !!fired } }); },
-		
+
 		// --- System / Config ---
 		getSystem() { return _fetch(SNW.CFG.API.system); },
 		patchSystem(b) { return _fetch(SNW.CFG.API.system, { method: 'POST', body: b }); },
@@ -2846,19 +2916,19 @@ window.SNW = window.SNW || {};
 		getConfigAll() { return _fetch(SNW.CFG.API.config); },
 		reload() { return _fetch(SNW.CFG.API.reload, { method: 'POST' }); },
 		factoryReset() { return _fetch(SNW.CFG.API.configInit, { method: 'POST' }); },
-		
+
 		// --- Wi-Fi ---
 		getWifiState() { return _fetch(SNW.CFG.API.wifiState); },
 		getWifiConfig() { return _fetch(SNW.CFG.API.wifiConfig); },
 		patchWifi(b) { return _fetch(SNW.CFG.API.wifiConfig, { method: 'POST', body: b }); },
 		scanWifi() { return _fetch(SNW.CFG.API.wifiScan, { timeoutMs: SNW.CFG.TIMEOUT_MS.SCAN }); },
-		
+
 		// --- Time ---
 		setTime(b) { return _fetch(SNW.CFG.API.timeSet, { method: 'POST', body: b }); },
-		
+
 		// --- Logs ---
 		getLogs() { return _fetch(SNW.CFG.API.logs); },
-		
+
 		// --- Firmware ---
 		checkFw() { return _fetch(SNW.CFG.API.firmwareCheck); },
 		uploadFirmware(file, onProgress) {
@@ -2871,18 +2941,41 @@ window.SNW = window.SNW || {};
 			form.append('file', file);
 			return uploadWithProgress(SNW.CFG.API.fileUpload, form, onProgress);
 		},
-		
+
 		// --- AI ---
 		gemini(body) {
 			return _fetch(SNW.CFG.API.gemini, { method: 'POST', body, timeoutMs: SNW.CFG.TIMEOUT_MS.GEMINI });
 		},
-		
+		executeAiAction(name, args) {
+			return _fetch(SNW.CFG.API.aiExecute, { method: 'POST', body: { name, args } });
+		},
+		getAiLiveToken(todayDate) {
+			const q = todayDate ? `?today=${encodeURIComponent(todayDate)}` : '';
+			return _fetch(`${SNW.CFG.API.aiLiveToken}${q}`, { method: 'POST' });
+		},
+		callAiLiveFunction(body) {
+			return _fetch(SNW.CFG.API.aiLiveFunc, { method: 'POST', body });
+		},
+		getAiLiveConfig() {
+			return _fetch(SNW.CFG.API.aiLiveCfg);
+		},
+		getAiCostStatus(todayDate) {
+			const q = todayDate ? `?today=${encodeURIComponent(todayDate)}` : '';
+			return _fetch(`${SNW.CFG.API.aiCostStatus}${q}`);
+		},
+		reportAiUsage(body) {
+			return _fetch(SNW.CFG.API.aiUsage, { method: 'POST', body });
+		},
+		resetAiCost(todayDate) {
+			return _fetch(SNW.CFG.API.aiCostReset, { method: 'POST', body: { todayDate } });
+		},
+
 		// --- 유틸 ---
 		setApiKey,
 		getApiKey,
 		ApiError
 	});
-	
+
 })(window.SNW);
 
 
@@ -3424,7 +3517,7 @@ window.SNW = window.SNW || {};
     };
 })(window.SNW);
 
-/* ===== LAYER 1 ===== */
+/* ===== LAYER 1: UI Components & Services (AudioWorklet, AI Live) ===== */
 
 /* ---- 100.ui.badge.js (2046 bytes) ---- */
 // =========================================================
@@ -5459,7 +5552,992 @@ SNW.UI = SNW.UI || {};
 
 
 
-/* ===== LAYER 2 ===== */
+/* ---- 145.ai.client.js (1920 bytes) ---- */
+// =========================================================
+// 145.ai.client.js — SNW.AIClient
+// Layer 3 (코어 UI / AI 통신 클라이언트)
+// =========================================================
+window.SNW = window.SNW || {};
+(function(SNW) {
+	'use strict';
+
+	const CACHE_MAX = 20;
+	const HISTORY_MAX = 20;
+	const STORAGE_KEY = 'snw.ai.history';
+
+	const _cache = new Map();
+	let _pendingPromise = null;
+
+	SNW.AIClient = {
+		loadHistory() {
+			try {
+				const s = localStorage.getItem(STORAGE_KEY);
+				return s ? JSON.parse(s).slice(-HISTORY_MAX) : [];
+			} catch {
+				return [];
+			}
+		},
+
+		saveHistory(hist) {
+			try {
+				if (!Array.isArray(hist)) return;
+				localStorage.setItem(STORAGE_KEY, JSON.stringify(hist.slice(-HISTORY_MAX)));
+			} catch {}
+		},
+
+		clearHistory() {
+			try {
+				localStorage.removeItem(STORAGE_KEY);
+				_cache.clear();
+			} catch {}
+		},
+
+		async send(message, history = [], opts = {}) {
+			const text = (message || '').trim();
+			if (!text) return null;
+
+			const lang = opts.lang || 'ko';
+			const voiceMode = !!opts.voiceMode;
+			const cacheKey = `${text}|${history.length}|${lang}|${voiceMode ? 'v' : 't'}`;
+
+			if (_cache.has(cacheKey)) {
+				const entry = _cache.get(cacheKey);
+				if (Date.now() - entry.ts < 60000) {
+					return entry.data;
+				}
+				_cache.delete(cacheKey);
+			}
+
+			if (_pendingPromise) return _pendingPromise;
+
+			_pendingPromise = (async () => {
+				try {
+					const body = {
+						message: text,
+						history: history.slice(-6),
+						lang: lang,
+						voiceMode: voiceMode
+					};
+					const res = await SNW.Api.gemini(body);
+
+					_cache.set(cacheKey, { ts: Date.now(), data: res });
+					if (_cache.size > CACHE_MAX) {
+						const firstKey = _cache.keys().next().value;
+						_cache.delete(firstKey);
+					}
+					return res;
+				} finally {
+					_pendingPromise = null;
+				}
+			})();
+
+			return _pendingPromise;
+		}
+	};
+})(window.SNW);
+
+
+
+/* ---- 146.ai.voice.js (4330 bytes) ---- */
+// =========================================================
+// 146.ai.voice.js — SNW.AIVoice
+// Layer 3 (음성 입력 STT & 음성 합성 TTS)
+// =========================================================
+window.SNW = window.SNW || {};
+(function (SNW) {
+	'use strict';
+
+	let _currentRecognition = null;
+	let _wakeRecognition = null;
+
+	SNW.AIVoice = {
+		isSTTSupported() {
+			return ('webkitSpeechRecognition' in window) || ('SpeechRecognition' in window);
+		},
+
+		isTTSSupported() {
+			return ('speechSynthesis' in window) && ('SpeechSynthesisUtterance' in window);
+		},
+
+		detectLang(text) {
+			if (!text) return 'ko-KR';
+			const koMatches = text.match(/[가-힣]/g) || [];
+			const cleanLen = text.replace(/\s/g, '').length;
+			if (cleanLen === 0) return 'ko-KR';
+			return (koMatches.length / cleanLen > 0.2) ? 'ko-KR' : 'en-US';
+		},
+
+		startListening(opts = {}) {
+			return new Promise((resolve, reject) => {
+				if (!this.isSTTSupported()) {
+					return reject(new Error('STT_NOT_SUPPORTED'));
+				}
+
+				this.stopListening();
+
+				const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+				const rec = new SpeechRecognition();
+				_currentRecognition = rec;
+
+				rec.lang = opts.lang || 'ko-KR';
+				rec.continuous = false;
+				rec.interimResults = false;
+				rec.maxAlternatives = 1;
+
+				let finished = false;
+
+				rec.onresult = (e) => {
+					finished = true;
+					const transcript = (e.results && e.results[0] && e.results[0][0])
+						? e.results[0][0].transcript
+						: '';
+					resolve({ transcript });
+				};
+
+				rec.onerror = (e) => {
+					finished = true;
+					reject(new Error(e.error || 'STT_ERROR'));
+				};
+
+				rec.onend = () => {
+					_currentRecognition = null;
+					if (!finished) {
+						resolve({ transcript: '' });
+					}
+				};
+
+				try {
+					rec.start();
+				} catch (err) {
+					reject(err);
+				}
+			});
+		},
+
+		stopListening() {
+			if (_currentRecognition) {
+				try { _currentRecognition.abort(); } catch { }
+				_currentRecognition = null;
+			}
+		},
+
+		speak(text, opts = {}) {
+			if (!this.isTTSSupported() || !text) return;
+
+			this.stopSpeaking();
+
+			const utter = new SpeechSynthesisUtterance(text);
+			utter.lang = opts.lang || this.detectLang(text);
+			utter.rate = opts.rate || 1.0;
+			utter.pitch = opts.pitch || 1.0;
+
+			// 최적 보이스 탐색
+			try {
+				const voices = window.speechSynthesis.getVoices() || [];
+				const langPrefix = utter.lang.substring(0, 2);
+				const matchedVoice = voices.find(v => v.lang.startsWith(langPrefix));
+				if (matchedVoice) utter.voice = matchedVoice;
+			} catch { }
+
+			window.speechSynthesis.speak(utter);
+		},
+
+		stopSpeaking() {
+			if (this.isTTSSupported()) {
+				try { window.speechSynthesis.cancel(); } catch { }
+			}
+		},
+
+		// =====================================================
+		// 웨이크워드 감지 (옵션: "헤이 윈드", "hey wind")
+		// =====================================================
+		startWakeDetection(opts = {}) {
+			if (!this.isSTTSupported()) return false;
+			this.stopWakeDetection();
+
+			const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+			const rec = new SpeechRecognition();
+			_wakeRecognition = rec;
+
+			rec.continuous = true;
+			rec.interimResults = true;
+			rec.lang = opts.lang || 'ko-KR';
+
+			const wakeKeywords = ['헤이 윈드', '헤이윈드', '헤이 wind', 'hey wind', 'hi wind'];
+			let isCooldown = false;
+
+			rec.onresult = (e) => {
+				if (isCooldown) return;
+				for (let i = e.resultIndex; i < e.results.length; i++) {
+					const transcript = (e.results[i][0].transcript || '').toLowerCase();
+					const matched = wakeKeywords.some(w => transcript.includes(w));
+					if (matched) {
+						isCooldown = true;
+						if (opts.onWake) opts.onWake();
+						setTimeout(() => { isCooldown = false; }, 4000);
+						break;
+					}
+				}
+			};
+
+			rec.onerror = (e) => {
+				if (e.error !== 'no-speech' && opts.onError) opts.onError(e);
+			};
+
+			rec.onend = () => {
+				if (_wakeRecognition === rec) {
+					try { rec.start(); } catch { }
+				}
+			};
+
+			try {
+				rec.start();
+				return true;
+			} catch (err) {
+				return false;
+			}
+		},
+
+		stopWakeDetection() {
+			if (_wakeRecognition) {
+				const rec = _wakeRecognition;
+				_wakeRecognition = null;
+				try { rec.abort(); } catch { }
+			}
+		}
+	};
+})(window.SNW);
+
+
+
+/* ---- 147.ai.live.js (9572 bytes) ---- */
+/*
+ * ------------------------------------------------------
+ * 소스명 : 147.ai.live.js
+ * 모듈약어 : SNW.AiLive
+ * 모듈명 : Smart Nature Wind Gemini Live Voice Client (Bidi WS & Guardrails)
+ * ------------------------------------------------------
+ * 기능 요약:
+ *  - Gemini Live Bi-directional WebSocket 연결 관리
+ *  - 16kHz 마이크 스트리밍 / 24kHz 스피커 재생 큐 통합
+ *  - Barge-in(인터럽션) 실시간 처리
+ *  - 12개 ESP32 스마트 바람 제어 도구 브리지 실행
+ *  - 30초 주기 사용량(오디오 초, 비용) 측정 및 NVS 동기화
+ *  - 일일 30분 상한 도달 시 안전 종료 및 REST 폴백
+ * ------------------------------------------------------
+ */
+
+(function (window, SNW) {
+	'use strict';
+
+	SNW = SNW || {};
+	window.SNW = SNW;
+
+	let _ws = null;
+	let _isConnected = false;
+	let _isConnecting = false;
+	let _sessionStartTime = 0;
+	let _lastReportTime = 0;
+	let _usageIntervalId = null;
+
+	let _callbacks = {
+		onStateChange: null, // (state, details)
+		onText: null,        // (text, isComplete)
+		onToolCall: null,    // (name, args, result)
+		onVolume: null,      // (level 0..1)
+		onError: null,       // (err)
+		onCostUpdate: null   // (costStatus)
+	};
+
+	function getTodayDateStr() {
+		const now = new Date();
+		const y = now.getFullYear();
+		const m = String(now.getMonth() + 1).padStart(2, '0');
+		const d = String(now.getDate()).padStart(2, '0');
+		return `${y}-${m}-${d}`;
+	}
+
+	const AiLive = {
+		isSupported() {
+			return !!(window.WebSocket && SNW.AudioCapture && SNW.AudioCapture.isSupported());
+		},
+
+		isConnected() {
+			return _isConnected;
+		},
+
+		isConnecting() {
+			return _isConnecting;
+		},
+
+		async startSession(callbacks = {}) {
+			if (_isConnected || _isConnecting) return;
+			_callbacks = Object.assign(_callbacks, callbacks);
+
+			_isConnecting = true;
+			this._emitState('connecting');
+
+			const todayDate = getTodayDateStr();
+
+			try {
+				// 1. 일일 30분 가드레일 토큰 획득
+				const tokenRes = await SNW.API.getAiLiveToken(todayDate);
+				if (tokenRes.level === 'cap' || (tokenRes.remainingSec !== undefined && tokenRes.remainingSec <= 0)) {
+					const msg = tokenRes.error || (SNW.I18n ? SNW.I18n.t('ai.dailyCapReached') : 'Daily Live limit reached (30 min)');
+					throw new Error(msg);
+				}
+
+				if (callbacks.onCostUpdate) {
+					callbacks.onCostUpdate(tokenRes);
+				}
+
+				// 2. 초기 Live WS 설정 조회 (엄격 프롬프트 및 도구 선언)
+				const cfgRes = await SNW.API.getAiLiveConfig();
+				const token = tokenRes.token;
+				const wsUrl = `${tokenRes.wsUrl || 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent'}?key=${token}`;
+
+				// 3. AudioPlayback 초기화
+				if (SNW.AudioPlayback) {
+					SNW.AudioPlayback.init({
+						onStateChange: (isPlaying) => {
+							this._emitState(isPlaying ? 'speaking' : 'listening');
+						}
+					});
+				}
+
+				// 4. WebSocket 연결
+				_ws = new WebSocket(wsUrl);
+
+				_ws.onopen = async () => {
+					_isConnected = true;
+					_isConnecting = false;
+					_sessionStartTime = Date.now();
+					_lastReportTime = _sessionStartTime;
+
+					// 초기 setup 메시지 전송
+					this._sendSetup(cfgRes, tokenRes.voiceName);
+
+					// 마이크 캡처 시작
+					await this._startMicCapture();
+
+					// 30초 주기 사용량 보고 타이머 시작
+					this._startUsageReporting();
+
+					this._emitState('connected');
+				};
+
+				_ws.onmessage = async (event) => {
+					await this._handleMessage(event.data);
+				};
+
+				_ws.onerror = (e) => {
+					console.error('[AiLive] WebSocket error:', e);
+					if (_callbacks.onError) _callbacks.onError(new Error('WebSocket connection error'));
+				};
+
+				_ws.onclose = (event) => {
+					this._handleClose(event);
+				};
+
+			} catch (err) {
+				_isConnecting = false;
+				this.stopSession();
+				if (_callbacks.onError) {
+					_callbacks.onError(err);
+				}
+				this._emitState('idle');
+				throw err;
+			}
+		},
+
+		_sendSetup(cfgRes, voiceName) {
+			const setupMsg = {
+				setup: {
+					model: 'models/gemini-2.0-flash-exp',
+					generationConfig: {
+						responseModalities: ['AUDIO'],
+						speechConfig: {
+							voiceConfig: {
+								prebuiltVoiceConfig: {
+									voiceName: voiceName || 'Aoede'
+								}
+							}
+						}
+					},
+					systemInstruction: {
+						parts: [{ text: (cfgRes && cfgRes.systemInstruction) || 'You are SmartNatureWind voice controller.' }]
+					},
+					tools: (cfgRes && cfgRes.tools) || []
+				}
+			};
+			_ws.send(JSON.stringify(setupMsg));
+		},
+
+		async _startMicCapture() {
+			if (!SNW.AudioCapture) return;
+			await SNW.AudioCapture.start({
+				onChunk: (base64Pcm) => {
+					if (!_isConnected || !_ws || _ws.readyState !== WebSocket.OPEN) return;
+					const chunkMsg = {
+						realtimeInput: {
+							mediaChunks: [
+								{
+									mimeType: 'audio/pcm;rate=16000',
+									data: base64Pcm
+								}
+							]
+						}
+					};
+					_ws.send(JSON.stringify(chunkMsg));
+				},
+				onVolume: (level) => {
+					if (_callbacks.onVolume) {
+						_callbacks.onVolume(level);
+					}
+				},
+				onError: (err) => {
+					console.error('[AiLive] AudioCapture error:', err);
+					if (_callbacks.onError) _callbacks.onError(err);
+				}
+			});
+		},
+
+		async _handleMessage(data) {
+			let msg = null;
+			try {
+				if (typeof data === 'string') {
+					msg = JSON.parse(data);
+				} else if (data instanceof Blob) {
+					const text = await data.text();
+					msg = JSON.parse(text);
+				}
+			} catch (e) {
+				console.warn('[AiLive] JSON parse error:', e);
+				return;
+			}
+
+			if (!msg) return;
+
+			// 1. 모델 발화 파트 처리 (오디오/텍스트)
+			if (msg.serverContent) {
+				const sc = msg.serverContent;
+
+				// Barge-in 인터럽트 수신 시 스피커 즉시 중단
+				if (sc.interrupted) {
+					if (SNW.AudioPlayback) {
+						SNW.AudioPlayback.flush();
+					}
+					this._emitState('interrupted');
+				}
+
+				if (sc.modelTurn && sc.modelTurn.parts) {
+					for (const part of sc.modelTurn.parts) {
+						// 24kHz 오디오 청크
+						if (part.inlineData && part.inlineData.data) {
+							if (SNW.AudioPlayback) {
+								SNW.AudioPlayback.enqueueBase64Pcm(part.inlineData.data);
+							}
+						}
+						// 텍스트 청크
+						if (part.text && _callbacks.onText) {
+							_callbacks.onText(part.text, false);
+						}
+					}
+				}
+
+				if (sc.turnComplete && _callbacks.onText) {
+					_callbacks.onText('', true);
+				}
+			}
+
+			// 2. Tool Call (도구 실행) 처리
+			if (msg.toolCall) {
+				this._handleToolCall(msg.toolCall);
+			}
+		},
+
+		async _handleToolCall(toolCall) {
+			this._emitState('executing');
+			try {
+				const calls = toolCall.functionCalls || [];
+				// ESP32 백엔드 브리지 호출
+				const bridgeRes = await SNW.API.callAiLiveFunction({ functionCalls: calls });
+				const responses = (bridgeRes && bridgeRes.functionResponses) || [];
+
+				if (_callbacks.onToolCall) {
+					for (let i = 0; i < calls.length; i++) {
+						const c = calls[i];
+						const r = responses[i] ? responses[i].response : null;
+						_callbacks.onToolCall(c.name, c.args, r);
+					}
+				}
+
+				// Live WebSocket으로 응답 전송
+				if (_isConnected && _ws && _ws.readyState === WebSocket.OPEN) {
+					const replyMsg = {
+						toolResponse: {
+							functionResponses: responses
+						}
+					};
+					_ws.send(JSON.stringify(replyMsg));
+				}
+			} catch (e) {
+				console.error('[AiLive] Tool execution error:', e);
+			}
+		},
+
+		_startUsageReporting() {
+			this._stopUsageReporting();
+			_usageIntervalId = setInterval(() => {
+				this._reportUsageDelta();
+			}, 30000); // 30초 주기
+		},
+
+		_stopUsageReporting() {
+			if (_usageIntervalId) {
+				clearInterval(_usageIntervalId);
+				_usageIntervalId = null;
+			}
+		},
+
+		async _reportUsageDelta() {
+			if (!_sessionStartTime) return;
+			const now = Date.now();
+			const elapsedSec = Math.round((now - _lastReportTime) / 1000);
+			if (elapsedSec <= 0) return;
+
+			_lastReportTime = now;
+			const todayDate = getTodayDateStr();
+
+			// 오디오 1초당 비용 추정 ($0.0003/sec -> x1000: 0.3)
+			const estCostX1000 = Math.round(elapsedSec * 0.3);
+
+			try {
+				const res = await SNW.API.reportAiUsage({
+					todayDate,
+					audioSec: elapsedSec,
+					turnCount: 0,
+					costUsdX1000: estCostX1000
+				});
+
+				if (_callbacks.onCostUpdate) {
+					_callbacks.onCostUpdate(res);
+				}
+
+				// 상한 도달 시 자동 종료
+				if (res && res.level === 'cap') {
+					const msg = SNW.I18n ? SNW.I18n.t('ai.dailyCapReached') : 'Daily Live audio limit reached (30 min)';
+					if (_callbacks.onError) _callbacks.onError(new Error(msg));
+					this.stopSession();
+				}
+			} catch (e) {
+				console.warn('[AiLive] Failed to report usage:', e);
+			}
+		},
+
+		_handleClose(event) {
+			_isConnected = false;
+			_isConnecting = false;
+			this._stopUsageReporting();
+			this._reportUsageDelta(); // 남은 사용량 최종 보고
+
+			if (SNW.AudioCapture) SNW.AudioCapture.stop();
+			if (SNW.AudioPlayback) SNW.AudioPlayback.flush();
+
+			this._emitState('closed');
+		},
+
+		stopSession() {
+			_isConnecting = false;
+			if (_isConnected && _ws) {
+				try {
+					_ws.close();
+				} catch (_) {}
+			}
+			_ws = null;
+			_isConnected = false;
+
+			this._stopUsageReporting();
+			this._reportUsageDelta();
+
+			if (SNW.AudioCapture) SNW.AudioCapture.stop();
+			if (SNW.AudioPlayback) SNW.AudioPlayback.close();
+
+			this._emitState('idle');
+		},
+
+		_emitState(state, details) {
+			if (_callbacks.onStateChange) {
+				_callbacks.onStateChange(state, details);
+			}
+		}
+	};
+
+	SNW.AiLive = AiLive;
+
+})(window, window.SNW);
+
+
+
+/* ---- 147a.audio.capture.js (5508 bytes) ---- */
+/*
+ * ------------------------------------------------------
+ * 소스명 : 147a.audio.capture.js
+ * 모듈약어 : SNW.AudioCapture
+ * 모듈명 : Smart Nature Wind Audio Input & PCM16 Streamer (Live AEC)
+ * ------------------------------------------------------
+ * 기능 요약:
+ *  - 마이크 캡처 (AEC/노이즈 캔슬레이션/자동 게인)
+ *  - 인라인 Blob URL 기반 AudioWorklet (단일 번들 404 방지)
+ *  - 16kHz, 16-bit PCM 모노 인코딩 및 base64 스트리밍
+ *  - 실시간 볼륨 메터링 (UI 애니메이션 연동)
+ * ------------------------------------------------------
+ */
+
+(function (window, SNW) {
+	'use strict';
+
+	SNW = SNW || {};
+	window.SNW = SNW;
+
+	let _audioCtx = null;
+	let _mediaStream = null;
+	let _sourceNode = null;
+	let _workletNode = null;
+	let _analyserNode = null;
+	let _animId = null;
+	let _isCapturing = false;
+
+	// 인라인 AudioWorklet 소스 (Float32 -> Int16 변환)
+	const WORKLET_CODE = `
+class PcmCaptureProcessor extends AudioWorkletProcessor {
+	constructor() {
+		super();
+		this.bufferSize = 2048; // ~128ms at 16kHz
+		this.buffer = new Int16Array(this.bufferSize);
+		this.offset = 0;
+	}
+
+	process(inputs, outputs, parameters) {
+		const input = inputs[0];
+		if (!input || !input[0]) return true;
+		const channel = input[0];
+
+		for (let i = 0; i < channel.length; i++) {
+			// Float32 [-1.0, 1.0] -> Int16 [-32768, 32767]
+			let s = Math.max(-1, Math.min(1, channel[i]));
+			this.buffer[this.offset++] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+
+			if (this.offset >= this.bufferSize) {
+				this.port.postMessage(this.buffer.buffer, [this.buffer.buffer]);
+				this.buffer = new Int16Array(this.bufferSize);
+				this.offset = 0;
+			}
+		}
+		return true;
+	}
+}
+registerProcessor('pcm-capture-processor', PcmCaptureProcessor);
+`;
+
+	function arrayBufferToBase64(buffer) {
+		let binary = '';
+		const bytes = new Uint8Array(buffer);
+		const len = bytes.byteLength;
+		for (let i = 0; i < len; i++) {
+			binary += String.fromCharCode(bytes[i]);
+		}
+		return window.btoa(binary);
+	}
+
+	const AudioCapture = {
+		isSupported() {
+			return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.AudioContext);
+		},
+
+		isCapturing() {
+			return _isCapturing;
+		},
+
+		async start({ onChunk, onVolume, onError } = {}) {
+			if (_isCapturing) return true;
+			if (!this.isSupported()) {
+				const err = new Error('Audio recording not supported in this browser');
+				if (onError) onError(err);
+				throw err;
+			}
+
+			try {
+				// 1. 마이크 스트림 획득 (AEC 활성화)
+				_mediaStream = await navigator.mediaDevices.getUserMedia({
+					audio: {
+						channelCount: 1,
+						sampleRate: 16000,
+						echoCancellation: true,
+						noiseSuppression: true,
+						autoGainControl: true
+					},
+					video: false
+				});
+
+				// 2. 16kHz AudioContext 생성
+				const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+				_audioCtx = new AudioContextClass({ sampleRate: 16000 });
+				if (_audioCtx.state === 'suspended') {
+					await _audioCtx.resume();
+				}
+
+				// 3. 인라인 Blob URL 기반 AudioWorklet 등록
+				const blob = new Blob([WORKLET_CODE], { type: 'application/javascript' });
+				const workletUrl = URL.createObjectURL(blob);
+				try {
+					await _audioCtx.audioWorklet.addModule(workletUrl);
+				} finally {
+					URL.revokeObjectURL(workletUrl);
+				}
+
+				// 4. 노드 연결
+				_sourceNode = _audioCtx.createMediaStreamSource(_mediaStream);
+				_workletNode = new AudioWorkletNode(_audioCtx, 'pcm-capture-processor');
+
+				// 볼륨 분석기
+				_analyserNode = _audioCtx.createAnalyser();
+				_analyserNode.fftSize = 256;
+				_sourceNode.connect(_analyserNode);
+				_sourceNode.connect(_workletNode);
+
+				// 5. PCM 청크 수신 이벤트
+				_workletNode.port.onmessage = (event) => {
+					if (!_isCapturing) return;
+					const pcmBuffer = event.data; // ArrayBuffer (Int16)
+					const base64Pcm = arrayBufferToBase64(pcmBuffer);
+					if (onChunk) {
+						onChunk(base64Pcm, pcmBuffer);
+					}
+				};
+
+				// 6. 실시간 볼륨 미터링 루프
+				if (onVolume) {
+					const pcmData = new Uint8Array(_analyserNode.frequencyBinCount);
+					const updateMeter = () => {
+						if (!_isCapturing) return;
+						_analyserNode.getByteFrequencyData(pcmData);
+						let sum = 0;
+						for (let i = 0; i < pcmData.length; i++) {
+							sum += pcmData[i];
+						}
+						const avg = sum / pcmData.length;
+						const norm = Math.min(1.0, avg / 128.0);
+						onVolume(norm);
+						_animId = requestAnimationFrame(updateMeter);
+					};
+					_animId = requestAnimationFrame(updateMeter);
+				}
+
+				_isCapturing = true;
+				return true;
+			} catch (e) {
+				this.stop();
+				if (onError) onError(e);
+				throw e;
+			}
+		},
+
+		stop() {
+			_isCapturing = false;
+
+			if (_animId) {
+				cancelAnimationFrame(_animId);
+				_animId = null;
+			}
+
+			if (_workletNode) {
+				try {
+					_workletNode.port.onmessage = null;
+					_workletNode.disconnect();
+				} catch (_) {}
+				_workletNode = null;
+			}
+
+			if (_analyserNode) {
+				try { _analyserNode.disconnect(); } catch (_) {}
+				_analyserNode = null;
+			}
+
+			if (_sourceNode) {
+				try { _sourceNode.disconnect(); } catch (_) {}
+				_sourceNode = null;
+			}
+
+			if (_mediaStream) {
+				try {
+					_mediaStream.getTracks().forEach(t => t.stop());
+				} catch (_) {}
+				_mediaStream = null;
+			}
+
+			if (_audioCtx) {
+				try {
+					_audioCtx.close();
+				} catch (_) {}
+				_audioCtx = null;
+			}
+		}
+	};
+
+	SNW.AudioCapture = AudioCapture;
+
+})(window, window.SNW);
+
+
+
+/* ---- 147b.audio.playback.js (3677 bytes) ---- */
+/*
+ * ------------------------------------------------------
+ * 소스명 : 147b.audio.playback.js
+ * 모듈약어 : SNW.AudioPlayback
+ * 모듈명 : Smart Nature Wind Audio Output & PCM24 Stream Player (Barge-in Support)
+ * ------------------------------------------------------
+ * 기능 요약:
+ *  - Gemini Live 24kHz PCM16 모노 스트리밍 큐 재생
+ *  - 실시간 스케줄링 (끊김 없는 Seamless 재생)
+ *  - Barge-in(끼어들기) 발생 시 즉시 큐 비우기 및 중단 (flush)
+ *  - 재생 상태 콜백
+ * ------------------------------------------------------
+ */
+
+(function (window, SNW) {
+	'use strict';
+
+	SNW = SNW || {};
+	window.SNW = SNW;
+
+	let _audioCtx = null;
+	let _nextPlayTime = 0;
+	let _scheduledSources = [];
+	let _isPlaying = false;
+	let _onStateChange = null;
+
+	function base64ToArrayBuffer(base64) {
+		const binaryString = window.atob(base64);
+		const len = binaryString.length;
+		const bytes = new Uint8Array(len);
+		for (let i = 0; i < len; i++) {
+			bytes[i] = binaryString.charCodeAt(i);
+		}
+		return bytes.buffer;
+	}
+
+	function pcm16ToFloat32(arrayBuffer) {
+		const int16Array = new Int16Array(arrayBuffer);
+		const float32Array = new Float32Array(int16Array.length);
+		for (let i = 0; i < int16Array.length; i++) {
+			float32Array[i] = int16Array[i] / 32768.0;
+		}
+		return float32Array;
+	}
+
+	const AudioPlayback = {
+		init({ onStateChange } = {}) {
+			_onStateChange = onStateChange || null;
+		},
+
+		_ensureAudioContext() {
+			if (!_audioCtx || _audioCtx.state === 'closed') {
+				const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+				_audioCtx = new AudioContextClass({ sampleRate: 24000 });
+			}
+			if (_audioCtx.state === 'suspended') {
+				_audioCtx.resume();
+			}
+			return _audioCtx;
+		},
+
+		isPlaying() {
+			return _isPlaying;
+		},
+
+		_setPlaying(val) {
+			if (_isPlaying !== val) {
+				_isPlaying = val;
+				if (_onStateChange) _onStateChange(_isPlaying);
+			}
+		},
+
+		enqueueBase64Pcm(base64Data) {
+			if (!base64Data) return;
+			try {
+				const buffer = base64ToArrayBuffer(base64Data);
+				this.enqueueArrayBuffer(buffer);
+			} catch (e) {
+				console.warn('[AudioPlayback] Failed to decode base64 audio:', e);
+			}
+		},
+
+		enqueueArrayBuffer(arrayBuffer) {
+			const ctx = this._ensureAudioContext();
+			const float32Data = pcm16ToFloat32(arrayBuffer);
+
+			const audioBuffer = ctx.createBuffer(1, float32Data.length, 24000);
+			audioBuffer.getChannelData(0).set(float32Data);
+
+			const source = ctx.createBufferSource();
+			source.buffer = audioBuffer;
+			source.connect(ctx.destination);
+
+			const now = ctx.currentTime;
+			const startTime = Math.max(now, _nextPlayTime);
+			source.start(startTime);
+			_nextPlayTime = startTime + audioBuffer.duration;
+
+			_scheduledSources.push(source);
+			this._setPlaying(true);
+
+			source.onended = () => {
+				const idx = _scheduledSources.indexOf(source);
+				if (idx !== -1) {
+					_scheduledSources.splice(idx, 1);
+				}
+				if (_scheduledSources.length === 0 && ctx.currentTime >= _nextPlayTime) {
+					this._setPlaying(false);
+				}
+			};
+		},
+
+		// Barge-in 발생 시 현재 재생 중인 모든 버퍼 즉시 중단 및 큐 초기화
+		flush() {
+			for (const src of _scheduledSources) {
+				try {
+					src.stop();
+					src.disconnect();
+				} catch (_) {}
+			}
+			_scheduledSources = [];
+			if (_audioCtx) {
+				_nextPlayTime = _audioCtx.currentTime;
+			} else {
+				_nextPlayTime = 0;
+			}
+			this._setPlaying(false);
+		},
+
+		close() {
+			this.flush();
+			if (_audioCtx) {
+				try { _audioCtx.close(); } catch (_) {}
+				_audioCtx = null;
+			}
+			this._setPlaying(false);
+		}
+	};
+
+	SNW.AudioPlayback = AudioPlayback;
+
+})(window, window.SNW);
+
+
+
+/* ===== LAYER 2: Pages (Dashboard, Chart, Studio, AI, Automation) ===== */
 
 /* ---- 200.page.dashboard.js (17423 bytes) ---- */
 // =========================================================
@@ -8421,55 +9499,114 @@ SNW.Page = SNW.Page || {};
 	};
 })(window.SNW);
 
-/* ---- 290.page.ai.js (4571 bytes) ---- */
+/* ---- 290.page.ai.js (17522 bytes) ---- */
 // =========================================================
 // 290.page.ai.js — SNW.Page.AI
-// Layer 4 (페이지 로직)
-// [P1-14] 예시 텍스트 i18n 이관
+// Layer 4 (페이지 로직: AI 스튜디오, 2-turn REST 제어 & Gemini Live Voice)
 // =========================================================
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
-(function(SNW) {
+(function (SNW) {
 	'use strict';
-	
+
 	const MAX_MSG_LEN = 4000;
-	
+
 	SNW.Page.AI = class AI {
 		constructor(container) {
 			this.el = container;
 			this._active = true;
 			this._history = [];
+			this._isListening = false;
+			this._currentMode = 'rest'; // 'rest' | 'live'
+			this._liveCostStatus = null;
 		}
-		
+
 		async mount() {
 			this.el.innerHTML = '';
 			this.el.appendChild(SNW.Tpl.ai());
 			SNW.I18n.applyTo(this.el);
-			
+
 			const slot = this.el.querySelector('[data-slot="chat"]');
 			const examplePlaceholder = SNW.I18n.t('ai.placeholder');
-			
+
 			slot.innerHTML = `
                 <div class="snw-ai-chat">
-                    <div class="snw-ai-messages" data-slot="messages"></div>
-                    <div class="snw-ai-examples" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-                        <button type="button" class="snw-btn snw-btn--sm" data-example="${SNW.I18n.t('ai.example1')}">${SNW.I18n.t('ai.example1')}</button>
-                        <button type="button" class="snw-btn snw-btn--sm" data-example="${SNW.I18n.t('ai.example2')}">${SNW.I18n.t('ai.example2')}</button>
-                        <button type="button" class="snw-btn snw-btn--sm" data-example="${SNW.I18n.t('ai.example3')}">${SNW.I18n.t('ai.example3')}</button>
-                    </div>
-                    <div class="snw-ai-input">
-                        <textarea data-slot="input" rows="3"
-                                  placeholder="${SNW.DomUtil.escape(examplePlaceholder)}"
-                                  maxlength="${MAX_MSG_LEN}"></textarea>
-                        <button type="button" class="snw-btn snw-btn-primary" data-action="send">
-                            ${SNW.I18n.t('ai.send')}
+                    <div class="snw-ai-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <div class="snw-btn-group" role="group">
+                                <button type="button" class="snw-btn snw-btn--sm snw-btn--primary" data-mode-btn="rest">
+                                    ${SNW.I18n.t('ai.modeRest')}
+                                </button>
+                                <button type="button" class="snw-btn snw-btn--sm snw-btn--ghost" data-mode-btn="live">
+                                    ${SNW.I18n.t('ai.modeLive')}
+                                </button>
+                            </div>
+                            <span class="snw-badge snw-badge--info" data-slot="cost-badge" style="display:none;font-size:0.75rem;"></span>
+                        </div>
+                        <button type="button" class="snw-btn snw-btn--sm snw-btn--ghost" data-action="clear-history">
+                            ${SNW.I18n.t('ai.clearHistory')}
                         </button>
                     </div>
+
+                    <!-- REST Chat View -->
+                    <div class="snw-ai-rest-view" data-view="rest">
+                        <div class="snw-ai-messages" data-slot="messages"></div>
+                        <div class="snw-ai-examples" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+                            <button type="button" class="snw-btn snw-btn--sm" data-example="바다 바람 틀어줘">바다 바람 틀어줘</button>
+                            <button type="button" class="snw-btn snw-btn--sm" data-example="30분 후 꺼줘">30분 후 꺼줘</button>
+                            <button type="button" class="snw-btn snw-btn--sm" data-example="스케줄대로 해줘">스케줄대로 해줘</button>
+                            <button type="button" class="snw-btn snw-btn--sm" data-example="${SNW.I18n.t('ai.example1')}">${SNW.I18n.t('ai.example1')}</button>
+                        </div>
+                        <div class="snw-ai-input" style="display:flex;gap:6px;align-items:flex-end;">
+                            <textarea data-slot="input" rows="2" style="flex:1;"
+                                      placeholder="${SNW.DomUtil.escape(examplePlaceholder)}"
+                                      maxlength="${MAX_MSG_LEN}"></textarea>
+                            <button type="button" class="snw-btn snw-btn--secondary" data-action="voice" title="음성 입력">
+                                🎤
+                            </button>
+                            <button type="button" class="snw-btn snw-btn-primary" data-action="send">
+                                ${SNW.I18n.t('ai.send')}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Live Voice View -->
+                    <div class="snw-ai-live-view" data-view="live" style="display:none;text-align:center;padding:24px 12px;">
+                        <div class="snw-live-orb-container" style="margin:20px auto;width:120px;height:120px;position:relative;">
+                            <div class="snw-live-orb" data-slot="live-orb" style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg, #3b82f6, #8b5cf6);opacity:0.85;box-shadow:0 0 20px rgba(59,130,246,0.5);transition:transform 0.1s ease, box-shadow 0.1s ease;"></div>
+                        </div>
+                        <div class="snw-live-status-text" data-slot="live-status" style="font-size:1.1rem;font-weight:600;margin-bottom:12px;color:var(--text-color, #f8fafc);">
+                            ${SNW.I18n.t('ai.liveStart')}
+                        </div>
+                        <div class="snw-live-transcript" data-slot="live-transcript" style="min-height:48px;max-height:120px;overflow-y:auto;font-size:0.95rem;color:var(--text-muted, #94a3b8);margin-bottom:20px;padding:8px 12px;background:rgba(0,0,0,0.15);border-radius:8px;"></div>
+                        <div class="snw-live-actions-log" data-slot="live-actions" style="margin-bottom:16px;font-size:0.85rem;color:#4ade80;"></div>
+                        <div>
+                            <button type="button" class="snw-btn snw-btn--lg snw-btn-primary" data-action="live-toggle" style="min-width:160px;">
+                                ${SNW.I18n.t('ai.liveStart')}
+                            </button>
+                        </div>
+                    </div>
                 </div>`;
-			
+
+			// 이전 대화 이력 로드
+			if (SNW.AIClient) {
+				this._history = SNW.AIClient.loadHistory();
+				this._renderHistory();
+			}
+
+			// 모드 전환 버튼 바인딩
+			SNW.DomUtil.delegate(this.el, '[data-mode-btn]', 'click', (e, btn) => {
+				const mode = btn.getAttribute('data-mode-btn');
+				this._switchMode(mode);
+			});
+
+			// 이벤트 위임
 			SNW.DomUtil.delegate(this.el, '[data-action="send"]', 'click', () => this._onSend());
-			
-			// [P1-14] 예시 버튼 클릭 → textarea에 채움
+			SNW.DomUtil.delegate(this.el, '[data-action="voice"]', 'click', () => this._onVoiceToggle());
+			SNW.DomUtil.delegate(this.el, '[data-action="clear-history"]', 'click', () => this._onClearHistory());
+			SNW.DomUtil.delegate(this.el, '[data-action="live-toggle"]', 'click', () => this._onLiveToggle());
+
+			// 예시 버튼 클릭
 			SNW.DomUtil.delegate(this.el, '[data-example]', 'click', (e, btn) => {
 				const inp = this.el.querySelector('[data-slot="input"]');
 				if (inp) {
@@ -8477,7 +9614,7 @@ SNW.Page = SNW.Page || {};
 					inp.focus();
 				}
 			});
-			
+
 			const inp = this.el.querySelector('[data-slot="input"]');
 			if (inp) {
 				inp.addEventListener('keydown', (e) => {
@@ -8487,50 +9624,291 @@ SNW.Page = SNW.Page || {};
 					}
 				});
 			}
-			
+
+			// 초기 비용 상태 로드
+			this._loadCostStatus();
+
 			SNW.LogUtil.info('[AI] mount 완료');
 		}
-		
-		unmount() { this._active = false; }
-		
-		async _onSend() {
+
+		unmount() {
+			this._active = false;
+			if (SNW.AIVoice) {
+				SNW.AIVoice.stopListening();
+				SNW.AIVoice.stopSpeaking();
+			}
+			if (SNW.AiLive && SNW.AiLive.isConnected()) {
+				SNW.AiLive.stopSession();
+			}
+		}
+
+		async _loadCostStatus() {
+			try {
+				if (SNW.API && SNW.API.getAiCostStatus) {
+					const now = new Date();
+					const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+					const res = await SNW.API.getAiCostStatus(today);
+					this._updateCostBadge(res);
+				}
+			} catch (e) {
+				console.warn('[AI] Failed to load cost status:', e);
+			}
+		}
+
+		_updateCostBadge(costData) {
+			if (!costData) return;
+			this._liveCostStatus = costData;
+			const badge = this.el.querySelector('[data-slot="cost-badge"]');
+			if (!badge) return;
+
+			const usedMin = Math.round((costData.audioSec || 0) / 60);
+			const capMin = Math.round((costData.capSec || 1800) / 60);
+			const cost = ((costData.estCostUsdX1000 || 0) / 1000).toFixed(3);
+
+			badge.style.display = 'inline-block';
+			badge.textContent = SNW.I18n.t('ai.liveCost', { min: usedMin, cap: capMin, cost });
+
+			badge.classList.remove('snw-badge--info', 'snw-badge--warn', 'snw-badge--danger');
+			if (costData.level === 'cap') {
+				badge.classList.add('snw-badge--danger');
+			} else if (costData.level === 'warn') {
+				badge.classList.add('snw-badge--warn');
+			} else {
+				badge.classList.add('snw-badge--info');
+			}
+		}
+
+		_switchMode(mode) {
+			if (this._currentMode === mode) return;
+
+			// Live 실행 중 다른 모드로 전환 시 Live 중단
+			if (this._currentMode === 'live' && SNW.AiLive && SNW.AiLive.isConnected()) {
+				SNW.AiLive.stopSession();
+			}
+
+			this._currentMode = mode;
+
+			const restBtn = this.el.querySelector('[data-mode-btn="rest"]');
+			const liveBtn = this.el.querySelector('[data-mode-btn="live"]');
+			const restView = this.el.querySelector('[data-view="rest"]');
+			const liveView = this.el.querySelector('[data-view="live"]');
+
+			if (mode === 'live') {
+				if (restBtn) restBtn.className = 'snw-btn snw-btn--sm snw-btn--ghost';
+				if (liveBtn) liveBtn.className = 'snw-btn snw-btn--sm snw-btn--primary';
+				if (restView) restView.style.display = 'none';
+				if (liveView) liveView.style.display = 'block';
+			} else {
+				if (restBtn) restBtn.className = 'snw-btn snw-btn--sm snw-btn--primary';
+				if (liveBtn) liveBtn.className = 'snw-btn snw-btn--sm snw-btn--ghost';
+				if (restView) restView.style.display = 'block';
+				if (liveView) liveView.style.display = 'none';
+			}
+		}
+
+		async _onLiveToggle() {
+			if (!SNW.AiLive || !SNW.AiLive.isSupported()) {
+				SNW.Toast.show(SNW.I18n.t('ai.voiceNotSupported'), 'warn');
+				return;
+			}
+
+			const liveBtn = this.el.querySelector('[data-action="live-toggle"]');
+			const orb = this.el.querySelector('[data-slot="live-orb"]');
+			const statusText = this.el.querySelector('[data-slot="live-status"]');
+			const transcriptBox = this.el.querySelector('[data-slot="live-transcript"]');
+			const actionsLog = this.el.querySelector('[data-slot="live-actions"]');
+
+			if (SNW.AiLive.isConnected() || SNW.AiLive.isConnecting()) {
+				SNW.AiLive.stopSession();
+				if (liveBtn) liveBtn.textContent = SNW.I18n.t('ai.liveStart');
+				if (statusText) statusText.textContent = SNW.I18n.t('ai.liveStart');
+				if (orb) {
+					orb.style.transform = 'scale(1)';
+					orb.style.boxShadow = '0 0 20px rgba(59,130,246,0.5)';
+				}
+				return;
+			}
+
+			// 상한 사전 검사
+			if (this._liveCostStatus && this._liveCostStatus.level === 'cap') {
+				SNW.Toast.show(SNW.I18n.t('ai.dailyCapReached'), 'error');
+				this._switchMode('rest');
+				return;
+			}
+
+			if (statusText) statusText.textContent = SNW.I18n.t('ai.liveConnecting');
+			if (liveBtn) liveBtn.textContent = SNW.I18n.t('ai.liveStop');
+
+			try {
+				await SNW.AiLive.startSession({
+					onStateChange: (state) => {
+						if (!this._active) return;
+						if (state === 'connected' || state === 'listening') {
+							if (statusText) statusText.textContent = SNW.I18n.t('ai.liveConnected');
+							if (orb) orb.style.background = 'linear-gradient(135deg, #10b981, #06b6d4)';
+						} else if (state === 'speaking') {
+							if (statusText) statusText.textContent = SNW.I18n.t('ai.liveSpeaking');
+							if (orb) orb.style.background = 'linear-gradient(135deg, #f59e0b, #ef4444)';
+						} else if (state === 'executing') {
+							if (statusText) statusText.textContent = SNW.I18n.t('ai.actionDone');
+						} else if (state === 'idle' || state === 'closed') {
+							if (statusText) statusText.textContent = SNW.I18n.t('ai.liveStart');
+							if (liveBtn) liveBtn.textContent = SNW.I18n.t('ai.liveStart');
+							if (orb) {
+								orb.style.transform = 'scale(1)';
+								orb.style.background = 'linear-gradient(135deg, #3b82f6, #8b5cf6)';
+								orb.style.boxShadow = '0 0 20px rgba(59,130,246,0.5)';
+							}
+						}
+					},
+					onText: (text, isComplete) => {
+						if (!transcriptBox) return;
+						if (text) {
+							transcriptBox.textContent += text;
+							transcriptBox.scrollTop = transcriptBox.scrollHeight;
+						}
+						if (isComplete) {
+							transcriptBox.textContent += '\n';
+						}
+					},
+					onToolCall: (name, args, res) => {
+						if (!actionsLog) return;
+						const item = document.createElement('div');
+						item.textContent = `✓ ${name}: ${JSON.stringify(res || {})}`;
+						actionsLog.appendChild(item);
+					},
+					onVolume: (level) => {
+						if (!orb) return;
+						const scale = 1.0 + level * 0.45;
+						const blur = 20 + level * 30;
+						orb.style.transform = `scale(${scale.toFixed(2)})`;
+						orb.style.boxShadow = `0 0 ${blur.toFixed(0)}px rgba(59,130,246,0.8)`;
+					},
+					onCostUpdate: (costData) => {
+						this._updateCostBadge(costData);
+					},
+					onError: (err) => {
+						SNW.Toast.show(err.message || 'Live Voice error', 'error');
+					}
+				});
+			} catch (e) {
+				if (statusText) statusText.textContent = SNW.I18n.t('ai.liveStart');
+				if (liveBtn) liveBtn.textContent = SNW.I18n.t('ai.liveStart');
+				SNW.Toast.show(e.message || 'Live connection failed', 'error');
+			}
+		}
+
+		_renderHistory() {
+			const wrap = this.el.querySelector('[data-slot="messages"]');
+			if (!wrap || !this._history) return;
+			wrap.innerHTML = '';
+			for (const item of this._history) {
+				this._appendMessage(item.role, item.text, false);
+			}
+		}
+
+		_onClearHistory() {
+			if (SNW.AIClient) {
+				SNW.AIClient.clearHistory();
+			}
+			this._history = [];
+			const wrap = this.el.querySelector('[data-slot="messages"]');
+			if (wrap) wrap.innerHTML = '';
+			SNW.Toast.show(SNW.I18n.t('ai.clearHistory'), 'info');
+		}
+
+		async _onVoiceToggle() {
+			if (!SNW.AIVoice || !SNW.AIVoice.isSTTSupported()) {
+				SNW.Toast.show(SNW.I18n.t('ai.voiceNotSupported'), 'warn');
+				return;
+			}
+
+			const vBtn = this.el.querySelector('[data-action="voice"]');
+			if (this._isListening) {
+				SNW.AIVoice.stopListening();
+				this._isListening = false;
+				if (vBtn) vBtn.classList.remove('snw-btn--active');
+				return;
+			}
+
+			this._isListening = true;
+			if (vBtn) vBtn.classList.add('snw-btn--active');
+			SNW.Toast.show(SNW.I18n.t('ai.voiceListening'), 'info');
+
+			try {
+				const res = await SNW.AIVoice.startListening();
+				this._isListening = false;
+				if (vBtn) vBtn.classList.remove('snw-btn--active');
+
+				if (res && res.transcript) {
+					const inp = this.el.querySelector('[data-slot="input"]');
+					if (inp) {
+						inp.value = res.transcript;
+						this._onSend(true); // 음성 모드로 전송
+					}
+				}
+			} catch (err) {
+				this._isListening = false;
+				if (vBtn) vBtn.classList.remove('snw-btn--active');
+				SNW.Toast.show(SNW.I18n.t('ai.micError'), 'error');
+			}
+		}
+
+		async _onSend(isVoiceMode = false) {
 			const inp = this.el.querySelector('[data-slot="input"]');
 			const msg = (inp && inp.value || '').trim();
 			if (!msg) return;
 			inp.value = '';
-			
-			this._appendMessage('user', msg);
-			this._appendMessage('assistant', SNW.I18n.t('ai.thinking'));
-			
+
+			this._appendMessage('user', msg, true);
+			this._appendMessage('assistant', SNW.I18n.t('ai.thinking'), false);
+
 			try {
-				const body = {
-					contents: [{ parts: [{ text: msg }] }]
-				};
-				const res = await SNW.Api.gemini(body);
-				if (!this._active) return;
-				
-				let text = '';
-				try {
-					const candidates = res && res.candidates;
-					if (candidates && candidates[0] && candidates[0].content &&
-						candidates[0].content.parts && candidates[0].content.parts[0]) {
-						text = candidates[0].content.parts[0].text || '';
-					} else if (typeof res === 'string') {
-						text = res;
-					} else if (res && res.text) {
-						text = res.text;
+				let resText = '';
+				let speechHint = '';
+				let actions = [];
+
+				if (SNW.AIClient) {
+					const res = await SNW.AIClient.send(msg, this._history, {
+						lang: SNW.I18n.currentLang || 'ko',
+						voiceMode: isVoiceMode
+					});
+					if (!this._active) return;
+
+					if (res) {
+						resText = res.text || '';
+						speechHint = res._speechHint || resText;
+						actions = res.actions || [];
 					}
-				} catch {}
-				
-				if (!text) text = '(no response)';
-				this._replaceLastAssistant(text);
+				} else {
+					// 폴백
+					const res = await SNW.Api.gemini({ message: msg });
+					if (!this._active) return;
+					resText = (res && res.text) || '(no response)';
+				}
+
+				if (!resText) resText = '(no response)';
+
+				this._replaceLastAssistant(resText, actions);
+
+				// 대화 이력 업데이트 및 저장
+				this._history.push({ role: 'assistant', text: resText });
+				if (SNW.AIClient) {
+					SNW.AIClient.saveHistory(this._history);
+				}
+
+				// TTS 음성 출력
+				if (speechHint && SNW.AIVoice && SNW.AIVoice.isTTSSupported()) {
+					SNW.AIVoice.speak(speechHint);
+				}
+
 			} catch (e) {
-				this._replaceLastAssistant('[ERROR] ' + (e.message || 'failed'));
+				this._replaceLastAssistant('[ERROR] ' + (e.message || 'failed'), []);
 				SNW.ErrorHandler.handle(e, 'ai.send');
 			}
 		}
-		
-		_appendMessage(role, text) {
+
+		_appendMessage(role, text, saveToHistory = false) {
 			const wrap = this.el.querySelector('[data-slot="messages"]');
 			if (!wrap) return;
 			const cls = role === 'user' ? 'is-user' : 'is-assistant';
@@ -8539,21 +9917,39 @@ SNW.Page = SNW.Page || {};
                     <div class="snw-ai-bubble">${text}</div>
                 </div>`);
 			wrap.scrollTop = wrap.scrollHeight;
+
+			if (saveToHistory) {
+				this._history.push({ role, text });
+				if (SNW.AIClient) {
+					SNW.AIClient.saveHistory(this._history);
+				}
+			}
 		}
-		
-		_replaceLastAssistant(text) {
+
+		_replaceLastAssistant(text, actions = []) {
 			const wrap = this.el.querySelector('[data-slot="messages"]');
 			if (!wrap) return;
 			const list = wrap.querySelectorAll('.snw-ai-msg.is-assistant');
 			const last = list[list.length - 1];
 			if (last) {
 				const bubble = last.querySelector('.snw-ai-bubble');
-				if (bubble) bubble.textContent = text;
+				if (bubble) {
+					let actionHtml = '';
+					if (actions && actions.length > 0) {
+						actionHtml = `<div class="snw-ai-actions" style="margin-top:6px;padding-top:6px;border-top:1px dashed rgba(255,255,255,0.2);font-size:0.85em;color:#4ade80;">`;
+						for (const a of actions) {
+							actionHtml += `<div>✓ ${SNW.DomUtil.escape(a.name)}: ${SNW.DomUtil.escape(a.result)}</div>`;
+						}
+						actionHtml += `</div>`;
+					}
+					bubble.innerHTML = `${SNW.DomUtil.escape(text)}${actionHtml}`;
+				}
 			}
 			wrap.scrollTop = wrap.scrollHeight;
 		}
 	};
 })(window.SNW);
+
 
 /* ---- 290.page.automation.js (3405 bytes) ---- */
 // =========================================================
@@ -10167,7 +11563,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ===== LAYER 3 ===== */
+/* ===== LAYER 3: Info & Profiles ===== */
 
 /* ---- 300.page.info.js (3551 bytes) ---- */
 // =========================================================
@@ -10401,7 +11797,7 @@ SNW.Page = SNW.Page || {};
     };
 })(window.SNW);
 
-/* ===== LAYER 9 ===== */
+/* ===== LAYER 9: App Bootstrap, Onboarding & Overlays ===== */
 
 /* ---- 998.onboarding.js (10532 bytes) ---- */
 // =========================================================
@@ -11305,5 +12701,369 @@ window.SNW = window.SNW || {};
     }
 
 })(window.SNW);
+
+
+
+/* ---- 999b.ai-sheet.js (11431 bytes) ---- */
+/*
+ * ------------------------------------------------------
+ * 소스명 : 999b.ai-sheet.js
+ * 모듈약어 : SNW.AISheet
+ * 모듈명 : Smart Nature Wind Global Floating AI Voice Sheet (FAB)
+ * ------------------------------------------------------
+ * 기능 요약:
+ *  - 어느 화면에서나 AI 음성 제어를 호출할 수 있는 전역 플로팅 액션 버튼 (FAB)
+ *  - 슬라이드업 바텀 시트 오버레이 (REST 자연어 제어 & Gemini Live 실시간 음성)
+ *  - 빠른 실행 칩 (Quick chips), 실시간 발화 상태, 도구 실행 피드백
+ * ------------------------------------------------------
+ */
+
+(function (window, SNW) {
+	'use strict';
+
+	SNW = SNW || {};
+	window.SNW = SNW;
+
+	let _initialized = false;
+	let _visible = false;
+	let _mode = 'rest'; // 'rest' | 'live'
+	let _fabEl = null;
+	let _sheetEl = null;
+	let _history = [];
+
+	const AISheet = {
+		init() {
+			if (_initialized) return;
+			_initialized = true;
+
+			_mode = localStorage.getItem('snw.ai.mode') || 'rest';
+
+			this._renderFAB();
+			this._renderSheet();
+			this._bindEvents();
+
+			// 옵션 웨이크워드 연동
+			if (SNW.AIVoice && SNW.AIVoice.isSTTSupported()) {
+				SNW.AIVoice.startWakeDetection({
+					onWake: () => {
+						this.open();
+						if (SNW.Toast) SNW.Toast.show(SNW.I18n ? SNW.I18n.t('ai.voiceListening') : 'Listening...', 'info');
+					}
+				});
+			}
+
+			SNW.LogUtil ? SNW.LogUtil.info('[AISheet] Global AI FAB sheet initialized') : console.log('[AISheet] Initialized');
+		},
+
+		_renderFAB() {
+			_fabEl = document.createElement('button');
+			_fabEl.type = 'button';
+			_fabEl.className = 'snw-ai-fab';
+			_fabEl.setAttribute('aria-label', 'AI Assistant');
+			_fabEl.innerHTML = '🎙️';
+			_fabEl.style.cssText = `
+				position: fixed;
+				bottom: 72px;
+				right: 20px;
+				width: 54px;
+				height: 54px;
+				border-radius: 50%;
+				background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+				color: #ffffff;
+				border: none;
+				box-shadow: 0 4px 14px rgba(0,0,0,0.3), 0 0 10px rgba(59,130,246,0.5);
+				font-size: 24px;
+				cursor: pointer;
+				z-index: 999;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+			`;
+
+			_fabEl.addEventListener('mouseenter', () => {
+				_fabEl.style.transform = 'scale(1.08)';
+			});
+			_fabEl.addEventListener('mouseleave', () => {
+				_fabEl.style.transform = 'scale(1)';
+			});
+			_fabEl.addEventListener('click', () => {
+				this.toggle();
+			});
+
+			document.body.appendChild(_fabEl);
+		},
+
+		_renderSheet() {
+			_sheetEl = document.createElement('div');
+			_sheetEl.className = 'snw-ai-sheet-container';
+			_sheetEl.style.cssText = `
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: rgba(0,0,0,0.5);
+				backdrop-filter: blur(4px);
+				z-index: 1000;
+				display: none;
+				opacity: 0;
+				transition: opacity 0.25s ease;
+				justify-content: center;
+				align-items: flex-end;
+			`;
+
+			const placeholderText = SNW.I18n ? SNW.I18n.t('ai.placeholder') : 'Ask anything...';
+			const sendText = SNW.I18n ? SNW.I18n.t('ai.send') : 'Send';
+			const titleText = SNW.I18n ? SNW.I18n.t('ai.title') : 'AI Assistant';
+
+			_sheetEl.innerHTML = `
+				<div class="snw-ai-sheet" style="
+					width: 100%;
+					max-width: 600px;
+					max-height: 82vh;
+					background: var(--bg-card, #1e293b);
+					border-top-left-radius: 20px;
+					border-top-right-radius: 20px;
+					box-shadow: 0 -8px 24px rgba(0,0,0,0.4);
+					display: flex;
+					flex-direction: column;
+					padding: 16px;
+					transform: translateY(100%);
+					transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+				">
+					<!-- Header -->
+					<div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.1);">
+						<div style="display:flex;align-items:center;gap:8px;">
+							<span style="font-size:1.2rem;font-weight:700;">✨ ${titleText}</span>
+							<span class="snw-badge snw-badge--info" data-slot="sheet-cost" style="display:none;font-size:0.75rem;"></span>
+						</div>
+						<button type="button" class="snw-btn snw-btn--ghost snw-btn--sm" data-action="sheet-close" style="font-size:1.2rem;line-height:1;padding:4px 8px;">✕</button>
+					</div>
+
+					<!-- Quick Chips -->
+					<div style="display:flex;gap:6px;overflow-x:auto;padding:10px 0;scrollbar-width:none;">
+						<button type="button" class="snw-btn snw-btn--sm" data-quick="바다 바람 틀어줘">바다 바람</button>
+						<button type="button" class="snw-btn snw-btn--sm" data-quick="30분 후 꺼줘">30분 후 꺼줘</button>
+						<button type="button" class="snw-btn snw-btn--sm" data-quick="스케줄대로 해줘">스케줄 복귀</button>
+						<button type="button" class="snw-btn snw-btn--sm" data-quick="팬 정지">정지</button>
+					</div>
+
+					<!-- Messages List -->
+					<div data-slot="sheet-messages" style="flex:1;overflow-y:auto;min-height:180px;max-height:360px;margin-bottom:12px;display:flex;flex-direction:column;gap:8px;padding-right:4px;"></div>
+
+					<!-- Input Bar -->
+					<div style="display:flex;gap:8px;align-items:center;">
+						<input type="text" data-slot="sheet-input" placeholder="${placeholderText}" style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.2);color:#fff;outline:none;" />
+						<button type="button" class="snw-btn snw-btn--secondary" data-action="sheet-mic" style="border-radius:12px;padding:10px 14px;">🎤</button>
+						<button type="button" class="snw-btn snw-btn--primary" data-action="sheet-send" style="border-radius:12px;padding:10px 16px;">${sendText}</button>
+					</div>
+				</div>
+			`;
+
+			document.body.appendChild(_sheetEl);
+		},
+
+		_bindEvents() {
+			// 바깥 영역 클릭 시 닫기
+			_sheetEl.addEventListener('click', (e) => {
+				if (e.target === _sheetEl) this.close();
+			});
+
+			const closeBtn = _sheetEl.querySelector('[data-action="sheet-close"]');
+			if (closeBtn) closeBtn.addEventListener('click', () => this.close());
+
+			const sendBtn = _sheetEl.querySelector('[data-action="sheet-send"]');
+			const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
+			const micBtn = _sheetEl.querySelector('[data-action="sheet-mic"]');
+
+			if (sendBtn) sendBtn.addEventListener('click', () => this._onSend());
+			if (inputEl) {
+				inputEl.addEventListener('keydown', (e) => {
+					if (e.key === 'Enter') {
+						e.preventDefault();
+						this._onSend();
+					}
+				});
+			}
+
+			if (micBtn) {
+				micBtn.addEventListener('click', () => this._onVoiceInput());
+			}
+
+			// 퀵 칩 이벤트
+			const chips = _sheetEl.querySelectorAll('[data-quick]');
+			chips.forEach(chip => {
+				chip.addEventListener('click', () => {
+					const val = chip.getAttribute('data-quick');
+					if (inputEl) {
+						inputEl.value = val;
+						this._onSend();
+					}
+				});
+			});
+		},
+
+		open() {
+			if (_visible) return;
+			_visible = true;
+			_sheetEl.style.display = 'flex';
+			requestAnimationFrame(() => {
+				_sheetEl.style.opacity = '1';
+				const inner = _sheetEl.querySelector('.snw-ai-sheet');
+				if (inner) inner.style.transform = 'translateY(0)';
+			});
+
+			if (SNW.AIClient) {
+				_history = SNW.AIClient.loadHistory();
+				this._renderMessages();
+			}
+
+			const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
+			if (inputEl) setTimeout(() => inputEl.focus(), 300);
+		},
+
+		close() {
+			if (!_visible) return;
+			_visible = false;
+			_sheetEl.style.opacity = '0';
+			const inner = _sheetEl.querySelector('.snw-ai-sheet');
+			if (inner) inner.style.transform = 'translateY(100%)';
+			setTimeout(() => {
+				if (!_visible) _sheetEl.style.display = 'none';
+			}, 300);
+		},
+
+		toggle() {
+			if (_visible) this.close();
+			else this.open();
+		},
+
+		_renderMessages() {
+			const box = _sheetEl.querySelector('[data-slot="sheet-messages"]');
+			if (!box) return;
+			box.innerHTML = '';
+			const recent = _history.slice(-10);
+			for (const m of recent) {
+				this._appendBubble(m.role, m.text);
+			}
+			box.scrollTop = box.scrollHeight;
+		},
+
+		_appendBubble(role, text) {
+			const box = _sheetEl.querySelector('[data-slot="sheet-messages"]');
+			if (!box) return;
+
+			const bubble = document.createElement('div');
+			const isUser = (role === 'user');
+			bubble.style.cssText = `
+				align-self: ${isUser ? 'flex-end' : 'flex-start'};
+				max-width: 82%;
+				padding: 8px 12px;
+				border-radius: 12px;
+				font-size: 0.92rem;
+				line-height: 1.4;
+				background: ${isUser ? '#3b82f6' : 'rgba(255,255,255,0.08)'};
+				color: #fff;
+				word-break: break-word;
+			`;
+			bubble.textContent = text;
+			box.appendChild(bubble);
+			box.scrollTop = box.scrollHeight;
+		},
+
+		async _onSend() {
+			const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
+			const msg = (inputEl && inputEl.value || '').trim();
+			if (!msg) return;
+			inputEl.value = '';
+
+			this._appendBubble('user', msg);
+			_history.push({ role: 'user', text: msg });
+			if (SNW.AIClient) SNW.AIClient.saveHistory(_history);
+
+			this._appendBubble('assistant', '🤔 ...');
+
+			try {
+				let reply = '';
+				let hint = '';
+				let actions = [];
+
+				if (SNW.AIClient) {
+					const res = await SNW.AIClient.send(msg, _history, {
+						lang: (SNW.I18n && SNW.I18n.currentLang) || 'ko',
+						voiceMode: false
+					});
+					reply = (res && res.text) || '(no response)';
+					hint = (res && res._speechHint) || reply;
+					actions = (res && res.actions) || [];
+				} else if (SNW.API && SNW.API.gemini) {
+					const res = await SNW.API.gemini({ message: msg });
+					reply = (res && res.text) || '(no response)';
+				}
+
+				this._updateLastBubble(reply, actions);
+				_history.push({ role: 'assistant', text: reply });
+				if (SNW.AIClient) SNW.AIClient.saveHistory(_history);
+
+				// TTS 발화
+				if (hint && SNW.AIVoice && SNW.AIVoice.isTTSSupported()) {
+					SNW.AIVoice.speak(hint);
+				}
+			} catch (e) {
+				this._updateLastBubble('❌ ' + (e.message || 'Error'));
+			}
+		},
+
+		_updateLastBubble(text, actions = []) {
+			const box = _sheetEl.querySelector('[data-slot="sheet-messages"]');
+			if (!box) return;
+			const bubbles = box.querySelectorAll('div');
+			const last = bubbles[bubbles.length - 1];
+			if (last) {
+				let actionStr = '';
+				if (actions && actions.length > 0) {
+					actionStr = '\n' + actions.map(a => `✓ ${a.name}: ${a.result}`).join('\n');
+				}
+				last.textContent = text + actionStr;
+			}
+			box.scrollTop = box.scrollHeight;
+		},
+
+		async _onVoiceInput() {
+			if (!SNW.AIVoice || !SNW.AIVoice.isSTTSupported()) {
+				if (SNW.Toast) SNW.Toast.show('Voice input not supported', 'warn');
+				return;
+			}
+
+			const micBtn = _sheetEl.querySelector('[data-action="sheet-mic"]');
+			if (micBtn) micBtn.style.background = '#ef4444';
+
+			try {
+				const res = await SNW.AIVoice.startListening();
+				if (micBtn) micBtn.style.background = '';
+				if (res && res.transcript) {
+					const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
+					if (inputEl) {
+						inputEl.value = res.transcript;
+						this._onSend();
+					}
+				}
+			} catch (e) {
+				if (micBtn) micBtn.style.background = '';
+			}
+		}
+	};
+
+	SNW.AISheet = AISheet;
+
+	// 앱 부팅 시 자동 초기화
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', () => AISheet.init());
+	} else {
+		AISheet.init();
+	}
+
+})(window, window.SNW);
 
 

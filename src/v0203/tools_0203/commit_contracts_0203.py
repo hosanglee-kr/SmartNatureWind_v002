@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-src/v0203/contract_doc_0200 커밋 스크립트 (Python 3.7+ 크로스 플랫폼) - v0203 도구
+src/v0203/contract_doc_0203 커밋 스크립트 (Python 3.7+ 크로스 플랫폼) - v0203 도구
 
 기능:
   1. git 저장소 루트 자동 감지 (git rev-parse --show-toplevel)
@@ -41,12 +41,15 @@ REQUIRED_FILES: Tuple[str, ...] = (
 )
 
 # 선택 문서 (--strict 시 필수화)
-#  - 현재 빈 튜플: Ref/UI_TERMINOLOGY_0203.md 는 향후 프론트엔드 정리 시 작성 예정
-#  - 파일 실제 작성 후 아래 형태로 등록하면 --strict gate가 자동 활성화됨:
-#      OPTIONAL_FILES = (
-#          "src/v0203/contract_doc_0203/Ref/UI_TERMINOLOGY_0203.md",
-#      )
-OPTIONAL_FILES: Tuple[str, ...] = ()
+OPTIONAL_FILES: Tuple[str, ...] = (
+    "src/v0203/contract_doc_0203/Ref/UI_TERMINOLOGY_0170.md",
+)
+
+# 연계 참조 문서 (미커밋 시 알림용)
+RELATED_DOCS: Tuple[str, ...] = (
+    "src/v0203/User_Manual_0203/UserManual_0203_002.md",
+    "AGENTS.md",
+)
 
 DEFAULT_MSG = "src/v0203/contract_doc_0203: 계약 문서 갱신"
 CONTRACTS_REL = "src/v0203/contract_doc_0203"
@@ -139,7 +142,7 @@ def verify_required_files(repo_root: Path, strict: bool) -> None:
 # ============================================================
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="src/v0203/contract_doc_0200 커밋 스크립트 (Python 크로스 플랫폼)",
+        description="src/v0203/contract_doc_0203 커밋 스크립트 (Python 크로스 플랫폼)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "예시:\n"
@@ -152,7 +155,7 @@ def main() -> int:
     parser.add_argument(
         "-m", "--message",
         default=DEFAULT_MSG,
-        help="커밋 메시지 (기본값: 'src/v0203/contract_doc_0200: 계약 문서 갱신')",
+        help="커밋 메시지 (기본값: 'src/v0203/contract_doc_0203: 계약 문서 갱신')",
     )
     parser.add_argument(
         "-n", "--dry-run",
@@ -190,6 +193,18 @@ def main() -> int:
         print(status.stdout, end="")
     else:
         _info("  (변경 사항 없음)")
+
+    # 연계 문서 변경 감지 안내
+    rel_changed = []
+    for rdoc in RELATED_DOCS:
+        s = _run(["git", "status", "--short", rdoc], cwd=repo_root, check=False)
+        if s.stdout.strip():
+            rel_changed.append(rdoc)
+    if rel_changed:
+        _info()
+        _info("  [참고] 연계 문서 변경 감지 (계약 외 별도 커밋 권장):")
+        for rc in rel_changed:
+            _info(f"    * {rc}")
 
     if args.dry_run:
         _info()

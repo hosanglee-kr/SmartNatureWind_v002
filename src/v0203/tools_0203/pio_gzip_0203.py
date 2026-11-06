@@ -1,26 +1,28 @@
 #!/usr/bin/env python3
 """
-Smart Nature Wind v0203 — SPA Web Staging + Offline Zip (최종 완성본)
+Smart Nature Wind v0203 — SPA Web Staging + Offline Zip (Stage 8 AI / 54 JS + 18 CSS)
 
 [경로 정책]
   - HTML/JS/CSS 원본 : src/v0203/data_v0203_src/html_v0203/ (하위 폴더 구조 지원)
       ├── index.html
-      ├── css/ (개별 CSS)
+      ├── css/ (18개 개별 CSS)
       └── js/
-          ├── core/ (기반/유틸/서비스)
-          ├── app/  (페이지/부트스트랩)
+          ├── core/ (기반/유틸/서비스, 145~147 AI/Live 및 AudioWorklet 포함)
+          ├── app/  (페이지/부트스트랩, 290.page.ai, 999b.ai-sheet 포함)
+          ├── 998.offline_data_0203.js (JSON Mock 캐시 - 배포 제외)
           └── 998.offline_0203.js (오프라인 어댑터 - 로컬 검증용, 배포 제외)
-  - JSON 원본 : src/v0203/data_v0203_src/json/
+  - JSON 원본 : src/v0203/data_v0203_src/json/ (9종)
   - 배포 스테이징 : src/v0203/data_v0203/
   - 오프라인 zip : <project>/dist/
 
 [파이프라인 (6단계)]
-  [1/6] JS 번들       : **/*.js (번호순 정렬, 번들 제외 파일 필터링) → P010_bundle_0203.js (+ .gz)
-  [2/6] CSS 번들      : **/_*.css (번호순 정렬) → P000_common_0203.css (+ .gz)
+  [0/6] 데이터 동기화 : i18n CI gate, C++ Enum ➔ 000.const.js, JSON ➔ 998.offline_data_0203.js
+  [1/6] JS 번들       : **/*.js (54개 파일 번호순 정렬, 오프라인 2종 제외) → P010_bundle_0203.js (+ .gz)
+  [2/6] CSS 번들      : **/_*.css (18개 파일 번호순 정렬) → P000_common_0203.css (+ .gz)
   [3/6] HTML Shell    : index.html → index.html (+ .gz)
-  [4/6] 기타 자산     : 이미지/폰트 등 복사. (998.offline_0203.js는 배포 제외)
-  [5/6] JSON 복사     : data_v0203_src/json/*.json → data_v0203/json/*.json
-  [6/6] 오프라인 zip  : data_v0203/ 전체 압축
+  [4/6] 기타 자산     : 이미지/폰트 등 복사 (오프라인 2종 배포 제외)
+  [5/6] JSON 복사     : data_v0203_src/json/*.json (9종) → data_v0203/json/*.json
+  [6/6] 오프라인 zip  : data_v0203/ 전체 압축 (dist/)
 
 [특이사항]
   - 번들 결과물(JS, CSS raw)을 소스 폴더에도 동기화하여 Live Server 등으로 로컬 UI 즉시 검증 지원.
@@ -290,9 +292,17 @@ def build_js_bundle(src_dir: Path, dst_dir: Path) -> int:
         size = len(content.encode("utf-8"))
         total_raw += size
 
+        LAYER_MAP = {
+            "0": "Core (Constants, Config, I18n, Utilities)",
+            "1": "UI Components & Services (AudioWorklet, AI Live)",
+            "2": "Pages (Dashboard, Chart, Studio, AI, Automation)",
+            "3": "Info & Profiles",
+            "9": "App Bootstrap, Onboarding & Overlays",
+        }
         layer = f.name.split(".")[0][:1] if f.name[0].isdigit() else "?"
         if layer != prev_layer:
-            parts.append(f"\n/* ===== LAYER {layer} ===== */\n")
+            desc = LAYER_MAP.get(layer, layer)
+            parts.append(f"\n/* ===== LAYER {layer}: {desc} ===== */\n")
             prev_layer = layer
 
         parts.append(f"\n/* ---- {f.name} ({size} bytes) ---- */\n")

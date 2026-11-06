@@ -130,15 +130,31 @@ def collect_used_keys(root: Path) -> dict[str, set[str]]:
     return used
 
 
-def collect_defined_keys(root: Path) -> set[str]:
-    """i18n.js DICT에 정의된 키 전체"""
+def collect_defined_keys_by_lang(root: Path) -> tuple[set[str], set[str]]:
+    """i18n.js DICT에서 ko 및 en 키를 각각 수집. 반환: (ko_keys, en_keys)"""
     fp = root / I18N_FILE
     if not fp.is_file():
         print(f"[ERROR] i18n 파일 없음: {fp}", file=sys.stderr)
         sys.exit(EXIT_IO)
 
     content = fp.read_text(encoding="utf-8", errors="replace")
-    return set(RE_DICT_KEY.findall(content))
+    parts = re.split(r"^\s*en\s*:\s*\{", content, maxsplit=1, flags=re.MULTILINE)
+    if len(parts) == 2:
+        ko_text, en_text = parts[0], parts[1]
+        ko_keys = set(RE_DICT_KEY.findall(ko_text))
+        en_keys = set(RE_DICT_KEY.findall(en_text))
+    else:
+        all_keys = set(RE_DICT_KEY.findall(content))
+        ko_keys = all_keys
+        en_keys = all_keys
+
+    return ko_keys, en_keys
+
+
+def collect_defined_keys(root: Path) -> set[str]:
+    """i18n.js DICT에 정의된 키 전체 (하위 호환)"""
+    ko_keys, en_keys = collect_defined_keys_by_lang(root)
+    return ko_keys & en_keys
 
 
 def check_missing(used_map: dict[str, set[str]], defined: set[str]) -> dict[str, list[str]]:
@@ -155,8 +171,8 @@ def check_missing(used_map: dict[str, set[str]], defined: set[str]) -> dict[str,
 # main
 # ============================================================
 def main() -> int:
-    parser = argparse.ArgumentParser(description="i18n DICT 완전성 검증")
-    parser.add_argument("--strict", action="store_true", help="미정의 키 발견 시 exit 1")
+    parser = argparse.ArgumentParser(description="i18n DICT 완전성 검증 (ko/en 대칭성 및 코드 참조 검사)")
+    parser.add_argument("--strict", action="store_true", help="미정의 키 또는 ko/en 불일치 발견 시 exit 1")
     parser.add_argument("--verbose", action="store_true", help="모든 사용 키 개수 출력")
     args = parser.parse_args()
 
@@ -164,25 +180,64 @@ def main() -> int:
     root       = find_repo_root(script_dir)
 
     used_map = collect_used_keys(root)
-    defined  = collect_defined_keys(root)
+    ko_keys, en_keys = collect_defined_keys_by_lang(root)
+    defined  = ko_keys & en_keys
 
     total_used = sum(len(v) for v in used_map.values())
     unique_used = len(set().union(*used_map.values())) if used_map else 0
 
+    ko_only = sorted(ko_keys - en_keys)
+    en_only = sorted(en_keys - ko_keys)
+    has_asymmetry = bool(ko_only or en_only)
+
     print("=" * 64)
-    print(f" i18n DICT 완전성 검증")
+    print(f" i18n DICT 완전성 & ko/en 대칭성 검증 (CI Gate)")
     print(f" 검사 파일: {len(used_map)}개")
     print(f" 총 사용(중복 포함): {total_used}건")
     print(f" 고유 사용: {unique_used}개")
-    print(f" 정의된 키: {len(defined)}개")
+    print(f" 정의된 키: ko={len(ko_keys)}개, en={len(en_keys)}개 (공통={len(defined)}개)")
     print("=" * 64)
 
+    # 1. ko/en 대칭성 리포트
+    if has_asymmetry:
+        print("\n[WARN] ko / en DICT 키 불일치 발견:")
+        if ko_only:
+            print(f"  - ko에만 존재 ({len(ko_only)}개): {', '.join(ko_only[:10])}{' ...' if len(ko_only) > 10 else ''}")
+        if en_only:
+            print(f"  - en에만 존재 ({len(en_only)}개): {', '.join(en_only[:10])}{' ...' if len(en_only) > 10 else ''}")
+    else:
+        print(" [OK] ko/en DICT 키 100% 대칭 일치")
+
+    # 2. 코드 참조 키 정의 검증
     missing = check_missing(used_map, defined)
     total_missing = sum(len(v) for v in missing.values())
 
-    if total_missing == 0:
-        print(f"\n[OK] 모든 {unique_used}개 키가 정의되어 있습니다.")
+    if total_missing > 0:
+        print(f"\n[FAIL] {total_missing}개 미정의 키 ({len(missing)}개 파일):\n")
+        for rel in sorted(missing.keys()):
+            print(f"  {rel}")
+            for k in missing[rel]:
+                print(f"    - {k}")
+            print()
+
+    # 판정
+    if total_missing == 0 and not has_asymmetry:
+        print(f"\n[OK] 코드에서 참조하는 모든 {unique_used}개 키가 정의되어 있으며, ko/en 완전 대칭입니다.")
         return EXIT_OK
+
+    if total_missing == 0 and has_asymmetry:
+        print(f"\n[INFO] 참조 키는 모두 정의되어 있으나, ko/en 간 불일치가 존재합니다.")
+        if args.strict:
+            print("[STRICT] exit 1 (CI gate: ko/en 대칭성 위반)")
+            return EXIT_MISSING
+        return EXIT_OK
+
+    if args.strict:
+        print("[STRICT] exit 1 (CI gate)")
+        return EXIT_MISSING
+
+    print("[INFO] --strict 옵션으로 CI gate 활성화 가능")
+    return EXIT_OK
 
     print(f"\n[FAIL] {total_missing}개 미정의 키 ({len(missing)}개 파일):\n")
     for rel in sorted(missing.keys()):

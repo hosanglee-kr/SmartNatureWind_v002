@@ -7,7 +7,7 @@
 [![Firmware Version](https://img.shields.io/badge/Firmware-v0203%20(FW__2.0.3)-blue.svg)](src/v0203/contract_doc_0203/SPEC_0203.md)
 [![Target MCU](https://img.shields.io/badge/MCU-ESP32--S3--N16R8-orange.svg)](src/v0203/contract_doc_0203/BUDGET_0203.md)
 [![PlatformIO](https://img.shields.io/badge/Framework-PlatformIO%20%7C%20C%2B%2B17-green.svg)](platformio.ini)
-[![Architecture](https://img.shields.io/badge/Arch-FreeRTOS%20CBD%20v2.13--v3.0-purple.svg)](src/v0203/contract_doc_0203/CONTRACT_0203.md)
+[![Architecture](https://img.shields.io/badge/Arch-FreeRTOS%20CBD%20v2.14--v3.1-purple.svg)](src/v0203/contract_doc_0203/CONTRACT_0203.md)
 
 * **원작 오픈소스 프로젝트**: [WindScape by Tilman Griesel](https://github.com/TilmanGriesel/WindScape.git)
 * **현재 펌웨어 사양**: **v0203 (FW_Ver_2.0.3)** (ESP32-S3 / C++17 / FreeRTOS / PlatformIO 기반 단독 실행 임베디드 어플라이언스, C++ 소스 `_0203` 접미사)
@@ -19,7 +19,7 @@
 
 **Smart Nature Wind v0203**은 외부 홈오토메이션 서버(Home Assistant, ESPHome 등) 종속 없이, **ESP32-S3 기기 자체에서 완벽하게 단독 구동되는 풀스택 임베디드 웹 어플라이언스**입니다.
 
-기기 내부 플래시 메모리(LittleFS)에 탑재된 초경량 싱글 번들 웹서버, 실시간 WebSocket 물리 차트, 10종 자연풍 대기역학 프리셋 × 5종 스타일 조합, **Session FSM 기반 8스텝 작곡기(Wind Studio)**, **일본 기상청 표준 DI 기반 Comfort 추천**, 온습도(DHT22)·인체감지(PIR) 센서 연동 지능형 제어, 개인화 스케줄러 및 3단계 자동 꺼짐(Auto-Off) 보호 체계를 제공합니다.
+기기 내부 플래시 메모리(LittleFS)에 탑재된 초경량 싱글 번들 웹서버, 실시간 WebSocket 물리 차트, 10종 자연풍 대기역학 프리셋 × 5종 스타일 조합, **Session FSM 기반 8스텝 작곡기(Wind Studio)**, **일본 기상청 표준 DI 기반 Comfort 추천**, **Gemini AI 비서 & Live 실시간 양방향 음성**, 온습도(DHT22)·인체감지(PIR) 센서 연동 지능형 제어, 개인화 스케줄러 및 3단계 자동 꺼짐(Auto-Off) 보호 체계를 제공합니다.
 
 ---
 
@@ -29,21 +29,21 @@
 각 부문별 세부 회로도, 수치 모델, 동시성 계약, 상태 전이, API 규격 및 유지보수 절차는 아래의 상세 전문 문서를 참조하십시오.
 
 ### 1. 사용자 가이드 (User Manual)
-* 📖 [**Smart Nature Wind v0203 종합 사용자 매뉴얼 v2.8**](src/v0203/User_Manual_0203/UserManual_0203_002.md)
-  * 기기 설치, 배선, Wi-Fi(SoftAP/STA) 연결, 13대 웹 화면 조작법, 10대 프리셋 + 5대 스타일 상세 해설, 대시보드 3대 슬라이더 연동, Wind Studio 8스텝 작곡기, Session FSM & Now Playing Bar, Comfort DI 추천, Monitor 실시간/회고, 4단계 온보딩, 오프라인 시뮬레이션 데모 툴바, REST API/WebSocket 규격, 고장 진단 및 유지보수 가이드 수록.
+* 📖 [**Smart Nature Wind v0203 종합 사용자 매뉴얼 v2.9**](src/v0203/User_Manual_0203/UserManual_0203_002.md)
+  * 기기 설치, 배선, Wi-Fi(SoftAP/STA) 연결, 13대 웹 화면 조작법, 10대 프리셋 + 5대 스타일 상세 해설, 대시보드 3대 슬라이더 연동, Wind Studio 8스텝 작곡기, Session FSM & Now Playing Bar, Comfort DI 추천, Monitor 실시간/회고, **§13 Gemini AI 비서 & Live 실시간 음성(Aoede 보이스, Audio Orb, 웨이크워드, Barge-in, 12대 제어도구, 안심 가드레일, 전역 플로팅 마이크 FAB)**, 4단계 온보딩, 오프라인 시뮬레이션 데모 툴바, REST API/WebSocket 규격, 고장 진단 및 유지보수 가이드 수록.
 
 ### 2. 기술 사양 및 CBD 엔지니어링 계약서 (Engineering Contracts)
-* 📑 [**README_0203.md (계약 문서 세트 총괄 인덱스 v2.11)**](src/v0203/contract_doc_0203/README_0203.md)
-* 📐 [**SPEC_0203.md (종합 기술 사양서 v2.13)**](src/v0203/contract_doc_0203/SPEC_0203.md) : 하드웨어 핀맵, 25kHz PWM 타이밍, REST/WebSocket 인터페이스, §5.1.1 Session 응답 확장(`profileName`/`stepRemainSec`), §5.1.2 Runtime(NVS) top-level 노출, §5.1.3 `/control/override` 폐지, §6.1 ADR 1~6, Gzip Level 9 정적 에셋 파이프라인 (총 115.9 KB 번들) 및 오프라인 모듈 분리 규격.
-* 🤝 [**CONTRACT_0203.md (동시성 계약서 v3.0)**](src/v0203/contract_doc_0203/CONTRACT_0203.md) : FreeRTOS 5대 태스크 구조, 우선순위, Mutex 소유권 및 데드락 방지, §3.2 Session 위임 락 순서, §7.10 Phase 1~6 감사 이력(46건), Batch I 물리 파라미터 직접 지정 계약(OVR-1~OVR-4), SYNC-1~SYNC-3.
-* 🔄 [**STATE_0203.md (상태 및 7-State + Session 3-State FSM 명세서 v3.0)**](src/v0203/contract_doc_0203/STATE_0203.md) : §2.5 Session FSM ↔ runCtx FSM 관계(ADR-1), §6.4 Pause/Resume/Stop 라이프사이클, INIT / AP_CONFIG / STA_CONNECTING / RUNNING / SAFE_MODE / FIRMWARE_UPDATE / FACTORY_RESET 전이 표.
-* 🔀 [**FLOW_0203.md (실행 흐름도 및 시퀀스 다이어그램 v2.9)**](src/v0203/contract_doc_0203/FLOW_0203.md) : 부팅 시퀀스, HTTP/WS 처리 루프, §4.1 Session Start/Pause/Resume/Stop 시퀀스(ADR-1), §4.2 Schedule profileId 단일 실행(ADR-3), §4.3 Runtime(NVS) Export, §4.4 Settings→TM10 재적용(N-2).
-* ⏱️ [**BUDGET_0203.md (자원 및 WCET 예산 v2.8)**](src/v0203/contract_doc_0203/BUDGET_0203.md) : SRAM/PSRAM/Flash 메모리 버짓, 태스크별 WCET, §8.2.1 i18n 확장(+2.3KB gzip), §10.3 Phase 1~6 예산 영향, 프론트엔드 Gzip 예산 (115.9 KB / 1MB 한도 통과, RAM 33.3%, Flash 23.3%).
-* 🧪 [**TEST_PLAN_0203.md (회귀 테스트 및 검증 계획서 v3.0)**](src/v0203/contract_doc_0203/TEST_PLAN_0203.md) : 단위/통합/스트레스 테스트 케이스(T-90~T-112 Phase 1~6 신규) 및 **39대 필수 릴리스 게이트**.
+* 📑 [**README_0203.md (계약 문서 세트 총괄 인덱스 v2.13)**](src/v0203/contract_doc_0203/README_0203.md)
+* 📐 [**SPEC_0203.md (종합 기술 사양서 v2.14)**](src/v0203/contract_doc_0203/SPEC_0203.md) : 하드웨어 핀맵, 25kHz PWM 타이밍, REST/WebSocket 인터페이스, §5.1.4 Stage 8 AI 제어 & Gemini Live 8대 API 명세, 12대 안전도구 및 15종 위험명령 차단, ADR 1~8, Gzip Level 9 정적 에셋 파이프라인 (총 118.1 KB 번들) 및 오프라인 모듈 분리 규격.
+* 🤝 [**CONTRACT_0203.md (동시성 계약서 v3.1)**](src/v0203/contract_doc_0203/CONTRACT_0203.md) : FreeRTOS 5대 태스크 구조, 우선순위, Mutex 소유권 및 데드락 방지, §3.2 Session 위임 락 순서, §7.15 Stage 8 AI-1~AI-6 실시간 음성 안전 계약(15종 위험명령 차단, 30분 상한, NVS 4키 일일비용 가드레일, AudioWorklet Barge-in Flush), Batch I 물리 Override, SYNC-1~3.
+* 🔄 [**STATE_0203.md (상태 및 7-State + Session 3-State FSM 명세서 v3.1)**](src/v0203/contract_doc_0203/STATE_0203.md) : 상태 소유권 매트릭스(§1 `s_aiDailyUsage`/`s_promptCache`/`runtimeAutoOff` 확장), §2.5 Session FSM ↔ runCtx FSM 관계(ADR-1), §6.4 Pause/Resume/Stop 위임 라이프사이클, S10 물리 엔진 상태, §8 E-2 AI 분할 상태 소유권.
+* 🔀 [**FLOW_0203.md (실행 흐름도 및 시퀀스 다이어그램 v3.0)**](src/v0203/contract_doc_0203/FLOW_0203.md) : 부팅 시퀀스, HTTP/WS 처리 루프, §4.1 Session 위임 시퀀스, §13 Stage 8 AI 제어 & Gemini Live 양방향 음성 시퀀스(AudioWorklet 16k/24k, Barge-in, Tool Call 위임, NVS 일일 리셋), `pio_gzip_0203.py` 빌드 전처리/오프라인 부트스트랩 시퀀스.
+* ⏱️ [**BUDGET_0203.md (자원 및 WCET 예산 v2.9)**](src/v0203/contract_doc_0203/BUDGET_0203.md) : SRAM/PSRAM/Flash 메모리 버짓, 태스크별 WCET, §3 async_tcp AI 라우트 8종 WCET, §10.4 Stage 8 AI 자원 영향표, 프론트엔드 Gzip 예산 (118.1 KB / 1MB LittleFS, RAM 33.3%, Flash 23.5%).
+* 🧪 [**TEST_PLAN_0203.md (회귀 테스트 및 검증 계획서 v3.2)**](src/v0203/contract_doc_0203/TEST_PLAN_0203.md) : 단위/통합/스트레스 테스트 케이스(§3.5 T-114~T-120 Stage 8 AI 회귀 7건, 총 46건 필수 게이트, `test/e2e_stage8_4.py` 자동화 스크립트), §8 트러블슈팅 매트릭스.
 
 ### 3. 개발 환경 및 AI 에이전트 협업 가이드 (Developer & Agent Setup)
 * 🤖 [**AGENTS.md (개발 환경 및 에이전트 협업 가이드)**](AGENTS.md)
-  * ESP32-S3 PlatformIO 빌드/플래시 설정, C++ `_0203` 모듈 아키텍처, CBD v2.13~v3.0 계약 준수 및 에이전트 작업 원칙 안내.
+  * ESP32-S3 PlatformIO 빌드/플래시 설정, C++ `_0203` 모듈 아키텍처, CBD v2.14~v3.1 계약 준수 및 에이전트 필수 4대 불변 원칙 안내.
 
 ---
 
@@ -51,16 +51,17 @@
 
 1. [핵심 기능 (Key Features)](#-핵심-기능-key-features)
 2. [작동 모드 (Operating Modes)](#-작동-모드-operating-modes)
-3. [10종 자연풍 환경 프리셋 (Nature Presets)](#-10종-자연풍-환경-프리셋-nature-presets)
-4. [5종 바람 스타일 (Wind Styles)](#-5종-바람-스타일-wind-styles)
-5. [Session FSM & Wind Studio (v0203 신규)](#-session-fsm--wind-studio-v0203-신규)
-6. [빠른 시작 가이드 (Quick Start)](#-빠른-시작-가이드-quick-start)
-7. [하드웨어 구성 및 배선 (Hardware & Wiring)](#-하드웨어-구성-및-배선-hardware--wiring)
-8. [소프트웨어 빌드 및 배포 (Build & Setup)](#-소프트웨어-빌드-및-배포-build--setup)
-9. [웹 대시보드 및 시스템 구조 (Web Interface & System Architecture)](#-웹-대시보드-및-시스템-구조-web-interface--system-architecture)
-10. [대기역학 물리 시뮬레이션 원리 (Physics Model)](#-대기역학-물리-시뮬레이션-원리-physics-model)
-11. [문제 해결 요약 (Troubleshooting Summary)](#-문제-해결-요약-troubleshooting-summary)
-12. [부품 및 참조 링크 (Links)](#-부품-및-참조-링크-links)
+3. [Gemini AI 비서 & Live 양방향 음성 (Stage 8 신규)](#-gemini-ai-비서--live-실시간-음성-stage-8-신규)
+4. [10종 자연풍 환경 프리셋 (Nature Presets)](#-10종-자연풍-환경-프리셋-nature-presets)
+5. [5종 바람 스타일 (Wind Styles)](#-5종-바람-스타일-wind-styles)
+6. [Session FSM & Wind Studio (v0203 신규)](#-session-fsm--wind-studio-v0203-신규)
+7. [빠른 시작 가이드 (Quick Start)](#-빠른-시작-가이드-quick-start)
+8. [하드웨어 구성 및 배선 (Hardware & Wiring)](#-하드웨어-구성-및-배선-hardware--wiring)
+9. [소프트웨어 빌드 및 배포 (Build & Setup)](#-소프트웨어-빌드-및-배포-build--setup)
+10. [웹 대시보드 및 시스템 구조 (Web Interface & System Architecture)](#-웹-대시보드-및-시스템-구조-web-interface--system-architecture)
+11. [대기역학 물리 시뮬레이션 원리 (Physics Model)](#-대기역학-물리-시뮬레이션-원리-physics-model)
+12. [문제 해결 요약 (Troubleshooting Summary)](#-문제-해결-요약-troubleshooting-summary)
+13. [부품 및 참조 링크 (Links)](#-부품-및-참조-링크-links)
 
 ---
 
@@ -70,10 +71,16 @@
   외부 서버나 Home Assistant 허브 없이, ESP32-S3 단독으로 비동기 웹서버, RESTful API, 고성능 WebSocket 브로커를 구동합니다.
 * **대기역학 기반 실시간 물리 시뮬레이션 (Realistic Wind Physics)**  
   미기상학 대기 경계층 이론을 적용하여 난류 스펙트럼(Turbulence), 열기포 상승(Thermal Bubble), 돌풍(Gust), 하드웨어 관성 필터(Inertia Filter)를 실시간 수치 연산합니다.
+* **Gemini AI 비서 & Live 실시간 양방향 음성 (Stage 8 신규)**  
+  - **초저지연 양방향 실시간 대화**: WebSocket 기반 Gemini Live API와 프론트엔드 AudioWorklet(16kHz Mic 녹음 / 24kHz PCM 재생) 연동.
+  - **Barge-in (말끊기) 지원**: AI 발화 중 사용자가 말을 시작하면 재생 버퍼를 즉각 Flush하고 사용자 음성에 우선 응답.
+  - **12대 제어 도구 (Tool Calls)**: 바람 프리셋/스타일 전환, 세션 제어(재생/일시정지/정지), 풍속 미세조정, 수면 타이머 예약 등 완전 자율 실행.
+  - **3중 안심 가드레일**: 15종 위험/물리 파괴 명령 차단, 세션 30분 상한(403 초과 차단), 일일 비용 및 사용량 NVS 영구 기록 가드레일.
+  - **전역 플로팅 마이크 FAB**: 어느 화면에서든 원클릭으로 호출 가능한 실시간 음성 대화 바텀시트(`999b.ai-sheet.js`) 및 Audio Orb 시각화.
 * **10종 자연 환경 프리셋 × 5종 스타일 조합**  
   `OCEAN`, `COUNTRY_BREEZE`, `MEDITERRANEAN`, `MOUNTAIN`, `PLAINS`, `HARBOR_BREEZE`, `FOREST_CANOPY`, `URBAN_SUNSET`, `TROPICAL_RAIN`, `DESERT_NIGHT` 10종 프리셋에 `BALANCE`/`ACTIVE`/`FOCUS`/`RELAX`/`SLEEP` 5종 스타일을 조합하여 50가지 기류 특성 제공.
-* **초경량 SPA Web UI 대시보드 (Gzip Level 9, 총 115.9 KB)**  
-  47개 JS, 18개 CSS를 단일 번들(`P010_bundle_0203.js` 100.2KB gz / `P000_common_0203.css` 14.1KB gz / `index.html` 1.6KB gz)로 패키징.  
+* **초경량 SPA Web UI 대시보드 (Gzip Level 9, 총 118.1 KB)**  
+  54개 JS, 18개 CSS를 단일 번들(`P010_bundle_0203.js` 102.4KB gz / `P000_common_0203.css` 14.1KB gz / `index.html` 1.8KB gz)로 패키징.  
   대시보드 상단 5종 바람 스타일 탭(38px 터치 최적화) + 하단 4x2 프리셋 그리드(10종) + 3대 물리 슬라이더 자동 동기화 + 수면풍(SLEEP) 모드 + 정량적 체감 피드백(m/s 등) + 완전 한/영 다국어 + 모바일 2열 세그먼트 그리드 + 세그먼트 순서 이동(▲/▼) + Undo 토스트 + 오프라인 접이식 데모 툴바.
 * **Session FSM & 8스텝 Wind Studio (v0203 신규)**  
   `IDLE`/`ACTIVE`/`PAUSED` 3-State Session FSM + 5분/30분 Smart Resume. 8스텝 작곡기(Wind Studio)로 나만의 바람 시나리오 제작 → Playlist 저장 → 대시보드 원클릭 재생 → Now Playing Bar로 어디서나 제어.
@@ -96,7 +103,7 @@
 
 ## ⚙ 작동 모드 (Operating Modes)
 
-기기는 다음 4가지 핵심 모드로 동작하며, 세부 파라미터는 웹 UI 및 REST API를 통해 실시간 변경됩니다.
+기기는 다음 5가지 핵심 모드로 동작하며, 세부 파라미터는 웹 UI 및 REST API를 통해 실시간 변경됩니다.
 
 | 모드 | 영문명 | 설명 | 상세 참조 |
 |---|---|---|---|
@@ -104,6 +111,39 @@
 | **정속 모드** | Constant / FIXED | 사용자가 지정한 고정 세기(0~100%)로 일정하게 팬을 구동합니다 (Session `FIXED`). | [매뉴얼 §4](src/v0203/User_Manual_0203/UserManual_0203_002.md#4-메인-대시보드-조작-가이드-dashboard) |
 | **Comfort 모드** | DI-Auto | DHT22 센서의 실내 온·습도 기반 DI(불쾌지수)로 최적 프리셋/프로필을 추천합니다. | [매뉴얼 §10](src/v0203/User_Manual_0203/UserManual_0203_002.md#10-comfort-di-기반-추천-v0203-신규) |
 | **스케줄 모드** | Schedule | 요일 및 시간대별로 지정된 Profile을 참조하여 자동으로 동작합니다 (ADR-3 단일 규격). | [매뉴얼 §7](src/v0203/User_Manual_0203/UserManual_0203_002.md#7-주간-스케줄러-설정-schedule) |
+| **AI 음성 모드** | Gemini Live | 음성 또는 텍스트 자연어로 바람 제어 및 질문 답변을 실시간으로 수행합니다. | [매뉴얼 §13](src/v0203/User_Manual_0203/UserManual_0203_002.md#13-gemini-ai-비서--live-실시간-음성-v0203-신규) |
+
+> 💡 상태 전이 규칙과 Fail-Safe 조건은 [STATE_0203.md](src/v0203/contract_doc_0203/STATE_0203.md) 문서를 참조하십시오.
+
+---
+
+## 🎙️ Gemini AI 비서 & Live 실시간 음성 (Stage 8 신규)
+
+Smart Nature Wind v0203은 Google Gemini Live API와 WebSocket을 결합한 실시간 음성 비서 아키텍처를 탑재하였습니다.
+
+### 1. 양방향 실시간 오디오 파이프라인
+* **마이크 입력**: 브라우저 AudioWorklet을 통해 16kHz 모노 PCM16 형식으로 캡처 후 기기를 거쳐 Gemini Live 세션으로 스트리밍.
+* **음성 출력**: Gemini의 24kHz PCM16 오디오 청크를 수신하여 부드러운 Aoede 보이스로 실시간 재생.
+* **Barge-in (말끊기)**: 사용자가 말하기 시작하면 즉각 오디오 큐를 비우고 사용자 음성을 우선 처리.
+
+### 2. 12대 스마트 제어 도구 (Tool Calls)
+자연어 명령("시원한 바다 바람 틀어줘", "30분 뒤에 꺼줘", "바람 살짝 줄여줘")을 기기 제어 명령으로 자동 변환하여 실행합니다.
+
+| 도구명 | 설명 | 예시 발화 |
+|---|---|---|
+| `set_preset` | 10종 자연풍 프리셋 변경 | "지중해 연안 바람 틀어줘" |
+| `set_style` | 5종 바람 스타일 변경 | "집중 모드로 바꿔줘" |
+| `set_speed` | 고정 풍속(%) 설정 | "바람 세기 40%로 해줘" |
+| `session_control` | 재생 / 일시정지 / 정지 | "잠깐 멈춰줘", "다시 시작해" |
+| `adjust_wind` | 풍속 상대 조정 | "조금만 더 시원하게 해줘" |
+| `set_auto_off` | 수면 및 전원 타이머 설정 | "1시간 뒤에 꺼줘" |
+| `get_environment` | 온습도 및 불쾌지수 조회 | "지금 방 온도랑 습도 어때?" |
+| `get_fan_state` | 현재 팬 상태 조회 | "지금 무슨 바람 불고 있어?" |
+
+### 3. 강력한 안심 가드레일 (Safety Guardrails)
+* **15종 위험 명령 차단**: 공장초기화, 시스템 재부팅, Wi-Fi 초기화, 펌웨어 덮어쓰기 등 위험 행위는 음성으로 실행 불가.
+* **30분 세션 상한**: 세션당 최대 30분 제한으로 불필요한 과금 방지 (30분 초과 시 403 차단 및 정중한 종료 안내).
+* **NVS 일일 비용 한도 추적**: ESP32-S3 비휘발성 메모리(NVS)에 일일 세션 시간 및 토큰을 누적 기록하여 예산 초과 방지.
 
 > 💡 상태 전이 규칙과 Fail-Safe 조건은 [STATE_0203.md](src/v0203/contract_doc_0203/STATE_0203.md) 문서를 참조하십시오.
 
@@ -279,13 +319,13 @@
 기기 IP로 접속 시 브라우저 헤더의 Gzip 지원 여부를 판별하여 초고속으로 SPA Shell을 렌더링하며, 해시 라우팅(#)을 통해 페이지 전환 지연 시간 0ms를 제공합니다.
 
 * **메인 SPA Shell 진입점**: `/` (자동 리다이렉트 `/index.html`)
-* **해시 뷰 라우팅 (18개 페이지)**:
+* **해시 뷰 라우팅 (18개 페이지 + 전역 바텀시트)**:
   - `#/dashboard`: 전원 제어, 상단 바람 스타일 5종 탭(38px) + 하단 4x2 프리셋 그리드(10종) + 3대 물리 슬라이더 즉시 동기화 + 수면풍(SLEEP) + **Comfort DI 추천 카드**
   - `#/chart`: WebSocket 기반 실시간 대기역학 물리 차트 (실측/예상 탭, **예상 파형 오버레이**)
   - `#/automation/studio`: **8스텝 Wind Studio 작곡기 (v0203 신규)**
   - `#/automation/playlist`: **Wind Playlist 카드 목록 (v0203 신규)**
   - `#/automation/schedule`: **Profile 참조 스케줄러 (ADR-3 단일 규격)**
-  - `#/automation/timer`: 타이머 패널 (Stage 7 예정)
+  - `#/automation/timer`: 타이머 패널 (Stage 7)
   - `#/monitor`: **실시간 + 회고 모니터 (v0203 신규, 20-bar EQ + 64-event 타임라인)**
   - `#/schedule`: 요일별/시간대별 예약 규칙 관리 (모달 고정 헤더/푸터)
   - `#/profiles`: 개인 맞춤형 프로필 저장/호출 (**steps[] 단일 표준 스키마**)
@@ -295,10 +335,11 @@
   - `#/diagnostics`: 하드웨어 및 LittleFS 진단 (**Runtime NVS 섹션 포함**)
   - `#/firmware`: OTA 펌웨어 업로드 및 업데이트
   - `#/logs`: 실시간 링버퍼 시스템 로그 뷰어
-  - `#/ai`: Gemini AI 대화형 비서 연동
+  - `#/ai`: **Gemini AI Studio (텍스트 대화, 프롬프트 빌더, 일일 사용량/비용 모니터링)**
   - `#/info`: 힙 메모리, 업타임, Wi-Fi RSSI, 센서 상태 확인
   - `#/windprofile`: 바람 프리셋 관리
   - `#/simulation`: **바람 체험실 (v0203 재설계)**
+  - **전역 바텀시트 (`999b.ai-sheet.js`)**: 우측 하단 플로팅 마이크 FAB 버튼으로 언제 어디서나 호출 가능한 실시간 음성 비서 인터페이스
 
 ### 2. REST API & WebSocket 인터페이스 요약 (v0203)
 * `GET /api/v001/state` : 전원 상태, 모드, 목표 풍속, **세션 스냅샷(`profileName`, `stepRemainSec`)**, **Runtime(NVS)**, Comfort DI
@@ -313,7 +354,15 @@
 * `GET /api/v001/wifi/state` : Wi-Fi 실시간 연결 상태 및 IP 조회
 * `GET /api/v001/system` : 시스템 상태(Free Heap, Wi-Fi RSSI, 센서 측정값)
 * `GET /api/v001/config/*`, `POST /api/v001/config/save` : JSON 환경설정 읽기 및 영구 저장
-* `POST /api/v001/ai/gemini` : Gemini AI 프록시 통신
+* **Stage 8 AI & Gemini Live 실시간 음성 API 8종**:
+  - `POST /api/v001/ai/gemini` : Gemini 텍스트 대화 턴 처리 및 Tool Call 연동
+  - `POST /api/v001/ai/execute-action` : 자연어 12대 제어 도구 안전 검증 및 위임 실행
+  - `POST /api/v001/ai/live-token` : Gemini Live 세션 인증 토큰 발급 (30분 상한 안전 차단)
+  - `POST /api/v001/ai/live-func` : Live 음성 Tool Call 결과 처리 및 상태 갱신
+  - `GET /api/v001/ai/live-config` : 시스템 프롬프트(30초 캐시) 및 도구 선언 JSON 제공
+  - `GET /api/v001/ai/cost-status` : NVS 일일 AI 누적 비용/토큰 사용 현황
+  - `POST /api/v001/ai/usage` : 프론트엔드 AI 토큰 사용량 보고 및 NVS 누적
+  - `POST /api/v001/ai/cost-reset` : NVS 일일 비용 강제 리셋 (관리자)
 * `/ws/state`, `/ws/chart`, `/ws/metrics`, `/ws/log`, `/ws/summary` : 실시간 5개 채널 WebSocket 스트리밍
 
 > 💡 웹 화면별 상세 기능은 [사용자 매뉴얼 §4](src/v0203/User_Manual_0203/UserManual_0203_002.md#4-메인-대시보드-조작-가이드-dashboard), API 명세는 [SPEC_0203.md §5](src/v0203/contract_doc_0203/SPEC_0203.md)를 참조하십시오.
@@ -356,6 +405,9 @@ Smart Nature Wind의 핵심은 단순 랜덤 함수 난수 생성이 아닌, **�
 | **Dashboard 재생 버튼 무반응** | Session API 위임 실패 (v0203 이전 버그) | 펌웨어 v0203 이상인지 확인 (`/api/v001/version`) | [매뉴얼 §14](src/v0203/User_Manual_0203/UserManual_0203_002.md#14-자주-묻는-질문-faq-및-문제-해결) |
 | **화면에 영어/한글 대신 이상한 키 값** | i18n DICT 미정의 (v0203 이전 버그) | 펌웨어 v0203 이상인지 확인, `check_i18n.py --strict` 통과 여부 | - |
 | **온도/습도 센서 값 표기 안 됨** | DHT22 풀업 저항 누락 또는 핀 번호 오류 | GPIO 17 설정 확인, VCC-Data 간 10kΩ 풀업 저항 장착 | [매뉴얼 §14](src/v0203/User_Manual_0203/UserManual_0203_002.md#14-자주-묻는-질문-faq-및-문제-해결) |
+| **AI 음성 마이크 인식이 안 됨** | 브라우저 마이크 권한 미허용 또는 HTTP 비보안 연결 | HTTPS 또는 localhost/IP 신뢰 허용 후 브라우저 마이크 권한 '허용' 선택 | [매뉴얼 §13](src/v0203/User_Manual_0203/UserManual_0203_002.md#13-gemini-ai-비서--live-실시간-음성-v0203-신규) |
+| **AI 대화 시 401 오류 발생** | Gemini API Key 미설정 또는 잘못된 키 | `#/settings` 보안 탭 또는 AI Studio 상단에서 유효한 Gemini API Key 등록 | [매뉴얼 §13](src/v0203/User_Manual_0203/UserManual_0203_002.md#13-gemini-ai-비서--live-실시간-음성-v0203-신규) |
+| **AI Live 연결 시 403 오류 (세션 거부)** | 세션 30분 상한 도달 또는 일일 비용 한도 초과 | 통화 종료 후 신규 세션 시작, 또는 AI 설정에서 일일 비용 상태 확인 및 리셋 | [매뉴얼 §13](src/v0203/User_Manual_0203/UserManual_0203_002.md#13-gemini-ai-비서--live-실시간-음성-v0203-신규) |
 
 ---
 

@@ -318,7 +318,7 @@ void CL_MON_Monitor::flushCold() {
         w.preset_idx        = s_agg.presetIdx;
         w.gust_count        = (uint8_t)s_agg.gustCnt;
         w.thermal_count     = (uint8_t)s_agg.thermalCnt;
-        _appendFile(PATH_WIND, &w, sizeof(w), COLD_WIND_CAP);
+        _appendFile(PATH_WIND, &w, sizeof(w), COLD_WIND_CAP, w.t);
     }
 
     if (s_agg.sensorCnt > 0) {
@@ -330,14 +330,14 @@ void CL_MON_Monitor::flushCold() {
         s.temp_max_x10        = s_agg.tempMax;
         s.hum_avg             = (uint8_t)(s_agg.humSum / s_agg.sensorCnt);
         s.motion_ratio        = (uint8_t)((s_agg.motionCnt * 255) / s_agg.sensorCnt);
-        _appendFile(PATH_SENSOR, &s, sizeof(s), COLD_SENSOR_CAP);
+        _appendFile(PATH_SENSOR, &s, sizeof(s), COLD_SENSOR_CAP, s.t);
     }
 
     for (uint8_t i = 0; i < s_stateCount; i++) {
         uint8_t                    idx = (s_stateHead + STATE_CAP - s_stateCount + i) % STATE_CAP;
         const ST_MON_StateEvent_t& e   = s_state[idx];
         if (e.t <= s_agg.lastStateEpochFlushed) continue;
-        _appendFile(PATH_STATE, &e, sizeof(e), COLD_STATE_CAP);
+        _appendFile(PATH_STATE, &e, sizeof(e), COLD_STATE_CAP, e.t);
     }
     if (s_stateCount > 0) {
         s_agg.lastStateEpochFlushed = s_state[(s_stateHead + STATE_CAP - 1) % STATE_CAP].t;
@@ -347,7 +347,7 @@ void CL_MON_Monitor::flushCold() {
         uint8_t                     idx = (s_configHead + CONFIG_CAP - s_configCount + i) % CONFIG_CAP;
         const ST_MON_ConfigEvent_t& e   = s_config[idx];
         if (e.t <= s_agg.lastConfigEpochFlushed) continue;
-        _appendFile(PATH_CONFIG, &e, sizeof(e), COLD_CONFIG_CAP);
+        _appendFile(PATH_CONFIG, &e, sizeof(e), COLD_CONFIG_CAP, e.t);
     }
     if (s_configCount > 0) {
         s_agg.lastConfigEpochFlushed = s_config[(s_configHead + CONFIG_CAP - 1) % CONFIG_CAP].t;
@@ -357,7 +357,7 @@ void CL_MON_Monitor::flushCold() {
         uint8_t                     idx = (s_systemHead + SYSTEM_CAP - s_systemCount + i) % SYSTEM_CAP;
         const ST_MON_SystemEvent_t& e   = s_system[idx];
         if (e.t <= s_agg.lastSystemEpochFlushed) continue;
-        _appendFile(PATH_SYSTEM, &e, sizeof(e), COLD_SYSTEM_CAP);
+        _appendFile(PATH_SYSTEM, &e, sizeof(e), COLD_SYSTEM_CAP, e.t);
     }
     if (s_systemCount > 0) {
         s_agg.lastSystemEpochFlushed = s_system[(s_systemHead + SYSTEM_CAP - 1) % SYSTEM_CAP].t;
@@ -377,7 +377,7 @@ void CL_MON_Monitor::flushCold() {
                        s_systemCount);
 }
 
-bool CL_MON_Monitor::_appendFile(const char* p_path, const void* p_entry, uint16_t p_entrySize, uint32_t p_capacity) {
+bool CL_MON_Monitor::_appendFile(const char* p_path, const void* p_entry, uint16_t p_entrySize, uint32_t p_capacity, uint32_t p_epochT) {
     ST_MON_FileHeader_t h;
     if (!_readHeader(p_path, h)) return false;
     if (h.entry_size != p_entrySize) return false;
@@ -397,8 +397,8 @@ bool CL_MON_Monitor::_appendFile(const char* p_path, const void* p_entry, uint16
 
     h.head = (h.head + 1) % h.capacity;
     if (h.count < h.capacity) h.count++;
-    if (h.first_epoch == 0) h.first_epoch = ((const ST_MON_Wind5Min_t*)p_entry)->t;
-    h.last_epoch = ((const ST_MON_Wind5Min_t*)p_entry)->t;
+    if (h.first_epoch == 0) h.first_epoch = p_epochT;
+    h.last_epoch = p_epochT;
     f.seek(0);
     f.write((const uint8_t*)&h, sizeof(h));
     f.close();

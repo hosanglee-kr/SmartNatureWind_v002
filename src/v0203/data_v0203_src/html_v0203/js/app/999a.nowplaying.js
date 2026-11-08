@@ -157,6 +157,7 @@ window.SNW = window.SNW || {};
         const h = barEl.eq.height;
 
         const tick = () => {
+            if (!barEl._eqAnimId) return;
             const store = SNW.Store ? SNW.Store.get() : {};
             const sim = store.sim || {};
             const v = (sim.windSpeed != null) ? sim.windSpeed : (Math.random() * 8 + 2);
@@ -174,7 +175,7 @@ window.SNW = window.SNW || {};
             }
             barEl._eqAnimId = requestAnimationFrame(tick);
         };
-        tick();
+        barEl._eqAnimId = requestAnimationFrame(tick);
     }
 
     function stopEq() {

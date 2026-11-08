@@ -258,6 +258,6 @@ typedef struct {
                         static void _aggregateWind(const ST_MON_WindRaw_t& p_e);
                         static void _aggregateSensor(const ST_MON_SensorRaw_t& p_e);
                         static void _writeHeader(const char* p_path, uint16_t p_entrySize, uint32_t p_capacity);
-                        static bool _appendFile(const char* p_path, const void* p_entry, uint16_t p_entrySize, uint32_t p_capacity);
+                        static bool _appendFile(const char* p_path, const void* p_entry, uint16_t p_entrySize, uint32_t p_capacity, uint32_t p_epochT);
                         static bool _readHeader(const char* p_path, ST_MON_FileHeader_t& p_h);
                     };

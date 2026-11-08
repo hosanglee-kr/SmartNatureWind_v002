@@ -200,9 +200,9 @@ window.SNW = window.SNW || {};
         A.overrideFixed = async (percent) => {
             runtime.sim.active = true;
             runtime.control.active = true;
-            runtime.control.state = 'OVERRIDE_HOLD';
+            runtime.control.state = 'OVERRIDE';
             runtime.control.stateCode = 1;
-            runtime.control.reason = 'MANUAL_OVERRIDE';
+            runtime.control.reason = 'OVERRIDE_ACTIVE';
             runtime.control.reasonCode = 1;
             if (percent != null) {
                 runtime.sim.intensity = percent;
@@ -794,6 +794,8 @@ window.SNW = window.SNW || {};
     function startSimulator() {
         if (window._snw_sim_timer) return;
         window._snw_sim_timer = setInterval(() => {
+            if (!runtime.sim.active && !runtime.control.session?.active) return;
+
             // ─────────── ① 세션 step 진행 (N-28) ───────────
             const sess = runtime.control.session;
             if (sess && sess.active && sess.state === 'ACTIVE') {

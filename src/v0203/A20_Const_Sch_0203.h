@@ -269,8 +269,20 @@ typedef struct {
     char    endTime[6]   = {0};
 } ST_A20_SchedulePeriod_t;
 
-// [P2-4] ST_A20_ScheduleSegment_t 독자 정의 제거 ➔ ST_A20_Step_t alias로 통합
-typedef ST_A20_Step_t ST_A20_ScheduleSegment_t;
+typedef struct {
+    uint8_t  segId      = 0;
+    uint16_t segNo      = 0;
+    uint16_t onMinutes  = 0;
+    uint16_t offMinutes = 0;
+
+    EN_A20_segment_mode_t mode = EN_A20_SEG_MODE_PRESET;
+
+    char                     presetCode[A20_Const::MAX_CODE_LEN] = {0};
+    char                     styleCode[A20_Const::MAX_CODE_LEN]  = {0};
+    ST_A20_SegmentOverride_t override;
+
+    float fixedSpeed = 0.0f;
+} ST_A20_ScheduleSegment_t;
 
 typedef struct {
     uint8_t  schId                         = 0;

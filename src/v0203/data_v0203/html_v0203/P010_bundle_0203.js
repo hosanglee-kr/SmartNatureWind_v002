@@ -12705,7 +12705,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 999b.ai-sheet.js (11447 bytes) ---- */
+/* ---- 999b.ai-sheet.js (11520 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명 : 999b.ai-sheet.js
@@ -12856,7 +12856,7 @@ window.SNW = window.SNW || {};
 					<!-- Input Bar -->
 					<div style="display:flex;gap:8px;align-items:center;">
 						<input type="text" data-slot="sheet-input" placeholder="${placeholderText}" style="flex:1;padding:10px 14px;border-radius:12px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.2);color:#fff;outline:none;" />
-						<button type="button" class="snw-btn snw-btn--secondary" data-action="sheet-mic" style="border-radius:12px;padding:10px 14px;">🎤</button>
+						<button type="button" class="snw-btn snw-btn--secondary" data-action="sheet-mic" title="음성 입력 (클릭 시에만 마이크가 활성화됩니다)" style="border-radius:12px;padding:10px 14px;">🎤</button>
 						<button type="button" class="snw-btn snw-btn--primary" data-action="sheet-send" style="border-radius:12px;padding:10px 16px;">${sendText}</button>
 					</div>
 				</div>

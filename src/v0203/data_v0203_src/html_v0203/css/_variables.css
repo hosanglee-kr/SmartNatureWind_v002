@@ -64,7 +64,7 @@
     --snw-header-h: 56px;
     --snw-footer-h: 40px;
     --snw-sidebar-w: 220px;
-    --snw-bottom-nav-h: 56px;
+    --snw-bottom-nav-h: 60px; /* [FE-P2-4] 모바일 네비게이션 실측 60px 통일 */
     --snw-np-h: 48px;
     
     /* 그림자 */

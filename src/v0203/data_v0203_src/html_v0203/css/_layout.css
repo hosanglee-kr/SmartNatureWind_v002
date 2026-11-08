@@ -157,7 +157,7 @@ body.snw-sidebar-open .snw-sidebar-overlay {
         display: flex;
         position: fixed;
         bottom: 0; left: 0; right: 0;
-        height: 60px;
+        height: var(--snw-bottom-nav-h);
         background: var(--snw-surface);
         border-top: 1px solid var(--snw-border);
         z-index: var(--snw-z-bottom);

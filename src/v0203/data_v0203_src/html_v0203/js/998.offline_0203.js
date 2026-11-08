@@ -739,8 +739,9 @@ window.SNW = window.SNW || {};
         };
 
         A.addWindProfile = async (b) => {
+            const body = _unwrap(b, 'preset');
             const list = (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.presets) || [];
-            list.push(Object.assign({ idx: list.length }, b.preset || {}));
+            list.push(Object.assign({ idx: list.length }, body));
             persistCache('windDict');
             return { result: 'created', id: list.length - 1 };
         };

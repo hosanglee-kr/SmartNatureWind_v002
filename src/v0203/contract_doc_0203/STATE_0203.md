@@ -6,6 +6,38 @@
 
 ---
 
+## 📋 목차 (Table of Contents)
+
+1. [상태 변수 소유권 및 접근 매트릭스](#1-상태-변수-소유권-및-접근-매트릭스)
+2. [CT10 메인 제어 상태머신 (7-State FSM)](#2-ct10-메인-제어-상태머신-7-state-fsm)
+   - [2.1 상태 정의](#21-상태-정의)
+   - [2.2 상태 전이 우선순위 (`decideRunSource`)](#22-상태-전이-우선순위-deciderunsource)
+   - [2.3 상태 전이표](#23-상태-전이표)
+   - [2.4 Batch F-5: profile fall-through 차단](#24-batch-f-5-profile-fall-through-차단)
+   - [2.5 Session FSM ↔ runCtx FSM 관계 (ADR-1 확정)](#25-session-fsm--runctx-fsm-관계-adr-1-확정)
+     - [2.5.1 이중 상태의 명확한 분리](#251-이중-상태의-명확한-분리)
+     - [2.5.2 핵심 계약](#252-핵심-계약)
+     - [2.5.3 세션 전이 매트릭스](#253-세션-전이-매트릭스)
+     - [2.5.4 타임라인 예시 (PLAYLIST)](#254-타임라인-예시-playlist)
+     - [2.5.5 금지 패턴](#255-금지-패턴)
+3. [S10 시뮬레이션 물리 엔진 상태](#3-s10-시뮬레이션-물리-엔진-상태)
+   - [3.1 M10 모션 감지 상태 (C-3 반영)](#31-m10-모션-감지-상태-c-3-반영)
+4. [WF10 Wi-Fi 상태머신](#4-wf10-wi-fi-상태머신)
+5. [TM10 시간 동기화 상태](#5-tm10-시간-동기화-상태)
+6. [위임 플래그 라이프사이클 (F-05, F-06)](#6-위임-플래그-라이프사이클-f-05-f-06)
+   - [6.1 F-05 Pending Reload](#61-f-05-pending-reload)
+   - [6.2 F-06 Pending Motion.Sim Apply](#62-f-06-pending-motionsim-apply)
+   - [6.3 Batch D-1 Dirty 배치 소비](#63-batch-d-1-dirty-배치-소비)
+   - [6.4 Session Pause/Resume/Stop 위임 라이프사이클](#64-session-pauseresumestop-위임-라이프사이클)
+7. [AutoOff 래치 및 이벤트 상태](#7-autooff-래치-및-이벤트-상태)
+   - [7.1 래치 해제 경로](#71-래치-해제-경로)
+   - [7.2 AutoOff offTime 재트리거 방지](#72-autooff-offtime-재트리거-방지)
+   - [7.3 이벤트 상태 hold/ACK](#73-이벤트-상태-holdack)
+8. [E-2 분할 파일 상태 소유권 (신규)](#8-e-2-분할-파일-상태-소유권-신규)
+9. [개정 이력](#9-개정-이력)
+
+---
+
 ## 1. 상태 변수 소유권 및 접근 매트릭스
 
 | 상태 변수 | 단독 Writer | 허용 Reader | 보호 기제 | 비고 |

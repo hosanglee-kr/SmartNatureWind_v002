@@ -344,19 +344,23 @@ def build_js_bundle(src_dir: Path, dst_dir: Path) -> int:
 
     bundle = "".join(parts)
 
-    out_raw = dst_dir / JS_BUNDLE_OUTPUT
-    out_gz  = dst_dir / (JS_BUNDLE_OUTPUT + ".gz")
-    out_raw.write_text(bundle, encoding="utf-8")
+    # [로컬 UI 검증용] 소스 폴더(src_dir)에 번들 raw 파일 동기화
+    src_raw = src_dir / JS_BUNDLE_OUTPUT
+    src_raw.write_text(bundle, encoding="utf-8")
 
+    # [ESP32 LittleFS 배포용] 배포 폴더(dst_dir)에는 .gz 압축 파일만 배포 (플래시 824KB 버짓 보호)
+    out_gz = dst_dir / (JS_BUNDLE_OUTPUT + ".gz")
     with gzip.open(out_gz, "wb", compresslevel=9) as f_out:
         f_out.write(bundle.encode("utf-8"))
 
-    # [로컬 UI 검증용] 번들 raw 파일만 소스 폴더에 동기화
-    shutil.copy2(out_raw, src_dir / JS_BUNDLE_OUTPUT)
+    # 배포 폴더에 남아있는 비압축 raw 파일 제거
+    out_raw = dst_dir / JS_BUNDLE_OUTPUT
+    if out_raw.is_file():
+        out_raw.unlink()
 
     gz_size = out_gz.stat().st_size
     ratio = (1.0 - gz_size / total_raw) * 100.0 if total_raw > 0 else 0.0
-    _log(f"  ==> bundle: {total_raw:,} B → {gz_size:,} B (gz {ratio:.1f}% 절감)", tag="js")
+    _log(f"  ==> bundle: {total_raw:,} B → {gz_size:,} B (gz {ratio:.1f}% 절감, raw는 배포 제외)", tag="js")
     return 0
 
 
@@ -389,19 +393,23 @@ def build_css_bundle(src_dir: Path, dst_dir: Path) -> int:
 
     bundle = "".join(parts)
 
-    out_raw = dst_dir / CSS_BUNDLE_OUTPUT
-    out_gz  = dst_dir / (CSS_BUNDLE_OUTPUT + ".gz")
-    out_raw.write_text(bundle, encoding="utf-8")
+    # [로컬 UI 검증용] 소스 폴더(src_dir)에 번들 raw 파일 동기화
+    src_raw = src_dir / CSS_BUNDLE_OUTPUT
+    src_raw.write_text(bundle, encoding="utf-8")
 
+    # [ESP32 LittleFS 배포용] 배포 폴더(dst_dir)에는 .gz 압축 파일만 배포
+    out_gz = dst_dir / (CSS_BUNDLE_OUTPUT + ".gz")
     with gzip.open(out_gz, "wb", compresslevel=9) as f_out:
         f_out.write(bundle.encode("utf-8"))
 
-    # [로컬 UI 검증용] 번들 raw 파일만 소스 폴더에 동기화
-    shutil.copy2(out_raw, src_dir / CSS_BUNDLE_OUTPUT)
+    # 배포 폴더에 남아있는 비압축 raw 파일 제거
+    out_raw = dst_dir / CSS_BUNDLE_OUTPUT
+    if out_raw.is_file():
+        out_raw.unlink()
 
     gz_size = out_gz.stat().st_size
     ratio = (1.0 - gz_size / total_raw) * 100.0 if total_raw > 0 else 0.0
-    _log(f"  ==> bundle: {total_raw:,} B → {gz_size:,} B (gz {ratio:.1f}% 절감)", tag="css")
+    _log(f"  ==> bundle: {total_raw:,} B → {gz_size:,} B (gz {ratio:.1f}% 절감, raw는 배포 제외)", tag="css")
     return 0
 
 
@@ -417,17 +425,20 @@ def process_html_shell(src_dir: Path, dst_dir: Path) -> int:
     content = src_html.read_text(encoding="utf-8")
     raw_size = len(content.encode("utf-8"))
 
-    out_raw = dst_dir / HTML_SHELL_OUTPUT
-    out_gz  = dst_dir / (HTML_SHELL_OUTPUT + ".gz")
-    out_raw.write_text(content, encoding="utf-8")
-
+    # [ESP32 LittleFS 배포용] 배포 폴더(dst_dir)에는 .gz 압축 파일만 배포
+    out_gz = dst_dir / (HTML_SHELL_OUTPUT + ".gz")
     with gzip.open(out_gz, "wb", compresslevel=9) as f_out:
         f_out.write(content.encode("utf-8"))
 
+    # 배포 폴더에 남아있는 비압축 raw 파일 제거
+    out_raw = dst_dir / HTML_SHELL_OUTPUT
+    if out_raw.is_file():
+        out_raw.unlink()
+
     gz_size = out_gz.stat().st_size
     ratio = (1.0 - gz_size / raw_size) * 100.0 if raw_size > 0 else 0.0
-    _log(f"[3/6] HTML Shell: {HTML_SHELL_INPUT} → {HTML_SHELL_OUTPUT} "
-         f"({raw_size:,} → {gz_size:,} B, gz {ratio:.1f}% 절감)", tag="html")
+    _log(f"[3/6] HTML Shell: {HTML_SHELL_INPUT} → {HTML_SHELL_OUTPUT}.gz "
+         f"({raw_size:,} → {gz_size:,} B, gz {ratio:.1f}% 절감, raw는 배포 제외)", tag="html")
     return 0
 
 
@@ -515,11 +526,11 @@ def build_offline_zip(project_root: Path, include_gz: bool = True) -> int:
         print(f"[ERROR] 스테이징 없음: {stage_dir}", file=sys.stderr)
         return 1
 
-    # 필수 파일 검증 (index.html로 변경됨)
+    # 필수 파일 검증 (.gz 번들 + JSON 필수 파일)
     required = [
-        stage_dir / "html_v0203" / HTML_SHELL_OUTPUT,
-        stage_dir / "html_v0203" / CSS_BUNDLE_OUTPUT,
-        stage_dir / "html_v0203" / JS_BUNDLE_OUTPUT,
+        stage_dir / "html_v0203" / (HTML_SHELL_OUTPUT + ".gz"),
+        stage_dir / "html_v0203" / (CSS_BUNDLE_OUTPUT + ".gz"),
+        stage_dir / "html_v0203" / (JS_BUNDLE_OUTPUT + ".gz"),
         stage_dir / "json" / "10_cfg_jsonFile.json",
         stage_dir / "json" / "cfg_system_0203.json",
     ]

@@ -438,12 +438,21 @@ startSession(type, trigger, payload) [T-async]
 - **[AI-5] 오디오 인라인 Blob AudioWorklet 및 Barge-in Flush**: 마이크 캡처는 별도 파일 없이 인라인 Blob AudioWorklet(16kHz PCM16)으로 전송되며, Gemini 응답 음성(24kHz PCM16) 수신 중 사용자 발화(Interruption) 발생 시 오디오 버퍼 큐를 즉시 Flush하여 음성 겹침을 방지한다.
 - **[AI-6] 프롬프트 캐싱 (30초 만료)을 통한 자원 보호**: 시스템 프롬프트 생성(`buildAIPromptStrict`)은 30초 파일 스코프 캐시를 유지하여 빈번한 AI 요청 중에도 I2C 센서 블로킹 및 힙 파편화를 0으로 억제한다.
 
+### 7.16 v0203 통합 감사 28대 이슈 해결 및 계약 규약 (AUDIT-1~AUDIT-6) (0203_012 신규)
+- **[AUDIT-1] FactoryReset SPA 단일 스키마 (BE-P0-1)**: `A20_resetWebPageDefault`는 구버전 `/html_v3/` 및 복수 HTML 페이지를 전면 배제하고, 단일 `/html_v0203/index.html`과 `P010_bundle_0203.js`, `P000_common_0203.css` SPA 스키마만 초기화하여 리셋 후 웹 서빙 불능을 차단한다.
+- **[AUDIT-2] AI Action의 CRUD 헬퍼 필수 경유 (BE-P0-2, BE-P1-6)**: `executeAddProfile`과 `add_schedule`은 C10 설정을 직접 조작하지 않고 `addUserProfilesFromJson` 등 표준 CRUD 헬퍼에 위임하여 ID 자동 발급, 중복 검증, profileId 유효성 검증을 100% 강제한다.
+- **[AUDIT-3] T-async 컨텍스트 getRootSnapshot 원자 캡처 (BE-P0-3)**: `startOverridePreset` 등 비동기 요청 핸들러에서 `g_A20_config_root` 접근 시 직접 참조를 금지하고 `getRootSnapshot()`을 통해 포인터 원자 스냅샷을 획득하여 Torn read 및 UAF를 방지한다.
+- **[AUDIT-4] T-loop WS 브로드캐스트 가드 (BE-P1-5)**: `D10_Logger::broadcastLog`는 WS 활성 클라이언트가 0일 경우 JSON 직렬화 및 `textAll` 호출을 즉시 스킵하여 `loopTask` 지연을 방지한다.
+- **[AUDIT-5] C10 부팅 실패 시 Recovery AP 폴백 (BE-P1-2, BE-P1-3)**: `CL_C10_ConfigManager::begin()` 실패 시 벽돌화를 방지하고 B-11 규약에 따라 Recovery AP로 부팅하며, 부팅 완료 시 `applySystemRuntimeFromConfig()`를 호출하여 사용자 저장 런타임 설정을 즉시 반영한다.
+- **[AUDIT-6] SSOT 자동 대조 CI 게이트 (AUDIT-CI)**: `validate_contracts.py`를 통해 문서(SPEC/README/BUDGET), C++ 헤더(W10_Web_Const/W10_AI_Limits), 프론트엔드 config/offline 어댑터 간 경로/상수/FSM 상태명 정합성을 빌드 파이프라인(`pio_gzip_0203.py`)에서 자동 검증한다.
+
 ---
 
 ## 8. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-08** | **v3.2** | **통합 감사 28대 이슈 해결 및 계약 규약 신설 (§7.16 AUDIT-1~6, 0203_012)**: FactoryReset SPA 단일 스키마, AI CRUD 헬퍼 위임, T-async getRootSnapshot 원자 캡처, T-loop WS 0-클라이언트 가드, C10 begin 실패 시 Recovery AP 폴백 및 런타임 설정 자동 적용, SSOT 자동 대조 CI 게이트 규약 명시 | Antigravity AI |
 | **2026-11-06** | **v3.1** | **Stage 8 AI 제어 및 Gemini Live 실시간 음성 안전 계약 (§7.15 AI-1~AI-6)**: 15종 위험 명령 원천 차단, Tool Calling FSM 위임, 30분 세션 상한 및 403 차단, NVS 4키 일일 비용 가드레일, AudioWorklet 16k/24k 인라인 스트리밍 및 Barge-in Flush, 30초 프롬프트 캐싱 계약 명시, 개정 이력 위치 정상화 | Antigravity AI |
 | **2026-10-30** | **v2.9** | **W10 REST 라우팅 Regex 의존성 제거, onNotFound Gzip 서빙 및 ArduinoJson v7 파싱 계약 (§7.14 ROUTE-1~3)**: `/:id` 기반 REST 라우팅 통일, `onNotFound` 핸들러 기반 `/html_v0203/` Gzip 정적 서빙, ArduinoJson v7 `.is<T>()` 타입 안전성 계약 명시 | Antigravity AI |
 | 2026-10-28 | v2.8 | 프론트엔드-백엔드 동기화 및 오프라인 2분할 계약 추가 (§7.9 SYNC-1~SYNC-3): `CT10_Ctl_0203.h` Enum ➔ `000.const.js` 자동 주입, `998.offline_data_0203.js` 분리 및 플래시 제외, 대시보드 프리셋/스타일 슬라이더 동기화, 모달 오버레이 격리 | Antigravity AI |

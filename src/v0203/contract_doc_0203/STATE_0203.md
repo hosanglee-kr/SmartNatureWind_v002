@@ -390,6 +390,7 @@ stopSession()
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-08** | **v3.2** | **통합 감사 28대 이슈 해결 상태 정합성 반영 (0203_012)**: 오프라인 FSM 종료 이유 'POWER_OFF' ➔ 'NONE' C++ SSOT 일치, `ST_A20_ScheduleSegment_t` 독립 구조체 유지로 오버로드 충돌 방지, `_persistOffTimeLastYday` 리셋 무결성 보장, `C10_Config_Sch_Internal_0203.h` 안전 인라인 브릿지 명세 | Antigravity AI |
 | **2026-11-06** | **v3.1** | **Stage 8 AI 제어 및 Live 음성 상태 소유권 반영**: §1 3행 확장(`s_aiDailyUsage`, `s_promptCache`, `runtimeAutoOff`), §8 분할 소유권에 AI 프롬프트/액션/라우트 모듈 3종 추가, 자정 리셋 및 30분 상한 상태 수명주기 명시 | Antigravity AI |
 | **2026-11-05** | **v3.0** | **Phase 1~6 통합 (v0203_011) — Session 위임 엔진 반영**: §1 5행 확장 (`_session`, `_pausedExec`, `profileName`, `currentStepStartMs`, `runCtx.state` vs `_session.state`), §2.5 신규 (Session FSM ↔ runCtx FSM 관계, ADR-1), §6.4 신규 (Pause/Resume/Stop 위임 라이프사이클, Smart Resume). | Antigravity AI |
 | 2026-10-27 | v2.5 | Batch H 웹 UI 고도화/오프라인 로더 동기화 상태 무결성 확인 (C++ FSM 변경 없음) | Antigravity AI |

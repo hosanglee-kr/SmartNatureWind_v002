@@ -4,6 +4,23 @@
 
 ---
 
+## 📋 목차 (Table of Contents)
+
+1. [🏗️ 1. 개발 환경 요약](#️-1-개발-환경-요약)
+2. [📚 2. 단일 진실 공급원 (SSOT) 계약 문서 맵](#-2-단일-진실-공급원-ssot-계약-문서-맵)
+3. [🛡️ 3. AI 에이전트 필수 4대 불변 원칙 (Invariant Rules)](#️-3-ai-에이전트-필수-4대-불변-원칙-invariant-rules)
+   - [원칙 1: C++ 백엔드 수정필요 시 목적, 기능변화 명확하게 정리해서 승인 후 수정 원칙](#원칙-1-c-백엔드-수정필요-시-목적-기능변화-명확하게-정리해서-승인-후-수정-원칙)
+   - [원칙 2: 지식 그래프 (Graphify) 선행 질의 원칙 (Graph-First Rule)](#원칙-2-지식-그래프-graphify-선행-질의-원칙-graph-first-rule)
+   - [원칙 3: 정적 에셋 파이프라인 및 오프라인 모듈 분리 규약 (Pipeline Rule)](#원칙-3-정적-에셋-파이프라인-및-오프라인-모듈-분리-규약-pipeline-rule)
+   - [원칙 4: 계약 기반 변경 및 상대 경로 링크 원칙 (CBD Rule)](#원칙-4-계약-기반-변경-및-상대-경로-링크-원칙-cbd-rule)
+4. [📐 4. 핵심 코딩 컨벤션 & 네이밍 치트시트](#-4-핵심-코딩-컨벤션--네이밍-치트시트)
+   - [4.1 네이밍 접두사 규칙](#41-네이밍-접두사-규칙)
+   - [4.2 C++ 백엔드 구현 규칙](#42-c-백엔드-구현-규칙)
+   - [4.3 프론트엔드 (Web UI) 구현 규칙](#43-프론트엔드-web-ui-구현-규칙)
+5. [🛠️ 5. 필수 CLI 명령어 치트시트](#️-5-필수-cli-명령어-치트시트)
+
+---
+
 ## 🏗️ 1. 개발 환경 요약
 
 | 항목 | 상세 내용 |
@@ -11,7 +28,7 @@
 | **기본 타깃 MCU** | **ESP32-S3-N16R8** (16MB Flash / 8MB OPI PSRAM, dual-core Xtensa @ 240MHz) |
 | **프레임워크 / 빌드** | Arduino-ESP32 (`-std=gnu++17`) on FreeRTOS / PlatformIO IDE |
 | **파일 시스템** | LittleFS (`./src/v0203/data_v0203`) |
-| **정적 에셋 파이프라인** | SPA 번들 (54개 JS `P010_bundle_0203.js`, 18개 CSS `P000_common_0203.css`, `index.html`) + Level 9 Gzip (`tools_0203/pio_gzip_0203.py`, Gzip 총 118.1 KB) |
+| **정적 에셋 파이프라인** | SPA 번들 (54개 JS `P010_bundle_0203.js` 120.7 KB gz, 18개 CSS `P000_common_0203.css` 14.8 KB gz, `index.html` 1.7 KB gz) + Level 9 Gzip (`tools_0203/pio_gzip_0203.py`, Gzip 총 137.2 KB / LittleFS 149.8 KB) |
 | **활성 버전 / 접미사** | **v0203 (FW_Ver_2.0.3)** (C++ 백엔드 소스 `_0203` 접미사 / LittleFS 에셋 `_0203`) |
 
 ---
@@ -22,13 +39,13 @@
 
 | 계약 문서명 | 담당 영역 및 핵심 SSOT 내용 | 상세 링크 |
 |---|---|:---:|
-| **SPEC_0203.md** (v2.14) | 시스템 최상위 기술 사양 (하드웨어 핀맵, 25kHz PWM 타이밍, C++ 모듈 구성 및 파일 매핑, JSON 스키마, REST/WebSocket API 전체 명세, §5.1.4 Stage 8 AI 제어 & Gemini Live 실시간 음성 및 비용 가드레일, ADR 1~8, 프론트엔드 54 JS + 18 CSS 번들 규격) | [SPEC_0203.md](src/v0203/contract_doc_0203/SPEC_0203.md) |
-| **CONTRACT_0203.md** (v3.1) | FreeRTOS 태스크 경계, 뮤텍스 소유권, 데드락 방지, §3.2 Session 위임 락 순서, §7.15 Stage 8 AI-1~AI-6 실시간 음성 안전 계약(15종 위험명령 차단, 30분 상한, NVS 4키 일일비용 가드레일, AudioWorklet Barge-in Flush), Batch I 물리 Override, SYNC-1~3 | [CONTRACT_0203.md](src/v0203/contract_doc_0203/CONTRACT_0203.md) |
+| **SPEC_0203.md** (v2.16) | 시스템 최상위 기술 사양 (하드웨어 핀맵, 25kHz PWM 타이밍, C++ 모듈 구성 및 파일 매핑, JSON 스키마, REST/WebSocket API 전체 명세, §5.1.4 Stage 8 AI 제어 & Gemini Live 실시간 음성 및 비용 가드레일, ADR 1~10, 프론트엔드 54 JS + 18 CSS 번들 규격, Stage 9 UI 표준화 & 2차 감사 19대 이슈 해결) | [SPEC_0203.md](src/v0203/contract_doc_0203/SPEC_0203.md) |
+| **CONTRACT_0203.md** (v3.4) | FreeRTOS 태스크 경계, 뮤텍스 소유권, 데드락 방지, §3.2 Session 위임 락 순서, §7.15 AI-1~AI-6 실시간 음성 안전 계약, §7.16 1차 감사 AUDIT-1~6, §7.17 UI-5~8 레이아웃 스택, §7.18 2차 감사 AUDIT2-1~5(Live 보안인가, 도구선언 단일위임, REST parts 규격, 데스크톱 그리드 ADR-10) | [CONTRACT_0203.md](src/v0203/contract_doc_0203/CONTRACT_0203.md) |
 | **STATE_0203.md** (v3.1) | 상태 소유권 매트릭스(§1 `s_aiDailyUsage`/`s_promptCache`/`runtimeAutoOff` 확장), §2.5 Session FSM ↔ runCtx FSM 관계(ADR-1), §6.4 Pause/Resume/Stop 위임 라이프사이클, S10 물리 엔진 상태, §8 E-2 AI 분할 상태 소유권 | [STATE_0203.md](src/v0203/contract_doc_0203/STATE_0203.md) |
 | **FLOW_0203.md** (v3.0) | §4.1 Session Start/Pause/Resume/Stop 시퀀스, §13 Stage 8 AI 제어 & Gemini Live 양방향 음성 시퀀스(AudioWorklet 16k/24k, Barge-in, Tool Call 위임, NVS 일일 리셋), `pio_gzip_0203.py` 빌드 전처리/오프라인 부트스트랩 시퀀스 | [FLOW_0203.md](src/v0203/contract_doc_0203/FLOW_0203.md) |
-| **BUDGET_0203.md** (v2.9) | SRAM/PSRAM/Flash 메모리 버짓, 태스크별 WCET, §3 async_tcp AI 라우트 8종 WCET, §10.4 Stage 8 AI 자원 영향표, 프론트엔드 Gzip 예산 (118.1 KB / 1MB LittleFS, RAM 33.3%, Flash 23.5%) | [BUDGET_0203.md](src/v0203/contract_doc_0203/BUDGET_0203.md) |
-| **TEST_PLAN_0203.md** (v3.2) | 회귀 절차 (§3.5 T-114~T-120 Stage 8 AI 회귀 7건, 총 46건 필수 게이트, `test/e2e_stage8_4.py` 자동화 스크립트), §8 트러블슈팅 매트릭스 | [TEST_PLAN_0203.md](src/v0203/contract_doc_0203/TEST_PLAN_0203.md) |
-| **README_0203.md** (v2.13) | CBD 계약 체계 총괄, §3 마일스톤 Stage 8 AI/Live/Guardrails 추가, §7 실측 자원 (RAM 100.4KB / Flash 1.32MB / littlefs 148.8 KB), 커밋 및 검증 스크립트 | [README_0203.md](src/v0203/contract_doc_0203/README_0203.md) |
+| **BUDGET_0203.md** (v2.9) | SRAM/PSRAM/Flash 메모리 버짓, 태스크별 WCET, §3 async_tcp AI 라우트 8종 WCET, §10.4 Stage 8 AI 자원 영향표, 프론트엔드 Gzip 예산 (137.2 KB / 1MB LittleFS, RAM 30.7%, Flash 20.8%) | [BUDGET_0203.md](src/v0203/contract_doc_0203/BUDGET_0203.md) |
+| **TEST_PLAN_0203.md** (v3.2) | 회귀 절차 (§3.5 T-114~T-120 Stage 8 AI 회귀 7건, §3.6 T-121~T-148 28대 감사 회귀, 총 67건 필수 게이트, `test/e2e_stage8_4.py` 자동화 스크립트), §8 트러블슈팅 매트릭스 | [TEST_PLAN_0203.md](src/v0203/contract_doc_0203/TEST_PLAN_0203.md) |
+| **README_0203.md** (v2.16) | CBD 계약 체계 총괄, §3 마일스톤 Stage 8/9/9.1 완결, §7 실측 자원 (RAM 100.5KB / Flash 1.36MB / littlefs 149.8 KB), 커밋 및 검증 스크립트 | [README_0203.md](src/v0203/contract_doc_0203/README_0203.md) |
 | **UserManual_0203_002.md** (v2.9) | v0203 사용자 매뉴얼 — §13 Gemini AI 비서 & Live 실시간 음성(Aoede 보이스, Audio Orb, 웨이크워드, Barge-in, 12대 제어도구, 안심 가드레일, 전역 플로팅 마이크 FAB), 12대 웹 UI 화면 조작 가이드, 대시보드 3대 슬라이더 연동, 오프라인 접이식 데모 툴바 | [UserManual_0203_002.md](src/v0203/User_Manual_0203/UserManual_0203_002.md) |
 
 ---
@@ -85,6 +102,7 @@
 6. **센서 캐시 재사용**: 실시간 Comfort(불쾌지수 DI) 계산 시 파일 스코프 DHT 센서 캐시(`s_dhtCache`)를 재사용하여 I2C 블로킹 시간 0ms 유지.
 7. **Session 위임 (ADR-1)**: `startSession`/`pauseSession`/`resumeSession`/`stopSession`은 내부 검증 경로(`startUserProfileByNo`/`startOverridePreset`/`startOverrideFixed`)에 위임. `_session`은 export 전용 mirror이며 `decideRunSource`에 참여 금지.
 8. **AI 제어 & 가드레일 (AI-1~AI-6)**: 15종 위험 시스템 명령(`reboot`, `factory_reset`, `wifi_modify` 등) 원천 차단(`isDangerousAction`). 12대 허용 도구는 CT10 공개 함수에 위임. Gemini Live 30분 상한(403) 및 일일 $0.50 한도 보호 NVS 4키 누적. 프롬프트 캐시 30초 준수.
+9. **Gemini REST/Live 스키마 및 보안 (AI-7/AUDIT2-1~3)**: Gemini REST 2-turn `parts`는 원시 문자열 대신 `[{"text": "..."}]` 객체 규격 엄격 준수. Live 도구 선언은 `CT10_AI::appendAIFunctionDeclarations()` 단일 위임(SSOT). 6대 AI 라우트 `checkApiKey()` 인가 가드 및 비동기 HTTP 요청 단편화(`index + len != total`) 검사 필수.
 
 ### 4.3 프론트엔드 (Web UI) 구현 규칙
 1. **널리시 폴백 (NEW-C1)**: 폼 필드 렌더링 시 `||` 연산자 금지, `nz(v, fallback)` 사용 (`0`, `''`, `false` 유효값 보존).
@@ -96,6 +114,9 @@
 7. **Preview 파사드 (ADR-5)**: `SNW.Preview.showModal/generate/_animate` 파사드 사용. 실구현은 `140.ui.simulation.js` 위임.
 8. **i18n 완전성 (P-2)**: `SNW.I18n.t('key')` 참조 전 반드시 `check_i18n.py --strict` 통과. 신규 키는 ko/en 양쪽 DICT에 대칭 추가.
 9. **AudioWorklet & Barge-in (AI-5)**: 마이크 캡처는 16kHz PCM16 Worklet Blob 스트리밍, 재생 큐는 24kHz PCM16, 사용자 발화 시 `AudioPlayback.flush()`로 이전 음성 즉시 소거.
+10. **데스크톱 영구 내비게이션 (ADR-10)**: 화면 폭 1024px 이상에서는 `.snw-app`에 2열 그리드(`var(--snw-sidebar-w) 1fr`)를 상시 적용하고 `#btn-menu` 은닉. 라우팅 전환이나 본문 클릭 시 데스크톱 사이드바가 닫히지 않도록 `window.innerWidth < 1024` 가드 필수 적용.
+11. **세션 데이터 정규화 (`060.store.js`, R-1)**: 백엔드 상태 수신 시 `normalizeSession()` 헬퍼를 경유하여 `type`(숫자 0~3), `typeName`('NONE'|'PLAYLIST'|'PRESET'|'FIXED'), `triggerName`, `state`를 정규화하여 렌더링 시 `undefined` 미표시 및 비정규 상태 오판 방지.
+12. **하단 뷰포트 레이아웃 스택 (ADR-9)**: Now Playing Bar 가동 시 `body.has-nowplaying` 클래스를 자동 토글하여 AI FAB과 토스트를 76px에서 124px로 자동 부상시키고, 메인 콘텐츠 `padding-bottom`을 128px로 확장하여 스크롤 가림 원천 차단.
 
 ---
 

@@ -7,7 +7,7 @@
 [![Firmware Version](https://img.shields.io/badge/Firmware-v0203%20(FW__2.0.3)-blue.svg)](src/v0203/contract_doc_0203/SPEC_0203.md)
 [![Target MCU](https://img.shields.io/badge/MCU-ESP32--S3--N16R8-orange.svg)](src/v0203/contract_doc_0203/BUDGET_0203.md)
 [![PlatformIO](https://img.shields.io/badge/Framework-PlatformIO%20%7C%20C%2B%2B17-green.svg)](platformio.ini)
-[![Architecture](https://img.shields.io/badge/Arch-FreeRTOS%20CBD%20v2.14--v3.1-purple.svg)](src/v0203/contract_doc_0203/CONTRACT_0203.md)
+[![Architecture](https://img.shields.io/badge/Arch-FreeRTOS%20CBD%20v2.16--v3.4-purple.svg)](src/v0203/contract_doc_0203/CONTRACT_0203.md)
 
 * **원작 오픈소스 프로젝트**: [WindScape by Tilman Griesel](https://github.com/TilmanGriesel/WindScape.git)
 * **현재 펌웨어 사양**: **v0203 (FW_Ver_2.0.3)** (ESP32-S3 / C++17 / FreeRTOS / PlatformIO 기반 단독 실행 임베디드 어플라이언스, C++ 소스 `_0203` 접미사)
@@ -33,35 +33,39 @@
   * 기기 설치, 배선, Wi-Fi(SoftAP/STA) 연결, 13대 웹 화면 조작법, 10대 프리셋 + 5대 스타일 상세 해설, 대시보드 3대 슬라이더 연동, Wind Studio 8스텝 작곡기, Session FSM & Now Playing Bar, Comfort DI 추천, Monitor 실시간/회고, **§13 Gemini AI 비서 & Live 실시간 음성(Aoede 보이스, Audio Orb, 웨이크워드, Barge-in, 12대 제어도구, 안심 가드레일, 전역 플로팅 마이크 FAB)**, 4단계 온보딩, 오프라인 시뮬레이션 데모 툴바, REST API/WebSocket 규격, 고장 진단 및 유지보수 가이드 수록.
 
 ### 2. 기술 사양 및 CBD 엔지니어링 계약서 (Engineering Contracts)
-* 📑 [**README_0203.md (계약 문서 세트 총괄 인덱스 v2.13)**](src/v0203/contract_doc_0203/README_0203.md)
-* 📐 [**SPEC_0203.md (종합 기술 사양서 v2.14)**](src/v0203/contract_doc_0203/SPEC_0203.md) : 하드웨어 핀맵, 25kHz PWM 타이밍, REST/WebSocket 인터페이스, §5.1.4 Stage 8 AI 제어 & Gemini Live 8대 API 명세, 12대 안전도구 및 15종 위험명령 차단, ADR 1~8, Gzip Level 9 정적 에셋 파이프라인 (총 118.1 KB 번들) 및 오프라인 모듈 분리 규격.
-* 🤝 [**CONTRACT_0203.md (동시성 계약서 v3.1)**](src/v0203/contract_doc_0203/CONTRACT_0203.md) : FreeRTOS 5대 태스크 구조, 우선순위, Mutex 소유권 및 데드락 방지, §3.2 Session 위임 락 순서, §7.15 Stage 8 AI-1~AI-6 실시간 음성 안전 계약(15종 위험명령 차단, 30분 상한, NVS 4키 일일비용 가드레일, AudioWorklet Barge-in Flush), Batch I 물리 Override, SYNC-1~3.
+* 📑 [**README_0203.md (계약 문서 세트 총괄 인덱스 v2.16)**](src/v0203/contract_doc_0203/README_0203.md) : CBD 계약 체계 총괄, Stage 8/9/9.1 마일스톤 및 실측 자원(RAM 100.5KB / Flash 1.36MB / LittleFS 149.8KB).
+* 📐 [**SPEC_0203.md (종합 기술 사양서 v2.16)**](src/v0203/contract_doc_0203/SPEC_0203.md) : 하드웨어 핀맵, 25kHz PWM 타이밍, REST/WebSocket 인터페이스, §5.1.4 Stage 8 AI 제어 & Gemini Live 8대 API 명세, 12대 안전도구 및 15종 위험명령 차단, ADR 1~10, Gzip Level 9 정적 에셋 파이프라인 (총 137.2 KB gz 번들) 및 오프라인 모듈 분리 규격, Stage 9 UI 레이아웃 표준화 & 2차 감사 19대 이슈 해결.
+* 🤝 [**CONTRACT_0203.md (동시성 계약서 v3.4)**](src/v0203/contract_doc_0203/CONTRACT_0203.md) : FreeRTOS 5대 태스크 구조, 우선순위, Mutex 소유권 및 데드락 방지, §3.2 Session 위임 락 순서, §7.15 Stage 8 AI-1~AI-6 실시간 음성 안전 계약, §7.16 1차 감사 AUDIT-1~6, §7.17 UI-5~8 모바일 레이아웃 스택, §7.18 2차 감사 AUDIT2-1~5(Live 보안인가, 도구선언 단일위임, REST parts 객체 규격, 데스크톱 영구 사이드바 ADR-10).
 * 🔄 [**STATE_0203.md (상태 및 7-State + Session 3-State FSM 명세서 v3.1)**](src/v0203/contract_doc_0203/STATE_0203.md) : 상태 소유권 매트릭스(§1 `s_aiDailyUsage`/`s_promptCache`/`runtimeAutoOff` 확장), §2.5 Session FSM ↔ runCtx FSM 관계(ADR-1), §6.4 Pause/Resume/Stop 위임 라이프사이클, S10 물리 엔진 상태, §8 E-2 AI 분할 상태 소유권.
 * 🔀 [**FLOW_0203.md (실행 흐름도 및 시퀀스 다이어그램 v3.0)**](src/v0203/contract_doc_0203/FLOW_0203.md) : 부팅 시퀀스, HTTP/WS 처리 루프, §4.1 Session 위임 시퀀스, §13 Stage 8 AI 제어 & Gemini Live 양방향 음성 시퀀스(AudioWorklet 16k/24k, Barge-in, Tool Call 위임, NVS 일일 리셋), `pio_gzip_0203.py` 빌드 전처리/오프라인 부트스트랩 시퀀스.
-* ⏱️ [**BUDGET_0203.md (자원 및 WCET 예산 v2.9)**](src/v0203/contract_doc_0203/BUDGET_0203.md) : SRAM/PSRAM/Flash 메모리 버짓, 태스크별 WCET, §3 async_tcp AI 라우트 8종 WCET, §10.4 Stage 8 AI 자원 영향표, 프론트엔드 Gzip 예산 (118.1 KB / 1MB LittleFS, RAM 33.3%, Flash 23.5%).
-* 🧪 [**TEST_PLAN_0203.md (회귀 테스트 및 검증 계획서 v3.2)**](src/v0203/contract_doc_0203/TEST_PLAN_0203.md) : 단위/통합/스트레스 테스트 케이스(§3.5 T-114~T-120 Stage 8 AI 회귀 7건, 총 46건 필수 게이트, `test/e2e_stage8_4.py` 자동화 스크립트), §8 트러블슈팅 매트릭스.
+* ⏱️ [**BUDGET_0203.md (자원 및 WCET 예산 v2.9)**](src/v0203/contract_doc_0203/BUDGET_0203.md) : SRAM/PSRAM/Flash 메모리 버짓, 태스크별 WCET, §3 async_tcp AI 라우트 8종 WCET, §10.4 Stage 8 AI 자원 영향표, 프론트엔드 Gzip 예산 (137.2 KB / 1MB LittleFS, RAM 30.7%, Flash 20.8%).
+* 🧪 [**TEST_PLAN_0203.md (회귀 테스트 및 검증 계획서 v3.2)**](src/v0203/contract_doc_0203/TEST_PLAN_0203.md) : 단위/통합/스트레스 테스트 케이스(§3.5 T-114~T-120 Stage 8 AI 회귀 7건, §3.6 T-121~T-148 28대 감사 회귀, 총 67건 필수 게이트, `test/e2e_stage8_4.py` 자동화 스크립트), §8 트러블슈팅 매트릭스.
 
 ### 3. 개발 환경 및 AI 에이전트 협업 가이드 (Developer & Agent Setup)
 * 🤖 [**AGENTS.md (개발 환경 및 에이전트 협업 가이드)**](AGENTS.md)
-  * ESP32-S3 PlatformIO 빌드/플래시 설정, C++ `_0203` 모듈 아키텍처, CBD v2.14~v3.1 계약 준수 및 에이전트 필수 4대 불변 원칙 안내.
+  * ESP32-S3 PlatformIO 빌드/플래시 설정, C++ `_0203` 모듈 아키텍처, CBD v2.16~v3.4 계약 준수 및 에이전트 필수 4대 불변 원칙, 네이밍 치트시트 안내.
 
 ---
 
 ## 📋 목차 (Table of Contents)
 
-1. [핵심 기능 (Key Features)](#-핵심-기능-key-features)
-2. [작동 모드 (Operating Modes)](#-작동-모드-operating-modes)
-3. [Gemini AI 비서 & Live 양방향 음성 (Stage 8 신규)](#-gemini-ai-비서--live-실시간-음성-stage-8-신규)
-4. [10종 자연풍 환경 프리셋 (Nature Presets)](#-10종-자연풍-환경-프리셋-nature-presets)
-5. [5종 바람 스타일 (Wind Styles)](#-5종-바람-스타일-wind-styles)
-6. [Session FSM & Wind Studio (v0203 신규)](#-session-fsm--wind-studio-v0203-신규)
-7. [빠른 시작 가이드 (Quick Start)](#-빠른-시작-가이드-quick-start)
-8. [하드웨어 구성 및 배선 (Hardware & Wiring)](#-하드웨어-구성-및-배선-hardware--wiring)
-9. [소프트웨어 빌드 및 배포 (Build & Setup)](#-소프트웨어-빌드-및-배포-build--setup)
-10. [웹 대시보드 및 시스템 구조 (Web Interface & System Architecture)](#-웹-대시보드-및-시스템-구조-web-interface--system-architecture)
-11. [대기역학 물리 시뮬레이션 원리 (Physics Model)](#-대기역학-물리-시뮬레이션-원리-physics-model)
-12. [문제 해결 요약 (Troubleshooting Summary)](#-문제-해결-요약-troubleshooting-summary)
-13. [부품 및 참조 링크 (Links)](#-부품-및-참조-링크-links)
+1. [📚 문서 체계 및 상세 안내 (Documentation Roadmap)](#-문서-체계-및-상세-안내-documentation-roadmap)
+2. [🌬 핵심 기능 (Key Features)](#-핵심-기능-key-features)
+3. [⚙ 작동 모드 (Operating Modes)](#-작동-모드-operating-modes)
+4. [🎙️ Gemini AI 비서 & Live 양방향 음성 (Stage 8)](#️-gemini-ai-비서--live-실시간-음성-stage-8-신규)
+5. [🗺️ 10종 자연풍 환경 프리셋 (Nature Presets)](#️-10종-자연풍-환경-프리셋-nature-presets)
+6. [🎨 5종 바람 스타일 (Wind Styles)](#-5종-바람-스타일-wind-styles)
+7. [🎵 Session FSM & Wind Studio (v0203 신규)](#-session-fsm--wind-studio-v0203-신규)
+8. [🚀 빠른 시작 가이드 (Quick Start)](#-빠른-시작-가이드-quick-start)
+9. [🔧 하드웨어 구성 및 배선 (Hardware & Wiring)](#-하드웨어-구성-및-배선-hardware--wiring)
+10. [💻 소프트웨어 빌드 및 배포 (Build & Setup)](#-소프트웨어-빌드-및-배포-build--setup)
+11. [🌐 웹 대시보드 및 시스템 구조 (Web Interface & System Architecture)](#-웹-대시보드-및-시스템-구조-web-interface--system-architecture)
+    - [11.1 웹 브라우저 주요 진입점 (SPA Routes)](#1-웹-브라우저-주요-진입점-spa-routes)
+    - [11.2 반응형 레이아웃 및 데스크톱 영구 내비게이션 (ADR-9, ADR-10)](#2-반응형-레이아웃-및-데스크톱-영구-내비게이션-adr-9-adr-10)
+    - [11.3 REST API & WebSocket 인터페이스 요약](#3-rest-api--websocket-인터페이스-요약-v0203)
+12. [🌪 대기역학 물리 시뮬레이션 원리 (Physics Model)](#-대기역학-물리-시뮬레이션-원리-physics-model)
+13. [🧭 문제 해결 요약 (Troubleshooting Summary)](#-문제-해결-요약-troubleshooting-summary)
+14. [🔗 부품 및 참조 링크 (Links)](#-부품-및-참조-링크-links)
 
 ---
 
@@ -79,9 +83,11 @@
   - **전역 플로팅 마이크 FAB**: 어느 화면에서든 원클릭으로 호출 가능한 실시간 음성 대화 바텀시트(`999b.ai-sheet.js`) 및 Audio Orb 시각화.
 * **10종 자연 환경 프리셋 × 5종 스타일 조합**  
   `OCEAN`, `COUNTRY_BREEZE`, `MEDITERRANEAN`, `MOUNTAIN`, `PLAINS`, `HARBOR_BREEZE`, `FOREST_CANOPY`, `URBAN_SUNSET`, `TROPICAL_RAIN`, `DESERT_NIGHT` 10종 프리셋에 `BALANCE`/`ACTIVE`/`FOCUS`/`RELAX`/`SLEEP` 5종 스타일을 조합하여 50가지 기류 특성 제공.
-* **초경량 SPA Web UI 대시보드 (Gzip Level 9, 총 118.1 KB)**  
-  54개 JS, 18개 CSS를 단일 번들(`P010_bundle_0203.js` 102.4KB gz / `P000_common_0203.css` 14.1KB gz / `index.html` 1.8KB gz)로 패키징.  
-  대시보드 상단 5종 바람 스타일 탭(38px 터치 최적화) + 하단 4x2 프리셋 그리드(10종) + 3대 물리 슬라이더 자동 동기화 + 수면풍(SLEEP) 모드 + 정량적 체감 피드백(m/s 등) + 완전 한/영 다국어 + 모바일 2열 세그먼트 그리드 + 세그먼트 순서 이동(▲/▼) + Undo 토스트 + 오프라인 접이식 데모 툴바.
+* **초경량 SPA Web UI 대시보드 (Gzip Level 9, 총 137.2 KB gz / LittleFS 149.8 KB)**  
+  54개 JS, 18개 CSS를 단일 번들(`P010_bundle_0203.js` 120.7KB gz / `P000_common_0203.css` 14.8KB gz / `index.html` 1.7KB gz)로 패키징.  
+  - **데스크톱 영구 사이드바 & 모바일 슬라이드 드로어 분리 (ADR-10)**: 1024px 이상 대화면에서는 2열 그리드로 사이드바를 상시 노출하여 메뉴 증발을 차단하고, 모바일에서는 터치 드로어 및 딤 오버레이를 제공합니다.
+  - **하단 뷰포트 레이아웃 동적 스택 (ADR-9)**: Now Playing Bar 가동 시 AI FAB과 토스트가 76px에서 124px로 0.25초 부상하며 본문 스크롤 가림을 해소합니다.
+  - **원스톱 인터랙션**: 대시보드 상단 5종 바람 스타일 탭(44px 모바일 터치 최적화) + 하단 4x2 프리셋 그리드(10종) + 3대 물리 슬라이더 자동 동기화 및 `[수동 튜닝됨]` 뱃지 / `[기본값 원복]` 리셋 액션 + Now Playing Bar 상세 확장 모달(`showNowPlayingDetailsModal`) + 완전 한/영 다국어 + 오프라인 접이식 데모 툴바 탑재.
 * **Session FSM & 8스텝 Wind Studio (v0203 신규)**  
   `IDLE`/`ACTIVE`/`PAUSED` 3-State Session FSM + 5분/30분 Smart Resume. 8스텝 작곡기(Wind Studio)로 나만의 바람 시나리오 제작 → Playlist 저장 → 대시보드 원클릭 재생 → Now Playing Bar로 어디서나 제어.
 * **일본 기상청 표준 DI 기반 Comfort 추천 (v0203 신규)**  
@@ -341,7 +347,13 @@ Smart Nature Wind v0203은 Google Gemini Live API와 WebSocket을 결합한 실�
   - `#/simulation`: **바람 체험실 (v0203 재설계)**
   - **전역 바텀시트 (`999b.ai-sheet.js`)**: 우측 하단 플로팅 마이크 FAB 버튼으로 언제 어디서나 호출 가능한 실시간 음성 비서 인터페이스
 
-### 2. REST API & WebSocket 인터페이스 요약 (v0203)
+### 2. 반응형 레이아웃 및 데스크톱 영구 내비게이션 (ADR-9, ADR-10)
+Smart Nature Wind v0203은 다양한 뷰포트 해상도에 최적화된 반응형 웹 레이아웃을 제공합니다.
+* **데스크톱 영구 사이드바 2열 그리드 (`ADR-10`)**: 화면 폭 1024px 이상의 PC/태블릿 가로 모드에서는 `.snw-app`에 좌측 사이드바(220px)와 메인 본문 2열 그리드가 상시 고정되며, 햄버거 메뉴 버튼(`#btn-menu`)과 딤 오버레이를 은닉하여 대화면 탐색 편의성을 극대화합니다.
+* **모바일 반응형 슬라이드 드로어**: 1024px 미만의 모바일 화면에서는 상단 햄버거 버튼 터치 시 부드러운 오프캔버스 드로어 및 딤 오버레이가 활성화되며, 메뉴 클릭 시 자동으로 닫힙니다.
+* **하단 뷰포트 레이아웃 동적 스택 (`ADR-9`)**: 모바일 하단 탭 바(60px), Now Playing Bar(48px), 전역 플로팅 AI FAB(54px), 토스트 알림이 중첩되지 않도록 CSS 변수 기반 동적 스택을 적용합니다. 세션 시작 시 `body.has-nowplaying` 클래스를 통해 AI FAB/토스트가 76px에서 124px로 0.25초 부상하며, 콘텐츠 하단 패딩을 128px로 확장하여 스크롤 끝단 가림을 원천 방지합니다.
+
+### 3. REST API & WebSocket 인터페이스 요약 (v0203)
 * `GET /api/v001/state` : 전원 상태, 모드, 목표 풍속, **세션 스냅샷(`profileName`, `stepRemainSec`)**, **Runtime(NVS)**, Comfort DI
 * `POST /api/v001/session/{start|pause|resume|stop}` : **Session FSM 제어 (ADR-1 위임 모델)**
   - `start` body: `{type:"PLAYLIST"|"PRESET"|"FIXED", payload:{...}, trigger:"MANUAL"|"SCHEDULE"}`

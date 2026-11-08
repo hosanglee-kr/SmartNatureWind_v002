@@ -84,13 +84,13 @@ void A00_init() {
     // 2. Config + NVS 초기화
     // ------------------------------------------------------
     if (!CL_C10_ConfigManager::begin()) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A00] C10 begin failed. Abort init.");
-        return;
-    }
-
-    bool v_cfgOk = CL_C10_ConfigManager::loadAll(g_A20_config_root);
-    if (!v_cfgOk) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A00] C10 loadAll returned false (partial/default may be used).");
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A00] C10 begin failed. Forcing in-memory fallback.");
+        // [BE-P1-2] 조기 return 대신 3단계 In-memory / Recovery AP 폴백 진행
+    } else {
+        bool v_cfgOk = CL_C10_ConfigManager::loadAll(g_A20_config_root);
+        if (!v_cfgOk) {
+            CL_D10_Logger::log(EN_L10_LOG_WARN, "[A00] C10 loadAll returned false (partial/default may be used).");
+        }
     }
 
     // NVS begin (Config 이후)
@@ -239,6 +239,11 @@ void A00_init() {
     esp_task_wdt_init(A20_Const::G_A00_WDT_TIMEOUT_SEC, true);
 #endif
     esp_task_wdt_add(NULL);
+
+    // [BE-P1-3] 부팅 시 저장된 시스템 런타임(로그 레벨 등) 적용 (T-128 대응)
+    if (g_A20_config_root.system) {
+        CL_W10_WebAPI::applySystemRuntimeFromConfig(*g_A20_config_root.system);
+    }
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[A00] Init complete. Ready.");
 }

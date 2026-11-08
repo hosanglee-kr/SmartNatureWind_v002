@@ -137,8 +137,8 @@ class CL_D10_Logger {
 	}
 
 	static void broadcastLog(EN_L10_LogLevel_t p_level, const char* p_msg) {
-		if (!s_wsLogs)
-			return;
+		if (!s_wsLogs || s_wsLogs->count() == 0)
+			return; // [BE-P1-5] 클라이언트가 없으면 직렬화 및 textAll 생략 (T-loop 보호)
 		JsonDocument v_doc;
 		v_doc["ts"]	 = millis();
 		v_doc["lv"]	 = (int)p_level;

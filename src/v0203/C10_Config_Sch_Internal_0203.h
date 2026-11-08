@@ -55,9 +55,6 @@ bool C10_fromJson_ScheduleItem(const JsonObjectConst& p_js,
                                bool                   p_forceReissueSegId,
                                const char*            p_callerForLog);
 
-// segId 재발급 + segNo 필수/중복 검증
-bool C10_reissueSegIdsAndValidateSegNos(ST_A20_ScheduleItem_t& p_s, const char* p_callerForLog);
-
 // File Load 검증 (schId/schNo/segId/segNo 필수/0금지/중복/범위)
 bool C10_validateSchedulesLoaded(const ST_A20_SchedulesRoot_t& p_root, const char* p_callerForLog);
 

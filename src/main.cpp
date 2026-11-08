@@ -62,7 +62,7 @@ void setup() {
     Serial.println(" Smart Nature Wind - Boot Sequence ");
     Serial.println("=====================================");
 
-    delay(1000);
+    delay(A20_Const::G_A00_BOOT_BANNER_DELAY_MS);
 
     // --------------------------------------------------
     // 2) Logger 초기화 + 로그 레벨 설정
@@ -74,7 +74,7 @@ void setup() {
     CL_D10_Logger::begin(Serial);
     CL_D10_Logger::setLevel(EN_L10_LOG_INFO);
 
-    delay(1000);
+    delay(A20_Const::G_A00_LOGGER_INIT_DELAY_MS);
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[BOOT] Logger ready");
 

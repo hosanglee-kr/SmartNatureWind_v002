@@ -64,11 +64,6 @@ int CL_C10_ConfigManager::addScheduleFromJson(const JsonDocument& p_doc) {
         return -4;
     }
 
-    if (!C10_reissueSegIdsAndValidateSegNos(s, __func__)) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] addSchedule: segment validation failed");
-        return -5;
-    }
-
     if (C10_isSchIdDuplicated(v_root, s.schId, v_root.count)) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] addSchedule: duplicated schId=%u", (unsigned)s.schId);
         return -6;

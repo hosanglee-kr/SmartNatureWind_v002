@@ -248,7 +248,8 @@ typedef struct {
     // 공통
     ST_A20_SegmentOverride_t override;
 
-    // [Stage 1 호환 브릿지] 기존 세그먼트 멤버 매핑
+    // [BE-P2-2 / ADR-2 Legacy Bridge] 내부 tickSegmentSequence FSM 호환 미러 필드
+    // (외부 JSON/API는 stepNo/durationMin/type 100% 단일 사용, FSM 내부 전용)
     uint8_t               segId      = 0;
     uint16_t              segNo      = 0;
     uint16_t              onMinutes  = 0;
@@ -268,20 +269,8 @@ typedef struct {
     char    endTime[6]   = {0};
 } ST_A20_SchedulePeriod_t;
 
-typedef struct {
-    uint8_t  segId      = 0;
-    uint16_t segNo      = 0;
-    uint16_t onMinutes  = 0;
-    uint16_t offMinutes = 0;
-
-    EN_A20_segment_mode_t mode = EN_A20_SEG_MODE_PRESET;
-
-    char                     presetCode[A20_Const::MAX_CODE_LEN] = {0};
-    char                     styleCode[A20_Const::MAX_CODE_LEN]  = {0};
-    ST_A20_SegmentOverride_t override;
-
-    float fixedSpeed = 0.0f;
-} ST_A20_ScheduleSegment_t;
+// [P2-4] ST_A20_ScheduleSegment_t 독자 정의 제거 ➔ ST_A20_Step_t alias로 통합
+typedef ST_A20_Step_t ST_A20_ScheduleSegment_t;
 
 typedef struct {
     uint8_t  schId                         = 0;

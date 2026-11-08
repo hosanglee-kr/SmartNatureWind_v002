@@ -59,6 +59,8 @@ namespace A20_Const {
 	// [E-3] 부트 시퀀스 지연 상수 (main.cpp)
 	// ======================================================
 	constexpr uint32_t G_A00_SERIAL_INIT_DELAY_MS	= 1500;	// [ms] Serial.begin 후 대기
+	constexpr uint32_t G_A00_BOOT_BANNER_DELAY_MS   = 1000; // [ms] 부팅 배너 출력 후 대기 (BE-P2-1)
+	constexpr uint32_t G_A00_LOGGER_INIT_DELAY_MS   = 1000; // [ms] Logger 초기화 후 대기 (BE-P2-1)
 	constexpr uint32_t G_A00_USB_CDC_POLL_MS		= 100;	// [ms] USB CDC 연결 폴링
 	constexpr uint32_t G_A00_USB_CDC_TIMEOUT_MS	= 3000;	// [C-1] CDC 동기화 타임아웃 (미연결 시 부팅 계속)
 

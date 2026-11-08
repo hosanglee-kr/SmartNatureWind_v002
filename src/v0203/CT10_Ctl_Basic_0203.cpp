@@ -167,17 +167,17 @@ void CL_CT10_ControlManager::initAutoOffFromSchedule(const ST_A20_ScheduleItem_t
     autoOffRt.offTimeLastYday = -1;
     autoOffRt.offTimeLastMin  = -1;
 
-        // [v0203 단일 규격] Schedule은 profileId를 참조하므로, 해당 프로파일의 autoOff를 상속
-        if (p_s.profileId > 0 && g_A20_config_root.userProfiles) {
-            ST_A20_UserProfilesRoot_t& v_profs = *g_A20_config_root.userProfiles;
-            for (uint8_t v_i = 0; v_i < v_profs.count; v_i++) {
-                if (v_profs.items[v_i].profileId == p_s.profileId) {
-                    initAutoOffFromUserProfile(v_profs.items[v_i]);
-                    return;
-                }
+    // [v0203 단일 규격] Schedule은 profileId를 참조하므로, 해당 프로파일의 autoOff를 상속
+    if (p_s.profileId > 0 && g_A20_config_root.userProfiles) {
+        ST_A20_UserProfilesRoot_t& v_profs = *g_A20_config_root.userProfiles;
+        for (uint8_t v_i = 0; v_i < v_profs.count; v_i++) {
+            if (v_profs.items[v_i].profileId == p_s.profileId) {
+                initAutoOffFromUserProfile(v_profs.items[v_i]);
+                return;
             }
         }
     }
+}
 
     // --------------------------------------------------
     // [CT10] 이벤트 상태 ACK (UI에서 호출)

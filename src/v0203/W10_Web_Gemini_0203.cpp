@@ -23,6 +23,7 @@
 #include "D10_Logger_0203.h"
 #include "C10_Config_0203.h"
 #include <WiFiClientSecure.h>
+#include <HTTPClient.h>
 
 // ------------------------------------------------------
 // Gemini API 상수
@@ -59,7 +60,7 @@ static const char* W10_getGeminiApiKey() {
 }
 
 // ------------------------------------------------------
-// Gemini API 직접 호출 (HTTPS POST)
+// Gemini API 직접 호출 (HTTPS POST via HTTPClient)
 // ------------------------------------------------------
 static String W10_callGeminiApi(const char* p_body, size_t p_len, int& r_httpCode) {
     const char* v_apiKey = W10_getGeminiApiKey();
@@ -72,83 +73,43 @@ static String W10_callGeminiApi(const char* p_body, size_t p_len, int& r_httpCod
     v_client.setInsecure(); // ESP32 제약: 인증서 검증 생략
     v_client.setTimeout(G_W10_GEMINI_TIMEOUT / 1000);
 
-    if (!v_client.connect(G_W10_GEMINI_HOST, G_W10_GEMINI_PORT)) {
-        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10][Gemini] Connection failed");
+    HTTPClient v_http;
+    v_http.setTimeout(G_W10_GEMINI_TIMEOUT);
+
+    String v_url  = "https://" G_W10_GEMINI_HOST "/v1beta/models/gemini-2.5-flash:generateContent?key=";
+    v_url        += v_apiKey;
+
+    if (!v_http.begin(v_client, v_url)) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10][Gemini] HTTPClient begin failed");
         r_httpCode = 503;
         return "{\"error\":\"Gemini connection failed\"}";
     }
 
-    String v_request  = "POST /v1beta/models/gemini-2.5-flash:generateContent?key=";
-    v_request        += v_apiKey;
-    v_request        += " HTTP/1.1\r\n";
-    v_request        += "Host: " G_W10_GEMINI_HOST "\r\n";
-    v_request        += "Content-Type: application/json\r\n";
-    v_request        += "Connection: close\r\n";
-    v_request        += "Content-Length: " + String(p_len) + "\r\n\r\n";
+    v_http.addHeader("Content-Type", "application/json");
+    v_http.addHeader("Connection", "close");
 
-    v_client.print(v_request);
-    v_client.print(p_body);
+    int v_code = v_http.POST((uint8_t*)p_body, p_len);
+    r_httpCode = v_code;
 
-    String        v_resp;
-    unsigned long v_startMs     = millis();
-    bool          v_headersDone = false;
-    bool          v_truncated   = false;
-
-    static constexpr size_t S_LINE_BUF_SZ = 512;
-    static char             s_lineBuf[S_LINE_BUF_SZ];
-    static uint8_t          s_chunk[256];
-
-    while (v_client.connected() || v_client.available()) {
-        if (millis() - v_startMs > (unsigned long)G_W10_GEMINI_TIMEOUT) {
-            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10][Gemini] Timeout reading response");
-            r_httpCode = 504;
-            v_client.stop();
-            return "{\"error\":\"Gemini timeout\"}";
+    String v_resp;
+    if (v_code > 0) {
+        v_resp = v_http.getString();
+        if (v_resp.length() > G_W10_GEMINI_MAX_RESP) {
+            CL_D10_Logger::log(EN_L10_LOG_WARN,
+                               "[W10][Gemini] Response size %u exceeds max %u",
+                               (unsigned)v_resp.length(),
+                               (unsigned)G_W10_GEMINI_MAX_RESP);
         }
-
-        if (!v_client.available()) {
-            delay(5);
-            continue;
-        }
-
-        // 헤더 파싱
-        if (!v_headersDone) {
-            memset(s_lineBuf, 0, S_LINE_BUF_SZ);
-            size_t v_n     = v_client.readBytesUntil('\n', s_lineBuf, S_LINE_BUF_SZ - 1);
-            s_lineBuf[v_n] = '\0';
-
-            if (v_n >= 5 && strncmp(s_lineBuf, "HTTP/", 5) == 0) {
-                const char* v_sp = strchr(s_lineBuf, ' ');
-                if (v_sp) r_httpCode = atoi(v_sp + 1);
-            }
-            if (v_n == 0 || (v_n == 1 && s_lineBuf[0] == '\r')) {
-                v_headersDone = true;
-            }
-            continue;
-        }
-
-        // 본문 청크 누적
-        size_t v_n = v_client.readBytes(s_chunk, sizeof(s_chunk));
-        if (v_n == 0) continue;
-
-        size_t v_avail = (v_resp.length() < G_W10_GEMINI_MAX_RESP) ? (G_W10_GEMINI_MAX_RESP - v_resp.length()) : 0;
-
-        if (v_avail == 0) {
-            v_truncated = true;
-            continue; // drain
-        }
-
-        size_t v_append = (v_n < v_avail) ? v_n : v_avail;
-        v_resp.concat((const char*)s_chunk, v_append);
-
-        if (v_append < v_n) v_truncated = true;
+    } else {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                           "[W10][Gemini] HTTP POST failed: %s (code %d)",
+                           v_http.errorToString(v_code).c_str(),
+                           v_code);
+        r_httpCode = 502;
+        v_resp     = "{\"error\":\"Gemini HTTP failed\"}";
     }
 
-    v_client.stop();
-
-    if (v_truncated) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN, "[W10][Gemini] Response truncated at %u bytes", (unsigned)v_resp.length());
-    }
+    v_http.end();
     return v_resp;
 }
 

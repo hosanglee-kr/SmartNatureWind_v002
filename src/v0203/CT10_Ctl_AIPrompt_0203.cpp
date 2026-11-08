@@ -35,20 +35,20 @@ namespace {
         return v_h;
     }
 
-    // 프리셋 코드 한글 변환
+    // 프리셋 코드 한글 변환 (G_A20_WindPreset_Arr 10종 SSOT 매핑)
     const char* presetCodeToKorean(const char* p_code) {
         if (!p_code || !p_code[0]) return "바람";
         if (strcmp(p_code, "OCEAN") == 0)          return "바다 바람";
-        if (strcmp(p_code, "VALLEY_BREEZE") == 0)  return "계곡 바람";
-        if (strcmp(p_code, "FOREST_RUSTLE") == 0)  return "숲 바람";
-        if (strcmp(p_code, "MOUNTAIN_GALE") == 0)  return "산들바람";
-        if (strcmp(p_code, "SPRING_BREEZE") == 0)  return "봄바람";
-        if (strcmp(p_code, "SUMMER_SQUALL") == 0)  return "소나기 바람";
-        if (strcmp(p_code, "AUTUMN_CHILL") == 0)   return "가을바람";
-        if (strcmp(p_code, "WINTER_BLIZZARD") == 0)return "겨울바람";
-        if (strcmp(p_code, "LAKE_RIPPLE") == 0)    return "호숫가 바람";
-        if (strcmp(p_code, "DESERT_NIGHT") == 0)   return "사막 밤바람";
-        return p_code;
+        if (strcmp(p_code, "COUNTRY_BREEZE") == 0) return "시골 바람";
+        if (strcmp(p_code, "MEDITERRANEAN") == 0)  return "지중해 바람";
+        if (strcmp(p_code, "MOUNTAIN") == 0)       return "산바람";
+        if (strcmp(p_code, "PLAINS") == 0)         return "들판 바람";
+        if (strcmp(p_code, "HARBOR_BREEZE") == 0)  return "항구 바람";
+        if (strcmp(p_code, "FOREST_CANOPY") == 0)  return "숲속 바람";
+        if (strcmp(p_code, "URBAN_SUNSET") == 0)   return "도시 노을";
+        if (strcmp(p_code, "TROPICAL_RAIN") == 0)  return "열대 비";
+        if (strcmp(p_code, "DESERT_NIGHT") == 0)   return "사막 밤";
+        return "바람";
     }
 }
 

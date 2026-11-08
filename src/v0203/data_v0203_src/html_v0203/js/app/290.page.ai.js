@@ -142,10 +142,10 @@ SNW.Page = SNW.Page || {};
 
 		async _loadCostStatus() {
 			try {
-				if (SNW.API && SNW.API.getAiCostStatus) {
+				if (SNW.Api && SNW.Api.getAiCostStatus) {
 					const now = new Date();
 					const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-					const res = await SNW.API.getAiCostStatus(today);
+					const res = await SNW.Api.getAiCostStatus(today);
 					this._updateCostBadge(res);
 				}
 			} catch (e) {
@@ -368,7 +368,7 @@ SNW.Page = SNW.Page || {};
 
 				if (SNW.AIClient) {
 					const res = await SNW.AIClient.send(msg, this._history, {
-						lang: SNW.I18n.currentLang || 'ko',
+						lang: (SNW.I18n && SNW.I18n.getLang ? SNW.I18n.getLang() : 'ko'),
 						voiceMode: isVoiceMode
 					});
 					if (!this._active) return;

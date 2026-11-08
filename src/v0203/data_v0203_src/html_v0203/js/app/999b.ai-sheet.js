@@ -284,14 +284,14 @@
 
 				if (SNW.AIClient) {
 					const res = await SNW.AIClient.send(msg, _history, {
-						lang: (SNW.I18n && SNW.I18n.currentLang) || 'ko',
+						lang: (SNW.I18n && SNW.I18n.getLang ? SNW.I18n.getLang() : 'ko'),
 						voiceMode: false
 					});
 					reply = (res && res.text) || '(no response)';
 					hint = (res && res._speechHint) || reply;
 					actions = (res && res.actions) || [];
-				} else if (SNW.API && SNW.API.gemini) {
-					const res = await SNW.API.gemini({ message: msg });
+				} else if (SNW.Api && SNW.Api.gemini) {
+					const res = await SNW.Api.gemini({ message: msg });
 					reply = (res && res.text) || '(no response)';
 				}
 

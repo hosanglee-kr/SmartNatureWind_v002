@@ -504,9 +504,9 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
         p_cfg.pageCount = 1;
 
         ST_A20_PageItem_t& v_p = p_cfg.pages[0];
-        A40_ComFunc::copyStr2Buffer_safe(v_p.uri, "/P010_main_0200.html", sizeof(v_p.uri));
-        A40_ComFunc::copyStr2Buffer_safe(v_p.path, "/html_v3/P010_main_0200.html", sizeof(v_p.path));
-        A40_ComFunc::copyStr2Buffer_safe(v_p.label, "Main", sizeof(v_p.label));
+        A40_ComFunc::copyStr2Buffer_safe(v_p.uri, "/index.html", sizeof(v_p.uri));
+        A40_ComFunc::copyStr2Buffer_safe(v_p.path, "/html_v0203/index.html", sizeof(v_p.path));
+        A40_ComFunc::copyStr2Buffer_safe(v_p.label, "Smart Nature Wind", sizeof(v_p.label));
         v_p.enable = true;
         v_p.isMain = true;
         v_p.order  = 10;
@@ -518,13 +518,8 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
             A40_ComFunc::copyStr2Buffer_safe(v_a.uri, p_uri, sizeof(v_a.uri));
             A40_ComFunc::copyStr2Buffer_safe(v_a.path, p_path, sizeof(v_a.path));
         };
-        v_addPageAsset("/P010_main_0200.css", "/html_v3/P010_main_0200.css");
-        v_addPageAsset("/P010_main_core_071.js", "/html_v3/P010_main_core_071.js");
-        v_addPageAsset("/P010_main_preset_071.js", "/html_v3/P010_main_preset_071.js");
-        v_addPageAsset("/P010_main_ws_071.js", "/html_v3/P010_main_ws_071.js");
-        v_addPageAsset("/P010_main_wifi_071.js", "/html_v3/P010_main_wifi_071.js");
-        v_addPageAsset("/P010_main_misc_071.js", "/html_v3/P010_main_misc_071.js");
-        v_addPageAsset("/P010_main_0200.js", "/html_v3/P010_main_0200.js");
+        v_addPageAsset("/P000_common_0203.css", "/html_v0203/P000_common_0203.css");
+        v_addPageAsset("/P010_bundle_0203.js", "/html_v0203/P010_bundle_0203.js");
     }
 
     auto v_addRedirect = [&](const char* p_from, const char* p_to) {
@@ -534,21 +529,25 @@ inline void A20_resetWebPageDefault(ST_A20_WebPageConfig_t& p_cfg) {
         A40_ComFunc::copyStr2Buffer_safe(v_r.uriTo, p_to, sizeof(v_r.uriTo));
     };
 
-    v_addRedirect("/", "/P010_main_0200.html");
-    v_addRedirect("/index.html", "/P010_main_0200.html");
-    v_addRedirect("/P010_main", "/P010_main_0200.html");
+    v_addRedirect("/", "/index.html");
+    v_addRedirect("/dashboard", "/index.html#/dashboard");
+    v_addRedirect("/chart", "/index.html#/chart");
+    v_addRedirect("/schedule", "/index.html#/schedule");
+    v_addRedirect("/profiles", "/index.html#/profiles");
+    v_addRedirect("/sensors", "/index.html#/sensors");
+    v_addRedirect("/simulation", "/index.html#/simulation");
+    v_addRedirect("/windprofile", "/index.html#/windprofile");
+    v_addRedirect("/automation", "/index.html#/automation");
+    v_addRedirect("/settings", "/index.html#/settings");
+    v_addRedirect("/network", "/index.html#/network");
+    v_addRedirect("/logs", "/index.html#/logs");
+    v_addRedirect("/diagnostics", "/index.html#/diagnostics");
+    v_addRedirect("/firmware", "/index.html#/firmware");
+    v_addRedirect("/ai", "/index.html#/ai");
+    v_addRedirect("/info", "/index.html#/info");
 
-    auto v_addCommonAsset = [&](const char* p_uri, const char* p_path, bool p_isCommon) {
-        if (p_cfg.assetCount >= A20_Const::MAX_COMMON_ASSETS) return;
-        ST_A20_CommonAsset_t& v_c = p_cfg.assets[p_cfg.assetCount++];
-        A40_ComFunc::copyStr2Buffer_safe(v_c.uri, p_uri, sizeof(v_c.uri));
-        A40_ComFunc::copyStr2Buffer_safe(v_c.path, p_path, sizeof(v_c.path));
-        v_c.isCommon = p_isCommon;
-    };
-
-    v_addCommonAsset("/P000_common_071.css", "/html_v3/P000_common_071.css", true);
-    v_addCommonAsset("/P000_common_071.js", "/html_v3/P000_common_071.js", true);
-    v_addCommonAsset("/P001_comm_API_071.js", "/html_v3/P001_comm_API_071.js", true);
+    // SPA 번들에 모든 자산 통합됨 (assets[]는 빈 배열)
+    p_cfg.assetCount = 0;
 }
 
 // ======================================================

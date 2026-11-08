@@ -35,6 +35,7 @@
         transform: translateX(-100%);
         box-shadow: var(--snw-shadow-lg);
     }
+
     body.snw-sidebar-open .snw-sidebar {
         transform: translateX(0) !important;
     }
@@ -98,6 +99,7 @@
         transform: translateX(-100%);
         box-shadow: var(--snw-shadow-lg);
     }
+
     body.snw-sidebar-open .snw-sidebar {
         transform: translateX(0) !important;
     }
@@ -108,10 +110,13 @@
 }
 
 /* =====================================================
- * 데스크톱 (≥ 1024) — 사이드바 상시 표시 (선택)
+ * 데스크톱 (≥ 1024)
  * ===================================================== */
 @media (min-width: 1024px) {
-    /* body:has()는 _layout.css에서 처리 */
+    .snw-sidebar {
+        transform: none !important;
+        box-shadow: none !important;
+    }
 }
 
 /* =====================================================
@@ -129,6 +134,7 @@
  * 인쇄
  * ===================================================== */
 @media print {
+
     .snw-header,
     .snw-sidebar,
     .snw-footer,
@@ -137,9 +143,11 @@
     .snw-btn-icon {
         display: none !important;
     }
+
     .snw-main {
         padding: 0;
     }
+
     .snw-card {
         box-shadow: none;
         border: 1px solid #ccc;
@@ -151,6 +159,7 @@
  * 접근성 — 모션 감소
  * ===================================================== */
 @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -166,8 +175,13 @@
  * [P1-7] 모바일 헤더 시계 숨김 (320px 대응)
  * ============================================================ */
 @media (max-width: 480px) {
-    .snw-clock { display: none; }
-    .snw-brand { font-size: 13px; }
+    .snw-clock {
+        display: none;
+    }
+
+    .snw-brand {
+        font-size: 13px;
+    }
 }
 
 /* ============================================================
@@ -179,16 +193,30 @@
         gap: 2px;
         padding: 4px 0;
     }
-    .snw-log-ts { font-size: 10px; }
-    .snw-log-lv { display: inline; margin-right: 6px; }
+
+    .snw-log-ts {
+        font-size: 10px;
+    }
+
+    .snw-log-lv {
+        display: inline;
+        margin-right: 6px;
+    }
 }
 
 /* ============================================================
  * [P1-15] Footer 터치 확대
  * ============================================================ */
 @media (max-width: 767px) {
-    :root { --snw-footer-h: 48px; }
-    .snw-footer { font-size: 12px; }
-    .snw-footer #footer-status { cursor: pointer; }
-}
+    :root {
+        --snw-footer-h: 48px;
+    }
 
+    .snw-footer {
+        font-size: 12px;
+    }
+
+    .snw-footer #footer-status {
+        cursor: pointer;
+    }
+}

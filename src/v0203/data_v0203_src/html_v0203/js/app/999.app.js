@@ -229,7 +229,12 @@ window.SNW = window.SNW || {};
         sidebar.removeAttribute('hidden');
         sidebar.style.display = '';
 
-        // 1. ☰ 버튼 토글
+        // 데스크톱 환경(≥1024px)에서는 기본으로 사이드바 열림 상태 활성화 (☰ 버튼으로 언제든지 토글 가능)
+        if (window.innerWidth >= 1024) {
+            document.body.classList.add('snw-sidebar-open');
+        }
+
+        // 1. ☰ 버튼 토글 (모든 해상도 지원)
         btn.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();

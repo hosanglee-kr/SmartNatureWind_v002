@@ -1,4 +1,4 @@
-# README_0203.md — 계약 기반 설계 문서 체계 (CBD) (v2.13)
+# README_0203.md — 계약 기반 설계 문서 체계 (CBD) (v2.15)
 
 > **목적**: 본 디렉토리는 Smart Nature Wind v0203 펌웨어의 계약 기반 설계(Contract-Based Design) 문서를 관리한다.  
 > 동시성 경계, 상태 소유권, 메모리/시간 예산, 회귀 테스트 절차를 체계화하여 멀티태스크 펌웨어의 안정성과 일관성을 보장한다.  
@@ -74,6 +74,7 @@ src/v0203/
 | **0203_010** | STAGE-1~7 | 8스텝 작곡기, Session FSM(스마트 Resume), Wind Studio/Playlist, Comfort DI 추천, 20바 Canvas EQ, 64-event 타임라인 회고, 4단계 온보딩 | [SPEC §5.4](SPEC_0203.md#54-프론트엔드-자산-규격-v24-신규) |
 | **v0203_011** | **Phase 1~6** | **Session 위임 엔진 + Preview 파사드 + i18n 100% + 오프라인 정합**: ADR-1(위임 모델), ADR-2(steps[] 단일 규격), ADR-3(Schedule profileId 단일 참조), ADR-5(Preview 파사드), 46건 이슈 해결 | [CONTRACT §7.10](CONTRACT_0203.md#710-v0203_011--phase-16-감사-이력-46건) |
 | **0203_012** | **v0203_AUDIT** | **통합 감사 28대 이슈 전 항목 해소 (P0 5건, P1 10건, P2 13건)**: SPA 리셋 스키마 복구, AI CRUD 위임, getRootSnapshot 원자 캡처, TTS 한글 매핑, B-11 AP 폴백, 로그 런타임 적용, Strict aliasing 해소, T-loop WS 가드, profileId 검증, getLang() 통일, 오프라인 FSM 정합, EQ RAF 가드, 오프라인 브로드캐스트 방지, `validate_contracts.py` SSOT CI 신설 | [CONTRACT §7.11](CONTRACT_0203.md) |
+| **0203_012** | **Stage 9 (UI/UX)** | **웹 UI/UX 전면 레이아웃 표준화 및 인터랙션 고도화 (Phase 1~4 완료)**: 하단 뷰포트 레이아웃 스택 표준화(`--snw-fab-bottom: 76px➔124px`, `--snw-content-pb: 80px➔128px`), Z-index 계층 재정립(fab: 990, modal: 1100), 바람 스타일 탭 44px 모바일 터치 접근성 규격화, Now Playing Bar 상세 확장 모달(`showNowPlayingDetailsModal`), Studio 3대 물리 슬라이더 Override `[수동 튜닝됨]` 뱃지 및 `[기본값 원복]` 리셋 액션, 54 JS 번들(119.3 KB Gzip) 실측 유지 | [SPEC §5.4.2.1](SPEC_0203.md#5421-모바일-하단-뷰포트-레이아웃-스택-표준화-0203_012) |
 
 ---
 
@@ -221,7 +222,7 @@ git push origin v0203-release-2026-10-26
 |---|---|---|---|---|
 | **RAM** | 100,556 B (30.7%) | 327,680 B | 227,124 B (69.3%) | ✅ BUDGET §6 >100KB 통과 |
 | **Flash** | 1,364,905 B (20.8%) | 6,553,600 B | 5,188,695 B (79.2%) | ✅ 여유 충분 |
-| **littlefs.bin** | 148.8 KB (프론트 gz 118.3 KB + JSON 20.8 KB) | 1,048,576 B (1MB) | 899,776 B (85.8%) | ✅ BUDGET §6 <200KB 통과 |
+| **littlefs.bin** | 149.8 KB (프론트 gz 119.3 KB + CSS 14.7 KB + HTML 1.7 KB + JSON 20.8 KB) | 1,048,576 B (1MB) | 898,776 B (85.7%) | ✅ BUDGET §6 <200KB 통과 |
 
 ---
 
@@ -229,6 +230,7 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-08** | **v2.15** | **Stage 9 웹 UI/UX 레이아웃 표준화 및 인터랙션 고도화 반영 (0203_012)**: 하단 뷰포트 레이아웃 스택 표준화(`--snw-fab-bottom: 76px➔124px`, `--snw-content-pb: 80px➔128px`), Z-index 계층 재정립(fab: 990, modal: 1100), 바람 스타일 5종 탭 44px 모바일 터치 접근성 규격화, Now Playing Bar 상세 확장 모달, Studio 3대 물리 슬라이더 Override `[수동 튜닝됨]` 뱃지 및 `[기본값 원복]` 리셋 액션, 54개 JS 번들(119.3 KB Gzip) 실측치 유지 | Antigravity AI |
 | **2026-11-08** | **v2.14** | **통합 감사 28대 이슈 전 항목 해소 및 SSOT 자동 대조 CI 구축 (0203_012)**: P0 5건, P1 10건, P2 13건 전 항목 패치 및 검증, PlatformIO 펌웨어 빌드 성공(RAM 100.5KB / Flash 1.36MB), SPA 프론트엔드 에셋 번들(118.3 KB Gzip) 동기화, `validate_contracts.py` 신규 CI 및 `pio_gzip_0203.py` 스테이징 게이트 통합, TEST_PLAN §3.6 (T-121~T-148) 28건 확장 반영 | Antigravity AI |
 | **2026-11-06** | **v2.13** | **Stage 8 AI 제어 체계 및 Gemini Live 실시간 음성·비용 가드레일 반영 (v0203_011)**: REST 2-turn 프록시(`/ai/gemini`), Gemini Live 웹소켓 도구 위임 브리지 및 비용 API 8종 등록, 12대 안전 제어 도구 및 15종 위험 명령 차단, 30분 상한(403) 및 일일 $0.50 NVS 가드레일, AudioWorklet 16k 송신/24k 저지연 재생 Barge-in Flush, 전역 플로팅 AI 바텀시트, 54개 JS 번들링 및 실측치 갱신 | Antigravity AI |
 | **2026-11-06** | **v2.12** | **Schedule 단일 규격 정합 & 레거시 슬림화 및 TimerPanel 신규 구현 (v0203_011)**: Schedule 트리거 단일 규격화(`segments`, `repeat*`, `autoOff`, `motion` 완전 제거 및 Profile 위임 상속), 자동화 4번째 탭 세션 타이머(`SNW.TimerPanel` & `SNW.TimerManager`) 신규 구현, 구버전 스케줄/프로파일 페이지(`220`, `230`) 경량 파사드 전환(75KB 번들 절감), PlatformIO 펌웨어 클린 빌드 검증(RAM 100.4KB / Flash 1.32MB 실측 최적화) | Antigravity AI |

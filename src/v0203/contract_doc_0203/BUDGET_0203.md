@@ -1,4 +1,4 @@
-# BUDGET_0203.md — 시간 및 시스템 자원 예산 (v2.9)
+# BUDGET_0203.md — 시간 및 시스템 자원 예산 (v3.1)
 
 > **기준**: v0203 정적 감사 + 런타임 실측 반영 (Batch A~G 완료).  
 > **핵심 성과**: F-05(reload 위임)/F-06(motion sim 위임)으로 `async_tcp` 블로킹 제거, D-1(WS mutex 배치)/D-4(atomic)/D-5(고정 배열)로 loopTask 지터 감소, B-1(NVS 단일 commit 10ms)/B-9(스냅샷 캐시 2ms) 성능 최적화.  
@@ -367,9 +367,19 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 | **NVS 누적** | `ST_N10_AIDailyUsage_t` (4키) | **RAM +32 B**, NVS 4개 키 할당 (자정 자동 리셋) |
 | **프롬프트 캐시** | 30초 파일 스코프 캐시 | I2C 센서 블로킹 **0 ms**, 힙 할당 빈도 **-95%** |
 | **프론트 번들** | JS 48개 ➔ 54개 (`P010_bundle`) | 번들 Gzip 100.2 KB ➔ **102.4 KB** (+2.2 KB gzip) |
-| **전체 Gzip** | JS + CSS + HTML | 총 **118.3 KB** (LittleFS 1MB 버짓 대비 **11.8%**, 여유 880 KB) |
-| **LittleFS 점유** | Gzip 번들 + JSON 9개 | 총 ~148.8 KB (플래시 1MB 대비 **14.9%**, 초록불 ✅) |
+| **전체 Gzip** | JS + CSS + HTML | 총 **119.3 KB** (LittleFS 1MB 버짓 대비 **11.9%**, 여유 879 KB) |
+| **LittleFS 점유** | Gzip 번들 + JSON 9개 | 총 ~149.8 KB (플래시 1MB 대비 **15.0%**, 초록불 ✅) |
 | **Live 오디오** | AudioWorklet 16k/24k PCM16 | ESP32 힙 부하 0 (브라우저-Gemini Live WS 직접 스트리밍) |
+
+### 10.5 Stage 9 (웹 UI/UX 표준화 및 인터랙션 고도화, 0203_012) 예산 영향
+
+| 항목 | 영향 내용 | 예산 판정 |
+|---|---|---|
+| **하단 동적 레이아웃 스택** | CSS 변수(`--snw-*`) 기반 런타임 제어 | **MCU RAM/Flash 오버헤드 0 B** |
+| **Now Playing 상세 확장 모달** | `showNowPlayingDetailsModal` DOM 동적 생성 | **정적 메모리 영향 0**, 번들 +1.2 KB raw |
+| **Override 뱃지 & 기본값 원복** | `_resetOverrideToDefaults` JS 로직 | 번들 +0.8 KB raw |
+| **프론트 에셋 실측치** | `P010_bundle_0203.js`: **119.3 KB** (Gzip 78.4% 절감)<br>`P000_common_0203.css`: **14.7 KB** (Gzip 82.9% 절감)<br>`index.html`: **1.7 KB** (Gzip 69.4% 절감) | LittleFS 1MB 버짓 대비 **13.5%** 로 극도로 안전 ✅ |
+| **C++ 백엔드 무수정** | 임베디드 소스 코드 변경 없음 | **WCET / Heap 부하 변동 0** |
 
 ---
 
@@ -377,6 +387,7 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-08** | **v3.1** | **Stage 9 웹 UI/UX 최적화 및 인터랙션 고도화 자원 실측 반영 (§10.5)**: 하단 뷰포트 레이아웃 스택 동적 변수화(런타임 0B), Now Playing 상세 확장 모달 및 Studio Override 원복 액션 탑재, 54개 JS 번들(119.3 KB Gzip) 및 18개 CSS(14.7 KB Gzip), LittleFS 총점유 149.8 KB(1MB 예산 대비 15.0%) 실측치 현행화 | Antigravity AI |
 | **2026-11-08** | **v3.0** | **Phase 3 — §8/§10.4 SSOT 정합**: §8.5 판정 표 감사 완료 후 최종 재측정(RAM 100.5KB 30.7%, Flash 1.36MB 20.8%, JS gz 102.4KB, 프론트 gz 합계 118.3KB, LittleFS 148.8KB), §10.4 Stage 8 AI 자원 영향표 실측치 현행화 | Antigravity AI |
 | **2026-11-06** | **v2.9** | **Stage 8 AI 제어 및 Live 실시간 음성 예산 영향 반영 (§10.4)**: §3 async_tcp AI 라우트 8종 WCET 추가, 54개 JS 번들링 및 정적 자산 Gzip 실측(118.1 KB / LittleFS 1MB 대비 11.8%), NVS 4키 메모리 영향, 프롬프트 캐시 30s 성능 최적화 명시 | Antigravity AI |
 | **2026-11-05** | **v2.8** | **Phase 1~6 통합 (v0203_011) — Session/Preview/i18n/Offline 예산 영향**: §2 Session 위임 WCET 2행, §8.2.1 i18n 확장 +2.3KB gzip 반영, §10.3 Phase별 상세 영향표 신규 (ADR-2 단일 규격화 반영). RAM +88B, Flash +2.2KB, littlefs +9.7KB 흡수. 프론트 gzip 87.7KB < 80KB 목표 유지. | Antigravity AI |

@@ -1,7 +1,7 @@
-# TEST_PLAN_0203.md — 회귀 테스트 절차서 (v3.2)
+# TEST_PLAN_0203.md — 회귀 테스트 절차서 (v3.4)
 
 > **검증 대상**: Smart Nature Wind v0203 펌웨어 + v0203 SPA 프론트엔드  
-> **기준선**: Batch A~F 백엔드 리팩토링 + Phase 0~7 프론트엔드 재설계 + Batch G 코드 재검토(P0/P1) + Batch H UI 고도화 + Batch I 물리 Override 및 다국어 고도화 완료  
+> **기준선**: Batch A~F 백엔드 리팩토링 + Phase 0~7 프론트엔드 재설계 + Batch G 코드 재검토(P0/P1) + Batch H UI 고도화 + Batch I 물리 Override 및 다국어 고도화 + Stage 8 AI 제어/Gemini Live + Stage 9 UI/UX 레이아웃 표준화 완료  
 > **검증 환경**: ESP32-S3-N16R8, LittleFS 업로드 완료, 권장 로그 `EN_L10_LOG_DEBUG`  
 > **파일명 정책**: 계약 문서 `_0203.md` 유지, 코드 참조 `_0203` 접미사
 
@@ -15,6 +15,10 @@
    - 3.1 [Batch G — P0 크리티컬 회귀 (T-46 ~ T-50)](#31-batch-g--p0-크리티컬-회귀-t-46--t-50)
    - 3.2 [Batch G — P1 회귀 (T-51 ~ T-67)](#32-batch-g--p1-회귀-t-51--t-67)
    - 3.3 [Batch I — 바람 물리 Override 및 UI 고도화 회귀 (T-70 ~ T-72)](#33-batch-i--바람-물리-override-및-ui-고도화-회귀-t-70--t-72)
+   - 3.4 [Phase 1~6 통합 회귀 (v0203_011, T-90 ~ T-113)](#34-phase-16-통합-회귀-v0203_011-t-90--t-113)
+   - 3.5 [Stage 8 AI 제어 및 Live 실시간 음성 회귀 (T-114 ~ T-120)](#35-stage-8-ai-제어-및-live-실시간-음성-회귀-t-114--t-120)
+   - 3.6 [통합 감사 회귀 (T-121 ~ T-148)](#36-통합-감사-회귀-t-121--t-148)
+   - 3.7 [Stage 9 — 웹 UI/UX 레이아웃 표준화 및 인터랙션 회귀 (T-149 ~ T-152)](#37-stage-9--웹-uiux-레이아웃-표준화-및-인터랙션-회귀-t-149--t-152)
 4. [프론트엔드 v0203 SPA (T-29 ~ T-35)](#4-프론트엔드-v0203-spa)
 5. [정적 감사 (T-36 ~ T-40)](#5-정적-감사)
 6. [부하/안정성 (T-41 ~ T-45)](#6-부하안정성)
@@ -63,6 +67,9 @@ L10 통합 감사 회귀 (28건) ─── 릴리스 차단 필수 15건
     · P0: T-121, T-122, T-123, T-124, T-125
     · P1: T-126 ~ T-135
     · P2: T-136 ~ T-148
+
+L11 Stage 9 UI/UX 레이아웃 표준화 및 인터랙션 회귀 (4건) ─── 릴리스 차단 필수 4건
+    T-149 ~ T-152 (모바일 뷰포트 스택, 스크롤 하단 여백 연동, 44px 터치, NowPlaying/Studio 인터랙션)
 ```
 
 ### 1.2 검증 환경
@@ -2210,6 +2217,165 @@ python src/v0203/tools_0203/check_i18n.py --strict
 | **L10 P1** | T-126 ~ T-135 (10건) | 90분 | **10/10 필수 통과** |
 | **L10 P2** | T-136 ~ T-148 (13건) | 90분 | **13/13 검증 완료** |
 
+---
+
+## 3.7 Stage 9 — 웹 UI/UX 레이아웃 표준화 및 인터랙션 회귀 (T-149 ~ T-152)
+
+### T-149. [UI-5/ADR-9] 모바일 하단 뷰포트 레이아웃 스택 및 FAB/Toast 동적 부상 검증
+
+**목적**: 모바일 뷰포트(< 768px)에서 Bottom Nav(60px), Now Playing Bar(48px), AI Floating FAB(54px), Toast 메시지가 세션 활성화/비활성화 시 겹침 없이 동적으로 부상/복귀하는지 검증.
+
+**대응 계약**: CONTRACT §7.17 UI-5, SPEC §5.4.2.1, ADR-9  
+**검증 절차**:
+```javascript
+// 브라우저 DevTools (375x667 모바일 에뮬레이션)
+// 1. 대기 상태 (세션 없음) 레이아웃 스택 검증
+console.assert(!document.body.classList.contains('has-nowplaying'), 'has-nowplaying 미설정 확인');
+const fab = document.querySelector('.snw-ai-fab');
+const fabBottomIdle = getComputedStyle(document.documentElement).getPropertyValue('--snw-fab-bottom').trim();
+console.assert(fabBottomIdle === '76px', '대기 상태 FAB bottom 76px 확인');
+
+// 2. 바람 세션 시작 (Now Playing Bar 활성화)
+// 대시보드에서 프리셋 또는 전원 ON 실행
+await SNW.Api.overridePreset('OCEAN');
+// WebSocket 수신 후 body.has-nowplaying 클래스 부여 확인
+console.assert(document.body.classList.contains('has-nowplaying'), 'has-nowplaying 자동 부여 확인');
+
+// 3. 동적 부상 좌표 검증
+const npBar = document.querySelector('.snw-nowplaying');
+const npRect = npBar.getBoundingClientRect();
+const navBar = document.querySelector('.snw-bottom-nav');
+const navRect = navBar.getBoundingClientRect();
+
+// Now Playing Bar가 Bottom Nav 바로 위(bottom: 60px)에 정확히 밀착하는지 확인
+console.assert(Math.abs(npRect.bottom - navRect.top) < 2, 'Now Playing Bar가 Bottom Nav 상단에 밀착');
+
+// FAB 및 Toast의 동적 부상 위치 확인 (76px -> 124px)
+const fabBottomActive = getComputedStyle(document.body).getPropertyValue('--snw-fab-bottom').trim();
+console.assert(fabBottomActive === '124px', '세션 중 FAB bottom 124px 동적 부상 확인');
+
+// 4. 세션 정지 시 원래 위치 복귀 확인
+await SNW.Api.stopSession();
+console.assert(!document.body.classList.contains('has-nowplaying'), 'has-nowplaying 해제 확인');
+```
+
+**합격 판정**:
+- [ ] 세션 비활성 시 FAB/Toast가 Bottom Nav 상단(bottom: 76px)에 안정적으로 배치
+- [ ] 세션 활성화 시 `body.has-nowplaying` 토글 및 FAB/Toast가 124px 위치로 부드럽게 부상(transition: bottom 0.25s)
+- [ ] z-index 스택 순서(Nav 90 < NowPlaying 95 < FAB 990 < Modal/Overlay 1100 < Toast 1200) 준수로 조작 차단 0건
+
+---
+
+### T-150. [UI-6] 메인 콘텐츠 스크롤 하단 여백 연동 및 UI 가림 해소 검증
+
+**목적**: 본문 컨테이너(`.snw-main`)의 `padding-bottom`이 세션 가동 시 80px에서 128px로 동적 확장되어 스케줄, 로그, 프로필 화면의 최하단 컨트롤이 하단 바에 가려지지 않는지 검증.
+
+**대응 계약**: CONTRACT §7.17 UI-6, SPEC §5.4.2.1  
+**검증 절차**:
+```javascript
+// 브라우저 콘솔 (#schedule 또는 #logs 페이지 진입)
+location.hash = '#/schedule';
+const mainEl = document.querySelector('.snw-main');
+
+// 1. 대기 상태 확인
+console.assert(getComputedStyle(mainEl).paddingBottom === '80px', '대기 시 하단 패딩 80px');
+
+// 2. 세션 시작 후 패딩 확장 확인
+await SNW.Api.overridePreset('VALLEY');
+console.assert(getComputedStyle(mainEl).paddingBottom === '128px', '세션 가동 시 하단 패딩 128px 동적 확장');
+
+// 3. 최하단 스크롤 후 최하단 버튼 클릭 가시성 확인
+window.scrollTo(0, document.body.scrollHeight);
+const lastCard = document.querySelector('.snw-card:last-child');
+const lastRect = lastCard.getBoundingClientRect();
+const npBar = document.querySelector('.snw-nowplaying');
+const npRect = npBar.getBoundingClientRect();
+console.assert(lastRect.bottom <= npRect.top, '최하단 요소가 Now Playing Bar에 가려지지 않음');
+```
+
+**합격 판정**:
+- [ ] 세션 가동 시 `.snw-main` 하단 패딩이 128px로 즉각 전환
+- [ ] 긴 리스트(로그 100건, 스케줄 다건 등) 스크롤 끝단까지 스크롤 시 모든 액션 버튼이 온전히 노출되어 클릭 가능
+
+---
+
+### T-151. [UI-7] 바람 스타일 5종 탭 44px 모바일 터치 접근성 및 래핑 검증
+
+**목적**: 대시보드의 바람 스타일 5종(NATURAL, SLEEP, REFRESH, STORM, SILENT) 탭 버튼이 모바일 터치 최소 높이 규격(44px)을 충족하고 좁은 뷰포트에서 자연스럽게 래핑되는지 검증.
+
+**대응 계약**: CONTRACT §7.17 UI-7, SPEC §5.4.2  
+**검증 절차**:
+```javascript
+// 브라우저 콘솔 (#dashboard 진입, 뷰포트 360x640)
+location.hash = '#/dashboard';
+const styleButtons = document.querySelectorAll('.snw-style-btn');
+console.assert(styleButtons.length === 5, '스타일 버튼 5개 렌더링 확인');
+
+styleButtons.forEach(btn => {
+    const rect = btn.getBoundingClientRect();
+    console.assert(rect.height >= 44, `버튼 높이 44px 이상 만족: ${rect.height}px`);
+});
+
+// 버튼 터치 이벤트 및 스타일 전환 API 호출 확인
+styleButtons[1].click(); // SLEEP 클릭
+// 네트워크 요청 POST /api/v001/control/override 또는 simulation 확인
+```
+
+**합격 판정**:
+- [ ] 5종 버튼의 렌더링 높이가 모두 44px 이상 (`min-height: 44px`)
+- [ ] 360px 이하 좁은 화면에서도 텍스트가 잘리지 않고 버튼 간격(gap: 8px)을 유지하며 flex 래핑
+- [ ] 탭 클릭 시 활성화 클래스(`.active`) 정상 토글 및 백엔드 파라미터 연동 성공
+
+---
+
+### T-152. [UI-8] Now Playing Bar 상세 확장 모달 및 Studio Override 원복 액션 검증
+
+**목적**: Now Playing Bar 우측 확장 아이콘(`[⤢]`) 클릭 시 상세 제어 모달 오픈 및 Wind Studio의 슬라이더 Override 수동 변경 시 `[수동 튜닝됨]` 배지 노출과 `[↺ 기본값 원복]` 버튼 동작 검증.
+
+**대응 계약**: CONTRACT §7.17 UI-8, UserManual §4 / §11.2 / §11.3  
+**검증 절차**:
+```javascript
+// 1. Now Playing Bar 상세 모달 검증
+// 세션 활성화 상태에서 Bar의 우측 확장 버튼 또는 Bar 클릭
+const expandBtn = document.querySelector('.snw-nowplaying__expand') || document.querySelector('.snw-nowplaying');
+expandBtn.click();
+
+// 모달 오픈 확인
+const modal = document.querySelector('.snw-modal');
+console.assert(modal !== null, 'Now Playing 상세 제어 모달 표시 확인');
+console.assert(modal.querySelector('.snw-nowplaying-modal__controls') !== null, '모달 내 제어 버튼 노출');
+
+// 모달 닫기
+document.querySelector('.snw-modal-close').click();
+
+// 2. Wind Studio Override 배지 및 원복 버튼 검증 (#profiles -> Studio 탭 또는 #simulation)
+location.hash = '#/profiles';
+// Studio 슬라이더 임의 조작 (강도 85%)
+const intensitySlider = document.querySelector('#studio-intensity');
+if (intensitySlider) {
+    intensitySlider.value = 85;
+    intensitySlider.dispatchEvent(new Event('input'));
+    
+    // [수동 튜닝됨] 뱃지 및 [↺ 기본값 원복] 버튼 표시 확인
+    const badge = document.querySelector('.snw-override-badge');
+    console.assert(badge && !badge.classList.contains('hidden'), '수동 튜닝됨 뱃지 표시 확인');
+    const resetBtn = document.querySelector('.snw-override-reset-btn');
+    console.assert(resetBtn && !resetBtn.classList.contains('hidden'), '기본값 원복 버튼 노출 확인');
+    
+    // 원복 버튼 클릭
+    resetBtn.click();
+    console.assert(intensitySlider.value != 85, '기본 프리셋 강도로 복귀 확인');
+    console.assert(badge.classList.contains('hidden'), '뱃지 자동 숨김 확인');
+}
+```
+
+**합격 판정**:
+- [ ] Now Playing Bar 확장 클릭 시 500ms 이내에 상세 재생 제어 모달이 부드럽게 오픈되고 정상 닫힘
+- [ ] Wind Studio 슬라이더 수동 조작 시 `[수동 튜닝됨]` 배지와 `[↺ 기본값 원복]` 버튼이 즉각 활성화
+- [ ] 원복 버튼 클릭 시 현재 활성 프리셋의 기준 물리 파라미터로 즉시 환원되고 배지가 숨김 처리됨
+
+---
+
 
 ---
 
@@ -2578,8 +2744,11 @@ done
 | **L6 Batch G P1** | **T-51 ~ T-67 (17건)** | **120분** | **8건 필수** (T-51, T-52, T-53, T-54, T-57, T-58, T-61, T-65) |
 | **L7 Batch I OVR** | **T-70 ~ T-72 (3건)** | **30분** | **3/3 필수** (T-70, T-71, T-72) |
 | **L8 Phase 1~6 통합** | **T-90 ~ T-113 (24건)** | **4시간** | **10건 필수** (T-90, T-91, T-94, T-97, T-98, T-99, T-101, T-103, T-105, T-106) |
+| **L9 Stage 8 AI/Live** | **T-114 ~ T-120 (7건)** | **60분** | **7/7 필수** (REST 2-turn, 위험명령 차단, 30분 상한, NVS 누적 등) |
+| **L10 통합 감사** | **T-121 ~ T-148 (28건)** | **220분** | **15건 필수** (P0 5건 + P1 10건) |
+| **L11 Stage 9 UI/UX** | **T-149 ~ T-152 (4건)** | **30분** | **4/4 필수** (T-149, T-150, T-151, T-152) |
 
-### 릴리스 차단 필수 세트 (최소 29건)
+### 릴리스 차단 필수 세트 (최소 50건)
 
 | # | 테스트 | 그룹 | Batch |
 |:---:|---|---|:---:|
@@ -2622,6 +2791,17 @@ done
 | 37 | T-103 (Phase 4 steps 단일 표준) | L8 | ADR-2 |
 | 38 | T-105 (Phase 5 Preview 파사드) | L8 | ADR-5 |
 | 39 | T-106 (Phase 5 i18n 완전성) | L8 | P-2 |
+| **40** | **T-114 (REST 2-turn 제어)** | **L9** | **AI-1** |
+| **41** | **T-115 (15종 위험명령 차단)** | **L9** | **AI-1** |
+| **42** | **T-116 (Gemini Live 토큰/30분 상한)** | **L9** | **AI-2** |
+| **43** | **T-117 (Gemini Live Tool Calling)** | **L9** | **AI-3** |
+| **44** | **T-118 (일일 비용 NVS 4키 누적)** | **L9** | **AI-4** |
+| **45** | **T-119 (AudioWorklet & Barge-in)** | **L9** | **AI-5** |
+| **46** | **T-120 (오프라인 시뮬레이터 Mock)** | **L9** | **AI-6** |
+| **47** | **T-149 (모바일 뷰포트 스택/동적 부상)** | **L11** | **UI-5/ADR-9** |
+| **48** | **T-150 (본문 스크롤 하단 여백 연동)** | **L11** | **UI-6** |
+| **49** | **T-151 (바람 스타일 5종 탭 44px 터치)** | **L11** | **UI-7** |
+| **50** | **T-152 (NowPlaying 모달 & Studio 원복)** | **L11** | **UI-8** |
 
 ---
 
@@ -2715,10 +2895,11 @@ done
 | **G-10.2** | **L10 P1 필수 10/10 (T-126~T-135)** | ✅ |
 | **G-10.3** | **L10 P2 정합성 13/13 (T-136~T-148)** | ✅ |
 | **G-10.4** | **SSOT 자동 대조 CI exit 0 (`validate_contracts.py`)** | ✅ |
+| **G-11.1** | **Stage 9 UI/UX 레이아웃 표준화 필수 4/4 (T-149~T-152)** | ✅ |
 
 ### 9.2 릴리스 승인 조건
 
-**모든 게이트 (G-7.0 ~ G-9.1) 통과 시 → 릴리스 승인**.
+**모든 게이트 (G-7.0 ~ G-11.1) 통과 시 → 릴리스 승인**.
 
 **미통과 시**:
 - 각 게이트 재실행
@@ -2757,6 +2938,7 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-08** | **v3.4** | **Stage 9 웹 UI/UX 레이아웃 표준화 및 인터랙션 회귀 절차 신설 (§3.7 T-149~T-152)**: 모바일 하단 뷰포트 레이아웃 스택 및 FAB/Toast 동적 부상 검증(T-149), 메인 콘텐츠 스크롤 하단 여백 연동(T-150), 바람 스타일 5종 탭 44px 모바일 터치 접근성(T-151), Now Playing Bar 상세 확장 모달 및 Wind Studio Override 원복 액션 검증(T-152), §1.1 L11 계층, §7 L11 회귀 매트릭스, §9.1 G-11.1 릴리스 게이트 추가 | Antigravity AI |
 | **2026-11-08** | **v3.3** | **통합 감사 28건 회귀 절차 신설 (§3.6 T-121~T-148)**: P0 긴급 안전성 5건(T-121~T-125), P1 기능 결함 10건(T-126~T-135), P2 정합성 13건(T-136~T-148), §1.1 L10 계층, §7 L10 회귀 매트릭스, §9.1 G-10.1~G-10.4 릴리스 게이트 신설 및 `validate_contracts.py` SSOT 자동 대조 CI 연계 | Antigravity AI |
 | **2026-11-06** | **v3.2** | **Stage 8 AI 제어 및 Gemini Live 실시간 음성 회귀 절차 신설 (§3.5 T-114~T-120)**: REST 2-turn, 15종 위험 명령 차단, Live 토큰/30분 상한, Tool Calling 위임, 일일 비용 NVS 누적, AudioWorklet/Barge-in, 오프라인 Mock 검증 절차 및 자동화 E2E 스크립트(`test/e2e_stage8_4.py`) 연계 명시 | Antigravity AI |
 | **2026-11-06** | **v3.1** | **Schedule 단일 규격 정합 & 세션 타이머 회귀 절차 신설 (v0203_011)**: §3.4 T-113 (세션 타이머 SNW.TimerPanel 동작 및 NowPlaying 연동) 신규 추가, Schedule의 profileId 단일 실행 재검증, L8 회귀 세트 24건 확장. | Antigravity AI |

@@ -1,4 +1,4 @@
-# CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.1)
+# CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.3)
 
 > **기준**: v0203 정적 감사 + 런타임 동시성 검증 완료 (F-01~F-10, I-1~I-6, N-1~N-4, G-1~G-3, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10, Batch G 전면 반영).  
 > **목적**: 멀티태스킹 환경에서 태스크 경계, 뮤텍스 획득 순서, 공유 자원 접근 규약 및 위임 패턴을 정의하여 데이터 레이스, 교착 상태(Deadlock), UAF를 원천 차단.  
@@ -446,12 +446,19 @@ startSession(type, trigger, payload) [T-async]
 - **[AUDIT-5] C10 부팅 실패 시 Recovery AP 폴백 (BE-P1-2, BE-P1-3)**: `CL_C10_ConfigManager::begin()` 실패 시 벽돌화를 방지하고 B-11 규약에 따라 Recovery AP로 부팅하며, 부팅 완료 시 `applySystemRuntimeFromConfig()`를 호출하여 사용자 저장 런타임 설정을 즉시 반영한다.
 - **[AUDIT-6] SSOT 자동 대조 CI 게이트 (AUDIT-CI)**: `validate_contracts.py`를 통해 문서(SPEC/README/BUDGET), C++ 헤더(W10_Web_Const/W10_AI_Limits), 프론트엔드 config/offline 어댑터 간 경로/상수/FSM 상태명 정합성을 빌드 파이프라인(`pio_gzip_0203.py`)에서 자동 검증한다.
 
+### 7.17 웹 UI/UX 레이아웃 및 인터랙션 계약 (UI-5~UI-8) (Stage 9 / 0203_012 신규)
+- **[UI-5] 모바일 하단 뷰포트 레이아웃 스택 표준화 (ADR-9)**: 모바일 하단 탭 바(60px), Now Playing Bar(48px), 전역 플로팅 AI FAB(54px), 토스트 호스트 간 겹침 방지를 위해 CSS 변수 기반 동적 스택을 적용한다. Now Playing Bar 가동 시 `body.has-nowplaying` 클래스를 자동 토글하여 AI FAB과 토스트를 76px에서 124px로 0.25s 동안 자동 부상시키며, 메인 콘텐츠 `padding-bottom`을 80px에서 128px로 확장하여 스크롤 끝단 가림을 원천 차단한다.
+- **[UI-6] 모바일 터치 타깃 44px 접근성 보장**: 대시보드 바람 스타일 5종 탭 버튼의 최소 터치 높이를 44px(`min-height: 44px`)로 강제하여 모바일 접근성 표준을 준수하고 오터치를 방지한다.
+- **[UI-7] Now Playing Bar 상세 확장 모달 규약**: Now Playing Bar 좌측 영역 탭(`data-action="expand"`) 시 단순 페이지 이동 대신 `showNowPlayingDetailsModal()`을 호출하여 세션 상세 정보(종류/스텝/남은 시간)를 확인하고 [▶ 재개/⏸ 일시정지], [⏹ 정지], [⏱️ 타이머 설정 바로가기]를 원스톱 제어한다.
+- **[UI-8] 물리 Override 상태 가시화 및 원클릭 복원 규약**: Wind Studio 등에서 물리 파라미터(강도/변동성/돌풍)를 수동 조작했을 때 `[수동 튜닝됨]` 뱃지를 표시하고, 원클릭 `[↺ 기본값 원복]` 액션(`_resetOverrideToDefaults`)을 통해 선택된 프리셋의 기준 물리값으로 즉각 되돌릴 수 있는 수단을 필수 제공한다.
+
 ---
 
 ## 8. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-08** | **v3.3** | **Stage 9 웹 UI/UX 레이아웃 표준화 및 인터랙션 고도화 계약 신설 (§7.17 UI-5~UI-8, 0203_012)**: 모바일 하단 뷰포트 레이아웃 스택 표준화(NowPlaying 연동 FAB/토스트 동적 부상 및 스크롤 끝단 가림 해소), 바람 스타일 탭 44px 터치 접근성 보장, Now Playing Bar 상세 확장 모달 규약, 물리 Override 상태 가시화 및 원클릭 복원 규약 명시 | Antigravity AI |
 | **2026-11-08** | **v3.2** | **통합 감사 28대 이슈 해결 및 계약 규약 신설 (§7.16 AUDIT-1~6, 0203_012)**: FactoryReset SPA 단일 스키마, AI CRUD 헬퍼 위임, T-async getRootSnapshot 원자 캡처, T-loop WS 0-클라이언트 가드, C10 begin 실패 시 Recovery AP 폴백 및 런타임 설정 자동 적용, SSOT 자동 대조 CI 게이트 규약 명시 | Antigravity AI |
 | **2026-11-06** | **v3.1** | **Stage 8 AI 제어 및 Gemini Live 실시간 음성 안전 계약 (§7.15 AI-1~AI-6)**: 15종 위험 명령 원천 차단, Tool Calling FSM 위임, 30분 세션 상한 및 403 차단, NVS 4키 일일 비용 가드레일, AudioWorklet 16k/24k 인라인 스트리밍 및 Barge-in Flush, 30초 프롬프트 캐싱 계약 명시, 개정 이력 위치 정상화 | Antigravity AI |
 | **2026-10-30** | **v2.9** | **W10 REST 라우팅 Regex 의존성 제거, onNotFound Gzip 서빙 및 ArduinoJson v7 파싱 계약 (§7.14 ROUTE-1~3)**: `/:id` 기반 REST 라우팅 통일, `onNotFound` 핸들러 기반 `/html_v0203/` Gzip 정적 서빙, ArduinoJson v7 `.is<T>()` 타입 안전성 계약 명시 | Antigravity AI |

@@ -114,6 +114,38 @@ def _log(msg: str, tag: str = "") -> None:
 # [0/6] 데이터 동기화 & 인젝션 (C++ Enum -> JS 상수, JSON -> 오프라인 Mock)
 # ============================================================
 # ============================================================
+# [Phase 3] SSOT 자동 대조 CI (validate_contracts.py 위임)
+#  - 파일 부재 시 WARN 후 통과
+# ============================================================
+def _run_validate_contracts(project_root: Path) -> int:
+    script = project_root / "src" / "v0203" / "tools_0203" / "validate_contracts.py"
+    if not script.is_file():
+        _log("[WARN] validate_contracts.py 없음 → SSOT gate 스킵", tag="contracts")
+        return 0
+
+    import os
+    is_strict = os.environ.get("SNW_CONTRACTS_STRICT", "1") == "1"
+    args = [sys.executable, str(script)]
+    if is_strict:
+        args.append("--strict")
+    else:
+        args.append("--warn-only")
+
+    _log(f"[contracts] validate_contracts.py {'--strict' if is_strict else '--warn-only'} 실행", tag="contracts")
+    try:
+        rc = subprocess.run(args, cwd=str(project_root)).returncode
+    except Exception as e:
+        _log(f"[ERROR] SSOT 검증 실행 실패: {e}", tag="contracts")
+        return 1 if is_strict else 0
+
+    if rc != 0:
+        _log(f"[FAIL] SSOT 검증 실패 (exit={rc}) → staging 중단", tag="contracts")
+    else:
+        _log("[OK] SSOT 검증 통과", tag="contracts")
+    return rc
+
+
+# ============================================================
 # [Phase 5.7+] i18n CI Gate
 #  - check_i18n.py --strict 서브프로세스 실행
 #  - 파일 부재 시 WARN 후 통과 (개발 초기 허용)
@@ -542,6 +574,14 @@ def run_staging(
     if not skip_stage and not html_src.is_dir():
         print(f"[ERROR] HTML Source dir 없음: {html_src}", file=sys.stderr)
         return 1
+
+    # ======================================================
+    # [Phase 3] SSOT 자동 대조 (i18n gate보다 먼저 — 문서 정합 선행)
+    # ======================================================
+    if not skip_stage:
+        rc_contracts = _run_validate_contracts(project_root)
+        if rc_contracts != 0:
+            return rc_contracts
 
     # ======================================================
     # [Phase 5.7+] i18n CI gate (P-2 회귀 방지)

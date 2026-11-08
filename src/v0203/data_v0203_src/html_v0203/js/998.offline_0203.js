@@ -215,7 +215,7 @@ window.SNW = window.SNW || {};
             runtime.control.active = false;
             runtime.control.state = 'IDLE';
             runtime.control.stateCode = 0;
-            runtime.control.reason = 'POWER_OFF';
+            runtime.control.reason = 'NONE';
             runtime.control.reasonCode = 0;
             if (SNW.Store) SNW.Store.set({ control: runtime.control, sim: runtime.sim, fsmState: 0, fsmReason: 0 });
             return { result: 'ok' };

@@ -14,9 +14,9 @@
  */
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
-(function(SNW) {
+(function (SNW) {
 	'use strict';
-	
+
 	SNW.Page.Chart = class Chart {
 		constructor(container) {
 			this.el = container;
@@ -28,19 +28,23 @@ SNW.Page = SNW.Page || {};
 			this._buffer = []; // CSV/재렌더용 원본 버퍼 (최대 120)
 			this.chart = null;
 		}
-		
+
 		async mount() {
 			this.el.innerHTML = '';
 			this.el.appendChild(SNW.Tpl.chart());
 			SNW.I18n.applyTo(this.el);
-			
+
 			// [REQ-1] Chart 탭 전환
 			this._activeTab = 'live';
 			this._showOverlay = false;
 			const overlayChk = this.el.querySelector('[data-chart-overlay]');
 			if (overlayChk) {
-				overlayChk.addEventListener('change', () => {
+				overlayChk.addEventListener('change', async () => {
 					this._showOverlay = overlayChk.checked;
+					if (this._showOverlay) {
+						await this._ensurePreviewBuffer();
+					}
+					this._drawOverlay();
 					this._switchTab(this._activeTab);
 				});
 			}
@@ -78,17 +82,17 @@ SNW.Page = SNW.Page || {};
 				maxPoints: 120,
 				series: SNW.CFG.UI.MINI_CHART_SERIES
 			});
-			
+
 			// 초기 데이터 (풀 덤프: S-2 getChartHistory 우선)
 			try {
 				const hist = await SNW.Api.getChartHistory();
 				if (!this._active) return;
 				if (hist && Array.isArray(hist.chart) && hist.chart.length > 0) {
 					this._buffer = hist.chart.map(e => ({
-						t:          (e.t != null)          ? e.t          : Date.now(),
-						windSpeed:  (e.wind != null)       ? e.wind       : 0,
+						t: (e.t != null) ? e.t : Date.now(),
+						windSpeed: (e.wind != null) ? e.wind : 0,
 						targetWind: (e.targetWind != null) ? e.targetWind : 0,
-						pwmDuty:    (e.pwm != null)        ? e.pwm        : 0
+						pwmDuty: (e.pwm != null) ? e.pwm : 0
 					}));
 					this._redrawRange();
 				} else {
@@ -101,7 +105,7 @@ SNW.Page = SNW.Page || {};
 					if (this._active) this._applyInitial(simState);
 				} catch (e2) { /* ignore */ }
 			}
-			
+
 			// WS chart 구독
 			const wsChart = SNW.WsManager.get('chart');
 			if (wsChart) {
@@ -111,7 +115,7 @@ SNW.Page = SNW.Page || {};
 				});
 				this._wsUnsubs.push(unsub);
 			}
-			
+
 			// 범위 선택
 			const rangeSel = this.el.querySelector('[data-slot="range"]');
 			if (rangeSel) {
@@ -121,28 +125,28 @@ SNW.Page = SNW.Page || {};
 					this._redrawRange();
 				});
 			}
-			
+
 			// CSV 내보내기
 			SNW.DomUtil.delegate(this.el, '[data-action="export"]', 'click', () => {
 				this._exportCsv();
 			});
-			
+
 			SNW.LogUtil.info('[Chart] mount 완료');
 		}
-		
+
 		unmount() {
 			this._active = false;
-			this._unsubs.forEach(fn => { try { fn(); } catch {} });
-			this._wsUnsubs.forEach(fn => { try { fn(); } catch {} });
+			this._unsubs.forEach(fn => { try { fn(); } catch { } });
+			this._wsUnsubs.forEach(fn => { try { fn(); } catch { } });
 			this._timers.forEach(id => clearInterval(id));
 			if (this.chart && this.chart.destroy) {
-				try { this.chart.destroy(); } catch {}
+				try { this.chart.destroy(); } catch { }
 			}
 			this._unsubs = [];
 			this._wsUnsubs = [];
 			this._timers = [];
 		}
-		
+
 		// -------------------------------------------------
 		// 초기 데이터 (S10 → sim state)
 		// -------------------------------------------------
@@ -157,7 +161,7 @@ SNW.Page = SNW.Page || {};
 				pwmDuty: sim.pwmDuty != null ? sim.pwmDuty : 0
 			});
 		}
-		
+
 		// -------------------------------------------------
 		// WS chart 수신
 		//  - diffOnly: { sim: { windSpeed, targetWind, pwmDuty, ... } }
@@ -167,10 +171,10 @@ SNW.Page = SNW.Page || {};
 			if (!this.chart) return;
 			this.chart.clear();
 			this._buffer = [];
-			
+
 			if (tab === 'live') {
 				// 실제: S-2 이력 + WS 라이브
-				SNW.Api.getChartHistory().then(hist => {
+				SNW.Api.getChartHistory().then(async hist => {
 					if (hist?.chart?.length) {
 						this._buffer = hist.chart.map(e => ({
 							t: e.t || Date.now(),
@@ -179,9 +183,12 @@ SNW.Page = SNW.Page || {};
 							pwmDuty: e.pwm || 0
 						}));
 						this._redrawRange();
-						if (this._showOverlay) this._drawOverlay();
+						if (this._showOverlay) {
+							await this._ensurePreviewBuffer();
+							this._drawOverlay();
+						}
 					}
-				}).catch(() => {});
+				}).catch(() => { });
 			} else {
 				// 예상: 현재 프리셋 × 스타일로 생성
 				// [Phase5 5.5] ADR-5 이후 generate는 async → IIFE로 fire-and-forget
@@ -222,21 +229,21 @@ SNW.Page = SNW.Page || {};
 					// diffOnly 1점 = append
 					const e = data.chart[0];
 					this._pushPoint({
-						t:          (e.t != null)          ? e.t          : Date.now(),
-						windSpeed:  (e.wind != null)       ? e.wind       : 0,
+						t: (e.t != null) ? e.t : Date.now(),
+						windSpeed: (e.wind != null) ? e.wind : 0,
 						targetWind: (e.targetWind != null) ? e.targetWind : 0,
-						pwmDuty:    (e.pwm != null)        ? e.pwm        : 0,
-						gust:       (e.gust != null)       ? e.gust       : 0,
-						thermal:    (e.thermal != null)    ? e.thermal    : 0
+						pwmDuty: (e.pwm != null) ? e.pwm : 0,
+						gust: (e.gust != null) ? e.gust : 0,
+						thermal: (e.thermal != null) ? e.thermal : 0
 					});
 					return;
 				}
 				// 2개 이상 = full dump (이력 교체)
 				this._buffer = data.chart.map(e => ({
-					t:          (e.t != null)          ? e.t          : Date.now(),
-					windSpeed:  (e.wind != null)       ? e.wind       : 0,
+					t: (e.t != null) ? e.t : Date.now(),
+					windSpeed: (e.wind != null) ? e.wind : 0,
 					targetWind: (e.targetWind != null) ? e.targetWind : 0,
-					pwmDuty:    (e.pwm != null)        ? e.pwm        : 0
+					pwmDuty: (e.pwm != null) ? e.pwm : 0
 				}));
 				this._redrawRange();
 				return;
@@ -252,13 +259,13 @@ SNW.Page = SNW.Page || {};
 				});
 			}
 		}
-		
+
 		_pushPoint(pt) {
 			this._buffer.push(pt);
 			if (this._buffer.length > 120) this._buffer.shift();
 			if (this.chart) this.chart.push(pt);
 		}
-		
+
 		// -------------------------------------------------
 		// 범위 변경 시 재렌더 (버퍼에서 잘라냄)
 		// -------------------------------------------------
@@ -271,130 +278,130 @@ SNW.Page = SNW.Page || {};
 				this.chart.push(this._buffer[i]);
 			}
 		}
-		
+
 		// -------------------------------------------------
 		// CSV 내보내기 (현재 buffer)
 		// -------------------------------------------------
-        _exportCsv() {
-            if (!this._buffer.length) {
-                SNW.ToastUtil.info(SNW.I18n.t('common.noData'));
-                return;
-            }
-            const header = 'timestamp,windSpeed,targetWind,pwmDuty\n';
-            const rows = this._buffer.map(r => [
-                SNW.TimeUtil.epochToTimeStr(r.t),
-                r.windSpeed.toFixed(3),
-                r.targetWind.toFixed(3),
-                r.pwmDuty.toFixed(1)
-            ].join(',')).join('\n');
-            
-            const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `snw_chart_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            URL.revokeObjectURL(url);
-            
-            SNW.ToastUtil.success(SNW.I18n.t('common.success'));
-        }
+		_exportCsv() {
+			if (!this._buffer.length) {
+				SNW.ToastUtil.info(SNW.I18n.t('common.noData'));
+				return;
+			}
+			const header = 'timestamp,windSpeed,targetWind,pwmDuty\n';
+			const rows = this._buffer.map(r => [
+				SNW.TimeUtil.epochToTimeStr(r.t),
+				r.windSpeed.toFixed(3),
+				r.targetWind.toFixed(3),
+				r.pwmDuty.toFixed(1)
+			].join(',')).join('\n');
 
-        // ======================================================
-        // [Phase5 5.5] 예상 파형 오버레이 (ADR-5 이후 신규)
-        //
-        //  [설계]
-        //   - 차트 캔버스 위에 반투명 캔버스를 절대 위치로 삽입
-        //   - 실측 데이터(_buffer)의 min/max 범위에 예상 파형을 매핑
-        //   - 점선 + 돌풍 마커로 시각 구분
-        //   - _showOverlay=false면 즉시 제거
-        // ======================================================
-        async _ensurePreviewBuffer() {
-            if (this._previewBuffer) return;
-            if (!SNW.Preview || typeof SNW.Preview.generate !== 'function') return;
+			const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8' });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `snw_chart_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.csv`;
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			URL.revokeObjectURL(url);
 
-            const sim = SNW.Store.get().sim || {};
-            try {
-                const wave = await SNW.Preview.generate(
-                    sim.presetCode || 'OCEAN',
-                    sim.styleCode || 'BALANCE',
-                    null
-                );
-                if (wave && wave.points) this._previewBuffer = wave.points;
-            } catch (e) {
-                if (SNW.LogUtil) SNW.LogUtil.warn('[Chart] overlay preview fail', e);
-            }
-        }
+			SNW.ToastUtil.success(SNW.I18n.t('common.success'));
+		}
 
-        _drawOverlay() {
-            // 기존 오버레이 제거
-            const existing = this.el.querySelector('.snw-overlay-canvas');
-            if (existing) existing.remove();
+		// ======================================================
+		// [Phase5 5.5] 예상 파형 오버레이 (ADR-5 이후 신규)
+		//
+		//  [설계]
+		//   - 차트 캔버스 위에 반투명 캔버스를 절대 위치로 삽입
+		//   - 실측 데이터(_buffer)의 min/max 범위에 예상 파형을 매핑
+		//   - 점선 + 돌풍 마커로 시각 구분
+		//   - _showOverlay=false면 즉시 제거
+		// ======================================================
+		async _ensurePreviewBuffer() {
+			if (this._previewBuffer) return;
+			if (!SNW.Preview || typeof SNW.Preview.generate !== 'function') return;
 
-            // 조건 확인
-            if (!this._showOverlay)         return;
-            if (!this._previewBuffer)       return;
-            if (this._activeTab !== 'live') return;   // 예상 탭에서는 이미 실측이 예상이므로 오버레이 불필요
-            if (!this._buffer || this._buffer.length < 2) return;
+			const sim = SNW.Store.get().sim || {};
+			try {
+				const wave = await SNW.Preview.generate(
+					sim.presetCode || 'OCEAN',
+					sim.styleCode || 'BALANCE',
+					null
+				);
+				if (wave && wave.points) this._previewBuffer = wave.points;
+			} catch (e) {
+				if (SNW.LogUtil) SNW.LogUtil.warn('[Chart] overlay preview fail', e);
+			}
+		}
 
-            const chartSlot = this.el.querySelector('[data-slot="chart"]');
-            if (!chartSlot) return;
+		_drawOverlay() {
+			// 기존 오버레이 제거
+			const existing = this.el.querySelector('.snw-overlay-canvas');
+			if (existing) existing.remove();
 
-            if (getComputedStyle(chartSlot).position === 'static') {
-                chartSlot.style.position = 'relative';
-            }
+			// 조건 확인
+			if (!this._showOverlay) return;
+			if (!this._previewBuffer) return;
+			if (this._activeTab !== 'live') return;   // 예상 탭에서는 이미 실측이 예상이므로 오버레이 불필요
+			if (!this._buffer || this._buffer.length < 2) return;
 
-            const ovl = document.createElement('canvas');
-            ovl.className = 'snw-overlay-canvas';
-            ovl.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;';
-            chartSlot.appendChild(ovl);
+			const chartSlot = this.el.querySelector('[data-slot="chart"]');
+			if (!chartSlot) return;
 
-            requestAnimationFrame(() => {
-                const rect = chartSlot.getBoundingClientRect();
-                if (rect.width < 10 || rect.height < 10) return;
-                if (!ovl.isConnected) return;
+			if (getComputedStyle(chartSlot).position === 'static') {
+				chartSlot.style.position = 'relative';
+			}
 
-                ovl.width  = Math.floor(rect.width);
-                ovl.height = Math.floor(rect.height);
+			const ovl = document.createElement('canvas');
+			ovl.className = 'snw-overlay-canvas';
+			ovl.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;';
+			chartSlot.appendChild(ovl);
 
-                // 실측 + 예상 통합 min/max
-                let mn = Infinity, mx = -Infinity;
-                this._buffer.forEach(p => {
-                    const v = Number(p.windSpeed);
-                    if (!Number.isFinite(v)) return;
-                    if (v < mn) mn = v;
-                    if (v > mx) mx = v;
-                });
-                this._previewBuffer.forEach(p => {
-                    const v = Number(p.wind);
-                    if (!Number.isFinite(v)) return;
-                    if (v < mn) mn = v;
-                    if (v > mx) mx = v;
-                });
-                if (!Number.isFinite(mn) || !Number.isFinite(mx) || mx <= mn) return;
+			requestAnimationFrame(() => {
+				const rect = chartSlot.getBoundingClientRect();
+				if (rect.width < 10 || rect.height < 10) return;
+				if (!ovl.isConnected) return;
 
-                const ctx = ovl.getContext('2d');
-                const pad = 6;
-                const innerH = ovl.height - pad * 2;
-                const n = this._previewBuffer.length;
-                if (n < 2) return;
+				ovl.width = Math.floor(rect.width);
+				ovl.height = Math.floor(rect.height);
 
-                // 점선 오버레이
-                ctx.strokeStyle = 'rgba(240,136,62,0.75)';
-                ctx.lineWidth = 1.5;
-                ctx.setLineDash([5, 4]);
-                ctx.beginPath();
-                for (let i = 0; i < n; i++) {
-                    const x = (i / (n - 1)) * ovl.width;
-                    const y = pad + ((mx - this._previewBuffer[i].wind) / (mx - mn)) * innerH;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else         ctx.lineTo(x, y);
-                }
-                ctx.stroke();
-                ctx.setLineDash([]);
-            });
-        }
-    };
-    
+				// 실측 + 예상 통합 min/max
+				let mn = Infinity, mx = -Infinity;
+				this._buffer.forEach(p => {
+					const v = Number(p.windSpeed);
+					if (!Number.isFinite(v)) return;
+					if (v < mn) mn = v;
+					if (v > mx) mx = v;
+				});
+				this._previewBuffer.forEach(p => {
+					const v = Number(p.wind);
+					if (!Number.isFinite(v)) return;
+					if (v < mn) mn = v;
+					if (v > mx) mx = v;
+				});
+				if (!Number.isFinite(mn) || !Number.isFinite(mx) || mx <= mn) return;
+
+				const ctx = ovl.getContext('2d');
+				const pad = 6;
+				const innerH = ovl.height - pad * 2;
+				const n = this._previewBuffer.length;
+				if (n < 2) return;
+
+				// 점선 오버레이
+				ctx.strokeStyle = 'rgba(240,136,62,0.75)';
+				ctx.lineWidth = 1.5;
+				ctx.setLineDash([5, 4]);
+				ctx.beginPath();
+				for (let i = 0; i < n; i++) {
+					const x = (i / (n - 1)) * ovl.width;
+					const y = pad + ((mx - this._previewBuffer[i].wind) / (mx - mn)) * innerH;
+					if (i === 0) ctx.moveTo(x, y);
+					else ctx.lineTo(x, y);
+				}
+				ctx.stroke();
+				ctx.setLineDash([]);
+			});
+		}
+	};
+
 })(window.SNW);

@@ -235,16 +235,25 @@ window.SNW = window.SNW || {};
                     break;
                 case 'ovrIntensity':
                     this.step.override.windIntensity = Number(val);
+                    this.step.override.enabled = true;
+                    const chkInt = el.querySelector('[data-field="overrideEnabled"]');
+                    if (chkInt) chkInt.checked = true;
                     const lInt = el.querySelector('[data-slot="ovr-int-label"]');
                     if (lInt) lInt.textContent = val + '%';
                     break;
                 case 'ovrVariability':
                     this.step.override.windVariability = Number(val);
+                    this.step.override.enabled = true;
+                    const chkVar = el.querySelector('[data-field="overrideEnabled"]');
+                    if (chkVar) chkVar.checked = true;
                     const lVar = el.querySelector('[data-slot="ovr-var-label"]');
                     if (lVar) lVar.textContent = val + '%';
                     break;
                 case 'ovrGust':
                     this.step.override.gustFrequency = Number(val);
+                    this.step.override.enabled = true;
+                    const chkGust = el.querySelector('[data-field="overrideEnabled"]');
+                    if (chkGust) chkGust.checked = true;
                     const lGust = el.querySelector('[data-slot="ovr-gust-label"]');
                     if (lGust) lGust.textContent = val + '%';
                     break;
@@ -571,13 +580,17 @@ window.SNW = window.SNW || {};
             };
 
             try {
+                let savedId = this._profileId;
                 if (this._profileId) {
                     await SNW.Api.updateProfile(this._profileId, profile);
                 } else {
-                    await SNW.Api.addProfile(profile);
+                    const res = await SNW.Api.addProfile(profile);
+                    if (res && (res.id || res.profileId || res.profileNo)) {
+                        savedId = res.id || res.profileId || res.profileNo;
+                    }
                 }
                 if (SNW.ToastUtil) SNW.ToastUtil.success(this._profileId ? '업데이트 완료' : '저장 완료');
-                const targetProfId = this._profileId;
+                const targetProfId = savedId;
                 setTimeout(() => {
                     if (targetProfId && confirm('지금 이 프로필을 재생해 보시겠어요?')) {
                         if (SNW.Api && typeof SNW.Api.startPlaylist === 'function') {

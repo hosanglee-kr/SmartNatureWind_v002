@@ -107,9 +107,11 @@ window.SNW = window.SNW || {};
         main.appendChild(SNW.DomUtil.html`<div class="snw-error">${msg}</div>`);
     }
     
-    // 페이지 이동 시 사이드바 닫기 (오직 클래스만 제거)
+    // 모바일/태블릿 화면에서만 페이지 이동 시 사이드바 닫기
     function _closeSidebarOnMobile() {
-        document.body.classList.remove('snw-sidebar-open');
+        if (window.innerWidth < 1024) {
+            document.body.classList.remove('snw-sidebar-open');
+        }
     }
     
     async function dispatch() {

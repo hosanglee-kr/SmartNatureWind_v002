@@ -548,7 +548,7 @@ window.SNW = window.SNW || {};
                 text = '시원한 바다 바람을 틀어드렸습니다.';
                 hint = '바다 바람을 틀어드렸습니다.';
             } else if (msg.includes('꺼') || msg.includes('정지') || msg.includes('중지')) {
-                await A.sessionStop();
+                await A.stopSession();
                 actions.push({ name: 'stop_session', args: {}, result: 'ok' });
                 text = '바람을 껐습니다.';
                 hint = '바람을 껐습니다.';
@@ -578,7 +578,7 @@ window.SNW = window.SNW || {};
 
         A.executeAiAction = async (name, args) => {
             if (name === 'stop_session') {
-                await A.sessionStop();
+                await A.stopSession();
                 return { ok: true, name, result: 'ok' };
             }
             if (name === 'start_preset') {

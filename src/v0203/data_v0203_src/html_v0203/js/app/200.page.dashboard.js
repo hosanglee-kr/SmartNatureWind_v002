@@ -5,7 +5,7 @@
 // =========================================================
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     SNW.Page.Dashboard = class Dashboard {
@@ -29,7 +29,7 @@ SNW.Page = SNW.Page || {};
 
         unmount() {
             this._active = false;
-            this._unsubs.forEach(fn => { try { fn(); } catch {} });
+            this._unsubs.forEach(fn => { try { fn(); } catch { } });
             this._unsubs = [];
             if (this._eq) this._eq.stop();
             this._eq = null;
@@ -114,9 +114,9 @@ SNW.Page = SNW.Page || {};
 
             // Now Playing 컨트롤
             const btnPause = this.el.querySelector('[data-action="pause"]');
-            const btnStop  = this.el.querySelector('[data-action="stop"]');
+            const btnStop = this.el.querySelector('[data-action="stop"]');
             if (btnPause) btnPause.onclick = () => this._onPauseToggle();
-            if (btnStop)  btnStop.onclick  = () => this._onStop();
+            if (btnStop) btnStop.onclick = () => this._onStop();
 
             // Context 재생 버튼
             const btnRec = this.el.querySelector('[data-action="play-recommend"]');
@@ -133,7 +133,7 @@ SNW.Page = SNW.Page || {};
 
             this._unsubs.push(
                 SNW.Store.watch('session', () => this._renderNowPlaying()),
-                SNW.Store.watch('sim',     () => this._onSimUpdate()),
+                SNW.Store.watch('sim', () => this._onSimUpdate()),
                 SNW.Store.watch('control', () => this._onControlUpdate()),
             );
             // 초기 렌더
@@ -147,43 +147,46 @@ SNW.Page = SNW.Page || {};
             const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
             const s = store.session;
             const titleEl = this.el.querySelector('[data-slot="np-title"]');
-            const subEl   = this.el.querySelector('[data-slot="np-sub"]');
+            const subEl = this.el.querySelector('[data-slot="np-sub"]');
             const btnPause = this.el.querySelector('[data-action="pause"]');
-            const btnStop  = this.el.querySelector('[data-action="stop"]');
+            const btnStop = this.el.querySelector('[data-action="stop"]');
             if (!titleEl) return;
 
-            const isActive = s && s.type && s.type !== 'NONE' && s.active !== false;
+            const typeName = s ? (s.typeName || (['NONE', 'PLAYLIST', 'PRESET', 'FIXED'][Number(s.type)] || String(s.type || 'NONE'))) : 'NONE';
+            const isActive = s && typeName !== 'NONE' && s.active !== false && s.state !== 'COMPLETED';
 
             if (!isActive) {
                 titleEl.textContent = '꺼짐';
-                subEl.textContent   = '세션 없음';
+                subEl.textContent = '세션 없음';
                 if (btnPause) btnPause.hidden = true;
-                if (btnStop)  btnStop.hidden  = true;
+                if (btnStop) btnStop.hidden = true;
                 this._eq?.renderStatic();
                 this._eq?.stop();
                 this._slider?.set(0);
                 return;
             }
 
-            const isPaused = s.state === 'PAUSED';
+            const isPaused = s.state === 'PAUSED' || s.state === 1;
             let title = '', sub = '';
 
-            if (s.type === 'PLAYLIST') {
-                title = s.profileName || '플레이리스트';
-                const remain = this._fmtRemain(s.stepRemainSec || 0);
-                sub = `Step ${s.currentStep || 1}/${s.totalSteps || 1} · ${remain}`;
-            } else if (s.type === 'PRESET') {
+            if (typeName === 'PLAYLIST') {
+                title = s.profileName || s.name || `프로필 #${s.profileNo || s.profileId || ''}`;
+                const remain = this._fmtRemain(s.stepRemainSec || s.remainSec || 0);
+                sub = `Step ${s.currentStep || s.stepNo || 1}/${s.totalSteps || 1} · ${remain}`;
+            } else if (typeName === 'PRESET') {
                 title = `${s.presetCode || ''} · ${s.styleCode || ''}`;
                 sub = isPaused ? '일시정지' : '재생 중';
-            } else if (s.type === 'FIXED') {
-                title = `일반 선풍기 ${Math.round(s.percent || 0)}%`;
+            } else if (typeName === 'FIXED') {
+                const spd = (s.percent != null) ? s.percent : (s.fixedSpeed != null ? s.fixedSpeed : (s.speed || 0));
+                title = `일반 선풍기 ${Math.round(spd)}%`;
                 sub = isPaused ? '일시정지' : '재생 중';
-                if (this._slider) this._slider.set(s.percent || 0);
+                if (this._slider) this._slider.set(spd);
             }
 
-            const triggerIcon = s.trigger === 'MANUAL' ? '✋' : '⏰';
+            const isManual = (s.trigger === 1 || s.trigger === 'MANUAL' || s.triggerName === 'MANUAL');
+            const triggerIcon = isManual ? '✋' : '⏰';
             titleEl.textContent = `${triggerIcon} ${title}`;
-            subEl.textContent   = isPaused ? `⏸ ${sub}` : sub;
+            subEl.textContent = isPaused ? `⏸ ${sub}` : sub;
 
             if (btnPause) {
                 btnPause.hidden = false;
@@ -212,7 +215,7 @@ SNW.Page = SNW.Page || {};
             const s = store.session;
 
             // [Phase3 N-1] 명시적 숫자 판정
-            const typeNum  = s ? Number(s.type) : 0;
+            const typeNum = s ? Number(s.type) : 0;
             const isActive = (typeNum > 0) && (s.state === 'ACTIVE');
 
             if (this._eq && isActive) {
@@ -251,15 +254,15 @@ SNW.Page = SNW.Page || {};
 
         _renderContext(ctx) {
             if (!ctx) return;
-            const envEl     = this.el.querySelector('[data-slot="comfort-env"]');
-            const levelEl   = this.el.querySelector('[data-slot="comfort-level"]');
-            const recEl     = this.el.querySelector('[data-slot="comfort-recommend"]');
-            const playBtn   = this.el.querySelector('[data-action="play-recommend"]');
+            const envEl = this.el.querySelector('[data-slot="comfort-env"]');
+            const levelEl = this.el.querySelector('[data-slot="comfort-level"]');
+            const recEl = this.el.querySelector('[data-slot="comfort-recommend"]');
+            const playBtn = this.el.querySelector('[data-action="play-recommend"]');
             if (!envEl) return;
 
             const emoji = ['🟢', '🟡', '🟠', '🔴'][ctx.level] || '⚪';
             const tempStr = (ctx.tempC != null) ? ctx.tempC.toFixed(1) : '--';
-            const humStr  = (ctx.humidity != null) ? ctx.humidity.toFixed(0) : '--';
+            const humStr = (ctx.humidity != null) ? ctx.humidity.toFixed(0) : '--';
 
             envEl.textContent = `🌡️ ${tempStr}°C  💧 ${humStr}%`;
             levelEl.textContent = `${emoji} ${ctx.levelText || ''}`;
@@ -267,11 +270,12 @@ SNW.Page = SNW.Page || {};
 
             // 추천 표시
             const rec = ctx.recommend || {};
+            const esc = (txt) => (SNW.DomUtil ? SNW.DomUtil.escape(txt) : txt);
             if (rec.profileId > 0) {
-                recEl.innerHTML = `💡 현재 날씨엔 "<b>프로필 #${rec.profileId}</b>"이 가장 쾌적합니다`;
+                recEl.innerHTML = `💡 현재 날씨엔 "<b>프로필 #${esc(String(rec.profileId))}</b>"이 가장 쾌적합니다`;
                 if (playBtn) playBtn.disabled = false;
             } else if (rec.presetCode) {
-                recEl.innerHTML = `💡 현재 날씨엔 "<b>${rec.presetCode} · ${rec.styleCode}</b>" 바람을 추천합니다`;
+                recEl.innerHTML = `💡 현재 날씨엔 "<b>${esc(String(rec.presetCode))} · ${esc(String(rec.styleCode || ''))}</b>" 바람을 추천합니다`;
                 if (playBtn) playBtn.disabled = false;
             } else {
                 recEl.textContent = '현재 추천 바람 정보를 준비 중입니다';

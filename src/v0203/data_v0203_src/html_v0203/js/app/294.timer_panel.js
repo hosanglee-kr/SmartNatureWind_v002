@@ -83,7 +83,9 @@ window.SNW = window.SNW || {};
         async _onExpire() {
             this.cancel(false);
             try {
-                if (SNW.Api && SNW.Api.Session && typeof SNW.Api.Session.stop === 'function') {
+                if (SNW.Api && typeof SNW.Api.stopSession === 'function') {
+                    await SNW.Api.stopSession();
+                } else if (SNW.Api && SNW.Api.Session && typeof SNW.Api.Session.stop === 'function') {
                     await SNW.Api.Session.stop();
                 }
             } catch (err) {
@@ -115,6 +117,11 @@ window.SNW = window.SNW || {};
 
             this._startInterval();
             this._notify();
+
+            // 백엔드 기기 자체 타이머 동기화 (R-3: 브라우저 종료 시에도 기기 자동 꺼짐 보장)
+            if (SNW.Api && typeof SNW.Api.executeAiAction === 'function') {
+                SNW.Api.executeAiAction('set_timer', { minutes: min }).catch(() => {});
+            }
 
             if (SNW.ToastUtil && typeof SNW.ToastUtil.success === 'function') {
                 SNW.ToastUtil.success(SNW.I18n.t('timer.setSuccess', { m: min }));
@@ -304,8 +311,8 @@ window.SNW = window.SNW || {};
             if (!slot) return;
 
             const t = (k, p) => (SNW.I18n ? SNW.I18n.t(k, p) : k);
-            const ctl = SNW.Store ? SNW.Store.get('control') : null;
-            const sess = ctl && ctl.session;
+            const st = SNW.Store ? SNW.Store.get() : null;
+            const sess = st ? (st.session || (st.control && st.control.session)) : null;
             const isActive = sess && (sess.state === 'ACTIVE' || sess.state === 'PAUSED');
 
             if (isActive) {

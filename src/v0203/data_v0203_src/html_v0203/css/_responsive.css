@@ -35,8 +35,8 @@
         transform: translateX(-100%);
         box-shadow: var(--snw-shadow-lg);
     }
-    .snw-sidebar:not([hidden]) {
-        transform: translateX(0);
+    body.snw-sidebar-open .snw-sidebar {
+        transform: translateX(0) !important;
     }
 
     /* 토스트 전체 폭 및 하단 레이아웃 동적 연동 */
@@ -98,8 +98,8 @@
         transform: translateX(-100%);
         box-shadow: var(--snw-shadow-lg);
     }
-    .snw-sidebar:not([hidden]) {
-        transform: translateX(0);
+    body.snw-sidebar-open .snw-sidebar {
+        transform: translateX(0) !important;
     }
 
     .snw-main {

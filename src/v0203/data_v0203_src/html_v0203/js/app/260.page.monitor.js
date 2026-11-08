@@ -22,13 +22,7 @@ SNW.Page = SNW.Page || {};
             this._bindStore();
             await this._loadLiveData();
 
-            // 라이브 이퀄라이저 초기화
-            const liveEqSlot = this.el.querySelector('[data-slot="live-eq"]');
-            if (liveEqSlot && SNW.UI && typeof SNW.UI.equalizer === 'function') {
-                this._liveEq = SNW.UI.equalizer(liveEqSlot, { bars: 40, fps: 30, maxWind: 11 });
-            }
-
-            // 탭 초기화
+            // 탭 초기화 (_switchTab('live') 내부에서 _renderLive가 이퀄라이저를 전담 생성)
             this._switchTab(this._currentTab);
         }
 
@@ -87,6 +81,10 @@ SNW.Page = SNW.Page || {};
                 </div>`;
 
             // 이퀄라이저 재초기화
+            if (this._liveEq && typeof this._liveEq.stop === 'function') {
+                this._liveEq.stop();
+                this._liveEq = null;
+            }
             const eqSlot = slot.querySelector('[data-slot="live-eq"]');
             if (eqSlot && SNW.UI && typeof SNW.UI.equalizer === 'function') {
                 this._liveEq = SNW.UI.equalizer(eqSlot, { bars: 40, fps: 30, maxWind: 11 });
@@ -106,20 +104,27 @@ SNW.Page = SNW.Page || {};
             }
 
             const infoEl = this.el.querySelector('[data-slot="live-info"]');
-            if (infoEl && session && session.type !== 'NONE') {
-                let title = '';
-                if (session.type === 'PLAYLIST') title = session.profileName;
-                else if (session.type === 'PRESET') title = `${session.presetCode} · ${session.styleCode}`;
-                else title = `일반 선풍기 ${Math.round(session.percent || 0)}%`;
+            const typeName = session ? (session.typeName || (['NONE','PLAYLIST','PRESET','FIXED'][Number(session.type)] || String(session.type || 'NONE'))) : 'NONE';
+            const isActive = Boolean(session && typeName !== 'NONE' && session.active !== false && session.state !== 'COMPLETED');
 
+            if (infoEl && isActive) {
+                let title = '';
+                if (typeName === 'PLAYLIST') title = session.profileName || session.name || `프로필 #${session.profileNo || session.profileId || ''}`;
+                else if (typeName === 'PRESET') title = `${session.presetCode || ''} · ${session.styleCode || ''}`;
+                else {
+                    const spd = (session.percent != null) ? session.percent : (session.fixedSpeed != null ? session.fixedSpeed : (session.speed || 0));
+                    title = `일반 선풍기 ${Math.round(spd)}%`;
+                }
+
+                const isManual = (session.trigger === 1 || session.trigger === 'MANUAL' || session.triggerName === 'MANUAL');
                 infoEl.innerHTML = `
                     <div class="snw-monitor__live-row">
-                        <span>${session.trigger === 'MANUAL' ? '✋' : '⏰'} ${SNW.DomUtil.escape(title)}</span>
+                        <span>${isManual ? '✋' : '⏰'} ${SNW.DomUtil.escape(title)}</span>
                     </div>
-                    ${session.type === 'PLAYLIST' ? `
+                    ${typeName === 'PLAYLIST' ? `
                         <div class="snw-monitor__live-row">
-                            <span>Step ${session.currentStep}/${session.totalSteps}</span>
-                            <span>${this._fmtTime(session.stepRemainSec || 0)}</span>
+                            <span>Step ${session.currentStep || session.stepNo || 1}/${session.totalSteps || 1}</span>
+                            <span>${this._fmtTime(session.stepRemainSec || session.remainSec || 0)}</span>
                         </div>` : ''}
                 `;
             } else if (infoEl) {

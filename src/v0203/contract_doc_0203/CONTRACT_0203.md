@@ -1,4 +1,4 @@
-# CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.3)
+# CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.4)
 
 > **기준**: v0203 정적 감사 + 런타임 동시성 검증 완료 (F-01~F-10, I-1~I-6, N-1~N-4, G-1~G-3, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10, Batch G 전면 반영).  
 > **목적**: 멀티태스킹 환경에서 태스크 경계, 뮤텍스 획득 순서, 공유 자원 접근 규약 및 위임 패턴을 정의하여 데이터 레이스, 교착 상태(Deadlock), UAF를 원천 차단.  
@@ -452,12 +452,20 @@ startSession(type, trigger, payload) [T-async]
 - **[UI-7] Now Playing Bar 상세 확장 모달 규약**: Now Playing Bar 좌측 영역 탭(`data-action="expand"`) 시 단순 페이지 이동 대신 `showNowPlayingDetailsModal()`을 호출하여 세션 상세 정보(종류/스텝/남은 시간)를 확인하고 [▶ 재개/⏸ 일시정지], [⏹ 정지], [⏱️ 타이머 설정 바로가기]를 원스톱 제어한다.
 - **[UI-8] 물리 Override 상태 가시화 및 원클릭 복원 규약**: Wind Studio 등에서 물리 파라미터(강도/변동성/돌풍)를 수동 조작했을 때 `[수동 튜닝됨]` 뱃지를 표시하고, 원클릭 `[↺ 기본값 원복]` 액션(`_resetOverrideToDefaults`)을 통해 선택된 프리셋의 기준 물리값으로 즉각 되돌릴 수 있는 수단을 필수 제공한다.
 
+### 7.18 2차 통합 감사 이슈 해결 및 계약 규약 (AUDIT2-1~AUDIT2-5) (Stage 9.1 / 0203_012 신규)
+- **[AUDIT2-1] AI Live 토큰 및 경로 인증 보안 강화 (BE-P0-NEW-2, BE-P0-NEW-3)**: `/api/v001/ai/live-config` 등 6대 AI 라우트에 `checkApiKey()` 인가 가드를 전면 강제하여 평문 API Key 노출을 차단하고, 요청 본문 단편화 버퍼 검사(`index + len != total`) 및 0바이트 페이로드 가드로 파싱 크래시를 원천 방어한다.
+- **[AUDIT2-2] Gemini 도구 선언 단일 위임 (SSOT) 원칙 (BE-P0-NEW-2)**: `W10_Web_Routes_AILive_0203.cpp`의 하드코딩 도구 목록을 제거하고 `CT10_AI::appendAIFunctionDeclarations()` 단일 진실 공급원에 전면 위임하여 REST/Live 도구 선언 동기화 100%를 보장한다.
+- **[AUDIT2-3] Gemini REST API Parts Object 스키마 준수 (BE-P0-NEW-1)**: Google Generative AI REST 스키마에 따라 `parts` 배열 항목을 원시 문자열 대신 `[{"text": "..."}]` 객체로 엄격 직렬화하여 400 Bad Request 파싱 오류를 원천 차단한다.
+- **[AUDIT2-4] 프론트엔드 세션 스토어 정규화 헬퍼 규약 (R-1 / FE-P0-NEW-3, FE-P1-NEW-4)**: `060.store.js`의 `normalizeSession()` 헬퍼를 통해 백엔드 숫자형 `type`(0~3)과 문자열 `typeName`('NONE'|'PLAYLIST'|'PRESET'|'FIXED'), `triggerName`, `state`를 사전 정규화하여 렌더링 시 `undefined` 미표시 및 금지된 `'RUNNING'` 상태 오판을 차단한다.
+- **[AUDIT2-5] 데스크톱 영구 사이드바 그리드 규약 (ADR-10)**: 화면 폭 1024px 이상에서는 `.snw-app`에 2열 그리드(`var(--snw-sidebar-w) 1fr`)를 적용하고 `#btn-menu`를 은닉하며 라우터 전환 시 사이드바를 상시 유지하여 대화면 탐색 편의성을 보장한다.
+
 ---
 
 ## 8. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-08** | **v3.4** | **Stage 9.1 2차 통합 감사 19대 이슈 해결 및 계약 규약 신설 (§7.18 AUDIT2-1~AUDIT2-5, 0203_012)**: AI Live 토큰 및 경로 인증 보안 강화(checkApiKey 6대 라우트 강제 및 본문 단편화 가드), Gemini 도구 선언 CT10_AI SSOT 단일 위임, Gemini REST parts object 스키마 준수, 프론트엔드 세션 스토어 정규화 헬퍼(`normalizeSession`) 탑재, 데스크톱 영구 사이드바 그리드 규약(ADR-10) 명시 | Antigravity AI |
 | **2026-11-08** | **v3.3** | **Stage 9 웹 UI/UX 레이아웃 표준화 및 인터랙션 고도화 계약 신설 (§7.17 UI-5~UI-8, 0203_012)**: 모바일 하단 뷰포트 레이아웃 스택 표준화(NowPlaying 연동 FAB/토스트 동적 부상 및 스크롤 끝단 가림 해소), 바람 스타일 탭 44px 터치 접근성 보장, Now Playing Bar 상세 확장 모달 규약, 물리 Override 상태 가시화 및 원클릭 복원 규약 명시 | Antigravity AI |
 | **2026-11-08** | **v3.2** | **통합 감사 28대 이슈 해결 및 계약 규약 신설 (§7.16 AUDIT-1~6, 0203_012)**: FactoryReset SPA 단일 스키마, AI CRUD 헬퍼 위임, T-async getRootSnapshot 원자 캡처, T-loop WS 0-클라이언트 가드, C10 begin 실패 시 Recovery AP 폴백 및 런타임 설정 자동 적용, SSOT 자동 대조 CI 게이트 규약 명시 | Antigravity AI |
 | **2026-11-06** | **v3.1** | **Stage 8 AI 제어 및 Gemini Live 실시간 음성 안전 계약 (§7.15 AI-1~AI-6)**: 15종 위험 명령 원천 차단, Tool Calling FSM 위임, 30분 세션 상한 및 403 차단, NVS 4키 일일 비용 가드레일, AudioWorklet 16k/24k 인라인 스트리밍 및 Barge-in Flush, 30초 프롬프트 캐싱 계약 명시, 개정 이력 위치 정상화 | Antigravity AI |

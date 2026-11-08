@@ -68,7 +68,7 @@
 
 			try {
 				// 1. 일일 30분 가드레일 토큰 획득
-				const tokenRes = await SNW.API.getAiLiveToken(todayDate);
+				const tokenRes = await SNW.Api.getAiLiveToken(todayDate);
 				if (tokenRes.level === 'cap' || (tokenRes.remainingSec !== undefined && tokenRes.remainingSec <= 0)) {
 					const msg = tokenRes.error || (SNW.I18n ? SNW.I18n.t('ai.dailyCapReached') : 'Daily Live limit reached (30 min)');
 					throw new Error(msg);
@@ -79,7 +79,7 @@
 				}
 
 				// 2. 초기 Live WS 설정 조회 (엄격 프롬프트 및 도구 선언)
-				const cfgRes = await SNW.API.getAiLiveConfig();
+				const cfgRes = await SNW.Api.getAiLiveConfig();
 				const token = tokenRes.token;
 				const wsUrl = `${tokenRes.wsUrl || 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent'}?key=${token}`;
 
@@ -248,7 +248,7 @@
 			try {
 				const calls = toolCall.functionCalls || [];
 				// ESP32 백엔드 브리지 호출
-				const bridgeRes = await SNW.API.callAiLiveFunction({ functionCalls: calls });
+				const bridgeRes = await SNW.Api.callAiLiveFunction({ functionCalls: calls });
 				const responses = (bridgeRes && bridgeRes.functionResponses) || [];
 
 				if (_callbacks.onToolCall) {
@@ -300,7 +300,7 @@
 			const estCostX1000 = Math.round(elapsedSec * 0.3);
 
 			try {
-				const res = await SNW.API.reportAiUsage({
+				const res = await SNW.Api.reportAiUsage({
 					todayDate,
 					audioSec: elapsedSec,
 					turnCount: 0,

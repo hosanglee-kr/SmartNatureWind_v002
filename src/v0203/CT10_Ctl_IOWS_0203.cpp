@@ -43,7 +43,7 @@ static JsonDocument s_doc_metrics;
 static JsonDocument s_doc_chart;
 static JsonDocument s_doc_summary;
 
-static constexpr uint32_t S_WS_MAX_INTERVAL_MS = 600000UL;   // 10분
+static constexpr uint32_t S_WS_MAX_INTERVAL_MS = 600000UL; // 10분
 
 // ======================================================
 // CT10 상태 mutex 정의 (lazy-init은 CL_A40_MutexGuard_Semaphore가 담당)
@@ -86,19 +86,13 @@ static bool     s_pending[EN_A20_WS_CH_COUNT]    = {false, false, false, false};
 static uint32_t s_lastCleanupMs     = 0;
 static uint32_t s_lastPolicyApplyMs = 0;
 
-static uint16_t s_itvMs[EN_A20_WS_CH_COUNT] = {
-    (uint16_t)G_A20_WS_CH_Base_Arr[EN_A20_WS_CH_STATE].chDefaultIntervalMs,
-    (uint16_t)G_A20_WS_CH_Base_Arr[EN_A20_WS_CH_METRICS].chDefaultIntervalMs,
-    (uint16_t)G_A20_WS_CH_Base_Arr[EN_A20_WS_CH_CHART].chDefaultIntervalMs,
-    (uint16_t)G_A20_WS_CH_Base_Arr[EN_A20_WS_CH_SUMMARY].chDefaultIntervalMs
-};
+static uint16_t s_itvMs[EN_A20_WS_CH_COUNT] = {(uint16_t)G_A20_WS_CH_Base_Arr[EN_A20_WS_CH_STATE].chDefaultIntervalMs,
+                                               (uint16_t)G_A20_WS_CH_Base_Arr[EN_A20_WS_CH_METRICS].chDefaultIntervalMs,
+                                               (uint16_t)G_A20_WS_CH_Base_Arr[EN_A20_WS_CH_CHART].chDefaultIntervalMs,
+                                               (uint16_t)G_A20_WS_CH_Base_Arr[EN_A20_WS_CH_SUMMARY].chDefaultIntervalMs};
 
 static uint8_t s_prio[EN_A20_WS_CH_COUNT] = {
-    (uint8_t)EN_A20_WS_CH_STATE,
-    (uint8_t)EN_A20_WS_CH_METRICS,
-    (uint8_t)EN_A20_WS_CH_CHART,
-    (uint8_t)EN_A20_WS_CH_SUMMARY
-};
+    (uint8_t)EN_A20_WS_CH_STATE, (uint8_t)EN_A20_WS_CH_METRICS, (uint8_t)EN_A20_WS_CH_CHART, (uint8_t)EN_A20_WS_CH_SUMMARY};
 
 static uint16_t s_chartLargeBytes  = (uint16_t)G_A20_WS_ETC_DEFAULT_CONFIG.chartLargeBytes;
 static uint8_t  s_chartThrottleMul = (uint8_t)G_A20_WS_ETC_DEFAULT_CONFIG.chartThrottleMul;
@@ -109,13 +103,11 @@ static uint16_t s_cleanupMs = (uint16_t)G_A20_WS_ETC_DEFAULT_CONFIG.wsCleanupMs;
 // --------------------------------------------------
 // 브로커 주입 API
 // --------------------------------------------------
-void CT10_WS_setBrokers(
-    void (*p_state)(JsonDocument&, bool),
-    void (*p_metrics)(JsonDocument&, bool),
-    void (*p_chart)(JsonDocument&, bool),
-    void (*p_summary)(JsonDocument&, bool),
-    void (*p_cleanup)()
-) {
+void CT10_WS_setBrokers(void (*p_state)(JsonDocument&, bool),
+                        void (*p_metrics)(JsonDocument&, bool),
+                        void (*p_chart)(JsonDocument&, bool),
+                        void (*p_summary)(JsonDocument&, bool),
+                        void (*p_cleanup)()) {
     s_bcast_state   = p_state;
     s_bcast_metrics = p_metrics;
     s_bcast_chart   = p_chart;
@@ -126,10 +118,8 @@ void CT10_WS_setBrokers(
 // --------------------------------------------------
 // 우선순위 정렬
 // --------------------------------------------------
-static void CT10_WS_buildPriorityOrderFromConfig(
-    const ST_A20_WS_CH_CONFIG_t p_cfg[EN_A20_WS_CH_COUNT],
-    uint8_t                    p_out[EN_A20_WS_CH_COUNT]
-) {
+static void CT10_WS_buildPriorityOrderFromConfig(const ST_A20_WS_CH_CONFIG_t p_cfg[EN_A20_WS_CH_COUNT],
+                                                 uint8_t                     p_out[EN_A20_WS_CH_COUNT]) {
     for (uint8_t v_i = 0; v_i < (uint8_t)EN_A20_WS_CH_COUNT; v_i++) {
         p_out[v_i] = v_i;
     }
@@ -143,8 +133,10 @@ static void CT10_WS_buildPriorityOrderFromConfig(
             uint8_t pb = p_cfg[b].priority;
 
             bool v_swap = false;
-            if (pb < pa) v_swap = true;
-            else if (pb == pa && b < a) v_swap = true;
+            if (pb < pa)
+                v_swap = true;
+            else if (pb == pa && b < a)
+                v_swap = true;
 
             if (v_swap) {
                 uint8_t t  = p_out[v_i];
@@ -169,8 +161,8 @@ static void CT10_WS_applyPolicyFromSystem() {
     const ST_A20_WebSocketConfig_t& v_ws  = v_sys.system.webSocket;
 
     for (uint8_t v_i = 0; v_i < (uint8_t)EN_A20_WS_CH_COUNT; v_i++) {
-        const ST_A20_WS_CH_CONFIG_t& v_ch = v_ws.wsChConfig[v_i];
-        uint16_t v_itv = v_ch.chIntervalMs;
+        const ST_A20_WS_CH_CONFIG_t& v_ch  = v_ws.wsChConfig[v_i];
+        uint16_t                     v_itv = v_ch.chIntervalMs;
         if (v_itv > 0) {
             s_itvMs[v_i] = v_itv;
         }
@@ -203,15 +195,13 @@ void CT10_WS_begin() {
     s_lastCleanupMs     = 0;
     s_lastPolicyApplyMs = millis();
 
-    CL_D10_Logger::log(
-        EN_L10_LOG_INFO,
-        "[CT10][WS] Scheduler begin: itv(state=%u metrics=%u chart=%u summary=%u) cleanup=%u",
-        (unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_STATE],
-        (unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_METRICS],
-        (unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_CHART],
-        (unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_SUMMARY],
-        (unsigned)s_cleanupMs
-    );
+    CL_D10_Logger::log(EN_L10_LOG_INFO,
+                       "[CT10][WS] Scheduler begin: itv(state=%u metrics=%u chart=%u summary=%u) cleanup=%u",
+                       (unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_STATE],
+                       (unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_METRICS],
+                       (unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_CHART],
+                       (unsigned)s_itvMs[(uint8_t)EN_A20_WS_CH_SUMMARY],
+                       (unsigned)s_cleanupMs);
 }
 
 // --------------------------------------------------
@@ -219,9 +209,9 @@ void CT10_WS_begin() {
 // --------------------------------------------------
 static void CT10_WS_collectPending(CL_CT10_ControlManager& p_ctrl) {
     uint8_t v_dirty = p_ctrl.consumeAllDirty();
-    if (v_dirty & 0x01) s_pending[(uint8_t)EN_A20_WS_CH_STATE]   = true;
+    if (v_dirty & 0x01) s_pending[(uint8_t)EN_A20_WS_CH_STATE] = true;
     if (v_dirty & 0x02) s_pending[(uint8_t)EN_A20_WS_CH_METRICS] = true;
-    if (v_dirty & 0x04) s_pending[(uint8_t)EN_A20_WS_CH_CHART]   = true;
+    if (v_dirty & 0x04) s_pending[(uint8_t)EN_A20_WS_CH_CHART] = true;
     if (v_dirty & 0x08) s_pending[(uint8_t)EN_A20_WS_CH_SUMMARY] = true;
 }
 
@@ -348,7 +338,7 @@ void CL_CT10_ControlManager::markDirty(const char* p_key) {
 bool CL_CT10_ControlManager::consumeDirtyState() {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return false;
-    bool v_ret = _dirtyState;
+    bool v_ret  = _dirtyState;
     _dirtyState = false;
     return v_ret;
 }
@@ -356,7 +346,7 @@ bool CL_CT10_ControlManager::consumeDirtyState() {
 bool CL_CT10_ControlManager::consumeDirtyMetrics() {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return false;
-    bool v_ret = _dirtyMetrics;
+    bool v_ret    = _dirtyMetrics;
     _dirtyMetrics = false;
     return v_ret;
 }
@@ -364,7 +354,7 @@ bool CL_CT10_ControlManager::consumeDirtyMetrics() {
 bool CL_CT10_ControlManager::consumeDirtyChart() {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return false;
-    bool v_ret = _dirtyChart;
+    bool v_ret  = _dirtyChart;
     _dirtyChart = false;
     return v_ret;
 }
@@ -372,7 +362,7 @@ bool CL_CT10_ControlManager::consumeDirtyChart() {
 bool CL_CT10_ControlManager::consumeDirtySummary() {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return false;
-    bool v_ret = _dirtySummary;
+    bool v_ret    = _dirtySummary;
     _dirtySummary = false;
     return v_ret;
 }
@@ -386,10 +376,22 @@ uint8_t CL_CT10_ControlManager::consumeAllDirty() {
     if (!v_guard.isAcquired()) return 0;
 
     uint8_t v_ret = 0;
-    if (_dirtyState)   { v_ret |= 0x01; _dirtyState   = false; }
-    if (_dirtyMetrics) { v_ret |= 0x02; _dirtyMetrics = false; }
-    if (_dirtyChart)   { v_ret |= 0x04; _dirtyChart   = false; }
-    if (_dirtySummary) { v_ret |= 0x08; _dirtySummary = false; }
+    if (_dirtyState) {
+        v_ret       |= 0x01;
+        _dirtyState  = false;
+    }
+    if (_dirtyMetrics) {
+        v_ret         |= 0x02;
+        _dirtyMetrics  = false;
+    }
+    if (_dirtyChart) {
+        v_ret       |= 0x04;
+        _dirtyChart  = false;
+    }
+    if (_dirtySummary) {
+        v_ret         |= 0x08;
+        _dirtySummary  = false;
+    }
     return v_ret;
 }
 
@@ -412,6 +414,11 @@ void CL_CT10_ControlManager::maybePushMetricsDirty() {
 // exportStateJson_v02
 // --------------------------------------------------
 void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
+    // 락 순서 준수 (CONTRACT §3.1 / AGENTS.md §4.2):
+    // s_stateMutex(L2) 획득 전 s_rootSwapMux(L1)를 경유하여 안전한 스냅샷 원자 캡처
+    ST_A20_ConfigRoot_t v_cfgSnap;
+    CL_C10_ConfigManager::getRootSnapshot(v_cfgSnap);
+
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
         CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] %s: Mutex busy", __func__);
@@ -438,11 +445,11 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
 
     // 2-1) Event hold/ack
     {
-        JsonObject v_evt = A40_ComFunc::Json_ensureObject(v_ctl["event"]);
+        JsonObject v_evt     = A40_ComFunc::Json_ensureObject(v_ctl["event"]);
         v_evt["ackRequired"] = runCtx.stateAckRequired;
         v_evt["holdUntilMs"] = (uint32_t)runCtx.stateHoldUntilMs;
 
-        uint32_t v_now = (uint32_t)millis();
+        uint32_t v_now    = (uint32_t)millis();
         uint32_t v_remain = 0;
         if (runCtx.stateHoldUntilMs != 0 && v_now < runCtx.stateHoldUntilMs) {
             v_remain = (uint32_t)(runCtx.stateHoldUntilMs - v_now);
@@ -453,7 +460,7 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     // 3) Time status
     {
         JsonObject v_time = A40_ComFunc::Json_ensureObject(v_ctl["time"]);
-        v_time["valid"] = CL_TM10_TimeManager::isTimeValid();
+        v_time["valid"]   = CL_TM10_TimeManager::isTimeValid();
 
         struct tm v_tm;
         memset(&v_tm, 0, sizeof(v_tm));
@@ -471,13 +478,13 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     // 4) Schedule snapshot
     {
         JsonObject v_sch = A40_ComFunc::Json_ensureObject(v_ctl["schedule"]);
-        v_sch["index"] = (int)curScheduleIndex;
-        v_sch["schId"] = (uint8_t)runCtx.activeSchId;
-        v_sch["schNo"] = (uint16_t)runCtx.activeSchNo;
+        v_sch["index"]   = (int)curScheduleIndex;
+        v_sch["schId"]   = (uint8_t)runCtx.activeSchId;
+        v_sch["schNo"]   = (uint16_t)runCtx.activeSchNo;
 
         const char* v_name = "";
-        if (g_A20_config_root.schedules) {
-            ST_A20_SchedulesRoot_t& v_cfg = *g_A20_config_root.schedules;
+        if (v_cfgSnap.schedules) {
+            ST_A20_SchedulesRoot_t& v_cfg = *v_cfgSnap.schedules;
             for (uint8_t i = 0; i < v_cfg.count; i++) {
                 if (v_cfg.items[i].schId == runCtx.activeSchId) {
                     v_name = v_cfg.items[i].name;
@@ -491,13 +498,13 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
 
     // 5) Profile snapshot
     {
-        JsonObject v_prof = A40_ComFunc::Json_ensureObject(v_ctl["profile"]);
+        JsonObject v_prof   = A40_ComFunc::Json_ensureObject(v_ctl["profile"]);
         v_prof["index"]     = (int)curProfileIndex;
         v_prof["profileNo"] = (uint16_t)runCtx.activeProfileNo;
 
         const char* v_name = "";
-        if (g_A20_config_root.userProfiles) {
-            ST_A20_UserProfilesRoot_t& v_cfg = *g_A20_config_root.userProfiles;
+        if (v_cfgSnap.userProfiles) {
+            ST_A20_UserProfilesRoot_t& v_cfg = *v_cfgSnap.userProfiles;
             for (uint8_t i = 0; i < v_cfg.count; i++) {
                 if (v_cfg.items[i].profileNo == runCtx.activeProfileNo) {
                     v_name = v_cfg.items[i].name;
@@ -512,16 +519,16 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     // 6) Segment runtime snapshot
     {
         JsonObject v_seg = A40_ComFunc::Json_ensureObject(v_ctl["segment"]);
-        v_seg["segId"] = (uint8_t)runCtx.activeSegId;
-        v_seg["segNo"] = (uint16_t)runCtx.activeSegNo;
+        v_seg["segId"]   = (uint8_t)runCtx.activeSegId;
+        v_seg["segNo"]   = (uint16_t)runCtx.activeSegNo;
 
-        JsonObject v_srt = A40_ComFunc::Json_ensureObject(v_seg["scheduleRt"]);
+        JsonObject v_srt      = A40_ComFunc::Json_ensureObject(v_seg["scheduleRt"]);
         v_srt["index"]        = (int)scheduleSegRt.index;
         v_srt["onPhase"]      = scheduleSegRt.onPhase;
         v_srt["phaseStartMs"] = (uint32_t)scheduleSegRt.phaseStartMs;
         v_srt["loopCount"]    = (uint8_t)scheduleSegRt.loopCount;
 
-        JsonObject v_prt = A40_ComFunc::Json_ensureObject(v_seg["profileRt"]);
+        JsonObject v_prt      = A40_ComFunc::Json_ensureObject(v_seg["profileRt"]);
         v_prt["index"]        = (int)profileSegRt.index;
         v_prt["onPhase"]      = profileSegRt.onPhase;
         v_prt["phaseStartMs"] = (uint32_t)profileSegRt.phaseStartMs;
@@ -530,7 +537,7 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
 
     // 7) Override snapshot
     {
-        JsonObject v_ov = A40_ComFunc::Json_ensureObject(v_ctl["override"]);
+        JsonObject v_ov      = A40_ComFunc::Json_ensureObject(v_ctl["override"]);
         v_ov["active"]       = overrideState.active;
         v_ov["useFixed"]     = overrideState.useFixed;
         v_ov["remainSec"]    = (uint32_t)calcOverrideRemainSec();
@@ -548,14 +555,14 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     // 7-1) [v0203 Stage 5] Pending Schedule snapshot (수동 재생 중 스케줄 대기 상태)
     {
         JsonObject v_ps = A40_ComFunc::Json_ensureObject(v_ctl["pendingSchedule"]);
-        v_ps["active"] = runCtx.pendingScheduleActive;
+        v_ps["active"]  = runCtx.pendingScheduleActive;
         if (runCtx.pendingScheduleActive) {
-            v_ps["schId"]       = runCtx.pendingSchId;
-            v_ps["schNo"]       = runCtx.pendingSchNo;
-            v_ps["name"]        = runCtx.pendingSchName;
-            v_ps["startTime"]   = runCtx.pendingSchStart;
-            v_ps["profileNo"]   = runCtx.pendingProfileNo;
-            v_ps["remainMin"]   = runCtx.pendingRemainMin;
+            v_ps["schId"]               = runCtx.pendingSchId;
+            v_ps["schNo"]               = runCtx.pendingSchNo;
+            v_ps["name"]                = runCtx.pendingSchName;
+            v_ps["startTime"]           = runCtx.pendingSchStart;
+            v_ps["profileNo"]           = runCtx.pendingProfileNo;
+            v_ps["remainMin"]           = runCtx.pendingRemainMin;
             v_ps["inactiveDueToManual"] = true;
             v_ps["manualOverride"]      = CL_N10_NvsManager::isManualOvrSchedule();
         }
@@ -563,7 +570,7 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
 
     // 8) AutoOff runtime snapshot
     {
-        JsonObject v_ao = A40_ComFunc::Json_ensureObject(v_ctl["autoOffRt"]);
+        JsonObject v_ao        = A40_ComFunc::Json_ensureObject(v_ctl["autoOffRt"]);
         v_ao["timerArmed"]     = autoOffRt.timerArmed;
         v_ao["timerStartMs"]   = (uint32_t)autoOffRt.timerStartMs;
         v_ao["timerMinutes"]   = (uint32_t)autoOffRt.timerMinutes;
@@ -578,7 +585,7 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
 
     // 8-1) Sensor snapshot
     {
-        JsonObject v_sensor = A40_ComFunc::Json_ensureObject(v_ctl["sensor"]);
+        JsonObject v_sensor  = A40_ComFunc::Json_ensureObject(v_ctl["sensor"]);
         v_sensor["tempC"]    = getCurrentTemperatureMock();
         v_sensor["humidity"] = getCurrentHumidityMock();
 
@@ -595,7 +602,7 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
         v_dirty["chart"]   = _dirtyChart;
         v_dirty["summary"] = _dirtySummary;
     }
-    
+
     // ======================================================
     // [v0203] 시간 기준점 노출 (millis ↔ epochms 변환용)
     //  - uptimeMs: 부팅 후 경과 (millis)
@@ -605,11 +612,9 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     //  - SNTP 미동기 시 epochNowMs=0 → 프론트는 상대 시간 표시만 사용
     // ======================================================
     {
-        JsonObject v_sys = A40_ComFunc::Json_ensureObject(v_ctl["system"]);
-        v_sys["uptimeMs"] = (uint32_t)millis();
-        v_sys["epochNowMs"] = CL_TM10_TimeManager::isTimeValid()
-            ? (uint64_t)time(nullptr) * 1000ULL
-            : 0ULL;
+        JsonObject v_sys    = A40_ComFunc::Json_ensureObject(v_ctl["system"]);
+        v_sys["uptimeMs"]   = (uint32_t)millis();
+        v_sys["epochNowMs"] = CL_TM10_TimeManager::isTimeValid() ? (uint64_t)time(nullptr) * 1000ULL : 0ULL;
     }
 
     // [I-1] Pending reload 상태
@@ -622,7 +627,7 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     // [N-7] Runtime (NVS) 스냅샷 노출 (/diagnostics 연동)
     // ======================================================
     {
-        JsonObject v_rt = A40_ComFunc::Json_ensureObject(v_root["runtime"]);
+        JsonObject            v_rt = A40_ComFunc::Json_ensureObject(v_root["runtime"]);
         ST_N10_RuntimeState_t v_st = CL_N10_NvsManager::getState();
 
         v_rt["runMode"]           = v_st.runMode;
@@ -637,20 +642,22 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
 
     // 9-1) [v0203 Stage 3] Session runtime snapshot
     {
-        JsonObject v_sess = A40_ComFunc::Json_ensureObject(v_ctl["session"]);
-        auto s = CL_CT10_ControlManager::getSessionSnapshot();
-        v_sess["active"]        = (s.state == EN_SESSION_ACTIVE || s.state == EN_SESSION_PAUSED);
-        v_sess["type"]          = (uint8_t)s.type;
-        v_sess["trigger"]       = (uint8_t)s.trigger;
-        v_sess["state"]         = (s.state == EN_SESSION_ACTIVE) ? "ACTIVE" :
-                                 (s.state == EN_SESSION_PAUSED)  ? "PAUSED"  : "COMPLETED";
-        v_sess["pausedAccumMs"] = s.pausedAccumMs;
+        JsonObject               v_sess = A40_ComFunc::Json_ensureObject(v_ctl["session"]);
+        // 이미 s_stateMutex를 쥐고 있으므로 getSessionSnapshot() 재귀 호출 대신 내부 _session 직접 복사
+        ST_CT10_SessionContext_t s      = _session;
+        v_sess["active"]                = (s.state == EN_SESSION_ACTIVE || s.state == EN_SESSION_PAUSED);
+        v_sess["type"]                  = (uint8_t)s.type;
+        v_sess["trigger"]               = (uint8_t)s.trigger;
+        v_sess["state"]                 = (s.state == EN_SESSION_ACTIVE)   ? "ACTIVE"
+                                          : (s.state == EN_SESSION_PAUSED) ? "PAUSED"
+                                                                           : "COMPLETED";
+        v_sess["pausedAccumMs"]         = s.pausedAccumMs;
 
         if (s.type == EN_CT10_SESSION_PLAYLIST) {
             v_sess["typeName"]    = "PLAYLIST";
             v_sess["profileId"]   = s.payload.playlist.profileId;
             v_sess["profileNo"]   = s.payload.playlist.profileNo;
-            v_sess["profileName"] = s.payload.playlist.profileName;   // [Phase3 신규]
+            v_sess["profileName"] = s.payload.playlist.profileName; // [Phase3 신규]
             v_sess["currentStep"] = s.payload.playlist.currentStepIdx + 1;
             v_sess["totalSteps"]  = s.payload.playlist.totalSteps;
             v_sess["loopCount"]   = s.payload.playlist.loopCount;
@@ -706,7 +713,7 @@ void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnl
     v_meta["override"]  = overrideState.active ? (overrideState.useFixed ? "fixed" : "resolved") : "none";
 
     {
-        JsonObject v_ctx = A40_ComFunc::Json_ensureObject(v_meta["ctx"]);
+        JsonObject v_ctx    = A40_ComFunc::Json_ensureObject(v_meta["ctx"]);
         v_ctx["state"]      = CT10_stateToString(runCtx.state);
         v_ctx["reason"]     = CT10_reasonToString(runCtx.reason);
         v_ctx["stateCode"]  = (uint8_t)runCtx.state;
@@ -805,7 +812,7 @@ void CL_CT10_ControlManager::exportMetricsJson(JsonDocument& p_doc) {
     v_m["ackRequired"] = runCtx.stateAckRequired;
     v_m["holdUntilMs"] = (uint32_t)runCtx.stateHoldUntilMs;
 
-    uint32_t v_now = (uint32_t)millis();
+    uint32_t v_now    = (uint32_t)millis();
     uint32_t v_remain = 0;
     if (runCtx.stateHoldUntilMs != 0 && v_now < runCtx.stateHoldUntilMs) {
         v_remain = (uint32_t)(runCtx.stateHoldUntilMs - v_now);
@@ -826,31 +833,31 @@ void CL_CT10_ControlManager::exportMetricsJson(JsonDocument& p_doc) {
 // --------------------------------------------------
 ST_MON_Snapshot_t CL_CT10_ControlManager::getMonitorSnapshot() {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    ST_MON_Snapshot_t s = {};
+    ST_MON_Snapshot_t           s = {};
 
     if (v_guard.isAcquired()) {
-        s.state  = (uint8_t)runCtx.state;
-        s.reason = (uint8_t)runCtx.reason;
-        s.activeSchId = runCtx.activeSchId;
-        s.activeSegNo = runCtx.activeSegNo;
+        s.state           = (uint8_t)runCtx.state;
+        s.reason          = (uint8_t)runCtx.reason;
+        s.activeSchId     = runCtx.activeSchId;
+        s.activeSegNo     = runCtx.activeSegNo;
         s.activeProfileNo = runCtx.activeProfileNo;
 
-        s.windSpeed   = sim.currentWindSpeed;
-        s.targetWind  = sim.targetWindSpeed;
-        s.pwmDuty     = pwm ? pwm->P10_getDutyPercent() : 0.0f;
-        s.intensity   = sim.userIntensity;
-        s.variability = sim.userVariability;
-        s.gustFreq    = sim.userGustFreq;
-        s.presetIdx   = 0;
-        s.styleIdx    = 0;
-        s.gustActive  = sim.gustActive;
-        s.thermalActive = sim.thermalActive;
-        s.overrideActive = overrideState.active;
-        s.autoOffTimerArmed = autoOffRt.timerArmed;
+        s.windSpeed           = sim.currentWindSpeed;
+        s.targetWind          = sim.targetWindSpeed;
+        s.pwmDuty             = pwm ? pwm->P10_getDutyPercent() : 0.0f;
+        s.intensity           = sim.userIntensity;
+        s.variability         = sim.userVariability;
+        s.gustFreq            = sim.userGustFreq;
+        s.presetIdx           = 0;
+        s.styleIdx            = 0;
+        s.gustActive          = sim.gustActive;
+        s.thermalActive       = sim.thermalActive;
+        s.overrideActive      = overrideState.active;
+        s.autoOffTimerArmed   = autoOffRt.timerArmed;
         s.autoOffTimerMinutes = autoOffRt.timerMinutes;
-        s.tempC = getCurrentTemperatureMock();
-        s.humidity = getCurrentHumidityMock();
-        s.motionActive = (motion != nullptr) ? motion->isActive() : false;
+        s.tempC               = getCurrentTemperatureMock();
+        s.humidity            = getCurrentHumidityMock();
+        s.motionActive        = (motion != nullptr) ? motion->isActive() : false;
     }
     return s;
 }

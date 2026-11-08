@@ -37,6 +37,7 @@ window.SNW = window.SNW || {};
     function isSessionVisible() {
         const s = getSession();
         if (!s) return false;
+        if (s.state === 'COMPLETED' || s.state === 2) return false;
         const type = parseType(s.type);
         return (type !== 0 && s.active !== false);
     }
@@ -65,7 +66,7 @@ window.SNW = window.SNW || {};
         document.body.classList.add('has-nowplaying');
 
         const type = parseType(s.type);
-        const stateStr = (typeof s.state === 'string') ? s.state : (s.state === 1 ? 'PAUSED' : 'RUNNING');
+        const stateStr = (typeof s.state === 'string') ? (s.state === 'RUNNING' ? 'ACTIVE' : s.state) : (s.state === 1 ? 'PAUSED' : 'ACTIVE');
         const isPaused = (stateStr === 'PAUSED');
 
         // 1) 타이틀
@@ -281,7 +282,7 @@ window.SNW = window.SNW || {};
     function showNowPlayingDetailsModal(s) {
         if (!SNW.UI || !SNW.UI.modal || !s) return;
         const type = parseType(s.type);
-        const stateStr = (typeof s.state === 'string') ? s.state : (s.state === 1 ? 'PAUSED' : 'RUNNING');
+        const stateStr = (typeof s.state === 'string') ? (s.state === 'RUNNING' ? 'ACTIVE' : s.state) : (s.state === 1 ? 'PAUSED' : 'ACTIVE');
         const isPaused = (stateStr === 'PAUSED');
 
         let title = '';

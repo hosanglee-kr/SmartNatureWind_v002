@@ -45,7 +45,7 @@ window.SNW = window.SNW || {};
             if (closed) return;
             closed = true;
 
-            if (_onEsc)          document.removeEventListener('keydown', _onEsc);
+            if (_onEsc) document.removeEventListener('keydown', _onEsc);
             if (_onOverlayClick) overlay.removeEventListener('click', _onOverlayClick);
             _onEsc = null;
             _onOverlayClick = null;
@@ -248,15 +248,16 @@ window.SNW = window.SNW || {};
             overlay.ontouchstart = closeOverlay;
         }
 
-        // 3. 사이드바 내부 링크 클릭 시 닫기
+        // 3. 사이드바 내부 링크 클릭 시 닫기 (모바일/태블릿에서만)
         sidebar.onclick = (e) => {
-            if (e.target.closest('a')) {
+            if (e.target.closest('a') && window.innerWidth < 1024) {
                 document.body.classList.remove('snw-sidebar-open');
             }
         };
 
-        // 4. 외부 영역 클릭 시 닫기 (데스크톱 + 오버레이 안 보이는 환경 보완)
+        // 4. 외부 영역 클릭 시 닫기 (모바일/태블릿에서만)
         document.addEventListener('click', (e) => {
+            if (window.innerWidth >= 1024) return;
             if (!document.body.classList.contains('snw-sidebar-open')) return;
             if (sidebar.contains(e.target)) return;
             if (btn.contains(e.target)) return;

@@ -167,8 +167,8 @@ static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocu
 
     // ─── Turn 1 요청 조립 ───
     JsonDocument v_turn1Req;
-    JsonObject   v_sys = v_turn1Req["system_instruction"].to<JsonObject>();
-    v_sys["parts"].to<JsonArray>().add(CT10_AI::buildAIPromptStrict(v_lang, v_voice));
+    JsonObject   v_sys                                       = v_turn1Req["system_instruction"].to<JsonObject>();
+    v_sys["parts"].to<JsonArray>().add<JsonObject>()["text"] = CT10_AI::buildAIPromptStrict(v_lang, v_voice);
 
     JsonArray  v_tools   = v_turn1Req["tools"].to<JsonArray>();
     JsonObject v_toolObj = v_tools.add<JsonObject>();
@@ -188,15 +188,15 @@ static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocu
             if (v_text[0]) {
                 JsonObject c = v_contents.add<JsonObject>();
                 c["role"]    = (strcmp(v_role, "assistant") == 0) ? "model" : "user";
-                c["parts"].to<JsonArray>().add(v_text);
+                c["parts"].to<JsonArray>().add<JsonObject>()["text"] = v_text;
             }
         }
     }
 
     // 현재 사용자 메시지 추가
-    JsonObject v_userCur = v_contents.add<JsonObject>();
-    v_userCur["role"]    = "user";
-    v_userCur["parts"].to<JsonArray>().add(v_message);
+    JsonObject v_userCur                                         = v_contents.add<JsonObject>();
+    v_userCur["role"]                                            = "user";
+    v_userCur["parts"].to<JsonArray>().add<JsonObject>()["text"] = v_message;
 
     String v_t1Body;
     serializeJson(v_turn1Req, v_t1Body);
@@ -271,8 +271,8 @@ static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocu
 
     // ─── Turn 2 자연어 요약 호출 (FunctionResponse 전달) ───
     JsonDocument v_turn2Req;
-    JsonObject   v_t2Sys = v_turn2Req["system_instruction"].to<JsonObject>();
-    v_t2Sys["parts"].to<JsonArray>().add(CT10_AI::buildAIPromptStrict(v_lang, v_voice));
+    JsonObject   v_t2Sys                                       = v_turn2Req["system_instruction"].to<JsonObject>();
+    v_t2Sys["parts"].to<JsonArray>().add<JsonObject>()["text"] = CT10_AI::buildAIPromptStrict(v_lang, v_voice);
 
     JsonArray v_t2Contents = v_turn2Req["contents"].to<JsonArray>();
     for (JsonObject c : v_contents) {
@@ -282,12 +282,12 @@ static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocu
     v_t2Contents.add(v_content);
 
     // user의 functionResponse part 추가
-    JsonObject v_fnRespObj      = v_t2Contents.add<JsonObject>();
-    v_fnRespObj["role"]         = "user";
-    JsonObject v_fnPart         = v_fnRespObj["parts"].to<JsonArray>().add<JsonObject>();
-    JsonObject v_fr             = v_fnPart["functionResponse"].to<JsonObject>();
-    v_fr["name"]                = v_fnName;
-    v_fr["response"]["content"] = v_actionResult;
+    JsonObject v_fnRespObj     = v_t2Contents.add<JsonObject>();
+    v_fnRespObj["role"]        = "user";
+    JsonObject v_fnPart        = v_fnRespObj["parts"].to<JsonArray>().add<JsonObject>();
+    JsonObject v_fr            = v_fnPart["functionResponse"].to<JsonObject>();
+    v_fr["name"]               = v_fnName;
+    v_fr["response"]["result"] = v_actionResult;
 
     String v_t2Body;
     serializeJson(v_turn2Req, v_t2Body);
@@ -307,10 +307,11 @@ static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocu
     v_finalDoc["ok"]   = v_actionOk;
     v_finalDoc["text"] = (v_naturalText.length() > 0) ? v_naturalText : v_speechHint;
 
-    // 세션 스냅샷 첨부
+    // 세션 스냅샷 첨부 (type 숫자 및 typeName 문자열 모두 제공하여 FE와 100% 정합)
     ST_CT10_SessionContext_t v_curSession = CL_CT10_ControlManager::getSessionSnapshot();
     JsonObject               v_sess       = v_finalDoc["session"].to<JsonObject>();
-    v_sess["type"]                        = (v_curSession.type == EN_CT10_SESSION_FIXED)      ? "FIXED"
+    v_sess["type"]                        = (uint8_t)v_curSession.type;
+    v_sess["typeName"]                    = (v_curSession.type == EN_CT10_SESSION_FIXED)      ? "FIXED"
                                             : (v_curSession.type == EN_CT10_SESSION_PRESET)   ? "PRESET"
                                             : (v_curSession.type == EN_CT10_SESSION_PLAYLIST) ? "PLAYLIST"
                                                                                               : "NONE";

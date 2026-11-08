@@ -250,8 +250,8 @@ window.SNW = window.SNW || {};
                         if (SNW.ToastUtil) SNW.ToastUtil.error('실행할 플레이리스트를 선택하세요');
                         return false;
                     }
-                    if (startEl.value >= endEl.value) {
-                        if (SNW.ToastUtil) SNW.ToastUtil.error('종료 시각이 시작 시각보다 빨라야 합니다');
+                    if (startEl.value === endEl.value) {
+                        if (SNW.ToastUtil) SNW.ToastUtil.error('시작 시각과 종료 시각이 같을 수 없습니다');
                         return false;
                     }
 
@@ -317,7 +317,7 @@ window.SNW = window.SNW || {};
             if (!profile.steps) return '0분';
             let total = 0;
             for (const s of profile.steps) total += Number(s.durationMin) || 0;
-            if (profile.repeat && profile.repeatCount > 0) total *= profile.repeatCount;
+            if (profile.repeatSegments && profile.repeatCount > 0) total *= profile.repeatCount;
             const h = Math.floor(total / 60);
             const m = total % 60;
             return h > 0 ? `${h}시간 ${m}분` : `${m}분`;

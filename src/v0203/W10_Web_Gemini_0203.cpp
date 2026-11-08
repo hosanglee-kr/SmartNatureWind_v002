@@ -329,7 +329,7 @@ void CL_W10_WebAPI::routeGeminiProxy() {
     s_server->on(
         W10_Const::HTTP_API_GEMINI_PROXY,
         HTTP_POST,
-        [](AsyncWebServerRequest* p_request) { p_request->send(400, "application/json", "{\"error\":\"empty body\"}"); },
+        [](AsyncWebServerRequest* p_request) {},
         nullptr,
         [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
             if (!checkApiKey(p_request)) {
@@ -390,7 +390,7 @@ void CL_W10_WebAPI::routeAIExecuteAction() {
     s_server->on(
         W10_Const::HTTP_API_GEMINI_EXECUTE,
         HTTP_POST,
-        [](AsyncWebServerRequest* p_request) { p_request->send(400, "application/json", "{\"error\":\"empty body\"}"); },
+        [](AsyncWebServerRequest* p_request) {},
         nullptr,
         [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
             if (!checkApiKey(p_request)) {

@@ -9499,7 +9499,7 @@ SNW.Page = SNW.Page || {};
 	};
 })(window.SNW);
 
-/* ---- 290.page.ai.js (17522 bytes) ---- */
+/* ---- 290.page.ai.js (17552 bytes) ---- */
 // =========================================================
 // 290.page.ai.js — SNW.Page.AI
 // Layer 4 (페이지 로직: AI 스튜디오, 2-turn REST 제어 & Gemini Live Voice)
@@ -9644,10 +9644,10 @@ SNW.Page = SNW.Page || {};
 
 		async _loadCostStatus() {
 			try {
-				if (SNW.API && SNW.API.getAiCostStatus) {
+				if (SNW.Api && SNW.Api.getAiCostStatus) {
 					const now = new Date();
 					const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-					const res = await SNW.API.getAiCostStatus(today);
+					const res = await SNW.Api.getAiCostStatus(today);
 					this._updateCostBadge(res);
 				}
 			} catch (e) {
@@ -9870,7 +9870,7 @@ SNW.Page = SNW.Page || {};
 
 				if (SNW.AIClient) {
 					const res = await SNW.AIClient.send(msg, this._history, {
-						lang: SNW.I18n.currentLang || 'ko',
+						lang: (SNW.I18n && SNW.I18n.getLang ? SNW.I18n.getLang() : 'ko'),
 						voiceMode: isVoiceMode
 					});
 					if (!this._active) return;
@@ -12374,7 +12374,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 999a.nowplaying.js (12397 bytes) ---- */
+/* ---- 999a.nowplaying.js (12478 bytes) ---- */
 // =========================================================
 // 999a.nowplaying.js — 전역 Now Playing Bar
 // Layer 3 (애플리케이션 전역 컴포넌트)
@@ -12534,6 +12534,7 @@ window.SNW = window.SNW || {};
         const h = barEl.eq.height;
 
         const tick = () => {
+            if (!barEl._eqAnimId) return;
             const store = SNW.Store ? SNW.Store.get() : {};
             const sim = store.sim || {};
             const v = (sim.windSpeed != null) ? sim.windSpeed : (Math.random() * 8 + 2);
@@ -12551,7 +12552,7 @@ window.SNW = window.SNW || {};
             }
             barEl._eqAnimId = requestAnimationFrame(tick);
         };
-        tick();
+        barEl._eqAnimId = requestAnimationFrame(tick);
     }
 
     function stopEq() {
@@ -12704,7 +12705,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 999b.ai-sheet.js (11431 bytes) ---- */
+/* ---- 999b.ai-sheet.js (11447 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명 : 999b.ai-sheet.js
@@ -12991,14 +12992,14 @@ window.SNW = window.SNW || {};
 
 				if (SNW.AIClient) {
 					const res = await SNW.AIClient.send(msg, _history, {
-						lang: (SNW.I18n && SNW.I18n.currentLang) || 'ko',
+						lang: (SNW.I18n && SNW.I18n.getLang ? SNW.I18n.getLang() : 'ko'),
 						voiceMode: false
 					});
 					reply = (res && res.text) || '(no response)';
 					hint = (res && res._speechHint) || reply;
 					actions = (res && res.actions) || [];
-				} else if (SNW.API && SNW.API.gemini) {
-					const res = await SNW.API.gemini({ message: msg });
+				} else if (SNW.Api && SNW.Api.gemini) {
+					const res = await SNW.Api.gemini({ message: msg });
 					reply = (res && res.text) || '(no response)';
 				}
 

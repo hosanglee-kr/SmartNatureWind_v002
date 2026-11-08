@@ -1914,7 +1914,7 @@ body.snw-night-mode {
 
 
 
-/* ---- _layout.css (10074 bytes) ---- */
+/* ---- _layout.css (10196 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : _layout.css
@@ -2051,21 +2051,26 @@ body.snw-sidebar-open .snw-sidebar {
     display: block !important;
 }
 
-/* 오버레이 (배경 어둡게: 모바일/태블릿 전용) */
+/* 오버레이 (배경 어둡게: 모바일 전용 < 768px 에서만 동작) */
 .snw-sidebar-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: var(--snw-z-overlay);
-    /* 사이드바(1050)보다 낮게 */
-    display: none;
+    display: none !important;
 }
 
-body.snw-sidebar-open .snw-sidebar-overlay {
-    display: block !important;
+@media (max-width: 767px) {
+    .snw-sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: var(--snw-z-overlay);
+        display: none !important;
+    }
+
+    body.snw-sidebar-open .snw-sidebar-overlay {
+        display: block !important;
+    }
 }
 
 /* 네비게이션 메뉴 */

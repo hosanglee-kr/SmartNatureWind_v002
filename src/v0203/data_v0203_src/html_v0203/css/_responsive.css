@@ -39,12 +39,13 @@
         transform: translateX(0);
     }
 
-    /* 토스트 전체 폭 */
+    /* 토스트 전체 폭 및 하단 레이아웃 동적 연동 */
     .snw-toast-host {
-        bottom: 70px;
+        bottom: var(--snw-toast-bottom, 76px);
         left: var(--snw-spacing);
         right: var(--snw-spacing);
         max-width: none;
+        transition: bottom 0.25s ease;
     }
 
     /* 버튼 터치 크기 확대 */

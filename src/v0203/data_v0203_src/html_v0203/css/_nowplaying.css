@@ -5,7 +5,7 @@
  * ============================================================ */
 .snw-nowplaying {
     position: fixed;
-    bottom: var(--snw-bottom-nav-h, 56px);
+    bottom: var(--snw-bottom-nav-h, 60px);
     left: 0;
     right: 0;
     height: var(--snw-np-h, 48px);
@@ -15,7 +15,7 @@
     align-items: center;
     padding: 0 var(--snw-spacing, 12px);
     gap: var(--snw-spacing-sm, 8px);
-    z-index: var(--snw-z-np, 90);
+    z-index: var(--snw-z-np, 95);
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(8px);
     transition: transform var(--snw-transition, 0.2s ease), opacity var(--snw-transition, 0.2s ease);
@@ -85,6 +85,21 @@
 
 .snw-nowplaying__badge .strike {
     text-decoration: line-through;
+}
+
+.snw-nowplaying__badge--timer {
+    background: rgba(78, 168, 222, 0.2);
+    color: var(--snw-info, #4ea8de);
+    border: 1px solid var(--snw-info, #4ea8de);
+    border-radius: 12px;
+    padding: 1px 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.snw-nowplaying__badge--timer:hover {
+    background: rgba(78, 168, 222, 0.35);
 }
 
 .snw-nowplaying__controls {

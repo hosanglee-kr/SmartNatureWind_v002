@@ -9499,7 +9499,7 @@ SNW.Page = SNW.Page || {};
 	};
 })(window.SNW);
 
-/* ---- 290.page.ai.js (17552 bytes) ---- */
+/* ---- 290.page.ai.js (16644 bytes) ---- */
 // =========================================================
 // 290.page.ai.js — SNW.Page.AI
 // Layer 4 (페이지 로직: AI 스튜디오, 2-turn REST 제어 & Gemini Live Voice)
@@ -9531,7 +9531,7 @@ SNW.Page = SNW.Page || {};
 
 			slot.innerHTML = `
                 <div class="snw-ai-chat">
-                    <div class="snw-ai-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+                    <div class="snw-ai-header">
                         <div style="display:flex;gap:6px;align-items:center;">
                             <div class="snw-btn-group" role="group">
                                 <button type="button" class="snw-btn snw-btn--sm snw-btn--primary" data-mode-btn="rest">
@@ -9551,13 +9551,13 @@ SNW.Page = SNW.Page || {};
                     <!-- REST Chat View -->
                     <div class="snw-ai-rest-view" data-view="rest">
                         <div class="snw-ai-messages" data-slot="messages"></div>
-                        <div class="snw-ai-examples" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+                        <div class="snw-ai-examples">
                             <button type="button" class="snw-btn snw-btn--sm" data-example="바다 바람 틀어줘">바다 바람 틀어줘</button>
                             <button type="button" class="snw-btn snw-btn--sm" data-example="30분 후 꺼줘">30분 후 꺼줘</button>
                             <button type="button" class="snw-btn snw-btn--sm" data-example="스케줄대로 해줘">스케줄대로 해줘</button>
                             <button type="button" class="snw-btn snw-btn--sm" data-example="${SNW.I18n.t('ai.example1')}">${SNW.I18n.t('ai.example1')}</button>
                         </div>
-                        <div class="snw-ai-input" style="display:flex;gap:6px;align-items:flex-end;">
+                        <div class="snw-ai-input">
                             <textarea data-slot="input" rows="2" style="flex:1;"
                                       placeholder="${SNW.DomUtil.escape(examplePlaceholder)}"
                                       maxlength="${MAX_MSG_LEN}"></textarea>
@@ -9571,15 +9571,15 @@ SNW.Page = SNW.Page || {};
                     </div>
 
                     <!-- Live Voice View -->
-                    <div class="snw-ai-live-view" data-view="live" style="display:none;text-align:center;padding:24px 12px;">
-                        <div class="snw-live-orb-container" style="margin:20px auto;width:120px;height:120px;position:relative;">
-                            <div class="snw-live-orb" data-slot="live-orb" style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg, #3b82f6, #8b5cf6);opacity:0.85;box-shadow:0 0 20px rgba(59,130,246,0.5);transition:transform 0.1s ease, box-shadow 0.1s ease;"></div>
+                    <div class="snw-ai-live-view" data-view="live">
+                        <div class="snw-live-orb-container">
+                            <div class="snw-live-orb" data-slot="live-orb"></div>
                         </div>
-                        <div class="snw-live-status-text" data-slot="live-status" style="font-size:1.1rem;font-weight:600;margin-bottom:12px;color:var(--text-color, #f8fafc);">
+                        <div class="snw-live-status-text" data-slot="live-status">
                             ${SNW.I18n.t('ai.liveStart')}
                         </div>
-                        <div class="snw-live-transcript" data-slot="live-transcript" style="min-height:48px;max-height:120px;overflow-y:auto;font-size:0.95rem;color:var(--text-muted, #94a3b8);margin-bottom:20px;padding:8px 12px;background:rgba(0,0,0,0.15);border-radius:8px;"></div>
-                        <div class="snw-live-actions-log" data-slot="live-actions" style="margin-bottom:16px;font-size:0.85rem;color:#4ade80;"></div>
+                        <div class="snw-live-transcript" data-slot="live-transcript"></div>
+                        <div class="snw-live-actions-log" data-slot="live-actions"></div>
                         <div>
                             <button type="button" class="snw-btn snw-btn--lg snw-btn-primary" data-action="live-toggle" style="min-width:160px;">
                                 ${SNW.I18n.t('ai.liveStart')}
@@ -10036,13 +10036,13 @@ SNW.Page = SNW.Page || {};
 
 
 
-/* ---- 291.studio.js (26745 bytes) ---- */
+/* ---- 291.studio.js (29436 bytes) ---- */
 // =========================================================
 // 291.studio.js — Wind Design Studio (작곡)
 // Layer 3 (Studio 패널 컴포넌트)
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     // =========================================================
@@ -10081,8 +10081,8 @@ window.SNW = window.SNW || {};
         render() {
             const s = this.step;
             const isPreset = s.type === 'PRESET';
-            const isFixed  = s.type === 'FIXED';
-            const isRest   = s.type === 'REST';
+            const isFixed = s.type === 'FIXED';
+            const isRest = s.type === 'REST';
             const ovr = s.override || { enabled: false };
 
             const el = document.createElement('div');
@@ -10103,8 +10103,8 @@ window.SNW = window.SNW || {};
                         <span>타입</span>
                         <select data-field="type">
                             <option value="PRESET" ${isPreset ? 'selected' : ''}>프리셋 재생</option>
-                            <option value="FIXED"  ${isFixed  ? 'selected' : ''}>고정 풍속</option>
-                            <option value="REST"   ${isRest   ? 'selected' : ''}>휴지 (정지)</option>
+                            <option value="FIXED"  ${isFixed ? 'selected' : ''}>고정 풍속</option>
+                            <option value="REST"   ${isRest ? 'selected' : ''}>휴지 (정지)</option>
                         </select>
                     </label>
 
@@ -10143,13 +10143,19 @@ window.SNW = window.SNW || {};
 
                 ${isPreset ? `
                 <details class="snw-step-card__override" ${ovr.enabled ? 'open' : ''}>
-                    <summary>
+                    <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
                         <label class="snw-step-checkbox" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
                             <input type="checkbox" data-field="overrideEnabled" ${ovr.enabled ? 'checked' : ''}>
                             <span>⚙ 물리 세부 조정 (Override)</span>
                         </label>
+                        ${ovr.enabled ? `<span class="snw-badge snw-badge--warn" style="font-size:10px;padding:2px 6px;">수동 튜닝됨</span>` : ''}
                     </summary>
                     <div class="snw-step-card__override-body">
+                        <div style="display:flex;justify-content:flex-end;margin-bottom:6px;">
+                            <button type="button" class="snw-btn snw-btn--sm snw-btn--ghost" data-action="reset-ovr" style="font-size:11px;padding:2px 8px;" title="선택한 프리셋의 기본 물리 파라미터로 되돌립니다">
+                                ↺ 기본값 원복
+                            </button>
+                        </div>
                         <label class="snw-step-field snw-step-field--full">
                             <span>강도 <b data-slot="ovr-int-label">${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}%</b></span>
                             <input type="range" data-field="ovrIntensity" min="0" max="100" value="${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}">
@@ -10186,16 +10192,21 @@ window.SNW = window.SNW || {};
                             mode: 'single',
                             a: {
                                 presetCode: this.step.presetCode || 'OCEAN',
-                                styleCode:  this.step.styleCode  || 'BALANCE',
-                                override:   this.step.override,
+                                styleCode: this.step.styleCode || 'BALANCE',
+                                override: this.step.override,
                             },
                         });
                     }
                 };
             }
 
+            const btnResetOvr = el.querySelector('[data-action="reset-ovr"]');
+            if (btnResetOvr) {
+                btnResetOvr.onclick = () => this._resetOverrideToDefaults(el);
+            }
+
             el.querySelectorAll('[data-field]').forEach(input => {
-                input.addEventListener('input',  () => this._onFieldChange(el, input));
+                input.addEventListener('input', () => this._onFieldChange(el, input));
                 input.addEventListener('change', () => this._onFieldChange(el, input));
             });
 
@@ -10236,7 +10247,7 @@ window.SNW = window.SNW || {};
                 case 'type':
                     this.step.type = val;
                     if (val === 'PRESET' && !this.step.presetCode) this.step.presetCode = 'OCEAN';
-                    if (val === 'PRESET' && !this.step.styleCode)  this.step.styleCode  = 'BALANCE';
+                    if (val === 'PRESET' && !this.step.styleCode) this.step.styleCode = 'BALANCE';
                     this._rerender();
                     return;
                 case 'durationMin':
@@ -10256,9 +10267,9 @@ window.SNW = window.SNW || {};
                 case 'overrideEnabled':
                     this.step.override.enabled = !!val;
                     if (val) {
-                        if (this.step.override.windIntensity < 0)   this.step.override.windIntensity = 70;
+                        if (this.step.override.windIntensity < 0) this.step.override.windIntensity = 70;
                         if (this.step.override.windVariability < 0) this.step.override.windVariability = 50;
-                        if (this.step.override.gustFrequency < 0)   this.step.override.gustFrequency = 45;
+                        if (this.step.override.gustFrequency < 0) this.step.override.gustFrequency = 45;
                     }
                     break;
                 case 'ovrIntensity':
@@ -10307,6 +10318,41 @@ window.SNW = window.SNW || {};
                         : '완전 휴지 (0 m/s)';
                 }
             }
+        }
+
+        _resetOverrideToDefaults(el) {
+            const presets = (SNW.Studio._windDict && SNW.Studio._windDict.presets) || [];
+            const target = presets.find(p => p.code === this.step.presetCode) || {};
+            const factors = target.factors || {};
+
+            const defInt = (factors.windIntensity != null) ? factors.windIntensity : 70;
+            const defVar = (factors.windVariability != null) ? factors.windVariability : 50;
+            const defGust = (factors.gustFrequency != null) ? factors.gustFrequency : 45;
+
+            if (!this.step.override) {
+                this.step.override = { enabled: true };
+            }
+            this.step.override.windIntensity = defInt;
+            this.step.override.windVariability = defVar;
+            this.step.override.gustFrequency = defGust;
+
+            const inputInt = el.querySelector('[data-field="ovrIntensity"]');
+            const inputVar = el.querySelector('[data-field="ovrVariability"]');
+            const inputGust = el.querySelector('[data-field="ovrGust"]');
+            const lblInt = el.querySelector('[data-slot="ovr-int-label"]');
+            const lblVar = el.querySelector('[data-slot="ovr-var-label"]');
+            const lblGust = el.querySelector('[data-slot="ovr-gust-label"]');
+
+            if (inputInt) inputInt.value = defInt;
+            if (inputVar) inputVar.value = defVar;
+            if (inputGust) inputGust.value = defGust;
+            if (lblInt) lblInt.textContent = `${defInt}%`;
+            if (lblVar) lblVar.textContent = `${defVar}%`;
+            if (lblGust) lblGust.textContent = `${defGust}%`;
+
+            this._scheduleSparklineUpdate();
+            this.onChange(this.index, this.step);
+            if (SNW.ToastUtil) SNW.ToastUtil.info('프리셋 기본값으로 복원되었습니다.');
         }
 
         getStep() { return this.step; }
@@ -10455,8 +10501,8 @@ window.SNW = window.SNW || {};
 
             // 액션 바인딩
             this.el.querySelector('[data-action="add-step"]').onclick = () => this._onAddStep();
-            this.el.querySelector('[data-action="cancel"]').onclick   = () => this._onCancel();
-            this.el.querySelector('[data-action="save"]').onclick     = () => this._onSave();
+            this.el.querySelector('[data-action="cancel"]').onclick = () => this._onCancel();
+            this.el.querySelector('[data-action="save"]').onclick = () => this._onSave();
             const btnPreviewAll = this.el.querySelector('[data-action="preview-all"]');
             if (btnPreviewAll) {
                 btnPreviewAll.onclick = async () => {
@@ -10470,8 +10516,8 @@ window.SNW = window.SNW || {};
                             mode: 'single',
                             a: {
                                 presetCode: firstPreset.presetCode || 'OCEAN',
-                                styleCode:  firstPreset.styleCode  || 'BALANCE',
-                                override:   firstPreset.override,
+                                styleCode: firstPreset.styleCode || 'BALANCE',
+                                override: firstPreset.override,
                             },
                         });
                     }
@@ -10556,7 +10602,7 @@ window.SNW = window.SNW || {};
                 stepCount: this._steps.length,
                 steps: this._steps,
                 autoOff: {
-                    timer:   { enabled: false, minutes: 0 },
+                    timer: { enabled: false, minutes: 0 },
                     offTime: { enabled: false, time: '00:00' },
                     offTemp: { enabled: false, temp: 0 },
                 },
@@ -12374,7 +12420,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 999a.nowplaying.js (12478 bytes) ---- */
+/* ---- 999a.nowplaying.js (16855 bytes) ---- */
 // =========================================================
 // 999a.nowplaying.js — 전역 Now Playing Bar
 // Layer 3 (애플리케이션 전역 컴포넌트)
@@ -12434,10 +12480,12 @@ window.SNW = window.SNW || {};
         const s = getSession();
         if (!s || !isSessionVisible()) {
             barEl.root.hidden = true;
+            document.body.classList.remove('has-nowplaying');
             stopEq();
             return;
         }
         barEl.root.hidden = false;
+        document.body.classList.add('has-nowplaying');
 
         const type = parseType(s.type);
         const stateStr = (typeof s.state === 'string') ? s.state : (s.state === 1 ? 'PAUSED' : 'RUNNING');
@@ -12608,14 +12656,7 @@ window.SNW = window.SNW || {};
     function onExpand() {
         const s = getSession();
         if (!s) return;
-        const type = parseType(s.type);
-        if (type === 1) {
-            location.hash = '/profiles';
-        } else if (type === 2) {
-            location.hash = '/dashboard';
-        } else if (type === 3) {
-            location.hash = '/dashboard';
-        }
+        showNowPlayingDetailsModal(s);
     }
 
     // =========================================================
@@ -12656,6 +12697,97 @@ window.SNW = window.SNW || {};
         getSession
     };
 
+
+    // =========================================================
+    // Now Playing 상세 확장 모달
+    // =========================================================
+    function showNowPlayingDetailsModal(s) {
+        if (!SNW.UI || !SNW.UI.modal || !s) return;
+        const type = parseType(s.type);
+        const stateStr = (typeof s.state === 'string') ? s.state : (s.state === 1 ? 'PAUSED' : 'RUNNING');
+        const isPaused = (stateStr === 'PAUSED');
+
+        let title = '';
+        let typeBadge = '';
+        if (type === 1) {
+            title = s.profileName || (s.profileNo ? `프로필 #${s.profileNo}` : '플레이리스트');
+            typeBadge = '🎵 맞춤 바람 (플레이리스트)';
+        } else if (type === 2) {
+            title = `${s.presetCode || '자연풍'} · ${s.styleCode || '표준'}`;
+            typeBadge = '🌿 자연풍 프리셋';
+        } else if (type === 3) {
+            title = `일반 선풍기 (${Math.round(s.percent || 0)}%)`;
+            typeBadge = '🌀 고정 풍속';
+        } else {
+            title = '재생 중인 바람';
+            typeBadge = '🍃 세션';
+        }
+
+        const remainSec = s.stepRemainSec || 0;
+        const timeStr = isPaused
+            ? `일시정지 (${formatTime(remainSec)})`
+            : (remainSec > 0 ? `${formatTime(remainSec)} 남음` : '연속 가동 중');
+
+        const stepStr = (type === 1) ? `Step ${s.currentStep || 1} / ${s.totalSteps || 1}` : '';
+
+        const timerStatus = (SNW.TimerManager && typeof SNW.TimerManager.getStatus === 'function')
+            ? SNW.TimerManager.getStatus()
+            : null;
+        const timerActive = timerStatus && timerStatus.active;
+        const timerText = timerActive
+            ? `⏱️ 자동 종료 타이머: ${timerStatus.remainMin}분 남음`
+            : '⏱️ 자동 종료 예약 타이머 설정';
+
+        const content = document.createElement('div');
+        content.className = 'snw-np-detail-modal';
+        content.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:14px;padding:4px 0;">
+                <div style="text-align:center;padding:12px;background:var(--snw-surface-2,#12161c);border-radius:var(--snw-radius,8px);border:1px solid var(--snw-border,#2f3844);">
+                    <div style="font-size:11px;color:var(--snw-primary,#4a9eff);font-weight:600;margin-bottom:4px;">${typeBadge}</div>
+                    <div style="font-size:18px;font-weight:700;color:var(--snw-text,#e6edf3);">${SNW.DomUtil ? SNW.DomUtil.escape(title) : title}</div>
+                    <div style="font-size:13px;color:var(--snw-text-dim,#8b949e);margin-top:6px;display:flex;justify-content:center;gap:8px;">
+                        ${stepStr ? `<span><b>${stepStr}</b></span><span>·</span>` : ''}
+                        <span style="color:${isPaused ? 'var(--snw-warn,#d29922)' : 'var(--snw-success,#3fb950)'};font-weight:600;">
+                            ${isPaused ? '⏸ 일시정지' : '▶ 재생 중'}
+                        </span>
+                        <span>·</span>
+                        <span>${timeStr}</span>
+                    </div>
+                </div>
+
+                <button type="button" class="snw-btn snw-btn--full" id="np-btn-timer-link" style="justify-content:center;background:${timerActive ? 'rgba(78,168,222,0.15)' : 'var(--snw-surface-2,#12161c)'};border:1px solid ${timerActive ? 'var(--snw-info,#4ea8de)' : 'var(--snw-border,#2f3844)'};color:${timerActive ? 'var(--snw-info,#4ea8de)' : 'var(--snw-text,#e6edf3)'};">
+                    ${timerText} ➔
+                </button>
+            </div>
+        `;
+
+        SNW.UI.modal(
+            '🍃 바람 세션 상세',
+            content,
+            async () => {
+                await onPauseOrResume();
+                return true;
+            },
+            async () => {
+                await onStop();
+                return true;
+            },
+            {
+                okLabel: isPaused ? '▶ 재개' : '⏸ 일시정지',
+                cancelLabel: '⏹ 바람 정지',
+                width: '380px'
+            }
+        );
+
+        const timerBtn = content.querySelector('#np-btn-timer-link');
+        if (timerBtn) {
+            timerBtn.onclick = () => {
+                const overlay = document.querySelector('.snw-modal-overlay');
+                if (overlay) overlay.click();
+                location.hash = '/automation/timer';
+            };
+        }
+    }
 
     // =========================================================
     // 스케줄 충돌 모달
@@ -12705,7 +12837,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 999b.ai-sheet.js (11520 bytes) ---- */
+/* ---- 999b.ai-sheet.js (11604 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명 : 999b.ai-sheet.js
@@ -12764,7 +12896,7 @@ window.SNW = window.SNW || {};
 			_fabEl.innerHTML = '🎙️';
 			_fabEl.style.cssText = `
 				position: fixed;
-				bottom: 72px;
+				bottom: var(--snw-fab-bottom, 76px);
 				right: 20px;
 				width: 54px;
 				height: 54px;
@@ -12775,11 +12907,11 @@ window.SNW = window.SNW || {};
 				box-shadow: 0 4px 14px rgba(0,0,0,0.3), 0 0 10px rgba(59,130,246,0.5);
 				font-size: 24px;
 				cursor: pointer;
-				z-index: 999;
+				z-index: var(--snw-z-fab, 990);
 				display: flex;
 				align-items: center;
 				justify-content: center;
-				transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+				transition: bottom 0.25s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
 			`;
 
 			_fabEl.addEventListener('mouseenter', () => {
@@ -12806,7 +12938,7 @@ window.SNW = window.SNW || {};
 				height: 100%;
 				background: rgba(0,0,0,0.5);
 				backdrop-filter: blur(4px);
-				z-index: 1000;
+				z-index: var(--snw-z-modal, 1100);
 				display: none;
 				opacity: 0;
 				transition: opacity 0.25s ease;
@@ -12823,7 +12955,7 @@ window.SNW = window.SNW || {};
 					width: 100%;
 					max-width: 600px;
 					max-height: 82vh;
-					background: var(--bg-card, #1e293b);
+					background: var(--snw-surface, #1e293b);
 					border-top-left-radius: 20px;
 					border-top-right-radius: 20px;
 					box-shadow: 0 -8px 24px rgba(0,0,0,0.4);

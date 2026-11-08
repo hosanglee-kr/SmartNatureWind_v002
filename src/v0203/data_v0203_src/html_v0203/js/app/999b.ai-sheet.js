@@ -56,7 +56,7 @@
 			_fabEl.innerHTML = '🎙️';
 			_fabEl.style.cssText = `
 				position: fixed;
-				bottom: 72px;
+				bottom: var(--snw-fab-bottom, 76px);
 				right: 20px;
 				width: 54px;
 				height: 54px;
@@ -67,11 +67,11 @@
 				box-shadow: 0 4px 14px rgba(0,0,0,0.3), 0 0 10px rgba(59,130,246,0.5);
 				font-size: 24px;
 				cursor: pointer;
-				z-index: 999;
+				z-index: var(--snw-z-fab, 990);
 				display: flex;
 				align-items: center;
 				justify-content: center;
-				transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+				transition: bottom 0.25s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
 			`;
 
 			_fabEl.addEventListener('mouseenter', () => {
@@ -98,7 +98,7 @@
 				height: 100%;
 				background: rgba(0,0,0,0.5);
 				backdrop-filter: blur(4px);
-				z-index: 1000;
+				z-index: var(--snw-z-modal, 1100);
 				display: none;
 				opacity: 0;
 				transition: opacity 0.25s ease;
@@ -115,7 +115,7 @@
 					width: 100%;
 					max-width: 600px;
 					max-height: 82vh;
-					background: var(--bg-card, #1e293b);
+					background: var(--snw-surface, #1e293b);
 					border-top-left-radius: 20px;
 					border-top-right-radius: 20px;
 					box-shadow: 0 -8px 24px rgba(0,0,0,0.4);

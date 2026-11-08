@@ -18,12 +18,12 @@
     --snw-surface-3: #2f3844;
     --snw-border: #2f3844;
     --snw-border-hi: #4a5563;
-    
+
     /* 텍스트 */
     --snw-text: #e6edf3;
     --snw-text-dim: #8b949e;
     --snw-text-faint: #6e7a87;
-    
+
     /* 액션 컬러 */
     --snw-primary: #4a9eff;
     --snw-primary-hover: #3a8eef;
@@ -31,7 +31,7 @@
     --snw-warn: #d29922;
     --snw-error: #f85149;
     --snw-info: #58a6ff;
-    
+
     /* 상태 배지 컬러 */
     --snw-state-gray: #59636e;
     --snw-state-blue: #4a9eff;
@@ -40,18 +40,18 @@
     --snw-state-yellow: #d29922;
     --snw-state-orange: #f0883e;
     --snw-state-red: #f85149;
-    
+
     /* 차트 컬러 */
     --snw-chart-wind: #4a9eff;
     --snw-chart-target: #9aa5b1;
     --snw-chart-pwm: #f5a623;
-    
+
     /* 폰트 */
     --snw-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
         "Helvetica Neue", Arial, "Apple SD Gothic Neo",
         "Malgun Gothic", sans-serif;
     --snw-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    
+
     /* 크기 */
     --snw-radius: 8px;
     --snw-radius-lg: 12px;
@@ -59,36 +59,69 @@
     --snw-spacing: 12px;
     --snw-spacing-sm: 8px;
     --snw-spacing-lg: 20px;
-    
+
     /* 헤더/사이드바/푸터 */
     --snw-header-h: 56px;
     --snw-footer-h: 40px;
     --snw-sidebar-w: 220px;
-    --snw-bottom-nav-h: 60px; /* [FE-P2-4] 모바일 네비게이션 실측 60px 통일 */
+    --snw-bottom-nav-h: 60px;
+    /* [FE-P2-4] 모바일 네비게이션 실측 60px 통일 */
     --snw-np-h: 48px;
-    
+
+    /* [v0203-UI] 하단 뷰포트 레이아웃 스택 (기본: Now Playing 숨김) */
+    --snw-fab-bottom: 76px;
+    --snw-toast-bottom: 76px;
+    --snw-content-pb: 80px;
+
     /* 그림자 */
     --snw-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
     --snw-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     --snw-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
-    
+
     /* 전환 */
     --snw-transition: 0.2s ease;
     --snw-transition-fast: 0.1s ease;
-    
+
     /* =====================================================
-     * [N-6] z-index 계층 (ADR-4 확정)
-     *  - header(50) < nowplaying(95) < bottom-nav(1000)
+     * [N-6] z-index 계층 (ADR-4 확정 및 Stage 8 AI FAB 반영)
+     *  - header(50) < nowplaying(95) < fab(990) < bottom-nav(1000)
      *    < sidebar-overlay(1040) < sidebar(1050)
      *    < modal(1100) < toast(1200)
      * ===================================================== */
-    --snw-z-header:  50;
-    --snw-z-np:      95;
-    --snw-z-bottom:  1000;
+    --snw-z-header: 50;
+    --snw-z-np: 95;
+    --snw-z-fab: 990;
+    --snw-z-bottom: 1000;
     --snw-z-overlay: 1040;
     --snw-z-sidebar: 1050;
-    --snw-z-modal:   1100;   /* [N-6] 900 → 1100 */
-    --snw-z-toast:   1200;   /* [N-6] 1000 → 1200 */
+    --snw-z-modal: 1100;
+    /* [N-6] 900 → 1100 */
+    --snw-z-toast: 1200;
+    /* [N-6] 1000 → 1200 */
+}
+
+/* [v0203-UI] Now Playing Bar 활성화 시 동적 부상 레이아웃 */
+body.has-nowplaying {
+    --snw-fab-bottom: 124px;
+    /* 60px(BottomNav) + 48px(NP) + 16px */
+    --snw-toast-bottom: 124px;
+    --snw-content-pb: 128px;
+}
+
+/* [v0203-UI] 데스크톱 (Bottom Nav 없음) 레이아웃 스택 */
+@media (min-width: 768px) {
+    :root {
+        --snw-fab-bottom: 24px;
+        --snw-toast-bottom: 24px;
+        --snw-content-pb: 24px;
+    }
+
+    body.has-nowplaying {
+        --snw-fab-bottom: 72px;
+        /* 48px(NP) + 24px */
+        --snw-toast-bottom: 72px;
+        --snw-content-pb: 72px;
+    }
 }
 
 /* 라이트 모드 자동 전환 */
@@ -104,10 +137,9 @@
         --snw-text: #1f2328;
         --snw-text-dim: #59636e;
         --snw-text-faint: #8b949e;
-        
+
         --snw-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
         --snw-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         --snw-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
     }
 }
-

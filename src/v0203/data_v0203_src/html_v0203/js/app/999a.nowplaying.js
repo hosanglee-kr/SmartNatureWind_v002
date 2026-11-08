@@ -57,10 +57,12 @@ window.SNW = window.SNW || {};
         const s = getSession();
         if (!s || !isSessionVisible()) {
             barEl.root.hidden = true;
+            document.body.classList.remove('has-nowplaying');
             stopEq();
             return;
         }
         barEl.root.hidden = false;
+        document.body.classList.add('has-nowplaying');
 
         const type = parseType(s.type);
         const stateStr = (typeof s.state === 'string') ? s.state : (s.state === 1 ? 'PAUSED' : 'RUNNING');
@@ -231,14 +233,7 @@ window.SNW = window.SNW || {};
     function onExpand() {
         const s = getSession();
         if (!s) return;
-        const type = parseType(s.type);
-        if (type === 1) {
-            location.hash = '/profiles';
-        } else if (type === 2) {
-            location.hash = '/dashboard';
-        } else if (type === 3) {
-            location.hash = '/dashboard';
-        }
+        showNowPlayingDetailsModal(s);
     }
 
     // =========================================================
@@ -279,6 +274,97 @@ window.SNW = window.SNW || {};
         getSession
     };
 
+
+    // =========================================================
+    // Now Playing 상세 확장 모달
+    // =========================================================
+    function showNowPlayingDetailsModal(s) {
+        if (!SNW.UI || !SNW.UI.modal || !s) return;
+        const type = parseType(s.type);
+        const stateStr = (typeof s.state === 'string') ? s.state : (s.state === 1 ? 'PAUSED' : 'RUNNING');
+        const isPaused = (stateStr === 'PAUSED');
+
+        let title = '';
+        let typeBadge = '';
+        if (type === 1) {
+            title = s.profileName || (s.profileNo ? `프로필 #${s.profileNo}` : '플레이리스트');
+            typeBadge = '🎵 맞춤 바람 (플레이리스트)';
+        } else if (type === 2) {
+            title = `${s.presetCode || '자연풍'} · ${s.styleCode || '표준'}`;
+            typeBadge = '🌿 자연풍 프리셋';
+        } else if (type === 3) {
+            title = `일반 선풍기 (${Math.round(s.percent || 0)}%)`;
+            typeBadge = '🌀 고정 풍속';
+        } else {
+            title = '재생 중인 바람';
+            typeBadge = '🍃 세션';
+        }
+
+        const remainSec = s.stepRemainSec || 0;
+        const timeStr = isPaused
+            ? `일시정지 (${formatTime(remainSec)})`
+            : (remainSec > 0 ? `${formatTime(remainSec)} 남음` : '연속 가동 중');
+
+        const stepStr = (type === 1) ? `Step ${s.currentStep || 1} / ${s.totalSteps || 1}` : '';
+
+        const timerStatus = (SNW.TimerManager && typeof SNW.TimerManager.getStatus === 'function')
+            ? SNW.TimerManager.getStatus()
+            : null;
+        const timerActive = timerStatus && timerStatus.active;
+        const timerText = timerActive
+            ? `⏱️ 자동 종료 타이머: ${timerStatus.remainMin}분 남음`
+            : '⏱️ 자동 종료 예약 타이머 설정';
+
+        const content = document.createElement('div');
+        content.className = 'snw-np-detail-modal';
+        content.innerHTML = `
+            <div style="display:flex;flex-direction:column;gap:14px;padding:4px 0;">
+                <div style="text-align:center;padding:12px;background:var(--snw-surface-2,#12161c);border-radius:var(--snw-radius,8px);border:1px solid var(--snw-border,#2f3844);">
+                    <div style="font-size:11px;color:var(--snw-primary,#4a9eff);font-weight:600;margin-bottom:4px;">${typeBadge}</div>
+                    <div style="font-size:18px;font-weight:700;color:var(--snw-text,#e6edf3);">${SNW.DomUtil ? SNW.DomUtil.escape(title) : title}</div>
+                    <div style="font-size:13px;color:var(--snw-text-dim,#8b949e);margin-top:6px;display:flex;justify-content:center;gap:8px;">
+                        ${stepStr ? `<span><b>${stepStr}</b></span><span>·</span>` : ''}
+                        <span style="color:${isPaused ? 'var(--snw-warn,#d29922)' : 'var(--snw-success,#3fb950)'};font-weight:600;">
+                            ${isPaused ? '⏸ 일시정지' : '▶ 재생 중'}
+                        </span>
+                        <span>·</span>
+                        <span>${timeStr}</span>
+                    </div>
+                </div>
+
+                <button type="button" class="snw-btn snw-btn--full" id="np-btn-timer-link" style="justify-content:center;background:${timerActive ? 'rgba(78,168,222,0.15)' : 'var(--snw-surface-2,#12161c)'};border:1px solid ${timerActive ? 'var(--snw-info,#4ea8de)' : 'var(--snw-border,#2f3844)'};color:${timerActive ? 'var(--snw-info,#4ea8de)' : 'var(--snw-text,#e6edf3)'};">
+                    ${timerText} ➔
+                </button>
+            </div>
+        `;
+
+        SNW.UI.modal(
+            '🍃 바람 세션 상세',
+            content,
+            async () => {
+                await onPauseOrResume();
+                return true;
+            },
+            async () => {
+                await onStop();
+                return true;
+            },
+            {
+                okLabel: isPaused ? '▶ 재개' : '⏸ 일시정지',
+                cancelLabel: '⏹ 바람 정지',
+                width: '380px'
+            }
+        );
+
+        const timerBtn = content.querySelector('#np-btn-timer-link');
+        if (timerBtn) {
+            timerBtn.onclick = () => {
+                const overlay = document.querySelector('.snw-modal-overlay');
+                if (overlay) overlay.click();
+                location.hash = '/automation/timer';
+            };
+        }
+    }
 
     // =========================================================
     // 스케줄 충돌 모달

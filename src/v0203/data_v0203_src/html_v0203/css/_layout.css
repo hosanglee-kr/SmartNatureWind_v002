@@ -200,8 +200,10 @@ body.snw-sidebar-open .snw-sidebar-overlay {
 .snw-main {
     grid-row: 2;
     padding: var(--snw-spacing-lg);
+    padding-bottom: var(--snw-content-pb, 24px);
     overflow-x: hidden;
     min-width: 0;
+    transition: padding-bottom 0.25s ease;
 }
 
 .snw-footer {
@@ -329,9 +331,9 @@ body.snw-sidebar-open .snw-sidebar-overlay {
         z-index: 1001 !important;
     }
 
-    /* 메인 컨텐츠가 하단 탭 바에 가려지지 않도록 패딩 추가 */
+    /* 메인 컨텐츠가 하단 탭 바 및 Now Playing에 가려지지 않도록 패딩 동적 반영 */
     .snw-main {
-        padding-bottom: 80px;
+        padding-bottom: var(--snw-content-pb, 80px);
     }
 }
 

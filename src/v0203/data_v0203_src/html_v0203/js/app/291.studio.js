@@ -3,7 +3,7 @@
 // Layer 3 (Studio 패널 컴포넌트)
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     // =========================================================
@@ -42,8 +42,8 @@ window.SNW = window.SNW || {};
         render() {
             const s = this.step;
             const isPreset = s.type === 'PRESET';
-            const isFixed  = s.type === 'FIXED';
-            const isRest   = s.type === 'REST';
+            const isFixed = s.type === 'FIXED';
+            const isRest = s.type === 'REST';
             const ovr = s.override || { enabled: false };
 
             const el = document.createElement('div');
@@ -64,8 +64,8 @@ window.SNW = window.SNW || {};
                         <span>타입</span>
                         <select data-field="type">
                             <option value="PRESET" ${isPreset ? 'selected' : ''}>프리셋 재생</option>
-                            <option value="FIXED"  ${isFixed  ? 'selected' : ''}>고정 풍속</option>
-                            <option value="REST"   ${isRest   ? 'selected' : ''}>휴지 (정지)</option>
+                            <option value="FIXED"  ${isFixed ? 'selected' : ''}>고정 풍속</option>
+                            <option value="REST"   ${isRest ? 'selected' : ''}>휴지 (정지)</option>
                         </select>
                     </label>
 
@@ -104,13 +104,19 @@ window.SNW = window.SNW || {};
 
                 ${isPreset ? `
                 <details class="snw-step-card__override" ${ovr.enabled ? 'open' : ''}>
-                    <summary>
+                    <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
                         <label class="snw-step-checkbox" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
                             <input type="checkbox" data-field="overrideEnabled" ${ovr.enabled ? 'checked' : ''}>
                             <span>⚙ 물리 세부 조정 (Override)</span>
                         </label>
+                        ${ovr.enabled ? `<span class="snw-badge snw-badge--warn" style="font-size:10px;padding:2px 6px;">수동 튜닝됨</span>` : ''}
                     </summary>
                     <div class="snw-step-card__override-body">
+                        <div style="display:flex;justify-content:flex-end;margin-bottom:6px;">
+                            <button type="button" class="snw-btn snw-btn--sm snw-btn--ghost" data-action="reset-ovr" style="font-size:11px;padding:2px 8px;" title="선택한 프리셋의 기본 물리 파라미터로 되돌립니다">
+                                ↺ 기본값 원복
+                            </button>
+                        </div>
                         <label class="snw-step-field snw-step-field--full">
                             <span>강도 <b data-slot="ovr-int-label">${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}%</b></span>
                             <input type="range" data-field="ovrIntensity" min="0" max="100" value="${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}">
@@ -147,16 +153,21 @@ window.SNW = window.SNW || {};
                             mode: 'single',
                             a: {
                                 presetCode: this.step.presetCode || 'OCEAN',
-                                styleCode:  this.step.styleCode  || 'BALANCE',
-                                override:   this.step.override,
+                                styleCode: this.step.styleCode || 'BALANCE',
+                                override: this.step.override,
                             },
                         });
                     }
                 };
             }
 
+            const btnResetOvr = el.querySelector('[data-action="reset-ovr"]');
+            if (btnResetOvr) {
+                btnResetOvr.onclick = () => this._resetOverrideToDefaults(el);
+            }
+
             el.querySelectorAll('[data-field]').forEach(input => {
-                input.addEventListener('input',  () => this._onFieldChange(el, input));
+                input.addEventListener('input', () => this._onFieldChange(el, input));
                 input.addEventListener('change', () => this._onFieldChange(el, input));
             });
 
@@ -197,7 +208,7 @@ window.SNW = window.SNW || {};
                 case 'type':
                     this.step.type = val;
                     if (val === 'PRESET' && !this.step.presetCode) this.step.presetCode = 'OCEAN';
-                    if (val === 'PRESET' && !this.step.styleCode)  this.step.styleCode  = 'BALANCE';
+                    if (val === 'PRESET' && !this.step.styleCode) this.step.styleCode = 'BALANCE';
                     this._rerender();
                     return;
                 case 'durationMin':
@@ -217,9 +228,9 @@ window.SNW = window.SNW || {};
                 case 'overrideEnabled':
                     this.step.override.enabled = !!val;
                     if (val) {
-                        if (this.step.override.windIntensity < 0)   this.step.override.windIntensity = 70;
+                        if (this.step.override.windIntensity < 0) this.step.override.windIntensity = 70;
                         if (this.step.override.windVariability < 0) this.step.override.windVariability = 50;
-                        if (this.step.override.gustFrequency < 0)   this.step.override.gustFrequency = 45;
+                        if (this.step.override.gustFrequency < 0) this.step.override.gustFrequency = 45;
                     }
                     break;
                 case 'ovrIntensity':
@@ -268,6 +279,41 @@ window.SNW = window.SNW || {};
                         : '완전 휴지 (0 m/s)';
                 }
             }
+        }
+
+        _resetOverrideToDefaults(el) {
+            const presets = (SNW.Studio._windDict && SNW.Studio._windDict.presets) || [];
+            const target = presets.find(p => p.code === this.step.presetCode) || {};
+            const factors = target.factors || {};
+
+            const defInt = (factors.windIntensity != null) ? factors.windIntensity : 70;
+            const defVar = (factors.windVariability != null) ? factors.windVariability : 50;
+            const defGust = (factors.gustFrequency != null) ? factors.gustFrequency : 45;
+
+            if (!this.step.override) {
+                this.step.override = { enabled: true };
+            }
+            this.step.override.windIntensity = defInt;
+            this.step.override.windVariability = defVar;
+            this.step.override.gustFrequency = defGust;
+
+            const inputInt = el.querySelector('[data-field="ovrIntensity"]');
+            const inputVar = el.querySelector('[data-field="ovrVariability"]');
+            const inputGust = el.querySelector('[data-field="ovrGust"]');
+            const lblInt = el.querySelector('[data-slot="ovr-int-label"]');
+            const lblVar = el.querySelector('[data-slot="ovr-var-label"]');
+            const lblGust = el.querySelector('[data-slot="ovr-gust-label"]');
+
+            if (inputInt) inputInt.value = defInt;
+            if (inputVar) inputVar.value = defVar;
+            if (inputGust) inputGust.value = defGust;
+            if (lblInt) lblInt.textContent = `${defInt}%`;
+            if (lblVar) lblVar.textContent = `${defVar}%`;
+            if (lblGust) lblGust.textContent = `${defGust}%`;
+
+            this._scheduleSparklineUpdate();
+            this.onChange(this.index, this.step);
+            if (SNW.ToastUtil) SNW.ToastUtil.info('프리셋 기본값으로 복원되었습니다.');
         }
 
         getStep() { return this.step; }
@@ -416,8 +462,8 @@ window.SNW = window.SNW || {};
 
             // 액션 바인딩
             this.el.querySelector('[data-action="add-step"]').onclick = () => this._onAddStep();
-            this.el.querySelector('[data-action="cancel"]').onclick   = () => this._onCancel();
-            this.el.querySelector('[data-action="save"]').onclick     = () => this._onSave();
+            this.el.querySelector('[data-action="cancel"]').onclick = () => this._onCancel();
+            this.el.querySelector('[data-action="save"]').onclick = () => this._onSave();
             const btnPreviewAll = this.el.querySelector('[data-action="preview-all"]');
             if (btnPreviewAll) {
                 btnPreviewAll.onclick = async () => {
@@ -431,8 +477,8 @@ window.SNW = window.SNW || {};
                             mode: 'single',
                             a: {
                                 presetCode: firstPreset.presetCode || 'OCEAN',
-                                styleCode:  firstPreset.styleCode  || 'BALANCE',
-                                override:   firstPreset.override,
+                                styleCode: firstPreset.styleCode || 'BALANCE',
+                                override: firstPreset.override,
                             },
                         });
                     }
@@ -517,7 +563,7 @@ window.SNW = window.SNW || {};
                 stepCount: this._steps.length,
                 steps: this._steps,
                 autoOff: {
-                    timer:   { enabled: false, minutes: 0 },
+                    timer: { enabled: false, minutes: 0 },
                     offTime: { enabled: false, time: '00:00' },
                     offTemp: { enabled: false, temp: 0 },
                 },

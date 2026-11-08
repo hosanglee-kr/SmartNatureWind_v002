@@ -100,7 +100,7 @@
 
 
 
-/* ---- _components.css (30170 bytes) ---- */
+/* ---- _components.css (31569 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : _components.css
@@ -1114,7 +1114,7 @@
  * ===================================================== */
 .snw-toast-host {
     position: fixed;
-    bottom: 60px;
+    bottom: var(--snw-toast-bottom, 24px);
     right: 20px;
     display: flex;
     flex-direction: column;
@@ -1122,6 +1122,7 @@
     z-index: var(--snw-z-toast);
     pointer-events: none;
     max-width: 320px;
+    transition: bottom 0.25s ease;
 }
 
 .snw-toast {
@@ -1326,6 +1327,70 @@
     outline: none;
 }
 
+.snw-ai-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--snw-spacing-sm);
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.snw-ai-examples {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: var(--snw-spacing-sm);
+}
+
+.snw-ai-live-view {
+    display: none;
+    text-align: center;
+    padding: 24px 12px;
+}
+
+.snw-live-orb-container {
+    margin: 20px auto;
+    width: 120px;
+    height: 120px;
+    position: relative;
+}
+
+.snw-live-orb {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--snw-primary, #4a9eff), #8b5cf6);
+    opacity: 0.85;
+    box-shadow: 0 0 20px rgba(74, 158, 255, 0.5);
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.snw-live-status-text {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--snw-text, #f8fafc);
+}
+
+.snw-live-transcript {
+    min-height: 48px;
+    max-height: 120px;
+    overflow-y: auto;
+    font-size: 0.95rem;
+    color: var(--snw-text-dim, #94a3b8);
+    margin-bottom: 20px;
+    padding: 8px 12px;
+    background: var(--snw-surface-2, rgba(0,0,0,0.15));
+    border-radius: var(--snw-radius, 8px);
+}
+
+.snw-live-actions-log {
+    margin-bottom: 16px;
+    font-size: 0.85rem;
+    color: var(--snw-success, #4ade80);
+}
+
 .snw-diag-panel,
 .snw-info-panel,
 .snw-firmware-panel {
@@ -1373,9 +1438,9 @@
 
 .snw-style-btn {
     flex: 1;
-    min-height: 38px;
-    padding: 8px 6px;
-    font-size: 12px;
+    min-height: 44px;
+    padding: 10px 6px;
+    font-size: 13px;
     font-weight: 600;
     text-align: center;
     background: transparent;
@@ -1849,7 +1914,7 @@ body.snw-night-mode {
 
 
 
-/* ---- _layout.css (8653 bytes) ---- */
+/* ---- _layout.css (8791 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : _layout.css
@@ -2052,8 +2117,10 @@ body.snw-sidebar-open .snw-sidebar-overlay {
 .snw-main {
     grid-row: 2;
     padding: var(--snw-spacing-lg);
+    padding-bottom: var(--snw-content-pb, 24px);
     overflow-x: hidden;
     min-width: 0;
+    transition: padding-bottom 0.25s ease;
 }
 
 .snw-footer {
@@ -2181,9 +2248,9 @@ body.snw-sidebar-open .snw-sidebar-overlay {
         z-index: 1001 !important;
     }
 
-    /* 메인 컨텐츠가 하단 탭 바에 가려지지 않도록 패딩 추가 */
+    /* 메인 컨텐츠가 하단 탭 바 및 Now Playing에 가려지지 않도록 패딩 동적 반영 */
     .snw-main {
-        padding-bottom: 80px;
+        padding-bottom: var(--snw-content-pb, 80px);
     }
 }
 
@@ -2360,7 +2427,7 @@ body.snw-sidebar-open .snw-sidebar-overlay {
 
 
 
-/* ---- _nowplaying.css (2809 bytes) ---- */
+/* ---- _nowplaying.css (3179 bytes) ---- */
 /* ============================================================
  * 소스명   : _nowplaying.css
  * 모듈약어 : W10
@@ -2368,7 +2435,7 @@ body.snw-sidebar-open .snw-sidebar-overlay {
  * ============================================================ */
 .snw-nowplaying {
     position: fixed;
-    bottom: var(--snw-bottom-nav-h, 56px);
+    bottom: var(--snw-bottom-nav-h, 60px);
     left: 0;
     right: 0;
     height: var(--snw-np-h, 48px);
@@ -2378,7 +2445,7 @@ body.snw-sidebar-open .snw-sidebar-overlay {
     align-items: center;
     padding: 0 var(--snw-spacing, 12px);
     gap: var(--snw-spacing-sm, 8px);
-    z-index: var(--snw-z-np, 90);
+    z-index: var(--snw-z-np, 95);
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(8px);
     transition: transform var(--snw-transition, 0.2s ease), opacity var(--snw-transition, 0.2s ease);
@@ -2448,6 +2515,21 @@ body.snw-sidebar-open .snw-sidebar-overlay {
 
 .snw-nowplaying__badge .strike {
     text-decoration: line-through;
+}
+
+.snw-nowplaying__badge--timer {
+    background: rgba(78, 168, 222, 0.2);
+    color: var(--snw-info, #4ea8de);
+    border: 1px solid var(--snw-info, #4ea8de);
+    border-radius: 12px;
+    padding: 1px 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.snw-nowplaying__badge--timer:hover {
+    background: rgba(78, 168, 222, 0.35);
 }
 
 .snw-nowplaying__controls {
@@ -2832,7 +2914,7 @@ a {
 }
 
 
-/* ---- _responsive.css (4917 bytes) ---- */
+/* ---- _responsive.css (5019 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : _responsive.css
@@ -2874,12 +2956,13 @@ a {
         transform: translateX(0);
     }
 
-    /* 토스트 전체 폭 */
+    /* 토스트 전체 폭 및 하단 레이아웃 동적 연동 */
     .snw-toast-host {
-        bottom: 70px;
+        bottom: var(--snw-toast-bottom, 76px);
         left: var(--snw-spacing);
         right: var(--snw-spacing);
         max-width: none;
+        transition: bottom 0.25s ease;
     }
 
     /* 버튼 터치 크기 확대 */
@@ -3623,7 +3706,7 @@ a {
 
 
 
-/* ---- _variables.css (3433 bytes) ---- */
+/* ---- _variables.css (4223 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : _variables.css
@@ -3644,12 +3727,12 @@ a {
     --snw-surface-3: #2f3844;
     --snw-border: #2f3844;
     --snw-border-hi: #4a5563;
-    
+
     /* 텍스트 */
     --snw-text: #e6edf3;
     --snw-text-dim: #8b949e;
     --snw-text-faint: #6e7a87;
-    
+
     /* 액션 컬러 */
     --snw-primary: #4a9eff;
     --snw-primary-hover: #3a8eef;
@@ -3657,7 +3740,7 @@ a {
     --snw-warn: #d29922;
     --snw-error: #f85149;
     --snw-info: #58a6ff;
-    
+
     /* 상태 배지 컬러 */
     --snw-state-gray: #59636e;
     --snw-state-blue: #4a9eff;
@@ -3666,18 +3749,18 @@ a {
     --snw-state-yellow: #d29922;
     --snw-state-orange: #f0883e;
     --snw-state-red: #f85149;
-    
+
     /* 차트 컬러 */
     --snw-chart-wind: #4a9eff;
     --snw-chart-target: #9aa5b1;
     --snw-chart-pwm: #f5a623;
-    
+
     /* 폰트 */
     --snw-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
         "Helvetica Neue", Arial, "Apple SD Gothic Neo",
         "Malgun Gothic", sans-serif;
     --snw-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    
+
     /* 크기 */
     --snw-radius: 8px;
     --snw-radius-lg: 12px;
@@ -3685,36 +3768,69 @@ a {
     --snw-spacing: 12px;
     --snw-spacing-sm: 8px;
     --snw-spacing-lg: 20px;
-    
+
     /* 헤더/사이드바/푸터 */
     --snw-header-h: 56px;
     --snw-footer-h: 40px;
     --snw-sidebar-w: 220px;
-    --snw-bottom-nav-h: 60px; /* [FE-P2-4] 모바일 네비게이션 실측 60px 통일 */
+    --snw-bottom-nav-h: 60px;
+    /* [FE-P2-4] 모바일 네비게이션 실측 60px 통일 */
     --snw-np-h: 48px;
-    
+
+    /* [v0203-UI] 하단 뷰포트 레이아웃 스택 (기본: Now Playing 숨김) */
+    --snw-fab-bottom: 76px;
+    --snw-toast-bottom: 76px;
+    --snw-content-pb: 80px;
+
     /* 그림자 */
     --snw-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
     --snw-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     --snw-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
-    
+
     /* 전환 */
     --snw-transition: 0.2s ease;
     --snw-transition-fast: 0.1s ease;
-    
+
     /* =====================================================
-     * [N-6] z-index 계층 (ADR-4 확정)
-     *  - header(50) < nowplaying(95) < bottom-nav(1000)
+     * [N-6] z-index 계층 (ADR-4 확정 및 Stage 8 AI FAB 반영)
+     *  - header(50) < nowplaying(95) < fab(990) < bottom-nav(1000)
      *    < sidebar-overlay(1040) < sidebar(1050)
      *    < modal(1100) < toast(1200)
      * ===================================================== */
-    --snw-z-header:  50;
-    --snw-z-np:      95;
-    --snw-z-bottom:  1000;
+    --snw-z-header: 50;
+    --snw-z-np: 95;
+    --snw-z-fab: 990;
+    --snw-z-bottom: 1000;
     --snw-z-overlay: 1040;
     --snw-z-sidebar: 1050;
-    --snw-z-modal:   1100;   /* [N-6] 900 → 1100 */
-    --snw-z-toast:   1200;   /* [N-6] 1000 → 1200 */
+    --snw-z-modal: 1100;
+    /* [N-6] 900 → 1100 */
+    --snw-z-toast: 1200;
+    /* [N-6] 1000 → 1200 */
+}
+
+/* [v0203-UI] Now Playing Bar 활성화 시 동적 부상 레이아웃 */
+body.has-nowplaying {
+    --snw-fab-bottom: 124px;
+    /* 60px(BottomNav) + 48px(NP) + 16px */
+    --snw-toast-bottom: 124px;
+    --snw-content-pb: 128px;
+}
+
+/* [v0203-UI] 데스크톱 (Bottom Nav 없음) 레이아웃 스택 */
+@media (min-width: 768px) {
+    :root {
+        --snw-fab-bottom: 24px;
+        --snw-toast-bottom: 24px;
+        --snw-content-pb: 24px;
+    }
+
+    body.has-nowplaying {
+        --snw-fab-bottom: 72px;
+        /* 48px(NP) + 24px */
+        --snw-toast-bottom: 72px;
+        --snw-content-pb: 72px;
+    }
 }
 
 /* 라이트 모드 자동 전환 */
@@ -3730,11 +3846,9 @@ a {
         --snw-text: #1f2328;
         --snw-text-dim: #59636e;
         --snw-text-faint: #8b949e;
-        
+
         --snw-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
         --snw-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
         --snw-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
     }
 }
-
-

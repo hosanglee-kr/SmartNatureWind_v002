@@ -29,7 +29,7 @@ SNW.Page = SNW.Page || {};
 
 			slot.innerHTML = `
                 <div class="snw-ai-chat">
-                    <div class="snw-ai-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;">
+                    <div class="snw-ai-header">
                         <div style="display:flex;gap:6px;align-items:center;">
                             <div class="snw-btn-group" role="group">
                                 <button type="button" class="snw-btn snw-btn--sm snw-btn--primary" data-mode-btn="rest">
@@ -49,13 +49,13 @@ SNW.Page = SNW.Page || {};
                     <!-- REST Chat View -->
                     <div class="snw-ai-rest-view" data-view="rest">
                         <div class="snw-ai-messages" data-slot="messages"></div>
-                        <div class="snw-ai-examples" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+                        <div class="snw-ai-examples">
                             <button type="button" class="snw-btn snw-btn--sm" data-example="바다 바람 틀어줘">바다 바람 틀어줘</button>
                             <button type="button" class="snw-btn snw-btn--sm" data-example="30분 후 꺼줘">30분 후 꺼줘</button>
                             <button type="button" class="snw-btn snw-btn--sm" data-example="스케줄대로 해줘">스케줄대로 해줘</button>
                             <button type="button" class="snw-btn snw-btn--sm" data-example="${SNW.I18n.t('ai.example1')}">${SNW.I18n.t('ai.example1')}</button>
                         </div>
-                        <div class="snw-ai-input" style="display:flex;gap:6px;align-items:flex-end;">
+                        <div class="snw-ai-input">
                             <textarea data-slot="input" rows="2" style="flex:1;"
                                       placeholder="${SNW.DomUtil.escape(examplePlaceholder)}"
                                       maxlength="${MAX_MSG_LEN}"></textarea>
@@ -69,15 +69,15 @@ SNW.Page = SNW.Page || {};
                     </div>
 
                     <!-- Live Voice View -->
-                    <div class="snw-ai-live-view" data-view="live" style="display:none;text-align:center;padding:24px 12px;">
-                        <div class="snw-live-orb-container" style="margin:20px auto;width:120px;height:120px;position:relative;">
-                            <div class="snw-live-orb" data-slot="live-orb" style="width:100%;height:100%;border-radius:50%;background:linear-gradient(135deg, #3b82f6, #8b5cf6);opacity:0.85;box-shadow:0 0 20px rgba(59,130,246,0.5);transition:transform 0.1s ease, box-shadow 0.1s ease;"></div>
+                    <div class="snw-ai-live-view" data-view="live">
+                        <div class="snw-live-orb-container">
+                            <div class="snw-live-orb" data-slot="live-orb"></div>
                         </div>
-                        <div class="snw-live-status-text" data-slot="live-status" style="font-size:1.1rem;font-weight:600;margin-bottom:12px;color:var(--text-color, #f8fafc);">
+                        <div class="snw-live-status-text" data-slot="live-status">
                             ${SNW.I18n.t('ai.liveStart')}
                         </div>
-                        <div class="snw-live-transcript" data-slot="live-transcript" style="min-height:48px;max-height:120px;overflow-y:auto;font-size:0.95rem;color:var(--text-muted, #94a3b8);margin-bottom:20px;padding:8px 12px;background:rgba(0,0,0,0.15);border-radius:8px;"></div>
-                        <div class="snw-live-actions-log" data-slot="live-actions" style="margin-bottom:16px;font-size:0.85rem;color:#4ade80;"></div>
+                        <div class="snw-live-transcript" data-slot="live-transcript"></div>
+                        <div class="snw-live-actions-log" data-slot="live-actions"></div>
                         <div>
                             <button type="button" class="snw-btn snw-btn--lg snw-btn-primary" data-action="live-toggle" style="min-width:160px;">
                                 ${SNW.I18n.t('ai.liveStart')}

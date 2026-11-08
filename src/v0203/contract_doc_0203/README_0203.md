@@ -73,6 +73,7 @@ src/v0203/
 | **0203_008** | OFFLINE, SYNC-1~3 | C++ Enum ➔ `000.const.js` 동기화, 오프라인 모듈 2분할, 대시보드 슬라이더 연동 | [CONTRACT §7.8~7.9](CONTRACT_0203.md#79-프론트엔드-백엔드-데이터-동기화-및-오프라인-모듈-분리-계약-sync-1sync-3) |
 | **0203_010** | STAGE-1~7 | 8스텝 작곡기, Session FSM(스마트 Resume), Wind Studio/Playlist, Comfort DI 추천, 20바 Canvas EQ, 64-event 타임라인 회고, 4단계 온보딩 | [SPEC §5.4](SPEC_0203.md#54-프론트엔드-자산-규격-v24-신규) |
 | **v0203_011** | **Phase 1~6** | **Session 위임 엔진 + Preview 파사드 + i18n 100% + 오프라인 정합**: ADR-1(위임 모델), ADR-2(steps[] 단일 규격), ADR-3(Schedule profileId 단일 참조), ADR-5(Preview 파사드), 46건 이슈 해결 | [CONTRACT §7.10](CONTRACT_0203.md#710-v0203_011--phase-16-감사-이력-46건) |
+| **0203_012** | **v0203_AUDIT** | **통합 감사 28대 이슈 전 항목 해소 (P0 5건, P1 10건, P2 13건)**: SPA 리셋 스키마 복구, AI CRUD 위임, getRootSnapshot 원자 캡처, TTS 한글 매핑, B-11 AP 폴백, 로그 런타임 적용, Strict aliasing 해소, T-loop WS 가드, profileId 검증, getLang() 통일, 오프라인 FSM 정합, EQ RAF 가드, 오프라인 브로드캐스트 방지, `validate_contracts.py` SSOT CI 신설 | [CONTRACT §7.11](CONTRACT_0203.md) |
 
 ---
 
@@ -214,13 +215,13 @@ git push origin v0203-release-2026-10-26
 
 ---
 
-## 7. 실측 자원 사용량 (2026-11-06 Stage 8 최종 실측)
+## 7. 실측 자원 사용량 (2026-11-08 v0203 감사 완료 최종 실측)
 
 | 자원 | 사용 | 총량 | 여유 | 판정 |
 |---|---|---|---|---|
-| **RAM** | 100,468 B (30.7%) | 327,680 B | 227,212 B (69.3%) | ✅ BUDGET §6 >100KB 통과 |
-| **Flash** | 1,324,913 B (20.2%) | 6,553,600 B | 5,228,687 B (79.8%) | ✅ 여유 충분 |
-| **littlefs.bin** | 148.8 KB (프론트 gz 118.1 KB + JSON 30.7 KB) | 1,048,576 B (1MB) | 899,776 B (85.8%) | ✅ BUDGET §6 <200KB 통과 |
+| **RAM** | 100,556 B (30.7%) | 327,680 B | 227,124 B (69.3%) | ✅ BUDGET §6 >100KB 통과 |
+| **Flash** | 1,364,905 B (20.8%) | 6,553,600 B | 5,188,695 B (79.2%) | ✅ 여유 충분 |
+| **littlefs.bin** | 148.8 KB (프론트 gz 118.3 KB + JSON 20.8 KB) | 1,048,576 B (1MB) | 899,776 B (85.8%) | ✅ BUDGET §6 <200KB 통과 |
 
 ---
 
@@ -228,6 +229,7 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-08** | **v2.14** | **통합 감사 28대 이슈 전 항목 해소 및 SSOT 자동 대조 CI 구축 (0203_012)**: P0 5건, P1 10건, P2 13건 전 항목 패치 및 검증, PlatformIO 펌웨어 빌드 성공(RAM 100.5KB / Flash 1.36MB), SPA 프론트엔드 에셋 번들(118.3 KB Gzip) 동기화, `validate_contracts.py` 신규 CI 및 `pio_gzip_0203.py` 스테이징 게이트 통합, TEST_PLAN §3.6 (T-121~T-148) 28건 확장 반영 | Antigravity AI |
 | **2026-11-06** | **v2.13** | **Stage 8 AI 제어 체계 및 Gemini Live 실시간 음성·비용 가드레일 반영 (v0203_011)**: REST 2-turn 프록시(`/ai/gemini`), Gemini Live 웹소켓 도구 위임 브리지 및 비용 API 8종 등록, 12대 안전 제어 도구 및 15종 위험 명령 차단, 30분 상한(403) 및 일일 $0.50 NVS 가드레일, AudioWorklet 16k 송신/24k 저지연 재생 Barge-in Flush, 전역 플로팅 AI 바텀시트, 54개 JS 번들링 및 실측치 갱신 | Antigravity AI |
 | **2026-11-06** | **v2.12** | **Schedule 단일 규격 정합 & 레거시 슬림화 및 TimerPanel 신규 구현 (v0203_011)**: Schedule 트리거 단일 규격화(`segments`, `repeat*`, `autoOff`, `motion` 완전 제거 및 Profile 위임 상속), 자동화 4번째 탭 세션 타이머(`SNW.TimerPanel` & `SNW.TimerManager`) 신규 구현, 구버전 스케줄/프로파일 페이지(`220`, `230`) 경량 파사드 전환(75KB 번들 절감), PlatformIO 펌웨어 클린 빌드 검증(RAM 100.4KB / Flash 1.32MB 실측 최적화) | Antigravity AI |
 | 2026-11-05 | v2.11 | **Phase 1~6 구현 완료 및 전면 단일 규격화 (0203_010/011)**: 세션 위임 엔진(Session Delegation Model, 물리 백업/복원), 하위 호환성 전면 배제 및 UserProfile/Schedule 단일 규격(`steps[]`, `repeatSegments`, `profileId`) 일원화, i18n 475키 DICT 완성 및 `check_i18n.py` CI Gate 파이프라인 통합, Preview 파사드 단일화(ADR-5), 오프라인 어댑터 정합(N-11~N-14, N-28), B-2 스냅샷 규약 철저 준수 | Antigravity AI |

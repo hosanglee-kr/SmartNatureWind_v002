@@ -221,15 +221,15 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 
 ### 8.5 예산 대비 실측 판정
 
-| 예산 항목 | 목표 | 실측 (2026-11-06 v0203_011 최종) | 여유 | 판정 |
+| 예산 항목 | 목표 | 실측 (2026-11-08 v0203 감사 완료 최종) | 여유 | 판정 |
 |---|---:|---:|---:|:---:|
-| JS gzip (`P010_bundle_0203.js.gz`) | < 120 KB | 102.8 KB (raw 492.4 KB) | 17.2 KB | ✅ (79.1% 절감) |
-| CSS gzip (`P000_common_0203.css.gz`) | < 20 KB | 14.1 KB (raw 82.3 KB) | 5.9 KB | ✅ (82.8% 절감) |
+| JS gzip (`P010_bundle_0203.js.gz`) | < 125 KB | 102.4 KB (raw 545.7 KB) | 22.6 KB | ✅ (81.2% 절감) |
+| CSS gzip (`P000_common_0203.css.gz`) | < 20 KB | 14.1 KB (raw 82.9 KB) | 5.9 KB | ✅ (83.0% 절감) |
 | HTML gzip (`index.html.gz`) | < 3 KB | 1.8 KB (raw 5.6 KB) | 1.2 KB | ✅ (68.5% 절감) |
-| **프론트엔드 합계 gzip** | **< 150 KB** | **118.7 KB** | **31.3 KB** | ✅ |
-| LittleFS 총 사용 | < 300 KB | ~139.5 KB | ~160.5 KB | ✅ (1MB 한도의 13.9%) |
-| Flash RAM | < 40% | 30.7% | 9.3% | ✅ |
-| Flash 용량 | < 30% | 20.1% | 9.9% | ✅ |
+| **프론트엔드 합계 gzip** | **< 150 KB** | **118.3 KB** | **31.7 KB** | ✅ |
+| LittleFS 총 사용 | < 300 KB | ~148.8 KB | ~151.2 KB | ✅ (1MB 한도의 14.9%) |
+| Flash RAM | < 40% | 30.7% (100,556 B) | 9.3% | ✅ |
+| Flash 용량 | < 30% | 20.8% (1,364,905 B) | 9.2% | ✅ |
 | 첫 방문 HTTP | ≤ 3 | 3 | 0 | ✅ |
 | 페이지 전환 HTTP | 0 | 0 | 0 | ✅ |
 
@@ -367,7 +367,7 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 | **NVS 누적** | `ST_N10_AIDailyUsage_t` (4키) | **RAM +32 B**, NVS 4개 키 할당 (자정 자동 리셋) |
 | **프롬프트 캐시** | 30초 파일 스코프 캐시 | I2C 센서 블로킹 **0 ms**, 힙 할당 빈도 **-95%** |
 | **프론트 번들** | JS 48개 ➔ 54개 (`P010_bundle`) | 번들 Gzip 100.2 KB ➔ **102.4 KB** (+2.2 KB gzip) |
-| **전체 Gzip** | JS + CSS + HTML | 총 **118.1 KB** (LittleFS 1MB 버짓 대비 **11.8%**, 여유 880 KB) |
+| **전체 Gzip** | JS + CSS + HTML | 총 **118.3 KB** (LittleFS 1MB 버짓 대비 **11.8%**, 여유 880 KB) |
 | **LittleFS 점유** | Gzip 번들 + JSON 9개 | 총 ~148.8 KB (플래시 1MB 대비 **14.9%**, 초록불 ✅) |
 | **Live 오디오** | AudioWorklet 16k/24k PCM16 | ESP32 힙 부하 0 (브라우저-Gemini Live WS 직접 스트리밍) |
 
@@ -377,6 +377,7 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-08** | **v3.0** | **Phase 3 — §8/§10.4 SSOT 정합**: §8.5 판정 표 감사 완료 후 최종 재측정(RAM 100.5KB 30.7%, Flash 1.36MB 20.8%, JS gz 102.4KB, 프론트 gz 합계 118.3KB, LittleFS 148.8KB), §10.4 Stage 8 AI 자원 영향표 실측치 현행화 | Antigravity AI |
 | **2026-11-06** | **v2.9** | **Stage 8 AI 제어 및 Live 실시간 음성 예산 영향 반영 (§10.4)**: §3 async_tcp AI 라우트 8종 WCET 추가, 54개 JS 번들링 및 정적 자산 Gzip 실측(118.1 KB / LittleFS 1MB 대비 11.8%), NVS 4키 메모리 영향, 프롬프트 캐시 30s 성능 최적화 명시 | Antigravity AI |
 | **2026-11-05** | **v2.8** | **Phase 1~6 통합 (v0203_011) — Session/Preview/i18n/Offline 예산 영향**: §2 Session 위임 WCET 2행, §8.2.1 i18n 확장 +2.3KB gzip 반영, §10.3 Phase별 상세 영향표 신규 (ADR-2 단일 규격화 반영). RAM +88B, Flash +2.2KB, littlefs +9.7KB 흡수. 프론트 gzip 87.7KB < 80KB 목표 유지. | Antigravity AI |
 | 2026-10-28 | v2.7 | Batch I — 35종 JS 번들 실측치 갱신 (JS 74.0KB, CSS 10.1KB, HTML 1.3KB = 총 85.4KB gzip), RAM 33.1%, Flash 23.3% 현행화 | Antigravity AI |

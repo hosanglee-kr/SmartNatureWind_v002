@@ -57,6 +57,12 @@ L8 Phase 1~6 통합 회귀 (24건) ─── 릴리스 차단 필수 10건 (T-90
 
 L9 Stage 8 AI 제어 및 Live 실시간 음성 회귀 (7건) ─── 릴리스 차단 필수 7건
     T-114 ~ T-120 (자동화 E2E 스크립트: test/e2e_stage8_4.py)
+
+L10 통합 감사 회귀 (28건) ─── 릴리스 차단 필수 15건
+    T-121 ~ T-148 (P0: 5건 / P1: 10건 / P2: 13건)
+    · P0: T-121, T-122, T-123, T-124, T-125
+    · P1: T-126 ~ T-135
+    · P2: T-136 ~ T-148
 ```
 
 ### 1.2 검증 환경
@@ -2116,6 +2122,97 @@ python src/v0203/tools_0203/check_i18n.py --strict
 
 ---
 
+### 3.6 통합 감사 회귀 (T-121 ~ T-148)
+
+> **기준**: 2026-11-07 통합 감사 리포트 (백엔드 14건 + 프론트엔드 14건)  
+> **자동화 E2E 스크립트**: `test/audit_28/run_all.sh`
+
+#### 3.6.1 P0 회귀 (5건) — 릴리스 차단 필수
+
+##### T-121. [BE-P0-1] factoryReset 후 SPA 자산 서빙 정상화
+**대응 이슈**: `A23_Com_ResetCfg_0203.h::A20_resetWebPageDefault` — SPA 미반영 (`/html_v3/` 하드코딩)  
+**위반 문서**: SPEC §5.4.4  
+**합격 판정**:
+- [ ] 재부팅 3회 후 모두 200 OK
+- [ ] `cfg_pages_0203.json` `path` 필드가 `/html_v0203/*` 계열
+- [ ] `pageAssets[]`에 `P010_bundle_0203.js` 존재
+
+##### T-122. [BE-P0-2] AI `add_profile` CRUD 검증 우회 차단
+**대응 이슈**: `CT10_Ctl_AIAction_0203.cpp::executeAddProfile` — 검증 우회  
+**위반 문서**: CONTRACT §7.15 AI-2  
+**합격 판정**:
+- [ ] 신규 profileNo > 기존 max (자동 발급 준수)
+- [ ] 재부팅 후 프로필 개수 유지
+- [ ] 중복 및 검증 실패 로그 0건
+
+##### T-123. [BE-P0-3] T-async `startOverridePreset` mutex 보호
+**대응 이슈**: `CT10_Ctl_Ctl_Ovr_0203.cpp::startOverridePreset` — `g_A20_config_root` mutex 없이 참조  
+**위반 문서**: CONTRACT §3.1 B-2  
+**합격 판정**:
+- [ ] reload + AI 10회 반복 시 크래시/WDT 0건
+- [ ] 정적 검사(`g_A20_config_root.windDict` 직접 접근) 0건
+- [ ] uptime 연속 증가
+
+##### T-124. [FE-P0-1] AI 비용 배지 표시 정상화
+**대응 이슈**: `290.page.ai.js`, `999b.ai-sheet.js` — `SNW.API` 대문자 오타  
+**위반 문서**: SPEC §5.1.4.4  
+**합격 판정**:
+- [ ] 콘솔 에러 0건
+- [ ] `[data-slot="cost-badge"]` 정상 표시
+- [ ] "오늘 Live" 텍스트 및 비용 정보 정상 출력
+
+##### T-125. [FE-P0-2] AI Live 함수 경로 정합성
+**대응 이슈**: SPEC vs 코드 vs 프론트 3자 표류  
+**위반 문서**: SPEC §5.1.4.1  
+**합격 판정**:
+- [ ] `/ai/live-function` 200 OK (배포 경로 동작)
+- [ ] `/ai/live-func` 404 (폐기 경로)
+- [ ] SPEC §5.1.4.1 표에 `/ai/live-function` 반영
+
+#### 3.6.2 P1 회귀 (10건) — 릴리스 전 필수
+
+| ID | 대응 이슈 | 위반 문서 | 합격 판정 요약 |
+|:---:|---|---|---|
+| **T-126** | BE-P1-1 TTS 매핑 8/10 오매핑 | SPEC §7.15 AI-5 | 10/10 프리셋이 한글 이름 반환 (영문 코드 노출 0건) |
+| **T-127** | BE-P1-2 begin 실패 시 조기 return | FLOW §10, SPEC §6.1 B-11 | C10 실패 시 Recovery AP 폴백 부팅 및 웹 접속 가능 |
+| **T-128** | BE-P1-3 부팅 시 로그 레벨 무시 | F-4, FLOW §1 | 재부팅 후 사용자 설정 로그 레벨(DEBUG 등) 유지 |
+| **T-129** | BE-P1-4 Monitor strict aliasing UB | C++ 표준 규격 | struct 포인터 캐스팅 제거 및 타입 안전 epochT 정합 |
+| **T-130** | BE-P1-5 T-loop WS send 블로킹 | BUDGET §2, CONTRACT §6 | 클라이언트 0 가드 추가로 T-loop 블로킹 방지 |
+| **T-131** | BE-P1-6 add_schedule profileId 미검증 | FLOW §4.2 | 존재하지 않는 profileId 스케줄 추가 시 안전 거부 |
+| **T-132** | FE-P1-1 i18n currentLang undefined | i18n 계약 | `SNW.I18n.getLang()` 호출로 언어별 올바른 응답 생성 |
+| **T-133** | FE-P1-2 오프라인 FSM 명칭 오류 | STATE §2.1 C++ SSOT | OVERRIDE/OVERRIDE_ACTIVE 등 C++ 유효 상태 반환 |
+| **T-134** | FE-P1-3 NowPlaying EQ RAF 재개 | UI UX 안정성 | pause 후 100ms 이내 EQ 애니메이션 정지 |
+| **T-135** | FE-P1-4 오프라인 브로드캐스트 중지 | UX/리소스 절약 | 세션 stop 후 오프라인 WebSocket 브로드캐스트 중지 |
+
+#### 3.6.3 P2 회귀 (13건) — 후속 정리
+
+| ID | 대응 이슈 | 검증 방식 | 합격 판정 |
+|:---:|---|---|---|
+| **T-136** | main.cpp 매직넘버 | `G_A00_*` 상수 교체 | `delay(1000)` 매직넘버 0건 |
+| **T-137** | ADR-2 레거시 필드 격리 | FSM 브릿지 미러 격리 | `ST_A20_Step_t` steps[] 단일 규격 정합 |
+| **T-138** | dead code no-op 정리 | `C10_reissueSegIdsAndValidateSegNos` | 인라인 안전 브릿지 배치 |
+| **T-139** | ST_A20_ScheduleSegment_t 오버로드 | 독립 struct 유지 | FSM 함수 오버로드 충돌 방지 |
+| **T-140** | initAutoOffFromSchedule 서식 | 인덴트 및 중괄호 정돈 | `_persistOffTimeLastYday` 리셋 보장 |
+| **T-141** | check_i18n.py dead code | 대칭성 로직 전면 개편 | ko/en 510개 키 100% 대칭 검증 |
+| **T-142** | G_MAX_REQUEST_BODY 3자 표류 | 12KB 통일 | C++, SPEC, README 12KB 일치 |
+| **T-143** | AI Rate Limit 정의 표류 | 5초 간격 통일 | 코드 5초 간격과 SPEC 5초 동기화 |
+| **T-144** | NowPlaying 4px 겹침 | 높이 60px 통일 | 모바일 탭바와 NowPlaying 겹침 0px |
+| **T-145** | _components.css 모듈 가이드 | 모듈 주석 가이드 보강 | 파일 가독성 및 유지보수성 확보 |
+| **T-146** | i18n gate 정책 확인 | CI Gate 연동 | `check_i18n.py --strict` staging 통과 |
+| **T-147** | AISheet 웨이크워드 프라이버시 | 툴팁 프라이버시 보강 | 상시 활성 안내 및 사용자 인지 보장 |
+| **T-148** | addWindProfile unwrap 누락 | `_unwrap(b, 'preset')` 표준 적용 | ADR-2 단일 객체 파싱 준수 |
+
+#### 3.6.4 L10 회귀 매트릭스
+
+| 그룹 | 테스트 항목 | 예상 소요 | 판정 기준 |
+|:---|---|:---:|:---:|
+| **L10 P0** | T-121 ~ T-125 (5건) | 40분 | **5/5 필수 통과** |
+| **L10 P1** | T-126 ~ T-135 (10건) | 90분 | **10/10 필수 통과** |
+| **L10 P2** | T-136 ~ T-148 (13건) | 90분 | **13/13 검증 완료** |
+
+
+---
+
 ## 4. 프론트엔드 v0203 SPA
 
 ### T-29. 초기 로드 — SPA Shell 3자산
@@ -2614,6 +2711,10 @@ done
 | **G-8.3** | **정적 회귀 grep: B-2 위반 0건 / A-2 위반 0건 / 하드코딩 0건** | ⬜ |
 | **G-9.1** | **Batch I Override 물리 필수 3/3 (T-70, T-71, T-72)** | ⬜ |
 | **G-9.2** | **웹 오프라인 및 다국어 검증 (T-73)** | ⬜ |
+| **G-10.1** | **L10 P0 필수 5/5 (T-121~T-125)** | ✅ |
+| **G-10.2** | **L10 P1 필수 10/10 (T-126~T-135)** | ✅ |
+| **G-10.3** | **L10 P2 정합성 13/13 (T-136~T-148)** | ✅ |
+| **G-10.4** | **SSOT 자동 대조 CI exit 0 (`validate_contracts.py`)** | ✅ |
 
 ### 9.2 릴리스 승인 조건
 
@@ -2656,6 +2757,7 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-08** | **v3.3** | **통합 감사 28건 회귀 절차 신설 (§3.6 T-121~T-148)**: P0 긴급 안전성 5건(T-121~T-125), P1 기능 결함 10건(T-126~T-135), P2 정합성 13건(T-136~T-148), §1.1 L10 계층, §7 L10 회귀 매트릭스, §9.1 G-10.1~G-10.4 릴리스 게이트 신설 및 `validate_contracts.py` SSOT 자동 대조 CI 연계 | Antigravity AI |
 | **2026-11-06** | **v3.2** | **Stage 8 AI 제어 및 Gemini Live 실시간 음성 회귀 절차 신설 (§3.5 T-114~T-120)**: REST 2-turn, 15종 위험 명령 차단, Live 토큰/30분 상한, Tool Calling 위임, 일일 비용 NVS 누적, AudioWorklet/Barge-in, 오프라인 Mock 검증 절차 및 자동화 E2E 스크립트(`test/e2e_stage8_4.py`) 연계 명시 | Antigravity AI |
 | **2026-11-06** | **v3.1** | **Schedule 단일 규격 정합 & 세션 타이머 회귀 절차 신설 (v0203_011)**: §3.4 T-113 (세션 타이머 SNW.TimerPanel 동작 및 NowPlaying 연동) 신규 추가, Schedule의 profileId 단일 실행 재검증, L8 회귀 세트 24건 확장. | Antigravity AI |
 | 2026-11-05 | v3.0 | **Phase 1~6 통합 (v0203_011) 회귀 절차 신설**: §3.4 T-90~T-112 (23건) 신규, §1.1 L8 계층 추가, §7 회귀 매트릭스 확장 (L8 행 + 필수 세트 29→39건), §8 트러블슈팅 20건 추가 (ADR-2 단일 규격 반영). | Antigravity AI |

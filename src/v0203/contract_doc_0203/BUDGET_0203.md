@@ -51,6 +51,7 @@
     - [10.3 Phase 1~6 (v0203_011) 예산 영향](#103-phase-16-v0203_011-예산-영향)
     - [10.4 Stage 8 (AI 제어 및 Live 음성, v0203_011) 예산 영향](#104-stage-8-ai-제어-및-live-음성-v0203_011-예산-영향)
     - [10.5 Stage 9 (웹 UI/UX 표준화 및 인터랙션 고도화, 0203_012) 예산 영향](#105-stage-9-웹-uiux-표준화-및-인터랙션-고도화-0203_012-예산-영향)
+    - [10.6 Stage 10 IA 재설계 및 Comfort 자동 모드 누적 영향 (0203_013)](#106-stage-10-ia-재설계-및-comfort-자동-모드-누적-영향-0203_013)
 11. [개정 이력](#11-개정-이력)
 
 ---
@@ -75,6 +76,7 @@
 | **[F-05] `consumePendingReload()`** | **< 1 μs** | atomic exchange |
 | **[F-05] `reloadAll()`** | **100 ~ 500 ms** | Reload 발생 주기에만 1회 스파이크 (WDT 안전) |
 | `CT10::tick()` | 1 ~ 5 ms | 40ms 스로틀, FSM + 물리 |
+| **[Stage 10] `tickAutoComfort()`** | **< 0.1 μs** (게이트 미도달) / **< 150 μs** (기동 시) | 5분 게이트, 평상 조기 반환, 만료 시 추천 산출 및 프리셋 세션 시작 |
 | **[F-06] `_pendingMotionSimApply` 소비** | **< 100 μs** | atomic exchange + 파라미터 복사 |
 | `CT10_WS_tick()` | 1 ~ 10 ms | **[D-1]** consumeAllDirty 1회 (기존 4회 → mutex -75%) |
 | **[F-03] `g_M10_motionLogic->tick()`** | **< 100 μs** | PIR holdSec 감쇠 |
@@ -435,12 +437,21 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 | **프론트 에셋 실측치** | `P010_bundle_0203.js`: **119.3 KB** (Gzip 78.4% 절감)<br>`P000_common_0203.css`: **14.7 KB** (Gzip 82.9% 절감)<br>`index.html`: **1.7 KB** (Gzip 69.4% 절감) | LittleFS 1MB 버짓 대비 **13.5%** 로 극도로 안전 ✅ |
 | **C++ 백엔드 무수정** | 임베디드 소스 코드 변경 없음 | **WCET / Heap 부하 변동 0** |
 
+### 10.6 Stage 10 IA 재설계 및 Comfort 자동 모드 누적 영향 (0203_013)
+
+| 항목 | 실측치 / 영향 | 예산 평가 |
+|---|---|---|
+| **`loopTask` 주기 평가 부하** | 평상 시 < 0.1 μs 조기 반환, 5분 만료 시 ~120 μs 소요 | `loopTask` 20ms 예산 대비 < 0.6%로 영향 무시 가능 ✅ |
+| **프론트엔드 번들 크기** | JS gz: **127.3 KB** (53파일, 레거시 2파일 제거), CSS gz: **14.9 KB**, HTML gz: **1.7 KB** | LittleFS 1MB 예산 대비 **14.4%**로 극도로 여유 ✅ |
+| **Flash / RAM 사용률** | Flash: **1,364 KB (43.4%)**, RAM: **100 KB (30.6%)** | 4MB Flash / 320KB RAM 기준 여유 마진 56% 이상 확보 ✅ |
+
 ---
 
 ## 11. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-09** | **v3.4** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: §2 `tickAutoComfort` loopTask WCET(<0.1μs), §10.6 번들 크기(127.3KB gz) 및 Flash(43.4%)/RAM(30.6%) 예산 영향 평가 반영 | Antigravity AI |
 | **2026-11-09** | **v3.3** | **4MB Flash 플랫폼 예산 기준 현행화**: esp32-s3-zero / esp32-c3-zero 4MB Flash(LittleFS 1MB) 및 C3 No-PSRAM 안전 마진 기준 정합 | Antigravity AI |
 | **2026-11-09** | **v3.2** | **AI 빠른 참조 §링크 강화 (Phase B)**: TOC anchor 기반 [§N.M](#anchor) 자동 변환, src/v0203/tools_0203/enhance_index_links_0203.py 추가, --verify로 anchor 유효성 검증 | Antigravity AI |
 | **2026-11-08** | **v3.1** | **Stage 9 웹 UI/UX 최적화 및 인터랙션 고도화 자원 실측 반영 (§10.5)**: 하단 뷰포트 레이아웃 스택 동적 변수화(런타임 0B), Now Playing 상세 확장 모달 및 Studio Override 원복 액션 탑재, 54개 JS 번들(119.3 KB Gzip) 및 18개 CSS(14.7 KB Gzip), LittleFS 총점유 149.8 KB(1MB 예산 대비 15.0%) 실측치 현행화 | Antigravity AI |

@@ -13,7 +13,7 @@
 |---|---|---|---|
 | L1~L5 | [`TEST_PLAN_L1_L5_0203.md`](TEST_PLAN_L1_L5_0203.md) | T-1 ~ T-45 | [§6](#6-phase-7-릴리스-게이트) G-7.0, G-7.1 |
 | L6~L8 | [`TEST_PLAN_L6_L8_0203.md`](TEST_PLAN_L6_L8_0203.md) | T-46 ~ T-113 | [§6](#6-phase-7-릴리스-게이트) G-7.2~G-8.2 |
-| L9~L11 | [`TEST_PLAN_L9_L11_0203.md`](TEST_PLAN_L9_L11_0203.md) | T-114 ~ T-152 | [§6](#6-phase-7-릴리스-게이트) G-9.1~G-11.1 |
+| L9~L11 | [`TEST_PLAN_L9_L11_0203.md`](TEST_PLAN_L9_L11_0203.md) | T-114 ~ T-154-FE | [§6](#6-phase-7-릴리스-게이트) G-9.1~G-11.1 |
 
 ---
 
@@ -35,7 +35,7 @@
 |---|---|---|---|
 | **L1~L5** | [`TEST_PLAN_L1_L5_0203.md`](TEST_PLAN_L1_L5_0203.md) | T-1 ~ T-45 | T-1, T-3, T-5, T-10, T-14, T-16, T-27, T-29~T-35 |
 | **L6~L8** | [`TEST_PLAN_L6_L8_0203.md`](TEST_PLAN_L6_L8_0203.md) | T-46 ~ T-113 | P0 5/5, P1 8/8, T-70~T-72, T-90~T-113 中 10건 |
-| **L9~L11** | [`TEST_PLAN_L9_L11_0203.md`](TEST_PLAN_L9_L11_0203.md) | T-114 ~ T-152 | Stage 8 7/7, AUDIT P0 5+P1 10, Stage 9 4/4 |
+| **L9~L11** | [`TEST_PLAN_L9_L11_0203.md`](TEST_PLAN_L9_L11_0203.md) | T-114 ~ T-154-FE | Stage 8 7/7, AUDIT P0 5+P1 10, Stage 9 4/4, Stage 10 3/3 |
 | (본 인덱스) | `TEST_PLAN_0203.md` | 개요/매트릭스/게이트 | — |
 
 **자동화**: `python test/e2e_stage8_4.py <IP>` (Stage 8 T-114~T-120 7건)
@@ -81,8 +81,9 @@ L10 통합 감사 회귀 (28건) ─── 릴리스 차단 필수 15건
     · P1: T-126 ~ T-135
     · P2: T-136 ~ T-148
 
-L11 Stage 9 UI/UX 레이아웃 표준화 및 인터랙션 회귀 (4건) ─── 릴리스 차단 필수 4건
+L11 Stage 9~10 UI/UX 레이아웃 표준화 및 IA 회귀 (7건) ─── 릴리스 차단 필수 7건
     T-149 ~ T-152 (모바일 뷰포트 스택, 스크롤 하단 여백 연동, 44px 터치, NowPlaying/Studio 인터랙션)
+    T-153 ~ T-154-FE (Dashboard 3탭, Comfort 자동모드, 자동화 Playwright: test/e2e_ui_browser_check_0203.cjs)
 ```
 
 ---
@@ -353,6 +354,7 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-09** | **v4.1** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: L9~L11 레이어에 T-153(Dashboard 3탭), T-154(Comfort 자동모드 백엔드), T-154-FE(Comfort UI 토글/배지) 반영 | Antigravity AI |
 | **2026-11-09** | **v4.0** | **3분할 (Phase C)**: T-1~T-45 → `TEST_PLAN_L1_L5_0203.md`, T-46~T-113 → `TEST_PLAN_L6_L8_0203.md`, T-114~T-152 → `TEST_PLAN_L9_L11_0203.md`. 본 문서는 개요/매트릭스/게이트/트러블슈팅 인덱스로 전환. `src/v0203/tools_0203/split_test_plan_0203.py` 자동 생성 | Antigravity AI |
 | **2026-11-09** | **v3.5** | **AI 빠른 참조 §링크 강화 (Phase B)**: TOC anchor 기반 [§N.M](#anchor) 자동 변환, src/v0203/tools_0203/enhance_index_links_0203.py 추가, --verify로 anchor 유효성 검증 | Antigravity AI |
 | **2026-11-08** | **v3.4** | **Stage 9 웹 UI/UX 레이아웃 표준화 및 인터랙션 회귀 절차 신설 (§3.7 T-149~T-152)**: 모바일 하단 뷰포트 레이아웃 스택 및 FAB/Toast 동적 부상 검증(T-149), 메인 콘텐츠 스크롤 하단 여백 연동(T-150), 바람 스타일 5종 탭 44px 모바일 터치 접근성(T-151), Now Playing Bar 상세 확장 모달 및 Wind Studio Override 원복 액션 검증(T-152), §1.1 L11 계층, §7 L11 회귀 매트릭스, §9.1 G-11.1 릴리스 게이트 추가 | Antigravity AI |

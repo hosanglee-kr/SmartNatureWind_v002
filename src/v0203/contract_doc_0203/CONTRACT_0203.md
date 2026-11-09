@@ -312,12 +312,19 @@ startSession(type, trigger, payload) [T-async]
 - **[AUDIT2-4] 프론트엔드 세션 스토어 정규화 헬퍼 규약 (R-1 / FE-P0-NEW-3, FE-P1-NEW-4)**: `060.store.js`의 `normalizeSession()` 헬퍼를 통해 백엔드 숫자형 `type`(0~3)과 문자열 `typeName`('NONE'|'PLAYLIST'|'PRESET'|'FIXED'), `triggerName`, `state`를 사전 정규화하여 렌더링 시 `undefined` 미표시 및 금지된 `'RUNNING'` 상태 오판을 차단한다.
 - **[AUDIT2-5] 데스크톱 영구 사이드바 그리드 규약 (ADR-10)**: 화면 폭 1024px 이상에서는 `.snw-app`에 2열 그리드(`var(--snw-sidebar-w) 1fr`)를 적용하고 `#btn-menu`를 은닉하며 라우터 전환 시 사이드바를 상시 유지하여 대화면 탐색 편의성을 보장한다.
 
+### 7.20 Comfort 자동 모드 및 Stage 10 동시성 규약 (Stage 10 신규)
+
+- **[COMFORT-1] AutoOff 래치 우선 억제 계약**: `tickAutoComfort`는 `runCtx.state == EN_CT10_STATE_AUTOOFF_STOPPED`이거나 `_autoOffLatched == true`인 경우 세션을 기동하지 않고 조기 리턴하여 AutoOff 전원 차단 안전을 최우선 보장한다.
+- **[COMFORT-2] 락 획득 순서 엄수 계약**: `setAutoComfort(bool)`는 `s_stateMutex`를 먼저 획득한 상태에서 `CL_N10_NvsManager::setAutoComfort()`(내부 `N10::s_mutex` 획득)를 호출하여 CONTRACT §5.1 순서(`s_stateMutex` → `N10::s_mutex`)를 엄격히 준수한다.
+- **[UI-10] Now Playing Bar [🌱 자동] 배지 계약**: `autoComfortEnabled`에 의해 기동된 세션은 하단 Now Playing Bar 및 모달에 `[🌱 자동]` 배지를 상시 동기화 표출하여 사용자가 수동 조작과 자동 조작 상태를 명확히 식별하도록 보장한다.
+
 ---
 
 ## 8. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-09** | **v3.6** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: §7.20 COMFORT-1(AutoOff 래치 억제), COMFORT-2(락 획득 순서 준수), UI-10(Now Playing 자동 배지 표출) 동시성 및 안전 계약 추가 | Antigravity AI |
 | **2026-11-09** | **v3.5** | **AI 빠른 참조 §링크 강화 (Phase B)**: TOC anchor 기반 [§N.M](#anchor) 자동 변환, src/v0203/tools_0203/enhance_index_links_0203.py 추가, --verify로 anchor 유효성 검증 | Antigravity AI |
 | **2026-11-08** | **v3.4** | **Stage 9.1 2차 통합 감사 19대 이슈 해결 및 계약 규약 신설 (§7.18 AUDIT2-1~AUDIT2-5, 0203_012)**: AI Live 토큰 및 경로 인증 보안 강화(checkApiKey 6대 라우트 강제 및 본문 단편화 가드), Gemini 도구 선언 CT10_AI SSOT 단일 위임, Gemini REST parts object 스키마 준수, 프론트엔드 세션 스토어 정규화 헬퍼(`normalizeSession`) 탑재, 데스크톱 영구 사이드바 그리드 규약(ADR-10) 명시 | Antigravity AI |
 | **2026-11-08** | **v3.3** | **Stage 9 웹 UI/UX 레이아웃 표준화 및 인터랙션 고도화 계약 신설 (§7.17 UI-5~UI-8, 0203_012)**: 모바일 하단 뷰포트 레이아웃 스택 표준화(NowPlaying 연동 FAB/토스트 동적 부상 및 스크롤 끝단 가림 해소), 바람 스타일 탭 44px 터치 접근성 보장, Now Playing Bar 상세 확장 모달 규약, 물리 Override 상태 가시화 및 원클릭 복원 규약 명시 | Antigravity AI |

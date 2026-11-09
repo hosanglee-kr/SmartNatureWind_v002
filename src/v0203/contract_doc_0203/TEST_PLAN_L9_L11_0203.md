@@ -320,8 +320,50 @@ if (intensitySlider) {
 
 ---
 
+### T-153. [Stage 10] Dashboard 3탭 전환 및 퀵 타이머 검증
+
+**목적**: 제어/환경/프리셋 3탭 분리 및 인라인 ⏱️ 퀵 타이머 동작, 새로고침 시 마지막 선택 탭 복원 검증.  
+**대응 계약**: SPEC §5.4.2.2, FLOW §14.3  
+**자동화 도구**: `node test/e2e_ui_browser_check_0203.cjs` (또는 `test\run_ui_check_0203.bat`)  
+**검증 절차**:
+1. 대시보드 3탭([제어], [환경], [프리셋]) 클릭하여 각각의 섹션이 정상 토글되는지 확인
+2. 프리셋 탭 전환 시 스타일 셀렉터 및 10대 자연풍 프리셋 그리드가 지연 렌더링되는지 확인
+3. Now Playing 카드의 ⏱️ 버튼 클릭 시 퀵 타이머 시작/취소 프롬프트가 동작하는지 확인
+4. 새로고침 후 `localStorage['snw.dashboard.tab']`에 의해 마지막 탭이 유지되는지 확인
+**합격 판정**:
+- [ ] 3개 탭 전환 시 WCAG 2.1 AA `aria-selected` 및 화면 표시 정상 전환
+- [ ] 퀵 타이머 30분 설정 시 타이머 정상 기동
+- [ ] 탭 상태 복원 동작 성공
 
 ---
+
+### T-154. [Stage 10] Comfort 자동 모드 백엔드 주기 평가 및 AutoOff 가드 검증
+
+**목적**: `POST /api/v001/comfort/auto` 활성화 후 5분 주기 평가 및 AutoOff 래치 활성 시 기동 억제 검증.  
+**대응 계약**: SPEC §5.1.5, CONTRACT §7.20 COMFORT-1/COMFORT-2, STATE §1  
+**검증 절차**:
+1. `POST /api/v001/comfort/auto` `{"enabled": true}` 전송 -> 200 OK 및 NVS 저장 확인
+2. `GET /api/v001/comfort/auto` 호출하여 `autoComfort: true`, `remainSec` 반환 확인
+3. 세션 종료 유휴 상태에서 5분 경과 시 현재 DI에 맞는 자연풍 프리셋이 자동 시작되는지 확인
+4. AutoOff 발동으로 정지된 상태(`AUTOOFF_STOPPED`)에서 5분이 경과해도 팬이 자동으로 켜지지 않는지 확인
+**합격 판정**:
+- [ ] REST API 및 NVS 영구 저장 정상
+- [ ] 5분 주기 평가로 프리셋 자동 기동 확인
+- [ ] AutoOff 래치 상태에서 자동 기동 억제 확인
+
+---
+
+### T-154-FE. [Stage 10] Comfort 자동 모드 UI 토글 및 Now Playing 배지 표출 검증
+
+**목적**: 환경 탭 내 자동 모드 스위치 조작 및 가동 중 Now Playing Bar의 `[🌱 자동]` 배지 노출 검증.  
+**대응 계약**: CONTRACT §7.20 UI-10, FLOW §14.3  
+**검증 절차**:
+1. 대시보드 환경 탭에서 [Comfort 자동 모드] 스위치 On 토글 -> 확인 다이얼로그 후 활성화 확인
+2. 자동 모드 상태 문구 및 다음 평가 잔여시간 표시 확인
+3. 자동 모드에 의해 프리셋 세션 시작 시 하단 Now Playing Bar에 `[🌱 자동]` 배지 점등 확인
+**합격 판정**:
+- [ ] 스위치 토글 시 실시간 상태 텍스트 갱신 정상
+- [ ] Now Playing Bar에 초록색 `[🌱 자동]` 배지 정상 점등
 
 ---
 
@@ -329,4 +371,5 @@ if (intensitySlider) {
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| 2026-11-09 | v1.1 | Stage 10 신규 검증 항목 T-153(Dashboard 3탭), T-154(Comfort 자동모드 백엔드), T-154-FE(Comfort UI 토글/배지) 추가 | Antigravity AI |
 | 2026-11-09 | v1.0 | TEST_PLAN_0203.md에서 L9~L11 분할 (T-114~T-152). `src/v0203/tools_0203/split_test_plan_0203.py` 자동 생성 | Antigravity AI |

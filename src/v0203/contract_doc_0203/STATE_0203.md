@@ -85,6 +85,7 @@
 | `s_aiDailyUsage` (N10) | T-async (`reportAIUsage`, `resetAICost`) | T-async (`getAIDailyUsage`) | `N10::s_mutex` | 당일 비용 누적 및 자정 자동 리셋 (NVS 4키 영구화) |
 | `s_promptCache` (CT10_AI) | T-async (`buildAIPromptStrict`) | T-async | 30초 유효 타임스탬프 | I2C 센서 블로킹 및 힙 파편화 방지 |
 | `runtimeAutoOff` (CT10) | T-loop (`tickLoop`) | T-loop, T-async | `CT10::s_stateMutex` | AI 명령 실행 시 동적 AutoOff 감쇠 및 자동 종료 |
+| `s_autoComfortEnabled` (CT10) | T-async (`POST /comfort/auto`), T-loop (`begin()`) | T-loop (`tickAutoComfort`), T-async (`GET /comfort/auto`) | `CT10::s_stateMutex` + NVS | Comfort 자동 모드 활성 플래그 |
 
 ---
 
@@ -440,6 +441,7 @@ stopSession()
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-09** | **v3.4** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: §1 `s_autoComfortEnabled` NVS 소유권 및 접근 매트릭스 명세 반영 | Antigravity AI |
 | **2026-11-09** | **v3.3** | **AI 빠른 참조 §링크 강화 (Phase B)**: TOC anchor 기반 [§N.M](#anchor) 자동 변환, src/v0203/tools_0203/enhance_index_links_0203.py 추가, --verify로 anchor 유효성 검증 | Antigravity AI |
 | **2026-11-08** | **v3.2** | **통합 감사 28대 이슈 해결 상태 정합성 반영 (0203_012)**: 오프라인 FSM 종료 이유 'POWER_OFF' ➔ 'NONE' C++ SSOT 일치, `ST_A20_ScheduleSegment_t` 독립 구조체 유지로 오버로드 충돌 방지, `_persistOffTimeLastYday` 리셋 무결성 보장, `C10_Config_Sch_Internal_0203.h` 안전 인라인 브릿지 명세 | Antigravity AI |
 | **2026-11-06** | **v3.1** | **Stage 8 AI 제어 및 Live 음성 상태 소유권 반영**: §1 3행 확장(`s_aiDailyUsage`, `s_promptCache`, `runtimeAutoOff`), §8 분할 소유권에 AI 프롬프트/액션/라우트 모듈 3종 추가, 자정 리셋 및 30분 상한 상태 수명주기 명시 | Antigravity AI |

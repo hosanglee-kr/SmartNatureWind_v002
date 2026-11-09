@@ -17,3 +17,27 @@ dist/
 graphify-out/cache/
 graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
 graphify-out/*.lock
+# ============================================================
+# SmartNatureWind v0203 — 에이전트 워크스페이스 (2026-11-09)
+# ============================================================
+
+# .agents/ 가 canonical, .claude/ 는 생성물
+.claude/rules/
+.claude/skills/
+.claude/commands/
+# 반대로 settings.json (hooks config)은 팀 공유 → 커밋 예외
+!.claude/settings.json
+
+# 백엔드 승인 마커 (세션 로컬, 재생성 가능)
+.agents/state/*.json
+
+# Graphify 산출물 (대용량)
+graphify-out/
+!graphify-out/.gitkeep
+
+# 개인 로컬 설정
+CLAUDE.local.md
+
+# Python 도구 캐시
+tools/__pycache__/
+*.pyc

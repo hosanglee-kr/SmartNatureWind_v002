@@ -113,6 +113,11 @@ window.SNW = window.SNW || {};
 			if (path.includes('/diag')) return { heap: 120000, fs_used: 160000, fs_total: 1000000 };
 			if (path.includes('/version')) return { fw: 'FW_Ver_2.0.3' };
 			if (path.includes('/metrics')) return { metrics: {} };
+			if (path.includes('/control/timer')) {
+				if (opts.method === 'DELETE') return { success: true, active: false };
+				if (opts.method === 'POST') return { success: true, active: true, remainSec: ((opts.body && opts.body.minutes) || 30) * 60 };
+				return { active: false, remainSec: 0, durationMin: 0 };
+			}
 			if (path.includes('/control/override')) {
 				if (opts.body && rt.sim) {
 					if (opts.body.windIntensity != null) rt.sim.intensity = opts.body.windIntensity;
@@ -303,6 +308,15 @@ window.SNW = window.SNW || {};
 		},
 		getAutoComfortStatus() {
 			return _fetch(SNW.CFG.API.comfortAuto);
+		},
+		setControlTimer(minutes) {
+			return _fetch(SNW.CFG.API.controlTimer, { method: 'POST', body: { minutes } });
+		},
+		cancelControlTimer() {
+			return _fetch(SNW.CFG.API.controlTimer, { method: 'DELETE' });
+		},
+		getControlTimer() {
+			return _fetch(SNW.CFG.API.controlTimer);
 		},
 		getMonitorTimeline(since = 0) {
 			const q = since > 0 ? `?since=${since}` : '';

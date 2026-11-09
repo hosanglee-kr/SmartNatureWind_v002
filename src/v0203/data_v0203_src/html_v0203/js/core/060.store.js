@@ -58,6 +58,14 @@ window.SNW = window.SNW || {};
 		system: null, // control.system (uptimeMs/epochNowMs)
 		session: null, // [v0203 Stage 3] Session 스냅샷
 
+		// [Stage 10 P0-4] Comfort 자동 모드
+		autoComfortEnabled: false,
+		autoComfortLastEvalMs: 0,
+
+		// [Stage 10.1 Option A] 하드웨어 타이머 상태
+		hardwareTimerActive: false,
+		hardwareTimerRemainSec: 0,
+
 		// 파생 상태
 		lastUpdateMs: 0,
 		connection: 'offline', // 'online' | 'offline' | 'polling'
@@ -72,7 +80,7 @@ window.SNW = window.SNW || {};
 	// 세션 정규화 헬퍼 (R-1)
 	// =====================================================
 	const SESSION_TYPE_NAMES = ['NONE', 'PLAYLIST', 'PRESET', 'FIXED'];
-	const SESSION_TRIGGER_NAMES = ['NONE', 'MANUAL', 'SCHEDULE'];
+	const SESSION_TRIGGER_NAMES = ['NONE', 'MANUAL', 'SCHEDULE', 'AUTO_COMFORT'];
 
 	function normalizeSession(s) {
 		if (!s || typeof s !== 'object') {

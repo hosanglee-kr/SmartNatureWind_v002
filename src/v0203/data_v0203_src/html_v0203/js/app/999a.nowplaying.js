@@ -38,7 +38,7 @@ window.SNW = window.SNW || {};
     function isSessionVisible() {
         const s = getSession();
         if (!s) return false;
-        if (s.state === 'COMPLETED' || s.state === 2) return false;
+        if (s.state === 'COMPLETED') return false;
         const type = parseType(s.type);
         return (type !== 0 && s.active !== false);
     }
@@ -144,7 +144,8 @@ window.SNW = window.SNW || {};
 
         // 4-2) Auto Comfort 배지
         if (barEl.autoBadge) {
-            const isAuto = (SNW.Store && SNW.Store.get) ? !!SNW.Store.get().autoComfortEnabled : false;
+            const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+            const isAuto = !!store.autoComfortEnabled || (s && (s.trigger === 3 || s.triggerName === 'AUTO_COMFORT'));
             barEl.autoBadge.hidden = !isAuto;
         }
 
@@ -347,29 +348,40 @@ window.SNW = window.SNW || {};
             </div>
         `;
 
-        SNW.UI.modal(
+        const modalRef = SNW.UI.modal(
             '🍃 바람 세션 상세',
             content,
             async () => {
                 await onPauseOrResume();
                 return true;
             },
-            async () => {
-                await onStop();
+            () => {
+                // Cancel = 닫기만 수행 (세션 유지)
                 return true;
             },
             {
                 okLabel: isPaused ? '▶ 재개' : '⏸ 일시정지',
-                cancelLabel: '⏹ 바람 정지',
+                cancelLabel: (SNW.I18n && SNW.I18n.t) ? SNW.I18n.t('common.close') : '닫기',
                 width: '380px'
             }
         );
 
+        // 본문 하단에 독립된 세션 정지 버튼 추가
+        const stopBtn = document.createElement('button');
+        stopBtn.type = 'button';
+        stopBtn.className = 'snw-btn snw-btn--full';
+        stopBtn.style.cssText = 'margin-top:10px;justify-content:center;background:rgba(248,81,73,0.15);color:var(--snw-error,#f85149);border:1px solid var(--snw-error,#f85149);';
+        stopBtn.textContent = `⏹ ${(SNW.I18n && SNW.I18n.t) ? SNW.I18n.t('common.stopSession') : '세션 정지'}`;
+        stopBtn.onclick = async () => {
+            if (modalRef && typeof modalRef.close === 'function') modalRef.close();
+            await onStop();
+        };
+        content.appendChild(stopBtn);
+
         const timerBtn = content.querySelector('#np-btn-timer-link');
         if (timerBtn) {
             timerBtn.onclick = () => {
-                const overlay = document.querySelector('.snw-modal-overlay');
-                if (overlay) overlay.click();
+                if (modalRef && typeof modalRef.close === 'function') modalRef.close();
                 location.hash = '/automation/timer';
             };
         }

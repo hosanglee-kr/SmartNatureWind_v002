@@ -40,7 +40,7 @@
 				SNW.AIVoice.startWakeDetection({
 					onWake: () => {
 						this.open();
-						if (SNW.Toast) SNW.Toast.show(SNW.I18n ? SNW.I18n.t('ai.voiceListening') : 'Listening...', 'info');
+						if (SNW.ToastUtil) SNW.ToastUtil.info(SNW.I18n ? SNW.I18n.t('ai.voiceListening') : 'Listening...');
 					}
 				});
 			}
@@ -347,11 +347,7 @@
 
 		async _onVoiceInput() {
 				if (!SNW.AIVoice || !SNW.AIVoice.isSTTSupported()) {
-					if (SNW.ToastUtil && typeof SNW.ToastUtil.warn === 'function') {
-						SNW.ToastUtil.warn('Voice input not supported');
-					} else if (SNW.Toast) {
-						SNW.Toast.show('Voice input not supported', 'warn');
-					}
+					if (SNW.ToastUtil) SNW.ToastUtil.warn('Voice input not supported');
 					return;
 				}
 

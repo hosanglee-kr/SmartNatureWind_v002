@@ -206,7 +206,7 @@ SNW.Page = SNW.Page || {};
 
 		async _onLiveToggle() {
 			if (!SNW.AiLive || !SNW.AiLive.isSupported()) {
-				SNW.Toast.show(SNW.I18n.t('ai.voiceNotSupported'), 'warn');
+				if (SNW.ToastUtil) SNW.ToastUtil.warn(SNW.I18n.t('ai.voiceNotSupported'));
 				return;
 			}
 
@@ -229,7 +229,7 @@ SNW.Page = SNW.Page || {};
 
 			// 상한 사전 검사
 			if (this._liveCostStatus && this._liveCostStatus.level === 'cap') {
-				SNW.Toast.show(SNW.I18n.t('ai.dailyCapReached'), 'error');
+				if (SNW.ToastUtil) SNW.ToastUtil.error(SNW.I18n.t('ai.dailyCapReached'));
 				this._switchMode('rest');
 				return;
 			}
@@ -286,13 +286,13 @@ SNW.Page = SNW.Page || {};
 						this._updateCostBadge(costData);
 					},
 					onError: (err) => {
-						SNW.Toast.show(err.message || 'Live Voice error', 'error');
+						if (SNW.ToastUtil) SNW.ToastUtil.error(err.message || 'Live Voice error');
 					}
 				});
 			} catch (e) {
 				if (statusText) statusText.textContent = SNW.I18n.t('ai.liveStart');
 				if (liveBtn) liveBtn.textContent = SNW.I18n.t('ai.liveStart');
-				SNW.Toast.show(e.message || 'Live connection failed', 'error');
+				if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || 'Live connection failed');
 			}
 		}
 
@@ -312,12 +312,12 @@ SNW.Page = SNW.Page || {};
 			this._history = [];
 			const wrap = this.el.querySelector('[data-slot="messages"]');
 			if (wrap) wrap.innerHTML = '';
-			SNW.Toast.show(SNW.I18n.t('ai.clearHistory'), 'info');
+			if (SNW.ToastUtil) SNW.ToastUtil.info(SNW.I18n.t('ai.clearHistory'));
 		}
 
 		async _onVoiceToggle() {
 			if (!SNW.AIVoice || !SNW.AIVoice.isSTTSupported()) {
-				SNW.Toast.show(SNW.I18n.t('ai.voiceNotSupported'), 'warn');
+				if (SNW.ToastUtil) SNW.ToastUtil.warn(SNW.I18n.t('ai.voiceNotSupported'));
 				return;
 			}
 
@@ -331,7 +331,7 @@ SNW.Page = SNW.Page || {};
 
 			this._isListening = true;
 			if (vBtn) vBtn.classList.add('snw-btn--active');
-			SNW.Toast.show(SNW.I18n.t('ai.voiceListening'), 'info');
+			if (SNW.ToastUtil) SNW.ToastUtil.info(SNW.I18n.t('ai.voiceListening'));
 
 			try {
 				const res = await SNW.AIVoice.startListening();
@@ -348,7 +348,7 @@ SNW.Page = SNW.Page || {};
 			} catch (err) {
 				this._isListening = false;
 				if (vBtn) vBtn.classList.remove('snw-btn--active');
-				SNW.Toast.show(SNW.I18n.t('ai.micError'), 'error');
+				if (SNW.ToastUtil) SNW.ToastUtil.error(SNW.I18n.t('ai.micError'));
 			}
 		}
 

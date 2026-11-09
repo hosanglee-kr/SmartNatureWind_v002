@@ -188,7 +188,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 010.config.js (7038 bytes) ---- */
+/* ---- 010.config.js (7105 bytes) ---- */
 // =========================================================
 // 010.config.js — 프론트엔드 런타임 설정
 // Layer 0 (기반) — SNW.C 참조만 허용
@@ -243,6 +243,7 @@ window.SNW = window.SNW || {};
 			windDict: '/api/v001/windDict', // [v0203 Stage 4]
 			comfort: '/api/v001/comfort', // [v0203 Stage 6]
 			comfortAuto: '/api/v001/comfort/auto', // [Stage 10 Phase 3]
+			controlTimer: '/api/v001/control/timer', // [Stage 10.1 신규]
 			monitorTimeline: '/api/v001/monitor/timeline', // [v0203 Stage 7]
 			monitorSessionSummary: '/api/v001/monitor/session-summary', // [v0203 Stage 7]
 			schedules: '/api/v001/schedules',
@@ -401,7 +402,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 020.i18n.js (69611 bytes) ---- */
+/* ---- 020.i18n.js (71940 bytes) ---- */
 // =========================================================
 // 020.i18n.js — 다국어 완전판 (ko/en)
 // =========================================================
@@ -1117,6 +1118,20 @@ window.SNW = window.SNW || {};
             'comfort.autoConfirmOn': '쾌적 자동 모드를 켜시겠습니까? 5분마다 바람이 자동 조절됩니다.',
             'comfort.autoBadge': '🤖 자동',
             'comfort.nextEval': '다음 환경 평가까지: ',
+            'comfort.statusWaiting': '<b>다음 평가: {remain}</b> 후 자동 실행',
+            'comfort.statusRunning': '<b>🤖 자동 실행 중</b> — {preset} · {style}',
+            'comfort.statusRunningProfile': '<b>🤖 자동 실행 중</b> — {profileName}',
+            'comfort.statusUserPriority': '<b>수동 세션 우선</b> — 종료 후 자동 재개',
+            'comfort.statusSuspended': '<b>⚠️ 자동 종료 우선</b> — 일시 중단됨',
+            'comfort.statusResumeBtn': '재개',
+            'comfort.autoResumed': '자동 모드가 재개되었습니다',
+            'timer.browserOnly': '이 타이머는 브라우저 세션에서만 유효합니다',
+            'timer.autoComfortOff': '⏱️ 타이머 만료로 자동 모드도 함께 중단되었습니다',
+            'timer.invalidInput': '1~480 사이의 숫자를 입력하세요',
+            'timer.maxRange': '타이머는 최대 480분(8시간)까지 설정할 수 있습니다',
+            'timer.quickStarted': '{min}분 타이머가 시작되었습니다',
+            'timer.backendSyncFailed': '기기 타이머 동기화 실패 · 이 창을 닫으면 타이머가 해제됩니다',
+            'common.stopSession': '세션 정지',
             'schedule.modeSimple': '간단 예약',
             'schedule.modeAdvanced': '고급 작곡 예약',
             'schedule.simpleSaved': '스케줄이 등록되었습니다.',
@@ -1781,6 +1796,20 @@ window.SNW = window.SNW || {};
             'comfort.autoConfirmOn': 'Activate Auto Comfort mode? Wind will adjust every 5 minutes.',
             'comfort.autoBadge': '🤖 Auto',
             'comfort.nextEval': 'Next evaluation in: ',
+            'comfort.statusWaiting': '<b>Next evaluation: {remain}</b>',
+            'comfort.statusRunning': '<b>🤖 Auto Running</b> — {preset} · {style}',
+            'comfort.statusRunningProfile': '<b>🤖 Auto Running</b> — {profileName}',
+            'comfort.statusUserPriority': '<b>Manual session priority</b> — will resume after',
+            'comfort.statusSuspended': '<b>⚠️ AutoOff priority</b> — suspended',
+            'comfort.statusResumeBtn': 'Resume',
+            'comfort.autoResumed': 'Auto Mode resumed',
+            'timer.browserOnly': 'This timer only persists in the browser session',
+            'timer.autoComfortOff': '⏱️ Auto Mode stopped by timer expiry',
+            'timer.invalidInput': 'Please enter a number between 1-480',
+            'timer.maxRange': 'Timer max is 480 minutes (8 hours)',
+            'timer.quickStarted': 'Timer started for {min} min',
+            'timer.backendSyncFailed': 'Device timer sync failed · Timer will be lost if this window closes',
+            'common.stopSession': 'Stop Session',
             'schedule.modeSimple': 'Simple Schedule',
             'schedule.modeAdvanced': 'Advanced Schedule',
             'schedule.simpleSaved': 'Schedule has been saved.',
@@ -2601,7 +2630,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 040.api.js (16345 bytes) ---- */
+/* ---- 040.api.js (16941 bytes) ---- */
 // =========================================================
 // 040.api.js — SNW.Api (REST 클라이언트)
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -2717,6 +2746,11 @@ window.SNW = window.SNW || {};
 			if (path.includes('/diag')) return { heap: 120000, fs_used: 160000, fs_total: 1000000 };
 			if (path.includes('/version')) return { fw: 'FW_Ver_2.0.3' };
 			if (path.includes('/metrics')) return { metrics: {} };
+			if (path.includes('/control/timer')) {
+				if (opts.method === 'DELETE') return { success: true, active: false };
+				if (opts.method === 'POST') return { success: true, active: true, remainSec: ((opts.body && opts.body.minutes) || 30) * 60 };
+				return { active: false, remainSec: 0, durationMin: 0 };
+			}
 			if (path.includes('/control/override')) {
 				if (opts.body && rt.sim) {
 					if (opts.body.windIntensity != null) rt.sim.intensity = opts.body.windIntensity;
@@ -2907,6 +2941,15 @@ window.SNW = window.SNW || {};
 		},
 		getAutoComfortStatus() {
 			return _fetch(SNW.CFG.API.comfortAuto);
+		},
+		setControlTimer(minutes) {
+			return _fetch(SNW.CFG.API.controlTimer, { method: 'POST', body: { minutes } });
+		},
+		cancelControlTimer() {
+			return _fetch(SNW.CFG.API.controlTimer, { method: 'DELETE' });
+		},
+		getControlTimer() {
+			return _fetch(SNW.CFG.API.controlTimer);
 		},
 		getMonitorTimeline(since = 0) {
 			const q = since > 0 ? `?since=${since}` : '';
@@ -3223,7 +3266,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 060.store.js (5293 bytes) ---- */
+/* ---- 060.store.js (5527 bytes) ---- */
 // =========================================================
 // 060.store.js — SNW.Store + SNW.StoreBridge
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -3284,6 +3327,14 @@ window.SNW = window.SNW || {};
 		system: null, // control.system (uptimeMs/epochNowMs)
 		session: null, // [v0203 Stage 3] Session 스냅샷
 
+		// [Stage 10 P0-4] Comfort 자동 모드
+		autoComfortEnabled: false,
+		autoComfortLastEvalMs: 0,
+
+		// [Stage 10.1 Option A] 하드웨어 타이머 상태
+		hardwareTimerActive: false,
+		hardwareTimerRemainSec: 0,
+
 		// 파생 상태
 		lastUpdateMs: 0,
 		connection: 'offline', // 'online' | 'offline' | 'polling'
@@ -3298,7 +3349,7 @@ window.SNW = window.SNW || {};
 	// 세션 정규화 헬퍼 (R-1)
 	// =====================================================
 	const SESSION_TYPE_NAMES = ['NONE', 'PLAYLIST', 'PRESET', 'FIXED'];
-	const SESSION_TRIGGER_NAMES = ['NONE', 'MANUAL', 'SCHEDULE'];
+	const SESSION_TRIGGER_NAMES = ['NONE', 'MANUAL', 'SCHEDULE', 'AUTO_COMFORT'];
 
 	function normalizeSession(s) {
 		if (!s || typeof s !== 'object') {
@@ -6771,7 +6822,7 @@ window.SNW = window.SNW || {};
 
 /* ===== LAYER 2: Pages (Dashboard, Chart, Studio, AI, Automation) ===== */
 
-/* ---- 200.page.dashboard.js (33185 bytes) ---- */
+/* ---- 200.page.dashboard.js (37844 bytes) ---- */
 // =========================================================
 // 200.page.dashboard.js — 홈 (Stage 6 감성 UX 완성형)
 // Layer 4 (페이지 로직)
@@ -6803,6 +6854,10 @@ SNW.Page = SNW.Page || {};
 
         unmount() {
             this._active = false;
+            if (this._autoComfortTickId) {
+                clearInterval(this._autoComfortTickId);
+                this._autoComfortTickId = null;
+            }
             this._unsubs.forEach(fn => { try { fn(); } catch { } });
             this._unsubs = [];
             if (this._eq) this._eq.stop();
@@ -6973,9 +7028,16 @@ SNW.Page = SNW.Page || {};
             if (!SNW.Store || typeof SNW.Store.watch !== 'function') return;
 
             this._unsubs.push(
-                SNW.Store.watch('session', () => this._renderNowPlaying()),
+                SNW.Store.watch('session', () => {
+                    this._renderNowPlaying();
+                    this._renderAutoComfortStatus();
+                }),
                 SNW.Store.watch('sim', () => this._onSimUpdate()),
-                SNW.Store.watch('control', () => this._onControlUpdate()),
+                SNW.Store.watch('control', () => {
+                    this._onControlUpdate();
+                    this._renderAutoComfortStatus();
+                }),
+                SNW.Store.watch('autoComfortEnabled', () => this._renderAutoComfortStatus())
             );
             // 초기 렌더
             this._renderNowPlaying();
@@ -7238,20 +7300,22 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [Stage 10] 3탭 전환 및 영구 저장
+        // [Stage 10] 3탭 전환 및 영구 저장 (P2-16)
         // =========================================================
         _switchDashTab(tab) {
+            const validTabs = ['control', 'env', 'preset'];
+            const targetTab = validTabs.includes(tab) ? tab : 'control';
             this.el.querySelectorAll('[data-dash-tab]').forEach(b => {
-                const isActive = b.getAttribute('data-dash-tab') === tab;
+                const isActive = b.getAttribute('data-dash-tab') === targetTab;
                 b.classList.toggle('is-active', isActive);
                 b.setAttribute('aria-selected', isActive ? 'true' : 'false');
             });
             this.el.querySelectorAll('[data-dash-content]').forEach(c => {
-                c.style.display = (c.getAttribute('data-dash-content') === tab) ? 'block' : 'none';
+                c.style.display = (c.getAttribute('data-dash-content') === targetTab) ? 'block' : 'none';
             });
-            localStorage.setItem('snw.dashboard.tab', tab);
+            localStorage.setItem('snw.dashboard.tab', targetTab);
 
-            if (tab === 'preset' && !this._presetRendered) {
+            if (targetTab === 'preset' && !this._presetRendered) {
                 this._renderStyleSelector();
                 this._renderPresetGrid();
                 this._presetRendered = true;
@@ -7259,7 +7323,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [Stage 10] 퀵 타이머 다이얼로그
+        // [Stage 10] 퀵 타이머 다이얼로그 (P1-8)
         // =========================================================
         _onQuickTimer() {
             const cur = (SNW.TimerManager && SNW.TimerManager.getStatus) ? SNW.TimerManager.getStatus() : null;
@@ -7270,10 +7334,19 @@ SNW.Page = SNW.Page || {};
                 return;
             }
             const choice = prompt(SNW.I18n.t('timer.quickPrompt'), '30');
-            const min = Number(choice);
-            if (min > 0 && SNW.TimerManager) {
+            if (choice === null) return;
+            const min = Math.round(Number(choice));
+            if (!Number.isFinite(min) || min <= 0) {
+                if (SNW.ToastUtil) SNW.ToastUtil.warn(SNW.I18n.t('timer.invalidInput'));
+                return;
+            }
+            if (min > 480) {
+                if (SNW.ToastUtil) SNW.ToastUtil.warn(SNW.I18n.t('timer.maxRange'));
+                return;
+            }
+            if (SNW.TimerManager) {
                 SNW.TimerManager.start(min);
-                if (SNW.ToastUtil) SNW.ToastUtil.info(`${min}분 타이머가 시작되었습니다.`);
+                if (SNW.ToastUtil) SNW.ToastUtil.info(SNW.I18n.t('timer.quickStarted', { min }));
             }
         }
 
@@ -7367,11 +7440,12 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [Stage 10 Phase 5] Comfort 자동 모드 UI 초기화
+        // [Stage 10 Phase 5 / Stage 10.1] Comfort 자동 모드 UI 초기화 (P0-1, P0-4, P0-5, 갭 5)
         // =========================================================
         _initAutoComfort() {
             const slot = this.el.querySelector('[data-slot="auto-comfort-box"]');
             if (!slot) return;
+            if (slot.children.length > 0) return; // [갭 5] DOM 요소 존재 여부로 가드
 
             slot.innerHTML = `
                 <div class="snw-auto-comfort-header" style="display:flex;justify-content:space-between;align-items:center;">
@@ -7381,23 +7455,26 @@ SNW.Page = SNW.Page || {};
                     </div>
                     <label class="snw-switch" style="position:relative;display:inline-block;width:44px;height:24px;">
                         <input type="checkbox" id="chk-auto-comfort">
-                        <span class="snw-slider-switch round"></span>
+                        <span class="snw-switch__slider"></span>
                     </label>
                 </div>
-                <div class="snw-auto-comfort-status" id="auto-comfort-status-text" style="margin-top:8px;font-size:12px;color:var(--snw-text-dim);"></div>`;
+                <div class="snw-auto-comfort__status" id="auto-comfort-status-text" role="status" aria-live="polite"></div>`;
 
             const chk = slot.querySelector('#chk-auto-comfort');
-            const statusText = slot.querySelector('#auto-comfort-status-text');
+            let userInteracted = false; // [P0-5]
 
             if (SNW.Api && typeof SNW.Api.getAutoComfortStatus === 'function') {
                 SNW.Api.getAutoComfortStatus().then(res => {
-                    if (!res) return;
+                    if (!res || userInteracted) return;
                     chk.checked = !!res.autoComfort;
-                    this._updateAutoComfortStatusText(statusText, res.autoComfort, res.remainSec);
+                    if (SNW.Store) SNW.Store.set({ autoComfortEnabled: !!res.autoComfort });
+                    this._renderAutoComfortStatus();
+                    this._startAutoComfortTick();
                 }).catch(() => {});
             }
 
             chk.addEventListener('change', async () => {
+                userInteracted = true;
                 const targetState = chk.checked;
                 if (targetState) {
                     if (!confirm(SNW.I18n.t('comfort.autoConfirmOn'))) {
@@ -7407,26 +7484,102 @@ SNW.Page = SNW.Page || {};
                 }
                 try {
                     if (SNW.Api && typeof SNW.Api.setAutoComfort === 'function') {
-                        const res = await SNW.Api.setAutoComfort(targetState);
+                        await SNW.Api.setAutoComfort(targetState);
+                        if (SNW.Store) SNW.Store.set({ autoComfortEnabled: targetState }); // [P0-4]
                         if (SNW.ToastUtil) SNW.ToastUtil.info(targetState ? SNW.I18n.t('comfort.autoOn') : SNW.I18n.t('comfort.autoOff'));
-                        this._updateAutoComfortStatusText(statusText, targetState, res ? res.remainSec : 300);
+                        this._renderAutoComfortStatus();
+                        this._startAutoComfortTick();
                     }
                 } catch (e) {
                     chk.checked = !targetState;
-                    if (SNW.ToastUtil) SNW.ToastUtil.error(e.message);
+                    if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || SNW.I18n.t('common.error'));
                 }
             });
         }
 
-        _updateAutoComfortStatusText(el, enabled, remainSec) {
+        // =========================================================
+        // [Stage 10.1] Comfort 5상태 매트릭스 렌더러 (P1-10, 갭 3-A)
+        // =========================================================
+        _renderAutoComfortStatus() {
+            const el = this.el.querySelector('#auto-comfort-status-text');
             if (!el) return;
-            if (!enabled) {
+
+            const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+            if (!store.autoComfortEnabled) {
+                el.className = 'snw-auto-comfort__status';
                 el.textContent = SNW.I18n.t('comfort.autoOff');
                 return;
             }
-            const min = Math.floor((remainSec || 0) / 60);
-            const sec = (remainSec || 0) % 60;
-            el.innerHTML = `<span class="snw-badge snw-badge--auto" style="background:rgba(40,167,69,0.15);color:#28a745;padding:2px 6px;border-radius:4px;font-weight:600;">${SNW.I18n.t('comfort.autoBadge')}</span> ${SNW.I18n.t('comfort.nextEval')} ${min}분 ${sec}초`;
+
+            const ctl = store.control || {};
+            const session = store.session || {};
+            const isAutoOffLatched = (ctl.stateCode === 5);
+            const isSessionActive = (session.state === 'ACTIVE' && session.active);
+            const isAutoSession = isSessionActive && session.trigger === 3; // [갭 3-A]
+            const isManualSession = isSessionActive && !isAutoSession;
+
+            if (isAutoOffLatched) {
+                el.className = 'snw-auto-comfort__status is-suspended';
+                el.innerHTML = `${SNW.I18n.t('comfort.statusSuspended')}
+                    <button type="button" class="snw-auto-comfort__status-action" data-action="resume-auto">
+                        ${SNW.I18n.t('comfort.statusResumeBtn')}
+                    </button>`;
+                const btn = el.querySelector('[data-action="resume-auto"]');
+                if (btn) btn.onclick = () => this._onResumeAutoComfort();
+                return;
+            }
+            if (isAutoSession) {
+                el.className = 'snw-auto-comfort__status is-running';
+                el.innerHTML = SNW.I18n.t('comfort.statusRunning', {
+                    preset: session.presetCode || '', style: session.styleCode || ''
+                });
+                return;
+            }
+            if (isManualSession) {
+                el.className = 'snw-auto-comfort__status is-user-priority';
+                el.innerHTML = SNW.I18n.t('comfort.statusUserPriority');
+                return;
+            }
+            el.className = 'snw-auto-comfort__status is-waiting';
+            const remainMs = this._calcRemainMs();
+            el.innerHTML = SNW.I18n.t('comfort.statusWaiting', { remain: this._fmtRemainText(remainMs) });
+        }
+
+        async _onResumeAutoComfort() {
+            try {
+                if (SNW.Api && typeof SNW.Api.ackEvent === 'function') {
+                    await SNW.Api.ackEvent();
+                }
+                if (SNW.ToastUtil) SNW.ToastUtil.success(SNW.I18n.t('comfort.autoResumed'));
+                this._renderAutoComfortStatus();
+            } catch (e) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || SNW.I18n.t('common.error'));
+            }
+        }
+
+        _startAutoComfortTick() {
+            if (this._autoComfortTickId) clearInterval(this._autoComfortTickId);
+            const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+            if (!store.autoComfortEnabled) return;
+            this._autoComfortTickId = setInterval(() => {
+                if (!this._active) return;
+                this._renderAutoComfortStatus();
+            }, 5000);
+        }
+
+        _calcRemainMs() {
+            const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+            const system = store.system || {};
+            const serverUptimeMs = system.uptimeMs || 0;
+            const lastEvalMs = store.autoComfortLastEvalMs || 0;
+            const intervalMs = 5 * 60 * 1000;
+            if (serverUptimeMs === 0) return intervalMs;
+            return Math.max(0, intervalMs - Math.max(0, serverUptimeMs - lastEvalMs));
+        }
+
+        _fmtRemainText(ms) {
+            const totalSec = Math.ceil(ms / 1000);
+            return `${Math.floor(totalSec / 60)}분 ${totalSec % 60}초`;
         }
     };
 })(window.SNW);
@@ -9957,7 +10110,7 @@ SNW.Page = SNW.Page || {};
 	};
 })(window.SNW);
 
-/* ---- 290.page.ai.js (16644 bytes) ---- */
+/* ---- 290.page.ai.js (16764 bytes) ---- */
 // =========================================================
 // 290.page.ai.js — SNW.Page.AI
 // Layer 4 (페이지 로직: AI 스튜디오, 2-turn REST 제어 & Gemini Live Voice)
@@ -10166,7 +10319,7 @@ SNW.Page = SNW.Page || {};
 
 		async _onLiveToggle() {
 			if (!SNW.AiLive || !SNW.AiLive.isSupported()) {
-				SNW.Toast.show(SNW.I18n.t('ai.voiceNotSupported'), 'warn');
+				if (SNW.ToastUtil) SNW.ToastUtil.warn(SNW.I18n.t('ai.voiceNotSupported'));
 				return;
 			}
 
@@ -10189,7 +10342,7 @@ SNW.Page = SNW.Page || {};
 
 			// 상한 사전 검사
 			if (this._liveCostStatus && this._liveCostStatus.level === 'cap') {
-				SNW.Toast.show(SNW.I18n.t('ai.dailyCapReached'), 'error');
+				if (SNW.ToastUtil) SNW.ToastUtil.error(SNW.I18n.t('ai.dailyCapReached'));
 				this._switchMode('rest');
 				return;
 			}
@@ -10246,13 +10399,13 @@ SNW.Page = SNW.Page || {};
 						this._updateCostBadge(costData);
 					},
 					onError: (err) => {
-						SNW.Toast.show(err.message || 'Live Voice error', 'error');
+						if (SNW.ToastUtil) SNW.ToastUtil.error(err.message || 'Live Voice error');
 					}
 				});
 			} catch (e) {
 				if (statusText) statusText.textContent = SNW.I18n.t('ai.liveStart');
 				if (liveBtn) liveBtn.textContent = SNW.I18n.t('ai.liveStart');
-				SNW.Toast.show(e.message || 'Live connection failed', 'error');
+				if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || 'Live connection failed');
 			}
 		}
 
@@ -10272,12 +10425,12 @@ SNW.Page = SNW.Page || {};
 			this._history = [];
 			const wrap = this.el.querySelector('[data-slot="messages"]');
 			if (wrap) wrap.innerHTML = '';
-			SNW.Toast.show(SNW.I18n.t('ai.clearHistory'), 'info');
+			if (SNW.ToastUtil) SNW.ToastUtil.info(SNW.I18n.t('ai.clearHistory'));
 		}
 
 		async _onVoiceToggle() {
 			if (!SNW.AIVoice || !SNW.AIVoice.isSTTSupported()) {
-				SNW.Toast.show(SNW.I18n.t('ai.voiceNotSupported'), 'warn');
+				if (SNW.ToastUtil) SNW.ToastUtil.warn(SNW.I18n.t('ai.voiceNotSupported'));
 				return;
 			}
 
@@ -10291,7 +10444,7 @@ SNW.Page = SNW.Page || {};
 
 			this._isListening = true;
 			if (vBtn) vBtn.classList.add('snw-btn--active');
-			SNW.Toast.show(SNW.I18n.t('ai.voiceListening'), 'info');
+			if (SNW.ToastUtil) SNW.ToastUtil.info(SNW.I18n.t('ai.voiceListening'));
 
 			try {
 				const res = await SNW.AIVoice.startListening();
@@ -10308,7 +10461,7 @@ SNW.Page = SNW.Page || {};
 			} catch (err) {
 				this._isListening = false;
 				if (vBtn) vBtn.classList.remove('snw-btn--active');
-				SNW.Toast.show(SNW.I18n.t('ai.micError'), 'error');
+				if (SNW.ToastUtil) SNW.ToastUtil.error(SNW.I18n.t('ai.micError'));
 			}
 		}
 
@@ -11727,13 +11880,13 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 294.timer_panel.js (20842 bytes) ---- */
+/* ---- 294.timer_panel.js (21977 bytes) ---- */
 // =========================================================
 // 294.timer_panel.js — 자동화 세션 자동 종료 타이머 (TimerPanel)
 // Layer 3 (페이지 컴포넌트) & 전역 TimerManager
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     const LS_TIMER_KEY = 'snw_session_timer';
@@ -11812,11 +11965,25 @@ window.SNW = window.SNW || {};
 
         async _onExpire() {
             this.cancel(false);
+
+            // [P1-7] Comfort 자동 모드 영구 해제
+            try {
+                if (SNW.Api && typeof SNW.Api.getAutoComfortStatus === 'function') {
+                    const status = await SNW.Api.getAutoComfortStatus();
+                    if (status && status.autoComfort) {
+                        await SNW.Api.setAutoComfort(false);
+                        if (SNW.Store) SNW.Store.set({ autoComfortEnabled: false });
+                        if (SNW.ToastUtil) SNW.ToastUtil.info(SNW.I18n.t('timer.autoComfortOff'));
+                    }
+                }
+            } catch (e) {
+                console.warn('[TimerManager] AutoComfort reset failed:', e);
+            }
+
+            // 세션 정지 (P2-12: dead code 제거)
             try {
                 if (SNW.Api && typeof SNW.Api.stopSession === 'function') {
                     await SNW.Api.stopSession();
-                } else if (SNW.Api && SNW.Api.Session && typeof SNW.Api.Session.stop === 'function') {
-                    await SNW.Api.Session.stop();
                 }
             } catch (err) {
                 console.error('[TimerManager] Session stop error on expire:', err);
@@ -11826,9 +11993,9 @@ window.SNW = window.SNW || {};
             }
         },
 
-        start(minutes) {
-            const min = Number(minutes);
-            if (!min || min <= 0) {
+        async start(minutes) {
+            const min = Math.round(Number(minutes));
+            if (!Number.isFinite(min) || min <= 0 || min > 480) {
                 this.cancel(true);
                 return;
             }
@@ -11838,20 +12005,27 @@ window.SNW = window.SNW || {};
             this._durationMin = min;
             this._targetEndMs = Date.now() + (min * 60 * 1000);
 
+            // [Option A] ESP32 백엔드에 하드웨어 타이머 등록
+            try {
+                if (SNW.Api && typeof SNW.Api.setControlTimer === 'function') {
+                    await SNW.Api.setControlTimer(min);
+                } else if (SNW.Api && typeof SNW.Api.executeAiAction === 'function') {
+                    await SNW.Api.executeAiAction('set_timer', { minutes: min });
+                }
+            } catch (e) {
+                console.warn('[TimerManager] Backend sync failed:', e);
+                if (SNW.ToastUtil) SNW.ToastUtil.warn(SNW.I18n.t('timer.backendSyncFailed'));
+            }
+
             try {
                 localStorage.setItem(LS_TIMER_KEY, JSON.stringify({
                     targetEndMs: this._targetEndMs,
                     durationMin: this._durationMin
                 }));
-            } catch (e) {}
+            } catch (e) { }
 
             this._startInterval();
             this._notify();
-
-            // 백엔드 기기 자체 타이머 동기화 (R-3: 브라우저 종료 시에도 기기 자동 꺼짐 보장)
-            if (SNW.Api && typeof SNW.Api.executeAiAction === 'function') {
-                SNW.Api.executeAiAction('set_timer', { minutes: min }).catch(() => {});
-            }
 
             if (SNW.ToastUtil && typeof SNW.ToastUtil.success === 'function') {
                 SNW.ToastUtil.success(SNW.I18n.t('timer.setSuccess', { m: min }));
@@ -11871,7 +12045,11 @@ window.SNW = window.SNW || {};
 
             try {
                 localStorage.removeItem(LS_TIMER_KEY);
-            } catch (e) {}
+            } catch (e) { }
+
+            if (wasActive && SNW.Api && typeof SNW.Api.cancelControlTimer === 'function') {
+                SNW.Api.cancelControlTimer().catch(() => { });
+            }
 
             this._notify();
 
@@ -12046,8 +12224,8 @@ window.SNW = window.SNW || {};
             const isActive = sess && (sess.state === 'ACTIVE' || sess.state === 'PAUSED');
 
             if (isActive) {
-                const name = (sess.profileName && sess.profileName.trim()) 
-                    ? sess.profileName 
+                const name = (sess.profileName && sess.profileName.trim())
+                    ? sess.profileName
                     : (sess.typeName || '세션');
                 const escape = (s) => (SNW.DomUtil ? SNW.DomUtil.escape(s) : s);
                 slot.innerHTML = `
@@ -13007,7 +13185,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 999a.nowplaying.js (17320 bytes) ---- */
+/* ---- 999a.nowplaying.js (18156 bytes) ---- */
 // =========================================================
 // 999a.nowplaying.js — 전역 Now Playing Bar
 // Layer 3 (애플리케이션 전역 컴포넌트)
@@ -13048,7 +13226,7 @@ window.SNW = window.SNW || {};
     function isSessionVisible() {
         const s = getSession();
         if (!s) return false;
-        if (s.state === 'COMPLETED' || s.state === 2) return false;
+        if (s.state === 'COMPLETED') return false;
         const type = parseType(s.type);
         return (type !== 0 && s.active !== false);
     }
@@ -13154,7 +13332,8 @@ window.SNW = window.SNW || {};
 
         // 4-2) Auto Comfort 배지
         if (barEl.autoBadge) {
-            const isAuto = (SNW.Store && SNW.Store.get) ? !!SNW.Store.get().autoComfortEnabled : false;
+            const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+            const isAuto = !!store.autoComfortEnabled || (s && (s.trigger === 3 || s.triggerName === 'AUTO_COMFORT'));
             barEl.autoBadge.hidden = !isAuto;
         }
 
@@ -13357,29 +13536,40 @@ window.SNW = window.SNW || {};
             </div>
         `;
 
-        SNW.UI.modal(
+        const modalRef = SNW.UI.modal(
             '🍃 바람 세션 상세',
             content,
             async () => {
                 await onPauseOrResume();
                 return true;
             },
-            async () => {
-                await onStop();
+            () => {
+                // Cancel = 닫기만 수행 (세션 유지)
                 return true;
             },
             {
                 okLabel: isPaused ? '▶ 재개' : '⏸ 일시정지',
-                cancelLabel: '⏹ 바람 정지',
+                cancelLabel: (SNW.I18n && SNW.I18n.t) ? SNW.I18n.t('common.close') : '닫기',
                 width: '380px'
             }
         );
 
+        // 본문 하단에 독립된 세션 정지 버튼 추가
+        const stopBtn = document.createElement('button');
+        stopBtn.type = 'button';
+        stopBtn.className = 'snw-btn snw-btn--full';
+        stopBtn.style.cssText = 'margin-top:10px;justify-content:center;background:rgba(248,81,73,0.15);color:var(--snw-error,#f85149);border:1px solid var(--snw-error,#f85149);';
+        stopBtn.textContent = `⏹ ${(SNW.I18n && SNW.I18n.t) ? SNW.I18n.t('common.stopSession') : '세션 정지'}`;
+        stopBtn.onclick = async () => {
+            if (modalRef && typeof modalRef.close === 'function') modalRef.close();
+            await onStop();
+        };
+        content.appendChild(stopBtn);
+
         const timerBtn = content.querySelector('#np-btn-timer-link');
         if (timerBtn) {
             timerBtn.onclick = () => {
-                const overlay = document.querySelector('.snw-modal-overlay');
-                if (overlay) overlay.click();
+                if (modalRef && typeof modalRef.close === 'function') modalRef.close();
                 location.hash = '/automation/timer';
             };
         }
@@ -13433,7 +13623,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 999b.ai-sheet.js (12628 bytes) ---- */
+/* ---- 999b.ai-sheet.js (12481 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명 : 999b.ai-sheet.js
@@ -13476,7 +13666,7 @@ window.SNW = window.SNW || {};
 				SNW.AIVoice.startWakeDetection({
 					onWake: () => {
 						this.open();
-						if (SNW.Toast) SNW.Toast.show(SNW.I18n ? SNW.I18n.t('ai.voiceListening') : 'Listening...', 'info');
+						if (SNW.ToastUtil) SNW.ToastUtil.info(SNW.I18n ? SNW.I18n.t('ai.voiceListening') : 'Listening...');
 					}
 				});
 			}
@@ -13783,11 +13973,7 @@ window.SNW = window.SNW || {};
 
 		async _onVoiceInput() {
 				if (!SNW.AIVoice || !SNW.AIVoice.isSTTSupported()) {
-					if (SNW.ToastUtil && typeof SNW.ToastUtil.warn === 'function') {
-						SNW.ToastUtil.warn('Voice input not supported');
-					} else if (SNW.Toast) {
-						SNW.Toast.show('Voice input not supported', 'warn');
-					}
+					if (SNW.ToastUtil) SNW.ToastUtil.warn('Voice input not supported');
 					return;
 				}
 

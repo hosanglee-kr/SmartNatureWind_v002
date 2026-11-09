@@ -100,7 +100,7 @@
 
 
 
-/* ---- _components.css (31569 bytes) ---- */
+/* ---- _components.css (32880 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : _components.css
@@ -1573,6 +1573,37 @@ body.snw-night-mode {
     border-radius: var(--snw-radius-lg, 12px);
     padding: 18px;
 }
+
+/* ============================================================
+ * [Stage 10.1] Comfort 자동 모드 5상태 매트릭스 (CONTRACT §7.20 UI-10)
+ * ============================================================ */
+.snw-auto-comfort__status {
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 8px 10px;
+    border-radius: var(--snw-radius-sm, 4px);
+    margin-top: 8px;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+.snw-auto-comfort__status.is-waiting       { background: rgba(63,185,80,0.1);  color: var(--snw-success, #3fb950); }
+.snw-auto-comfort__status.is-running       { background: rgba(74,158,255,0.1); color: var(--snw-primary, #4a9eff); }
+.snw-auto-comfort__status.is-user-priority { background: rgba(210,153,34,0.1); color: var(--snw-warn, #d29922); }
+.snw-auto-comfort__status.is-suspended     { background: rgba(248,81,73,0.1);  color: var(--snw-error, #f85149); }
+.snw-auto-comfort__status b { font-weight: 700; }
+.snw-auto-comfort__status-action {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    font-size: 11px;
+    border-radius: 4px;
+    border: 1px solid currentColor;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+}
+.snw-auto-comfort__status-action:hover { background: rgba(255,255,255,0.1); }
+
 
 /* ---- _dashboard.css (6514 bytes) ---- */
 /*
@@ -3764,7 +3795,7 @@ a {
 
 
 
-/* ---- _variables.css (4225 bytes) ---- */
+/* ---- _variables.css (4223 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : _variables.css
@@ -3855,7 +3886,7 @@ a {
      *    < sidebar-overlay(1040) < sidebar(1050)
      *    < modal(1100) < toast(1200)
      * ===================================================== */
-    --snw-z-header: 1060;
+    --snw-z-header: 50;
     --snw-z-np: 95;
     --snw-z-fab: 990;
     --snw-z-bottom: 1000;

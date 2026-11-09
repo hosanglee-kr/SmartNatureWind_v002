@@ -3,7 +3,7 @@
 // Layer 3 (페이지 컴포넌트) & 전역 TimerManager
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     const LS_TIMER_KEY = 'snw_session_timer';
@@ -82,11 +82,25 @@ window.SNW = window.SNW || {};
 
         async _onExpire() {
             this.cancel(false);
+
+            // [P1-7] Comfort 자동 모드 영구 해제
+            try {
+                if (SNW.Api && typeof SNW.Api.getAutoComfortStatus === 'function') {
+                    const status = await SNW.Api.getAutoComfortStatus();
+                    if (status && status.autoComfort) {
+                        await SNW.Api.setAutoComfort(false);
+                        if (SNW.Store) SNW.Store.set({ autoComfortEnabled: false });
+                        if (SNW.ToastUtil) SNW.ToastUtil.info(SNW.I18n.t('timer.autoComfortOff'));
+                    }
+                }
+            } catch (e) {
+                console.warn('[TimerManager] AutoComfort reset failed:', e);
+            }
+
+            // 세션 정지 (P2-12: dead code 제거)
             try {
                 if (SNW.Api && typeof SNW.Api.stopSession === 'function') {
                     await SNW.Api.stopSession();
-                } else if (SNW.Api && SNW.Api.Session && typeof SNW.Api.Session.stop === 'function') {
-                    await SNW.Api.Session.stop();
                 }
             } catch (err) {
                 console.error('[TimerManager] Session stop error on expire:', err);
@@ -96,9 +110,9 @@ window.SNW = window.SNW || {};
             }
         },
 
-        start(minutes) {
-            const min = Number(minutes);
-            if (!min || min <= 0) {
+        async start(minutes) {
+            const min = Math.round(Number(minutes));
+            if (!Number.isFinite(min) || min <= 0 || min > 480) {
                 this.cancel(true);
                 return;
             }
@@ -108,20 +122,27 @@ window.SNW = window.SNW || {};
             this._durationMin = min;
             this._targetEndMs = Date.now() + (min * 60 * 1000);
 
+            // [Option A] ESP32 백엔드에 하드웨어 타이머 등록
+            try {
+                if (SNW.Api && typeof SNW.Api.setControlTimer === 'function') {
+                    await SNW.Api.setControlTimer(min);
+                } else if (SNW.Api && typeof SNW.Api.executeAiAction === 'function') {
+                    await SNW.Api.executeAiAction('set_timer', { minutes: min });
+                }
+            } catch (e) {
+                console.warn('[TimerManager] Backend sync failed:', e);
+                if (SNW.ToastUtil) SNW.ToastUtil.warn(SNW.I18n.t('timer.backendSyncFailed'));
+            }
+
             try {
                 localStorage.setItem(LS_TIMER_KEY, JSON.stringify({
                     targetEndMs: this._targetEndMs,
                     durationMin: this._durationMin
                 }));
-            } catch (e) {}
+            } catch (e) { }
 
             this._startInterval();
             this._notify();
-
-            // 백엔드 기기 자체 타이머 동기화 (R-3: 브라우저 종료 시에도 기기 자동 꺼짐 보장)
-            if (SNW.Api && typeof SNW.Api.executeAiAction === 'function') {
-                SNW.Api.executeAiAction('set_timer', { minutes: min }).catch(() => {});
-            }
 
             if (SNW.ToastUtil && typeof SNW.ToastUtil.success === 'function') {
                 SNW.ToastUtil.success(SNW.I18n.t('timer.setSuccess', { m: min }));
@@ -141,7 +162,11 @@ window.SNW = window.SNW || {};
 
             try {
                 localStorage.removeItem(LS_TIMER_KEY);
-            } catch (e) {}
+            } catch (e) { }
+
+            if (wasActive && SNW.Api && typeof SNW.Api.cancelControlTimer === 'function') {
+                SNW.Api.cancelControlTimer().catch(() => { });
+            }
 
             this._notify();
 
@@ -316,8 +341,8 @@ window.SNW = window.SNW || {};
             const isActive = sess && (sess.state === 'ACTIVE' || sess.state === 'PAUSED');
 
             if (isActive) {
-                const name = (sess.profileName && sess.profileName.trim()) 
-                    ? sess.profileName 
+                const name = (sess.profileName && sess.profileName.trim())
+                    ? sess.profileName
                     : (sess.typeName || '세션');
                 const escape = (s) => (SNW.DomUtil ? SNW.DomUtil.escape(s) : s);
                 slot.innerHTML = `

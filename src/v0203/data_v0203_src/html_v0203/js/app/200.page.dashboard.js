@@ -29,6 +29,10 @@ SNW.Page = SNW.Page || {};
 
         unmount() {
             this._active = false;
+            if (this._autoComfortTickId) {
+                clearInterval(this._autoComfortTickId);
+                this._autoComfortTickId = null;
+            }
             this._unsubs.forEach(fn => { try { fn(); } catch { } });
             this._unsubs = [];
             if (this._eq) this._eq.stop();
@@ -199,9 +203,16 @@ SNW.Page = SNW.Page || {};
             if (!SNW.Store || typeof SNW.Store.watch !== 'function') return;
 
             this._unsubs.push(
-                SNW.Store.watch('session', () => this._renderNowPlaying()),
+                SNW.Store.watch('session', () => {
+                    this._renderNowPlaying();
+                    this._renderAutoComfortStatus();
+                }),
                 SNW.Store.watch('sim', () => this._onSimUpdate()),
-                SNW.Store.watch('control', () => this._onControlUpdate()),
+                SNW.Store.watch('control', () => {
+                    this._onControlUpdate();
+                    this._renderAutoComfortStatus();
+                }),
+                SNW.Store.watch('autoComfortEnabled', () => this._renderAutoComfortStatus())
             );
             // 초기 렌더
             this._renderNowPlaying();
@@ -464,20 +475,22 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [Stage 10] 3탭 전환 및 영구 저장
+        // [Stage 10] 3탭 전환 및 영구 저장 (P2-16)
         // =========================================================
         _switchDashTab(tab) {
+            const validTabs = ['control', 'env', 'preset'];
+            const targetTab = validTabs.includes(tab) ? tab : 'control';
             this.el.querySelectorAll('[data-dash-tab]').forEach(b => {
-                const isActive = b.getAttribute('data-dash-tab') === tab;
+                const isActive = b.getAttribute('data-dash-tab') === targetTab;
                 b.classList.toggle('is-active', isActive);
                 b.setAttribute('aria-selected', isActive ? 'true' : 'false');
             });
             this.el.querySelectorAll('[data-dash-content]').forEach(c => {
-                c.style.display = (c.getAttribute('data-dash-content') === tab) ? 'block' : 'none';
+                c.style.display = (c.getAttribute('data-dash-content') === targetTab) ? 'block' : 'none';
             });
-            localStorage.setItem('snw.dashboard.tab', tab);
+            localStorage.setItem('snw.dashboard.tab', targetTab);
 
-            if (tab === 'preset' && !this._presetRendered) {
+            if (targetTab === 'preset' && !this._presetRendered) {
                 this._renderStyleSelector();
                 this._renderPresetGrid();
                 this._presetRendered = true;
@@ -485,7 +498,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [Stage 10] 퀵 타이머 다이얼로그
+        // [Stage 10] 퀵 타이머 다이얼로그 (P1-8)
         // =========================================================
         _onQuickTimer() {
             const cur = (SNW.TimerManager && SNW.TimerManager.getStatus) ? SNW.TimerManager.getStatus() : null;
@@ -496,10 +509,19 @@ SNW.Page = SNW.Page || {};
                 return;
             }
             const choice = prompt(SNW.I18n.t('timer.quickPrompt'), '30');
-            const min = Number(choice);
-            if (min > 0 && SNW.TimerManager) {
+            if (choice === null) return;
+            const min = Math.round(Number(choice));
+            if (!Number.isFinite(min) || min <= 0) {
+                if (SNW.ToastUtil) SNW.ToastUtil.warn(SNW.I18n.t('timer.invalidInput'));
+                return;
+            }
+            if (min > 480) {
+                if (SNW.ToastUtil) SNW.ToastUtil.warn(SNW.I18n.t('timer.maxRange'));
+                return;
+            }
+            if (SNW.TimerManager) {
                 SNW.TimerManager.start(min);
-                if (SNW.ToastUtil) SNW.ToastUtil.info(`${min}분 타이머가 시작되었습니다.`);
+                if (SNW.ToastUtil) SNW.ToastUtil.info(SNW.I18n.t('timer.quickStarted', { min }));
             }
         }
 
@@ -593,11 +615,12 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [Stage 10 Phase 5] Comfort 자동 모드 UI 초기화
+        // [Stage 10 Phase 5 / Stage 10.1] Comfort 자동 모드 UI 초기화 (P0-1, P0-4, P0-5, 갭 5)
         // =========================================================
         _initAutoComfort() {
             const slot = this.el.querySelector('[data-slot="auto-comfort-box"]');
             if (!slot) return;
+            if (slot.children.length > 0) return; // [갭 5] DOM 요소 존재 여부로 가드
 
             slot.innerHTML = `
                 <div class="snw-auto-comfort-header" style="display:flex;justify-content:space-between;align-items:center;">
@@ -607,23 +630,26 @@ SNW.Page = SNW.Page || {};
                     </div>
                     <label class="snw-switch" style="position:relative;display:inline-block;width:44px;height:24px;">
                         <input type="checkbox" id="chk-auto-comfort">
-                        <span class="snw-slider-switch round"></span>
+                        <span class="snw-switch__slider"></span>
                     </label>
                 </div>
-                <div class="snw-auto-comfort-status" id="auto-comfort-status-text" style="margin-top:8px;font-size:12px;color:var(--snw-text-dim);"></div>`;
+                <div class="snw-auto-comfort__status" id="auto-comfort-status-text" role="status" aria-live="polite"></div>`;
 
             const chk = slot.querySelector('#chk-auto-comfort');
-            const statusText = slot.querySelector('#auto-comfort-status-text');
+            let userInteracted = false; // [P0-5]
 
             if (SNW.Api && typeof SNW.Api.getAutoComfortStatus === 'function') {
                 SNW.Api.getAutoComfortStatus().then(res => {
-                    if (!res) return;
+                    if (!res || userInteracted) return;
                     chk.checked = !!res.autoComfort;
-                    this._updateAutoComfortStatusText(statusText, res.autoComfort, res.remainSec);
+                    if (SNW.Store) SNW.Store.set({ autoComfortEnabled: !!res.autoComfort });
+                    this._renderAutoComfortStatus();
+                    this._startAutoComfortTick();
                 }).catch(() => {});
             }
 
             chk.addEventListener('change', async () => {
+                userInteracted = true;
                 const targetState = chk.checked;
                 if (targetState) {
                     if (!confirm(SNW.I18n.t('comfort.autoConfirmOn'))) {
@@ -633,26 +659,102 @@ SNW.Page = SNW.Page || {};
                 }
                 try {
                     if (SNW.Api && typeof SNW.Api.setAutoComfort === 'function') {
-                        const res = await SNW.Api.setAutoComfort(targetState);
+                        await SNW.Api.setAutoComfort(targetState);
+                        if (SNW.Store) SNW.Store.set({ autoComfortEnabled: targetState }); // [P0-4]
                         if (SNW.ToastUtil) SNW.ToastUtil.info(targetState ? SNW.I18n.t('comfort.autoOn') : SNW.I18n.t('comfort.autoOff'));
-                        this._updateAutoComfortStatusText(statusText, targetState, res ? res.remainSec : 300);
+                        this._renderAutoComfortStatus();
+                        this._startAutoComfortTick();
                     }
                 } catch (e) {
                     chk.checked = !targetState;
-                    if (SNW.ToastUtil) SNW.ToastUtil.error(e.message);
+                    if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || SNW.I18n.t('common.error'));
                 }
             });
         }
 
-        _updateAutoComfortStatusText(el, enabled, remainSec) {
+        // =========================================================
+        // [Stage 10.1] Comfort 5상태 매트릭스 렌더러 (P1-10, 갭 3-A)
+        // =========================================================
+        _renderAutoComfortStatus() {
+            const el = this.el.querySelector('#auto-comfort-status-text');
             if (!el) return;
-            if (!enabled) {
+
+            const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+            if (!store.autoComfortEnabled) {
+                el.className = 'snw-auto-comfort__status';
                 el.textContent = SNW.I18n.t('comfort.autoOff');
                 return;
             }
-            const min = Math.floor((remainSec || 0) / 60);
-            const sec = (remainSec || 0) % 60;
-            el.innerHTML = `<span class="snw-badge snw-badge--auto" style="background:rgba(40,167,69,0.15);color:#28a745;padding:2px 6px;border-radius:4px;font-weight:600;">${SNW.I18n.t('comfort.autoBadge')}</span> ${SNW.I18n.t('comfort.nextEval')} ${min}분 ${sec}초`;
+
+            const ctl = store.control || {};
+            const session = store.session || {};
+            const isAutoOffLatched = (ctl.stateCode === 5);
+            const isSessionActive = (session.state === 'ACTIVE' && session.active);
+            const isAutoSession = isSessionActive && session.trigger === 3; // [갭 3-A]
+            const isManualSession = isSessionActive && !isAutoSession;
+
+            if (isAutoOffLatched) {
+                el.className = 'snw-auto-comfort__status is-suspended';
+                el.innerHTML = `${SNW.I18n.t('comfort.statusSuspended')}
+                    <button type="button" class="snw-auto-comfort__status-action" data-action="resume-auto">
+                        ${SNW.I18n.t('comfort.statusResumeBtn')}
+                    </button>`;
+                const btn = el.querySelector('[data-action="resume-auto"]');
+                if (btn) btn.onclick = () => this._onResumeAutoComfort();
+                return;
+            }
+            if (isAutoSession) {
+                el.className = 'snw-auto-comfort__status is-running';
+                el.innerHTML = SNW.I18n.t('comfort.statusRunning', {
+                    preset: session.presetCode || '', style: session.styleCode || ''
+                });
+                return;
+            }
+            if (isManualSession) {
+                el.className = 'snw-auto-comfort__status is-user-priority';
+                el.innerHTML = SNW.I18n.t('comfort.statusUserPriority');
+                return;
+            }
+            el.className = 'snw-auto-comfort__status is-waiting';
+            const remainMs = this._calcRemainMs();
+            el.innerHTML = SNW.I18n.t('comfort.statusWaiting', { remain: this._fmtRemainText(remainMs) });
+        }
+
+        async _onResumeAutoComfort() {
+            try {
+                if (SNW.Api && typeof SNW.Api.ackEvent === 'function') {
+                    await SNW.Api.ackEvent();
+                }
+                if (SNW.ToastUtil) SNW.ToastUtil.success(SNW.I18n.t('comfort.autoResumed'));
+                this._renderAutoComfortStatus();
+            } catch (e) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || SNW.I18n.t('common.error'));
+            }
+        }
+
+        _startAutoComfortTick() {
+            if (this._autoComfortTickId) clearInterval(this._autoComfortTickId);
+            const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+            if (!store.autoComfortEnabled) return;
+            this._autoComfortTickId = setInterval(() => {
+                if (!this._active) return;
+                this._renderAutoComfortStatus();
+            }, 5000);
+        }
+
+        _calcRemainMs() {
+            const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+            const system = store.system || {};
+            const serverUptimeMs = system.uptimeMs || 0;
+            const lastEvalMs = store.autoComfortLastEvalMs || 0;
+            const intervalMs = 5 * 60 * 1000;
+            if (serverUptimeMs === 0) return intervalMs;
+            return Math.max(0, intervalMs - Math.max(0, serverUptimeMs - lastEvalMs));
+        }
+
+        _fmtRemainText(ms) {
+            const totalSec = Math.ceil(ms / 1000);
+            return `${Math.floor(totalSec / 60)}분 ${totalSec % 60}초`;
         }
     };
 })(window.SNW);

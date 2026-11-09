@@ -29,7 +29,10 @@
 | STATE_0203.md | FSM/단일 Writer | §2, §6, §7 | [§2](src/v0203/contract_doc_0203/STATE_0203.md#2-runctx-fsm-7-state-명세) · [§6](src/v0203/contract_doc_0203/STATE_0203.md#6-위임-플래그-라이프사이클) · [§7](src/v0203/contract_doc_0203/STATE_0203.md#7-autooff-래치-및-이벤트-ack-규약) |
 | FLOW_0203.md | 새 시퀀스/부팅 | §1, §2, §11~14 | [§1](src/v0203/contract_doc_0203/FLOW_0203.md#1-부팅-시퀀스-a00_init) · [§2](src/v0203/contract_doc_0203/FLOW_0203.md#2-메인-루프-a00_run-타이밍) · [§13](src/v0203/contract_doc_0203/FLOW_0203.md#13-ai-제어-및-gemini-live-실시간-음성-시퀀스) · [§14](src/v0203/contract_doc_0203/FLOW_0203.md#14-웹-uiux-동적-레이아웃-및-인터랙션-흐름) |
 | BUDGET_0203.md | WCET/RAM/Flash/번들 | §2, §3, §8.5, §10 | [§2](src/v0203/contract_doc_0203/BUDGET_0203.md#2-looptask-wcet-예산) · [§8.5](src/v0203/contract_doc_0203/BUDGET_0203.md#85-최종-판정-요약-통합-감사-2차-반영) · [§10](src/v0203/contract_doc_0203/BUDGET_0203.md#10-batchphasestage-누적-예산-영향) |
-| TEST_PLAN_0203.md | 회귀 실행 | L1~L11 | [§7 요약](src/v0203/contract_doc_0203/TEST_PLAN_0203.md#7-회귀-매트릭스-요약) · [§9.1 게이트](src/v0203/contract_doc_0203/TEST_PLAN_0203.md#91-게이트-체크리스트) |
+| **TEST_PLAN_0203.md** | 레이어 개요/매트릭스/게이트 | §1, §4, §6 | [§1 링크](src/v0203/contract_doc_0203/TEST_PLAN_0203.md#1-분할-파일-링크) · [§4 매트릭스](src/v0203/contract_doc_0203/TEST_PLAN_0203.md#4-회귀-매트릭스-요약) |
+| **TEST_PLAN_L1_L5_0203.md** | T-1~T-45 실행 | §2~§6 | [L1_L5](src/v0203/contract_doc_0203/TEST_PLAN_L1_L5_0203.md) |
+| **TEST_PLAN_L6_L8_0203.md** | T-46~T-113 실행 | §3.1~§3.4 | [L6_L8](src/v0203/contract_doc_0203/TEST_PLAN_L6_L8_0203.md) |
+| **TEST_PLAN_L9_L11_0203.md** | T-114~T-152 실행 (Stage 8/9) | §3.5~§3.7 | [L9_L11](src/v0203/contract_doc_0203/TEST_PLAN_L9_L11_0203.md) |
 | **AUDIT_LOG_0203.md** | **감사 이력** | §1~§11 | [AUDIT_LOG](src/v0203/contract_doc_0203/AUDIT_LOG_0203.md) |
 | **AGENT_OPERATIONS_0203.md** | **운영 표준** | §1~§5 | [OPS](src/v0203/contract_doc_0203/AGENT_OPERATIONS_0203.md) |
 | README_0203.md | CBD 워크플로/커밋 도구 | §4, §5 | [README §4](src/v0203/contract_doc_0203/README_0203.md) |

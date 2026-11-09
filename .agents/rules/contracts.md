@@ -31,3 +31,17 @@ python src/v0203/tools_0203/commit_contracts_0203.py --dry-run --strict
 - 자기 문서 내 참조: `[§N.M](#anchor)`
 - 앵커 자동 생성: `python src/v0203/tools_0203/enhance_index_links_0203.py --verify`로 검증
 
+## TEST_PLAN 분할 규약 (Phase C)
+
+| 레이어 | 파일 | 범위 |
+|---|---|---|
+| L1~L5 | `TEST_PLAN_L1_L5_0203.md` | T-1~T-45 (기본 회귀) |
+| L6~L8 | `TEST_PLAN_L6_L8_0203.md` | T-46~T-113 (Batch G~I, Phase 1~6) |
+| L9~L11 | `TEST_PLAN_L9_L11_0203.md` | T-114~T-152 (Stage 8/9) |
+| 인덱스 | `TEST_PLAN_0203.md` | 개요/매트릭스/게이트/트러블슈팅 |
+
+- 회귀 실행 시 해당 L 파일만 Read
+- 신규 T-항목 추가: 원본 `TEST_PLAN_0203.md` 직접 수정 금지 → 분할 파일에 추가 후 `split_test_plan.py --force` 재실행
+- 앵커 참조는 분할 후 `enhance_index_links.py --verify` 필수
+
+

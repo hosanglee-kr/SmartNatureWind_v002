@@ -7,7 +7,7 @@ window.SNW = window.SNW || {};
 	'use strict';
 
 	const LS_PREFIX = 'snw.';
-
+	
 	SNW.CFG = {
 		// =====================================================
 		// localStorage 키 (중앙 관리)
@@ -19,7 +19,13 @@ window.SNW = window.SNW || {};
 			LANG: LS_PREFIX + 'lang',
 			DEBUG: LS_PREFIX + 'debug',
 			LAST_PRESET: LS_PREFIX + 'lastPreset',
-			UI_THEME: LS_PREFIX + 'theme'
+			UI_THEME: LS_PREFIX + 'theme',
+			
+			// [PATCH] AI 키를 여기로 통합 (최종 문자열은 기존과 동일)
+			AI_MODE: LS_PREFIX + 'ai.mode', // 'snw.ai.mode'
+			AI_LIVE_WARNED: LS_PREFIX + 'ai.liveWarned', // 'snw.ai.liveWarned'
+			AI_HISTORY: LS_PREFIX + 'ai.history' // 'snw.ai.history'
+				
 		},
 
 		// =====================================================
@@ -171,12 +177,7 @@ window.SNW = window.SNW || {};
 			POLL_MS: 60000,
 			REPORT_MS: 30000
 		},
-		LS_KEY: {
-			AI_MODE: 'snw.ai.mode',
-			AI_LIVE_WARNED: 'snw.ai.liveWarned',
-			AI_HISTORY: 'snw.ai.history'
-		},
-
+	
 		// =====================================================
 		// 개발 모드
 		// =====================================================

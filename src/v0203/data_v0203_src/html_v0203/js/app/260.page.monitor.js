@@ -1,5 +1,5 @@
 // =========================================================
-// 260.page.monitor.js — SNW.Page.Monitor (Stage 7 회고 + 실시간 EQ)
+// 260.page.monitor.js — SNW.Page.Monitor (Stage 7 히스토리 + 실시간 EQ)
 // =========================================================
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
@@ -22,7 +22,7 @@ SNW.Page = SNW.Page || {};
             this._bindStore();
             await this._loadLiveData();
 
-            // 탭 초기화 (_switchTab('live') 내부에서 _renderLive가 이퀄라이저를 전담 생성)
+            // 탭 초기화
             this._switchTab(this._currentTab);
         }
 
@@ -40,7 +40,7 @@ SNW.Page = SNW.Page || {};
                 <div class="snw-monitor">
                     <div class="snw-tabs">
                         <button type="button" class="snw-tab-btn is-active" data-tab="live">📊 실시간</button>
-                        <button type="button" class="snw-tab-btn" data-tab="retro">🎬 회고</button>
+                        <button type="button" class="snw-tab-btn" data-tab="retro">🎬 히스토리</button>
                     </div>
                     <div data-tab-content="live"></div>
                     <div data-tab-content="retro" style="display:none;"></div>
@@ -80,7 +80,6 @@ SNW.Page = SNW.Page || {};
                     <div class="snw-monitor__sensors" data-slot="live-sensors"></div>
                 </div>`;
 
-            // 이퀄라이저 재초기화
             if (this._liveEq && typeof this._liveEq.stop === 'function') {
                 this._liveEq.stop();
                 this._liveEq = null;
@@ -149,14 +148,15 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // 회고 탭
+        // 히스토리 탭 (기존 회고)
         // =========================================================
         async _renderRetro() {
             const slot = this.el.querySelector('[data-tab-content="retro"]');
             if (!slot) return;
+            
             slot.innerHTML = `
                 <div class="snw-card">
-                    <h2>🎬 세션 회고</h2>
+                    <h2>🎬 세션 히스토리</h2>
                     <div class="snw-toolbar" style="margin-bottom:12px;">
                         <select data-slot="retro-range">
                             <option value="1h">최근 1시간</option>
@@ -165,17 +165,17 @@ SNW.Page = SNW.Page || {};
                         </select>
                         <button type="button" class="snw-btn" data-action="refresh">🔄</button>
                     </div>
-                    <div data-slot="retro-content" class="snw-loading">로딩 중...</div>
+                    <div data-slot="retro-content"></div>
                 </div>`;
-
+            
             const refreshBtn = slot.querySelector('[data-action="refresh"]');
             if (refreshBtn) refreshBtn.onclick = () => this._loadRetro();
             const rangeSelect = slot.querySelector('[data-slot="retro-range"]');
             if (rangeSelect) rangeSelect.onchange = () => this._loadRetro();
-
+            
             await this._loadRetro();
         }
-
+        
         async _loadRetro() {
             const slot = this.el.querySelector('[data-slot="retro-content"]');
             if (!slot) return;
@@ -187,8 +187,8 @@ SNW.Page = SNW.Page || {};
             const durMap = { '1h': 3600, '24h': 86400, '7d': 604800 };
             const since = now - (durMap[range] || 86400);
 
-            slot.innerHTML = '<div class="snw-loading">로딩 중...</div>';   // [Phase5 5.9] 로딩 표시
-
+            slot.innerHTML = '<div class="snw-loading" style="min-height:150px;">로딩 중...</div>';
+            
             try {
                 const getTlFn = (SNW.Api && (SNW.Api.getTimeline || SNW.Api.getMonitorTimeline)) ?
                     (SNW.Api.getTimeline || SNW.Api.getMonitorTimeline).bind(SNW.Api) : () => Promise.resolve({ events: [] });
@@ -204,19 +204,15 @@ SNW.Page = SNW.Page || {};
 
                 slot.innerHTML = '';
                 slot.appendChild(this._renderSummary(summary));
-                slot.appendChild(this._renderTimeline(timeline));
-                slot.appendChild(this._renderEventList(timeline));
+                slot.appendChild(this._renderTimeline(timeline, range));
+                slot.appendChild(this._renderEventList(timeline, range));
             } catch (e) {
-                slot.innerHTML = '<div class="snw-error">회고 데이터 로드 실패</div>';
+                slot.innerHTML = '<div class="snw-error">히스토리 데이터 로드 실패</div>';
             }
         }
 
         // ======================================================
-        // [Phase5 5.9] 이중 스키마 수용
-        //  - 신 스키마: summary.stats.{totalSessions, totalActiveSec, ...}
-        //  - 구 스키마: {totalEvents, sessionStarts, sessionEnds, stepChanges}
-        //  - 후자는 C++ querySessionSummary() 현 구현과 일치
-        //  - 구 스키마에서는 파생 가능한 필드만 표시
+        // 요약 카드
         // ======================================================
         _renderSummary(summary) {
             const div = document.createElement('div');
@@ -227,12 +223,10 @@ SNW.Page = SNW.Page || {};
                 return div;
             }
 
-            // 신 스키마 우선, 없으면 구 스키마에서 파생
             let stats = summary.stats || null;
 
             if (!stats) {
                 const starts = Number(summary.sessionStarts || 0);
-                const ends   = Number(summary.sessionEnds   || 0);
                 const total  = Number(summary.totalEvents   || 0);
 
                 if (total === 0 && starts === 0) {
@@ -242,7 +236,7 @@ SNW.Page = SNW.Page || {};
 
                 stats = {
                     totalSessions:  starts,
-                    totalActiveSec: 0,    // 구 스키마에 시간 필드 없음
+                    totalActiveSec: 0,
                     avgWindSpeed:   0,
                     maxWindSpeed:   0,
                     avgTempC:       0,
@@ -291,11 +285,9 @@ SNW.Page = SNW.Page || {};
         }
 
         // ======================================================
-        // [Phase5 5.9] timeline.from/to 폴백
-        //  - C++ queryTimeline()은 from/to를 반환하지 않음
-        //  - events의 첫/마지막 t로 자동 계산
+        // 타임라인: 마커 겹침 방지 (엇갈림 배치) 적용
         // ======================================================
-        _renderTimeline(timeline) {
+        _renderTimeline(timeline, range = '24h') {
             const div = document.createElement('div');
             div.className = 'snw-retro-timeline';
 
@@ -305,61 +297,68 @@ SNW.Page = SNW.Page || {};
             }
 
             const events = timeline.events;
-            // from/to 폴백 (C++ 응답에 없는 경우 계산)
-            const fromTs = (timeline.from != null)
-                ? timeline.from
-                : (events[0]?.t ?? 0);
-            const toTs   = (timeline.to != null)
-                ? timeline.to
-                : (events[events.length - 1]?.t ?? Math.floor(Date.now() / 1000));
+            const fromTs = (timeline.from != null) ? timeline.from : (events[0]?.t ?? 0);
+            const toTs   = (timeline.to != null) ? timeline.to : (events[events.length - 1]?.t ?? Math.floor(Date.now() / 1000));
 
             const normalized = { ...timeline, from: fromTs, to: toTs, events };
+            const fromLabel = this._fmtAxisTime(fromTs, range);
+            const toLabel   = this._fmtAxisTime(toTs, range);
+
+            let lastPos = -10;
+            let lane = 0;
+
+            const markersHtml = events.map(e => {
+                const rawPos = ((e.t - fromTs) / Math.max(1, toTs - fromTs)) * 100;
+                const pos = Math.min(98, Math.max(2, rawPos));
+                
+                // 이전 마커와 5% 이내로 가까우면 위/아래 위치 교차
+                if (pos - lastPos < 5) {
+                    lane = lane === 0 ? 1 : 0;
+                } else {
+                    lane = 0;
+                }
+                lastPos = pos;
+
+                return this._eventMarker(e, normalized, range, pos, lane);
+            }).join('');
 
             div.innerHTML = `
                 <div class="snw-retro-timeline__title">이벤트 타임라인</div>
-                <div class="snw-retro-timeline__bar">
-                    ${events.map(e => this._eventMarker(e, normalized)).join('')}
+                <div class="snw-retro-timeline__container">
+                    <div class="snw-retro-timeline__bar">
+                        ${markersHtml}
+                    </div>
+                    <div class="snw-retro-timeline__axis">
+                        <span>${fromLabel}</span>
+                        <span>${toLabel}</span>
+                    </div>
                 </div>
             `;
             return div;
         }
 
-        _eventMarker(e, timeline) {
-            const start = timeline.from || 0;
-            const end   = timeline.to   || Math.floor(Date.now() / 1000);
-            const span  = Math.max(1, end - start);
-            const pos   = Math.min(100, Math.max(0, ((e.t - start) / span) * 100));
-
+        _eventMarker(e, timeline, range = '24h', pos = 0, lane = 0) {
             const icon = {
-                0: '⚪',   // STATE_CHANGE
-                1: '➡️',   // STEP_CHANGE
-                2: '▶',    // SESSION_START
-                3: '⏹',    // SESSION_END
-                4: '✋',   // MANUAL_OVERRIDE
-                5: '🌙',   // AUTOOFF
-                6: '⏸',    // PAUSE
-                7: '▶',    // RESUME
+                0: '⚪', 1: '➡️', 2: '▶', 3: '⏹',
+                4: '✋', 5: '🌙', 6: '⏸', 7: '▶',
             }[e.eventType] || '•';
 
             const color = {
-                0: '#59636e',
-                1: '#4a9eff',
-                2: '#3fb950',
-                3: '#8b949e',
-                4: '#d29922',
-                5: '#f0883e',
-                6: '#d29922',
-                7: '#3fb950',
+                0: '#59636e', 1: '#4a9eff', 2: '#3fb950', 3: '#8b949e',
+                4: '#d29922', 5: '#f0883e', 6: '#d29922', 7: '#3fb950',
             }[e.eventType] || '#59636e';
 
+            const timeLabel = this._fmtAxisTime(e.t, range);
+            const laneClass = lane === 1 ? 'snw-retro-marker--bottom' : '';
+
             return `
-                <div class="snw-retro-marker" style="left:${pos}%;background:${color};" title="${this._fmtTimeOfDay(e.t)} · ${SNW.DomUtil.escape(e.label || '')}">
+                <div class="snw-retro-marker ${laneClass}" style="left:${pos}%;background:${color};" title="${timeLabel} · ${SNW.DomUtil.escape(e.label || '')}">
                     <span>${icon}</span>
                 </div>
             `;
         }
 
-        _renderEventList(timeline) {
+        _renderEventList(timeline, range = '24h') {
             const div = document.createElement('div');
             div.className = 'snw-retro-events';
 
@@ -372,7 +371,7 @@ SNW.Page = SNW.Page || {};
                 <div class="snw-retro-events__title">이벤트 목록 (최근 30개)</div>
                 ${events.map(e => `
                     <div class="snw-retro-event-row">
-                        <span class="snw-retro-event-row__time">${this._fmtTimeOfDay(e.t)}</span>
+                        <span class="snw-retro-event-row__time">${this._fmtAxisTime(e.t, range)}</span>
                         <span class="snw-retro-event-row__icon">${
                             2 === e.eventType ? '▶' :
                             3 === e.eventType ? '⏹' :
@@ -390,7 +389,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // Store
+        // 유틸리티
         // =========================================================
         _bindStore() {
             if (SNW.Store && typeof SNW.Store.subscribe === 'function') {
@@ -418,9 +417,18 @@ SNW.Page = SNW.Page || {};
             return h > 0 ? `${h}시간 ${m}분` : `${m}분`;
         }
 
-        _fmtTimeOfDay(epoch) {
+        _fmtAxisTime(epoch, range) {
+            if (!epoch || epoch <= 0) return '--:--';
             const d = new Date(epoch * 1000);
-            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            const hh = String(d.getHours()).padStart(2, '0');
+            const min = String(d.getMinutes()).padStart(2, '0');
+
+            if (range === '7d') {
+                return `${mm}/${dd} ${hh}:${min}`;
+            }
+            return `${hh}:${min}`;
         }
 
         async _loadLiveData() {

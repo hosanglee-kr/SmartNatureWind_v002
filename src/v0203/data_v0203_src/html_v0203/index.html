@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="ko">
-
+<html lang="ko" style="color-scheme: dark;">
+    
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="dark"> <!-- ★ 추가 -->
     <meta name="theme-color" content="#0f1419">
     <title data-i18n="app.title">Smart Nature Wind</title>
     <link rel="icon"
@@ -12,7 +13,6 @@
 </head>
 
 <body>
-
     <div id="app" class="snw-app">
 
         <header class="snw-header" id="snw-header">
@@ -40,7 +40,7 @@
             <div class="snw-nowplaying__left" data-action="expand">
                 <canvas class="snw-nowplaying__eq" width="20" height="16"></canvas>
                 <div class="snw-nowplaying__info">
-                    <div class="snw-nowplaying__title">-</div>
+                    <div class="snw-nowplaying__title" data-slot="np-title">-</div>
                     <div class="snw-nowplaying__sub">
                         <span data-slot="np-step">-</span>
                         <span data-slot="np-time">-</span>

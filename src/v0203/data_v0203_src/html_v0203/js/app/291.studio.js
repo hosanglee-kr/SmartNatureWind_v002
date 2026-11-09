@@ -59,6 +59,7 @@ window.SNW = window.SNW || {};
                     </div>
                 </div>
 
+                <!-- 2열 그리드 -->
                 <div class="snw-step-card__grid">
                     <label class="snw-step-field">
                         <span>타입</span>
@@ -103,12 +104,14 @@ window.SNW = window.SNW || {};
                 </div>` : ''}
 
                 ${isPreset ? `
+                <!-- 물리 세부 조정 (Override) -->
                 <details class="snw-step-card__override" ${ovr.enabled ? 'open' : ''}>
-                    <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
-                        <label class="snw-step-checkbox" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-                            <input type="checkbox" data-field="overrideEnabled" ${ovr.enabled ? 'checked' : ''}>
+                    <summary style="display:flex; align-items:center; justify-content:space-between; cursor:pointer; padding:4px 0; list-style:none; outline:none;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <!-- pointer-events:none으로 클릭 시 summary 이벤트를 유도 -->
+                            <input type="checkbox" data-field="overrideEnabled" ${ovr.enabled ? 'checked' : ''} style="pointer-events:none;">
                             <span>⚙ 물리 세부 조정 (Override)</span>
-                        </label>
+                        </div>
                         ${ovr.enabled ? `<span class="snw-badge snw-badge--warn" style="font-size:10px;padding:2px 6px;">수동 튜닝됨</span>` : ''}
                     </summary>
                     <div class="snw-step-card__override-body">
@@ -132,13 +135,13 @@ window.SNW = window.SNW || {};
                     </div>
                 </details>` : ''}
 
-                <div class="snw-step-card__sparkline" data-slot="sparkline" style="height:40px;margin-top:10px;"></div>
-                <div class="snw-step-card__sparkline-meta" data-slot="sparkline-meta" style="font-size:11px;color:var(--snw-text-dim,#8b949e);margin-top:4px;"></div>
+                <div class="snw-step-card__sparkline" data-slot="sparkline"></div>
+                <div class="snw-step-card__sparkline-meta" data-slot="sparkline-meta"></div>
             `;
 
             this.el = el;
 
-            // 이벤트
+            // 이벤트 바인딩
             const btnDel = el.querySelector('[data-action="delete"]');
             if (btnDel) btnDel.onclick = () => this.onDelete(this.index);
             const btnUp = el.querySelector('[data-action="up"]');
@@ -170,6 +173,18 @@ window.SNW = window.SNW || {};
                 input.addEventListener('input', () => this._onFieldChange(el, input));
                 input.addEventListener('change', () => this._onFieldChange(el, input));
             });
+
+            // [추가] details 태그 열고 닫을 때 체크박스 상태 동기화
+            const detailsEl = el.querySelector('.snw-step-card__override');
+            if (detailsEl) {
+                detailsEl.addEventListener('toggle', () => {
+                    const chk = el.querySelector('[data-field="overrideEnabled"]');
+                    if (chk && chk.checked !== detailsEl.open) {
+                        chk.checked = detailsEl.open;
+                        chk.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+            }
 
             // Sparkline 초기화
             if (SNW.UI && typeof SNW.UI.sparkline === 'function') {
@@ -232,6 +247,9 @@ window.SNW = window.SNW || {};
                         if (this.step.override.windVariability < 0) this.step.override.windVariability = 50;
                         if (this.step.override.gustFrequency < 0) this.step.override.gustFrequency = 45;
                     }
+                    // 체크박스 상태에 맞춰 details 열고 닫기
+                    const detailsEl = el.querySelector('.snw-step-card__override');
+                    if (detailsEl) detailsEl.open = !!val;
                     break;
                 case 'ovrIntensity':
                     this.step.override.windIntensity = Number(val);
@@ -338,7 +356,7 @@ window.SNW = window.SNW || {};
             this._active = true;
             this._steps = [];
             this._stepEditors = [];
-            this._profileId = null;    // edit mode
+            this._profileId = null;
             this._profileNo = 0;
             this._name = '';
             this._repeat = false;
@@ -350,7 +368,6 @@ window.SNW = window.SNW || {};
         async mount() {
             this.el.innerHTML = '<div class="snw-loading">Studio 로딩 중...</div>';
 
-            // windDict 로드
             if (!SNW.Studio._windDict) {
                 try {
                     const data = await SNW.Api.getWindDict();
@@ -362,7 +379,6 @@ window.SNW = window.SNW || {};
                 }
             }
 
-            // URL query 또는 params에서 edit ID 확인
             const editId = (this.params && this.params.edit) ? parseInt(this.params.edit, 10) : null;
 
             if (editId) {
@@ -431,12 +447,14 @@ window.SNW = window.SNW || {};
                                 <label style="display:block;font-size:12px;color:var(--snw-text-dim,#8b949e);margin-bottom:4px;">프로필 이름</label>
                                 <input type="text" data-field="name" value="${SNW.DomUtil ? SNW.DomUtil.escape(this._name) : this._name}" maxlength="32" style="width:100%;padding:8px 10px;background:var(--snw-surface-2,#232b36);border:1px solid var(--snw-border,#2f3844);border-radius:var(--snw-radius-sm,4px);color:var(--snw-text,#e6edf3);">
                             </div>
-                            <div class="snw-form-row snw-form-row--inline" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-                                <label class="snw-step-checkbox" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                            
+                            <div class="snw-form-row snw-form-row--inline" style="margin-bottom:16px;">
+                                <label class="snw-step-checkbox" style="margin:0;">
                                     <input type="checkbox" data-field="repeat" ${this._repeat ? 'checked' : ''}>
                                     <span>반복</span>
                                 </label>
-                                <input type="number" data-field="repeatCount" min="0" max="99" value="${this._repeatCount}" placeholder="0=무한" style="width:80px;padding:6px;background:var(--snw-surface-2,#232b36);border:1px solid var(--snw-border,#2f3844);border-radius:var(--snw-radius-sm,4px);color:var(--snw-text,#e6edf3);">
+                                <input type="number" data-field="repeatCount" min="0" max="99" value="${this._repeatCount}" placeholder="0" 
+                                       style="width:70px;padding:6px;background:var(--snw-surface-2,#232b36);border:1px solid var(--snw-border,#2f3844);border-radius:var(--snw-radius-sm,4px);color:var(--snw-text,#e6edf3);text-align:center;">
                                 <span class="snw-form-hint" style="font-size:12px;color:var(--snw-text-dim,#8b949e);">회 (0=무한)</span>
                             </div>
                         </div>
@@ -444,17 +462,20 @@ window.SNW = window.SNW || {};
                         <h3 class="snw-form-section" style="font-size:14px;color:var(--snw-primary,#4a9eff);margin:16px 0 10px;">Step 시퀀스</h3>
                         <div data-slot="steps"></div>
 
-                        <button type="button" class="snw-btn snw-btn--add-step" data-action="add-step" style="width:100%;padding:10px;margin-top:10px;background:var(--snw-surface-2,#232b36);border:1px dashed var(--snw-border,#2f3844);color:var(--snw-text,#e6edf3);border-radius:var(--snw-radius-sm,4px);cursor:pointer;">
+                        <button type="button" class="snw-btn snw-btn--add-step" data-action="add-step">
                             + Step 추가 (최대 8개)
                         </button>
                     </div>
 
+                    <!-- 하단 액션 바 -->
                     <div class="snw-studio__bar">
-                        <button type="button" class="snw-btn" data-action="preview-all" style="padding:8px 16px;background:var(--snw-surface-2,#232b36);color:var(--snw-primary,#4a9eff);border:1px solid var(--snw-primary,#4a9eff);border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-weight:600;">🎬 시나리오 체험</button>
-                        <button type="button" class="snw-btn" data-action="cancel" style="padding:8px 16px;background:var(--snw-surface-3,#2f3844);color:var(--snw-text,#e6edf3);border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;">취소</button>
-                        <button type="button" class="snw-btn snw-btn-primary" data-action="save" style="padding:8px 20px;background:var(--snw-primary,#4a9eff);color:#fff;border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-weight:600;">
-                            ${isEdit ? '업데이트' : '저장'}
-                        </button>
+                        <button type="button" class="snw-btn" data-action="preview-all" style="padding:8px 16px;background:rgba(74,158,255,0.1);color:var(--snw-primary,#4a9eff);border:1px solid var(--snw-primary,#4a9eff);border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-weight:600;">🎬 미리보기</button>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="snw-btn" data-action="cancel" style="padding:8px 16px;background:var(--snw-surface-3,#2f3844);color:var(--snw-text,#e6edf3);border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;">취소</button>
+                            <button type="button" class="snw-btn snw-btn-primary" data-action="save" style="padding:8px 20px;background:var(--snw-primary,#4a9eff);color:#fff;border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-weight:600;">
+                                ${isEdit ? '업데이트' : '저장'}
+                            </button>
+                        </div>
                     </div>
                 </div>`;
 
@@ -611,4 +632,3 @@ window.SNW = window.SNW || {};
         }
     };
 })(window.SNW);
-

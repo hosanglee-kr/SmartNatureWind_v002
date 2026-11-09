@@ -187,10 +187,10 @@ window.SNW = window.SNW || {};
             // =====================================================
             'monitor.title': '모니터',
             'monitor.liveTab': '📊 실시간',
-            'monitor.retroTab': '🎬 회고',
+            'monitor.retroTab': '🎬 히스토리',
             'monitor.liveWind': '📊 실시간 풍속',
             'monitor.sensors': '🌡️ 센서',
-            'monitor.retroTitle': '🎬 세션 회고',
+            'monitor.retroTitle': '🎬 세션 히스토리',
             'monitor.range1h': '최근 1시간',
             'monitor.range24h': '최근 24시간',
             'monitor.range7d': '최근 7일',

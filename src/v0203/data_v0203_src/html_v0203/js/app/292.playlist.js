@@ -90,7 +90,9 @@ window.SNW = window.SNW || {};
                         <span class="snw-playlist-item__name" style="font-weight:600;font-size:15px;color:var(--snw-text,#e6edf3);">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(profile.name) : profile.name}</span>
                         <span class="snw-playlist-item__meta" style="font-size:12px;color:var(--snw-text-dim,#8b949e);">${profile.stepCount || (profile.steps ? profile.steps.length : 0)} Step · ${this._fmtTotal(profile)}</span>
                     </div>
-                    <div class="snw-playlist-item__sparkline" data-slot="spark" style="height:44px;margin:4px 0;"></div>
+                    
+                    <div class="snw-playlist-item__sparkline" data-slot="spark" style="height:100px; margin:8px 0; border-radius:8px; padding:8px;"></div>
+      
                     <div class="snw-playlist-item__refs" style="font-size:11px;color:var(--snw-text-faint,#6e7a87);">
                         ${refCount > 0
                     ? `<span style="color:var(--snw-warn,#d29922);">⏰ 스케줄 ${refCount}개에서 사용 중</span>`

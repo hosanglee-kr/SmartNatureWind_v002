@@ -1500,3 +1500,61 @@ body.snw-night-mode {
     text-decoration: none;
 }
 .snw-auto-comfort__status-action:hover { background: rgba(255,255,255,0.1); }
+
+
+
+/* =====================================================
+ * [UI Fix] AI Assistant 세그먼트 컨트롤 및 UI 개선
+ * ===================================================== */
+/* 1. 모드 전환 세그먼트 컨트롤 */
+.snw-btn-group {
+    display: inline-flex;
+    background: var(--snw-surface-2);
+    border-radius: var(--snw-radius);
+    padding: 2px;
+    gap: 2px;
+    border: 1px solid var(--snw-border);
+}
+
+.snw-btn-group .snw-btn {
+    border-radius: var(--snw-radius-sm);
+    border: none;
+    box-shadow: none;
+    transition: background 0.15s, color 0.15s;
+}
+
+.snw-btn-group .snw-btn--primary {
+    background: var(--snw-primary);
+    color: #fff;
+    font-weight: 600;
+}
+
+.snw-btn-group .snw-btn--ghost {
+    background: transparent;
+    color: var(--snw-text-dim);
+}
+.snw-btn-group .snw-btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* 2. 비용 배지 2줄 개행 방지 */
+[data-slot="cost-badge"] {
+    white-space: nowrap;
+    max-width: 45vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 3. 예시 칩 2x2 그리드 정렬 */
+.snw-ai-examples {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.snw-ai-examples .snw-btn {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+    padding: 8px 12px;
+}

@@ -1604,6 +1604,62 @@ body.snw-night-mode {
 }
 .snw-auto-comfort__status-action:hover { background: rgba(255,255,255,0.1); }
 
+/* =====================================================
+ * [UI Fix] AI Assistant 세그먼트 컨트롤 및 UI 개선
+ * ===================================================== */
+/* 1. 모드 전환 세그먼트 컨트롤 */
+.snw-btn-group {
+    display: inline-flex;
+    background: var(--snw-surface-2);
+    border-radius: var(--snw-radius);
+    padding: 2px;
+    gap: 2px;
+    border: 1px solid var(--snw-border);
+}
+
+.snw-btn-group .snw-btn {
+    border-radius: var(--snw-radius-sm);
+    border: none;
+    box-shadow: none;
+    transition: background 0.15s, color 0.15s;
+}
+
+.snw-btn-group .snw-btn--primary {
+    background: var(--snw-primary);
+    color: #fff;
+    font-weight: 600;
+}
+
+.snw-btn-group .snw-btn--ghost {
+    background: transparent;
+    color: var(--snw-text-dim);
+}
+.snw-btn-group .snw-btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* 2. 비용 배지 2줄 개행 방지 */
+[data-slot="cost-badge"] {
+    white-space: nowrap;
+    max-width: 45vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 3. 예시 칩 2x2 그리드 정렬 */
+.snw-ai-examples {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.snw-ai-examples .snw-btn {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+    padding: 8px 12px;
+}
+
 
 /* ---- _dashboard.css (6514 bytes) ---- */
 /*
@@ -2359,7 +2415,12 @@ body.snw-sidebar-open .snw-sidebar {
     }
 }
 
-/* ---- _monitor.css (2520 bytes) ---- */
+/* ============================================================
+ * 소스명   : _monitor.css
+ * 모듈약어 : 
+ * 모듈명   : Monitor (실시간 및 히스토리)
+ * ============================================================ */
+
 .snw-monitor {
     display: flex;
     flex-direction: column;
@@ -2397,96 +2458,178 @@ body.snw-sidebar-open .snw-sidebar {
     color: var(--snw-text);
 }
 
-/* 회고 */
+/* ============================================================
+ * 히스토리 (구 회고) 탭
+ * ============================================================ */
 .snw-retro-summary {
     background: var(--snw-surface-2);
     border-radius: var(--snw-radius);
     padding: 12px;
     margin-bottom: 16px;
 }
+
 .snw-retro-summary__title {
     font-size: 14px;
     font-weight: 600;
     color: var(--snw-text);
     margin-bottom: 12px;
 }
+
+/* 요약 정보 그리드 반응형 처리 (화면이 좁아져도 글자가 깨지지 않음) */
 .snw-retro-summary__grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
     gap: 8px;
     font-size: 12px;
 }
-.snw-retro-summary__grid > div {
+
+.snw-retro-summary__grid>div {
     display: flex;
     justify-content: space-between;
     padding: 4px 0;
 }
+
 .snw-retro-summary__grid span {
     color: var(--snw-text-dim);
 }
 
+/* ============================================================
+ * 이벤트 타임라인 (마커 엇갈림 배치 및 시간축)
+ * ============================================================ */
 .snw-retro-timeline {
-    margin-bottom: 16px;
+    margin: 20px 0;
 }
+
 .snw-retro-timeline__title {
     font-size: 13px;
     color: var(--snw-text-dim);
-    margin-bottom: 8px;
+    margin-bottom: 12px;
 }
+
+/* 마커가 양 끝(0%, 100%)에서 잘리지 않도록 컨테이너에 좌우 여백 부여 */
+.snw-retro-timeline__container {
+    padding: 0 16px;
+}
+
+/* 타임라인 바: 높이를 늘려 마커가 위아래로 배치될 공간 확보 */
 .snw-retro-timeline__bar {
     position: relative;
-    height: 40px;
-    background: var(--snw-bg-2);
-    border-radius: var(--snw-radius);
-    overflow: hidden;
+    height: 48px;
+    background: transparent;
+    margin-bottom: 12px;
 }
+
+/* 타임라인 중앙 가로선 (기준점) */
+.snw-retro-timeline__bar::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--snw-surface-3, #2f3844);
+    border-radius: 2px;
+    transform: translateY(-50%);
+    z-index: 0;
+}
+
+/* 타임라인 하단 시간 축 */
+.snw-retro-timeline__axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--snw-text-dim, #8b949e);
+    font-variant-numeric: tabular-nums;
+    padding: 0 4px;
+}
+
+/* 기본 마커 (선 위쪽에 배치) */
 .snw-retro-marker {
     position: absolute;
-    top: 4px;
-    transform: translateX(-50%);
-    width: 24px; height: 24px;
+    top: 50%;
+    transform: translate(-50%, -100%);
+    margin-top: -2px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: 14px;
     color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     cursor: pointer;
-    transition: transform 0.15s;
+    transition: transform 0.15s, box-shadow 0.15s;
+    border: 2px solid var(--snw-surface, #1a2028);
+    z-index: 1;
 }
+
+/* 마커 호버 시 확대 */
 .snw-retro-marker:hover {
-    transform: translateX(-50%) scale(1.2);
-    z-index: 2;
+    transform: translate(-50%, -100%) scale(1.2);
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+/* 이벤트가 겹칠 때 아래쪽으로 배치되는 마커 */
+.snw-retro-marker--bottom {
+    transform: translate(-50%, 0);
+    margin-top: 2px;
+}
+
+.snw-retro-marker--bottom:hover {
+    transform: translate(-50%, 0) scale(1.2);
+}
+
+/* ============================================================
+ * 이벤트 목록 (스크롤 지원)
+ * ============================================================ */
+.snw-retro-events {
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--snw-bg-2, #0a0f14);
+    border-radius: var(--snw-radius, 8px);
+    padding: 8px;
+    margin-top: 16px;
 }
 
 .snw-retro-events__title {
     font-size: 13px;
     color: var(--snw-text-dim);
     margin-bottom: 8px;
+    padding-left: 4px;
 }
+
 .snw-retro-event-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 4px 8px;
+    padding: 6px 8px;
     font-size: 12px;
     color: var(--snw-text);
-    border-bottom: 1px solid var(--snw-border);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
+
+.snw-retro-event-row:last-child {
+    border-bottom: none;
+}
+
+/* 7일 조회 시 'MM/DD HH:mm'이 잘리지 않도록 너비 확보 */
 .snw-retro-event-row__time {
     color: var(--snw-text-faint);
     font-family: var(--snw-font-mono);
-    min-width: 48px;
+    min-width: 68px;
 }
+
 .snw-retro-event-row__icon {
     min-width: 20px;
     text-align: center;
 }
+
 .snw-retro-event-row__label {
     flex: 1;
     color: var(--snw-text);
 }
-
 
 
 /* ---- _nowplaying.css (3179 bytes) ---- */
@@ -3565,7 +3708,6 @@ a {
 
 
 
-/* ---- _studio.css (5475 bytes) ---- */
 /* ============================================================
  * 소스명   : _studio.css
  * 모듈약어 : W10
@@ -3578,24 +3720,34 @@ a {
     padding-bottom: 80px;   /* sticky bar 공간 */
 }
 
+/* 하단 액션 바 좌우 분리 */
 .snw-studio__bar {
     position: fixed;
-    bottom: calc(var(--snw-bottom-nav-h, 56px) + var(--snw-np-h, 48px));
+    bottom: var(--snw-bottom-nav-h, 60px);
     left: 0; right: 0;
     padding: 12px 16px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
     background: var(--snw-surface, #1a2028);
     border-top: 1px solid var(--snw-border, #2f3844);
     display: flex;
     gap: 8px;
-    justify-content: flex-end;
-    z-index: 100;
+    justify-content: space-between;
+    z-index: 1000;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.3);
 }
 
+body.has-nowplaying .snw-studio__bar {
+    bottom: calc(var(--snw-bottom-nav-h, 60px) + var(--snw-np-h, 48px));
+}
+
 @media (min-width: 768px) {
-    .snw-studio__bar {
-        bottom: var(--snw-np-h, 48px);
-    }
+    .snw-studio__bar { bottom: 0; }
+    body.has-nowplaying .snw-studio__bar { bottom: var(--snw-np-h, 48px); }
+}
+
+/* Studio 화면일 때는 AI FAB 버튼 숨김 */
+body:has(.snw-studio__bar) .snw-ai-fab {
+    display: none !important;
 }
 
 /* ============================================================
@@ -3645,15 +3797,17 @@ a {
 .snw-icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .snw-icon-btn--danger { color: var(--snw-error, #f85149); }
 
-/* Grid */
+/* 2열 그리드 레이아웃 */
 .snw-step-card__grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin-bottom: 8px;
+    gap: 12px;
+    margin-bottom: 12px;
 }
 @media (max-width: 480px) {
-    .snw-step-card__grid { grid-template-columns: 1fr; }
+    .snw-step-card__grid {
+        grid-template-columns: 1fr; /* 모바일에서는 1열 */
+    }
 }
 
 .snw-step-field {
@@ -3679,6 +3833,7 @@ a {
     color: var(--snw-text, #e6edf3);
     font-size: 13px;
     width: 100%;
+    box-sizing: border-box;
 }
 .snw-step-field input[type="range"] {
     width: 100%;
@@ -3689,9 +3844,15 @@ a {
     align-items: center;
     gap: 6px;
 }
+.snw-step-field__row input[type="number"] {
+    width: 100%;
+    max-width: 100px;
+    text-align: center;
+}
 .snw-step-field__unit {
     color: var(--snw-text-dim, #8b949e);
     font-size: 12px;
+    white-space: nowrap;
 }
 
 /* Override */
@@ -3705,6 +3866,9 @@ a {
     cursor: pointer;
     font-size: 12px;
     color: var(--snw-text-dim, #8b949e);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 .snw-step-card__override-body {
     margin-top: 10px;
@@ -3721,20 +3885,30 @@ a {
     cursor: pointer;
 }
 
-/* Sparkline */
+/* 체크박스 테마 색상 */
+input[type="checkbox"] {
+    accent-color: var(--snw-primary, #4a9eff);
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    margin: 0;
+}
+
+/* Sparkline 차트 크기 확대 및 배경/테두리 */
 .snw-step-card__sparkline {
-    margin-top: 10px;
-    height: 50px;
-    background: var(--snw-bg-2, #0a0f14);
-    border-radius: var(--snw-radius-sm, 4px);
+    margin-top: 12px;
+    height: 80px;
+    background: var(--snw-surface, #ffffff);
+    border: 1px solid var(--snw-border, #d0d7de);
+    border-radius: 8px;
     overflow: hidden;
-    padding: 4px;
+    padding: 8px;
 }
 .snw-step-card__sparkline-meta {
     font-size: 11px;
     color: var(--snw-text-dim, #8b949e);
     text-align: right;
-    margin-top: 4px;
+    margin-top: 6px;
 }
 
 /* Add step button */
@@ -3772,12 +3946,14 @@ a {
     border-bottom-color: var(--snw-primary, #4a9eff);
 }
 
-/* Form row inline */
+/* Form row inline (반복 컨트롤 등) */
 .snw-form-row--inline {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
     flex-wrap: wrap;
+    gap: 8px !important;
 }
 .snw-form-hint {
     font-size: 11px;
@@ -3792,7 +3968,6 @@ a {
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
-
 
 
 /* ---- _variables.css (4223 bytes) ---- */

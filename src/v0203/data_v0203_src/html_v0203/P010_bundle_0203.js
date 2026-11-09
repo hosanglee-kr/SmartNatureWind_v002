@@ -205,13 +205,20 @@ window.SNW = window.SNW || {};
 		// =====================================================
 		LS_PREFIX: LS_PREFIX,
 		LS_KEY: {
-			API_KEY: LS_PREFIX + 'apiKey',
-			LEVEL: LS_PREFIX + 'level',
-			LANG: LS_PREFIX + 'lang',
-			DEBUG: LS_PREFIX + 'debug',
-			LAST_PRESET: LS_PREFIX + 'lastPreset',
-			UI_THEME: LS_PREFIX + 'theme'
-		},
+            API_KEY: LS_PREFIX + 'apiKey',
+            LEVEL: LS_PREFIX + 'level',
+            LANG: LS_PREFIX + 'lang',
+            DEBUG: LS_PREFIX + 'debug',
+            LAST_PRESET: LS_PREFIX + 'lastPreset',
+            UI_THEME: LS_PREFIX + 'theme',
+            
+            // [PATCH] AI 키를 여기로 통합 (최종 문자열은 기존과 동일)
+            AI_MODE: LS_PREFIX + 'ai.mode', // 'snw.ai.mode'
+            AI_LIVE_WARNED: LS_PREFIX + 'ai.liveWarned', // 'snw.ai.liveWarned'
+            AI_HISTORY: LS_PREFIX + 'ai.history' // 'snw.ai.history'
+            
+        },
+
 
 		// =====================================================
 		// API 경로 (버전 prefix 중앙 관리)
@@ -361,11 +368,6 @@ window.SNW = window.SNW || {};
 			WARN_SEC: 25 * 60, // 25분 경고
 			POLL_MS: 60000,
 			REPORT_MS: 30000
-		},
-		LS_KEY: {
-			AI_MODE: 'snw.ai.mode',
-			AI_LIVE_WARNED: 'snw.ai.liveWarned',
-			AI_HISTORY: 'snw.ai.history'
 		},
 
 		// =====================================================
@@ -592,10 +594,10 @@ window.SNW = window.SNW || {};
             // =====================================================
             'monitor.title': '모니터',
             'monitor.liveTab': '📊 실시간',
-            'monitor.retroTab': '🎬 회고',
+            'monitor.retroTab': '🎬 히스토리',
             'monitor.liveWind': '📊 실시간 풍속',
             'monitor.sensors': '🌡️ 센서',
-            'monitor.retroTitle': '🎬 세션 회고',
+            'monitor.retroTitle': '🎬 세션 히스토리',
             'monitor.range1h': '최근 1시간',
             'monitor.range24h': '최근 24시간',
             'monitor.range7d': '최근 7일',
@@ -1986,71 +1988,73 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 031.util.dom.js (2004 bytes) ---- */
 // =========================================================
-// 031.util.dom.js — SNW.DomUtil
+// 031.util.dom.js — SNW.DomUtil (PATCHED)
+//  - 원본의 DomUtil 재할당 → 단일 리터럴로 통합
+//  - tooltip()을 리터럴 첫 메서드로 이동
+//  - 중복 'use strict'; 제거
+//  - tooltip 내부 참조를 this.escape()로 방어
 // Layer 1 (유틸) — SNW.C 참조
 // =========================================================
 window.SNW = window.SNW || {};
 (function(SNW) {
     'use strict';
-    SNW.DomUtil = SNW.DomUtil || {};
-    // [U-B6] 용어 툴팁
-    SNW.DomUtil.tooltip = function(term, definition) {
-        return `<span class="snw-term" title="${SNW.DomUtil.escape(definition)}" style="cursor:help;border-bottom:1px dashed var(--snw-text-dim);">${SNW.DomUtil.escape(term)}</span>`;
+    
+    SNW.DomUtil = {
+        // [U-B6] 용어 툴팁
+        tooltip(term, definition) {
+            return `<span class="snw-term" title="${this.escape(definition)}" style="cursor:help;border-bottom:1px dashed var(--snw-text-dim);">${this.escape(term)}</span>`;
+        },
+        
+        /** 안전 textContent */
+        text(el, v) {
+            if (el) el.textContent = (v == null) ? '' : String(v);
+        },
+        
+        /** 안전 class 토글 */
+        toggleClass(el, cls, on) {
+            if (el) el.classList.toggle(cls, !!on);
+        },
+        
+        /** data-* 기반 이벤트 위임 */
+        delegate(root, selector, event, handler) {
+            root.addEventListener(event, (e) => {
+                const t = e.target.closest(selector);
+                if (t && root.contains(t)) handler(e, t);
+            });
+        },
+        
+        /** HTML escape */
+        escape(s) {
+            return String(s).replace(/[&<>"']/g,
+                c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } [c]));
+        },
+        
+        /** HTML 템플릿 → Element (값은 escape) */
+        html(strings, ...vals) {
+            const div = document.createElement('div');
+            div.innerHTML = strings.reduce((acc, s, i) => {
+                const v = vals[i];
+                const safe = (v == null) ? '' :
+                    (typeof v === 'string' ? this.escape(v) : v);
+                return acc + s + (i < vals.length ? safe : '');
+            }, '').trim();
+            return div.firstElementChild;
+        },
+        
+        /** 반응형 뷰포트 클래스 */
+        applyResponsiveClass(el) {
+            const apply = () => {
+                const w = window.innerWidth;
+                el.classList.toggle('snw-mobile', w < 768);
+                el.classList.toggle('snw-tablet', w >= 768 && w < 1024);
+                el.classList.toggle('snw-desktop', w >= 1024);
+            };
+            apply();
+            window.addEventListener('resize', apply);
+        }
     };
-	'use strict';
-	
-	SNW.DomUtil = {
-		/** 안전 textContent */
-		text(el, v) {
-			if (el) el.textContent = (v == null) ? '' : String(v);
-		},
-		
-		/** 안전 class 토글 */
-		toggleClass(el, cls, on) {
-			if (el) el.classList.toggle(cls, !!on);
-		},
-		
-		/** data-* 기반 이벤트 위임 */
-		delegate(root, selector, event, handler) {
-			root.addEventListener(event, (e) => {
-				const t = e.target.closest(selector);
-				if (t && root.contains(t)) handler(e, t);
-			});
-		},
-		
-		/** HTML escape */
-		escape(s) {
-			return String(s).replace(/[&<>"']/g,
-				c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } [c]));
-		},
-		
-		/** HTML 템플릿 → Element (값은 escape) */
-		html(strings, ...vals) {
-			const div = document.createElement('div');
-			div.innerHTML = strings.reduce((acc, s, i) => {
-				const v = vals[i];
-				const safe = (v == null) ? '' :
-					(typeof v === 'string' ? SNW.DomUtil.escape(v) : v);
-				return acc + s + (i < vals.length ? safe : '');
-			}, '').trim();
-			return div.firstElementChild;
-		},
-		
-		/** 반응형 뷰포트 클래스 */
-		applyResponsiveClass(el) {
-			const apply = () => {
-				const w = window.innerWidth;
-				el.classList.toggle('snw-mobile', w < 768);
-				el.classList.toggle('snw-tablet', w >= 768 && w < 1024);
-				el.classList.toggle('snw-desktop', w >= 1024);
-			};
-			apply();
-			window.addEventListener('resize', apply);
-		}
-	};
-	
+    
 })(window.SNW);
 
 
@@ -9227,9 +9231,8 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 260.page.monitor.js (19665 bytes) ---- */
 // =========================================================
-// 260.page.monitor.js — SNW.Page.Monitor (Stage 7 회고 + 실시간 EQ)
+// 260.page.monitor.js — SNW.Page.Monitor (Stage 7 히스토리 + 실시간 EQ)
 // =========================================================
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
@@ -9252,7 +9255,7 @@ SNW.Page = SNW.Page || {};
             this._bindStore();
             await this._loadLiveData();
 
-            // 탭 초기화 (_switchTab('live') 내부에서 _renderLive가 이퀄라이저를 전담 생성)
+            // 탭 초기화
             this._switchTab(this._currentTab);
         }
 
@@ -9270,7 +9273,7 @@ SNW.Page = SNW.Page || {};
                 <div class="snw-monitor">
                     <div class="snw-tabs">
                         <button type="button" class="snw-tab-btn is-active" data-tab="live">📊 실시간</button>
-                        <button type="button" class="snw-tab-btn" data-tab="retro">🎬 회고</button>
+                        <button type="button" class="snw-tab-btn" data-tab="retro">🎬 히스토리</button>
                     </div>
                     <div data-tab-content="live"></div>
                     <div data-tab-content="retro" style="display:none;"></div>
@@ -9310,7 +9313,6 @@ SNW.Page = SNW.Page || {};
                     <div class="snw-monitor__sensors" data-slot="live-sensors"></div>
                 </div>`;
 
-            // 이퀄라이저 재초기화
             if (this._liveEq && typeof this._liveEq.stop === 'function') {
                 this._liveEq.stop();
                 this._liveEq = null;
@@ -9379,14 +9381,15 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // 회고 탭
+        // 히스토리 탭 (기존 회고)
         // =========================================================
         async _renderRetro() {
             const slot = this.el.querySelector('[data-tab-content="retro"]');
             if (!slot) return;
+            
             slot.innerHTML = `
                 <div class="snw-card">
-                    <h2>🎬 세션 회고</h2>
+                    <h2>🎬 세션 히스토리</h2>
                     <div class="snw-toolbar" style="margin-bottom:12px;">
                         <select data-slot="retro-range">
                             <option value="1h">최근 1시간</option>
@@ -9395,17 +9398,17 @@ SNW.Page = SNW.Page || {};
                         </select>
                         <button type="button" class="snw-btn" data-action="refresh">🔄</button>
                     </div>
-                    <div data-slot="retro-content" class="snw-loading">로딩 중...</div>
+                    <div data-slot="retro-content"></div>
                 </div>`;
-
+            
             const refreshBtn = slot.querySelector('[data-action="refresh"]');
             if (refreshBtn) refreshBtn.onclick = () => this._loadRetro();
             const rangeSelect = slot.querySelector('[data-slot="retro-range"]');
             if (rangeSelect) rangeSelect.onchange = () => this._loadRetro();
-
+            
             await this._loadRetro();
         }
-
+        
         async _loadRetro() {
             const slot = this.el.querySelector('[data-slot="retro-content"]');
             if (!slot) return;
@@ -9417,8 +9420,8 @@ SNW.Page = SNW.Page || {};
             const durMap = { '1h': 3600, '24h': 86400, '7d': 604800 };
             const since = now - (durMap[range] || 86400);
 
-            slot.innerHTML = '<div class="snw-loading">로딩 중...</div>';   // [Phase5 5.9] 로딩 표시
-
+            slot.innerHTML = '<div class="snw-loading" style="min-height:150px;">로딩 중...</div>';
+            
             try {
                 const getTlFn = (SNW.Api && (SNW.Api.getTimeline || SNW.Api.getMonitorTimeline)) ?
                     (SNW.Api.getTimeline || SNW.Api.getMonitorTimeline).bind(SNW.Api) : () => Promise.resolve({ events: [] });
@@ -9434,19 +9437,15 @@ SNW.Page = SNW.Page || {};
 
                 slot.innerHTML = '';
                 slot.appendChild(this._renderSummary(summary));
-                slot.appendChild(this._renderTimeline(timeline));
-                slot.appendChild(this._renderEventList(timeline));
+                slot.appendChild(this._renderTimeline(timeline, range));
+                slot.appendChild(this._renderEventList(timeline, range));
             } catch (e) {
-                slot.innerHTML = '<div class="snw-error">회고 데이터 로드 실패</div>';
+                slot.innerHTML = '<div class="snw-error">히스토리 데이터 로드 실패</div>';
             }
         }
 
         // ======================================================
-        // [Phase5 5.9] 이중 스키마 수용
-        //  - 신 스키마: summary.stats.{totalSessions, totalActiveSec, ...}
-        //  - 구 스키마: {totalEvents, sessionStarts, sessionEnds, stepChanges}
-        //  - 후자는 C++ querySessionSummary() 현 구현과 일치
-        //  - 구 스키마에서는 파생 가능한 필드만 표시
+        // 요약 카드
         // ======================================================
         _renderSummary(summary) {
             const div = document.createElement('div');
@@ -9457,12 +9456,10 @@ SNW.Page = SNW.Page || {};
                 return div;
             }
 
-            // 신 스키마 우선, 없으면 구 스키마에서 파생
             let stats = summary.stats || null;
 
             if (!stats) {
                 const starts = Number(summary.sessionStarts || 0);
-                const ends   = Number(summary.sessionEnds   || 0);
                 const total  = Number(summary.totalEvents   || 0);
 
                 if (total === 0 && starts === 0) {
@@ -9472,7 +9469,7 @@ SNW.Page = SNW.Page || {};
 
                 stats = {
                     totalSessions:  starts,
-                    totalActiveSec: 0,    // 구 스키마에 시간 필드 없음
+                    totalActiveSec: 0,
                     avgWindSpeed:   0,
                     maxWindSpeed:   0,
                     avgTempC:       0,
@@ -9521,11 +9518,9 @@ SNW.Page = SNW.Page || {};
         }
 
         // ======================================================
-        // [Phase5 5.9] timeline.from/to 폴백
-        //  - C++ queryTimeline()은 from/to를 반환하지 않음
-        //  - events의 첫/마지막 t로 자동 계산
+        // 타임라인: 마커 겹침 방지 (엇갈림 배치) 적용
         // ======================================================
-        _renderTimeline(timeline) {
+        _renderTimeline(timeline, range = '24h') {
             const div = document.createElement('div');
             div.className = 'snw-retro-timeline';
 
@@ -9535,61 +9530,68 @@ SNW.Page = SNW.Page || {};
             }
 
             const events = timeline.events;
-            // from/to 폴백 (C++ 응답에 없는 경우 계산)
-            const fromTs = (timeline.from != null)
-                ? timeline.from
-                : (events[0]?.t ?? 0);
-            const toTs   = (timeline.to != null)
-                ? timeline.to
-                : (events[events.length - 1]?.t ?? Math.floor(Date.now() / 1000));
+            const fromTs = (timeline.from != null) ? timeline.from : (events[0]?.t ?? 0);
+            const toTs   = (timeline.to != null) ? timeline.to : (events[events.length - 1]?.t ?? Math.floor(Date.now() / 1000));
 
             const normalized = { ...timeline, from: fromTs, to: toTs, events };
+            const fromLabel = this._fmtAxisTime(fromTs, range);
+            const toLabel   = this._fmtAxisTime(toTs, range);
+
+            let lastPos = -10;
+            let lane = 0;
+
+            const markersHtml = events.map(e => {
+                const rawPos = ((e.t - fromTs) / Math.max(1, toTs - fromTs)) * 100;
+                const pos = Math.min(98, Math.max(2, rawPos));
+                
+                // 이전 마커와 5% 이내로 가까우면 위/아래 위치 교차
+                if (pos - lastPos < 5) {
+                    lane = lane === 0 ? 1 : 0;
+                } else {
+                    lane = 0;
+                }
+                lastPos = pos;
+
+                return this._eventMarker(e, normalized, range, pos, lane);
+            }).join('');
 
             div.innerHTML = `
                 <div class="snw-retro-timeline__title">이벤트 타임라인</div>
-                <div class="snw-retro-timeline__bar">
-                    ${events.map(e => this._eventMarker(e, normalized)).join('')}
+                <div class="snw-retro-timeline__container">
+                    <div class="snw-retro-timeline__bar">
+                        ${markersHtml}
+                    </div>
+                    <div class="snw-retro-timeline__axis">
+                        <span>${fromLabel}</span>
+                        <span>${toLabel}</span>
+                    </div>
                 </div>
             `;
             return div;
         }
 
-        _eventMarker(e, timeline) {
-            const start = timeline.from || 0;
-            const end   = timeline.to   || Math.floor(Date.now() / 1000);
-            const span  = Math.max(1, end - start);
-            const pos   = Math.min(100, Math.max(0, ((e.t - start) / span) * 100));
-
+        _eventMarker(e, timeline, range = '24h', pos = 0, lane = 0) {
             const icon = {
-                0: '⚪',   // STATE_CHANGE
-                1: '➡️',   // STEP_CHANGE
-                2: '▶',    // SESSION_START
-                3: '⏹',    // SESSION_END
-                4: '✋',   // MANUAL_OVERRIDE
-                5: '🌙',   // AUTOOFF
-                6: '⏸',    // PAUSE
-                7: '▶',    // RESUME
+                0: '⚪', 1: '➡️', 2: '▶', 3: '⏹',
+                4: '✋', 5: '🌙', 6: '⏸', 7: '▶',
             }[e.eventType] || '•';
 
             const color = {
-                0: '#59636e',
-                1: '#4a9eff',
-                2: '#3fb950',
-                3: '#8b949e',
-                4: '#d29922',
-                5: '#f0883e',
-                6: '#d29922',
-                7: '#3fb950',
+                0: '#59636e', 1: '#4a9eff', 2: '#3fb950', 3: '#8b949e',
+                4: '#d29922', 5: '#f0883e', 6: '#d29922', 7: '#3fb950',
             }[e.eventType] || '#59636e';
 
+            const timeLabel = this._fmtAxisTime(e.t, range);
+            const laneClass = lane === 1 ? 'snw-retro-marker--bottom' : '';
+
             return `
-                <div class="snw-retro-marker" style="left:${pos}%;background:${color};" title="${this._fmtTimeOfDay(e.t)} · ${SNW.DomUtil.escape(e.label || '')}">
+                <div class="snw-retro-marker ${laneClass}" style="left:${pos}%;background:${color};" title="${timeLabel} · ${SNW.DomUtil.escape(e.label || '')}">
                     <span>${icon}</span>
                 </div>
             `;
         }
 
-        _renderEventList(timeline) {
+        _renderEventList(timeline, range = '24h') {
             const div = document.createElement('div');
             div.className = 'snw-retro-events';
 
@@ -9602,7 +9604,7 @@ SNW.Page = SNW.Page || {};
                 <div class="snw-retro-events__title">이벤트 목록 (최근 30개)</div>
                 ${events.map(e => `
                     <div class="snw-retro-event-row">
-                        <span class="snw-retro-event-row__time">${this._fmtTimeOfDay(e.t)}</span>
+                        <span class="snw-retro-event-row__time">${this._fmtAxisTime(e.t, range)}</span>
                         <span class="snw-retro-event-row__icon">${
                             2 === e.eventType ? '▶' :
                             3 === e.eventType ? '⏹' :
@@ -9620,7 +9622,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // Store
+        // 유틸리티
         // =========================================================
         _bindStore() {
             if (SNW.Store && typeof SNW.Store.subscribe === 'function') {
@@ -9648,9 +9650,18 @@ SNW.Page = SNW.Page || {};
             return h > 0 ? `${h}시간 ${m}분` : `${m}분`;
         }
 
-        _fmtTimeOfDay(epoch) {
+        _fmtAxisTime(epoch, range) {
+            if (!epoch || epoch <= 0) return '--:--';
             const d = new Date(epoch * 1000);
-            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            const hh = String(d.getHours()).padStart(2, '0');
+            const min = String(d.getMinutes()).padStart(2, '0');
+
+            if (range === '7d') {
+                return `${mm}/${dd} ${hh}:${min}`;
+            }
+            return `${hh}:${min}`;
         }
 
         async _loadLiveData() {
@@ -9673,6 +9684,7 @@ SNW.Page = SNW.Page || {};
         }
     };
 })(window.SNW);
+
 
 
 /* ---- 270.page.network.js (16146 bytes) ---- */
@@ -10110,7 +10122,6 @@ SNW.Page = SNW.Page || {};
 	};
 })(window.SNW);
 
-/* ---- 290.page.ai.js (16764 bytes) ---- */
 // =========================================================
 // 290.page.ai.js — SNW.Page.AI
 // Layer 4 (페이지 로직: AI 스튜디오, 2-turn REST 제어 & Gemini Live Voice)
@@ -10163,15 +10174,15 @@ SNW.Page = SNW.Page || {};
                     <div class="snw-ai-rest-view" data-view="rest">
                         <div class="snw-ai-messages" data-slot="messages"></div>
                         <div class="snw-ai-examples">
-                            <button type="button" class="snw-btn snw-btn--sm" data-example="바다 바람 틀어줘">바다 바람 틀어줘</button>
-                            <button type="button" class="snw-btn snw-btn--sm" data-example="30분 후 꺼줘">30분 후 꺼줘</button>
-                            <button type="button" class="snw-btn snw-btn--sm" data-example="스케줄대로 해줘">스케줄대로 해줘</button>
-                            <button type="button" class="snw-btn snw-btn--sm" data-example="${SNW.I18n.t('ai.example1')}">${SNW.I18n.t('ai.example1')}</button>
-                        </div>
+						    <button type="button" class="snw-btn snw-btn--sm" data-example="바다 바람 틀어줘">🌊 바다 바람</button>
+						    <button type="button" class="snw-btn snw-btn--sm" data-example="30분 후 꺼줘">⏱ 30분 후 끄기</button>
+						    <button type="button" class="snw-btn snw-btn--sm" data-example="스케줄대로 해줘">📅 스케줄 복귀</button>
+						    <button type="button" class="snw-btn snw-btn--sm" data-example="${SNW.I18n.t('ai.example1')}">🌤 날씨 추천</button>
+						</div>
                         <div class="snw-ai-input">
-                            <textarea data-slot="input" rows="2" style="flex:1;"
-                                      placeholder="${SNW.DomUtil.escape(examplePlaceholder)}"
-                                      maxlength="${MAX_MSG_LEN}"></textarea>
+                        	<textarea data-slot="input" rows="1" style="flex:1; resize:none; max-height:120px; overflow-y:auto;"
+							          placeholder="${SNW.DomUtil.escape(examplePlaceholder)}"
+							          maxlength="${MAX_MSG_LEN}"></textarea>
                             <button type="button" class="snw-btn snw-btn--secondary" data-action="voice" title="음성 입력">
                                 🎤
                             </button>
@@ -10225,7 +10236,7 @@ SNW.Page = SNW.Page || {};
 					inp.focus();
 				}
 			});
-
+			
 			const inp = this.el.querySelector('[data-slot="input"]');
 			if (inp) {
 				inp.addEventListener('keydown', (e) => {
@@ -10233,6 +10244,12 @@ SNW.Page = SNW.Page || {};
 						e.preventDefault();
 						this._onSend();
 					}
+				});
+				
+				// [NEW] 입력 내용에 따른 높이 자동 확장
+				inp.addEventListener('input', () => {
+					inp.style.height = 'auto';
+					inp.style.height = Math.min(inp.scrollHeight, 120) + 'px';
 				});
 			}
 
@@ -10562,6 +10579,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
+
 /* ---- 290.page.automation.js (3405 bytes) ---- */
 // =========================================================
 // 290.page.automation.js — 자동화 페이지 (Studio/Playlist/스케줄/타이머)
@@ -10647,7 +10665,6 @@ SNW.Page = SNW.Page || {};
 
 
 
-/* ---- 291.studio.js (30256 bytes) ---- */
 // =========================================================
 // 291.studio.js — Wind Design Studio (작곡)
 // Layer 3 (Studio 패널 컴포넌트)
@@ -10709,6 +10726,7 @@ window.SNW = window.SNW || {};
                     </div>
                 </div>
 
+                <!-- 2열 그리드 -->
                 <div class="snw-step-card__grid">
                     <label class="snw-step-field">
                         <span>타입</span>
@@ -10753,12 +10771,14 @@ window.SNW = window.SNW || {};
                 </div>` : ''}
 
                 ${isPreset ? `
+                <!-- 물리 세부 조정 (Override) -->
                 <details class="snw-step-card__override" ${ovr.enabled ? 'open' : ''}>
-                    <summary style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
-                        <label class="snw-step-checkbox" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-                            <input type="checkbox" data-field="overrideEnabled" ${ovr.enabled ? 'checked' : ''}>
+                    <summary style="display:flex; align-items:center; justify-content:space-between; cursor:pointer; padding:4px 0; list-style:none; outline:none;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <!-- pointer-events:none으로 클릭 시 summary 이벤트를 유도 -->
+                            <input type="checkbox" data-field="overrideEnabled" ${ovr.enabled ? 'checked' : ''} style="pointer-events:none;">
                             <span>⚙ 물리 세부 조정 (Override)</span>
-                        </label>
+                        </div>
                         ${ovr.enabled ? `<span class="snw-badge snw-badge--warn" style="font-size:10px;padding:2px 6px;">수동 튜닝됨</span>` : ''}
                     </summary>
                     <div class="snw-step-card__override-body">
@@ -10782,13 +10802,13 @@ window.SNW = window.SNW || {};
                     </div>
                 </details>` : ''}
 
-                <div class="snw-step-card__sparkline" data-slot="sparkline" style="height:40px;margin-top:10px;"></div>
-                <div class="snw-step-card__sparkline-meta" data-slot="sparkline-meta" style="font-size:11px;color:var(--snw-text-dim,#8b949e);margin-top:4px;"></div>
+                <div class="snw-step-card__sparkline" data-slot="sparkline"></div>
+                <div class="snw-step-card__sparkline-meta" data-slot="sparkline-meta"></div>
             `;
 
             this.el = el;
 
-            // 이벤트
+            // 이벤트 바인딩
             const btnDel = el.querySelector('[data-action="delete"]');
             if (btnDel) btnDel.onclick = () => this.onDelete(this.index);
             const btnUp = el.querySelector('[data-action="up"]');
@@ -10820,6 +10840,18 @@ window.SNW = window.SNW || {};
                 input.addEventListener('input', () => this._onFieldChange(el, input));
                 input.addEventListener('change', () => this._onFieldChange(el, input));
             });
+
+            // [추가] details 태그 열고 닫을 때 체크박스 상태 동기화
+            const detailsEl = el.querySelector('.snw-step-card__override');
+            if (detailsEl) {
+                detailsEl.addEventListener('toggle', () => {
+                    const chk = el.querySelector('[data-field="overrideEnabled"]');
+                    if (chk && chk.checked !== detailsEl.open) {
+                        chk.checked = detailsEl.open;
+                        chk.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+            }
 
             // Sparkline 초기화
             if (SNW.UI && typeof SNW.UI.sparkline === 'function') {
@@ -10882,6 +10914,9 @@ window.SNW = window.SNW || {};
                         if (this.step.override.windVariability < 0) this.step.override.windVariability = 50;
                         if (this.step.override.gustFrequency < 0) this.step.override.gustFrequency = 45;
                     }
+                    // 체크박스 상태에 맞춰 details 열고 닫기
+                    const detailsEl = el.querySelector('.snw-step-card__override');
+                    if (detailsEl) detailsEl.open = !!val;
                     break;
                 case 'ovrIntensity':
                     this.step.override.windIntensity = Number(val);
@@ -10988,7 +11023,7 @@ window.SNW = window.SNW || {};
             this._active = true;
             this._steps = [];
             this._stepEditors = [];
-            this._profileId = null;    // edit mode
+            this._profileId = null;
             this._profileNo = 0;
             this._name = '';
             this._repeat = false;
@@ -11000,7 +11035,6 @@ window.SNW = window.SNW || {};
         async mount() {
             this.el.innerHTML = '<div class="snw-loading">Studio 로딩 중...</div>';
 
-            // windDict 로드
             if (!SNW.Studio._windDict) {
                 try {
                     const data = await SNW.Api.getWindDict();
@@ -11012,7 +11046,6 @@ window.SNW = window.SNW || {};
                 }
             }
 
-            // URL query 또는 params에서 edit ID 확인
             const editId = (this.params && this.params.edit) ? parseInt(this.params.edit, 10) : null;
 
             if (editId) {
@@ -11081,12 +11114,14 @@ window.SNW = window.SNW || {};
                                 <label style="display:block;font-size:12px;color:var(--snw-text-dim,#8b949e);margin-bottom:4px;">프로필 이름</label>
                                 <input type="text" data-field="name" value="${SNW.DomUtil ? SNW.DomUtil.escape(this._name) : this._name}" maxlength="32" style="width:100%;padding:8px 10px;background:var(--snw-surface-2,#232b36);border:1px solid var(--snw-border,#2f3844);border-radius:var(--snw-radius-sm,4px);color:var(--snw-text,#e6edf3);">
                             </div>
-                            <div class="snw-form-row snw-form-row--inline" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-                                <label class="snw-step-checkbox" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+                            
+                            <div class="snw-form-row snw-form-row--inline" style="margin-bottom:16px;">
+                                <label class="snw-step-checkbox" style="margin:0;">
                                     <input type="checkbox" data-field="repeat" ${this._repeat ? 'checked' : ''}>
                                     <span>반복</span>
                                 </label>
-                                <input type="number" data-field="repeatCount" min="0" max="99" value="${this._repeatCount}" placeholder="0=무한" style="width:80px;padding:6px;background:var(--snw-surface-2,#232b36);border:1px solid var(--snw-border,#2f3844);border-radius:var(--snw-radius-sm,4px);color:var(--snw-text,#e6edf3);">
+                                <input type="number" data-field="repeatCount" min="0" max="99" value="${this._repeatCount}" placeholder="0" 
+                                       style="width:70px;padding:6px;background:var(--snw-surface-2,#232b36);border:1px solid var(--snw-border,#2f3844);border-radius:var(--snw-radius-sm,4px);color:var(--snw-text,#e6edf3);text-align:center;">
                                 <span class="snw-form-hint" style="font-size:12px;color:var(--snw-text-dim,#8b949e);">회 (0=무한)</span>
                             </div>
                         </div>
@@ -11094,17 +11129,20 @@ window.SNW = window.SNW || {};
                         <h3 class="snw-form-section" style="font-size:14px;color:var(--snw-primary,#4a9eff);margin:16px 0 10px;">Step 시퀀스</h3>
                         <div data-slot="steps"></div>
 
-                        <button type="button" class="snw-btn snw-btn--add-step" data-action="add-step" style="width:100%;padding:10px;margin-top:10px;background:var(--snw-surface-2,#232b36);border:1px dashed var(--snw-border,#2f3844);color:var(--snw-text,#e6edf3);border-radius:var(--snw-radius-sm,4px);cursor:pointer;">
+                        <button type="button" class="snw-btn snw-btn--add-step" data-action="add-step">
                             + Step 추가 (최대 8개)
                         </button>
                     </div>
 
+                    <!-- 하단 액션 바 -->
                     <div class="snw-studio__bar">
-                        <button type="button" class="snw-btn" data-action="preview-all" style="padding:8px 16px;background:var(--snw-surface-2,#232b36);color:var(--snw-primary,#4a9eff);border:1px solid var(--snw-primary,#4a9eff);border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-weight:600;">🎬 시나리오 체험</button>
-                        <button type="button" class="snw-btn" data-action="cancel" style="padding:8px 16px;background:var(--snw-surface-3,#2f3844);color:var(--snw-text,#e6edf3);border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;">취소</button>
-                        <button type="button" class="snw-btn snw-btn-primary" data-action="save" style="padding:8px 20px;background:var(--snw-primary,#4a9eff);color:#fff;border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-weight:600;">
-                            ${isEdit ? '업데이트' : '저장'}
-                        </button>
+                        <button type="button" class="snw-btn" data-action="preview-all" style="padding:8px 16px;background:rgba(74,158,255,0.1);color:var(--snw-primary,#4a9eff);border:1px solid var(--snw-primary,#4a9eff);border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-weight:600;">🎬 미리보기</button>
+                        <div style="display:flex; gap:8px;">
+                            <button type="button" class="snw-btn" data-action="cancel" style="padding:8px 16px;background:var(--snw-surface-3,#2f3844);color:var(--snw-text,#e6edf3);border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;">취소</button>
+                            <button type="button" class="snw-btn snw-btn-primary" data-action="save" style="padding:8px 20px;background:var(--snw-primary,#4a9eff);color:#fff;border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-weight:600;">
+                                ${isEdit ? '업데이트' : '저장'}
+                            </button>
+                        </div>
                     </div>
                 </div>`;
 
@@ -11263,7 +11301,6 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-
 /* ---- 292.playlist.js (9849 bytes) ---- */
 // =========================================================
 // 292.playlist.js — Wind Playlist (재생 목록)
@@ -11357,7 +11394,8 @@ window.SNW = window.SNW || {};
                         <span class="snw-playlist-item__name" style="font-weight:600;font-size:15px;color:var(--snw-text,#e6edf3);">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(profile.name) : profile.name}</span>
                         <span class="snw-playlist-item__meta" style="font-size:12px;color:var(--snw-text-dim,#8b949e);">${profile.stepCount || (profile.steps ? profile.steps.length : 0)} Step · ${this._fmtTotal(profile)}</span>
                     </div>
-                    <div class="snw-playlist-item__sparkline" data-slot="spark" style="height:44px;margin:4px 0;"></div>
+                    <div class="snw-playlist-item__sparkline" data-slot="spark" style="height:100px; margin:8px 0; border-radius:8px; padding:8px;"></div>
+      
                     <div class="snw-playlist-item__refs" style="font-size:11px;color:var(--snw-text-faint,#6e7a87);">
                         ${refCount > 0
                     ? `<span style="color:var(--snw-warn,#d29922);">⏰ 스케줄 ${refCount}개에서 사용 중</span>`

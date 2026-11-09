@@ -50,15 +50,15 @@ SNW.Page = SNW.Page || {};
                     <div class="snw-ai-rest-view" data-view="rest">
                         <div class="snw-ai-messages" data-slot="messages"></div>
                         <div class="snw-ai-examples">
-                            <button type="button" class="snw-btn snw-btn--sm" data-example="바다 바람 틀어줘">바다 바람 틀어줘</button>
-                            <button type="button" class="snw-btn snw-btn--sm" data-example="30분 후 꺼줘">30분 후 꺼줘</button>
-                            <button type="button" class="snw-btn snw-btn--sm" data-example="스케줄대로 해줘">스케줄대로 해줘</button>
-                            <button type="button" class="snw-btn snw-btn--sm" data-example="${SNW.I18n.t('ai.example1')}">${SNW.I18n.t('ai.example1')}</button>
-                        </div>
+						    <button type="button" class="snw-btn snw-btn--sm" data-example="바다 바람 틀어줘">🌊 바다 바람</button>
+						    <button type="button" class="snw-btn snw-btn--sm" data-example="30분 후 꺼줘">⏱ 30분 후 끄기</button>
+						    <button type="button" class="snw-btn snw-btn--sm" data-example="스케줄대로 해줘">📅 스케줄 복귀</button>
+						    <button type="button" class="snw-btn snw-btn--sm" data-example="${SNW.I18n.t('ai.example1')}">🌤 날씨 추천</button>
+						</div>
                         <div class="snw-ai-input">
-                            <textarea data-slot="input" rows="2" style="flex:1;"
-                                      placeholder="${SNW.DomUtil.escape(examplePlaceholder)}"
-                                      maxlength="${MAX_MSG_LEN}"></textarea>
+                        	<textarea data-slot="input" rows="1" style="flex:1; resize:none; max-height:120px; overflow-y:auto;"
+							          placeholder="${SNW.DomUtil.escape(examplePlaceholder)}"
+							          maxlength="${MAX_MSG_LEN}"></textarea>
                             <button type="button" class="snw-btn snw-btn--secondary" data-action="voice" title="음성 입력">
                                 🎤
                             </button>
@@ -112,7 +112,7 @@ SNW.Page = SNW.Page || {};
 					inp.focus();
 				}
 			});
-
+			
 			const inp = this.el.querySelector('[data-slot="input"]');
 			if (inp) {
 				inp.addEventListener('keydown', (e) => {
@@ -120,6 +120,12 @@ SNW.Page = SNW.Page || {};
 						e.preventDefault();
 						this._onSend();
 					}
+				});
+				
+				// [NEW] 입력 내용에 따른 높이 자동 확장
+				inp.addEventListener('input', () => {
+					inp.style.height = 'auto';
+					inp.style.height = Math.min(inp.scrollHeight, 120) + 'px';
 				});
 			}
 

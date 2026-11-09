@@ -1,4 +1,4 @@
-# STATE_0203.md — 상태 소유권 및 FSM 명세 (v3.3)
+# STATE_0203.md — 상태 소유권 및 FSM 명세 (v3.5)
 
 > **단일 기록자 원칙**: 각 런타임 상태 변수는 원칙적으로 단 하나의 태스크만 쓰기 권한을 가진다. 다중 태스크 쓰기 시 전용 뮤텍스 또는 `std::atomic`으로 격리.  
 > F-01~F-10, I-1~I-6, N-1~N-4, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10, Batch G 반영.  
@@ -84,7 +84,7 @@
 | `runCtx.state` | T-loop (`applyDecision`) | T-async (`exportStateJson_v02`), T-loop | `CT10::s_stateMutex` | FSM 실제 상태 (session과 별개) |
 | `s_aiDailyUsage` (N10) | T-async (`reportAIUsage`, `resetAICost`) | T-async (`getAIDailyUsage`) | `N10::s_mutex` | 당일 비용 누적 및 자정 자동 리셋 (NVS 4키 영구화) |
 | `s_promptCache` (CT10_AI) | T-async (`buildAIPromptStrict`) | T-async | 30초 유효 타임스탬프 | I2C 센서 블로킹 및 힙 파편화 방지 |
-| `runtimeAutoOff` (CT10) | T-loop (`tickLoop`) | T-loop, T-async | `CT10::s_stateMutex` | AI 명령 실행 시 동적 AutoOff 감쇠 및 자동 종료 |
+| `runtimeAutoOff` (CT10 `_session.runtimeAutoOffMin`, `runtimeAutoOffStartMs`) | T-async (`setSessionAutoOff`, `POST /control/timer`, `AI set_timer`), T-loop (`tickLoop` 만료) | T-async (`getTimerDurationMin`, `getSessionAutoOffRemainSec`), T-loop | `CT10::s_stateMutex` | 하드웨어 백엔드 타이머 런타임 상태 (만료 시 stopSession + setAutoComfort(false)) |
 | `s_autoComfortEnabled` (CT10) | T-async (`POST /comfort/auto`), T-loop (`begin()`) | T-loop (`tickAutoComfort`), T-async (`GET /comfort/auto`) | `CT10::s_stateMutex` + NVS | Comfort 자동 모드 활성 플래그 |
 
 ---
@@ -166,8 +166,10 @@
 ### 2.5.2 핵심 계약
 1. `decideRunSource()`는 **절대 `_session`을 참조하지 않음**.
 2. `_session`은 `startSession`에서 위임된 실행 컨텍스트(`runSource`/`overrideState`/`curProfileIndex`)의 "사용자 명시 세션 여부"만 미러링.
-3. 따라서 **FSM이 IDLE이어도 `_session.state=PAUSED`일 수 있음** (pause 시 실행 상태 해제 → FSM IDLE, 하지만 _session은 PAUSED 유지).
-4. **resume 시**:
+3. `_session.trigger`: 1=MANUAL, 2=SCHEDULE, 3=AUTO_COMFORT (Comfort 자동 모드에 의한 세션 기동 식별).
+4. **하드웨어 타이머 만료 (Stage 10.1)**: `runtimeAutoOffMin` 경과 시 `runCtx.reason = EN_CT10_REASON_AUTOOFF_TIMER` (9) 설정 후 `stopSession()` 및 `setAutoComfort(false)`를 호출하여 Comfort 자동 모드를 영구 해제한다.
+5. 따라서 **FSM이 IDLE이어도 `_session.state=PAUSED`일 수 있음** (pause 시 실행 상태 해제 → FSM IDLE, 하지만 _session은 PAUSED 유지).
+6. **resume 시**:
    - `_pausedExec.valid == true` → 실행 컨텍스트 복원 → 다음 tick에서 FSM이 OVERRIDE/PROFILE_RUN 진입
    - `_session.state = ACTIVE`
 
@@ -430,7 +432,7 @@ stopSession()
 | `C10_Config_WindDc_*` | 프리셋 CRUD | - |
 | `TM10_TimeMg_0203.cpp` | SNTP 상태 | (모두 헤더 inline static) |
 | `CT10_Ctl_AIPrompt_0203.cpp` | `s_promptCache`, `s_promptCacheValidUntil` (30초 캐시) | - |
-| `CT10_Ctl_AIAction_0203.cpp` | 12개 안전 도구 디스패처 (소유 상태 없음, CT10 공개 함수 위임) | - |
+| `CT10_Ctl_AIAction_0203.cpp` | 13개 안전 도구 디스패처 (set_timer 포함, CT10 공개 함수 위임) | - |
 | `W10_Web_Routes_AILive_0203.cpp` | Live 토큰 / 30분 상한 판정 및 일일 비용 라우팅 핸들러 | - |
 
 > **F-10 계약**: 분할 .cpp 간 공유 매크로는 `*_Internal_0203.h` 승격 필수. 파일 스코프 정의 금지.
@@ -441,6 +443,7 @@ stopSession()
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-09** | **v3.5** | **Stage 10.1 결함 패치 및 하드웨어 백엔드 타이머 구현 (0203_013_20_02)**: `runtimeAutoOff` 백엔드 소유권 확장, `EN_CT10_TRIGGER_AUTO_COMFORT=3` 세션 트리거 추가, 타이머 만료 시 정지 사유 9번(AUTOOFF_TIMER) 및 `setAutoComfort(false)` 부수효과 명세, 13개 안전 도구 현행화 | Antigravity AI |
 | **2026-11-09** | **v3.4** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: §1 `s_autoComfortEnabled` NVS 소유권 및 접근 매트릭스 명세 반영 | Antigravity AI |
 | **2026-11-09** | **v3.3** | **AI 빠른 참조 §링크 강화 (Phase B)**: TOC anchor 기반 [§N.M](#anchor) 자동 변환, src/v0203/tools_0203/enhance_index_links_0203.py 추가, --verify로 anchor 유효성 검증 | Antigravity AI |
 | **2026-11-08** | **v3.2** | **통합 감사 28대 이슈 해결 상태 정합성 반영 (0203_012)**: 오프라인 FSM 종료 이유 'POWER_OFF' ➔ 'NONE' C++ SSOT 일치, `ST_A20_ScheduleSegment_t` 독립 구조체 유지로 오버로드 충돌 방지, `_persistOffTimeLastYday` 리셋 무결성 보장, `C10_Config_Sch_Internal_0203.h` 안전 인라인 브릿지 명세 | Antigravity AI |

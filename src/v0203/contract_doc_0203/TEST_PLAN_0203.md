@@ -1,4 +1,4 @@
-# TEST_PLAN_0203.md — 회귀 테스트 인덱스 (v4.0)
+# TEST_PLAN_0203.md — 회귀 테스트 인덱스 (v4.2)
 
 > **검증 대상**: Smart Nature Wind v0203 펌웨어 + v0203 SPA 프론트엔드
 > **기준선**: Batch A~F + Phase 0~7 + Batch G/H/I + Stage 8 AI/Live + Stage 9 UI/UX
@@ -212,6 +212,10 @@ which curl jq || sudo apt install curl jq
 | **48** | **T-150 (본문 스크롤 하단 여백 연동)** | **L11** | **UI-6** |
 | **49** | **T-151 (바람 스타일 5종 탭 44px 터치)** | **L11** | **UI-7** |
 | **50** | **T-152 (NowPlaying 모달 & Studio 원복)** | **L11** | **UI-8** |
+| **51** | **T-153 (Dashboard 3탭 전환)** | **L11** | **SPEC §5.4.2.2** |
+| **52** | **T-154 (Comfort 자동모드 백엔드)** | **L11** | **COMFORT-1/2** |
+| **53** | **T-154-FE (Comfort 5상태 매트릭스)** | **L11** | **UI-10** |
+| **54** | **T-155 (하드웨어 백엔드 타이머 신뢰성)** | **L11** | **TIMER-1~3** |
 
 ---
 
@@ -354,6 +358,7 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-09** | **v4.2** | **Stage 10.1 결함 패치 및 하드웨어 백엔드 타이머 검증 항목 반영 (0203_013_20_02)**: L11 계층 T-154-FE(Comfort 5상태 매트릭스) 강화 및 T-155(하드웨어 타이머 브라우저 종료 후 단독 만료/재기동 차단 E2E) 추가 | Antigravity AI |
 | **2026-11-09** | **v4.1** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: L9~L11 레이어에 T-153(Dashboard 3탭), T-154(Comfort 자동모드 백엔드), T-154-FE(Comfort UI 토글/배지) 반영 | Antigravity AI |
 | **2026-11-09** | **v4.0** | **3분할 (Phase C)**: T-1~T-45 → `TEST_PLAN_L1_L5_0203.md`, T-46~T-113 → `TEST_PLAN_L6_L8_0203.md`, T-114~T-152 → `TEST_PLAN_L9_L11_0203.md`. 본 문서는 개요/매트릭스/게이트/트러블슈팅 인덱스로 전환. `src/v0203/tools_0203/split_test_plan_0203.py` 자동 생성 | Antigravity AI |
 | **2026-11-09** | **v3.5** | **AI 빠른 참조 §링크 강화 (Phase B)**: TOC anchor 기반 [§N.M](#anchor) 자동 변환, src/v0203/tools_0203/enhance_index_links_0203.py 추가, --verify로 anchor 유효성 검증 | Antigravity AI |

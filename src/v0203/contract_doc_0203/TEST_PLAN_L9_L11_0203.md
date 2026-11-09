@@ -353,17 +353,41 @@ if (intensitySlider) {
 
 ---
 
-### T-154-FE. [Stage 10] Comfort 자동 모드 UI 토글 및 Now Playing 배지 표출 검증
+### T-154-FE. [Stage 10 / Stage 10.1] Comfort 자동 모드 UI 5상태 매트릭스 및 Now Playing 배지 표출 검증
 
-**목적**: 환경 탭 내 자동 모드 스위치 조작 및 가동 중 Now Playing Bar의 `[🌱 자동]` 배지 노출 검증.  
-**대응 계약**: CONTRACT §7.20 UI-10, FLOW §14.3  
+**목적**: 환경 탭 내 자동 모드 스위치(.snw-switch__slider) 조작, 5상태 매트릭스(`is-waiting`, `is-running`, `is-user-priority`, `is-suspended`) 실시간 전환, AutoOff 래치 시 [재개] 버튼 동작, 가동 중 Now Playing Bar의 `[🌱 자동]` 배지 노출 검증.  
+**대응 계약**: CONTRACT §7.20 UI-10, SPEC §5.4.2.2, FLOW §14.3  
 **검증 절차**:
-1. 대시보드 환경 탭에서 [Comfort 자동 모드] 스위치 On 토글 -> 확인 다이얼로그 후 활성화 확인
-2. 자동 모드 상태 문구 및 다음 평가 잔여시간 표시 확인
-3. 자동 모드에 의해 프리셋 세션 시작 시 하단 Now Playing Bar에 `[🌱 자동]` 배지 점등 확인
+1. 대시보드 환경 탭에서 [Comfort 자동 모드] 스위치 On 토글 -> 확인 다이얼로그 후 활성화 확인 (`.snw-switch__slider` 정상 렌더링)
+2. 자동 모드 상태 문구 5초 주기 실시간 갱신 및 5상태 매트릭스 동작 확인:
+   - 세션 대기 중: `is-waiting` 및 "다음 평가: M분 S초 후 자동 실행" 카운트다운 표시
+   - 자동 기동 중: `is-running` 및 "🤖 자동 실행 중 — 프리셋 · 스타일" 표시
+   - 수동 세션 가동 중: `is-user-priority` 및 "수동 세션 우선 — 종료 후 자동 재개" 표시
+   - AutoOff 래치 발동 시: `is-suspended` 및 "⚠️ 자동 종료 우선 — 일시 중단됨 [재개]" 표시
+3. `[재개]` 버튼 클릭 시 `ackEvent()` 호출 및 자동 모드 재개 정상 동작 확인
+4. 자동 모드에 의해 프리셋 세션 시작 시 하단 Now Playing Bar에 `[🌱 자동]` 배지 점등 확인
 **합격 판정**:
-- [ ] 스위치 토글 시 실시간 상태 텍스트 갱신 정상
+- [ ] 스위치 슬라이더 CSS 오타 없이 정상 렌더링 및 토글 실시간 상태 갱신 정상
+- [ ] 5상태 매트릭스 클래스 및 문구 정상 전환, `[재개]` 버튼 클릭 시 정상 복귀
 - [ ] Now Playing Bar에 초록색 `[🌱 자동]` 배지 정상 점등
+
+---
+
+### T-155. [Stage 10.1] 하드웨어 백엔드 타이머 신뢰성 및 브라우저 종료 후 단독 만료 검증
+
+**목적**: 타이머 설정 후 브라우저 창을 닫아도 백엔드 단독으로 세션이 안전하게 자동 종료되고, 만료 후 5분 뒤에도 Comfort 자동 모드로 인한 재기동이 영구 억제되는지 검증.  
+**대응 계약**: CONTRACT §7.21 TIMER-1~TIMER-3, SPEC §5.1.6, STATE §2.5  
+**검증 절차**:
+1. 대시보드 퀵 타이머 또는 타이머 패널에서 1분 타이머 설정 (`POST /api/v001/control/timer { "minutes": 1 }`)
+2. `GET /api/v001/control/timer` 호출하여 `active: true, remainSec <= 60` 응답 확인
+3. 브라우저 탭을 즉시 닫거나 네트워크 단절 (오프라인 시뮬레이션)
+4. 1분 경과 후 기기 시리얼 로그 확인: `[CT10] Runtime AutoOff expired (1 min)` 로그 발생 및 모터 PWM 0% 정지 확인
+5. 브라우저 재접속 후 세션 상태 조회: `state == COMPLETED`, `runCtx.reason == 9 (AUTOOFF_TIMER)` 확인
+6. 5분 경과 후 실내 DI 평가가 발생해도 `autoComfort`가 false로 해제되어 팬이 자동 재기동되지 않는지 확인
+**합격 판정**:
+- [ ] 브라우저 오프라인 상태에서도 백엔드 런타임 타이머 단독 만료 및 팬 안전 정지
+- [ ] 타이머 만료 후 Comfort 자동 모드가 영구 해제되어 5분 뒤 재기동 원천 차단
+- [ ] 백엔드 동기 실패 시 브라우저 UI에 경고 토스트 표출 확인
 
 ---
 
@@ -371,5 +395,6 @@ if (intensitySlider) {
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-09** | **v1.2** | **Stage 10.1 하드웨어 백엔드 타이머 및 Comfort 5상태 검증 항목 추가**: T-154-FE 5상태 매트릭스/스위치 렌더링 강화, T-155(하드웨어 타이머 브라우저 종료 후 단독 만료 및 Comfort 재기동 차단 E2E) 신설 | Antigravity AI |
 | 2026-11-09 | v1.1 | Stage 10 신규 검증 항목 T-153(Dashboard 3탭), T-154(Comfort 자동모드 백엔드), T-154-FE(Comfort UI 토글/배지) 추가 | Antigravity AI |
 | 2026-11-09 | v1.0 | TEST_PLAN_0203.md에서 L9~L11 분할 (T-114~T-152). `src/v0203/tools_0203/split_test_plan_0203.py` 자동 생성 | Antigravity AI |

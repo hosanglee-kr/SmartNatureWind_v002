@@ -142,8 +142,41 @@
 
 ---
 
-## 7. 개정 이력
+## 7. 자동화 인프라
+
+### 7.3 Graphify 초기화 / 증분 / 조회
+
+**래퍼**: `tools/graphify_init.py` (cross-platform). 원본 PowerShell은 `SKILL.original.md`.
+
+| 작업 | 명령 |
+|---|---|
+| 최초 빌드 | `python tools/graphify_init.py build` |
+| 깊은 모드 | `python tools/graphify_init.py build --mode deep` |
+| 증분 | `python tools/graphify_init.py build --update` |
+| 클러스터만 재실행 | `python tools/graphify_init.py build --cluster-only` |
+| 상태 확인 | `python tools/graphify_init.py check` |
+| 질의 (BFS) | `python tools/graphify_init.py query "<q>"` |
+| 경로 추적 (DFS) | `python tools/graphify_init.py query "<q>" --dfs` |
+| 최단 경로 | `python tools/graphify_init.py path "A" "B"` |
+| 심볼 설명 | `python tools/graphify_init.py explain "심볼"` |
+| Obsidian vault | `python tools/graphify_init.py export --obsidian --obsidian-dir ~/vaults/my-project` |
+| Wiki + SVG | `python tools/graphify_init.py export --wiki --svg` |
+| MCP 서버 | `python tools/graphify_init.py mcp --watch` |
+
+**원칙 2 준수 순서**:
+1. `check` → graph 존재 확인
+2. 질문이 자연어면 **`query` 직행** (fast path)
+3. 코드/설계 변경 후 **`build --update`**
+4. 재질의
+
+**세션 내 최초 1회** (graph 없을 때만): `build`
+
+---
+
+## 8. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| 2026-11-09 | v1.1 | Phase D: §7.3 Graphify 확장 래퍼 8대 서브커맨드 가이드 및 운영 순서 반영 | Antigravity AI |
 | 2026-11-09 | v1.0 | 초기 작성 — 병행 사용 세션 표준화 + Auto memory/`/learn` 가이드 + 시나리오 A~D | Antigravity AI |
+

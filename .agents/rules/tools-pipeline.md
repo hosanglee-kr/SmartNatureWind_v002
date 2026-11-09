@@ -27,3 +27,13 @@ description: "v0203 빌드/검증 파이프라인 스크립트 규칙"
 ## SSOT 자동 대조 (AUDIT-6)
 - `validate_contracts.py`가 `pio_gzip_0203.py` 스테이징에서 자동 실행
 - 문서(SPEC/README/BUDGET) ↔ C++ 헤더 ↔ 프론트엔드 config/offline 정합성 검증
+
+## graphify 래퍼 규약 (Phase D)
+
+- 정식 엔트리: `python tools/graphify_init.py <subcommand>`
+- 서브커맨드: `build` / `check` / `update`(→`build --update`) / `query` / `path` / `explain` / `export` / `mcp`
+- **fast path 보존**: `graphify-out/graph.json` 존재 + 자연어 질문 → `query` 직행. 재빌드 신호(`--update`, `--cluster-only`, URL) 없으면 탐지 스킵
+- 원본 `SKILL.md` PowerShell은 `SKILL.original.md`로 백업 후 참조만
+- AGENTS.md 원칙 2 준수: `grep_search`/무차별 `view_file` 금지 → `query`/`path`/`explain` 우선
+- 코드/설계 변경 후 `build --update` 필수 (그래프 최신화)
+

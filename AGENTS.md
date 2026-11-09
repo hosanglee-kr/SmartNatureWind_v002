@@ -75,13 +75,18 @@ python src/v0203/tools_0203/commit_contracts_0203.py --dry-run --strict
 
 ## 4. 주요 CLI (상세는 Skill 참조)
 
+> **원칙 2 (Graph-First) 실행 순서**:
+> `check` → `query` (자연어 직행) → 최소 라인 Read → 작업 → `build --update`
+
 | 작업 | 명령 | Skill |
 |---|---|---|
 | 빌드 + 플래시 | `pio run -e esp32-s3-n16r8 -j 12 [--target upload/uploadfs]` | `build-and-flash` |
 | 계약 갱신 | `commit_contracts_0203.py --dry-run --strict` | `contract-update` |
 | 회귀 실행 | `test/e2e_stage8_4.py <IP>` / TEST_PLAN T-항목 | `regression-run` |
 | 프론트 번들 | `pio_gzip_0203.py` (+ `check_i18n.py --strict`) | `bundle-frontend` |
-| 그래프 갱신 | `graphify update .` | (기존) `graphify` |
+| 그래프 질의 | `python tools/graphify_init.py query "<q>"` | (기존) `graphify` |
+| 그래프 갱신 | `python tools/graphify_init.py build --update` | (기존) `graphify` |
+| 그래프 상태 | `python tools/graphify_init.py check` | (기존) `graphify` |
 | 동기화 | `python tools/sync-agent-configs.py [--check]` | — |
 
 ---

@@ -1,8 +1,27 @@
-# BUDGET_0203.md — 시간 및 시스템 자원 예산 (v3.1)
+# BUDGET_0203.md — 시간 및 시스템 자원 예산 (v3.2)
 
 > **기준**: v0203 정적 감사 + 런타임 실측 반영 (Batch A~G 완료).  
 > **핵심 성과**: F-05(reload 위임)/F-06(motion sim 위임)으로 `async_tcp` 블로킹 제거, D-1(WS mutex 배치)/D-4(atomic)/D-5(고정 배열)로 loopTask 지터 감소, B-1(NVS 단일 commit 10ms)/B-9(스냅샷 캐시 2ms) 성능 최적화.  
 > **파일명 정책**: 계약 문서 `_0203.md` 유지, 코드 참조 `_0203` 접미사.
+
+---
+
+## 🔍 AI 빠른 참조 (섹션 트리거)
+
+| 변경 대상 | §섹션 |
+|---|---|
+| 태스크 자원 매트릭스 | [§1](#1-태스크별-자원-할당-매트릭스) |
+| loopTask WCET | [§2](#2-looptask-wcet-예산-a00_run) |
+| async_tcp WCET (AI 라우트 포함) | [§3](#3-async_tcp-wcet-f-05f-06d-1-반영-후) |
+| 잠재 블로킹 | [§4](#4-잠재-블로킹-지점-및-완화) |
+| FreeRTOS 스택 | [§5](#5-freertos-스택-예산) |
+| 관측성 메트릭 | [§6](#6-관측성-메트릭) |
+| LittleFS·소켓 | [§7](#7-플래시-및-네트워크-소켓-예산) |
+| **FE 자산 예산·판정** | **[§8.5](#85-예산-대비-실측-판정)** |
+| 확장 여유 분석 | [§8.6](#86-확장-여유-분석) |
+| RAM/Flash 실측 | [§9](#9-메모리-사용-실측-buildfs링크-결과) |
+| Batch/Phase/Stage 예산 영향 | [§10](#10-batch-af-예산-영향-요약) |
+
 
 ---
 
@@ -417,6 +436,7 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-09** | **v3.2** | **AI 빠른 참조 §링크 강화 (Phase B)**: TOC anchor 기반 [§N.M](#anchor) 자동 변환, src/v0203/tools_0203/enhance_index_links_0203.py 추가, --verify로 anchor 유효성 검증 | Antigravity AI |
 | **2026-11-08** | **v3.1** | **Stage 9 웹 UI/UX 최적화 및 인터랙션 고도화 자원 실측 반영 (§10.5)**: 하단 뷰포트 레이아웃 스택 동적 변수화(런타임 0B), Now Playing 상세 확장 모달 및 Studio Override 원복 액션 탑재, 54개 JS 번들(119.3 KB Gzip) 및 18개 CSS(14.7 KB Gzip), LittleFS 총점유 149.8 KB(1MB 예산 대비 15.0%) 실측치 현행화 | Antigravity AI |
 | **2026-11-08** | **v3.0** | **Phase 3 — §8/§10.4 SSOT 정합**: §8.5 판정 표 감사 완료 후 최종 재측정(RAM 100.5KB 30.7%, Flash 1.36MB 20.8%, JS gz 102.4KB, 프론트 gz 합계 118.3KB, LittleFS 148.8KB), §10.4 Stage 8 AI 자원 영향표 실측치 현행화 | Antigravity AI |
 | **2026-11-06** | **v2.9** | **Stage 8 AI 제어 및 Live 실시간 음성 예산 영향 반영 (§10.4)**: §3 async_tcp AI 라우트 8종 WCET 추가, 54개 JS 번들링 및 정적 자산 Gzip 실측(118.1 KB / LittleFS 1MB 대비 11.8%), NVS 4키 메모리 영향, 프롬프트 캐시 30s 성능 최적화 명시 | Antigravity AI |

@@ -1,8 +1,26 @@
-# STATE_0203.md — 상태 소유권 및 FSM 명세 (v3.1)
+# STATE_0203.md — 상태 소유권 및 FSM 명세 (v3.3)
 
 > **단일 기록자 원칙**: 각 런타임 상태 변수는 원칙적으로 단 하나의 태스크만 쓰기 권한을 가진다. 다중 태스크 쓰기 시 전용 뮤텍스 또는 `std::atomic`으로 격리.  
 > F-01~F-10, I-1~I-6, N-1~N-4, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10, Batch G 반영.  
 > **파일명 정책**: 계약 문서 `_0203.md` 유지, 코드 참조 `_0203` 접미사.
+
+---
+
+## 🔍 AI 빠른 참조 (섹션 트리거)
+
+| 변경 대상 | §섹션 |
+|---|---|
+| 상태 변수 소유권 매트릭스 | [§1](#1-상태-변수-소유권-및-접근-매트릭스) |
+| runCtx FSM (7-State) | [§2.1](#21-상태-정의)~[§2.4](#24-batch-f-5-profile-fall-through-차단) |
+| Session ↔ runCtx FSM 관계 (ADR-1) | [§2.5](#25-session-fsm--runctx-fsm-관계-adr-1-확정) |
+| S10 물리 엔진 | [§3](#3-s10-시뮬레이션-물리-엔진-상태) |
+| M10 PIR 단일 판정 (C-3) | [§3.1](#31-m10-모션-감지-상태-c-3-반영) |
+| WF10 Wi-Fi / TM10 SNTP | [§4](#4-wf10-wi-fi-상태머신), [§5](#5-tm10-시간-동기화-상태) |
+| 위임 플래그 라이프사이클 (F-05/F-06/D-1) | [§6.1](#61-f-05-pending-reload)~[§6.3](#63-batch-d-1-dirty-배치-소비) |
+| Session Pause/Resume/Stop | [§6.4](#64-session-pauseresumestop-위임-라이프사이클) |
+| AutoOff 래치·이벤트 ACK | [§7](#7-autooff-래치-및-이벤트-상태) |
+| E-2 분할 파일 소유권 | [§8](#8-e-2-분할-파일-상태-소유권-신규) |
+
 
 ---
 
@@ -422,6 +440,7 @@ stopSession()
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-09** | **v3.3** | **AI 빠른 참조 §링크 강화 (Phase B)**: TOC anchor 기반 [§N.M](#anchor) 자동 변환, src/v0203/tools_0203/enhance_index_links_0203.py 추가, --verify로 anchor 유효성 검증 | Antigravity AI |
 | **2026-11-08** | **v3.2** | **통합 감사 28대 이슈 해결 상태 정합성 반영 (0203_012)**: 오프라인 FSM 종료 이유 'POWER_OFF' ➔ 'NONE' C++ SSOT 일치, `ST_A20_ScheduleSegment_t` 독립 구조체 유지로 오버로드 충돌 방지, `_persistOffTimeLastYday` 리셋 무결성 보장, `C10_Config_Sch_Internal_0203.h` 안전 인라인 브릿지 명세 | Antigravity AI |
 | **2026-11-06** | **v3.1** | **Stage 8 AI 제어 및 Live 음성 상태 소유권 반영**: §1 3행 확장(`s_aiDailyUsage`, `s_promptCache`, `runtimeAutoOff`), §8 분할 소유권에 AI 프롬프트/액션/라우트 모듈 3종 추가, 자정 리셋 및 30분 상한 상태 수명주기 명시 | Antigravity AI |
 | **2026-11-05** | **v3.0** | **Phase 1~6 통합 (v0203_011) — Session 위임 엔진 반영**: §1 5행 확장 (`_session`, `_pausedExec`, `profileName`, `currentStepStartMs`, `runCtx.state` vs `_session.state`), §2.5 신규 (Session FSM ↔ runCtx FSM 관계, ADR-1), §6.4 신규 (Pause/Resume/Stop 위임 라이프사이클, Smart Resume). | Antigravity AI |

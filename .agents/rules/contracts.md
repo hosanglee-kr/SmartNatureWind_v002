@@ -20,3 +20,14 @@ description: "계약 문서(SPEC/CONTRACT/STATE/FLOW/BUDGET/TEST_PLAN/README) �
 - 커밋은 문서+코드 원자적
 
 ## 커밋 전 검증
+```bash
+python src/v0203/tools_0203/commit_contracts_0203.py --dry-run --strict
+```
+
+## 문서 내 상호 참조 링크 표기
+
+- 섹션 참조: `[§N.M](상대경로#anchor)` — 프로젝트 루트 기준
+- 문서 참조: `[문서명](상대경로)` — 예: `[SPEC §5.1.4](src/v0203/contract_doc_0203/SPEC_0203.md#514-ai-제어-...)`
+- 자기 문서 내 참조: `[§N.M](#anchor)`
+- 앵커 자동 생성: `python src/v0203/tools_0203/enhance_index_links_0203.py --verify`로 검증
+

@@ -10,8 +10,8 @@
 
 | 항목 | 내용 |
 |---|---|
-| MCU | ESP32-S3-N16R8 (16MB Flash / 8MB OPI PSRAM, dual-core @ 240MHz) |
-| 빌드 | PlatformIO + Arduino-ESP32 (`-std=gnu++17`), **`-j 12` 필수** |
+| MCU | ESP32-S3 Zero (기본, 4MB Flash / 2MB PSRAM), ESP32-C3 Zero (4MB, No PSRAM), ESP32-S3-N16R8 |
+| 빌드 | PlatformIO + Arduino-ESP32 (`-std=gnu++17`), default env: `esp32-s3-zero`, **`-j 12` 필수** |
 | 파일시스템 | LittleFS (`./src/v0203/data_v0203`) |
 | 에셋 파이프라인 | `pio_gzip_0203.py` (54 JS + 18 CSS 번들 + Gzip L9) |
 | 활성 버전 | **v0203** (FW_Ver_2.0.3) / C++·에셋 모두 `_0203` 접미사 |
@@ -80,7 +80,7 @@ python src/v0203/tools_0203/commit_contracts_0203.py --dry-run --strict
 
 | 작업 | 명령 | Skill |
 |---|---|---|
-| 빌드 + 플래시 | `pio run -e esp32-s3-n16r8 -j 12 [--target upload/uploadfs]` | `build-and-flash` |
+| 빌드 + 플래시 | `pio run -e esp32-s3-zero -j 12 [--target upload/uploadfs]` | `build-and-flash` |
 | 계약 갱신 | `commit_contracts_0203.py --dry-run --strict` | `contract-update` |
 | 회귀 실행 | `test/e2e_stage8_4.py <IP>` / TEST_PLAN T-항목 | `regression-run` |
 | 프론트 번들 | `pio_gzip_0203.py` (+ `check_i18n.py --strict`) | `bundle-frontend` |

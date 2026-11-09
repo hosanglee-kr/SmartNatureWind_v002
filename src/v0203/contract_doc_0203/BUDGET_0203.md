@@ -1,4 +1,4 @@
-# BUDGET_0203.md — 시간 및 시스템 자원 예산 (v3.2)
+# BUDGET_0203.md — 시간 및 시스템 자원 예산 (v3.3)
 
 > **기준**: v0203 정적 감사 + 런타임 실측 반영 (Batch A~G 완료).  
 > **핵심 성과**: F-05(reload 위임)/F-06(motion sim 위임)으로 `async_tcp` 블로킹 제거, D-1(WS mutex 배치)/D-4(atomic)/D-5(고정 배열)로 loopTask 지터 감소, B-1(NVS 단일 commit 10ms)/B-9(스냅샷 캐시 2ms) 성능 최적화.  
@@ -320,6 +320,11 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 | **.bss 증가 (D-5)** | +4.8 KB (`s_snapshot`) | - | - | heap 회피, RAM 여유 흡수 |
 | **littlefs.bin** | 118.7 KB | - | - | LittleFS 버짓 여유 충분 |
 
+> **4MB Flash 및 No-PSRAM 타깃 호환성 검증 (2026-11-09)**:
+> - **ESP32-S3 Zero (기본)**: 4MB Flash / 2MB PSRAM. Flash 실측치 1.36MB로 4MB 기준 35% 미만 점유하여 안전 마진 확보.
+> - **ESP32-C3 Zero (서브)**: 4MB Flash / No-PSRAM. 내부 SRAM 사용량 약 100.5KB (30.7%)로 220KB 이상의 Free Heap을 상시 유지하며, LittleFS 148.8KB(1MB 대비 15.0%)로 PSRAM 없는 경량 보드에서도 안전하게 동작.
+> - **ESP32-S3-N16R8 (참조)**: 16MB Flash / 8MB OPI PSRAM 확장 환경과 100% 바이너리 호환성 유지.
+
 ---
 
 ## 10. Batch A~F 예산 영향 요약
@@ -436,6 +441,7 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-09** | **v3.3** | **4MB Flash 플랫폼 예산 기준 현행화**: esp32-s3-zero / esp32-c3-zero 4MB Flash(LittleFS 1MB) 및 C3 No-PSRAM 안전 마진 기준 정합 | Antigravity AI |
 | **2026-11-09** | **v3.2** | **AI 빠른 참조 §링크 강화 (Phase B)**: TOC anchor 기반 [§N.M](#anchor) 자동 변환, src/v0203/tools_0203/enhance_index_links_0203.py 추가, --verify로 anchor 유효성 검증 | Antigravity AI |
 | **2026-11-08** | **v3.1** | **Stage 9 웹 UI/UX 최적화 및 인터랙션 고도화 자원 실측 반영 (§10.5)**: 하단 뷰포트 레이아웃 스택 동적 변수화(런타임 0B), Now Playing 상세 확장 모달 및 Studio Override 원복 액션 탑재, 54개 JS 번들(119.3 KB Gzip) 및 18개 CSS(14.7 KB Gzip), LittleFS 총점유 149.8 KB(1MB 예산 대비 15.0%) 실측치 현행화 | Antigravity AI |
 | **2026-11-08** | **v3.0** | **Phase 3 — §8/§10.4 SSOT 정합**: §8.5 판정 표 감사 완료 후 최종 재측정(RAM 100.5KB 30.7%, Flash 1.36MB 20.8%, JS gz 102.4KB, 프론트 gz 합계 118.3KB, LittleFS 148.8KB), §10.4 Stage 8 AI 자원 영향표 실측치 현행화 | Antigravity AI |

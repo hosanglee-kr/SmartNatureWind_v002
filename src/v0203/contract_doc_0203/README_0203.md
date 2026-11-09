@@ -1,4 +1,4 @@
-# README_0203.md — 계약 기반 설계 문서 체계 (CBD) (v2.16)
+# README_0203.md — 계약 기반 설계 문서 체계 (CBD) (v2.17)
 
 > **목적**: 본 디렉토리는 Smart Nature Wind v0203 펌웨어의 계약 기반 설계(Contract-Based Design) 문서를 관리한다.  
 > 동시성 경계, 상태 소유권, 메모리/시간 예산, 회귀 테스트 절차를 체계화하여 멀티태스크 펌웨어의 안정성과 일관성을 보장한다.  
@@ -210,11 +210,13 @@ python src/v0203/tools_0203/commit_contracts_0203.py -m "docs(contracts): v0203 
 
 ```bash
 # 1. 전체 빌드
-pio run --environment esp32-s3-n16r8   # SUCCESS 필수
+pio run --environment esp32-s3-zero    # 기본 타깃 (SUCCESS 필수)
+pio run --environment esp32-c3-zero    # 서브 타깃 (SUCCESS 필수)
+# pio run --environment esp32-s3-n16r8 # 참조 타깃 (필요 시 주석 해제)
 pio run --target buildfs               # Gzip 재빌드 필수
 
 # 2. 링크 무결성
-pio run --environment esp32-s3-n16r8 2>&1 | grep -iE "undefined|multiple"
+pio run --environment esp32-s3-zero 2>&1 | grep -iE "undefined|multiple"
 # 기대: 0건
 
 # 3. 잔존 참조
@@ -252,6 +254,7 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-09** | **v2.17** | **PlatformIO 환경 갱신**: esp32-s3-zero 기본 및 esp32-c3-zero 활성화 검증 게이트 반영 | Antigravity AI |
 | **2026-11-08** | **v2.16** | **Stage 9.1 2차 통합 감사 19대 이슈 해결 및 데스크톱 내비게이션 반영 (0203_012)**: Live 도구 선언 CT10_AI SSOT 단일 위임, 6대 AI 라우트 checkApiKey 보안 인가 및 요청 버퍼 단편화/빈본문 가드, Gemini REST parts object 스키마 준수, Session Snapshot Lock 순서 정합, TimerPanel stopSession 위임 및 set_timer 백엔드 동기화, Store 세션 정규화 `normalizeSession`, 모니터/나우플레잉/차트/스튜디오/스케줄러 결함 해소, 데스크톱 영구 사이드바 2열 그리드 레이아웃 `ADR-10` 반영 | Antigravity AI |
 | **2026-11-08** | **v2.15** | **Stage 9 웹 UI/UX 레이아웃 표준화 및 인터랙션 고도화 반영 (0203_012)**: 하단 뷰포트 레이아웃 스택 표준화(`--snw-fab-bottom: 76px➔124px`, `--snw-content-pb: 80px➔128px`), Z-index 계층 재정립(fab: 990, modal: 1100), 바람 스타일 5종 탭 44px 모바일 터치 접근성 규격화, Now Playing Bar 상세 확장 모달, Studio 3대 물리 슬라이더 Override `[수동 튜닝됨]` 뱃지 및 `[기본값 원복]` 리셋 액션, 54개 JS 번들(119.3 KB Gzip) 실측치 유지 | Antigravity AI |
 | **2026-11-08** | **v2.14** | **통합 감사 28대 이슈 전 항목 해소 및 SSOT 자동 대조 CI 구축 (0203_012)**: P0 5건, P1 10건, P2 13건 전 항목 패치 및 검증, PlatformIO 펌웨어 빌드 성공(RAM 100.5KB / Flash 1.36MB), SPA 프론트엔드 에셋 번들(118.3 KB Gzip) 동기화, `validate_contracts.py` 신규 CI 및 `pio_gzip_0203.py` 스테이징 게이트 통합, TEST_PLAN §3.6 (T-121~T-148) 28건 확장 반영 | Antigravity AI |

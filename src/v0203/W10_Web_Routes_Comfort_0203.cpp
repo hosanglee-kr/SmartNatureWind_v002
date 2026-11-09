@@ -58,5 +58,49 @@ void CL_W10_WebAPI::routeComfort() {
 
         sendJson(p_request, v_doc, 200);
     });
+
+    // ======================================================
+    // POST /api/v001/comfort/auto — Comfort 자동 모드 On/Off 설정
+    // ======================================================
+    s_server->on(W10_Const::HTTP_API_COMFORT_AUTO, HTTP_POST, [](AsyncWebServerRequest* p_request) {}, NULL,
+    [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+        if (!checkApiKey(p_request)) {
+            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            return;
+        }
+
+        JsonDocument v_doc;
+        DeserializationError v_err = deserializeJson(v_doc, p_data, p_len);
+        if (v_err || !v_doc["enabled"].is<bool>()) {
+            p_request->send(400, "application/json", "{\"error\":\"BAD_REQUEST\"}");
+            return;
+        }
+
+        bool v_en = v_doc["enabled"].as<bool>();
+        CL_CT10_ControlManager::setAutoComfort(v_en);
+
+        JsonDocument v_resp;
+        v_resp["success"]     = true;
+        v_resp["autoComfort"] = v_en;
+        v_resp["remainSec"]   = CL_CT10_ControlManager::getAutoComfortRemainSec();
+
+        sendJson(p_request, v_resp, 200);
+    });
+
+    // ======================================================
+    // GET /api/v001/comfort/auto — Comfort 자동 모드 상태 조회
+    // ======================================================
+    s_server->on(W10_Const::HTTP_API_COMFORT_AUTO, HTTP_GET, [](AsyncWebServerRequest* p_request) {
+        if (!checkApiKey(p_request)) {
+            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            return;
+        }
+
+        JsonDocument v_resp;
+        v_resp["autoComfort"] = CL_CT10_ControlManager::isAutoComfortEnabled();
+        v_resp["remainSec"]   = CL_CT10_ControlManager::getAutoComfortRemainSec();
+
+        sendJson(p_request, v_resp, 200);
+    });
 }
 

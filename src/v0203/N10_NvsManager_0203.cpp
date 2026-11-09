@@ -309,6 +309,22 @@ void CL_N10_NvsManager::resetRuntime() {
 	CL_D10_Logger::log(EN_L10_LOG_WARN, "[N10] Runtime state reset");
 }
 
+void CL_N10_NvsManager::setAutoComfort(bool p_enabled) {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
+	if (s_state.autoComfortEnabled != p_enabled) {
+		s_state.autoComfortEnabled = p_enabled;
+		s_dirty.runtime = true;
+	}
+}
+
+bool CL_N10_NvsManager::isAutoComfort() {
+	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+	return s_state.autoComfortEnabled;
+}
+
 // --------------------------------------------------
 // 내부: NVS 로드/저장 (B-5 상수 교체)
 // --------------------------------------------------
@@ -321,6 +337,7 @@ void CL_N10_NvsManager::loadRuntimeFromNvs() {
 	s_state.manualActive          = s_prefs.getUChar(G_N10_KEY_MANUAL_ACTIVE, 0) != 0;
 	s_state.manualProfileNo       = s_prefs.getShort(G_N10_KEY_MANUAL_PROFILE, 0);
 	s_state.manualOvrSchedule     = s_prefs.getUChar(G_N10_KEY_MANUAL_OVR_SCH, 0) != 0;
+	s_state.autoComfortEnabled    = s_prefs.getUChar(G_N10_KEY_AUTO_COMFORT, 0) != 0;
 
 	s_state.autoOffEnabled		 = s_prefs.getUChar(G_N10_KEY_AUTOOFF_ENABLED, 0) != 0;
 	s_state.autoOffMinutes		 = s_prefs.getULong(G_N10_KEY_AUTOOFF_MINUTES, 0);
@@ -386,6 +403,7 @@ void CL_N10_NvsManager::flush(bool p_force) {
     if (nvs_set_u8  (v_handle, G_N10_KEY_MANUAL_ACTIVE,    s_state.manualActive ? 1 : 0)                     != ESP_OK) v_setFail = true;
     if (nvs_set_i16 (v_handle, G_N10_KEY_MANUAL_PROFILE,   s_state.manualProfileNo)                         != ESP_OK) v_setFail = true;
     if (nvs_set_u8  (v_handle, G_N10_KEY_MANUAL_OVR_SCH,   s_state.manualOvrSchedule ? 1 : 0)               != ESP_OK) v_setFail = true;
+    if (nvs_set_u8  (v_handle, G_N10_KEY_AUTO_COMFORT,     s_state.autoComfortEnabled ? 1 : 0)              != ESP_OK) v_setFail = true;
 
     esp_err_t v_commitErr = nvs_commit(v_handle);
     nvs_close(v_handle);

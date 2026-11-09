@@ -42,6 +42,8 @@ typedef struct {
 	bool	 manualActive;
 	int16_t	 manualProfileNo;
 	bool	 manualOvrSchedule;
+	// [Stage 10] Comfort 자동 모드
+	bool	 autoComfortEnabled;
 } ST_N10_RuntimeState_t;
 
 // [v0203 신규 Phase 2] AI 일일 사용량 구조체
@@ -84,6 +86,7 @@ class CL_N10_NvsManager {
 	static constexpr const char* G_N10_KEY_MANUAL_ACTIVE    = "man_active";   // uint8(bool)
 	static constexpr const char* G_N10_KEY_MANUAL_PROFILE   = "man_prof";     // int16
 	static constexpr const char* G_N10_KEY_MANUAL_OVR_SCH   = "man_ovr_sch";  // uint8(bool)
+	static constexpr const char* G_N10_KEY_AUTO_COMFORT     = "auto_comfort"; // uint8(bool)
 
 	// [v0203 신규 Phase 2] AI 일일 사용량 NVS 키 (<= 15 byte)
 	static constexpr const char* G_N10_KEY_AI_RESET_DATE = "ai_rst_dt";
@@ -136,6 +139,10 @@ class CL_N10_NvsManager {
 	static void setOverridePreset(bool p_enabled, const char* p_presetCode, const char* p_styleCode);
 	static void clearOverride();
 	static void resetRuntime();
+
+	// [Stage 10] Comfort 자동 모드
+	static void setAutoComfort(bool p_enabled);
+	static bool isAutoComfort();
 
 	// ==================================================
 	// [Phase 2] AI 일일 사용량 관리 API

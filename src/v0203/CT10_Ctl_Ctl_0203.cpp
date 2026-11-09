@@ -23,7 +23,7 @@
 
 #include "CT10_Ctl_0203.h"
 
-#include "A40_Com_Utils_0203.h"     // A40_ComFunc / CL_A40_MutexGuard_Semaphore
+#include "A40_Com_Utils_0203.h" // A40_ComFunc / CL_A40_MutexGuard_Semaphore
 #include "N10_NvsManager_0203.h"
 #include "CT10_Monitor_0203.h"
 
@@ -65,7 +65,7 @@ void CL_CT10_ControlManager::clearManual() {
 bool CL_CT10_ControlManager::reloadAll() {
     // [A-min] 새 root를 로컬에 로드 (기존 g_A20_config_root는 손대지 않음)
     ST_A20_ConfigRoot_t v_new;
-    bool v_ok = CL_C10_ConfigManager::loadAll(v_new);
+    bool                v_ok = CL_C10_ConfigManager::loadAll(v_new);
     if (!v_ok) {
         CL_C10_ConfigManager::freeAll(v_new);
         s_lastReloadOk.store(false, std::memory_order_release);
@@ -83,22 +83,22 @@ bool CL_CT10_ControlManager::reloadAll() {
     // CT10 mutex + root swap mutex
     portENTER_CRITICAL(&CL_C10_ConfigManager::s_rootSwapMux);
     ST_A20_ConfigRoot_t v_old = g_A20_config_root;
-    g_A20_config_root = v_new;
+    g_A20_config_root         = v_new;
     portEXIT_CRITICAL(&CL_C10_ConfigManager::s_rootSwapMux);
 
     // CT10 멤버 초기화
     CL_CT10_ControlManager& v_inst = instance();
 
-    v_inst.runSource         = EN_CT10_RUN_NONE;
-    v_inst.curScheduleIndex  = -1;
-    v_inst.curProfileIndex   = -1;
-    v_inst.useProfileMode    = false;
+    v_inst.runSource        = EN_CT10_RUN_NONE;
+    v_inst.curScheduleIndex = -1;
+    v_inst.curProfileIndex  = -1;
+    v_inst.useProfileMode   = false;
 
     memset(&v_inst.overrideState, 0, sizeof(v_inst.overrideState));
-    memset(&v_inst.autoOffRt,     0, sizeof(v_inst.autoOffRt));
+    memset(&v_inst.autoOffRt, 0, sizeof(v_inst.autoOffRt));
     memset(&v_inst.scheduleSegRt, 0, sizeof(v_inst.scheduleSegRt));
-    memset(&v_inst.profileSegRt,  0, sizeof(v_inst.profileSegRt));
-    memset(&v_inst.runCtx,        0, sizeof(v_inst.runCtx));
+    memset(&v_inst.profileSegRt, 0, sizeof(v_inst.profileSegRt));
+    memset(&v_inst.runCtx, 0, sizeof(v_inst.runCtx));
 
     // [A-2] 영속 필드 리셋
     v_inst._persistOffTimeLastYday = -1;
@@ -143,40 +143,40 @@ void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
 
     memset(&overrideState, 0, sizeof(overrideState));
     memset(&scheduleSegRt, 0, sizeof(scheduleSegRt));
-    memset(&profileSegRt,  0, sizeof(profileSegRt));
-    memset(&autoOffRt,     0, sizeof(autoOffRt));
-    memset(&runCtx,        0, sizeof(runCtx));
+    memset(&profileSegRt, 0, sizeof(profileSegRt));
+    memset(&autoOffRt, 0, sizeof(autoOffRt));
+    memset(&runCtx, 0, sizeof(runCtx));
 
     scheduleSegRt.index = -1;
     profileSegRt.index  = -1;
 
     // segment rt 초기 진입 안정화
-    uint32_t v_now = (uint32_t)millis();
+    uint32_t v_now             = (uint32_t)millis();
     scheduleSegRt.onPhase      = true;
     scheduleSegRt.phaseStartMs = v_now;
     scheduleSegRt.loopCount    = 0;
 
-    profileSegRt.onPhase       = true;
-    profileSegRt.phaseStartMs  = v_now;
-    profileSegRt.loopCount     = 0;
+    profileSegRt.onPhase      = true;
+    profileSegRt.phaseStartMs = v_now;
+    profileSegRt.loopCount    = 0;
 
     autoOffRt.offTimeLastYday = -1;
     autoOffRt.offTimeLastMin  = -1;
 
-    useProfileMode     = false;
-    runSource          = EN_CT10_RUN_NONE;
-    curScheduleIndex   = -1;
-    curProfileIndex    = -1;
-    lastTickMs         = 0;
-    lastMetricsPushMs  = 0;
+    useProfileMode    = false;
+    runSource         = EN_CT10_RUN_NONE;
+    curScheduleIndex  = -1;
+    curProfileIndex   = -1;
+    lastTickMs        = 0;
+    lastMetricsPushMs = 0;
 
     runCtx.state             = EN_CT10_STATE_IDLE;
     runCtx.reason            = EN_CT10_REASON_NONE;
     runCtx.lastDecisionMs    = v_now;
     runCtx.lastStateChangeMs = v_now;
 
-    runCtx.stateHoldUntilMs  = 0;
-    runCtx.stateAckRequired  = false;
+    runCtx.stateHoldUntilMs = 0;
+    runCtx.stateAckRequired = false;
 
     runCtx.activeSchId     = 0;
     runCtx.activeSchNo     = 0;
@@ -186,6 +186,10 @@ void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
 
     // [I-3] pending motion.sim apply 리셋
     _pendingMotionSimApply.store(false, std::memory_order_release);
+
+    // [Stage 10] Comfort 자동 모드 NVS 복원
+    s_autoComfortEnabled    = CL_N10_NvsManager::isAutoComfort();
+    s_autoComfortLastEvalMs = 0;
 
     sim.begin(p_pwm);
 
@@ -216,11 +220,11 @@ void CL_CT10_ControlManager::applyMotionSimConfigToSim() {
 
     const ST_A20_MotSimCfg_t& v_src = g_A20_config_root.motion->sim;
 
-    sim.userIntensity   = A40_ComFunc::clampVal<float>(v_src.intensity,   0.0f, 100.0f);
+    sim.userIntensity   = A40_ComFunc::clampVal<float>(v_src.intensity, 0.0f, 100.0f);
     sim.userVariability = A40_ComFunc::clampVal<float>(v_src.variability, 0.0f, 100.0f);
-    sim.userGustFreq    = A40_ComFunc::clampVal<float>(v_src.gustFreq,    0.0f, 100.0f);
-    sim.fanLimitPct     = A40_ComFunc::clampVal<float>(v_src.fanLimit,    0.0f, 100.0f);
-    sim.minFanPct       = A40_ComFunc::clampVal<float>(v_src.minFan,      0.0f, 100.0f);
+    sim.userGustFreq    = A40_ComFunc::clampVal<float>(v_src.gustFreq, 0.0f, 100.0f);
+    sim.fanLimitPct     = A40_ComFunc::clampVal<float>(v_src.fanLimit, 0.0f, 100.0f);
+    sim.minFanPct       = A40_ComFunc::clampVal<float>(v_src.minFan, 0.0f, 100.0f);
     sim.turbSigma       = v_src.turbSigma;
     sim.turbLenScale    = v_src.turbLenScale;
     sim.thermalStrength = v_src.thermalStrength;
@@ -239,9 +243,7 @@ void CL_CT10_ControlManager::applyMotionSimConfigToSim() {
         strlcpy(sim.styleCode, v_src.styleCode, sizeof(sim.styleCode));
     }
 
-    CL_D10_Logger::log(EN_L10_LOG_DEBUG,
-                       "[CT10] S10 runtime updated from motion.sim (intensity=%.1f)",
-                       sim.userIntensity);
+    CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] S10 runtime updated from motion.sim (intensity=%.1f)", sim.userIntensity);
 }
 
 // --------------------------------------------------
@@ -257,8 +259,7 @@ void CL_CT10_ControlManager::tickLoop() {
     // [F-06] Deferred: pending motion.sim apply
     if (_pendingMotionSimApply.exchange(false, std::memory_order_acq_rel)) {
         applyMotionSimConfigToSim();
-        CL_D10_Logger::log(EN_L10_LOG_DEBUG,
-                           "[CT10] MotionSim apply consumed (loopTask)");
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] MotionSim apply consumed (loopTask)");
     }
 
     if (!active || !pwm) return;
@@ -268,19 +269,20 @@ void CL_CT10_ControlManager::tickLoop() {
     lastTickMs = v_nowMs;
 
     // [Stage 8 신규] AI set_timer 연동 런타임 AutoOff 만료 검사
-    if (_session.runtimeAutoOffMin > 0 &&
-        _session.type != EN_CT10_SESSION_NONE &&
-        _session.state == EN_SESSION_ACTIVE) {
+    if (_session.runtimeAutoOffMin > 0 && _session.type != EN_CT10_SESSION_NONE && _session.state == EN_SESSION_ACTIVE) {
         if (v_nowMs - _session.runtimeAutoOffStartMs >= (_session.runtimeAutoOffMin * 60000UL)) {
             CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Runtime AutoOff expired (%u min)", (unsigned)_session.runtimeAutoOffMin);
-            _session.runtimeAutoOffMin = 0;
+            _session.runtimeAutoOffMin     = 0;
             _session.runtimeAutoOffStartMs = 0;
-            _autoOffLatched = true;
-            runCtx.reason = EN_CT10_REASON_AUTOOFF_TIMER;
+            _autoOffLatched                = true;
+            runCtx.reason                  = EN_CT10_REASON_AUTOOFF_TIMER;
             stopSession();
             return;
         }
     }
+
+    // [Stage 10 Phase 3] Comfort 자동 모드 주기 평가 호출
+    tickAutoComfort();
 
     // 0) 이벤트 상태 hold/ack 유지
     if (!overrideState.active && shouldHoldEventState()) {
@@ -354,7 +356,6 @@ void CL_CT10_ControlManager::exportSimJson(JsonDocument& p_doc) {
     sim.toJson(p_doc);
 }
 
-
 // ======================================================
 // [v0203 신규] Session 엔진 진입점 (start/stop/pause/resume)
 // ======================================================
@@ -364,15 +365,13 @@ void CL_CT10_ControlManager::exportSimJson(JsonDocument& p_doc) {
 bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
                                           EN_CT10_trigger_t      p_trigger,
                                           const JsonDocument&    p_payloadDoc) {
-    auto& self = instance();
+    auto&                       self = instance();
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return false;
 
     // ① 기존 세션/실행 상태 정리 (멱등)
     if (self._session.type != EN_CT10_SESSION_NONE) {
-        CL_D10_Logger::log(EN_L10_LOG_INFO,
-                           "[CT10] startSession: replacing existing (type=%u)",
-                           (unsigned)self._session.type);
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] startSession: replacing existing (type=%u)", (unsigned)self._session.type);
         self.stopSession();
     } else if (self.overrideState.active || self.runSource != EN_CT10_RUN_NONE) {
         self.sim.stop();
@@ -386,8 +385,7 @@ bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
 
     switch (p_type) {
         case EN_CT10_SESSION_PLAYLIST: {
-            uint16_t v_profileId = A40_ComFunc::Json_getNum<uint16_t>(
-                p_payloadDoc.as<JsonObjectConst>(), "profileId", 0);
+            uint16_t v_profileId = A40_ComFunc::Json_getNum<uint16_t>(p_payloadDoc.as<JsonObjectConst>(), "profileId", 0);
             if (v_profileId == 0 || v_profileId > 255) {
                 CL_D10_Logger::log(EN_L10_LOG_WARN,
                                    "[CT10] startSession(PLAYLIST): invalid profileId=%u",
@@ -414,14 +412,13 @@ bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
 
             v_ok = self.startUserProfileByNo(v_profPtr->profileNo);
             if (v_ok) {
-                self.setProfileMode(true);   // schedule 배제
+                self.setProfileMode(true); // schedule 배제
 
-                self._session.payload.playlist.profileId   = (uint8_t)v_profileId;
-                self._session.payload.playlist.profileNo   = v_profPtr->profileNo;
-                A40_ComFunc::copyStr2Buffer_safe(
-                    self._session.payload.playlist.profileName,
-                    v_profPtr->name,
-                    sizeof(self._session.payload.playlist.profileName));
+                self._session.payload.playlist.profileId = (uint8_t)v_profileId;
+                self._session.payload.playlist.profileNo = v_profPtr->profileNo;
+                A40_ComFunc::copyStr2Buffer_safe(self._session.payload.playlist.profileName,
+                                                 v_profPtr->name,
+                                                 sizeof(self._session.payload.playlist.profileName));
                 self._session.payload.playlist.totalSteps         = v_profPtr->segCount;
                 self._session.payload.playlist.currentStepIdx     = 0;
                 self._session.payload.playlist.currentStepStartMs = millis();
@@ -432,9 +429,9 @@ bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
         }
 
         case EN_CT10_SESSION_PRESET: {
-            JsonObjectConst p = p_payloadDoc.as<JsonObjectConst>();
-            const char* pc = A40_ComFunc::Json_getStr(p, "presetCode", A20_Const::DEFAULT_PRESET_CODE);
-            const char* sc = A40_ComFunc::Json_getStr(p, "styleCode",  A20_Const::DEFAULT_STYLE_CODE);
+            JsonObjectConst p  = p_payloadDoc.as<JsonObjectConst>();
+            const char*     pc = A40_ComFunc::Json_getStr(p, "presetCode", A20_Const::DEFAULT_PRESET_CODE);
+            const char*     sc = A40_ComFunc::Json_getStr(p, "styleCode", A20_Const::DEFAULT_STYLE_CODE);
             if (!pc || !pc[0] || !sc || !sc[0]) return false;
 
             ST_A20_SegmentOverride_t v_ovr;
@@ -445,38 +442,34 @@ bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
             v_ovr.gustFrequency   = -1.0f;
 
             if (p["override"].is<JsonObjectConst>()) {
-                JsonObjectConst ovr   = p["override"].as<JsonObjectConst>();
-                v_ovr.enabled         = ovr["enabled"] | false;
-                if (ovr["windIntensity"].is<float>())
-                    v_ovr.windIntensity   = ovr["windIntensity"].as<float>();
-                if (ovr["windVariability"].is<float>())
-                    v_ovr.windVariability = ovr["windVariability"].as<float>();
-                if (ovr["gustFrequency"].is<float>())
-                    v_ovr.gustFrequency   = ovr["gustFrequency"].as<float>();
+                JsonObjectConst ovr = p["override"].as<JsonObjectConst>();
+                v_ovr.enabled       = ovr["enabled"] | false;
+                if (ovr["windIntensity"].is<float>()) v_ovr.windIntensity = ovr["windIntensity"].as<float>();
+                if (ovr["windVariability"].is<float>()) v_ovr.windVariability = ovr["windVariability"].as<float>();
+                if (ovr["gustFrequency"].is<float>()) v_ovr.gustFrequency = ovr["gustFrequency"].as<float>();
             }
 
-            self.startOverridePreset(pc, sc, &v_ovr, 0, true);   // forever
+            self.startOverridePreset(pc, sc, &v_ovr, 0, true); // forever
             v_ok = self.overrideState.active;
 
             if (v_ok) {
-                A40_ComFunc::copyStr2Buffer_safe(
-                    self._session.payload.preset.presetCode, pc,
-                    sizeof(self._session.payload.preset.presetCode));
-                A40_ComFunc::copyStr2Buffer_safe(
-                    self._session.payload.preset.styleCode, sc,
-                    sizeof(self._session.payload.preset.styleCode));
+                A40_ComFunc::copyStr2Buffer_safe(self._session.payload.preset.presetCode,
+                                                 pc,
+                                                 sizeof(self._session.payload.preset.presetCode));
+                A40_ComFunc::copyStr2Buffer_safe(self._session.payload.preset.styleCode,
+                                                 sc,
+                                                 sizeof(self._session.payload.preset.styleCode));
                 self._session.payload.preset.override = v_ovr;
             }
             break;
         }
 
         case EN_CT10_SESSION_FIXED: {
-            float v_pct = A40_ComFunc::Json_getNum<float>(
-                p_payloadDoc.as<JsonObjectConst>(), "percent", 50.0f);
-            if (v_pct < 0.0f)   v_pct = 0.0f;
+            float v_pct = A40_ComFunc::Json_getNum<float>(p_payloadDoc.as<JsonObjectConst>(), "percent", 50.0f);
+            if (v_pct < 0.0f) v_pct = 0.0f;
             if (v_pct > 100.0f) v_pct = 100.0f;
 
-            self.startOverrideFixed(v_pct, 0, true);   // forever
+            self.startOverrideFixed(v_pct, 0, true); // forever
             v_ok = self.overrideState.active;
 
             if (v_ok) self._session.payload.fixed.percent = v_pct;
@@ -488,9 +481,7 @@ bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
     }
 
     if (!v_ok) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN,
-                           "[CT10] startSession: delegation failed (type=%u)",
-                           (unsigned)p_type);
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] startSession: delegation failed (type=%u)", (unsigned)p_type);
         return false;
     }
 
@@ -504,8 +495,7 @@ bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
 
     // ④ NVS 세션 영속화
     if (p_type == EN_CT10_SESSION_PLAYLIST && p_trigger == EN_CT10_TRIGGER_MANUAL) {
-        CL_N10_NvsManager::setManualSession(
-            self._session.payload.playlist.profileNo, true);
+        CL_N10_NvsManager::setManualSession(self._session.payload.playlist.profileNo, true);
     } else {
         CL_N10_NvsManager::setManualSession(0, false);
     }
@@ -515,18 +505,22 @@ bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
     self.markDirty("metrics");
     self.markDirty("summary");
 
-    const char* v_label =
-        (p_type == EN_CT10_SESSION_PLAYLIST) ? "재생 시작" :
-        (p_type == EN_CT10_SESSION_PRESET)   ? "프리셋 재생" :
-                                               "일반 선풍기";
-    CL_MON_Monitor::pushSessionEvent(
-        EN_MON_EVENT_SESSION_START, v_label,
-        (uint8_t)p_type, (uint8_t)p_trigger,
-        0, 0, self._session.payload.playlist.profileNo, 0);
+    const char* v_label = (p_type == EN_CT10_SESSION_PLAYLIST) ? "재생 시작"
+                          : (p_type == EN_CT10_SESSION_PRESET) ? "프리셋 재생"
+                                                               : "일반 선풍기";
+    CL_MON_Monitor::pushSessionEvent(EN_MON_EVENT_SESSION_START,
+                                     v_label,
+                                     (uint8_t)p_type,
+                                     (uint8_t)p_trigger,
+                                     0,
+                                     0,
+                                     self._session.payload.playlist.profileNo,
+                                     0);
 
     CL_D10_Logger::log(EN_L10_LOG_INFO,
                        "[CT10] startSession: type=%u trigger=%u (delegated)",
-                       (unsigned)p_type, (unsigned)p_trigger);
+                       (unsigned)p_type,
+                       (unsigned)p_trigger);
     return true;
 }
 
@@ -553,12 +547,12 @@ bool CL_CT10_ControlManager::startFixedManual(float p_percent) {
 // [Phase3 N-1] pauseSession — 실행 상태 백업 + 물리 정지
 // ======================================================
 bool CL_CT10_ControlManager::pauseSession() {
-    auto& self = instance();
+    auto&                       self = instance();
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return false;
 
     if (self._session.type == EN_CT10_SESSION_NONE) return false;
-    if (self._session.state != EN_SESSION_ACTIVE)   return false;
+    if (self._session.state != EN_SESSION_ACTIVE) return false;
 
     // ① 실행 컨텍스트 백업 (resumeSession에서 복원)
     self._pausedExec.valid        = true;
@@ -586,11 +580,14 @@ bool CL_CT10_ControlManager::pauseSession() {
     self.markDirty("state");
     self.markDirty("metrics");
 
-    CL_MON_Monitor::pushSessionEvent(
-        EN_MON_EVENT_PAUSE, "일시정지",
-        (uint8_t)self._session.type, (uint8_t)self._session.trigger,
-        self._session.payload.playlist.currentStepIdx,
-        self._session.payload.playlist.totalSteps, 0, 0);
+    CL_MON_Monitor::pushSessionEvent(EN_MON_EVENT_PAUSE,
+                                     "일시정지",
+                                     (uint8_t)self._session.type,
+                                     (uint8_t)self._session.trigger,
+                                     self._session.payload.playlist.currentStepIdx,
+                                     self._session.payload.playlist.totalSteps,
+                                     0,
+                                     0);
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] pauseSession()");
     return true;
@@ -600,18 +597,18 @@ bool CL_CT10_ControlManager::pauseSession() {
 // [Phase3 N-1] resumeSession — 백업 복원 + Smart Resume
 // ======================================================
 bool CL_CT10_ControlManager::resumeSession() {
-    auto& self = instance();
+    auto&                       self = instance();
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return false;
 
-    if (self._session.type == EN_CT10_SESSION_NONE)  return false;
-    if (self._session.state != EN_SESSION_PAUSED)    return false;
-    if (!self._pausedExec.valid)                     return false;
+    if (self._session.type == EN_CT10_SESSION_NONE) return false;
+    if (self._session.state != EN_SESSION_PAUSED) return false;
+    if (!self._pausedExec.valid) return false;
 
     // ① 일시정지 시간 누적
-    uint32_t v_pauseDuration = millis() - self._session.pausedAtMs;
+    uint32_t v_pauseDuration     = millis() - self._session.pausedAtMs;
     self._session.pausedAccumMs += v_pauseDuration;
-    self._session.pausedAtMs = 0;
+    self._session.pausedAtMs     = 0;
 
     // ② 실행 컨텍스트 복원
     self.runSource       = self._pausedExec.runSource;
@@ -623,23 +620,20 @@ bool CL_CT10_ControlManager::resumeSession() {
     // ③ Smart Resume 정책
     if (self._session.type == EN_CT10_SESSION_PLAYLIST) {
         if (v_pauseDuration > S_PAUSE_STEP_RESET_MS) {
-            self.profileSegRt.index        = -1;
-            self.profileSegRt.phaseStartMs = millis();
-            self.profileSegRt.loopCount    = 0;
+            self.profileSegRt.index                           = -1;
+            self.profileSegRt.phaseStartMs                    = millis();
+            self.profileSegRt.loopCount                       = 0;
             self._session.payload.playlist.currentStepIdx     = 0;
             self._session.payload.playlist.currentStepStartMs = millis();
-            CL_D10_Logger::log(EN_L10_LOG_INFO,
-                               "[CT10] resumeSession: >30min → restart from Step 1");
+            CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] resumeSession: >30min → restart from Step 1");
         } else if (v_pauseDuration > S_PAUSE_CONTINUE_MS) {
-            self.profileSegRt.phaseStartMs = millis();
+            self.profileSegRt.phaseStartMs                    = millis();
             self._session.payload.playlist.currentStepStartMs = millis();
-            CL_D10_Logger::log(EN_L10_LOG_INFO,
-                               "[CT10] resumeSession: 5~30min → step phase reset");
+            CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] resumeSession: 5~30min → step phase reset");
         } else {
-            self.profileSegRt.phaseStartMs += v_pauseDuration;
+            self.profileSegRt.phaseStartMs                    += v_pauseDuration;
             self._session.payload.playlist.currentStepStartMs += v_pauseDuration;
-            CL_D10_Logger::log(EN_L10_LOG_INFO,
-                               "[CT10] resumeSession: <5min → continuous resume");
+            CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] resumeSession: <5min → continuous resume");
         }
     }
 
@@ -648,11 +642,14 @@ bool CL_CT10_ControlManager::resumeSession() {
 
     self.markDirty("state");
 
-    CL_MON_Monitor::pushSessionEvent(
-        EN_MON_EVENT_RESUME, "재개",
-        (uint8_t)self._session.type, (uint8_t)self._session.trigger,
-        self._session.payload.playlist.currentStepIdx,
-        self._session.payload.playlist.totalSteps, 0, 0);
+    CL_MON_Monitor::pushSessionEvent(EN_MON_EVENT_RESUME,
+                                     "재개",
+                                     (uint8_t)self._session.type,
+                                     (uint8_t)self._session.trigger,
+                                     self._session.payload.playlist.currentStepIdx,
+                                     self._session.payload.playlist.totalSteps,
+                                     0,
+                                     0);
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] resumeSession()");
     return true;
@@ -662,14 +659,12 @@ bool CL_CT10_ControlManager::resumeSession() {
 // [Phase3 N-1] stopSession — 전체 실행 상태 리셋 (멱등)
 // ======================================================
 bool CL_CT10_ControlManager::stopSession() {
-    auto& self = instance();
+    auto&                       self = instance();
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return false;
 
     // 멱등: 이미 완전 정지 상태면 no-op
-    if (self._session.type == EN_CT10_SESSION_NONE &&
-        !self.overrideState.active &&
-        self.runSource == EN_CT10_RUN_NONE) {
+    if (self._session.type == EN_CT10_SESSION_NONE && !self.overrideState.active && self.runSource == EN_CT10_RUN_NONE) {
         return false;
     }
 
@@ -678,13 +673,13 @@ bool CL_CT10_ControlManager::stopSession() {
     if (self.pwm) self.pwm->setDutyPercent(0.0f);
 
     // ② 위임 경로 정리 (재귀 mutex → 안전)
-    if (self.overrideState.active)                  self.stopOverride();
+    if (self.overrideState.active) self.stopOverride();
     if (self.runSource == EN_CT10_RUN_USER_PROFILE) self.stopUserProfile();
 
     // ③ 실행 상태 전체 리셋
     memset(&self.overrideState, 0, sizeof(self.overrideState));
-    self.runSource        = EN_CT10_RUN_NONE;
-    self.curProfileIndex  = -1;
+    self.runSource       = EN_CT10_RUN_NONE;
+    self.curProfileIndex = -1;
     memset(&self.profileSegRt, 0, sizeof(self.profileSegRt));
     self.profileSegRt.index = -1;
 
@@ -710,10 +705,7 @@ bool CL_CT10_ControlManager::stopSession() {
     self.markDirty("metrics");
     self.markDirty("summary");
 
-    CL_MON_Monitor::pushSessionEvent(
-        EN_MON_EVENT_SESSION_END, "세션 종료",
-        (uint8_t)v_oldType, (uint8_t)v_oldTrg,
-        0, 0, v_oldProfNo, 0);
+    CL_MON_Monitor::pushSessionEvent(EN_MON_EVENT_SESSION_END, "세션 종료", (uint8_t)v_oldType, (uint8_t)v_oldTrg, 0, 0, v_oldProfNo, 0);
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] stopSession()");
     return true;
@@ -724,7 +716,7 @@ bool CL_CT10_ControlManager::stopSession() {
 // ======================================================
 bool CL_CT10_ControlManager::setSessionAutoOff(uint32_t p_minutes) {
     if (p_minutes == 0 || p_minutes > 1440) return false;
-    auto& self = instance();
+    auto&                       self = instance();
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return false;
 
@@ -738,7 +730,7 @@ bool CL_CT10_ControlManager::setSessionAutoOff(uint32_t p_minutes) {
 }
 
 void CL_CT10_ControlManager::clearSessionAutoOff() {
-    auto& self = instance();
+    auto&                       self = instance();
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return;
 
@@ -749,7 +741,7 @@ void CL_CT10_ControlManager::clearSessionAutoOff() {
 }
 
 uint32_t CL_CT10_ControlManager::getSessionAutoOffRemainSec() {
-    auto& self = instance();
+    auto&                       self = instance();
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return 0;
     if (self._session.runtimeAutoOffMin == 0) return 0;
@@ -760,23 +752,23 @@ uint32_t CL_CT10_ControlManager::getSessionAutoOffRemainSec() {
 }
 
 bool CL_CT10_ControlManager::isSessionActive() {
-    auto& self = instance();
+    auto&                       self = instance();
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return false;
     return self._session.type != EN_CT10_SESSION_NONE && self._session.state == EN_SESSION_ACTIVE;
 }
 
 bool CL_CT10_ControlManager::isSessionPaused() {
-    auto& self = instance();
+    auto&                       self = instance();
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return false;
     return self._session.state == EN_SESSION_PAUSED;
 }
 
 ST_CT10_SessionContext_t CL_CT10_ControlManager::getSessionSnapshot() {
-    auto& self = instance();
+    auto&                       self = instance();
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    ST_CT10_SessionContext_t v_empty = {};
+    ST_CT10_SessionContext_t    v_empty = {};
     if (!v_guard.isAcquired()) return v_empty;
     return self._session;
 }
@@ -787,7 +779,7 @@ void CL_CT10_ControlManager::updatePendingScheduleInfo() {
     runCtx.pendingSchNo          = 0;
     runCtx.pendingProfileNo      = 0;
     runCtx.pendingRemainMin      = 0;
-    memset(runCtx.pendingSchName,  0, sizeof(runCtx.pendingSchName));
+    memset(runCtx.pendingSchName, 0, sizeof(runCtx.pendingSchName));
     memset(runCtx.pendingSchStart, 0, sizeof(runCtx.pendingSchStart));
 
     // Manual Session 중일 때만 연산
@@ -795,15 +787,15 @@ void CL_CT10_ControlManager::updatePendingScheduleInfo() {
     if (_session.trigger != EN_CT10_TRIGGER_MANUAL) return;
     if (!g_A20_config_root.schedules) return;
 
-    auto& cfg = *g_A20_config_root.schedules;
+    auto&     cfg = *g_A20_config_root.schedules;
     struct tm tm;
     if (!CL_TM10_TimeManager::getLocalTime(tm)) return;
 
-    uint8_t today = (tm.tm_wday == 0) ? 6 : (uint8_t)(tm.tm_wday - 1);
+    uint8_t  today  = (tm.tm_wday == 0) ? 6 : (uint8_t)(tm.tm_wday - 1);
     uint16_t curMin = (uint16_t)tm.tm_hour * 60 + tm.tm_min;
 
-    uint16_t nearest = 0xFFFF;
-    int nearestIdx = -1;
+    uint16_t nearest    = 0xFFFF;
+    int      nearestIdx = -1;
 
     for (uint8_t i = 0; i < cfg.count; i++) {
         const auto& s = cfg.items[i];
@@ -818,14 +810,16 @@ void CL_CT10_ControlManager::updatePendingScheduleInfo() {
         } else if (start < end) {
             if (s.period.days[today]) isActive = (curMin >= start && curMin < end);
         } else {
-            if (curMin >= start) isActive = s.period.days[today];
-            else if (curMin < end) isActive = s.period.days[today == 0 ? 6 : today - 1];
+            if (curMin >= start)
+                isActive = s.period.days[today];
+            else if (curMin < end)
+                isActive = s.period.days[today == 0 ? 6 : today - 1];
         }
 
         if (isActive) {
             runCtx.pendingScheduleActive = true;
-            runCtx.pendingSchId     = s.schId;
-            runCtx.pendingSchNo     = s.schNo;
+            runCtx.pendingSchId          = s.schId;
+            runCtx.pendingSchNo          = s.schNo;
             A40_ComFunc::copyStr2Buffer_safe(runCtx.pendingSchName, s.name, sizeof(runCtx.pendingSchName));
             A40_ComFunc::copyStr2Buffer_safe(runCtx.pendingSchStart, s.period.startTime, sizeof(runCtx.pendingSchStart));
             runCtx.pendingRemainMin = 0;
@@ -837,17 +831,17 @@ void CL_CT10_ControlManager::updatePendingScheduleInfo() {
         if (start <= curMin) continue;
         uint16_t remain = start - curMin;
         if (remain < nearest) {
-            nearest = remain;
+            nearest    = remain;
             nearestIdx = i;
         }
     }
 
     if (nearestIdx >= 0 && nearest <= 60) {
-        const auto& s = cfg.items[nearestIdx];
+        const auto& s                = cfg.items[nearestIdx];
         runCtx.pendingScheduleActive = true;
-        runCtx.pendingSchId     = s.schId;
-        runCtx.pendingSchNo     = s.schNo;
-        runCtx.pendingRemainMin = nearest;
+        runCtx.pendingSchId          = s.schId;
+        runCtx.pendingSchNo          = s.schNo;
+        runCtx.pendingRemainMin      = nearest;
         A40_ComFunc::copyStr2Buffer_safe(runCtx.pendingSchName, s.name, sizeof(runCtx.pendingSchName));
         A40_ComFunc::copyStr2Buffer_safe(runCtx.pendingSchStart, s.period.startTime, sizeof(runCtx.pendingSchStart));
         runCtx.pendingProfileNo = (uint8_t)s.profileId;

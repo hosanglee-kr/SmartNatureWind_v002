@@ -260,6 +260,14 @@ class CL_CT10_ControlManager {
     static float       getCurrentHumidityMock();
 
     // ======================================================
+    // [Stage 10] Comfort 자동 모드 API
+    // ======================================================
+    static void     setAutoComfort(bool p_enabled);
+    static bool     isAutoComfortEnabled();
+    static uint32_t getAutoComfortRemainSec();
+    static void     tickAutoComfort();
+
+    // ======================================================
     // [F-05] Pending reload (atomic CAS)
     // ======================================================
     static bool requestReload() {
@@ -382,6 +390,11 @@ class CL_CT10_ControlManager {
 
     // [B-1b] 상태 일관성 보호용 재귀 뮤텍스
     static SemaphoreHandle_t s_stateMutex;
+
+    // [Stage 10] Comfort 자동 모드 런타임 상태
+    static bool               s_autoComfortEnabled;
+    static uint32_t           s_autoComfortLastEvalMs;
+    static constexpr uint32_t AUTO_COMFORT_INTERVAL_MS = 300000; // 5분 (300,000 ms)
 
   private:
     bool _dirtyState   = false;

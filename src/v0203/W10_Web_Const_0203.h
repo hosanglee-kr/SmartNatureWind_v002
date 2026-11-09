@@ -84,6 +84,7 @@ constexpr const char* HTTP_API_SESSION_STOP         = HTTP_API_BASE "/session/st
 constexpr const char* HTTP_API_SESSION_CURRENT      = HTTP_API_BASE "/session/current";
 constexpr const char* HTTP_API_SESSION_SCH_OVERRIDE = HTTP_API_BASE "/session/schedule-override"; // [v0203 Stage 5]
 constexpr const char* HTTP_API_COMFORT              = HTTP_API_BASE "/comfort";                   // [v0203 Stage 6]
+constexpr const char* HTTP_API_COMFORT_AUTO         = HTTP_API_BASE "/comfort/auto";              // [v0203 Stage 10]
 
 // --------------------------------------------------
 // 5. 하드웨어 직접 제어 (Direct HW Control)

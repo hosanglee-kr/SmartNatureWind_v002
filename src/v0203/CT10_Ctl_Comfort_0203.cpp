@@ -14,6 +14,8 @@
 #include "CT10_Ctl_0203.h"
 #include "A20_Const_0203.h"
 #include "A40_Com_Utils_0203.h"
+#include "N10_NvsManager_0203.h"
+#include "D10_Logger_0203.h"
 #include <math.h>
 #include <strings.h>
 
@@ -106,4 +108,63 @@ uint8_t CL_CT10_ControlManager::getRecommendedProfileId() {
         }
     }
     return 0; // 매칭 프로필 없음
+}
+
+// =========================================================
+// [Stage 10 Phase 3] Comfort 자동 모드 상태 변수 및 구현
+// =========================================================
+bool     CL_CT10_ControlManager::s_autoComfortEnabled    = false;
+uint32_t CL_CT10_ControlManager::s_autoComfortLastEvalMs = 0;
+
+void CL_CT10_ControlManager::setAutoComfort(bool p_enabled) {
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return;
+
+    if (s_autoComfortEnabled == p_enabled) return;
+    s_autoComfortEnabled    = p_enabled;
+    s_autoComfortLastEvalMs = 0; // 활성화 시 즉시 평가 준비
+
+    // NVS 영구 저장 (CONTRACT §5.1 순서: s_stateMutex -> N10::s_mutex)
+    CL_N10_NvsManager::setAutoComfort(p_enabled);
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoComfort set to: %s", p_enabled ? "ON" : "OFF");
+}
+
+bool CL_CT10_ControlManager::isAutoComfortEnabled() {
+    return s_autoComfortEnabled;
+}
+
+uint32_t CL_CT10_ControlManager::getAutoComfortRemainSec() {
+    if (!s_autoComfortEnabled) return 0;
+    uint32_t v_elapsed = millis() - s_autoComfortLastEvalMs;
+    if (v_elapsed >= AUTO_COMFORT_INTERVAL_MS) return 0;
+    return (AUTO_COMFORT_INTERVAL_MS - v_elapsed) / 1000;
+}
+
+void CL_CT10_ControlManager::tickAutoComfort() {
+    if (!s_autoComfortEnabled) return;
+
+    const uint32_t v_now = millis();
+    if (v_now - s_autoComfortLastEvalMs < AUTO_COMFORT_INTERVAL_MS) return;
+    s_autoComfortLastEvalMs = v_now;
+
+    // 1. AutoOff 래치 활성 시 자동 기동 차단
+    if (instance().runCtx.state == EN_CT10_STATE_AUTOOFF_STOPPED || instance()._autoOffLatched) {
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoComfort: skip (AutoOff latched)");
+        return;
+    }
+
+    // 2. 이미 세션이 활성 가동 중이면 사용자 의도 우선
+    if (instance().isSessionActive()) {
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] AutoComfort: skip (Session already active)");
+        return;
+    }
+
+    // 3. 실내 환경 기반 추천 프리셋 산출 및 세션 시작
+    const char* v_recPreset = getRecommendedPresetCode();
+    const char* v_recStyle  = getRecommendedStyleCode();
+
+    if (v_recPreset && strlen(v_recPreset) > 0) {
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoComfort 5m eval -> startPreset: %s (%s)", v_recPreset, v_recStyle);
+        startPresetManual(v_recPreset, v_recStyle);
+    }
 }

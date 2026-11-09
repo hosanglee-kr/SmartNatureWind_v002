@@ -41,3 +41,8 @@ CLAUDE.local.md
 # Python 도구 캐시
 tools/__pycache__/
 *.pyc
+
+# UI E2E 테스트 산출물 (스크린샷 이미지)
+test/reports_ui/*.png
+!test/reports_ui/.gitkeep
+

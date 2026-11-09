@@ -166,5 +166,8 @@ void CL_CT10_ControlManager::tickAutoComfort() {
     if (v_recPreset && strlen(v_recPreset) > 0) {
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoComfort 5m eval -> startPreset: %s (%s)", v_recPreset, v_recStyle);
         startPresetManual(v_recPreset, v_recStyle);
+
+        // [Stage 10.1 갭 3-A] 자동 기동 세션임을 명시하여 FE의 is-running 표출 보장
+        instance()._session.trigger = EN_CT10_TRIGGER_AUTO_COMFORT;
     }
 }

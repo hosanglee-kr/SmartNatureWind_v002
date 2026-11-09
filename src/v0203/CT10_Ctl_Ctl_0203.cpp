@@ -277,6 +277,9 @@ void CL_CT10_ControlManager::tickLoop() {
             _autoOffLatched                = true;
             runCtx.reason                  = EN_CT10_REASON_AUTOOFF_TIMER;
             stopSession();
+
+            // [Stage 10.1 갭 1-A] 타이머 만료 시 Comfort 자동 모드 영구 해제
+            setAutoComfort(false);
             return;
         }
     }
@@ -749,6 +752,13 @@ uint32_t CL_CT10_ControlManager::getSessionAutoOffRemainSec() {
     uint32_t v_elapsedSec = (millis() - self._session.runtimeAutoOffStartMs) / 1000;
     uint32_t v_totalSec   = self._session.runtimeAutoOffMin * 60;
     return (v_elapsedSec < v_totalSec) ? (v_totalSec - v_elapsedSec) : 0;
+}
+
+uint16_t CL_CT10_ControlManager::getTimerDurationMin() {
+    auto&                       self = instance();
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return 0;
+    return self._session.runtimeAutoOffMin;
 }
 
 bool CL_CT10_ControlManager::isSessionActive() {

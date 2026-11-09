@@ -233,7 +233,7 @@ String executeAIAction(const char* p_fn, JsonObjectConst p_args) {
     // 7. 자동 꺼짐 타이머 (런타임 AutoOff)
     if (strcmp(p_fn, "set_timer") == 0) {
         uint32_t v_m = p_args["minutes"] | 0;
-        if (v_m == 0 || v_m > 1440) return "error:invalid_minutes";
+        if (v_m < 1 || v_m > 480) return "error:invalid_minutes";
         // 정지 상태라면 50% 바람으로 우선 가동
         if (!CL_CT10_ControlManager::isSessionActive()) {
             CL_CT10_ControlManager::instance().startOverrideFixed(50.0f, 0, true);

@@ -272,6 +272,65 @@ void CL_W10_WebAPI::routeControl() {
             v_res["mode"]        = v_mode ? "PROFILE" : "SCHEDULE";
             sendJson(p_request, v_res);
         });
+
+    // [Stage 10.1 Option A] POST /api/v001/control/timer
+    s_server->on(
+        W10_Const::HTTP_API_CTL_TIMER,
+        HTTP_POST,
+        [](AsyncWebServerRequest* p_request) {},
+        nullptr,
+        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+            if (!checkApiKey(p_request)) {
+                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+                return;
+            }
+            if (p_index + p_len != p_total) return;
+
+            JsonDocument v_doc;
+            if (!parseJsonBody(p_request, p_data, p_len, v_doc) || !v_doc["minutes"].is<uint16_t>()) {
+                p_request->send(400, "application/json", "{\"error\":\"invalid body\"}");
+                return;
+            }
+            uint16_t v_min = v_doc["minutes"].as<uint16_t>();
+            if (v_min < 1 || v_min > 480) {
+                p_request->send(400, "application/json", "{\"error\":\"minutes 1-480\"}");
+                return;
+            }
+            if (!CL_CT10_ControlManager::setSessionAutoOff(v_min)) {
+                p_request->send(500, "application/json", "{\"error\":\"timer_failed\"}");
+                return;
+            }
+            char v_buf[128];
+            snprintf(v_buf, sizeof(v_buf),
+                     "{\"success\":true,\"active\":true,\"remainSec\":%lu}",
+                     (unsigned long)CL_CT10_ControlManager::getSessionAutoOffRemainSec());
+            p_request->send(200, "application/json", v_buf);
+        });
+
+    // [Stage 10.1 Option A] DELETE /api/v001/control/timer
+    s_server->on(W10_Const::HTTP_API_CTL_TIMER, HTTP_DELETE, [](AsyncWebServerRequest* p_request) {
+        if (!checkApiKey(p_request)) {
+            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            return;
+        }
+        CL_CT10_ControlManager::clearSessionAutoOff();
+        p_request->send(200, "application/json", "{\"success\":true,\"active\":false}");
+    });
+
+    // [Stage 10.1 Option A] GET /api/v001/control/timer
+    s_server->on(W10_Const::HTTP_API_CTL_TIMER, HTTP_GET, [](AsyncWebServerRequest* p_request) {
+        if (!checkApiKey(p_request)) {
+            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            return;
+        }
+        char v_buf[128];
+        snprintf(v_buf, sizeof(v_buf),
+                 "{\"active\":%s,\"remainSec\":%lu,\"durationMin\":%u}",
+                 CL_CT10_ControlManager::isTimerActive() ? "true" : "false",
+                 (unsigned long)CL_CT10_ControlManager::getSessionAutoOffRemainSec(),
+                 CL_CT10_ControlManager::getTimerDurationMin());
+        p_request->send(200, "application/json", v_buf);
+    });
 }
 
 // --------------------------------------------------

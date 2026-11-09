@@ -45,9 +45,10 @@ typedef enum : uint8_t {
 } EN_CT10_session_type_t;
 
 typedef enum : uint8_t {
-    EN_CT10_TRIGGER_NONE     = 0,
-    EN_CT10_TRIGGER_MANUAL   = 1, // 사용자 "▶ 재생" / 1~5단
-    EN_CT10_TRIGGER_SCHEDULE = 2, // 시간 윈도우 진입
+    EN_CT10_TRIGGER_NONE         = 0,
+    EN_CT10_TRIGGER_MANUAL       = 1, // 사용자 "▶ 재생" / 1~5단
+    EN_CT10_TRIGGER_SCHEDULE     = 2, // 시간 윈도우 진입
+    EN_CT10_TRIGGER_AUTO_COMFORT = 3, // [Stage 10.1 갭 3-A] Comfort 자동 모드
 } EN_CT10_trigger_t;
 
 typedef enum : uint8_t {
@@ -238,6 +239,13 @@ class CL_CT10_ControlManager {
     static bool     setSessionAutoOff(uint32_t p_minutes);
     static void     clearSessionAutoOff();
     static uint32_t getSessionAutoOffRemainSec();
+
+    // [Stage 10.1 Option A] 타이머 편의 정적 메서드
+    static bool     setTimer(uint16_t p_minutes) { return setSessionAutoOff(p_minutes); }
+    static void     cancelTimer() { clearSessionAutoOff(); }
+    static bool     isTimerActive() { return getSessionAutoOffRemainSec() > 0; }
+    static uint32_t getTimerRemainSec() { return getSessionAutoOffRemainSec(); }
+    static uint16_t getTimerDurationMin();
 
     static bool                     isSessionActive();
     static bool                     isSessionPaused();

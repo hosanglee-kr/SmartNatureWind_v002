@@ -10,43 +10,49 @@
  */
 
 .snw-dashboard {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    gap: var(--snw-spacing-lg, 16px);
+    width: 100%;
+}
+
+.snw-dashboard__tabs {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--snw-border, #2f3844);
+    padding-bottom: 8px;
+}
+
+.snw-dashboard__tabs .snw-tab-btn {
+    flex: 1;
+    max-width: 180px;
+}
+
+@media (max-width: 767px) {
+    .snw-dashboard__tabs .snw-tab-btn {
+        max-width: none;
+        padding: 10px 4px;
+        font-size: 13px;
+    }
+}
+
+/* 탭 패널 내부 카드 스택 */
+[data-dash-content] {
+    display: flex;
+    flex-direction: column;
     gap: var(--snw-spacing-lg, 16px);
 }
 
-/* 데스크톱 (≥ 1024) */
+/* 데스크톱 환경 탭: Comfort 카드와 센서 요약 카드 2열 배치 */
 @media (min-width: 1024px) {
-    .snw-dashboard {
-        grid-template-columns: 2fr 1fr;
-        grid-template-areas:
-            "state  power"
-            "sensor sensor"
-            "preset preset"
-            "slider slider";
-    }
-    .snw-card--state { grid-area: state; }
-    .snw-card--power { grid-area: power; }
-    .snw-card--sensor { grid-area: sensor; }
-    .snw-card--preset { grid-area: preset; }
-    .snw-card--slider { grid-area: slider; }
-}
-
-/* 태블릿 (768~1023) */
-@media (min-width: 768px) and (max-width: 1023px) {
-    .snw-dashboard {
+    [data-dash-content="env"] {
+        display: grid;
         grid-template-columns: 1fr 1fr;
-        grid-template-areas:
-            "state  power"
-            "sensor sensor"
-            "preset preset"
-            "slider slider";
+        gap: var(--snw-spacing-lg, 16px);
+        align-items: start;
     }
-    .snw-card--state { grid-area: state; }
-    .snw-card--power { grid-area: power; }
-    .snw-card--sensor { grid-area: sensor; }
-    .snw-card--preset { grid-area: preset; }
-    .snw-card--slider { grid-area: slider; }
 }
 
 /* Dashboard 카드별 최소 높이 */

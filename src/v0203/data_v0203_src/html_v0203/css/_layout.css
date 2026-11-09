@@ -124,8 +124,8 @@ body {
 }
 
 /* 툴바가 상단에 존재할 때 사이드바 top 오프셋 보정 */
-#snw-offline-toolbar ~ .snw-app .snw-sidebar,
-.snw-offline-toolbar ~ .snw-app .snw-sidebar {
+#snw-offline-toolbar~.snw-app .snw-sidebar,
+.snw-offline-toolbar~.snw-app .snw-sidebar {
     top: calc(var(--snw-header-h) + 38px);
 }
 
@@ -142,7 +142,7 @@ body.snw-sidebar-open .snw-sidebar {
 @media (max-width: 767px) {
     .snw-sidebar-overlay {
         position: fixed;
-        top: 0;
+        top: var(--snw-header-h, 56px);
         left: 0;
         right: 0;
         bottom: 0;
@@ -357,45 +357,26 @@ body.snw-sidebar-open .snw-sidebar {
  * ===================================================== */
 @media (min-width: 1024px) {
 
-    /* 데스크톱에서는 배경 딤 오버레이 불필요 */
+    /* [ADR-10] 데스크톱 영구 사이드바 2열 그리드 규약 */
     .snw-sidebar-overlay {
         display: none !important;
     }
 
-    /* 햄버거 메뉴 버튼 상시 유지 (데스크톱에서도 메뉴 토글 가능) */
+    /* 데스크톱에서는 사이드바가 상시 고정되므로 햄버거 메뉴 은닉 */
     #btn-menu {
-        display: inline-flex !important;
+        display: none !important;
     }
 
-    /* 기본 데스크톱: 1열 그리드 */
+    /* 상시 2열 그리드: 좌측 사이드바 + 우측 메인 */
     .snw-app {
-        grid-template-columns: 1fr;
+        grid-template-columns: var(--snw-sidebar-w) 1fr;
     }
 
     .snw-header {
         grid-column: 1 / -1;
     }
 
-    .snw-main {
-        grid-column: 1;
-    }
-
-    .snw-footer {
-        grid-column: 1 / -1;
-    }
-
-    /* 기본 사이드바 숨김 */
     .snw-sidebar {
-        display: none;
-        transform: none !important;
-    }
-
-    /* 사이드바 열림 상태 (body.snw-sidebar-open): 2열 그리드 확장 */
-    body.snw-sidebar-open .snw-app {
-        grid-template-columns: var(--snw-sidebar-w) 1fr;
-    }
-
-    body.snw-sidebar-open .snw-sidebar {
         display: block !important;
         position: sticky;
         grid-column: 1;
@@ -405,16 +386,21 @@ body.snw-sidebar-open .snw-sidebar {
         height: calc(100vh - var(--snw-header-h) - var(--snw-footer-h));
         height: calc(100dvh - var(--snw-header-h) - var(--snw-footer-h));
         box-shadow: none;
+        transform: none !important;
         z-index: 40;
     }
 
-    #snw-offline-toolbar ~ .snw-app body.snw-sidebar-open .snw-sidebar,
-    .snw-offline-toolbar ~ .snw-app body.snw-sidebar-open .snw-sidebar {
+    #snw-offline-toolbar~.snw-app .snw-sidebar,
+    .snw-offline-toolbar~.snw-app .snw-sidebar {
         top: calc(var(--snw-header-h) + 38px);
         height: calc(100vh - var(--snw-header-h) - var(--snw-footer-h) - 38px);
     }
 
-    body.snw-sidebar-open .snw-main {
+    .snw-main {
         grid-column: 2;
+    }
+
+    .snw-footer {
+        grid-column: 1 / -1;
     }
 }

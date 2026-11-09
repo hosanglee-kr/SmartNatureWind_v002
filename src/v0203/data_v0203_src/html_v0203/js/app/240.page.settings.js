@@ -124,6 +124,18 @@ SNW.Page = SNW.Page || {};
                 // ---------- 1. 일반 / 보안 탭 ----------
                 const logSlot = formContainer.querySelector('[data-slot="form-log"]');
                 logSlot.innerHTML = `
+                    <h3 class="snw-form-section">${T('settings.secUiMode')}</h3>
+                    <div class="snw-form-row">
+                        <label>${T('settings.uiLevel')}</label>
+                        <select id="ui-level" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:6px;">
+                            <option value="L1" ${SNW.LevelUtil.current() === 'L1' ? 'selected' : ''}>${T('settings.levelL1')}</option>
+                            <option value="L2" ${SNW.LevelUtil.current() === 'L2' ? 'selected' : ''}>${T('settings.levelL2')}</option>
+                            <option value="L3" ${SNW.LevelUtil.current() === 'L3' ? 'selected' : ''}>${T('settings.levelL3')}</option>
+                            <option value="L4" ${SNW.LevelUtil.current() === 'L4' ? 'selected' : ''}>${T('settings.levelL4')}</option>
+                        </select>
+                        <small class="snw-form-row__hint" style="display:block;margin-top:4px;color:var(--snw-text-dim);font-size:12px;">${T('settings.uiLevelHint')}</small>
+                    </div>
+
                     <h3 class="snw-form-section">${T('settings.secMeta')}</h3>
                     <div class="snw-form-row">
                         <label>${T('settings.fieldDeviceName')}</label>
@@ -425,6 +437,18 @@ SNW.Page = SNW.Page || {};
                 }
             });
             wsChArr.sort((a, b) => a.chIdx - b.chIdx);
+
+            // [Stage 10] 인터페이스 모드 저장 (FE 로컬스토리지)
+            const uiLevelEl = q('#ui-level');
+            if (uiLevelEl && uiLevelEl.value !== SNW.LevelUtil.current()) {
+                try {
+                    localStorage.setItem((SNW.CFG && SNW.CFG.LS_KEY && SNW.CFG.LS_KEY.LEVEL) || 'snw.level', uiLevelEl.value);
+                    SNW.ToastUtil.info(SNW.I18n.t('settings.uiLevelSaved'));
+                    setTimeout(() => location.reload(), 2500);
+                } catch (e) {
+                    SNW.LogUtil.warn('[Settings] UI level save failed', e);
+                }
+            }
 
             // 페이로드 구성
             const patch = {

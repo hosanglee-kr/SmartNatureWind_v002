@@ -15,6 +15,7 @@ window.SNW = window.SNW || {};
         pending: null,
         timerBadge: null,
         timerVal: null,
+        autoBadge: null,
         btnPause: null,
         btnStop: null,
         // 로컬 상태
@@ -141,6 +142,12 @@ window.SNW = window.SNW || {};
             barEl.timerBadge.onclick = null;
         }
 
+        // 4-2) Auto Comfort 배지
+        if (barEl.autoBadge) {
+            const isAuto = (SNW.Store && SNW.Store.get) ? !!SNW.Store.get().autoComfortEnabled : false;
+            barEl.autoBadge.hidden = !isAuto;
+        }
+
         // 5) EQ 애니메이션
         if (isPaused) {
             stopEq();
@@ -251,6 +258,7 @@ window.SNW = window.SNW || {};
         barEl.pending = $('[data-slot="np-pending"]', barEl.root);
         barEl.timerBadge = $('[data-slot="np-timer"]', barEl.root);
         barEl.timerVal = $('[data-slot="np-timer-val"]', barEl.root);
+        barEl.autoBadge = $('[data-slot="np-auto-badge"]', barEl.root);
         barEl.btnPause = $('[data-action="pause"]', barEl.root);
         barEl.btnStop = $('[data-action="stop"]', barEl.root);
 

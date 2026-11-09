@@ -51,6 +51,7 @@ window.SNW = window.SNW || {};
 			windProfile: '/api/v001/windProfile',
 			windDict: '/api/v001/windDict', // [v0203 Stage 4]
 			comfort: '/api/v001/comfort', // [v0203 Stage 6]
+			comfortAuto: '/api/v001/comfort/auto', // [Stage 10 Phase 3]
 			monitorTimeline: '/api/v001/monitor/timeline', // [v0203 Stage 7]
 			monitorSessionSummary: '/api/v001/monitor/session-summary', // [v0203 Stage 7]
 			schedules: '/api/v001/schedules',

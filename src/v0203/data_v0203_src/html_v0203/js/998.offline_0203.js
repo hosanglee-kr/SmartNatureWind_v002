@@ -506,6 +506,15 @@ window.SNW = window.SNW || {};
                 styleCode: "BALANCE"
             }
         });
+        let _offlineAutoComfort = false;
+        A.setAutoComfort = async (enabled) => {
+            _offlineAutoComfort = !!enabled;
+            return { success: true, autoComfort: _offlineAutoComfort, remainSec: 300 };
+        };
+        A.getAutoComfortStatus = async () => ({
+            autoComfort: _offlineAutoComfort,
+            remainSec: 300
+        });
         A.getMonitorTimeline = async (since = 0) => ({
             events: [
                 { t: Math.floor(Date.now() / 1000) - 300, eventType: 2, sessionType: 1, trigger: 1, stepIdx: 0, totalSteps: 3, profileNo: 1, schNo: 0, label: "재생 시작" },

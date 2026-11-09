@@ -53,6 +53,10 @@
                     title="타이머 설정">
                     <span>⏱️ <span data-slot="np-timer-val"></span></span>
                 </div>
+                <div class="snw-nowplaying__badge snw-nowplaying__badge--auto" data-slot="np-auto-badge" hidden
+                    title="자동 Comfort 모드 가동 중" style="background:rgba(40,167,69,0.15);color:#28a745;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;">
+                    <span>🌱 자동</span>
+                </div>
             </div>
             <div class="snw-nowplaying__controls">
                 <button class="snw-np-btn" data-action="pause" aria-label="일시정지">⏸</button>
@@ -60,10 +64,10 @@
             </div>
         </div>
 
-        <!-- 👇 모바일 하단 탭 바 추가 -->
+        <!-- 👇 모바일 하단 탭 바 (5개 — Material Design 표준) -->
         <nav class="snw-bottom-nav" id="mobile-bottom-nav">
             <a href="#/dashboard" data-route="/dashboard" class="snw-bottom-nav__item">
-                <span class="snw-bottom-nav__icon">📊</span>
+                <span class="snw-bottom-nav__icon">🏠</span>
                 <span class="snw-bottom-nav__label" data-i18n="nav.dashboard">대시보드</span>
             </a>
             <a href="#/chart" data-route="/chart" class="snw-bottom-nav__item">
@@ -74,22 +78,14 @@
                 <span class="snw-bottom-nav__icon">🎨</span>
                 <span class="snw-bottom-nav__label" data-i18n="nav.automation">자동화</span>
             </a>
-
-            <a href="#/schedule" data-route="/schedule" class="snw-bottom-nav__item">
-                <span class="snw-bottom-nav__icon">📅</span>
-                <span class="snw-bottom-nav__label" data-i18n="nav.schedule">스케줄</span>
+            <a href="#/sensors" data-route="/sensors" class="snw-bottom-nav__item">
+                <span class="snw-bottom-nav__icon">🌡️</span>
+                <span class="snw-bottom-nav__label" data-i18n="nav.sensors">센서</span>
             </a>
             <a href="#/settings" data-route="/settings" class="snw-bottom-nav__item">
-                <span class="snw-bottom-nav__icon">⚙</span>
+                <span class="snw-bottom-nav__icon">⚙️</span>
                 <span class="snw-bottom-nav__label" data-i18n="nav.settings">설정</span>
             </a>
-            <!-- '더보기' 탭 추가 (클릭 시 사이드바 열림) -->
-            <a href="javascript:void(0)" onclick="document.getElementById('btn-menu').click()"
-                class="snw-bottom-nav__item">
-                <span class="snw-bottom-nav__icon">···</span>
-                <span class="snw-bottom-nav__label">더보기</span>
-            </a>
-
         </nav>
 
         <footer class="snw-footer">

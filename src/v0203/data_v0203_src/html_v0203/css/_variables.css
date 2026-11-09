@@ -88,7 +88,7 @@
      *    < sidebar-overlay(1040) < sidebar(1050)
      *    < modal(1100) < toast(1200)
      * ===================================================== */
-    --snw-z-header: 50;
+    --snw-z-header: 1060;
     --snw-z-np: 95;
     --snw-z-fab: 990;
     --snw-z-bottom: 1000;

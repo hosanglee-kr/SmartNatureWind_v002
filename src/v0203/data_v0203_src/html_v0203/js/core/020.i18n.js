@@ -685,6 +685,39 @@ window.SNW = window.SNW || {};
             'timer.gotoPlaylist': '🎵 Playlist로 이동',
             'timer.gotoHome': '🏠 홈으로 이동',
 
+            // =====================================================
+            // [Stage 10] UI/UX IA 재설계 및 Comfort 자동 모드
+            // =====================================================
+            'settings.secUiMode': '인터페이스 모드',
+            'settings.uiLevel': '사용자 레벨',
+            'settings.uiLevelHint': '선택한 레벨에 따라 노출 메뉴가 재구성됩니다 (자동 새로고침)',
+            'settings.uiLevelSaved': '설정 저장됨 · 잠시 후 새로고침됩니다',
+            'settings.levelL1': '일상 (간단하게)',
+            'settings.levelL2': '표준 (일반 사용 권장)',
+            'settings.levelL3': '고급 (세부 파라미터)',
+            'settings.levelL4': '전문가 (모든 엔지니어링 기능)',
+            'dashboard.tabControl': '제어',
+            'dashboard.tabEnv': '환경',
+            'dashboard.tabPreset': '프리셋',
+            'dashboard.sensorTitle': '센서 모니터링',
+            'dashboard.styleTitle': '바람 스타일',
+            'dashboard.styleHint': '바람 변동 패턴 보정',
+            'dashboard.presetTitle': '자연풍 프리셋',
+            'dashboard.presetHint': '10대 시뮬레이션 환경 선택',
+            'common.details': '상세보기',
+            'timer.quickPrompt': '몇 분 후 종료할까요? (분 단위 입력)',
+            'comfort.autoTitle': '스마트 쾌적 자동 모드',
+            'comfort.autoDesc': '실내 환경을 5분마다 감지하여 최적의 자연풍을 자동으로 유지합니다.',
+            'comfort.autoOn': '자동 모드 켜짐',
+            'comfort.autoOff': '자동 모드 꺼짐',
+            'comfort.autoConfirmOn': '쾌적 자동 모드를 켜시겠습니까? 5분마다 바람이 자동 조절됩니다.',
+            'comfort.autoBadge': '🤖 자동',
+            'comfort.nextEval': '다음 환경 평가까지: ',
+            'schedule.modeSimple': '간단 예약',
+            'schedule.modeAdvanced': '고급 작곡 예약',
+            'schedule.simpleSaved': '스케줄이 등록되었습니다.',
+            'ai.inputPlaceholder': '자연풍 제어나 궁금한 점을 물어보세요...',
+
         },
 
         en: {
@@ -1315,6 +1348,39 @@ window.SNW = window.SNW || {};
             'timer.setSuccess': '⏱️ Session will stop in {m} minutes.',
             'timer.gotoPlaylist': '🎵 Go to Playlist',
             'timer.gotoHome': '🏠 Go to Home',
+
+            // =====================================================
+            // [Stage 10] UI/UX IA Redesign & Comfort Auto Mode
+            // =====================================================
+            'settings.secUiMode': 'Interface Mode',
+            'settings.uiLevel': 'User Level',
+            'settings.uiLevelHint': 'Reconfigures menus based on selected level (auto reloads)',
+            'settings.uiLevelSaved': 'Settings saved · Reloading shortly',
+            'settings.levelL1': 'Simple (Beginner)',
+            'settings.levelL2': 'Standard (Recommended)',
+            'settings.levelL3': 'Advanced (Detailed Tuning)',
+            'settings.levelL4': 'Expert (All Engineering Tools)',
+            'dashboard.tabControl': 'Control',
+            'dashboard.tabEnv': 'Environment',
+            'dashboard.tabPreset': 'Presets',
+            'dashboard.sensorTitle': 'Sensors Monitoring',
+            'dashboard.styleTitle': 'Wind Style',
+            'dashboard.styleHint': 'Waveform pattern modifier',
+            'dashboard.presetTitle': 'Nature Presets',
+            'dashboard.presetHint': '10 nature presets',
+            'common.details': 'Details',
+            'timer.quickPrompt': 'Minutes until fan auto stop? (Enter number)',
+            'comfort.autoTitle': 'Smart Comfort Auto Mode',
+            'comfort.autoDesc': 'Monitors room conditions every 5 min and maintains optimal wind.',
+            'comfort.autoOn': 'Auto Mode Active',
+            'comfort.autoOff': 'Auto Mode Inactive',
+            'comfort.autoConfirmOn': 'Activate Auto Comfort mode? Wind will adjust every 5 minutes.',
+            'comfort.autoBadge': '🤖 Auto',
+            'comfort.nextEval': 'Next evaluation in: ',
+            'schedule.modeSimple': 'Simple Schedule',
+            'schedule.modeAdvanced': 'Advanced Schedule',
+            'schedule.simpleSaved': 'Schedule has been saved.',
+            'ai.inputPlaceholder': 'Ask AI to control wind or anything...',
         }
 
     };

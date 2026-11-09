@@ -298,6 +298,12 @@ window.SNW = window.SNW || {};
 		getComfort() {
 			return _fetch(SNW.CFG.API.comfort);
 		},
+		setAutoComfort(enabled) {
+			return _fetch(SNW.CFG.API.comfortAuto, { method: 'POST', body: { enabled: !!enabled } });
+		},
+		getAutoComfortStatus() {
+			return _fetch(SNW.CFG.API.comfortAuto);
+		},
 		getMonitorTimeline(since = 0) {
 			const q = since > 0 ? `?since=${since}` : '';
 			return _fetch(`${SNW.CFG.API.monitorTimeline}${q}`);

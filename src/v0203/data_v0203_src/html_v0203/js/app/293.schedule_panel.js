@@ -153,13 +153,45 @@ window.SNW = window.SNW || {};
 
         _openEditor(sch) {
             const isEdit = !!sch;
+            let isSimpleMode = isEdit ? (sch.name && sch.name.startsWith('[간단]')) : true;
             const days = sch ? ((sch.period && sch.period.days) || [0,0,0,0,0,0,0]) : [0,1,1,1,1,1,0];
             const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
+
+            const PRESETS = [
+                { code: 'OCEAN', name: '바다 바람 (OCEAN)' },
+                { code: 'COUNTRY_BREEZE', name: '산들바람 (COUNTRY_BREEZE)' },
+                { code: 'MEDITERRANEAN', name: '지중해 (MEDITERRANEAN)' },
+                { code: 'MOUNTAIN', name: '고산 계곡 (MOUNTAIN)' },
+                { code: 'PLAINS', name: '들판 바람 (PLAINS)' },
+                { code: 'HARBOR_BREEZE', name: '항구 바람 (HARBOR_BREEZE)' },
+                { code: 'FOREST_CANOPY', name: '숲속 그늘 (FOREST_CANOPY)' },
+                { code: 'URBAN_SUNSET', name: '도시 노을 (URBAN_SUNSET)' },
+                { code: 'TROPICAL_RAIN', name: '열대 우림 (TROPICAL_RAIN)' },
+                { code: 'DESERT_NIGHT', name: '사막 밤 (DESERT_NIGHT)' },
+            ];
+
+            const STYLES = [
+                { code: 'BALANCE', name: '⚖️ 균형 (BALANCE)' },
+                { code: 'ACTIVE',  name: '⚡ 활력 (ACTIVE)' },
+                { code: 'FOCUS',   name: '🎯 집중 (FOCUS)' },
+                { code: 'RELAX',   name: '🍃 휴식 (RELAX)' },
+                { code: 'SLEEP',   name: '🌙 수면 (SLEEP)' },
+            ];
 
             const content = document.createElement('div');
             content.className = 'snw-schedule-editor';
             content.innerHTML = `
                 <div class="snw-form">
+                    <!-- [Stage 10] 모드 토글 (간단 / 고급) -->
+                    <div class="snw-mode-toggle" style="display:flex;gap:8px;margin-bottom:14px;">
+                        <button type="button" class="snw-btn ${isSimpleMode ? 'snw-btn-primary' : ''}" data-mode="simple" style="flex:1;">
+                            ⚡ ${SNW.I18n.t('schedule.modeSimple')}
+                        </button>
+                        <button type="button" class="snw-btn ${!isSimpleMode ? 'snw-btn-primary' : ''}" data-mode="advanced" style="flex:1;">
+                            🎼 ${SNW.I18n.t('schedule.modeAdvanced')}
+                        </button>
+                    </div>
+
                     <div class="snw-form-row" style="margin-bottom:12px;">
                         <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;">스케줄 이름</label>
                         <input type="text" data-field="name" maxlength="32" class="snw-input"
@@ -190,26 +222,66 @@ window.SNW = window.SNW || {};
                                value="${isEdit && sch.period ? sch.period.endTime : '20:00'}">
                     </div>
 
-                    <h3 class="snw-form-section" style="font-size:14px;margin:16px 0 8px 0;font-weight:600;">🎵 실행할 플레이리스트</h3>
-                    <div class="snw-profile-picker">
-                        ${this._profiles.map(p => `
-                            <label class="snw-profile-radio ${isEdit && sch.profileId === p.profileId ? 'is-selected' : ''}">
-                                <input type="radio" name="profile" value="${p.profileId}"
-                                       ${isEdit && sch.profileId === p.profileId ? 'checked' : ''}>
-                                <div class="snw-profile-radio__content">
-                                    <div class="snw-profile-radio__name">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(p.name) : p.name}</div>
-                                    <div class="snw-profile-radio__meta">
-                                        ${p.stepCount || (p.steps ? p.steps.length : 0)}개 Step · ${this._fmtTotal(p)}
-                                    </div>
-                                </div>
-                            </label>
-                        `).join('')}
+                    <!-- 간단 모드 컨테이너 -->
+                    <div id="simple-mode-section" style="display:${isSimpleMode ? 'block' : 'none'};background:var(--snw-surface-2,#12161c);padding:12px;border-radius:6px;margin-bottom:12px;">
+                        <div class="snw-form-row" style="margin-bottom:10px;">
+                            <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;">바람 프리셋 선택</label>
+                            <select id="simple-preset-select" style="width:100%;padding:8px;background:var(--snw-surface-1,#1f242c);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
+                                ${PRESETS.map(p => `<option value="${p.code}">${p.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="snw-form-row">
+                            <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;">바람 스타일 선택</label>
+                            <select id="simple-style-select" style="width:100%;padding:8px;background:var(--snw-surface-1,#1f242c);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
+                                ${STYLES.map(s => `<option value="${s.code}">${s.name}</option>`).join('')}
+                            </select>
+                        </div>
                     </div>
 
-                    <div class="snw-schedule-editor__hint" style="margin-top:12px;">
-                        💡 새 프로필은 <b>Studio 탭</b>에서 작곡 후 선택할 수 있습니다.
+                    <!-- 고급 모드 컨테이너 -->
+                    <div id="advanced-mode-section" style="display:${!isSimpleMode ? 'block' : 'none'};">
+                        <h3 class="snw-form-section" style="font-size:14px;margin:16px 0 8px 0;font-weight:600;">🎵 실행할 플레이리스트</h3>
+                        <div class="snw-profile-picker">
+                            ${this._profiles.map(p => `
+                                <label class="snw-profile-radio ${isEdit && sch.profileId === p.profileId ? 'is-selected' : ''}">
+                                    <input type="radio" name="profile" value="${p.profileId}"
+                                           ${isEdit && sch.profileId === p.profileId ? 'checked' : ''}>
+                                    <div class="snw-profile-radio__content">
+                                        <div class="snw-profile-radio__name">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(p.name) : p.name}</div>
+                                        <div class="snw-profile-radio__meta">
+                                            ${p.stepCount || (p.steps ? p.steps.length : 0)}개 Step · ${this._fmtTotal(p)}
+                                        </div>
+                                    </div>
+                                </label>
+                            `).join('')}
+                        </div>
+
+                        <div class="snw-schedule-editor__hint" style="margin-top:12px;">
+                            💡 새 프로필은 <b>Studio 탭</b>에서 작곡 후 선택할 수 있습니다.
+                        </div>
                     </div>
                 </div>`;
+
+            // 모드 토글 이벤트
+            const btnSimple = content.querySelector('[data-mode="simple"]');
+            const btnAdvanced = content.querySelector('[data-mode="advanced"]');
+            const secSimple = content.querySelector('#simple-mode-section');
+            const secAdvanced = content.querySelector('#advanced-mode-section');
+
+            btnSimple.onclick = () => {
+                isSimpleMode = true;
+                btnSimple.classList.add('snw-btn-primary');
+                btnAdvanced.classList.remove('snw-btn-primary');
+                secSimple.style.display = 'block';
+                secAdvanced.style.display = 'none';
+            };
+            btnAdvanced.onclick = () => {
+                isSimpleMode = false;
+                btnAdvanced.classList.add('snw-btn-primary');
+                btnSimple.classList.remove('snw-btn-primary');
+                secSimple.style.display = 'none';
+                secAdvanced.style.display = 'block';
+            };
 
             // 요일 칩 토글
             content.querySelectorAll('.snw-day-chip').forEach(chip => {
@@ -239,15 +311,9 @@ window.SNW = window.SNW || {};
                     const nameEl  = content.querySelector('[data-field="name"]');
                     const startEl = content.querySelector('[data-field="startTime"]');
                     const endEl   = content.querySelector('[data-field="endTime"]');
-                    const selectedRadio = content.querySelector('input[name="profile"]:checked');
 
-                    // 검증
                     if (!nameEl.value.trim()) {
                         if (SNW.ToastUtil) SNW.ToastUtil.error('이름을 입력하세요');
-                        return false;
-                    }
-                    if (!selectedRadio) {
-                        if (SNW.ToastUtil) SNW.ToastUtil.error('실행할 플레이리스트를 선택하세요');
                         return false;
                     }
                     if (startEl.value === endEl.value) {
@@ -255,11 +321,48 @@ window.SNW = window.SNW || {};
                         return false;
                     }
 
-                    const profileId = Number(selectedRadio.value);
-                    const schNo = isEdit
-                        ? sch.schNo
-                        : (Date.now() % 65535) + 1;
+                    let profileId = 0;
+                    if (isSimpleMode) {
+                        const selPreset = content.querySelector('#simple-preset-select').value;
+                        const selStyle = content.querySelector('#simple-style-select').value;
+                        
+                        // [Stage 10] 간단 모드 단일 Step 프로필 자동 생성
+                        const autoProfile = {
+                            profileNo: (Date.now() % 65530) + 1,
+                            name: `[간단] ${selPreset}`,
+                            enabled: true,
+                            repeatSegments: false,
+                            repeatCount: 0,
+                            steps: [{
+                                stepNo: 10,
+                                durationMin: 120,
+                                type: 'PRESET',
+                                presetCode: selPreset,
+                                styleCode: selStyle,
+                                override: { enabled: false }
+                            }],
+                            autoOff: { timer: { enabled: false }, offTime: { enabled: false }, offTemp: { enabled: false } },
+                            motion: { pir: { enabled: false } }
+                        };
+                        try {
+                            if (SNW.Api && typeof SNW.Api.addProfile === 'function') {
+                                const pRes = await SNW.Api.addProfile(autoProfile);
+                                profileId = (pRes && pRes.profileId) ? pRes.profileId : autoProfile.profileNo;
+                            }
+                        } catch (pe) {
+                            SNW.LogUtil.warn('[Schedule] Auto profile create fallback', pe);
+                            profileId = autoProfile.profileNo;
+                        }
+                    } else {
+                        const selectedRadio = content.querySelector('input[name="profile"]:checked');
+                        if (!selectedRadio) {
+                            if (SNW.ToastUtil) SNW.ToastUtil.error('실행할 플레이리스트를 선택하세요');
+                            return false;
+                        }
+                        profileId = Number(selectedRadio.value);
+                    }
 
+                    const schNo = isEdit ? sch.schNo : (Date.now() % 65535) + 1;
                     const schedule = {
                         schNo,
                         name: nameEl.value.trim(),
@@ -278,7 +381,7 @@ window.SNW = window.SNW || {};
                         } else {
                             await SNW.Api.addSchedule(schedule);
                         }
-                        if (SNW.ToastUtil) SNW.ToastUtil.success(isEdit ? '스케줄 업데이트' : '스케줄 생성');
+                        if (SNW.ToastUtil) SNW.ToastUtil.success(isEdit ? '스케줄 업데이트' : SNW.I18n.t('schedule.simpleSaved'));
                         await this.mount();
                         return true;
                     } catch (e) {

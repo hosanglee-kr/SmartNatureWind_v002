@@ -188,7 +188,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 010.config.js (7105 bytes) ---- */
+/* ---- 010.config.js (7264 bytes) ---- */
 // =========================================================
 // 010.config.js — 프론트엔드 런타임 설정
 // Layer 0 (기반) — SNW.C 참조만 허용
@@ -198,27 +198,26 @@ window.SNW = window.SNW || {};
 	'use strict';
 
 	const LS_PREFIX = 'snw.';
-
+	
 	SNW.CFG = {
 		// =====================================================
 		// localStorage 키 (중앙 관리)
 		// =====================================================
 		LS_PREFIX: LS_PREFIX,
 		LS_KEY: {
-            API_KEY: LS_PREFIX + 'apiKey',
-            LEVEL: LS_PREFIX + 'level',
-            LANG: LS_PREFIX + 'lang',
-            DEBUG: LS_PREFIX + 'debug',
-            LAST_PRESET: LS_PREFIX + 'lastPreset',
-            UI_THEME: LS_PREFIX + 'theme',
-            
-            // [PATCH] AI 키를 여기로 통합 (최종 문자열은 기존과 동일)
-            AI_MODE: LS_PREFIX + 'ai.mode', // 'snw.ai.mode'
-            AI_LIVE_WARNED: LS_PREFIX + 'ai.liveWarned', // 'snw.ai.liveWarned'
-            AI_HISTORY: LS_PREFIX + 'ai.history' // 'snw.ai.history'
-            
-        },
-
+			API_KEY: LS_PREFIX + 'apiKey',
+			LEVEL: LS_PREFIX + 'level',
+			LANG: LS_PREFIX + 'lang',
+			DEBUG: LS_PREFIX + 'debug',
+			LAST_PRESET: LS_PREFIX + 'lastPreset',
+			UI_THEME: LS_PREFIX + 'theme',
+			
+			// [PATCH] AI 키를 여기로 통합 (최종 문자열은 기존과 동일)
+			AI_MODE: LS_PREFIX + 'ai.mode', // 'snw.ai.mode'
+			AI_LIVE_WARNED: LS_PREFIX + 'ai.liveWarned', // 'snw.ai.liveWarned'
+			AI_HISTORY: LS_PREFIX + 'ai.history' // 'snw.ai.history'
+				
+		},
 
 		// =====================================================
 		// API 경로 (버전 prefix 중앙 관리)
@@ -369,7 +368,7 @@ window.SNW = window.SNW || {};
 			POLL_MS: 60000,
 			REPORT_MS: 30000
 		},
-
+	
 		// =====================================================
 		// 개발 모드
 		// =====================================================
@@ -404,7 +403,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 020.i18n.js (71940 bytes) ---- */
+/* ---- 020.i18n.js (71952 bytes) ---- */
 // =========================================================
 // 020.i18n.js — 다국어 완전판 (ko/en)
 // =========================================================
@@ -1988,6 +1987,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
+/* ---- 031.util.dom.js (2114 bytes) ---- */
 // =========================================================
 // 031.util.dom.js — SNW.DomUtil (PATCHED)
 //  - 원본의 DomUtil 재할당 → 단일 리터럴로 통합
@@ -1998,63 +1998,63 @@ window.SNW = window.SNW || {};
 // =========================================================
 window.SNW = window.SNW || {};
 (function(SNW) {
-    'use strict';
-    
-    SNW.DomUtil = {
-        // [U-B6] 용어 툴팁
-        tooltip(term, definition) {
-            return `<span class="snw-term" title="${this.escape(definition)}" style="cursor:help;border-bottom:1px dashed var(--snw-text-dim);">${this.escape(term)}</span>`;
-        },
-        
-        /** 안전 textContent */
-        text(el, v) {
-            if (el) el.textContent = (v == null) ? '' : String(v);
-        },
-        
-        /** 안전 class 토글 */
-        toggleClass(el, cls, on) {
-            if (el) el.classList.toggle(cls, !!on);
-        },
-        
-        /** data-* 기반 이벤트 위임 */
-        delegate(root, selector, event, handler) {
-            root.addEventListener(event, (e) => {
-                const t = e.target.closest(selector);
-                if (t && root.contains(t)) handler(e, t);
-            });
-        },
-        
-        /** HTML escape */
-        escape(s) {
-            return String(s).replace(/[&<>"']/g,
-                c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } [c]));
-        },
-        
-        /** HTML 템플릿 → Element (값은 escape) */
-        html(strings, ...vals) {
-            const div = document.createElement('div');
-            div.innerHTML = strings.reduce((acc, s, i) => {
-                const v = vals[i];
-                const safe = (v == null) ? '' :
-                    (typeof v === 'string' ? this.escape(v) : v);
-                return acc + s + (i < vals.length ? safe : '');
-            }, '').trim();
-            return div.firstElementChild;
-        },
-        
-        /** 반응형 뷰포트 클래스 */
-        applyResponsiveClass(el) {
-            const apply = () => {
-                const w = window.innerWidth;
-                el.classList.toggle('snw-mobile', w < 768);
-                el.classList.toggle('snw-tablet', w >= 768 && w < 1024);
-                el.classList.toggle('snw-desktop', w >= 1024);
-            };
-            apply();
-            window.addEventListener('resize', apply);
-        }
-    };
-    
+	'use strict';
+	
+	SNW.DomUtil = {
+		// [U-B6] 용어 툴팁
+		tooltip(term, definition) {
+			return `<span class="snw-term" title="${this.escape(definition)}" style="cursor:help;border-bottom:1px dashed var(--snw-text-dim);">${this.escape(term)}</span>`;
+		},
+		
+		/** 안전 textContent */
+		text(el, v) {
+			if (el) el.textContent = (v == null) ? '' : String(v);
+		},
+		
+		/** 안전 class 토글 */
+		toggleClass(el, cls, on) {
+			if (el) el.classList.toggle(cls, !!on);
+		},
+		
+		/** data-* 기반 이벤트 위임 */
+		delegate(root, selector, event, handler) {
+			root.addEventListener(event, (e) => {
+				const t = e.target.closest(selector);
+				if (t && root.contains(t)) handler(e, t);
+			});
+		},
+		
+		/** HTML escape */
+		escape(s) {
+			return String(s).replace(/[&<>"']/g,
+				c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } [c]));
+		},
+		
+		/** HTML 템플릿 → Element (값은 escape) */
+		html(strings, ...vals) {
+			const div = document.createElement('div');
+			div.innerHTML = strings.reduce((acc, s, i) => {
+				const v = vals[i];
+				const safe = (v == null) ? '' :
+					(typeof v === 'string' ? this.escape(v) : v);
+				return acc + s + (i < vals.length ? safe : '');
+			}, '').trim();
+			return div.firstElementChild;
+		},
+		
+		/** 반응형 뷰포트 클래스 */
+		applyResponsiveClass(el) {
+			const apply = () => {
+				const w = window.innerWidth;
+				el.classList.toggle('snw-mobile', w < 768);
+				el.classList.toggle('snw-tablet', w >= 768 && w < 1024);
+				el.classList.toggle('snw-desktop', w >= 1024);
+			};
+			apply();
+			window.addEventListener('resize', apply);
+		}
+	};
+	
 })(window.SNW);
 
 
@@ -9231,6 +9231,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
+/* ---- 260.page.monitor.js (19858 bytes) ---- */
 // =========================================================
 // 260.page.monitor.js — SNW.Page.Monitor (Stage 7 히스토리 + 실시간 EQ)
 // =========================================================
@@ -9686,7 +9687,6 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-
 /* ---- 270.page.network.js (16146 bytes) ---- */
 // =========================================================
 // 270.page.network.js — SNW.Page.Network
@@ -10122,6 +10122,7 @@ SNW.Page = SNW.Page || {};
 	};
 })(window.SNW);
 
+/* ---- 290.page.ai.js (16877 bytes) ---- */
 // =========================================================
 // 290.page.ai.js — SNW.Page.AI
 // Layer 4 (페이지 로직: AI 스튜디오, 2-turn REST 제어 & Gemini Live Voice)
@@ -10579,7 +10580,6 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-
 /* ---- 290.page.automation.js (3405 bytes) ---- */
 // =========================================================
 // 290.page.automation.js — 자동화 페이지 (Studio/Playlist/스케줄/타이머)
@@ -10665,6 +10665,7 @@ SNW.Page = SNW.Page || {};
 
 
 
+/* ---- 291.studio.js (30998 bytes) ---- */
 // =========================================================
 // 291.studio.js — Wind Design Studio (작곡)
 // Layer 3 (Studio 패널 컴포넌트)
@@ -11301,7 +11302,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 292.playlist.js (9849 bytes) ---- */
+/* ---- 292.playlist.js (9911 bytes) ---- */
 // =========================================================
 // 292.playlist.js — Wind Playlist (재생 목록)
 // Layer 3 (Playlist 패널 컴포넌트)
@@ -11394,6 +11395,7 @@ window.SNW = window.SNW || {};
                         <span class="snw-playlist-item__name" style="font-weight:600;font-size:15px;color:var(--snw-text,#e6edf3);">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(profile.name) : profile.name}</span>
                         <span class="snw-playlist-item__meta" style="font-size:12px;color:var(--snw-text-dim,#8b949e);">${profile.stepCount || (profile.steps ? profile.steps.length : 0)} Step · ${this._fmtTotal(profile)}</span>
                     </div>
+                    
                     <div class="snw-playlist-item__sparkline" data-slot="spark" style="height:100px; margin:8px 0; border-radius:8px; padding:8px;"></div>
       
                     <div class="snw-playlist-item__refs" style="font-size:11px;color:var(--snw-text-faint,#6e7a87);">

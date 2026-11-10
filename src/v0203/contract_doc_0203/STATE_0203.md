@@ -1,4 +1,4 @@
-# STATE_0203.md — 상태 소유권 및 FSM 명세 (v3.5)
+# STATE_0203.md — 상태 소유권 및 FSM 명세 (v3.6)
 
 > **단일 기록자 원칙**: 각 런타임 상태 변수는 원칙적으로 단 하나의 태스크만 쓰기 권한을 가진다. 다중 태스크 쓰기 시 전용 뮤텍스 또는 `std::atomic`으로 격리.  
 > F-01~F-10, I-1~I-6, N-1~N-4, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10, Batch G 반영.  
@@ -443,6 +443,7 @@ stopSession()
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-10** | **v3.6** | **웹 UI/UX 클라이언트 상태 관리 및 히스토리/스튜디오 격리 규정 (b3d06c2)**: 모니터 '히스토리' 탭의 타임라인 레인 분기(lane 0/1) 순수 뷰 상태 격리, Wind Studio 진입 시 바텀바 뷰 상태와 AI FAB 토글 상태 무결성 확인, `SNW.CFG.LS_KEY` 내 AI 키 통합에 따른 단일 클라이언트 상태 소유권 보장 | Antigravity AI |
 | **2026-11-09** | **v3.5** | **Stage 10.1 결함 패치 및 하드웨어 백엔드 타이머 구현 (0203_013_20_02)**: `runtimeAutoOff` 백엔드 소유권 확장, `EN_CT10_TRIGGER_AUTO_COMFORT=3` 세션 트리거 추가, 타이머 만료 시 정지 사유 9번(AUTOOFF_TIMER) 및 `setAutoComfort(false)` 부수효과 명세, 13개 안전 도구 현행화 | Antigravity AI |
 | **2026-11-09** | **v3.4** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: §1 `s_autoComfortEnabled` NVS 소유권 및 접근 매트릭스 명세 반영 | Antigravity AI |
 | **2026-11-09** | **v3.3** | **AI 빠른 참조 §링크 강화 (Phase B)**: TOC anchor 기반 [§N.M](#anchor) 자동 변환, src/v0203/tools_0203/enhance_index_links_0203.py 추가, --verify로 anchor 유효성 검증 | Antigravity AI |

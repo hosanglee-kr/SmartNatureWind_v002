@@ -1,4 +1,4 @@
-# TEST_PLAN_0203.md — 회귀 테스트 인덱스 (v4.2)
+# TEST_PLAN_0203.md — 회귀 테스트 인덱스 (v4.3)
 
 > **검증 대상**: Smart Nature Wind v0203 펌웨어 + v0203 SPA 프론트엔드
 > **기준선**: Batch A~F + Phase 0~7 + Batch G/H/I + Stage 8 AI/Live + Stage 9 UI/UX
@@ -13,7 +13,7 @@
 |---|---|---|---|
 | L1~L5 | [`TEST_PLAN_L1_L5_0203.md`](TEST_PLAN_L1_L5_0203.md) | T-1 ~ T-45 | [§6](#6-phase-7-릴리스-게이트) G-7.0, G-7.1 |
 | L6~L8 | [`TEST_PLAN_L6_L8_0203.md`](TEST_PLAN_L6_L8_0203.md) | T-46 ~ T-113 | [§6](#6-phase-7-릴리스-게이트) G-7.2~G-8.2 |
-| L9~L11 | [`TEST_PLAN_L9_L11_0203.md`](TEST_PLAN_L9_L11_0203.md) | T-114 ~ T-154-FE | [§6](#6-phase-7-릴리스-게이트) G-9.1~G-11.1 |
+| L9~L11 | [`TEST_PLAN_L9_L11_0203.md`](TEST_PLAN_L9_L11_0203.md) | T-114 ~ T-156 | [§6](#6-phase-7-릴리스-게이트) G-9.1~G-11.1 |
 
 ---
 
@@ -35,7 +35,7 @@
 |---|---|---|---|
 | **L1~L5** | [`TEST_PLAN_L1_L5_0203.md`](TEST_PLAN_L1_L5_0203.md) | T-1 ~ T-45 | T-1, T-3, T-5, T-10, T-14, T-16, T-27, T-29~T-35 |
 | **L6~L8** | [`TEST_PLAN_L6_L8_0203.md`](TEST_PLAN_L6_L8_0203.md) | T-46 ~ T-113 | P0 5/5, P1 8/8, T-70~T-72, T-90~T-113 中 10건 |
-| **L9~L11** | [`TEST_PLAN_L9_L11_0203.md`](TEST_PLAN_L9_L11_0203.md) | T-114 ~ T-154-FE | Stage 8 7/7, AUDIT P0 5+P1 10, Stage 9 4/4, Stage 10 3/3 |
+| **L9~L11** | [`TEST_PLAN_L9_L11_0203.md`](TEST_PLAN_L9_L11_0203.md) | T-114 ~ T-156 | Stage 8 7/7, AUDIT P0 5+P1 10, Stage 9 4/4, Stage 10 3/3, UI 1/1 |
 | (본 인덱스) | `TEST_PLAN_0203.md` | 개요/매트릭스/게이트 | — |
 
 **자동화**: `python test/e2e_stage8_4.py <IP>` (Stage 8 T-114~T-120 7건)
@@ -358,6 +358,7 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-10** | **v4.3** | **웹 UI/UX 인터랙션 고도화 검증 절차 반영 (T-156, b3d06c2)**: L11 계층에 T-156(모니터 히스토리 지그재그 타임라인/시간축, Wind Studio 하단 분리 액션바 및 AI FAB 자동 은닉, AI 어시스턴트 세그먼트/스마트 입력창 검증) 반영 | Antigravity AI |
 | **2026-11-09** | **v4.2** | **Stage 10.1 결함 패치 및 하드웨어 백엔드 타이머 검증 항목 반영 (0203_013_20_02)**: L11 계층 T-154-FE(Comfort 5상태 매트릭스) 강화 및 T-155(하드웨어 타이머 브라우저 종료 후 단독 만료/재기동 차단 E2E) 추가 | Antigravity AI |
 | **2026-11-09** | **v4.1** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: L9~L11 레이어에 T-153(Dashboard 3탭), T-154(Comfort 자동모드 백엔드), T-154-FE(Comfort UI 토글/배지) 반영 | Antigravity AI |
 | **2026-11-09** | **v4.0** | **3분할 (Phase C)**: T-1~T-45 → `TEST_PLAN_L1_L5_0203.md`, T-46~T-113 → `TEST_PLAN_L6_L8_0203.md`, T-114~T-152 → `TEST_PLAN_L9_L11_0203.md`. 본 문서는 개요/매트릭스/게이트/트러블슈팅 인덱스로 전환. `src/v0203/tools_0203/split_test_plan_0203.py` 자동 생성 | Antigravity AI |

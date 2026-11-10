@@ -1,4 +1,4 @@
-# CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.7)
+# CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.8)
 
 > **기준**: v0203 정적 감사 + 런타임 동시성 검증 완료 (F-01~F-10, I-1~I-6, N-1~N-4, G-1~G-3, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10, Batch G 전면 반영).  
 > **목적**: 멀티태스킹 환경에서 태스크 경계, 뮤텍스 획득 순서, 공유 자원 접근 규약 및 위임 패턴을 정의하여 데이터 레이스, 교착 상태(Deadlock), UAF를 원천 차단.  
@@ -15,7 +15,7 @@
 | g_A20_config_root 규약 | [§3.1](#31-g_a20_config_root-생명주기-핵심-cbd-계약) |
 | 위임·지연 패턴 | [§6](#6-비동기-위임지연-패턴) |
 | Session 위임 락 순서 | [§5.1](#51-session-위임-락-순서-phase-3-adr-1) |
-| **활성 규약** (ADR/MON/UX/ROUTE/AI/AUDIT/UI/AUDIT2) | [§7.11](#711-userprofile--schedule-단일-규격-계약-adr-2-adr-3)~[§7.18](#718-2차-통합-감사-이슈-해결-및-계약-규약-audit2-1audit2-5-stage-91--0203_012-신규) |
+| **활성 규약** (ADR/MON/UX/ROUTE/AI/AUDIT/UI/AUDIT2/UI-11~13) | [§7.11](#711-userprofile--schedule-단일-규격-계약-adr-2-adr-3)~[§7.22](#722-웹-uiux-인터랙션-고도화-및-컴포넌트-격리-계약-ui-11ui-13-b3d06c2-신규) |
 | **감사 이력** (F-01~Phase 6, 모두 해결됨) | **AUDIT_LOG_0203.md** |
 
 
@@ -324,12 +324,19 @@ startSession(type, trigger, payload) [T-async]
 - **[TIMER-2] Comfort 자동 모드 재기동 억제 계약**: 하드웨어 타이머 만료 시 백엔드는 세션 정지와 동시에 `setAutoComfort(false)`를 호출하여 자동 모드를 영구 해제함으로써, 5분 후 환경 평가로 인한 원치 않는 기기 재기동을 원천 차단한다.
 - **[TIMER-3] 브라우저-백엔드 동기 실패 경고 계약**: 웹 클라이언트(`TimerManager`)에서 백엔드 타이머 등록 실패 시, 사일런트 무시를 금지하고 `SNW.ToastUtil.warn`을 통해 사용자에게 브라우저 종속 타이머 위험(창 닫힘 시 유실)을 명확히 고지해야 한다.
 
+### 7.22 웹 UI/UX 인터랙션 고도화 및 컴포넌트 격리 계약 (UI-11~UI-13) (b3d06c2 신규)
+
+- **[UI-11] 모니터 히스토리 타임라인 엇갈림 배치 계약**: 모니터 '히스토리' 탭의 이벤트 타임라인은 16px 좌우 여백을 두어 0%/100% 위치의 마커 잘림을 방지하고, 5% 이내 인접 이벤트는 위/아래 2단 레인(지그재그)으로 교차 배치하여 마커 겹침을 방지한다. 하단 시간축(`snw-retro-timeline__axis`)에 시작/종료 라벨을 표시하고 7일 조회 시 'MM/DD HH:mm' 포맷을 적용한다.
+- **[UI-12] 스튜디오 액션바 분리 및 AI FAB 은닉 계약**: Wind Studio 화면 활성화 시 하단 액션바(`snw-studio__bar`)를 좌측(`🎬 미리보기`)과 우측(`취소` / `저장/업데이트`)으로 분리 정렬하고 z-index를 1000으로 격상한다. 편집 시야 가림을 방지하기 위해 Studio 화면 활성화 시 우하단 AI FAB 버튼을 CSS 상에서 강제 은닉(`body:has(.snw-studio__bar) .snw-ai-fab { display: none !important; }`)한다.
+- **[UI-13] AI 어시스턴트 세그먼트 컨트롤 및 스마트 입력창 계약**: REST/Live 모드 전환은 `.snw-btn-group` 세그먼트 컨트롤로 단일화하고 비용 배지는 말줄임(`white-space: nowrap`, `text-overflow: ellipsis`)으로 2줄 개행을 방지한다. 대화 입력창(textarea)은 초기 1줄에서 입력 길이에 맞춰 최대 120px까지 동적 확장되어 가독성과 입력 편의성을 보장한다.
+
 ---
 
 ## 8. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-10** | **v3.8** | **웹 UI/UX 인터랙션 고도화 및 컴포넌트 격리 계약 (§7.22 UI-11~UI-13, b3d06c2)**: 모니터 히스토리 2단 지그재그 타임라인/시간축 규약(UI-11), 스튜디오 하단 분리 액션바 및 AI FAB 강제 은닉 규약(UI-12), AI 어시스턴트 세그먼트 컨트롤 및 자동 신축 입력창 규약(UI-13) 명시 | Antigravity AI |
 | **2026-11-09** | **v3.7** | **Stage 10.1 하드웨어 백엔드 타이머 신뢰성 및 안전 계약 (§7.21 TIMER-1~TIMER-3, UI-10 갱신, 0203_013_20_02)**: 하드웨어 백엔드 타이머 신뢰성 계약(TIMER-1), 만료 시 Comfort 재기동 억제(TIMER-2: setAutoComfort(false)), 브라우저 동기 실패 경고(TIMER-3), Comfort 5상태 매트릭스 UI-10 명시 | Antigravity AI |
 | **2026-11-09** | **v3.6** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: §7.20 COMFORT-1(AutoOff 래치 억제), COMFORT-2(락 획득 순서 준수), UI-10(Now Playing 자동 배지 표출) 동시성 및 안전 계약 추가 | Antigravity AI |
 | **2026-11-09** | **v3.5** | **AI 빠른 참조 §링크 강화 (Phase B)**: TOC anchor 기반 [§N.M](#anchor) 자동 변환, src/v0203/tools_0203/enhance_index_links_0203.py 추가, --verify로 anchor 유효성 검증 | Antigravity AI |

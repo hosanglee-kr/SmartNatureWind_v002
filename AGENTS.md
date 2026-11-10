@@ -36,7 +36,7 @@
 | **AUDIT_LOG_0203.md** | **감사 이력** | §1~§11 | [AUDIT_LOG](src/v0203/contract_doc_0203/AUDIT_LOG_0203.md) |
 | **AGENT_OPERATIONS_0203.md** | **운영 표준** | §1~§5 | [OPS](src/v0203/contract_doc_0203/AGENT_OPERATIONS_0203.md) |
 | README_0203.md | CBD 워크플로/커밋 도구 | §4, §5 | [README §4](src/v0203/contract_doc_0203/README_0203.md) |
-| **UserManual_0203_002.md** | **개발 시 참조하지 않음** (사용자 문서) | — | — |
+| **UserManual_0203_004.md** | **개발 시 참조하지 않음** (사용자 문서) | — | — |
 
 ---
 

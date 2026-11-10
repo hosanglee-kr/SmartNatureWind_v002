@@ -47,7 +47,7 @@ OPTIONAL_FILES: Tuple[str, ...] = (
 
 # 연계 참조 문서 (미커밋 시 알림용)
 RELATED_DOCS: Tuple[str, ...] = (
-    "src/v0203/User_Manual_0203/UserManual_0203_002.md",
+    "src/v0203/User_Manual_0203/UserManual_0203_004.md",
     "AGENTS.md",
 )
 

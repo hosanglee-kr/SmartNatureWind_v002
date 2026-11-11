@@ -239,21 +239,6 @@ def main() -> int:
     print("[INFO] --strict 옵션으로 CI gate 활성화 가능")
     return EXIT_OK
 
-    print(f"\n[FAIL] {total_missing}개 미정의 키 ({len(missing)}개 파일):\n")
-    for rel in sorted(missing.keys()):
-        print(f"  {rel}")
-        for k in missing[rel]:
-            print(f"    - {k}")
-        print()
-
-    if args.strict:
-        print("[STRICT] exit 1 (CI gate)")
-        return EXIT_MISSING
-
-    print("[INFO] --strict 옵션으로 CI gate 활성화 가능")
-    return EXIT_OK
-
-
 if __name__ == "__main__":
     try:
         sys.exit(main())

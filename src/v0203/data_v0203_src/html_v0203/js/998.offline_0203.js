@@ -1149,8 +1149,19 @@ window.SNW = window.SNW || {};
 
     // 브라우저 DOM 준비 완료 시 번들 덮어쓰기 방어 및 L4 고정, 툴바 렌더링
     if (typeof window !== 'undefined') {
-        try { localStorage.setItem('snw.level', 'L4'); } catch (e) { }
+        try { localStorage.setItem('snw.level', 'L4'); } catch (e) {}
         window.addEventListener('DOMContentLoaded', () => {
+            // ======================================================
+            // [API 재정의 필수 시점 - 유일한 시점]
+            //  1) 998.offline_0203.js (현재 파일)는 index.html document.write로 로드
+            //  2) P010_bundle_0203.js의 040.api.js가 Object.assign으로 _fetch 기반
+            //     메서드를 정의 (오프라인 분기 있으나 POST 상태 변경 누락)
+            //  3) DOMContentLoaded에서 ensureApi()를 재실행 → 오프라인 mock으로 재덮어씀
+            //
+            //  ※ SNW_BOOT은 이 DOMContentLoaded 이후에 실행되므로,
+            //    ensureApi()는 이 지점 1회로 충분 (SNW_BOOT 내부 호출 제거).
+            //  ※ 모든 페이지 mount 전에 완료 보장 (SNW_BOOT이 SNW.Offline.ready await).
+            // ======================================================
             ensureApi();
             stubWs();
             if (SNW.LevelUtil) {
@@ -1160,4 +1171,5 @@ window.SNW = window.SNW || {};
             renderOfflineToolbar();
         });
     }
+
 })(window.SNW);

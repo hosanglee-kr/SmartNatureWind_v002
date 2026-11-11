@@ -76,15 +76,19 @@ SNW.Page = SNW.Page || {};
         // =========================================================
         async _loadSystem() {
             try {
+                
                 const data = await SNW.Api.getSystem();
                 if (!this._active) return;
-
-                const sys    = (data && data.system) || {};
-                const hw     = sys.hw || {};
+                
+                // [BUGFIX] API 응답은 루트 flat 구조 {meta, system:{logging,webSocket}, hw, security, timeCfg}
+                //  - 이전: data.system 이 ST_A20_SystemConfig_t 전체라고 오판 → 모든 하위 필드가 defaults로 fallback
+                //  - 이후: 루트(data)에서 직접 추출 (오프라인 mock / C++ toJson_System 모두 동일 shape)
+                const sys = data || {};
+                const hw = sys.hw || {};
                 const logCfg = (sys.system && sys.system.logging) || {};
-                const ws     = (sys.system && sys.system.webSocket) || {};
-                const sec    = sys.security || {};
-                const meta   = sys.meta || {};
+                const ws = (sys.system && sys.system.webSocket) || {};
+                const sec = sys.security || {};
+                const meta = sys.meta || {};
 
                 const esc = SNW.DomUtil.escape;
                 const T = SNW.I18n.t.bind(SNW.I18n);

@@ -290,7 +290,9 @@ window.SNW = window.SNW || {};
                 }
                 if (SNW.Offline) {
                     if (SNW.Offline.ready) await SNW.Offline.ready;
-                    if (typeof SNW.Offline.ensureApi === 'function') SNW.Offline.ensureApi();
+                    // [참고] ensureApi()는 998.offline_0203.js의 DOMContentLoaded 리스너에서 실행됨.
+                    //  - SNW_BOOT은 DOMContentLoaded 이후이므로 이 시점에 오프라인 mock이 이미 적용됨
+                    //  - 중복 호출 제거 (040.api.js 로드 후 재정의는 DOMContentLoaded에서 보장)
                     if (typeof SNW.Offline.stubWs === 'function') SNW.Offline.stubWs();
                 }
                 if (typeof SNW.LevelUtil !== 'undefined') {

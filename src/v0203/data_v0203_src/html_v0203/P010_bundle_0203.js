@@ -8207,13 +8207,16 @@ SNW.Page = SNW.Page || {};
             try {
                 const data = await SNW.Api.getSystem();
                 if (!this._active) return;
-
-                const sys    = (data && data.system) || {};
-                const hw     = sys.hw || {};
+                
+                // [BUGFIX] API 응답은 루트 flat 구조 {meta, system:{logging,webSocket}, hw, security, timeCfg}
+                //  - 이전: data.system 이 ST_A20_SystemConfig_t 전체라고 오판 → 모든 하위 필드가 defaults로 fallback
+                //  - 이후: 루트(data)에서 직접 추출 (오프라인 mock / C++ toJson_System 모두 동일 shape)
+                const sys = data || {};
+                const hw = sys.hw || {};
                 const logCfg = (sys.system && sys.system.logging) || {};
-                const ws     = (sys.system && sys.system.webSocket) || {};
-                const sec    = sys.security || {};
-                const meta   = sys.meta || {};
+                const ws = (sys.system && sys.system.webSocket) || {};
+                const sec = sys.security || {};
+                const meta = sys.meta || {};
 
                 const esc = SNW.DomUtil.escape;
                 const T = SNW.I18n.t.bind(SNW.I18n);
@@ -12877,7 +12880,6 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 999.app.js (14118 bytes) ---- */
 // =========================================================
 // 999.app.js — 부트스트랩 (최종 로드)
 // =========================================================
@@ -13170,7 +13172,9 @@ window.SNW = window.SNW || {};
                 }
                 if (SNW.Offline) {
                     if (SNW.Offline.ready) await SNW.Offline.ready;
-                    if (typeof SNW.Offline.ensureApi === 'function') SNW.Offline.ensureApi();
+                    // [참고] ensureApi()는 998.offline_0203.js의 DOMContentLoaded 리스너에서 실행됨.
+                    //  - SNW_BOOT은 DOMContentLoaded 이후이므로 이 시점에 오프라인 mock이 이미 적용됨
+                    //  - 중복 호출 제거 (040.api.js 로드 후 재정의는 DOMContentLoaded에서 보장)
                     if (typeof SNW.Offline.stubWs === 'function') SNW.Offline.stubWs();
                 }
                 if (typeof SNW.LevelUtil !== 'undefined') {

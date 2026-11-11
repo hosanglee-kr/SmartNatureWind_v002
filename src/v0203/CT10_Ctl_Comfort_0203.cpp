@@ -89,13 +89,17 @@ const char* CL_CT10_ControlManager::getRecommendedStyleCode() {
 // - 없으면 0 반환 (프론트엔드에서 PRESET Session으로 직접 재생)
 // =========================================================
 uint8_t CL_CT10_ControlManager::getRecommendedProfileId() {
-    if (!g_A20_config_root.userProfiles) return 0;
+    // [B-2] T-async 컨텍스트: 원자 스냅샷 경유 필수
+    ST_A20_ConfigRoot_t v_snap;
+    CL_C10_ConfigManager::getRootSnapshot(v_snap);
+    if (!v_snap.userProfiles) return 0;
 
     const char* v_targetPreset = getRecommendedPresetCode();
     const char* v_targetStyle  = getRecommendedStyleCode();
 
-    for (uint8_t v_i = 0; v_i < g_A20_config_root.userProfiles->count && v_i < A20_Const::MAX_USER_PROFILES; v_i++) {
-        const auto& v_prof = g_A20_config_root.userProfiles->items[v_i];
+    for (uint8_t v_i = 0; v_i < v_snap.userProfiles->count && v_i < A20_Const::MAX_USER_PROFILES; v_i++) {
+        const auto& v_prof = v_snap.userProfiles->items[v_i];
+        
         if (!v_prof.enabled) continue;
 
         for (uint8_t v_s = 0; v_s < v_prof.segCount && v_s < A20_Const::MAX_STEPS_PER_PROFILE; v_s++) {

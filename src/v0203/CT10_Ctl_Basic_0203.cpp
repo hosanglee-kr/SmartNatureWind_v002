@@ -74,11 +74,14 @@ ST_CT10_DhtCache s_dhtCache;
 
 // 실제 read 수행 (캐시 갱신)
 void _ct10_readDhtIfNeeded() {
-    if (!g_A20_config_root.system) return;
+    // [B-2] T-async 컨텍스트: 원자 스냅샷 경유 필수
+    ST_A20_ConfigRoot_t v_snap;
+    CL_C10_ConfigManager::getRootSnapshot(v_snap);
+    if (!v_snap.system) return;
 
-    const auto& conf = g_A20_config_root.system->hw.tempHum;
+    const auto& conf = v_snap.system->hw.tempHum;
     if (!conf.enabled) return;
-
+    
     int16_t v_pin = (conf.pin > 0) ? (int16_t)conf.pin : 4;
 
     // 최초 1회 객체 생성

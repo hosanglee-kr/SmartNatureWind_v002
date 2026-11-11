@@ -47,9 +47,12 @@ bool CL_CT10_ControlManager::startUserProfileByNo(uint16_t p_profileNo) {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return false;
 
-    if (!g_A20_config_root.userProfiles) return false;
-
-    ST_A20_UserProfilesRoot_t& v_cfg = *g_A20_config_root.userProfiles;
+    // [B-2] T-async 컨텍스트: 원자 스냅샷 경유 필수
+    ST_A20_ConfigRoot_t v_snap;
+    CL_C10_ConfigManager::getRootSnapshot(v_snap);
+    if (!v_snap.userProfiles) return false;
+    
+    ST_A20_UserProfilesRoot_t& v_cfg = *v_snap.userProfiles;
 
     for (uint8_t v_i = 0; v_i < v_cfg.count; v_i++) {
         const ST_A20_UserProfileItem_t& v_p = v_cfg.items[v_i];

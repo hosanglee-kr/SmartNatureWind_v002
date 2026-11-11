@@ -143,8 +143,8 @@ typedef struct {
     int8_t               nextScheduleIndex;
     int8_t               nextProfileIndex;
     bool                 wantSimStop;
-    bool                 wantResetSegRt;
-    bool                 wantResetAutoOff;
+    // bool                 wantResetSegRt;
+    // bool                 wantResetAutoOff;
 } ST_CT10_Decision_t;
 
 typedef struct {

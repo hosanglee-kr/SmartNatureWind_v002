@@ -44,6 +44,7 @@
 
 #include "A20_Const_0203.h"
 #include "A40_Com_Utils_0203.h"   // [P1-3] CL_A40_MutexGuard_Semaphore
+#include "C10_Config_0203.h"      // [B-2] CL_C10_ConfigManager::getRootSnapshot
 #include "D10_Logger_0203.h"
 
 // ------------------------------------------------------
@@ -108,8 +109,12 @@ class CL_M10_MotionLogic {
 	    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
 		if (!v_guard.isAcquired()) return;
 
-		if (!g_A20_config_root.motion || !g_A20_config_root.motion->pir.enabled)
-			return;
+		// [B-2] T-async 컨텍스트(feedPIR 경유): 원자 스냅샷 경유 필수
+		ST_A20_ConfigRoot_t v_snap;
+		CL_C10_ConfigManager::getRootSnapshot(v_snap);
+		if (!v_snap.motion || !v_snap.motion->pir.enabled)
+		    return;
+    
 		_pir.lastDetected_ms = millis();
 		_pir.active			 = true;
 	}
@@ -122,9 +127,12 @@ class CL_M10_MotionLogic {
 	    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
 		if (!v_guard.isAcquired()) return;
 		
-		if (!g_A20_config_root.motion)
-			return;
-		const auto& v_cfg = *g_A20_config_root.motion;
+		// [B-2] 원자 스냅샷 경유 (T-loop/T-async 공용 안전)
+		ST_A20_ConfigRoot_t v_snap;
+		CL_C10_ConfigManager::getRootSnapshot(v_snap);
+		if (!v_snap.motion) return;
+		const auto& v_cfg = *v_snap.motion;
+
 		uint32_t	v_now = millis();
 
 		// PIR timeout
@@ -168,9 +176,11 @@ class CL_M10_MotionLogic {
 	    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
 		if (!v_guard.isAcquired()) return;
 		
-		if (!g_A20_config_root.motion)
-			return;
-		const auto& v_cfg = *g_A20_config_root.motion;
+		// [B-2] 원자 스냅샷 경유
+		ST_A20_ConfigRoot_t v_snap;
+		CL_C10_ConfigManager::getRootSnapshot(v_snap);
+		if (!v_snap.motion) return;
+		const auto& v_cfg = *v_snap.motion;
 
 		JsonObject v_o	 = p_doc["motion"].to<JsonObject>();
 		v_o["active"]	 = isActive();

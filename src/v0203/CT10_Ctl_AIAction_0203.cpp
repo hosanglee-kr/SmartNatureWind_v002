@@ -291,11 +291,24 @@ String executeAIAction(const char* p_fn, JsonObjectConst p_args) {
             CL_D10_Logger::log(EN_L10_LOG_WARN, "[AI] add_schedule: invalid profileId=%u", v_profId);
             return "error:invalid_profile";
         }
-
+        
         ST_A20_ScheduleItem_t& v_item = v_sch.items[v_sch.count];
         memset(&v_item, 0, sizeof(v_item));
-        v_item.schId = v_sch.count + 1;
-        v_item.schNo = v_sch.count + 1;
+        
+        // [AI-보완] 기존 스케줄의 max(schId)/max(schNo) + 1 → 삭제 후 재추가 시 ID 충돌 원천 차단
+        uint8_t  v_maxSchId = 0;
+        uint16_t v_maxSchNo = 0;
+        for (uint8_t i = 0; i < v_sch.count; ++i) {
+            if (v_sch.items[i].schId > v_maxSchId) v_maxSchId = v_sch.items[i].schId;
+            if (v_sch.items[i].schNo > v_maxSchNo) v_maxSchNo = v_sch.items[i].schNo;
+        }
+        uint16_t v_nextId = (uint16_t)v_maxSchId + 1u;
+        if (v_nextId == 0u || v_nextId > 255u) v_nextId = 1u;
+        uint16_t v_nextNo = v_maxSchNo + 1u;
+        if (v_nextNo == 0u) v_nextNo = 1u;
+        v_item.schId = (uint8_t)v_nextId;
+        v_item.schNo = v_nextNo;
+
         strlcpy(v_item.name, v_name, sizeof(v_item.name));
         v_item.profileId = v_profId;
         v_item.enabled   = true;

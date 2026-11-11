@@ -396,8 +396,11 @@ bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
                 return false;
             }
 
-            if (!g_A20_config_root.userProfiles) return false;
-            auto& v_profiles = *g_A20_config_root.userProfiles;
+            // [B-2] T-async 컨텍스트: 원자 스냅샷 경유 필수
+            ST_A20_ConfigRoot_t v_snap;
+            CL_C10_ConfigManager::getRootSnapshot(v_snap);
+            if (!v_snap.userProfiles) return false;
+            auto& v_profiles = *v_snap.userProfiles;
 
             const ST_A20_UserProfileItem_t* v_profPtr = nullptr;
             for (uint8_t v_i = 0; v_i < v_profiles.count; v_i++) {

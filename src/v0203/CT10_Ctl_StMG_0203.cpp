@@ -81,8 +81,8 @@ ST_CT10_Decision_t CL_CT10_ControlManager::decideRunSource() {
     v_d.nextScheduleIndex = -1;
     v_d.nextProfileIndex  = -1;
     v_d.wantSimStop       = false;
-    v_d.wantResetSegRt    = false;
-    v_d.wantResetAutoOff  = false;
+    // v_d.wantResetSegRt    = false;
+    // v_d.wantResetAutoOff  = false;
 
     // 0) 시간 유효성
     bool v_timeValid = CL_TM10_TimeManager::isTimeValid();
@@ -209,21 +209,21 @@ ST_CT10_Decision_t CL_CT10_ControlManager::decideRunSource() {
                 v_d.nextScheduleIndex = (int8_t)v_activeIdx;
                 return v_d;
             }
-        }
-
-        // 6) Idle
-        v_d.nextState     = EN_CT10_STATE_IDLE;
-        v_d.reason        = EN_CT10_REASON_NO_ACTIVE_SCHEDULE;
-        v_d.nextRunSource = EN_CT10_RUN_NONE;
-        return v_d;
     }
 
-    // ======================================================
-    // applyDecision()
-    // ======================================================
-    void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
-        // OVERRIDE 분기
-        if (p_d.nextState == EN_CT10_STATE_OVERRIDE) {
+    // 6) Idle
+    v_d.nextState     = EN_CT10_STATE_IDLE;
+    v_d.reason        = EN_CT10_REASON_NO_ACTIVE_SCHEDULE;
+    v_d.nextRunSource = EN_CT10_RUN_NONE;
+    return v_d;
+}
+
+// ======================================================
+// applyDecision()
+// ======================================================
+void CL_CT10_ControlManager::applyDecision(const ST_CT10_Decision_t& p_d) {
+    // OVERRIDE 분기
+    if (p_d.nextState == EN_CT10_STATE_OVERRIDE) {
             bool v_changed = false;
             if (runCtx.state != p_d.nextState) v_changed = true;
             if (runCtx.reason != p_d.reason) v_changed = true;
@@ -242,17 +242,17 @@ ST_CT10_Decision_t CL_CT10_ControlManager::decideRunSource() {
                 markDirty("summary");
             }
             return;
-        }
+    }
 
-        bool v_stateChanged  = (runCtx.state != p_d.nextState) || (runCtx.reason != p_d.reason);
-        bool v_sourceChanged = (runSource != p_d.nextRunSource) || (curScheduleIndex != p_d.nextScheduleIndex) ||
+    bool v_stateChanged  = (runCtx.state != p_d.nextState) || (runCtx.reason != p_d.reason);
+    bool v_sourceChanged = (runSource != p_d.nextRunSource) || (curScheduleIndex != p_d.nextScheduleIndex) ||
                                (curProfileIndex != p_d.nextProfileIndex);
 
-        if (p_d.wantSimStop) {
-            if (sim.active) sim.stop();
-        }
+    if (p_d.wantSimStop) {
+        if (sim.active) sim.stop();
+    }
 
-        if (v_sourceChanged) {
+    if (v_sourceChanged) {
             if (sim.active) sim.stop();
 
             runSource        = p_d.nextRunSource;
@@ -308,36 +308,36 @@ ST_CT10_Decision_t CL_CT10_ControlManager::decideRunSource() {
                 scheduleSegRt.index = -1;
                 profileSegRt.index  = -1;
             }
-        }
+    }
 
-        runCtx.state          = p_d.nextState;
-        runCtx.reason         = p_d.reason;
-        runCtx.lastDecisionMs = millis();
-        if (v_stateChanged || v_sourceChanged) {
-            runCtx.lastStateChangeMs = runCtx.lastDecisionMs;
-        }
+    runCtx.state          = p_d.nextState;
+    runCtx.reason         = p_d.reason;
+    runCtx.lastDecisionMs = millis();
+    if (v_stateChanged || v_sourceChanged) {
+        runCtx.lastStateChangeMs = runCtx.lastDecisionMs;
+    }
 
-        // TIME_INVALID 진입 시 hold + seg 리셋
-        if (v_stateChanged && runCtx.state == EN_CT10_STATE_TIME_INVALID) {
-            runCtx.stateHoldUntilMs = runCtx.lastDecisionMs + S_EVENT_HOLD_MS;
-            runCtx.stateAckRequired = false;
-            runCtx.activeSegId      = 0;
-            runCtx.activeSegNo      = 0;
-        }
+    // TIME_INVALID 진입 시 hold + seg 리셋
+    if (v_stateChanged && runCtx.state == EN_CT10_STATE_TIME_INVALID) {
+        runCtx.stateHoldUntilMs = runCtx.lastDecisionMs + S_EVENT_HOLD_MS;
+        runCtx.stateAckRequired = false;
+        runCtx.activeSegId      = 0;
+        runCtx.activeSegNo      = 0;
+    }
 
-        if (v_stateChanged || v_sourceChanged) {
-            markDirty("state");
-            markDirty("metrics");
-            markDirty("summary");
-        }
+    if (v_stateChanged || v_sourceChanged) {
+        markDirty("state");
+        markDirty("metrics");
+        markDirty("summary");
+    }
 
-        if (v_stateChanged || v_sourceChanged) {
-            CL_D10_Logger::log(EN_L10_LOG_INFO,
+    if (v_stateChanged || v_sourceChanged) {
+        CL_D10_Logger::log(EN_L10_LOG_INFO,
                                "[CT10] State=%s Reason=%s Source=%u schIdx=%d profIdx=%d",
                                CT10_stateToString(runCtx.state),
                                CT10_reasonToString(runCtx.reason),
                                (unsigned)runSource,
                                (int)curScheduleIndex,
                                (int)curProfileIndex);
-        }
     }
+}

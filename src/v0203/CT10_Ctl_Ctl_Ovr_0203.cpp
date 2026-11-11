@@ -57,8 +57,15 @@ void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
     ST_A20_ResolvedWind_t v_resolved;
     memset(&v_resolved, 0, sizeof(v_resolved));
 
-    bool v_ok = S20_resolveWindParams(*g_A20_config_root.windDict,
-                                     p_presetCode, p_styleCode, p_override, v_resolved);
+    // [B-2] T-async 컨텍스트: 원자 스냅샷 경유 필수
+    ST_A20_ConfigRoot_t v_snap;
+    CL_C10_ConfigManager::getRootSnapshot(v_snap);
+    if (!v_snap.windDict) return;
+    
+    ST_A20_ResolvedWind_t v_resolved;
+    memset(&v_resolved, 0, sizeof(v_resolved));
+    
+    bool v_ok = S20_resolveWindParams(*v_snap.windDict,
 
     if (!v_ok || !v_resolved.valid) {
         CL_D10_Logger::log(EN_L10_LOG_WARN,

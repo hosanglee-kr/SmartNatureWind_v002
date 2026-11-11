@@ -697,7 +697,7 @@ window.SNW = window.SNW || {};
             'settings.levelL3': '고급 (세부 파라미터)',
             'settings.levelL4': '전문가 (모든 엔지니어링 기능)',
             'dashboard.tabControl': '제어',
-            'dashboard.tabEnv': '환경',
+            'dashboard.tabEnv': '스마트쾌적',
             'dashboard.tabPreset': '프리셋',
             'dashboard.sensorTitle': '센서 모니터링',
             'dashboard.styleTitle': '바람 스타일',

@@ -52,6 +52,7 @@ void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
                                                  const ST_A20_SegmentOverride_t* p_override,
                                                  uint32_t p_seconds,
                                                  bool p_forever) {
+    
     // [B-2] T-async 컨텍스트: 원자 스냅샷 경유 필수
     ST_A20_ConfigRoot_t v_snap;
     CL_C10_ConfigManager::getRootSnapshot(v_snap);
@@ -61,6 +62,7 @@ void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
     memset(&v_resolved, 0, sizeof(v_resolved));
     
     bool v_ok = S20_resolveWindParams(*v_snap.windDict,
+                                     p_presetCode, p_styleCode, p_override, v_resolved);
 
     if (!v_ok || !v_resolved.valid) {
         CL_D10_Logger::log(EN_L10_LOG_WARN,

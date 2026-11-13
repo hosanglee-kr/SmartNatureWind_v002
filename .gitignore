@@ -31,10 +31,6 @@ graphify-out/*.lock
 # 백엔드 승인 마커 (세션 로컬, 재생성 가능)
 .agents/state/*.json
 
-# Graphify 산출물 (대용량)
-graphify-out/
-!graphify-out/.gitkeep
-
 # 개인 로컬 설정
 CLAUDE.local.md
 

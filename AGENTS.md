@@ -85,9 +85,9 @@ python src/v0203/tools_0203/commit_contracts_0203.py --dry-run --strict
 | 회귀 실행 | `test/e2e_stage8_4.py <IP>` / TEST_PLAN T-항목 | `regression-run` |
 | UI E2E 점검 | `node test/e2e_ui_browser_check_0203.cjs` | `regression-run` |
 | 프론트 번들 | `pio_gzip_0203.py` (+ `check_i18n.py --strict`) | `bundle-frontend` |
-| 그래프 질의 | `python tools/graphify_init.py query "<q>"` | (기존) `graphify` |
-| 그래프 갱신 | `python tools/graphify_init.py build --update` | (기존) `graphify` |
-| 그래프 상태 | `python tools/graphify_init.py check` | (기존) `graphify` |
+| 그래프 질의 | `graphify query "<q>"` | `graphify` |
+| 그래프 갱신 | `graphify update .` | `graphify` |
+| 그래프 탐색 | `graphify explain "<concept>"` / `graphify path "<A>" "<B>"` | `graphify` |
 | 동기화 | `python tools/sync-agent-configs.py [--check]` | — |
 
 ---

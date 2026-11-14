@@ -22,6 +22,7 @@
 #include <freertos/semphr.h>
 
 #include "A20_Const_0203.h"
+#include "A23_Com_ResetCfg_0203.h"
 #include "CT10_Monitor_0203.h"
 #include "C10_Config_0203.h"
 #include "D10_Logger_0203.h"
@@ -131,7 +132,8 @@ typedef enum : uint8_t {
     EN_CT10_STATE_PROFILE_RUN     = 2,
     EN_CT10_STATE_SCHEDULE_RUN    = 3,
     EN_CT10_STATE_AUTOOFF_STOPPED = 5,
-    EN_CT10_STATE_ENV_PAUSED                                  = 7,
+    EN_CT10_STATE_TIME_INVALID    = 6,
+    EN_CT10_STATE_ENV_PAUSED      = 7,
 } EN_CT10_state_t;
 
 typedef enum : uint8_t {
@@ -153,8 +155,9 @@ typedef enum : uint8_t {
     EN_CT10_REASON_MOTION_NO_PRESENCE  = 8,
     EN_CT10_REASON_AUTOOFF_TIMER       = 9,
     EN_CT10_REASON_AUTOOFF_TIME        = 10,
-    EN_CT10_REASON_TEMP_LOW_STOP                              = 12,
-    EN_CT10_REASON_DI_LOW_STOP                                = 13,
+    EN_CT10_REASON_USER_STOP           = 11,
+    EN_CT10_REASON_TEMP_LOW_STOP       = 12,
+    EN_CT10_REASON_DI_LOW_STOP         = 13,
 } EN_CT10_reason_t;
 
 typedef struct {
@@ -506,7 +509,12 @@ class CL_CT10_ControlManager {
     void ackEventState();
     bool checkTriggers(EN_CT10_pause_t* p_pauseOut, EN_CT10_reason_t* p_stopOut);
     bool isPauseResumed();
-    bool evalLowPauseHysteresis(bool p_curPaused, float p_val, float p_thr, float p_hys);
+    void evalLowPauseHysteresis(const ST_A20_ThresholdRule_t& p_rule,
+                                float                         p_val,
+                                float&                        r_lastVal,
+                                bool&                         r_paused,
+                                uint8_t&                      r_mask,
+                                uint8_t                       p_bit);
     void onTriggerStop(EN_CT10_reason_t p_reason);
     void onTriggerPause(EN_CT10_pause_t p_pause);
 

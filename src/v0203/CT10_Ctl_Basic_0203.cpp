@@ -102,9 +102,12 @@ void CL_CT10_ControlManager::applyRuleToTriggerRt(const ST_A20_TriggerRule_t& p_
     }
 }
 
-static void evalLowPauseHysteresis(const ST_A20_ThresholdRule_t& p_rule,
-                                   float p_val, float& r_lastVal,
-                                   bool& r_paused, uint8_t& r_mask, uint8_t p_bit) {
+void CL_CT10_ControlManager::evalLowPauseHysteresis(const ST_A20_ThresholdRule_t& p_rule,
+                                                   float                         p_val,
+                                                   float&                        r_lastVal,
+                                                   bool&                         r_paused,
+                                                   uint8_t&                      r_mask,
+                                                   uint8_t                       p_bit) {
     if (!p_rule.enabled || p_rule.mode != EN_A20_RULE_MODE_PAUSE) {
         r_paused = false;
         r_mask &= ~p_bit;
@@ -117,14 +120,6 @@ static void evalLowPauseHysteresis(const ST_A20_ThresholdRule_t& p_rule,
     } else if (p_val >= p_rule.threshold + p_rule.hysteresis) {
         r_paused = false;
         r_mask &= ~p_bit;
-    }
-}
-
-bool CL_CT10_ControlManager::evalLowPauseHysteresis(bool p_curPaused, float p_val, float p_thr, float p_hys) {
-    if (p_curPaused) {
-        return (p_val < (p_thr + p_hys));
-    } else {
-        return (p_val < p_thr);
     }
 }
 

@@ -25,20 +25,20 @@
 // ═══════════════════════════════════════════════════════════
 static EN_CT10_session_type_t W10_parseSessionType(const char* p_str) {
     if (!p_str) return EN_CT10_SESSION_NONE;
-    if (strcasecmp(p_str, "PLAYLIST")    == 0) return EN_CT10_SESSION_PLAYLIST;
-    if (strcasecmp(p_str, "PRESET")      == 0) return EN_CT10_SESSION_PRESET;
-    if (strcasecmp(p_str, "FIXED")       == 0) return EN_CT10_SESSION_FIXED;
-    if (strcasecmp(p_str, "AUTO_FULL")   == 0) return EN_CT10_SESSION_AUTO_FULL;
+    if (strcasecmp(p_str, "PLAYLIST") == 0) return EN_CT10_SESSION_PLAYLIST;
+    if (strcasecmp(p_str, "PRESET") == 0) return EN_CT10_SESSION_PRESET;
+    if (strcasecmp(p_str, "FIXED") == 0) return EN_CT10_SESSION_FIXED;
+    if (strcasecmp(p_str, "AUTO_FULL") == 0) return EN_CT10_SESSION_AUTO_FULL;
     if (strcasecmp(p_str, "AUTO_SELECT") == 0) return EN_CT10_SESSION_AUTO_SELECT;
     return EN_CT10_SESSION_NONE;
 }
 
 static EN_CT10_trigger_t W10_parseTrigger(const char* p_str) {
     if (!p_str) return EN_CT10_TRIGGER_MANUAL;
-    if (strcasecmp(p_str, "MANUAL")             == 0) return EN_CT10_TRIGGER_MANUAL;
-    if (strcasecmp(p_str, "SCHEDULE")           == 0) return EN_CT10_TRIGGER_SCHEDULE;
-    if (strcasecmp(p_str, "AUTO_COMFORT")       == 0) return EN_CT10_TRIGGER_AUTO_COMFORT;
-    if (strcasecmp(p_str, "MANUAL_AUTO_FULL")   == 0) return EN_CT10_TRIGGER_MANUAL_AUTO_FULL;
+    if (strcasecmp(p_str, "MANUAL") == 0) return EN_CT10_TRIGGER_MANUAL;
+    if (strcasecmp(p_str, "SCHEDULE") == 0) return EN_CT10_TRIGGER_SCHEDULE;
+    if (strcasecmp(p_str, "AUTO_COMFORT") == 0) return EN_CT10_TRIGGER_AUTO_COMFORT;
+    if (strcasecmp(p_str, "MANUAL_AUTO_FULL") == 0) return EN_CT10_TRIGGER_MANUAL_AUTO_FULL;
     if (strcasecmp(p_str, "MANUAL_AUTO_SELECT") == 0) return EN_CT10_TRIGGER_MANUAL_AUTO_SELECT;
     return EN_CT10_TRIGGER_MANUAL;
 }
@@ -195,7 +195,7 @@ void CL_W10_WebAPI::routeSession() {
                 return;
             }
 
-            bool v_ok = CL_CT10_ControlManager::updateActiveSessionRule(v_doc);
+            bool         v_ok = CL_CT10_ControlManager::updateActiveSessionRule(v_doc);
             JsonDocument v_res;
             v_res["ok"] = v_ok;
             if (v_ok) {
@@ -223,7 +223,7 @@ void CL_W10_WebAPI::routeSession() {
         v_res["active"]        = (s.state == EN_SESSION_ACTIVE || s.state == EN_SESSION_PAUSED);
         v_res["type"]          = (uint8_t)s.type;
         v_res["trigger"]       = (uint8_t)s.trigger;
-        v_res["state"]         = (s.state == EN_SESSION_ACTIVE)  ? "ACTIVE"
+        v_res["state"]         = (s.state == EN_SESSION_ACTIVE)   ? "ACTIVE"
                                  : (s.state == EN_SESSION_PAUSED) ? "PAUSED"
                                                                   : "COMPLETED";
         v_res["pausedAccumMs"] = s.pausedAccumMs;
@@ -274,7 +274,7 @@ void CL_W10_WebAPI::routeSession() {
             CL_N10_NvsManager::setManualOvrSchedule(v_override);
 
             JsonDocument v_out;
-            v_out["ok"] = true;
+            v_out["ok"]       = true;
             v_out["override"] = v_override;
             sendJson(p_request, v_out, 200);
             CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Schedule override set: %d", v_override);

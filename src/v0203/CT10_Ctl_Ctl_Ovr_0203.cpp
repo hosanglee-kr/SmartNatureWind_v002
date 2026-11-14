@@ -22,9 +22,9 @@ void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seco
     if (!v_guard.isAcquired()) return;
 
     if (p_isUserManual) {
-        _autoOffLatched = false;
+        _autoOffLatched     = false;
         triggerRt.pauseMask = 0;
-        runCtx.pauseReason = EN_CT10_PAUSE_NONE;
+        runCtx.pauseReason  = EN_CT10_PAUSE_NONE;
         runCtx.pauseSinceMs = 0;
     }
 
@@ -36,15 +36,17 @@ void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seco
     if (p_forever) {
         overrideState.endMs = 0;
     } else {
-        uint32_t v_sec = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
+        uint32_t v_sec      = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
         overrideState.endMs = millis() + (v_sec * 1000UL);
     }
 
     markDirty("state");
     markDirty("metrics");
 
-    CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] Override FIXED %.1f%% (%s)",
-                       overrideState.fixedPercent, p_forever ? "forever" : "timed");
+    CL_D10_Logger::log(EN_L10_LOG_INFO,
+                       "[CT10] Override FIXED %.1f%% (%s)",
+                       overrideState.fixedPercent,
+                       p_forever ? "forever" : "timed");
 
     CL_N10_NvsManager::setOverrideFixed(true, overrideState.fixedPercent);
 }
@@ -52,29 +54,27 @@ void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seco
 // --------------------------------------------------
 // override: preset (resolved WindDict)
 // --------------------------------------------------
-void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
-                                                 const char* p_styleCode,
+void CL_CT10_ControlManager::startOverridePreset(const char*                     p_presetCode,
+                                                 const char*                     p_styleCode,
                                                  const ST_A20_SegmentOverride_t* p_override,
-                                                 uint32_t p_seconds,
-                                                 bool p_forever,
-                                                 bool p_isUserManual) {
-    
+                                                 uint32_t                        p_seconds,
+                                                 bool                            p_forever,
+                                                 bool                            p_isUserManual) {
     // [B-2] T-async 컨텍스트: 원자 스냅샷 경유 필수
     ST_A20_ConfigRoot_t v_snap;
     CL_C10_ConfigManager::getRootSnapshot(v_snap);
     if (!v_snap.windDict) return;
-    
+
     ST_A20_ResolvedWind_t v_resolved;
     memset(&v_resolved, 0, sizeof(v_resolved));
-    
-    bool v_ok = S20_resolveWindParams(*v_snap.windDict,
-                                     p_presetCode, p_styleCode, p_override, v_resolved);
+
+    bool v_ok = S20_resolveWindParams(*v_snap.windDict, p_presetCode, p_styleCode, p_override, v_resolved);
 
     if (!v_ok || !v_resolved.valid) {
         CL_D10_Logger::log(EN_L10_LOG_WARN,
                            "[CT10] startOverridePreset resolve failed (%s,%s)",
                            p_presetCode ? p_presetCode : "",
-                           p_styleCode  ? p_styleCode  : "");
+                           p_styleCode ? p_styleCode : "");
         return;
     }
 
@@ -85,9 +85,9 @@ void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
 // override: resolved manual
 // --------------------------------------------------
 void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_wind,
-                                                 uint32_t p_seconds,
-                                                 bool p_forever,
-                                                 bool p_isUserManual) {
+                                                 uint32_t                     p_seconds,
+                                                 bool                         p_forever,
+                                                 bool                         p_isUserManual) {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return;
 
@@ -102,9 +102,9 @@ void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_
     }
 
     if (p_isUserManual) {
-        _autoOffLatched = false;
+        _autoOffLatched     = false;
         triggerRt.pauseMask = 0;
-        runCtx.pauseReason = EN_CT10_PAUSE_NONE;
+        runCtx.pauseReason  = EN_CT10_PAUSE_NONE;
         runCtx.pauseSinceMs = 0;
     }
 
@@ -118,7 +118,7 @@ void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_
     if (p_forever) {
         overrideState.endMs = 0;
     } else {
-        uint32_t v_sec = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
+        uint32_t v_sec      = (p_seconds > 0) ? p_seconds : S_OVERRIDE_DEFAULT_SEC;
         overrideState.endMs = millis() + (v_sec * 1000UL);
     }
 
@@ -128,7 +128,8 @@ void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_
 
     CL_D10_Logger::log(EN_L10_LOG_INFO,
                        "[CT10] applyManual: preset=%s style=%s (%s)",
-                       p_wind.presetCode, p_wind.styleCode,
+                       p_wind.presetCode,
+                       p_wind.styleCode,
                        p_forever ? "forever" : "timed");
 
     CL_N10_NvsManager::setOverridePreset(true, p_wind.presetCode, p_wind.styleCode);

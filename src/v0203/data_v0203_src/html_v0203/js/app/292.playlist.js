@@ -101,6 +101,7 @@ window.SNW = window.SNW || {};
                 </div>
                 <div class="snw-playlist-item__actions" style="display:flex;gap:8px;justify-content:flex-end;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">
                     <button type="button" class="snw-btn snw-btn-primary snw-btn--sm" data-action="play" style="padding:6px 14px;background:var(--snw-primary,#4a9eff);color:#fff;border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-size:12px;font-weight:600;">▶ 재생</button>
+                    <button type="button" class="snw-btn snw-btn--sm" data-action="rule" style="padding:6px 12px;background:var(--snw-surface-3,#2f3844);color:var(--snw-text,#e6edf3);border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-size:12px;">⚙ 규칙</button>
                     <button type="button" class="snw-btn snw-btn--sm" data-action="edit" style="padding:6px 12px;background:var(--snw-surface-3,#2f3844);color:var(--snw-text,#e6edf3);border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-size:12px;">✏️ 편집</button>
                     <button type="button" class="snw-btn snw-btn--sm snw-btn--danger" data-action="delete" style="padding:6px 12px;background:rgba(248,81,73,0.15);color:var(--snw-error,#f85149);border:1px solid rgba(248,81,73,0.3);border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-size:12px;">🗑</button>
                 </div>
@@ -130,8 +131,29 @@ window.SNW = window.SNW || {};
                 }
             };
 
+            const ruleBtn = card.querySelector('[data-action="rule"]');
+            if (ruleBtn) {
+                ruleBtn.onclick = async () => {
+                    if (!SNW.UI || !SNW.UI.ruleEditor) return;
+                    const updated = await SNW.UI.ruleEditor.showModal(profile.rule || {}, {
+                        title: `${profile.name || '바람'} 규칙`,
+                    });
+                    if (updated) {
+                        try {
+                            profile.rule = updated;
+                            await SNW.Api.updateProfile(pId, profile);
+                            await SNW.Api.saveConfig();
+                            if (SNW.ToastUtil) SNW.ToastUtil.success('규칙 저장 완료');
+                            await this.mount();
+                        } catch (e) {
+                            if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '규칙 저장 실패');
+                        }
+                    }
+                };
+            }
+
             card.querySelector('[data-action="edit"]').onclick = () => {
-                SNW.Router.navigate(`/automation/studio?edit=${pId}`);
+                SNW.Router.navigate(`/wind/studio?edit=${pId}`);
             };
 
             card.querySelector('[data-action="delete"]').onclick = async () => {

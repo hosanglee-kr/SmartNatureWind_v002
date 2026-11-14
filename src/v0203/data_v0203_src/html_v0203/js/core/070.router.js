@@ -1,63 +1,81 @@
 // =========================================================
-// 070.router.js — SNW.Router (해시 SPA 라우터)
+// core/070.router.js — Fresh Start 라우터
+// Layer 2 (Service) — Alias/리다이렉트 완전 배제
+// 화이트리스트 외 → /home 렌더링 (URL 유지, location.hash 재대입 없음)
 // =========================================================
 window.SNW = window.SNW || {};
 (function (SNW) {
     'use strict';
 
+    // ═══════════════════════════════════════════════════════════
+    // [Phase 1] Fresh Start — 이전 URL 완전 폐기
+    //  - ROUTES 화이트리스트 외 모든 해시 → '/home' fallback
+    //  - location.hash 재대입 최소화 (접근 거부만 예외)
+    //  - 뒤로가기 히스토리 오염 0
+    // ═══════════════════════════════════════════════════════════
     const ROUTES = {
-        '/dashboard': { page: 'dashboard', level: 'L1' },
-        '/ai': { page: 'ai', level: 'L2' }, // [Stage 10] L4 -> L2 격상
-        '/automation': { page: 'automation', params: { tab: 'studio' }, level: 'L2' },
-        '/automation/studio': { page: 'automation', params: { tab: 'studio' }, level: 'L2' },
-        '/automation/playlist': { page: 'automation', params: { tab: 'playlist' }, level: 'L2' },
-        '/automation/schedule': { page: 'automation', params: { tab: 'schedule' }, level: 'L2' },
-        '/automation/timer': { page: 'automation', params: { tab: 'timer' }, level: 'L2' },
-        '/chart': { page: 'chart', level: 'L2' },
-        '/sensors': { page: 'sensors', level: 'L2' },
-        '/monitor': { page: 'monitor', level: 'L2' }, // [Phase5 5.8]
-        '/simulation': { page: 'simulation', level: 'L3' },
-        '/windprofile': { page: 'windprofile', level: 'L3' },
-        '/settings': { page: 'settings', level: 'L2' }, // [Stage 10] L3 -> L2 (인터페이스 모드/언어 변경 허용)
-        '/network': { page: 'network', level: 'L3' },
-        '/logs': { page: 'logs', level: 'L3' },
-        '/diagnostics': { page: 'diagnostics', level: 'L4' },
-        '/firmware': { page: 'firmware', level: 'L4' },
-        '/info': { page: 'info', level: 'L1' }
+        // ─── L1 일상 (홈 3탭) ───
+        '/home':                    { page: 'Dashboard', params: { tab: 'control' }, level: 'L1' },
+        '/home/control':            { page: 'Dashboard', params: { tab: 'control' }, level: 'L1' },
+        '/home/env':                { page: 'Dashboard', params: { tab: 'env' },     level: 'L1' },
+        '/home/preset':             { page: 'Dashboard', params: { tab: 'preset' },  level: 'L1' },
+
+        // ─── L2 바람 만들기 (4탭) ───
+        '/wind':                    { page: 'Automation', params: { tab: 'studio' },     level: 'L2' },
+        '/wind/studio':             { page: 'Automation', params: { tab: 'studio' },     level: 'L2' },
+        '/wind/simulation':         { page: 'Automation', params: { tab: 'simulation' }, level: 'L2' },
+        '/wind/playlist':           { page: 'Automation', params: { tab: 'playlist' },   level: 'L2' },
+        '/wind/presets':            { page: 'Windprofile', level: 'L3' },
+
+        // ─── L2 자동화 (3탭) ───
+        '/automation':              { page: 'Automation', params: { tab: 'schedule' }, level: 'L2' },
+        '/automation/schedule':     { page: 'Automation', params: { tab: 'schedule' }, level: 'L2' },
+        '/automation/timer':        { page: 'Automation', params: { tab: 'timer' },    level: 'L2' },
+        '/automation/rules':        { page: 'Automation', params: { tab: 'rules' },    level: 'L2' },
+
+        // ─── L2 AI ───
+        '/ai':                      { page: 'AI', level: 'L2' },
+
+        // ─── L2 모니터 (4탭) ───
+        '/monitor':                 { page: 'Monitor', level: 'L2' },
+        '/monitor/chart':           { page: 'Chart',   level: 'L2' },
+        '/monitor/sensors':         { page: 'Sensors', level: 'L2' },
+        '/monitor/history':         { page: 'Monitor', level: 'L2' },
+        '/monitor/logs':            { page: 'Logs',    level: 'L3' },
+
+        // ─── L3 설정 (5탭) ───
+        '/settings':                { page: 'Settings',    params: { tab: 'general' },  level: 'L2' },
+        '/settings/general':        { page: 'Settings',    params: { tab: 'general' },  level: 'L2' },
+        '/settings/network':        { page: 'Network',     params: { tab: 'network' },  level: 'L3' },
+        '/settings/hardware':       { page: 'Settings',    params: { tab: 'hardware' }, level: 'L2' },
+        '/settings/firmware':       { page: 'Firmware',                                 level: 'L4' },
+        '/settings/diagnostics':    { page: 'Diagnostics',                              level: 'L4' },
     };
 
-
-
+    // ─── 사이드바 그룹 (3개 최상위 그룹) ───
     const NAV_GROUPS = [
         {
-            key: 'nav.groupControl',
+            key: 'nav.groupDaily',
             items: [
-                { path: '/dashboard', key: 'nav.dashboard', icon: '🏠', minLevel: 'L1' },
-                { path: '/ai', key: 'nav.ai', icon: '✨', minLevel: 'L2' },
-                { path: '/chart', key: 'nav.chart', icon: '📈', minLevel: 'L2' },
-                { path: '/automation', key: 'nav.automation', icon: '🎨', minLevel: 'L2' },
-                { path: '/sensors', key: 'nav.sensors', icon: '🌡️', minLevel: 'L2' },
-                { path: '/monitor', key: 'nav.monitor', icon: '📺', minLevel: 'L2' }
+                { path: '/home', key: 'nav.home', icon: '🏠', minLevel: 'L1' },
             ]
         },
         {
-            key: 'nav.groupSettings',
+            key: 'nav.groupControl',
             items: [
-                { path: '/settings', key: 'nav.settings', icon: '⚙️', minLevel: 'L2' },
-                { path: '/network', key: 'nav.network', icon: '📶', minLevel: 'L3' },
-                { path: '/windprofile', key: 'nav.windprofile', icon: '🌬️', minLevel: 'L3' },
-                { path: '/simulation', key: 'nav.simulation', icon: '📊', minLevel: 'L3' }
+                { path: '/wind',       key: 'nav.wind',       icon: '🌬️', minLevel: 'L2' },
+                { path: '/automation', key: 'nav.automation', icon: '⚙️', minLevel: 'L2' },
+                { path: '/ai',         key: 'nav.ai',         icon: '✨', minLevel: 'L2' },
+                { path: '/monitor',    key: 'nav.monitor',    icon: '📊', minLevel: 'L2' },
             ]
         },
         {
             key: 'nav.groupSystem',
             items: [
-                { path: '/logs', key: 'nav.logs', icon: '📜', minLevel: 'L3' },
-                { path: '/diagnostics', key: 'nav.diagnostics', icon: '🔧', minLevel: 'L4' },
-                { path: '/firmware', key: 'nav.firmware', icon: '💾', minLevel: 'L4' },
-                { path: '/info', key: 'nav.info', icon: 'ℹ️', minLevel: 'L1' }
+                { path: '/settings', key: 'nav.settings', icon: '🔧', minLevel: 'L2' },
             ]
-        }];
+        },
+    ];
 
     let currentPage = null;
     let currentPath = null;
@@ -69,9 +87,12 @@ window.SNW = window.SNW || {};
         return s.charAt(0).toUpperCase() + s.slice(1);
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // Fresh Start: 화이트리스트 외 → '/home' (URL 유지)
+    // ═══════════════════════════════════════════════════════════
     function parseHash() {
-        const raw = location.hash.replace(/^#/, '').split('?')[0] || '/dashboard';
-        return ROUTES[raw] ? raw : '/dashboard';
+        const raw = location.hash.replace(/^#/, '').split('?')[0] || '/home';
+        return ROUTES[raw] ? raw : '/home';
     }
 
     function _clearMain() {
@@ -92,7 +113,6 @@ window.SNW = window.SNW || {};
         main.appendChild(SNW.DomUtil.html`<div class="snw-error">${msg}</div>`);
     }
 
-    // 모바일/태블릿 화면에서만 페이지 이동 시 사이드바 닫기
     function _closeSidebarOnMobile() {
         if (window.innerWidth < 1024) {
             document.body.classList.remove('snw-sidebar-open');
@@ -103,8 +123,9 @@ window.SNW = window.SNW || {};
         if (_dispatching) return;
 
         const path = parseHash();
+        const originalHash = location.hash.replace(/^#/, '').split('?')[0] || '/home';
 
-        if (path === currentPath) return;
+        if (originalHash === currentPath) return;
 
         _dispatching = true;
         try {
@@ -113,17 +134,15 @@ window.SNW = window.SNW || {};
             const route = ROUTES[path];
             if (!SNW.LevelUtil.atLeast(route.level)) {
                 SNW.ToastUtil.warn(SNW.I18n.t('msg.accessDenied'));
-                location.hash = '/dashboard';
+                // 접근 거부만 예외적으로 리다이렉트
+                location.hash = '/home';
                 return;
             }
 
             if (currentPage && typeof currentPage.unmount === 'function') {
                 try {
                     const canLeave = currentPage.unmount();
-                    if (canLeave === false) {
-                        location.hash = currentPath;
-                        return;
-                    }
+                    if (canLeave === false) return;
                 } catch (e) {
                     SNW.LogUtil.error('[router] unmount failed', e);
                 }
@@ -148,17 +167,20 @@ window.SNW = window.SNW || {};
                 const qs = new URLSearchParams(location.hash.slice(qIdx + 1));
                 for (const [k, v] of qs.entries()) params[k] = v;
             }
+
             currentPage = new PageClass(main, params);
-            currentPath = path;
+            currentPath = originalHash;   // ★ 원본 해시 기준 (Fresh Start)
             await currentPage.mount();
 
+            // 사이드바 active 동기화
             document.querySelectorAll('#nav-menu a[data-route]').forEach(a => {
-                a.classList.toggle('is-active', a.getAttribute('data-route') === path);
+                const ar = a.getAttribute('data-route');
+                a.classList.toggle('is-active', path.startsWith(ar));
             });
-
-            // 하단 탭 바 active 동기화 추가
+            // 하단 탭 active 동기화
             document.querySelectorAll('.snw-bottom-nav__item').forEach(a => {
-                a.classList.toggle('is-active', a.getAttribute('data-route') === path);
+                const ar = a.getAttribute('data-route');
+                a.classList.toggle('is-active', path.startsWith(ar));
             });
 
         } catch (e) {
@@ -207,10 +229,6 @@ window.SNW = window.SNW || {};
         init() {
             window.addEventListener('hashchange', dispatch);
             document.addEventListener('snw:langchange', renderNavMenu);
-
-            // ⚠️ 사이드바 제어는 999.app.js에서 전담
-            // 라우터에서는 절대 건드리지 않음
-
             renderNavMenu();
             dispatch();
         },

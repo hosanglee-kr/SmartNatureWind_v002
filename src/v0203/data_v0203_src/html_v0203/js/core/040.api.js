@@ -351,21 +351,33 @@ window.SNW = window.SNW || {};
 		selectProfile(id) { return _fetch(SNW.CFG.API.profileSelect, { method: 'POST', body: { id } }); },
 		stopProfile() { return _fetch(SNW.CFG.API.profileStop, { method: 'POST' }); },
 
-		// --- Session (Stage 3 신규) ---
-		sessionStart(type, payload, trigger = 'MANUAL') {
+		// --- Session (Stage 5 신규: startSession 단일화) ---
+		startSession({ type, payload = {}, trigger } = {}) {
+			let finalTrigger = trigger;
+			if (!finalTrigger) {
+				if (type === 'AUTO_FULL')        finalTrigger = 'MANUAL_AUTO_FULL';
+				else if (type === 'AUTO_SELECT') finalTrigger = 'MANUAL_AUTO_SELECT';
+				else                             finalTrigger = 'MANUAL';
+			}
 			return _fetch(SNW.CFG.API.sessionStart, {
 				method: 'POST',
-				body: { type, payload, trigger }
+				body: { type, payload, trigger: finalTrigger }
 			});
 		},
 		startPlaylist(profileId) {
-			return this.sessionStart('PLAYLIST', { profileId });
+			return this.startSession({ type: 'PLAYLIST', payload: { profileId } });
 		},
 		startPreset(presetCode, styleCode) {
-			return this.sessionStart('PRESET', { presetCode, styleCode });
+			return this.startSession({ type: 'PRESET', payload: { presetCode, styleCode } });
 		},
 		startFixed(percent) {
-			return this.sessionStart('FIXED', { percent });
+			return this.startSession({ type: 'FIXED', payload: { percent } });
+		},
+		patchSessionRule(rule) {
+			return _fetch(SNW.CFG.API.sessionRule, {
+				method: 'PATCH',
+				body: { rule }
+			});
 		},
 		pauseSession() {
 			return _fetch(SNW.CFG.API.sessionPause, { method: 'POST' });

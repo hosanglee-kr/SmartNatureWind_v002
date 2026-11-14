@@ -39,6 +39,8 @@ window.SNW = window.SNW || {};
             reason: 'SCHEDULE_ACTIVE',
             reasonCode: 4,
             runSource: 1,
+            pauseReason: 0,
+            triggerRt: {},
             time: { valid: true, hour: 10, min: 30, wday: 2 },
             sensor: { tempC: 24.5, humidity: 55, motionActive: true },
             event: { ackRequired: false, holdUntilMs: 0, holdRemainMs: 0 },
@@ -346,10 +348,28 @@ window.SNW = window.SNW || {};
         //  - FIXED: percent → intensity 반영
         //  - sim.active = true (stopSession 이후 복귀 대응)
         // ======================================================
-        A.sessionStart = async (type, payload, trigger = 'MANUAL') => {
+        A.startSession = async (optsOrType, payloadArg, triggerArg) => {
+            let type, payload, trigger;
+            if (typeof optsOrType === 'object' && optsOrType !== null) {
+                type = optsOrType.type;
+                payload = optsOrType.payload || {};
+                trigger = optsOrType.trigger;
+            } else {
+                type = optsOrType;
+                payload = payloadArg || {};
+                trigger = triggerArg;
+            }
+            if (!trigger) {
+                if (type === 'AUTO_FULL')        trigger = 'MANUAL_AUTO_FULL';
+                else if (type === 'AUTO_SELECT') trigger = 'MANUAL_AUTO_SELECT';
+                else                             trigger = 'MANUAL';
+            }
+
             const isPlaylist = (type === 'PLAYLIST' || type === 1);
             const isPreset = (type === 'PRESET' || type === 2);
             const isFixed = (type === 'FIXED' || type === 3);
+            const isAutoFull = (type === 'AUTO_FULL' || type === 4);
+            const isAutoSelect = (type === 'AUTO_SELECT' || type === 5);
             const now = Date.now();
 
             // ─────────── ① physics 반영 ───────────
@@ -370,6 +390,23 @@ window.SNW = window.SNW || {};
                 runtime.sim.intensity = Math.max(0, Math.min(100, pct));
                 runtime.sim.variability = 0;
                 runtime.sim.gustFreq = 0;
+            } else if (isAutoFull) {
+                runtime.sim.presetCode = 'FOREST_CANOPY';
+                runtime.sim.styleCode = 'BALANCE';
+                const r = resolvePreset('FOREST_CANOPY', 'BALANCE');
+                runtime.sim.intensity = r.intensity;
+                runtime.sim.variability = r.variability;
+                runtime.sim.gustFreq = r.gustFreq;
+            } else if (isAutoSelect) {
+                if (payload.baseType === 'PRESET') {
+                    const pc = payload.presetCode || 'OCEAN';
+                    runtime.sim.presetCode = pc;
+                    runtime.sim.styleCode = 'BALANCE';
+                    const r = resolvePreset(pc, 'BALANCE');
+                    runtime.sim.intensity = r.intensity;
+                    runtime.sim.variability = r.variability;
+                    runtime.sim.gustFreq = r.gustFreq;
+                }
             }
 
             // ─────────── ② 세션 컨텍스트 ───────────
@@ -397,14 +434,22 @@ window.SNW = window.SNW || {};
                 }
             }
 
+            let sessionTypeNum = 1;
+            if (isPlaylist) sessionTypeNum = 1;
+            else if (isPreset) sessionTypeNum = 2;
+            else if (isFixed) sessionTypeNum = 3;
+            else if (isAutoFull) sessionTypeNum = 4;
+            else if (isAutoSelect) sessionTypeNum = 5;
+
             runtime.control.session = {
                 active: true,
-                type: isPlaylist ? 1 : (isPreset ? 2 : 3),
-                typeName: isPlaylist ? 'PLAYLIST' : (isPreset ? 'PRESET' : 'FIXED'),
-                trigger: trigger === 'SCHEDULE' ? 2 : 1,
+                type: sessionTypeNum,
+                typeName: isPlaylist ? 'PLAYLIST' : (isPreset ? 'PRESET' : (isFixed ? 'FIXED' : (isAutoFull ? 'AUTO_FULL' : 'AUTO_SELECT'))),
+                trigger: trigger.startsWith('SCHEDULE') ? 2 : 1,
+                triggerName: trigger,
                 state: 'ACTIVE',                                    // [6.3 N-13]
                 profileId, profileNo, profileName,
-                presetCode: (payload && payload.presetCode) || 'OCEAN',
+                presetCode: (payload && payload.presetCode) || (isAutoFull ? 'FOREST_CANOPY' : 'OCEAN'),
                 styleCode: (payload && payload.styleCode) || 'BALANCE',
                 percent: (payload && payload.percent) || 50,
                 currentStep: 1,
@@ -414,6 +459,7 @@ window.SNW = window.SNW || {};
                 currentStepDurationMs: stepDurationMs,                 // [6.3 신규]
                 loopCount: 0,
                 pausedAccumMs: 0,
+                rule: payload.rule || {},
             };
 
             if (SNW.Store) {
@@ -427,9 +473,16 @@ window.SNW = window.SNW || {};
 
             return { ok: true, result: 'session_started' };
         };
-        A.startPlaylist = async (profileId) => A.sessionStart('PLAYLIST', { profileId });
-        A.startPreset = async (p, s) => A.sessionStart('PRESET', { presetCode: p, styleCode: s });
-        A.startFixed = async (percent) => A.sessionStart('FIXED', { percent });
+        A.sessionStart = A.startSession;
+        A.patchSessionRule = async (rule) => {
+            if (runtime.control.session) {
+                runtime.control.session.rule = rule;
+            }
+            return { ok: true, result: 'rule_patched' };
+        };
+        A.startPlaylist = async (profileId) => A.startSession({ type: 'PLAYLIST', payload: { profileId } });
+        A.startPreset = async (p, s) => A.startSession({ type: 'PRESET', payload: { presetCode: p, styleCode: s } });
+        A.startFixed = async (percent) => A.startSession({ type: 'FIXED', payload: { percent } });
 
         // ======================================================
         // [Phase6 6.3b] pause/resume/stop — sim.active 동기 + 상태값 정합
@@ -967,8 +1020,9 @@ window.SNW = window.SNW || {};
                 override: { intensity: 85, variability: 70, gustFreq: 75 },
             },
             PIR_BLOCK: {
-                state: 'MOTION_BLOCKED', stateCode: 4,
-                reason: 'MOTION_NO_PRESENCE', reasonCode: 8,
+                state: 'ENV_PAUSED', stateCode: 7,
+                reason: 'ENV_PAUSED', reasonCode: 12,
+                pauseReason: 3,
                 active: false, motionActive: false,
             },
             AUTOOFF: {

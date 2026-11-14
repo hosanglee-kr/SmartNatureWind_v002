@@ -1,5 +1,5 @@
 
-/* ---- 000.const.js (8498 bytes) ---- */
+/* ---- 000.const.js (8614 bytes) ---- */
 // =========================================================
 // 000.const.js — 프론트엔드 상수 (변경 불변)
 // Layer 0 (기반) — 어떤 모듈도 참조하지 않음
@@ -58,9 +58,10 @@ window.SNW = window.SNW || {};
             1: { code: 'OVERRIDE',        icon: '✋', color: 'blue',   labelKey: 'fsm.override',       l1: true  },
             2: { code: 'PROFILE_RUN',     icon: '👤', color: 'green',  labelKey: 'fsm.profileRun',     l1: false },
             3: { code: 'SCHEDULE_RUN',    icon: '📅', color: 'cyan',   labelKey: 'fsm.scheduleRun',    l1: false },
-            4: { code: 'MOTION_BLOCKED',  icon: '🚫', color: 'yellow', labelKey: 'fsm.motionBlocked',  l1: true  },
+            4: { code: 'RESERVED_4',      icon: '⏸', color: 'gray',   labelKey: 'fsm.idle',           l1: false },
             5: { code: 'AUTOOFF_STOPPED', icon: '⏹', color: 'orange', labelKey: 'fsm.autoOffStopped', l1: true  },
-            6: { code: 'TIME_INVALID',    icon: '🕐', color: 'red',    labelKey: 'fsm.timeInvalid',    l1: false }
+            6: { code: 'TIME_INVALID',    icon: '🕐', color: 'red',    labelKey: 'fsm.timeInvalid',    l1: false },
+            7: { code: 'ENV_PAUSED',      icon: '⏸', color: 'orange', labelKey: 'fsm.envPaused',      l1: true  }
         },
 
         // =====================================================
@@ -188,7 +189,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 010.config.js (7264 bytes) ---- */
+/* ---- 010.config.js (7306 bytes) ---- */
 // =========================================================
 // 010.config.js — 프론트엔드 런타임 설정
 // Layer 0 (기반) — SNW.C 참조만 허용
@@ -234,6 +235,7 @@ window.SNW = window.SNW || {};
 			sessionResume: '/api/v001/session/resume',
 			sessionStop: '/api/v001/session/stop',
 			sessionCurrent: '/api/v001/session/current',
+			sessionRule: '/api/v001/session/rule',
 			sessionSchOverride: '/api/v001/session/schedule-override',
 			overrideFixed: '/api/v001/control/override/fixed',
 			overridePreset: '/api/v001/control/override/preset',
@@ -403,7 +405,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 020.i18n.js (72484 bytes) ---- */
+/* ---- 020.i18n.js (82314 bytes) ---- */
 // =========================================================
 // 020.i18n.js — 다국어 완전판 (ko/en)
 // =========================================================
@@ -1140,6 +1142,84 @@ window.SNW = window.SNW || {};
             'schedule.modeAdvanced': '고급 작곡 예약',
             'schedule.simpleSaved': '스케줄이 등록되었습니다.',
             'ai.inputPlaceholder': '자연풍 제어나 궁금한 점을 물어보세요...',
+            // ═══════════ [Stage 5] 신규 키 (KO) ═══════════
+            'home.oneTouchStart': '⚡ 지금 시작',
+            'home.scenario.sleep': '🌙 수면',
+            'home.scenario.office': '💼 사무',
+            'home.scenario.study': '📚 독서',
+            'home.scenario.rest': '🛋️ 휴식',
+            'home.scenario.exercise': '🏃 운동',
+            'home.scenario.baby': '👶 유아',
+            'home.scenario.pet': '🐾 반려',
+            'home.scenario.autoFull': '✨ AI 스마트 쾌적',
+            'home.scenario.autoSelect': '🎯 취향 맞춤 Auto',
+            'home.scenario.skipConfirm': '☑ 다음부터 이 확인창 없이 바로 시작',
+            'home.scenario.sleepMeta': '8h타이머·22°C정지',
+            'home.scenario.officeMeta': 'DI·PIR연동',
+            'home.scenario.studyMeta': '미풍·집중스타일',
+            'home.scenario.restMeta': '밸런스·자연풍',
+            'home.scenario.exerciseMeta': '강풍·돌풍활력',
+            'home.scenario.babyMeta': '24°C정지·초미풍',
+            'home.scenario.petMeta': 'PIR감지·온도감시',
+            'home.scenario.autoFullMeta': '실시간 100% 자율',
+            'home.scenario.autoSelectMeta': '바람고정·세기자동',
+            'session.autoFull': '✨ AI 스마트 쾌적',
+            'session.autoSelect': '🎯 취향 맞춤 Auto',
+            'session.autoSelectPrompt': '내가 원하는 바람 기준 선택',
+            'session.autoSelectPreset': '프리셋',
+            'session.autoSelectPlaylist': '플레이리스트',
+            'session.autoSelectHint': '※ 선택한 바람을 유지하며, 날씨에 따라 바람 스타일과 팬 세기만 자동 조절됩니다',
+            'session.autoFullHint1': '· 실내 온도·습도·불쾌지수 실시간 자동 감지',
+            'session.autoFullHint2': '· 5분마다 최적의 프리셋 & 스타일 자동 전환',
+            'session.autoFullHint3': '· 상시 쾌적 감시 (더워지면 스스로 재가동)',
+            'session.autoFullHint4': '· 사용자가 슬라이더 조작 시 수동 전환',
+            'fsm.envPaused': '⏸ 환경 일시정지',
+            'fsm.pauseReasonMotion': '👤 사람 없음',
+            'fsm.pauseReasonTempLow': '🌡️ 온도 낮음',
+            'fsm.pauseReasonDiLow': '☀️ 불쾌지수 낮음',
+            'fsm.pauseResumeHint.temp': '현재 {cur}°C / 재개 {resume}°C 대기 중',
+            'fsm.pauseResumeHint.di': '현재 DI {cur} / 재개 {resume} 대기 중',
+            'fsm.pauseResumeHint.motion': '재실 감지 시 자동 재개',
+            'rule.template.deepSleep': '🌙 숙면 권장',
+            'rule.template.babySafe': '👶 유아 안심',
+            'rule.template.officeFocus': '💼 사무 집중',
+            'rule.sectionPause': '⏸ 일시정지 (자동 재개)',
+            'rule.sectionStop': '⏹ 완전 종료 (사용자 확인)',
+            'rule.sectionComfort': '✨ AI 스마트 쾌적',
+            'rule.pir.enabled': '사람 없으면 멈춤',
+            'rule.tempLow.enabled': '온도 낮음',
+            'rule.tempLow.threshold': '임계',
+            'rule.tempLow.modePause': '일시정지 (자동 재개)',
+            'rule.tempLow.modeStop': '완전 종료 (사용자 확인 필요)',
+            'rule.tempLow.hysteresis': '재개 임계',
+            'rule.diLow.enabled': '불쾌지수 낮음',
+            'rule.timer.enabled': '타이머',
+            'rule.timer.suffix': '분 후 종료',
+            'rule.offTime.enabled': '예약 시각',
+            'rule.offTime.suffix': '종료',
+            'rule.smartComfort.interval': '자동 개입',
+            'rule.smartComfort.alwaysOn': '상시 쾌적 감시 (더워지면 스스로 켜기)',
+            'rule.tipModes': '⦿일시정지 = 자동 재개 / ○완전 종료 = 사용자 확인까지 유지',
+            'rule.tipBabySafe': '유아방·수면에는 완전 종료를 권장합니다',
+            'rule.validate.saveDisabled': '규칙 입력값을 확인하세요',
+            'auto.rules.globalSection': '🌐 전역 기본 규칙',
+            'auto.rules.profileSection': '📋 프로파일별 규칙',
+            'auto.rules.scheduleSection': '📅 스케줄별 규칙',
+            'auto.rules.inheritHint': '프로파일 규칙 상속',
+            'auto.rules.customHint': '직접 설정',
+            'nav.wind': '바람 만들기',
+            'nav.wind.studio': '🎨 작곡',
+            'nav.wind.simulation': '🎮 체험실',
+            'nav.wind.playlist': '📋 플레이리스트',
+            'nav.wind.presets': '🌿 프리셋 관리',
+            'nav.groupDaily': '일상',
+            'nav.groupControl': '주요 제어',
+            'nav.groupSystem': '시스템',
+            'monitor.timeline.running': '■ 가동',
+            'monitor.timeline.paused': '■ 환경 일시정지',
+            'monitor.timeline.idle': '■ 대기',
+            'chart.yAxis.fixedHint': 'Y축 0.0~8.0 m/s 고정',
+
 
         },
 
@@ -1821,6 +1901,84 @@ window.SNW = window.SNW || {};
             'schedule.modeAdvanced': 'Advanced Schedule',
             'schedule.simpleSaved': 'Schedule has been saved.',
             'ai.inputPlaceholder': 'Ask AI to control wind or anything...',
+            // ═══════════ [Stage 5] 신규 키 (EN) ═══════════
+            'home.oneTouchStart': '⚡ Quick Start',
+            'home.scenario.sleep': '🌙 Sleep',
+            'home.scenario.office': '💼 Office',
+            'home.scenario.study': '📚 Study',
+            'home.scenario.rest': '🛋️ Rest',
+            'home.scenario.exercise': '🏃 Exercise',
+            'home.scenario.baby': '👶 Baby',
+            'home.scenario.pet': '🐾 Pet',
+            'home.scenario.autoFull': '✨ AI Smart Comfort',
+            'home.scenario.autoSelect': '🎯 Custom Auto',
+            'home.scenario.skipConfirm': '☑ Skip this confirmation next time',
+            'home.scenario.sleepMeta': '8h timer · 22°C stop',
+            'home.scenario.officeMeta': 'DI · PIR linked',
+            'home.scenario.studyMeta': 'Gentle · Focus style',
+            'home.scenario.restMeta': 'Balance · Natural',
+            'home.scenario.exerciseMeta': 'Strong · Gusty',
+            'home.scenario.babyMeta': '24°C stop · Ultra gentle',
+            'home.scenario.petMeta': 'PIR · Temp monitoring',
+            'home.scenario.autoFullMeta': '100% Autonomous',
+            'home.scenario.autoSelectMeta': 'Fixed base · Auto strength',
+            'session.autoFull': '✨ AI Smart Comfort',
+            'session.autoSelect': '🎯 Custom Auto',
+            'session.autoSelectPrompt': 'Select your preferred base',
+            'session.autoSelectPreset': 'Preset',
+            'session.autoSelectPlaylist': 'Playlist',
+            'session.autoSelectHint': '※ Base wind stays fixed; style and strength auto-adjust to weather',
+            'session.autoFullHint1': '· Real-time temp · humidity · DI sensing',
+            'session.autoFullHint2': '· Optimal preset switch every 5 minutes',
+            'session.autoFullHint3': '· Continuous comfort monitoring (auto-restart if hot)',
+            'session.autoFullHint4': '· Switch to manual on user interaction',
+            'fsm.envPaused': '⏸ Environment Paused',
+            'fsm.pauseReasonMotion': '👤 No presence',
+            'fsm.pauseReasonTempLow': '🌡️ Temp too low',
+            'fsm.pauseReasonDiLow': '☀️ DI too low',
+            'fsm.pauseResumeHint.temp': 'Current {cur}°C / Resume at {resume}°C',
+            'fsm.pauseResumeHint.di': 'Current DI {cur} / Resume at {resume}',
+            'fsm.pauseResumeHint.motion': 'Auto-resume on presence detection',
+            'rule.template.deepSleep': '🌙 Deep Sleep',
+            'rule.template.babySafe': '👶 Baby Safe',
+            'rule.template.officeFocus': '💼 Office Focus',
+            'rule.sectionPause': '⏸ Pause (Auto-resume)',
+            'rule.sectionStop': '⏹ Stop (User Confirm)',
+            'rule.sectionComfort': '✨ AI Smart Comfort',
+            'rule.pir.enabled': 'Pause when no presence',
+            'rule.tempLow.enabled': 'Low temperature',
+            'rule.tempLow.threshold': 'Threshold',
+            'rule.tempLow.modePause': 'Pause (Auto-resume)',
+            'rule.tempLow.modeStop': 'Stop (User Confirm required)',
+            'rule.tempLow.hysteresis': 'Resume threshold',
+            'rule.diLow.enabled': 'Low DI',
+            'rule.timer.enabled': 'Timer',
+            'rule.timer.suffix': 'min later stop',
+            'rule.offTime.enabled': 'Scheduled stop',
+            'rule.offTime.suffix': 'stop',
+            'rule.smartComfort.interval': 'Auto intervention',
+            'rule.smartComfort.alwaysOn': 'Always-on comfort (auto-restart if hot)',
+            'rule.tipModes': '⦿Pause = auto-resume / ○Stop = persist until user confirm',
+            'rule.tipBabySafe': 'Use Stop mode for baby room & sleep',
+            'rule.validate.saveDisabled': 'Check rule inputs',
+            'auto.rules.globalSection': '🌐 Global Default Rules',
+            'auto.rules.profileSection': '📋 Per-Profile Rules',
+            'auto.rules.scheduleSection': '📅 Per-Schedule Rules',
+            'auto.rules.inheritHint': 'Inherit profile rule',
+            'auto.rules.customHint': 'Custom',
+            'nav.wind': 'Wind Studio',
+            'nav.wind.studio': '🎨 Studio',
+            'nav.wind.simulation': '🎮 Simulation',
+            'nav.wind.playlist': '📋 Playlist',
+            'nav.wind.presets': '🌿 Presets',
+            'nav.groupDaily': 'Daily',
+            'nav.groupControl': 'Main Control',
+            'nav.groupSystem': 'System',
+            'monitor.timeline.running': '■ Running',
+            'monitor.timeline.paused': '■ Env. Paused',
+            'monitor.timeline.idle': '■ Idle',
+            'chart.yAxis.fixedHint': 'Y-axis fixed 0.0~8.0 m/s',
+
         }
 
     };
@@ -2640,7 +2798,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 040.api.js (16941 bytes) ---- */
+/* ---- 040.api.js (17430 bytes) ---- */
 // =========================================================
 // 040.api.js — SNW.Api (REST 클라이언트)
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -2994,21 +3152,33 @@ window.SNW = window.SNW || {};
 		selectProfile(id) { return _fetch(SNW.CFG.API.profileSelect, { method: 'POST', body: { id } }); },
 		stopProfile() { return _fetch(SNW.CFG.API.profileStop, { method: 'POST' }); },
 
-		// --- Session (Stage 3 신규) ---
-		sessionStart(type, payload, trigger = 'MANUAL') {
+		// --- Session (Stage 5 신규: startSession 단일화) ---
+		startSession({ type, payload = {}, trigger } = {}) {
+			let finalTrigger = trigger;
+			if (!finalTrigger) {
+				if (type === 'AUTO_FULL')        finalTrigger = 'MANUAL_AUTO_FULL';
+				else if (type === 'AUTO_SELECT') finalTrigger = 'MANUAL_AUTO_SELECT';
+				else                             finalTrigger = 'MANUAL';
+			}
 			return _fetch(SNW.CFG.API.sessionStart, {
 				method: 'POST',
-				body: { type, payload, trigger }
+				body: { type, payload, trigger: finalTrigger }
 			});
 		},
 		startPlaylist(profileId) {
-			return this.sessionStart('PLAYLIST', { profileId });
+			return this.startSession({ type: 'PLAYLIST', payload: { profileId } });
 		},
 		startPreset(presetCode, styleCode) {
-			return this.sessionStart('PRESET', { presetCode, styleCode });
+			return this.startSession({ type: 'PRESET', payload: { presetCode, styleCode } });
 		},
 		startFixed(percent) {
-			return this.sessionStart('FIXED', { percent });
+			return this.startSession({ type: 'FIXED', payload: { percent } });
+		},
+		patchSessionRule(rule) {
+			return _fetch(SNW.CFG.API.sessionRule, {
+				method: 'PATCH',
+				body: { rule }
+			});
 		},
 		pauseSession() {
 			return _fetch(SNW.CFG.API.sessionPause, { method: 'POST' });
@@ -3487,67 +3657,85 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 070.router.js (8548 bytes) ---- */
+/* ---- 070.router.js (10465 bytes) ---- */
 // =========================================================
-// 070.router.js — SNW.Router (해시 SPA 라우터)
+// core/070.router.js — Fresh Start 라우터
+// Layer 2 (Service) — Alias/리다이렉트 완전 배제
+// 화이트리스트 외 → /home 렌더링 (URL 유지, location.hash 재대입 없음)
 // =========================================================
 window.SNW = window.SNW || {};
 (function (SNW) {
     'use strict';
 
+    // ═══════════════════════════════════════════════════════════
+    // [Phase 1] Fresh Start — 이전 URL 완전 폐기
+    //  - ROUTES 화이트리스트 외 모든 해시 → '/home' fallback
+    //  - location.hash 재대입 최소화 (접근 거부만 예외)
+    //  - 뒤로가기 히스토리 오염 0
+    // ═══════════════════════════════════════════════════════════
     const ROUTES = {
-        '/dashboard': { page: 'dashboard', level: 'L1' },
-        '/ai': { page: 'ai', level: 'L2' }, // [Stage 10] L4 -> L2 격상
-        '/automation': { page: 'automation', params: { tab: 'studio' }, level: 'L2' },
-        '/automation/studio': { page: 'automation', params: { tab: 'studio' }, level: 'L2' },
-        '/automation/playlist': { page: 'automation', params: { tab: 'playlist' }, level: 'L2' },
-        '/automation/schedule': { page: 'automation', params: { tab: 'schedule' }, level: 'L2' },
-        '/automation/timer': { page: 'automation', params: { tab: 'timer' }, level: 'L2' },
-        '/chart': { page: 'chart', level: 'L2' },
-        '/sensors': { page: 'sensors', level: 'L2' },
-        '/monitor': { page: 'monitor', level: 'L2' }, // [Phase5 5.8]
-        '/simulation': { page: 'simulation', level: 'L3' },
-        '/windprofile': { page: 'windprofile', level: 'L3' },
-        '/settings': { page: 'settings', level: 'L2' }, // [Stage 10] L3 -> L2 (인터페이스 모드/언어 변경 허용)
-        '/network': { page: 'network', level: 'L3' },
-        '/logs': { page: 'logs', level: 'L3' },
-        '/diagnostics': { page: 'diagnostics', level: 'L4' },
-        '/firmware': { page: 'firmware', level: 'L4' },
-        '/info': { page: 'info', level: 'L1' }
+        // ─── L1 일상 (홈 3탭) ───
+        '/home':                    { page: 'Dashboard', params: { tab: 'control' }, level: 'L1' },
+        '/home/control':            { page: 'Dashboard', params: { tab: 'control' }, level: 'L1' },
+        '/home/env':                { page: 'Dashboard', params: { tab: 'env' },     level: 'L1' },
+        '/home/preset':             { page: 'Dashboard', params: { tab: 'preset' },  level: 'L1' },
+
+        // ─── L2 바람 만들기 (4탭) ───
+        '/wind':                    { page: 'Automation', params: { tab: 'studio' },     level: 'L2' },
+        '/wind/studio':             { page: 'Automation', params: { tab: 'studio' },     level: 'L2' },
+        '/wind/simulation':         { page: 'Automation', params: { tab: 'simulation' }, level: 'L2' },
+        '/wind/playlist':           { page: 'Automation', params: { tab: 'playlist' },   level: 'L2' },
+        '/wind/presets':            { page: 'Windprofile', level: 'L3' },
+
+        // ─── L2 자동화 (3탭) ───
+        '/automation':              { page: 'Automation', params: { tab: 'schedule' }, level: 'L2' },
+        '/automation/schedule':     { page: 'Automation', params: { tab: 'schedule' }, level: 'L2' },
+        '/automation/timer':        { page: 'Automation', params: { tab: 'timer' },    level: 'L2' },
+        '/automation/rules':        { page: 'Automation', params: { tab: 'rules' },    level: 'L2' },
+
+        // ─── L2 AI ───
+        '/ai':                      { page: 'AI', level: 'L2' },
+
+        // ─── L2 모니터 (4탭) ───
+        '/monitor':                 { page: 'Monitor', level: 'L2' },
+        '/monitor/chart':           { page: 'Chart',   level: 'L2' },
+        '/monitor/sensors':         { page: 'Sensors', level: 'L2' },
+        '/monitor/history':         { page: 'Monitor', level: 'L2' },
+        '/monitor/logs':            { page: 'Logs',    level: 'L3' },
+
+        // ─── L3 설정 (5탭) ───
+        '/settings':                { page: 'Settings',    params: { tab: 'general' },  level: 'L2' },
+        '/settings/general':        { page: 'Settings',    params: { tab: 'general' },  level: 'L2' },
+        '/settings/network':        { page: 'Network',     params: { tab: 'network' },  level: 'L3' },
+        '/settings/hardware':       { page: 'Settings',    params: { tab: 'hardware' }, level: 'L2' },
+        '/settings/firmware':       { page: 'Firmware',                                 level: 'L4' },
+        '/settings/diagnostics':    { page: 'Diagnostics',                              level: 'L4' },
     };
 
-
-
+    // ─── 사이드바 그룹 (3개 최상위 그룹) ───
     const NAV_GROUPS = [
         {
-            key: 'nav.groupControl',
+            key: 'nav.groupDaily',
             items: [
-                { path: '/dashboard', key: 'nav.dashboard', icon: '🏠', minLevel: 'L1' },
-                { path: '/ai', key: 'nav.ai', icon: '✨', minLevel: 'L2' },
-                { path: '/chart', key: 'nav.chart', icon: '📈', minLevel: 'L2' },
-                { path: '/automation', key: 'nav.automation', icon: '🎨', minLevel: 'L2' },
-                { path: '/sensors', key: 'nav.sensors', icon: '🌡️', minLevel: 'L2' },
-                { path: '/monitor', key: 'nav.monitor', icon: '📺', minLevel: 'L2' }
+                { path: '/home', key: 'nav.home', icon: '🏠', minLevel: 'L1' },
             ]
         },
         {
-            key: 'nav.groupSettings',
+            key: 'nav.groupControl',
             items: [
-                { path: '/settings', key: 'nav.settings', icon: '⚙️', minLevel: 'L2' },
-                { path: '/network', key: 'nav.network', icon: '📶', minLevel: 'L3' },
-                { path: '/windprofile', key: 'nav.windprofile', icon: '🌬️', minLevel: 'L3' },
-                { path: '/simulation', key: 'nav.simulation', icon: '📊', minLevel: 'L3' }
+                { path: '/wind',       key: 'nav.wind',       icon: '🌬️', minLevel: 'L2' },
+                { path: '/automation', key: 'nav.automation', icon: '⚙️', minLevel: 'L2' },
+                { path: '/ai',         key: 'nav.ai',         icon: '✨', minLevel: 'L2' },
+                { path: '/monitor',    key: 'nav.monitor',    icon: '📊', minLevel: 'L2' },
             ]
         },
         {
             key: 'nav.groupSystem',
             items: [
-                { path: '/logs', key: 'nav.logs', icon: '📜', minLevel: 'L3' },
-                { path: '/diagnostics', key: 'nav.diagnostics', icon: '🔧', minLevel: 'L4' },
-                { path: '/firmware', key: 'nav.firmware', icon: '💾', minLevel: 'L4' },
-                { path: '/info', key: 'nav.info', icon: 'ℹ️', minLevel: 'L1' }
+                { path: '/settings', key: 'nav.settings', icon: '🔧', minLevel: 'L2' },
             ]
-        }];
+        },
+    ];
 
     let currentPage = null;
     let currentPath = null;
@@ -3559,9 +3747,12 @@ window.SNW = window.SNW || {};
         return s.charAt(0).toUpperCase() + s.slice(1);
     }
 
+    // ═══════════════════════════════════════════════════════════
+    // Fresh Start: 화이트리스트 외 → '/home' (URL 유지)
+    // ═══════════════════════════════════════════════════════════
     function parseHash() {
-        const raw = location.hash.replace(/^#/, '').split('?')[0] || '/dashboard';
-        return ROUTES[raw] ? raw : '/dashboard';
+        const raw = location.hash.replace(/^#/, '').split('?')[0] || '/home';
+        return ROUTES[raw] ? raw : '/home';
     }
 
     function _clearMain() {
@@ -3582,7 +3773,6 @@ window.SNW = window.SNW || {};
         main.appendChild(SNW.DomUtil.html`<div class="snw-error">${msg}</div>`);
     }
 
-    // 모바일/태블릿 화면에서만 페이지 이동 시 사이드바 닫기
     function _closeSidebarOnMobile() {
         if (window.innerWidth < 1024) {
             document.body.classList.remove('snw-sidebar-open');
@@ -3593,8 +3783,9 @@ window.SNW = window.SNW || {};
         if (_dispatching) return;
 
         const path = parseHash();
+        const originalHash = location.hash.replace(/^#/, '').split('?')[0] || '/home';
 
-        if (path === currentPath) return;
+        if (originalHash === currentPath) return;
 
         _dispatching = true;
         try {
@@ -3603,17 +3794,15 @@ window.SNW = window.SNW || {};
             const route = ROUTES[path];
             if (!SNW.LevelUtil.atLeast(route.level)) {
                 SNW.ToastUtil.warn(SNW.I18n.t('msg.accessDenied'));
-                location.hash = '/dashboard';
+                // 접근 거부만 예외적으로 리다이렉트
+                location.hash = '/home';
                 return;
             }
 
             if (currentPage && typeof currentPage.unmount === 'function') {
                 try {
                     const canLeave = currentPage.unmount();
-                    if (canLeave === false) {
-                        location.hash = currentPath;
-                        return;
-                    }
+                    if (canLeave === false) return;
                 } catch (e) {
                     SNW.LogUtil.error('[router] unmount failed', e);
                 }
@@ -3638,17 +3827,20 @@ window.SNW = window.SNW || {};
                 const qs = new URLSearchParams(location.hash.slice(qIdx + 1));
                 for (const [k, v] of qs.entries()) params[k] = v;
             }
+
             currentPage = new PageClass(main, params);
-            currentPath = path;
+            currentPath = originalHash;   // ★ 원본 해시 기준 (Fresh Start)
             await currentPage.mount();
 
+            // 사이드바 active 동기화
             document.querySelectorAll('#nav-menu a[data-route]').forEach(a => {
-                a.classList.toggle('is-active', a.getAttribute('data-route') === path);
+                const ar = a.getAttribute('data-route');
+                a.classList.toggle('is-active', path.startsWith(ar));
             });
-
-            // 하단 탭 바 active 동기화 추가
+            // 하단 탭 active 동기화
             document.querySelectorAll('.snw-bottom-nav__item').forEach(a => {
-                a.classList.toggle('is-active', a.getAttribute('data-route') === path);
+                const ar = a.getAttribute('data-route');
+                a.classList.toggle('is-active', path.startsWith(ar));
             });
 
         } catch (e) {
@@ -3697,10 +3889,6 @@ window.SNW = window.SNW || {};
         init() {
             window.addEventListener('hashchange', dispatch);
             document.addEventListener('snw:langchange', renderNavMenu);
-
-            // ⚠️ 사이드바 제어는 999.app.js에서 전담
-            // 라우터에서는 절대 건드리지 않음
-
             renderNavMenu();
             dispatch();
         },
@@ -3708,3 +3896,4 @@ window.SNW = window.SNW || {};
         current() { return currentPath; }
     };
 })(window.SNW);
+

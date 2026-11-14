@@ -200,6 +200,67 @@ SNW.Page = SNW.Page || {};
                         <button type="button" class="snw-btn snw-btn-primary" data-action="time-save">${SNW.I18n.t('network.saveTime')}</button>
                     </div>
                 `;
+
+                // [Stage 5] WebSocket 통신 설정 흡수
+                try {
+                    const wsConf = data?.system?.webSocket || {};
+                    const wsChArr = wsConf.wsChConfig || [
+                        { chIdx: 0, chName: 'state',   chIntervalMs: 800,  priority: 0 },
+                        { chIdx: 1, chName: 'metrics', chIntervalMs: 1500, priority: 1 },
+                        { chIdx: 2, chName: 'chart',   chIntervalMs: 1200, priority: 2 },
+                        { chIdx: 3, chName: 'summary', chIntervalMs: 1500, priority: 3 },
+                    ];
+                    const wsEtc = wsConf.wsEtcConfig || {};
+
+                    slot.innerHTML += `
+                        <details style="margin-top:16px;border:1px dashed var(--snw-border,#2f3844);border-radius:6px;padding:12px;">
+                            <summary style="cursor:pointer;font-weight:600;font-size:13px;">
+                                ⚙ 고급 WebSocket 통신 설정
+                            </summary>
+                            <div style="margin-top:12px;">
+                                ${wsChArr.map((ch, i) => `
+                                    <div style="display:grid;grid-template-columns:80px 1fr 1fr;gap:8px;margin-bottom:6px;font-size:12px;">
+                                        <span style="color:var(--snw-text-dim,#8b949e);">${ch.chName || 'ch' + i}</span>
+                                        <input type="number" data-ws-itv="${i}" value="${ch.chIntervalMs}" placeholder="interval(ms)"
+                                               style="padding:4px 8px;background:var(--snw-surface-2,#12161c);border:1px solid var(--snw-border,#2f3844);color:var(--snw-text,#e6edf3);border-radius:4px;">
+                                        <input type="number" data-ws-prio="${i}" value="${ch.priority}" placeholder="priority"
+                                               style="padding:4px 8px;background:var(--snw-surface-2,#12161c);border:1px solid var(--snw-border,#2f3844);color:var(--snw-text,#e6edf3);border-radius:4px;">
+                                    </div>
+                                `).join('')}
+                                <div class="snw-form-row" style="margin-top:8px;">
+                                    <label>Chart Large Bytes</label>
+                                    <input type="number" data-ws-chartlarge value="${wsEtc.chartLargeBytes || 3500}"
+                                           style="padding:4px 8px;background:var(--snw-surface-2,#12161c);border:1px solid var(--snw-border,#2f3844);color:var(--snw-text,#e6edf3);border-radius:4px;">
+                                </div>
+                                <button type="button" class="snw-btn snw-btn--sm" data-action="save-ws" style="margin-top:8px;">WebSocket 설정 저장</button>
+                            </div>
+                        </details>
+                    `;
+
+                    // 저장 버튼
+                    const btnSaveWs = slot.querySelector('[data-action="save-ws"]');
+                    if (btnSaveWs) {
+                        btnSaveWs.onclick = async () => {
+                            const newChArr = wsChArr.map((ch, i) => ({
+                                chIdx: ch.chIdx,
+                                chName: ch.chName,
+                                chIntervalMs: Number(slot.querySelector(`[data-ws-itv="${i}"]`).value),
+                                priority: Number(slot.querySelector(`[data-ws-prio="${i}"]`).value),
+                            }));
+                            const newEtc = {
+                                ...wsEtc,
+                                chartLargeBytes: Number(slot.querySelector('[data-ws-chartlarge]').value),
+                            };
+                            try {
+                                await SNW.Api.patchSystem({ system: { webSocket: { wsChConfig: newChArr, wsEtcConfig: newEtc } } });
+                                await SNW.Api.saveConfig();
+                                if (SNW.ToastUtil) SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
+                            } catch (e) {
+                                if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '저장 실패');
+                            }
+                        };
+                    }
+                } catch (e) {}
             } catch (e) {
                 SNW.LogUtil.warn('[Network] time config load 실패', e);
             }

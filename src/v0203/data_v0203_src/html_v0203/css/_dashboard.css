@@ -346,3 +346,124 @@
     cursor: not-allowed;
 }
 
+/* ============================================================
+ * [Stage 5] 시나리오 원터치 9종 (3×3 그리드) & is-running
+ * ============================================================ */
+.snw-scenario-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+@media (max-width: 480px) {
+    .snw-scenario-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+    }
+}
+
+.snw-scenario-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 6px;
+    min-height: 84px;
+    background: var(--snw-surface-2);
+    border: 1.5px solid var(--snw-border);
+    border-radius: var(--snw-radius);
+    color: var(--snw-text);
+    cursor: pointer;
+    transition: transform 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    text-align: center;
+    position: relative;
+}
+
+.snw-scenario-card:hover {
+    border-color: var(--snw-primary);
+    transform: translateY(-2px);
+}
+
+.snw-scenario-card:active {
+    transform: scale(0.96);
+}
+
+.snw-scenario-card__icon {
+    font-size: 22px;
+    line-height: 1;
+}
+
+.snw-scenario-card__name {
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.snw-scenario-card__meta {
+    font-size: 10px;
+    color: var(--snw-text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+/* 3색 라이프스타일 컬러 코딩 */
+.snw-scenario-card--lavender  { background: rgba(139, 122, 216, 0.12); border-color: rgba(139, 122, 216, 0.4); }
+.snw-scenario-card--mint      { background: rgba(46, 196, 182, 0.12);  border-color: rgba(46, 196, 182, 0.4); }
+.snw-scenario-card--emerald   { background: rgba(63, 185, 80, 0.12);   border-color: rgba(63, 185, 80, 0.4); }
+.snw-scenario-card--amber     { background: rgba(240, 136, 62, 0.12);  border-color: rgba(240, 136, 62, 0.4); }
+.snw-scenario-card--paleblue  { background: rgba(74, 158, 255, 0.12);  border-color: rgba(74, 158, 255, 0.4); }
+.snw-scenario-card--cyan      { background: rgba(45, 212, 191, 0.12);  border-color: rgba(45, 212, 191, 0.4); }
+
+.snw-scenario-card--lavender:hover { border-color: rgba(139, 122, 216, 0.9); }
+.snw-scenario-card--mint:hover     { border-color: rgba(46, 196, 182, 0.9); }
+.snw-scenario-card--emerald:hover  { border-color: rgba(63, 185, 80, 0.9); }
+.snw-scenario-card--amber:hover    { border-color: rgba(240, 136, 62, 0.9); }
+.snw-scenario-card--paleblue:hover { border-color: rgba(74, 158, 255, 0.9); }
+.snw-scenario-card--cyan:hover     { border-color: rgba(45, 212, 191, 0.9); }
+
+/* is-running 활성 상태 애니메이션 */
+.snw-scenario-card.is-running {
+    border-color: var(--snw-primary, #4a9eff) !important;
+    background: rgba(74, 158, 255, 0.22) !important;
+    box-shadow: 0 0 12px rgba(74, 158, 255, 0.35);
+}
+.snw-scenario-card.is-running::after {
+    content: "● 가동 중";
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--snw-primary, #4a9eff);
+}
+
+/* AUTOOFF_STOPPED 야간 리포트 카드 */
+.snw-autooff-report {
+    background: rgba(240, 136, 62, 0.12);
+    border: 1.5px solid var(--snw-warn, #d29922);
+    border-radius: var(--snw-radius, 8px);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.snw-autooff-report__info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+    color: var(--snw-text);
+}
+.snw-autooff-report__desc {
+    font-size: 11px;
+    color: var(--snw-text-dim);
+}
+
+

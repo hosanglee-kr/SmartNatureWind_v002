@@ -43,6 +43,7 @@ window.SNW = window.SNW || {};
 			sessionResume: '/api/v001/session/resume',
 			sessionStop: '/api/v001/session/stop',
 			sessionCurrent: '/api/v001/session/current',
+			sessionRule: '/api/v001/session/rule',
 			sessionSchOverride: '/api/v001/session/schedule-override',
 			overrideFixed: '/api/v001/control/override/fixed',
 			overridePreset: '/api/v001/control/override/preset',

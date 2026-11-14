@@ -52,8 +52,9 @@ SNW.Page = SNW.Page || {};
 
                 slot.innerHTML = `
                     <h3>FSM State</h3>
-                    <div class="snw-kv"><span>state</span><b>${ctl.state || '-'}</b></div>
-                    <div class="snw-kv"><span>reason</span><b>${ctl.reason || '-'}</b></div>
+                    <div class="snw-kv"><span>state</span><b>${ctl.state || '-'} (${ctl.stateCode ?? '-'})</b></div>
+                    <div class="snw-kv"><span>reason</span><b>${ctl.reason || '-'} (${ctl.reasonCode ?? '-'})</b></div>
+                    <div class="snw-kv"><span>pauseReason</span><b>${ctl.pauseReason ?? '-'}</b></div>
                     <div class="snw-kv"><span>runSource</span><b>${ctl.runSource ?? '-'}</b></div>
                     <div class="snw-kv"><span>profileMode</span><b>${ctl.profileMode ? 'ON' : 'OFF'}</b></div>
                     

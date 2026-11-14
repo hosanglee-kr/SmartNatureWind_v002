@@ -121,15 +121,15 @@ window.SNW = window.SNW || {};
                             </button>
                         </div>
                         <label class="snw-step-field snw-step-field--full">
-                            <span>강도 <b data-slot="ovr-int-label">${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}%</b></span>
+                            <span>바람 세기 (강도) <b data-slot="ovr-int-label">${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}%</b></span>
                             <input type="range" data-field="ovrIntensity" min="0" max="100" value="${ovr.windIntensity >= 0 ? ovr.windIntensity : 70}">
                         </label>
                         <label class="snw-step-field snw-step-field--full">
-                            <span>변동성 <b data-slot="ovr-var-label">${ovr.windVariability >= 0 ? ovr.windVariability : 50}%</b></span>
+                            <span>강약 변화폭 (변동성) <small style="color:var(--snw-text-dim);">[잔잔함 ↔ 역동적]</small> <b data-slot="ovr-var-label">${ovr.windVariability >= 0 ? ovr.windVariability : 50}%</b></span>
                             <input type="range" data-field="ovrVariability" min="0" max="100" value="${ovr.windVariability >= 0 ? ovr.windVariability : 50}">
                         </label>
                         <label class="snw-step-field snw-step-field--full">
-                            <span>돌풍 <b data-slot="ovr-gust-label">${ovr.gustFrequency >= 0 ? ovr.gustFrequency : 45}%</b></span>
+                            <span>산들바람 빈도 (열기포/돌풍) <b data-slot="ovr-gust-label">${ovr.gustFrequency >= 0 ? ovr.gustFrequency : 45}%</b></span>
                             <input type="range" data-field="ovrGust" min="0" max="100" value="${ovr.gustFrequency >= 0 ? ovr.gustFrequency : 45}">
                         </label>
                     </div>
@@ -361,6 +361,7 @@ window.SNW = window.SNW || {};
             this._name = '';
             this._repeat = false;
             this._repeatCount = 0;
+            this._currentRule = null; // [Stage 5] 규칙
         }
 
         static _windDict = null;
@@ -401,6 +402,7 @@ window.SNW = window.SNW || {};
             this._repeat = false;
             this._repeatCount = 0;
             this._steps = [this._defaultStep()];
+            this._currentRule = null;
         }
 
         async _loadProfile(profileId) {
@@ -420,6 +422,7 @@ window.SNW = window.SNW || {};
                 this._repeat = !!target.repeatSegments;
                 this._repeatCount = target.repeatCount || 0;
                 this._steps = (target.steps && target.steps.length > 0) ? target.steps : [this._defaultStep()];
+                this._currentRule = target.rule || null;
             } catch (e) {
                 if (SNW.ToastUtil) SNW.ToastUtil.error('프로필 로드 실패');
                 this._resetNewProfile();
@@ -465,6 +468,19 @@ window.SNW = window.SNW || {};
                         <button type="button" class="snw-btn snw-btn--add-step" data-action="add-step">
                             + Step 추가 (최대 8개)
                         </button>
+
+                        <!-- [Stage 5] 스마트 쾌적 & 자동 정지 규칙 -->
+                        <details class="snw-studio-rules" style="margin-top:20px;border:1px dashed var(--snw-border,#2f3844);border-radius:8px;padding:12px;background:var(--snw-surface-2,#232b36);">
+                            <summary style="cursor:pointer;font-weight:600;font-size:14px;color:var(--snw-text,#e6edf3);">
+                                ⚙ 스마트 쾌적 & 자동 정지 규칙
+                            </summary>
+                            <div data-slot="rule-summary" style="margin-top:12px;font-size:12px;color:var(--snw-text-dim,#8b949e);">
+                                로딩 중...
+                            </div>
+                            <button type="button" class="snw-btn snw-btn--sm" data-action="edit-rule" style="margin-top:8px;">
+                                규칙 편집 →
+                            </button>
+                        </details>
                     </div>
 
                     <!-- 하단 액션 바 -->
@@ -512,6 +528,33 @@ window.SNW = window.SNW || {};
                             },
                         });
                     }
+                };
+            }
+
+            // [Stage 5] 규칙 편집 진입점
+            const _updateRuleSummary = () => {
+                const ruleSummaryEl = this.el.querySelector('[data-slot="rule-summary"]');
+                if (!ruleSummaryEl) return;
+                const r = this._currentRule || {};
+                const items = [];
+                if (r.timer?.enabled)     items.push(`⏱️${r.timer.minutes}m`);
+                if (r.offTime?.enabled)   items.push(`⏰${r.offTime.time}`);
+                if (r.tempLow?.enabled)   items.push(`🌡️${r.tempLow.mode}`);
+                if (r.diLow?.enabled)     items.push(`☀️${r.diLow.mode}`);
+                if (r.pirPause?.enabled)  items.push(`👤${r.pirPause.holdSec}s`);
+                if (r.smartComfort?.enabled) items.push(`✨auto`);
+                ruleSummaryEl.textContent = items.length > 0 ? items.join(' · ') : '규칙 미설정 (클릭하여 추가)';
+            };
+            _updateRuleSummary();
+
+            const btnEditRule = this.el.querySelector('[data-action="edit-rule"]');
+            if (btnEditRule) {
+                btnEditRule.onclick = async () => {
+                    if (!SNW.UI.ruleEditor) return;
+                    const newRule = await SNW.UI.ruleEditor.showModal(this._currentRule);
+                    if (!newRule) return;
+                    this._currentRule = newRule;
+                    _updateRuleSummary();
                 };
             }
 
@@ -592,12 +635,7 @@ window.SNW = window.SNW || {};
                 repeatCount: this._repeatCount,
                 stepCount: this._steps.length,
                 steps: this._steps,
-                autoOff: {
-                    timer: { enabled: false, minutes: 0 },
-                    offTime: { enabled: false, time: '00:00' },
-                    offTemp: { enabled: false, temp: 0 },
-                },
-                motion: { pir: { enabled: true, holdSec: 120 } },
+                rule: this._currentRule,
             };
 
             try {
@@ -619,7 +657,7 @@ window.SNW = window.SNW || {};
                         }
                     }
                 }, 400);
-                SNW.Router.navigate('/automation/playlist');
+                SNW.Router.navigate('/wind/playlist');
             } catch (e) {
                 if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '저장 실패');
             }
@@ -627,7 +665,7 @@ window.SNW = window.SNW || {};
 
         _onCancel() {
             if (confirm('편집 내용을 버리시겠습니까?')) {
-                SNW.Router.navigate('/automation/playlist');
+                SNW.Router.navigate('/wind/playlist');
             }
         }
     };

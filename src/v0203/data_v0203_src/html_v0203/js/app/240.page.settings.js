@@ -189,6 +189,31 @@ SNW.Page = SNW.Page || {};
                     <div class="snw-toolbar">
                         <button type="button" class="snw-btn" data-action="test-api">${T('settings.testApiKey')}</button>
                     </div>
+
+                    <!-- [Stage 5 + m1 수정] 시스템 정보 (기존 300.page.info.js 완전 흡수) -->
+                    <h3 class="snw-form-section" style="margin-top:16px;">시스템 정보</h3>
+
+                    <h4 style="font-size:12px;color:var(--snw-text-dim,#8b949e);margin:8px 0 4px;">Version</h4>
+                    <div class="snw-kv"><span>Firmware</span><b data-slot="sys-fw">-</b></div>
+                    <div class="snw-kv"><span>Control</span><b data-slot="sys-ctl">-</b></div>
+                    <div class="snw-kv"><span>Config</span><b data-slot="sys-cfg">-</b></div>
+                    <div class="snw-kv"><span>API</span><b data-slot="sys-api">-</b></div>
+                    <div class="snw-kv"><span>Simul</span><b data-slot="sys-sim">-</b></div>
+
+                    <h4 style="font-size:12px;color:var(--snw-text-dim,#8b949e);margin:8px 0 4px;">Device</h4>
+                    <div class="snw-kv"><span>Hostname</span><b data-slot="sys-host">-</b></div>
+                    <div class="snw-kv"><span>MAC</span><b data-slot="sys-mac">-</b></div>
+                    <div class="snw-kv"><span>IP</span><b data-slot="sys-ip">-</b></div>
+                    <div class="snw-kv"><span>Uptime</span><b data-slot="sys-uptime">-</b></div>
+
+                    <h4 style="font-size:12px;color:var(--snw-text-dim,#8b949e);margin:8px 0 4px;">Storage</h4>
+                    <div class="snw-kv"><span>Heap Free</span><b data-slot="sys-heap">-</b></div>
+                    <div class="snw-kv"><span>FS Used</span><b data-slot="sys-fs-used">-</b></div>
+                    <div class="snw-kv"><span>FS Total</span><b data-slot="sys-fs-total">-</b></div>
+
+                    <div style="margin-top:12px;">
+                        <button type="button" class="snw-btn snw-btn--sm" data-action="replay-onboarding">🌿 시작 가이드 다시 보기</button>
+                    </div>
                 `;
 
                 // ---------- 2. 하드웨어 탭 ----------
@@ -366,6 +391,55 @@ SNW.Page = SNW.Page || {};
                         </div>
                         <div class="snw-form-sticky-spacer"></div>
                     `;
+                }
+
+                // [Stage 5 + m1 수정] 시스템 정보 로드 (완전 흡수)
+                try {
+                    const [v, d, wifi] = await Promise.all([
+                        SNW.Api.version ? SNW.Api.version().catch(() => null) : null,
+                        SNW.Api.diag ? SNW.Api.diag().catch(() => null) : null,
+                        SNW.Api.getWifiState ? SNW.Api.getWifiState().catch(() => null) : null,
+                    ]);
+                    const state = (wifi && wifi.wifi && wifi.wifi.state) || {};
+                    const sys = SNW.Store.get().system || {};
+                    const uptimeSec = sys.uptimeMs ? Math.floor(sys.uptimeMs / 1000) : 0;
+                    const uptimeStr = uptimeSec > 3600
+                        ? `${Math.floor(uptimeSec / 3600)}h ${Math.floor((uptimeSec % 3600) / 60)}m`
+                        : `${Math.floor(uptimeSec / 60)}m ${uptimeSec % 60}s`;
+
+                    const setKV = (slot, val) => {
+                        const el = this.el.querySelector(`[data-slot="${slot}"]`);
+                        if (el) el.textContent = val;
+                    };
+
+                    // Version 5종
+                    setKV('sys-fw',  (v && v.fw)      || '-');
+                    setKV('sys-ctl', (v && v.control) || '-');
+                    setKV('sys-cfg', (v && v.config)  || '-');
+                    setKV('sys-api', (v && v.api)     || '-');
+                    setKV('sys-sim', (v && v.simul)   || '-');
+
+                    // Device 4종
+                    setKV('sys-host', state.hostname || '-');
+                    setKV('sys-mac',  state.mac      || '-');
+                    setKV('sys-ip',   state.ip       || '-');
+                    setKV('sys-uptime', uptimeStr);
+
+                    // Storage 3종
+                    setKV('sys-heap', d && d.heap != null ? d.heap + ' B' : '-');
+                    setKV('sys-fs-used',  d && d.fs_used  != null ? d.fs_used + ' B'  : '-');
+                    setKV('sys-fs-total', d && d.fs_total != null ? d.fs_total + ' B' : '-');
+                } catch (e) {}
+
+                // 온보딩 재실행
+                const btnReplay = this.el.querySelector('[data-action="replay-onboarding"]');
+                if (btnReplay) {
+                    btnReplay.onclick = () => {
+                        localStorage.removeItem('snw.onboarded');
+                        if (SNW.Onboarding && typeof SNW.Onboarding.start === 'function') {
+                            SNW.Onboarding.start();
+                        }
+                    };
                 }
             } catch (e) {
                 SNW.ErrorHandler.handle(e, 'settings.load');

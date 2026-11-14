@@ -62,7 +62,7 @@ window.SNW = window.SNW || {};
                 const btn = this.el.querySelector('[data-action="to-studio"]');
                 if (btn) {
                     btn.onclick = () => {
-                        SNW.Router.navigate('/automation/studio');
+                        SNW.Router.navigate('/wind/studio');
                     };
                 }
                 return;
@@ -154,6 +154,8 @@ window.SNW = window.SNW || {};
         _openEditor(sch) {
             const isEdit = !!sch;
             let isSimpleMode = isEdit ? (sch.name && sch.name.startsWith('[간단]')) : true;
+            let editedRule = (isEdit && sch.rule) ? JSON.parse(JSON.stringify(sch.rule)) : null;
+            const isCustom = isEdit && sch.ruleOverride === true;
             const days = sch ? ((sch.period && sch.period.days) || [0,0,0,0,0,0,0]) : [0,1,1,1,1,1,0];
             const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
 
@@ -260,6 +262,24 @@ window.SNW = window.SNW || {};
                             💡 새 프로필은 <b>Studio 탭</b>에서 작곡 후 선택할 수 있습니다.
                         </div>
                     </div>
+
+                    <!-- [Stage 5] 규칙 상속/커스텀 -->
+                    <div style="margin-top:16px;padding:12px;background:var(--snw-surface-2,#12161c);border-radius:6px;">
+                        <div style="font-weight:600;font-size:13px;margin-bottom:8px;">⚙ 자동 정지 규칙</div>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                            <input type="radio" name="ruleMode" value="inherit" ${!isCustom ? 'checked' : ''}>
+                            <span>${SNW.I18n.t('auto.rules.inheritHint')} (프로파일 규칙 사용)</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:6px;cursor:pointer;">
+                            <input type="radio" name="ruleMode" value="custom" ${isCustom ? 'checked' : ''}>
+                            <span>${SNW.I18n.t('auto.rules.customHint')} (스케줄 자체 규칙)</span>
+                        </label>
+                        <div id="custom-rule-action" style="margin-top:8px;display:${isCustom ? 'block' : 'none'};">
+                            <button type="button" class="snw-btn snw-btn--sm" data-action="edit-rule" style="padding:4px 10px;background:var(--snw-surface-3,#2f3844);color:var(--snw-text,#e6edf3);border:none;border-radius:4px;cursor:pointer;font-size:12px;">
+                                ⚙ 커스텀 규칙 편집
+                            </button>
+                        </div>
+                    </div>
                 </div>`;
 
             // 모드 토글 이벤트
@@ -303,6 +323,31 @@ window.SNW = window.SNW || {};
                         r.classList.toggle('is-selected', r === radio));
                 });
             });
+
+            // 규칙 상속/커스텀 라디오 및 편집기 바인딩
+            const ruleRadios = content.querySelectorAll('input[name="ruleMode"]');
+            const customRuleAction = content.querySelector('#custom-rule-action');
+            const btnEditRule = content.querySelector('[data-action="edit-rule"]');
+
+            ruleRadios.forEach(r => {
+                r.addEventListener('change', () => {
+                    const custom = content.querySelector('input[name="ruleMode"]:checked')?.value === 'custom';
+                    if (customRuleAction) customRuleAction.style.display = custom ? 'block' : 'none';
+                });
+            });
+
+            if (btnEditRule) {
+                btnEditRule.onclick = async () => {
+                    if (!SNW.UI || !SNW.UI.ruleEditor) return;
+                    const res = await SNW.UI.ruleEditor.showModal(editedRule || {}, {
+                        title: '스케줄 커스텀 규칙',
+                    });
+                    if (res) {
+                        editedRule = res;
+                        if (SNW.ToastUtil) SNW.ToastUtil.info('커스텀 규칙이 설정되었습니다 (스케줄 저장 시 반영)');
+                    }
+                };
+            }
 
             SNW.UI.modal(
                 isEdit ? '스케줄 편집' : '새 스케줄',
@@ -363,6 +408,7 @@ window.SNW = window.SNW || {};
                     }
 
                     const schNo = isEdit ? sch.schNo : (Date.now() % 65535) + 1;
+                    const ruleOverride = content.querySelector('input[name="ruleMode"]:checked')?.value === 'custom';
                     const schedule = {
                         schNo,
                         name: nameEl.value.trim(),
@@ -373,6 +419,8 @@ window.SNW = window.SNW || {};
                             endTime: endEl.value,
                         },
                         profileId,
+                        ruleOverride,
+                        rule: editedRule || (isEdit && sch.rule ? sch.rule : {}),
                     };
 
                     try {

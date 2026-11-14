@@ -1,7 +1,10 @@
 // =========================================================
-// 200.page.dashboard.js — 홈 (Stage 6 감성 UX 완성형)
+// 200.page.dashboard.js — 홈 (Stage 5 UX 완성형)
 // Layer 4 (페이지 로직)
-// 4대 섹션: ① Now Playing & 이퀄라이저 ② 플레이리스트 ③ Context 추천 ④ 일반 선풍기 Snap
+//  - 9종 원터치 시나리오 (3×3 그리드, is-running 토글)
+//  - Now Playing & 이퀄라이저 (AUTO 배지, ENV_PAUSED 연동)
+//  - AUTOOFF_STOPPED 야간 리포트 + 1클릭 복구
+//  - 일반 선풍기 Snap & 플레이리스트
 // =========================================================
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
@@ -17,6 +20,7 @@ SNW.Page = SNW.Page || {};
             this._slider = null;
             this._contextCache = null;
             this._contextFetchMs = 0;
+            this._presetRendered = false;
         }
 
         async mount() {
@@ -41,8 +45,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // =========================================================
-        // 레이아웃 ([Stage 10] 3탭 구조: 제어 / 환경 / 프리셋)
+        // 레이아웃 (3탭 구조: 제어 / 환경 / 프리셋)
         // =========================================================
         _render() {
             this.el.innerHTML = `
@@ -62,7 +65,20 @@ SNW.Page = SNW.Page || {};
 
                     <!-- 탭 1: 제어 (Control) -->
                     <div data-dash-content="control" role="tabpanel" style="display:block;">
-                        <!-- ① Now Playing + 이퀄라이저 -->
+                        <!-- ⓪ AUTOOFF_STOPPED 야간 리포트 + 1클릭 복구 슬롯 -->
+                        <div data-slot="autooff-report" style="margin-bottom:12px;" hidden></div>
+
+                        <!-- ① 시나리오 원터치 9종 (3×3 그리드, Stage 5 신규) -->
+                        <section class="snw-card snw-card--scenarios">
+                            <h2 style="font-size:14px;font-weight:600;margin-bottom:12px;">
+                                ⚡ ${SNW.I18n.t('home.oneTouchStart')}
+                            </h2>
+                            <div class="snw-scenario-grid" data-slot="scenarios">
+                                ${this._renderScenarioGrid()}
+                            </div>
+                        </section>
+
+                        <!-- ② Now Playing + 이퀄라이저 -->
                         <section class="snw-card snw-card--nowplaying">
                             <div class="snw-np-big">
                                 <div class="snw-np-big__eq" data-slot="eq"></div>
@@ -78,13 +94,13 @@ SNW.Page = SNW.Page || {};
                             </div>
                         </section>
 
-                        <!-- ② 일반 선풍기 (Snap + Haptic) -->
+                        <!-- ③ 일반 선풍기 (Snap + Haptic) -->
                         <section class="snw-card snw-card--fan">
                             <h2 style="font-size:16px;margin-bottom:12px;font-weight:600;">🌀 ${SNW.I18n.t('home.normalFan')}</h2>
                             <div data-slot="slider"></div>
                         </section>
 
-                        <!-- ③ 재생할 플레이리스트 -->
+                        <!-- ④ 재생할 플레이리스트 -->
                         <section class="snw-card snw-card--playlist">
                             <h2 style="font-size:16px;margin-bottom:12px;font-weight:600;">🎵 ${SNW.I18n.t('home.playlist')}</h2>
                             <div data-slot="playlist-grid" class="snw-playlist-grid">
@@ -95,7 +111,7 @@ SNW.Page = SNW.Page || {};
 
                     <!-- 탭 2: 환경 (Environment) -->
                     <div data-dash-content="env" role="tabpanel" style="display:none;">
-                        <!-- Context 추천 (Stage 6) -->
+                        <!-- Context 추천 -->
                         <section class="snw-card snw-card--comfort" data-slot="comfort-card">
                             <div class="snw-comfort">
                                 <div class="snw-comfort__header">
@@ -109,7 +125,7 @@ SNW.Page = SNW.Page || {};
                                     ▶ 지금 추천 바람 재생
                                 </button>
                             </div>
-                            <!-- [Phase 5] Comfort 자동 모드 UI 슬롯 -->
+                            <!-- Comfort 자동 모드 UI 슬롯 -->
                             <div class="snw-auto-comfort-box" data-slot="auto-comfort-box" style="margin-top:14px;padding:12px;background:var(--snw-surface-2);border:1px solid var(--snw-border);border-radius:8px;"></div>
                         </section>
 
@@ -119,7 +135,7 @@ SNW.Page = SNW.Page || {};
                             <div data-slot="sensors-summary">
                                 <p style="font-size:13px;color:var(--snw-text-dim);margin:0 0 10px 0;">온도, 습도, PIR 재실 센서의 실시간 상세 파형을 확인할 수 있습니다.</p>
                             </div>
-                            <a href="#/sensors" class="snw-btn snw-btn--sm" style="display:inline-block;">${SNW.I18n.t('common.details')} →</a>
+                            <a href="#/monitor/sensors" class="snw-btn snw-btn--sm" style="display:inline-block;">${SNW.I18n.t('common.details')} →</a>
                         </section>
                     </div>
 
@@ -148,6 +164,41 @@ SNW.Page = SNW.Page || {};
             // 탭 이벤트 바인딩
             this.el.querySelectorAll('[data-dash-tab]').forEach(btn => {
                 btn.addEventListener('click', () => this._switchDashTab(btn.getAttribute('data-dash-tab')));
+            });
+
+            // [Stage 5] 시나리오 원터치 이벤트 위임 & 롱프레스 지원
+            let pressTimer = null;
+            let longPressed = false;
+
+            SNW.DomUtil.delegate(this.el, '[data-scenario]', 'mousedown', (e, btn) => {
+                longPressed = false;
+                const key = btn.getAttribute('data-scenario');
+                if (key === 'autoSelect' || key === 'sleep') {
+                    pressTimer = setTimeout(() => {
+                        longPressed = true;
+                        this._onScenarioClick(key, true);
+                    }, 650);
+                }
+            });
+
+            SNW.DomUtil.delegate(this.el, '[data-scenario]', 'mouseup', (e, btn) => {
+                if (pressTimer) {
+                    clearTimeout(pressTimer);
+                    pressTimer = null;
+                }
+            });
+
+            SNW.DomUtil.delegate(this.el, '[data-scenario]', 'click', (e, btn) => {
+                if (pressTimer) {
+                    clearTimeout(pressTimer);
+                    pressTimer = null;
+                }
+                if (longPressed) {
+                    longPressed = false;
+                    return;
+                }
+                const key = btn.getAttribute('data-scenario');
+                this._onScenarioClick(key, false);
             });
 
             // 이퀄라이저 초기화
@@ -196,6 +247,312 @@ SNW.Page = SNW.Page || {};
             this._switchDashTab(savedTab);
         }
 
+        // ═══════════════════════════════════════════════════════════
+        // [Stage 5] 시나리오 원터치 9종 (3×3)
+        // ═══════════════════════════════════════════════════════════
+        _renderScenarioGrid() {
+            const t = (k) => SNW.I18n.t(k);
+            const scenarios = [
+                { key: 'sleep',      color: 'lavender', type: 'autoSelect', profileNo: 10 },
+                { key: 'office',     color: 'mint',     type: 'playlist',   profileNo: 20 },
+                { key: 'study',      color: 'mint',     type: 'playlist',   profileNo: 30 },
+                { key: 'rest',       color: 'emerald',  type: 'playlist',   profileNo: 40 },
+                { key: 'exercise',   color: 'amber',    type: 'playlist',   profileNo: 50 },
+                { key: 'baby',       color: 'paleblue', type: 'playlist',   profileNo: 80 },
+                { key: 'pet',        color: 'paleblue', type: 'playlist',   profileNo: 70 },
+                { key: 'autoFull',   color: 'cyan',     type: 'autoFull' },
+                { key: 'autoSelect', color: 'cyan',     type: 'autoSelect' },
+            ];
+
+            return scenarios.map(s => {
+                const fullText = t('home.scenario.' + s.key);
+                const parts = fullText.split(' ');
+                const icon = parts[0] || '✨';
+                const name = parts.slice(1).join(' ') || fullText;
+                return `
+                <button type="button" class="snw-scenario-card snw-scenario-card--${s.color}"
+                        data-scenario="${s.key}">
+                    <span class="snw-scenario-card__icon">${icon}</span>
+                    <span class="snw-scenario-card__name">${name}</span>
+                    <span class="snw-scenario-card__meta">${t('home.scenario.' + s.key + 'Meta')}</span>
+                </button>`;
+            }).join('');
+        }
+
+        // [Stage 5] 현재 가동 중인 시나리오에 is-running 클래스 반영
+        _updateScenarioRunning() {
+            const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+            const s = store.session;
+            const ctl = store.control || {};
+            const isPausedOrBlocked = (ctl.stateCode === 5); // AUTOOFF_STOPPED
+            const isActive = s && (s.state === 'ACTIVE' || s.state === 2) && !isPausedOrBlocked;
+
+            const cards = this.el.querySelectorAll('[data-scenario]');
+            cards.forEach(card => card.classList.remove('is-running'));
+
+            if (!isActive) return;
+
+            const typeName = s.typeName || (['NONE', 'PLAYLIST', 'PRESET', 'FIXED', 'AUTO_FULL', 'AUTO_SELECT'][Number(s.type)] || String(s.type || ''));
+
+            let runningKey = null;
+            if (typeName === 'AUTO_FULL' || s.type === 4) {
+                runningKey = 'autoFull';
+            } else if (typeName === 'AUTO_SELECT' || s.type === 5) {
+                // sleep 베이스인지 여부 확인
+                if (s.styleCode === 'SLEEP' || s.profileNo === 10) {
+                    runningKey = 'sleep';
+                } else {
+                    runningKey = 'autoSelect';
+                }
+            } else if (typeName === 'PLAYLIST' || s.type === 1) {
+                const pNo = Number(s.profileNo || 0);
+                if (pNo === 10) runningKey = 'sleep';
+                else if (pNo === 20) runningKey = 'office';
+                else if (pNo === 30) runningKey = 'study';
+                else if (pNo === 40) runningKey = 'rest';
+                else if (pNo === 50) runningKey = 'exercise';
+                else if (pNo === 70) runningKey = 'pet';
+                else if (pNo === 80) runningKey = 'baby';
+            }
+
+            if (runningKey) {
+                const activeCard = this.el.querySelector(`[data-scenario="${runningKey}"]`);
+                if (activeCard) activeCard.classList.add('is-running');
+            }
+        }
+
+        async _onScenarioClick(key, forceDialog = false) {
+            // [is-running 토글 지원] 이미 실행 중인 카드를 다시 누르면 정지
+            const targetBtn = this.el.querySelector(`[data-scenario="${key}"]`);
+            if (targetBtn && targetBtn.classList.contains('is-running')) {
+                try {
+                    await SNW.Api.stopSession();
+                    if (SNW.Haptic) SNW.Haptic.stop();
+                    if (SNW.ToastUtil) SNW.ToastUtil.info(SNW.I18n.t('common.stopSession') || '세션 정지');
+                } catch (e) {
+                    if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '정지 실패');
+                }
+                return;
+            }
+
+            const skipConfirm = localStorage.getItem('snw_skip_scenario_confirm') === '1';
+
+            // ── AUTO_FULL 시나리오 ──
+            if (key === 'autoFull') {
+                if (!skipConfirm) {
+                    const ok = await this._showAutoFullConfirm();
+                    if (!ok) return;
+                }
+                try {
+                    await SNW.Api.startSession({
+                        type: 'AUTO_FULL',
+                        payload: {}
+                    });
+                    if (SNW.Haptic) SNW.Haptic.stepChange();
+                    if (SNW.ToastUtil) SNW.ToastUtil.success(SNW.I18n.t('session.autoFull'));
+                } catch (e) {
+                    if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '시작 실패');
+                }
+                return;
+            }
+
+            // ── AUTO_SELECT 시나리오 (sleep 또는 autoSelect) ──
+            if (key === 'autoSelect' || key === 'sleep') {
+                let base = null;
+                const saved = localStorage.getItem('snw.lastAutoSelectBase');
+                if (saved && !forceDialog) {
+                    try { base = JSON.parse(saved); } catch (e) { }
+                }
+
+                if (!base || forceDialog) {
+                    base = await this._showAutoSelectDialog(key === 'sleep');
+                    if (!base) return;
+                    try { localStorage.setItem('snw.lastAutoSelectBase', JSON.stringify(base)); } catch (e) { }
+                }
+
+                try {
+                    await SNW.Api.startSession({
+                        type: 'AUTO_SELECT',
+                        payload: base
+                    });
+                    if (SNW.Haptic) SNW.Haptic.stepChange();
+                    const title = (key === 'sleep') ? SNW.I18n.t('home.scenario.sleep') : SNW.I18n.t('session.autoSelect');
+                    if (SNW.ToastUtil) SNW.ToastUtil.success(title);
+                } catch (e) {
+                    if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '시작 실패');
+                }
+                return;
+            }
+
+            // ── 일반 시나리오 (PLAYLIST / PRESET: office, study, rest, exercise, pet=70, baby=80) ──
+            if (!skipConfirm) {
+                const ok = await this._showScenarioConfirm(key);
+                if (!ok) return;
+            }
+
+            try {
+                if (['office', 'study', 'rest', 'exercise', 'pet', 'baby'].includes(key)) {
+                    const profileNoMap = { office: 20, study: 30, rest: 40, exercise: 50, pet: 70, baby: 80 };
+                    const profileNo = profileNoMap[key];
+                    const pData = await SNW.Api.listProfiles();
+                    const pRoot = (pData && pData.userProfiles) ? pData.userProfiles : pData;
+                    const profs = (pRoot && pRoot.profiles) || [];
+                    const prof = profs.find(p => p.profileNo === profileNo);
+                    if (prof) {
+                        await SNW.Api.startPlaylist(prof.profileId);
+                    } else {
+                        // 기본 프리셋으로 fallback 실행
+                        const defaultPresetMap = { office: 'COUNTRY_BREEZE', study: 'FOREST_CANOPY', rest: 'OCEAN', exercise: 'MOUNTAIN', pet: 'COUNTRY_BREEZE', baby: 'OCEAN' };
+                        const presetCode = defaultPresetMap[key] || 'OCEAN';
+                        await SNW.Api.startPreset(presetCode, 'BALANCE');
+                    }
+                }
+                if (SNW.Haptic) SNW.Haptic.stepChange();
+                if (SNW.ToastUtil) SNW.ToastUtil.success(SNW.I18n.t('msg.playSuccess') || '재생 시작');
+            } catch (e) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '시작 실패');
+            }
+        }
+
+        _showScenarioConfirm(key) {
+            const t = (k) => SNW.I18n.t(k);
+            return new Promise(resolve => {
+                const content = document.createElement('div');
+                content.innerHTML = `
+                    <p>${t('home.scenario.' + key)} 모드로 시작할까요?</p>
+                    <label style="display:flex;align-items:center;gap:8px;margin-top:16px;font-size:12px;">
+                        <input type="checkbox" data-skip>
+                        <span>${t('home.scenario.skipConfirm')}</span>
+                    </label>
+                `;
+                SNW.UI.modal(
+                    t('home.scenario.' + key),
+                    content,
+                    async () => {
+                        if (content.querySelector('[data-skip]').checked) {
+                            localStorage.setItem('snw_skip_scenario_confirm', '1');
+                        }
+                        resolve(true);
+                        return true;
+                    },
+                    () => { resolve(false); },
+                    { okLabel: t('common.start') || '시작', cancelLabel: t('common.cancel') || '취소' }
+                );
+            });
+        }
+
+        _showAutoFullConfirm() {
+            const t = (k) => SNW.I18n.t(k);
+            return new Promise(resolve => {
+                const content = document.createElement('div');
+                content.innerHTML = `
+                    <p style="font-weight:600;margin-bottom:12px;">${t('session.autoFull')}</p>
+                    <ul style="list-style:none;padding:0;margin:0 0 16px;font-size:13px;line-height:1.8;">
+                        <li>${t('session.autoFullHint1')}</li>
+                        <li>${t('session.autoFullHint2')}</li>
+                        <li>${t('session.autoFullHint3')}</li>
+                        <li>${t('session.autoFullHint4')}</li>
+                    </ul>
+                    <label style="display:flex;align-items:center;gap:8px;font-size:12px;">
+                        <input type="checkbox" data-skip>
+                        <span>${t('home.scenario.skipConfirm')}</span>
+                    </label>
+                `;
+                SNW.UI.modal(
+                    t('session.autoFull'),
+                    content,
+                    async () => {
+                        if (content.querySelector('[data-skip]').checked) {
+                            localStorage.setItem('snw_skip_scenario_confirm', '1');
+                        }
+                        resolve(true);
+                        return true;
+                    },
+                    () => { resolve(false); },
+                    { okLabel: t('common.start') || '시작', cancelLabel: t('common.cancel') || '취소' }
+                );
+            });
+        }
+
+        async _showAutoSelectDialog(isSleepMode = false) {
+            const t = (k) => SNW.I18n.t(k);
+            // 프로파일 목록 로드
+            let profiles = [];
+            try {
+                const pData = await SNW.Api.listProfiles();
+                const pRoot = (pData && pData.userProfiles) ? pData.userProfiles : pData;
+                profiles = (pRoot && pRoot.profiles) || [];
+            } catch (e) {}
+
+            const hasProfiles = profiles.length > 0;
+
+            return new Promise(resolve => {
+                const content = document.createElement('div');
+                content.innerHTML = `
+                    <p style="font-weight:600;margin-bottom:12px;">${t('session.autoSelectPrompt')}</p>
+                    <div style="display:flex;flex-direction:column;gap:12px;">
+                        <label style="display:flex;align-items:center;gap:8px;">
+                            <input type="radio" name="autoSelectBase" value="PRESET" checked>
+                            <span>${t('session.autoSelectPreset')}</span>
+                            <select data-preset-select style="margin-left:auto;padding:4px 8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
+                                <option value="OCEAN" ${isSleepMode ? 'selected' : ''}>🌊 OCEAN</option>
+                                <option value="COUNTRY_BREEZE">🏡 COUNTRY</option>
+                                <option value="FOREST_CANOPY">🌲 FOREST</option>
+                                <option value="MOUNTAIN">🏔 MOUNTAIN</option>
+                            </select>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;${hasProfiles ? '' : 'opacity:0.5;'}">
+                            <input type="radio" name="autoSelectBase" value="PLAYLIST" ${hasProfiles ? '' : 'disabled'}>
+                            <span>${t('session.autoSelectPlaylist')}</span>
+                            <select data-profile-select ${hasProfiles ? '' : 'disabled'} style="margin-left:auto;padding:4px 8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
+                                ${hasProfiles
+                                    ? profiles.map(p => `<option value="${p.profileId}">${SNW.DomUtil ? SNW.DomUtil.escape(p.name) : p.name}</option>`).join('')
+                                    : '<option value="">프로파일 없음</option>'}
+                            </select>
+                        </label>
+                        ${hasProfiles ? '' : `
+                            <p style="font-size:11px;color:var(--snw-warn,#d29922);">
+                                ⚠️ PLAYLIST를 선택하려면 먼저 Wind Studio에서 프로파일을 만들어주세요.
+                            </p>
+                        `}
+                    </div>
+                    <p style="margin-top:16px;font-size:11px;color:var(--snw-text-dim);line-height:1.6;">
+                        ${t('session.autoSelectHint')}
+                    </p>
+                `;
+
+                SNW.UI.modal(
+                    t('session.autoSelect'),
+                    content,
+                    async () => {
+                        const baseTypeEl = content.querySelector('input[name="autoSelectBase"]:checked');
+                        if (!baseTypeEl) return false;
+                        const baseType = baseTypeEl.value;
+
+                        if (baseType === 'PRESET') {
+                            const presetCode = content.querySelector('[data-preset-select]').value;
+                            resolve({ baseType: 'PRESET', presetCode, styleCode: isSleepMode ? 'SLEEP' : 'BALANCE' });
+                        } else {
+                            if (!hasProfiles) {
+                                if (SNW.ToastUtil) SNW.ToastUtil.warn('프로파일이 없습니다. Wind Studio에서 먼저 만들어주세요.');
+                                return false;
+                            }
+                            const profileIdStr = content.querySelector('[data-profile-select]').value;
+                            const profileId = Number(profileIdStr);
+                            if (!profileId || profileId <= 0) {
+                                if (SNW.ToastUtil) SNW.ToastUtil.warn('유효한 프로파일을 선택하세요.');
+                                return false;
+                            }
+                            resolve({ baseType: 'PLAYLIST', profileId });
+                        }
+                        return true;
+                    },
+                    () => { resolve(null); },
+                    { okLabel: t('common.start') || '시작', cancelLabel: t('common.cancel') || '취소' }
+                );
+            });
+        }
+
         // =========================================================
         // Store 구독
         // =========================================================
@@ -206,16 +563,74 @@ SNW.Page = SNW.Page || {};
                 SNW.Store.watch('session', () => {
                     this._renderNowPlaying();
                     this._renderAutoComfortStatus();
+                    this._updateScenarioRunning();
                 }),
                 SNW.Store.watch('sim', () => this._onSimUpdate()),
                 SNW.Store.watch('control', () => {
                     this._onControlUpdate();
+                    this._renderNowPlaying();
                     this._renderAutoComfortStatus();
+                    this._renderAutoOffReport();
+                    this._updateScenarioRunning();
                 }),
                 SNW.Store.watch('autoComfortEnabled', () => this._renderAutoComfortStatus())
             );
             // 초기 렌더
             this._renderNowPlaying();
+            this._renderAutoOffReport();
+            this._updateScenarioRunning();
+        }
+
+        // =========================================================
+        // [Stage 5] AUTOOFF_STOPPED 야간 리포트 + 1클릭 복구
+        // =========================================================
+        _renderAutoOffReport() {
+            const reportSlot = this.el.querySelector('[data-slot="autooff-report"]');
+            if (!reportSlot) return;
+
+            const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+            const ctl = store.control || {};
+            const isAutoOff = (ctl.stateCode === 5); // AUTOOFF_STOPPED
+
+            if (!isAutoOff) {
+                reportSlot.hidden = true;
+                reportSlot.innerHTML = '';
+                return;
+            }
+
+            const reason = ctl.stopReason || 0;
+            let reasonDesc = '타이머 또는 야간 자동 정지 규칙에 의해 정지되었습니다.';
+            if (reason === 12) reasonDesc = '야간 실내 온도가 너무 낮아져 안전을 위해 자동 정지되었습니다. (감기 방지)';
+            else if (reason === 13) reasonDesc = '야간 불쾌지수가 낮아져 완전 정지되었습니다.';
+            else if (reason === 1) reasonDesc = '설정된 타이머 만료로 정지되었습니다.';
+            else if (reason === 2) reasonDesc = '설정된 예약 시각 도달로 정지되었습니다.';
+
+            reportSlot.hidden = false;
+            reportSlot.innerHTML = `
+                <div class="snw-autooff-report">
+                    <div class="snw-autooff-report__info">
+                        <strong>⏹ 야간 자동 정지 리포트</strong>
+                        <span class="snw-autooff-report__desc">${reasonDesc}</span>
+                    </div>
+                    <button type="button" class="snw-btn snw-btn--sm snw-btn-primary" data-action="ack-restore" style="white-space:nowrap;">
+                        ▶ 1클릭 복구
+                    </button>
+                </div>`;
+
+            const btnAck = reportSlot.querySelector('[data-action="ack-restore"]');
+            if (btnAck) {
+                btnAck.onclick = async () => {
+                    try {
+                        if (SNW.Api && typeof SNW.Api.ackEvent === 'function') {
+                            await SNW.Api.ackEvent();
+                        }
+                        if (SNW.ToastUtil) SNW.ToastUtil.success('정지 상태가 해제되었습니다');
+                        reportSlot.hidden = true;
+                    } catch (e) {
+                        if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '복구 실패');
+                    }
+                };
+            }
         }
 
         // =========================================================
@@ -224,6 +639,7 @@ SNW.Page = SNW.Page || {};
         _renderNowPlaying() {
             const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
             const s = store.session;
+            const ctl = store.control || {};
             const titleEl = this.el.querySelector('[data-slot="np-title"]');
             const subEl = this.el.querySelector('[data-slot="np-sub"]');
             const btnPause = this.el.querySelector('[data-action="pause"]');
@@ -231,8 +647,31 @@ SNW.Page = SNW.Page || {};
             const btnTimerQuick = this.el.querySelector('[data-action="timer-quick"]');
             if (!titleEl) return;
 
-            const typeName = s ? (s.typeName || (['NONE', 'PLAYLIST', 'PRESET', 'FIXED'][Number(s.type)] || String(s.type || 'NONE'))) : 'NONE';
+            const typeName = s ? (s.typeName || (['NONE', 'PLAYLIST', 'PRESET', 'FIXED', 'AUTO_FULL', 'AUTO_SELECT'][Number(s.type)] || String(s.type || 'NONE'))) : 'NONE';
             const isActive = s && typeName !== 'NONE' && s.active !== false && s.state !== 'COMPLETED';
+
+            // [Stage 5] ENV_PAUSED(7) 상태 감지
+            const isEnvPaused = (ctl.stateCode === 7);
+
+            if (isEnvPaused) {
+                const pauseReason = ctl.pauseReason || 0;
+                let reasonText = SNW.I18n.t('fsm.pauseReasonTempLow');
+                if (pauseReason === 1) reasonText = SNW.I18n.t('fsm.pauseReasonMotion');
+                else if (pauseReason === 3) reasonText = SNW.I18n.t('fsm.pauseReasonDiLow');
+
+                titleEl.textContent = `⏸ ${SNW.I18n.t('fsm.envPaused')}`;
+                subEl.textContent = `${reasonText} · 대기 중`;
+
+                if (btnPause) {
+                    btnPause.hidden = false;
+                    btnPause.textContent = '▶';
+                }
+                if (btnStop) btnStop.hidden = false;
+                if (btnTimerQuick) btnTimerQuick.hidden = true;
+                this._eq?.renderStatic();
+                this._eq?.stop();
+                return;
+            }
 
             if (!isActive) {
                 titleEl.textContent = '꺼짐';
@@ -249,7 +688,13 @@ SNW.Page = SNW.Page || {};
             const isPaused = s.state === 'PAUSED' || s.state === 1;
             let title = '', sub = '';
 
-            if (typeName === 'PLAYLIST') {
+            if (typeName === 'AUTO_FULL' || s.type === 4) {
+                title = SNW.I18n.t('session.autoFull');
+                sub = isPaused ? '일시정지' : (s.autoSwitchReason ? `✨ ${s.autoSwitchReason}` : '실시간 100% 자율 제어');
+            } else if (typeName === 'AUTO_SELECT' || s.type === 5) {
+                title = SNW.I18n.t('session.autoSelect');
+                sub = isPaused ? '일시정지' : (s.autoSwitchReason ? `🎯 ${s.autoSwitchReason}` : '바람 기준 고정 · 자동 세기 조절');
+            } else if (typeName === 'PLAYLIST') {
                 title = s.profileName || s.name || `프로필 #${s.profileNo || s.profileId || ''}`;
                 const remain = this._fmtRemain(s.stepRemainSec || s.remainSec || 0);
                 sub = `Step ${s.currentStep || s.stepNo || 1}/${s.totalSteps || 1} · ${remain}`;
@@ -264,7 +709,10 @@ SNW.Page = SNW.Page || {};
             }
 
             const isManual = (s.trigger === 1 || s.trigger === 'MANUAL' || s.triggerName === 'MANUAL');
-            const triggerIcon = isManual ? '✋' : '⏰';
+            let triggerIcon = isManual ? '✋' : '⏰';
+            if (typeName === 'AUTO_FULL' || s.type === 4) triggerIcon = '✨';
+            else if (typeName === 'AUTO_SELECT' || s.type === 5) triggerIcon = '🎯';
+
             titleEl.textContent = `${triggerIcon} ${title}`;
             subEl.textContent = isPaused ? `⏸ ${sub}` : sub;
 
@@ -288,7 +736,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // sim 업데이트 → 이퀄라이저 push
+        // sim 업데이트 → 이퀄라이저 push (stateCode 4 제거, 7 반영)
         // =========================================================
         _onSimUpdate() {
             const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
@@ -296,10 +744,12 @@ SNW.Page = SNW.Page || {};
             if (!sim) return;
 
             const s = store.session;
+            const ctl = store.control;
 
-            // [Phase3 N-1] 명시적 숫자 판정
+            // [Phase3 N-1 / Stage 5] stateCode === 7(ENV_PAUSED) 및 5(AUTOOFF_STOPPED) 차단
             const typeNum = s ? Number(s.type) : 0;
-            const isActive = (typeNum > 0) && (s.state === 'ACTIVE');
+            const isPausedOrBlocked = (ctl && (ctl.stateCode === 7 || ctl.stateCode === 5));
+            const isActive = (typeNum > 0) && (s.state === 'ACTIVE' || s.state === 2) && !isPausedOrBlocked;
 
             if (this._eq && isActive) {
                 this._eq.push(sim.windSpeed || 0);
@@ -379,7 +829,7 @@ SNW.Page = SNW.Page || {};
                 if (!grid) return;
 
                 if (profiles.length === 0) {
-                    grid.innerHTML = `<div class="snw-empty" style="color:var(--snw-text-dim,#8b949e);padding:16px 0;">작곡한 프로필이 없습니다.<br><a href="#/automation/studio" style="color:var(--snw-primary,#4a9eff);text-decoration:none;font-weight:600;display:inline-block;margin-top:8px;">🎨 Studio에서 작곡하기</a></div>`;
+                    grid.innerHTML = `<div class="snw-empty" style="color:var(--snw-text-dim,#8b949e);padding:16px 0;">작곡한 프로필이 없습니다.<br><a href="#/wind/studio" style="color:var(--snw-primary,#4a9eff);text-decoration:none;font-weight:600;display:inline-block;margin-top:8px;">🎨 Studio에서 작곡하기</a></div>`;
                     return;
                 }
 
@@ -426,9 +876,20 @@ SNW.Page = SNW.Page || {};
         async _onPauseToggle() {
             const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
             const s = store.session;
+            const ctl = store.control || {};
+            // ENV_PAUSED(7) 상태일 때는 resumeSession 호출
+            if (ctl.stateCode === 7) {
+                try {
+                    await SNW.Api.resumeSession();
+                    if (SNW.Haptic) SNW.Haptic.success();
+                } catch (e) {
+                    if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '재개 실패');
+                }
+                return;
+            }
             if (!s) return;
             try {
-                if (s.state === 'PAUSED') {
+                if (s.state === 'PAUSED' || s.state === 1) {
                     await SNW.Api.resumeSession();
                     if (SNW.Haptic) SNW.Haptic.success();
                 } else {
@@ -475,7 +936,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [Stage 10] 3탭 전환 및 영구 저장 (P2-16)
+        // 3탭 전환 및 영구 저장
         // =========================================================
         _switchDashTab(tab) {
             const validTabs = ['control', 'env', 'preset'];
@@ -498,7 +959,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [Stage 10] 퀵 타이머 다이얼로그 (P1-8)
+        // 퀵 타이머 다이얼로그
         // =========================================================
         _onQuickTimer() {
             const cur = (SNW.TimerManager && SNW.TimerManager.getStatus) ? SNW.TimerManager.getStatus() : null;
@@ -526,7 +987,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [Stage 10] Style Selector 5종 렌더러
+        // Style Selector 5종 렌더러
         // =========================================================
         _renderStyleSelector() {
             const wrap = this.el.querySelector('#style-selector');
@@ -564,7 +1025,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [Stage 10] 10대 자연풍 프리셋 그리드 렌더러
+        // 10대 자연풍 프리셋 그리드 렌더러
         // =========================================================
         _renderPresetGrid() {
             const wrap = this.el.querySelector('[data-slot="presets"]');
@@ -615,12 +1076,12 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [Stage 10 Phase 5 / Stage 10.1] Comfort 자동 모드 UI 초기화 (P0-1, P0-4, P0-5, 갭 5)
+        // Comfort 자동 모드 UI 초기화
         // =========================================================
         _initAutoComfort() {
             const slot = this.el.querySelector('[data-slot="auto-comfort-box"]');
             if (!slot) return;
-            if (slot.children.length > 0) return; // [갭 5] DOM 요소 존재 여부로 가드
+            if (slot.children.length > 0) return;
 
             slot.innerHTML = `
                 <div class="snw-auto-comfort-header" style="display:flex;justify-content:space-between;align-items:center;">
@@ -636,7 +1097,7 @@ SNW.Page = SNW.Page || {};
                 <div class="snw-auto-comfort__status" id="auto-comfort-status-text" role="status" aria-live="polite"></div>`;
 
             const chk = slot.querySelector('#chk-auto-comfort');
-            let userInteracted = false; // [P0-5]
+            let userInteracted = false;
 
             if (SNW.Api && typeof SNW.Api.getAutoComfortStatus === 'function') {
                 SNW.Api.getAutoComfortStatus().then(res => {
@@ -660,7 +1121,7 @@ SNW.Page = SNW.Page || {};
                 try {
                     if (SNW.Api && typeof SNW.Api.setAutoComfort === 'function') {
                         await SNW.Api.setAutoComfort(targetState);
-                        if (SNW.Store) SNW.Store.set({ autoComfortEnabled: targetState }); // [P0-4]
+                        if (SNW.Store) SNW.Store.set({ autoComfortEnabled: targetState });
                         if (SNW.ToastUtil) SNW.ToastUtil.info(targetState ? SNW.I18n.t('comfort.autoOn') : SNW.I18n.t('comfort.autoOff'));
                         this._renderAutoComfortStatus();
                         this._startAutoComfortTick();
@@ -673,7 +1134,7 @@ SNW.Page = SNW.Page || {};
         }
 
         // =========================================================
-        // [Stage 10.1] Comfort 5상태 매트릭스 렌더러 (P1-10, 갭 3-A)
+        // Comfort 5상태 매트릭스 렌더러
         // =========================================================
         _renderAutoComfortStatus() {
             const el = this.el.querySelector('#auto-comfort-status-text');
@@ -690,7 +1151,7 @@ SNW.Page = SNW.Page || {};
             const session = store.session || {};
             const isAutoOffLatched = (ctl.stateCode === 5);
             const isSessionActive = (session.state === 'ACTIVE' && session.active);
-            const isAutoSession = isSessionActive && session.trigger === 3; // [갭 3-A]
+            const isAutoSession = isSessionActive && session.trigger === 3;
             const isManualSession = isSessionActive && !isAutoSession;
 
             if (isAutoOffLatched) {

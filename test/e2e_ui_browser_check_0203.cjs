@@ -39,6 +39,7 @@ const { chromium, devices } = playwright;
 // 경로 설정
 const REPO_ROOT = path.resolve(__dirname, '..');
 const HTML_DIR  = path.join(REPO_ROOT, 'src/v0203/data_v0203_src/html_v0203');
+const DIST_HTML_DIR = path.join(REPO_ROOT, 'src/v0203/data_v0203/html_v0203');
 const JSON_DIR  = path.join(REPO_ROOT, 'src/v0203/data_v0203_src/json');
 const REPORT_DIR= path.join(__dirname, 'reports_ui');
 
@@ -58,12 +59,28 @@ function startStaticServer(initialPort = 8899) {
         const server = http.createServer((req, res) => {
             let uri = req.url.split('?')[0];
             let filePath = '';
+            let isGzip = false;
+            let effectiveExt = '';
 
             if (uri.startsWith('/json/')) {
                 filePath = path.join(JSON_DIR, uri.replace('/json/', ''));
             } else {
                 if (uri === '/' || uri === '') uri = '/index.html';
                 filePath = path.join(HTML_DIR, uri);
+                
+                // .gz 요청 처리 (LittleFS / Nginx 시뮬레이션)
+                if (!fs.existsSync(filePath) && uri.endsWith('.gz')) {
+                    const uncompressedPath = path.join(HTML_DIR, uri.slice(0, -3));
+                    const distGzPath = path.join(DIST_HTML_DIR, uri);
+                    if (fs.existsSync(uncompressedPath)) {
+                        filePath = uncompressedPath;
+                    } else if (fs.existsSync(distGzPath)) {
+                        filePath = distGzPath;
+                        isGzip = true;
+                    }
+                } else if (fs.existsSync(filePath) && uri.endsWith('.gz')) {
+                    isGzip = true;
+                }
             }
 
             if (!fs.existsSync(filePath)) {
@@ -72,9 +89,16 @@ function startStaticServer(initialPort = 8899) {
                 return;
             }
 
-            const ext = path.extname(filePath);
+            const cleanPath = isGzip ? filePath.slice(0, -3) : filePath;
+            const ext = path.extname(cleanPath);
             const contentType = mimeTypes[ext] || 'application/octet-stream';
-            res.writeHead(200, { 'Content-Type': contentType });
+
+            const headers = { 'Content-Type': contentType };
+            if (isGzip) {
+                headers['Content-Encoding'] = 'gzip';
+            }
+
+            res.writeHead(200, headers);
             fs.createReadStream(filePath).pipe(res);
         });
 
@@ -155,7 +179,10 @@ async function runE2EUIInspection() {
         const deskBottomNav = await deskPage.locator('#mobile-bottom-nav').isVisible();
         record('하단 모바일 탭 바 은닉 (display: none)', !deskBottomNav);
 
-        // 1-3) 대시보드 3탭 버튼 및 제어 탭 활성화
+        // 1-3) 대시보드 3탭 버튼 및 9종 시나리오 그리드
+        const scenarioCards = await deskPage.locator('.snw-scenario-card').count();
+        record('홈 9종(3×3) 원터치 시나리오 카드 렌더링', scenarioCards === 9, `${scenarioCards}/9개`);
+
         const tabsCount = await deskPage.locator('[data-dash-tab]').count();
         record('대시보드 3탭 버튼 존재 (제어/환경/프리셋)', tabsCount === 3, `${tabsCount}/3개`);
 
@@ -186,8 +213,8 @@ async function runE2EUIInspection() {
         const isSidebarStillThere = await deskPage.locator('#snw-sidebar').isVisible();
         record('페이지 이동 후에도 데스크톱 사이드바 유지 (영구 고정)', isAiPage && isSidebarStillThere);
 
-        // 복귀 및 스크린샷
-        await deskPage.click('#snw-sidebar a[href="#/dashboard"]');
+        // 복귀 및 스크린샷 (Fresh Start #/home)
+        await deskPage.click('#snw-sidebar a[href="#/home"]');
         await deskPage.waitForTimeout(300);
 
         record('PC 콘솔 에러 0건 (Clean)', deskErrors.length === 0, `${deskErrors.length}건`);
@@ -255,21 +282,31 @@ async function runE2EUIInspection() {
         const isMobPresetVisible = await mobPage.locator('[data-dash-content="preset"]').isVisible();
         record('모바일 [프리셋] 탭 터치 전환', isMobPresetVisible);
 
-        // 2-4) 하단 탭 바 원터치 페이지 라우팅 검증
-        await mobPage.click('#mobile-bottom-nav a[href="#/chart"]');
+        // 2-4) 하단 탭 바 원터치 페이지 라우팅 검증 (Fresh Start 5개 탭)
+        await mobPage.click('#mobile-bottom-nav a[href="#/wind"]');
         await mobPage.waitForTimeout(300);
-        const isChartRouted = mobPage.url().includes('#/chart');
-        record('하단 탭 [📈 차트] 원터치 이동', isChartRouted);
+        const isWindRouted = mobPage.url().includes('#/wind');
+        record('하단 탭 [🌬️ 바람] 원터치 이동', isWindRouted);
+
+        await mobPage.click('#mobile-bottom-nav a[href="#/automation"]');
+        await mobPage.waitForTimeout(300);
+        const isAutoRouted = mobPage.url().includes('#/automation');
+        record('하단 탭 [⚙️ 자동화] 원터치 이동', isAutoRouted);
+
+        await mobPage.click('#mobile-bottom-nav a[href="#/monitor"]');
+        await mobPage.waitForTimeout(300);
+        const isMonitorRouted = mobPage.url().includes('#/monitor');
+        record('하단 탭 [📊 모니터] 원터치 이동', isMonitorRouted);
 
         await mobPage.click('#mobile-bottom-nav a[href="#/settings"]');
         await mobPage.waitForTimeout(300);
         const isSettingsRouted = mobPage.url().includes('#/settings');
-        record('하단 탭 [⚙️ 설정] 원터치 이동', isSettingsRouted);
+        record('하단 탭 [🔧 설정] 원터치 이동', isSettingsRouted);
 
-        await mobPage.click('#mobile-bottom-nav a[href="#/dashboard"]');
+        await mobPage.click('#mobile-bottom-nav a[href="#/home"]');
         await mobPage.waitForTimeout(300);
-        const isDashRouted = mobPage.url().includes('#/dashboard');
-        record('하단 탭 [🏠 대시보드] 원터치 복귀', isDashRouted);
+        const isHomeRouted = mobPage.url().includes('#/home');
+        record('하단 탭 [🏠 홈] 원터치 복귀', isHomeRouted);
 
         record('안드로이드 모바일 콘솔 에러 0건 (Clean)', mobErrors.length === 0, `${mobErrors.length}건`);
         const mobScreenshotPath = path.join(REPORT_DIR, 'screenshot_mobile.png');

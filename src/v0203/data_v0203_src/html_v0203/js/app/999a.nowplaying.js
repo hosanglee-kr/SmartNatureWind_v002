@@ -1,6 +1,10 @@
 // =========================================================
-// 999a.nowplaying.js — 전역 Now Playing Bar
+// 999a.nowplaying.js — 전역 Now Playing Bar (Stage 5 UX 완성형)
 // Layer 3 (애플리케이션 전역 컴포넌트)
+//  - ENV_PAUSED 3초 호흡 애니메이션 + [▶ 지금 재개]
+//  - AUTO 배지 (✨ / 🎯)
+//  - 최단 종료 시각 표기 + autoSwitchReason 1줄 병기
+//  - btnStop 상시 노출 (ENV_PAUSED 중에도 완전 정지 허용)
 // =========================================================
 window.SNW = window.SNW || {};
 (function (SNW) {
@@ -18,10 +22,12 @@ window.SNW = window.SNW || {};
         autoBadge: null,
         btnPause: null,
         btnStop: null,
-        // 로컬 상태
         _eqAnimId: null,
         _eqBuffer: [],
     };
+
+    let _pauseBreathingId = null;
+    let _pauseBreathingPhase = 0;
 
     function $(sel, root) { return (root || document).querySelector(sel); }
 
@@ -31,12 +37,17 @@ window.SNW = window.SNW || {};
 
     function parseType(t) {
         if (typeof t === 'number') return t;
-        const m = { NONE: 0, PLAYLIST: 1, PRESET: 2, FIXED: 3 };
+        const m = { NONE: 0, PLAYLIST: 1, PRESET: 2, FIXED: 3, AUTO_FULL: 4, AUTO_SELECT: 5 };
         return m[t] != null ? m[t] : 0;
     }
 
     function isSessionVisible() {
-        const s = getSession();
+        const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+        const ctl = store.control;
+        // [Stage 5] ENV_PAUSED(7) 상태일 때는 세션이 pause 되어 있어도 바 상시 노출
+        if (ctl && ctl.stateCode === 7) return true;
+
+        const s = store.session;
         if (!s) return false;
         if (s.state === 'COMPLETED') return false;
         const type = parseType(s.type);
@@ -50,29 +61,122 @@ window.SNW = window.SNW || {};
         return `${m}:${String(s).padStart(2, '0')}`;
     }
 
+    // [Stage 5] ENV_PAUSED 3초 주기 호흡 애니메이션
+    function startPauseBreathing() {
+        if (_pauseBreathingId || !barEl.eq) return;
+        stopEq();
+        const ctx = barEl.eq.getContext('2d');
+        const w = barEl.eq.width;
+        const h = barEl.eq.height;
+
+        const tick = () => {
+            if (!_pauseBreathingId) return;
+            // ~3초 주기 (60fps 기준 약 0.035 rad/frame)
+            _pauseBreathingPhase = (_pauseBreathingPhase + 0.035) % (Math.PI * 2);
+            const alpha = 0.25 + 0.65 * Math.abs(Math.sin(_pauseBreathingPhase));
+
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = `rgba(210, 153, 34, ${alpha})`;
+            // 중앙 호흡 수평 바
+            ctx.fillRect(w * 0.15, h / 2 - 1.5, w * 0.7, 3);
+
+            _pauseBreathingId = requestAnimationFrame(tick);
+        };
+        _pauseBreathingId = requestAnimationFrame(tick);
+    }
+
+    function stopPauseBreathing() {
+        if (_pauseBreathingId) {
+            cancelAnimationFrame(_pauseBreathingId);
+            _pauseBreathingId = null;
+        }
+    }
+
     // =========================================================
     // 렌더링
     // =========================================================
     function render() {
         if (!barEl.root) return;
 
-        const s = getSession();
-        if (!s || !isSessionVisible()) {
+        const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+        const s = store.session;
+        const ctl = store.control;
+        const isEnvPaused = (ctl && ctl.stateCode === 7);
+
+        if (!isSessionVisible()) {
             barEl.root.hidden = true;
             document.body.classList.remove('has-nowplaying');
             stopEq();
+            stopPauseBreathing();
             return;
         }
+
         barEl.root.hidden = false;
         document.body.classList.add('has-nowplaying');
 
-        const type = parseType(s.type);
+        // ─── [Stage 5] 1. ENV_PAUSED 상태 처리 ───
+        if (isEnvPaused) {
+            stopEq();
+            startPauseBreathing();
+
+            const pauseReason = ctl.pauseReason || 0;
+            const cur = ctl.sensor || {};
+            const rule = (ctl.session && ctl.session.rule) || (s && s.rule) || {};
+            const curTemp = (cur.tempC != null) ? Number(cur.tempC).toFixed(1) : '--';
+            const curDi = (ctl.triggerRt && ctl.triggerRt.lastCheckDI != null)
+                ? Number(ctl.triggerRt.lastCheckDI).toFixed(0) : '--';
+
+            let subText = '';
+            if (pauseReason === 1) {
+                subText = SNW.I18n.t('fsm.pauseResumeHint.motion');
+            } else if (pauseReason === 2) {
+                const tl = rule.tempLow || {};
+                const resumeTh = (tl.threshold != null && tl.hysteresis != null)
+                    ? (Number(tl.threshold) + Number(tl.hysteresis)).toFixed(1) : '--';
+                subText = SNW.I18n.t('fsm.pauseResumeHint.temp', { cur: curTemp, resume: resumeTh });
+            } else if (pauseReason === 3) {
+                const dl = rule.diLow || {};
+                const resumeDi = (dl.threshold != null && dl.hysteresis != null)
+                    ? (Number(dl.threshold) + Number(dl.hysteresis)).toFixed(0) : '--';
+                subText = SNW.I18n.t('fsm.pauseResumeHint.di', { cur: curDi, resume: resumeDi });
+            } else {
+                subText = SNW.I18n.t('fsm.envPaused');
+            }
+
+            barEl.title.textContent = `⏸ ${SNW.I18n.t('fsm.envPaused')}`;
+            barEl.step.textContent = subText;
+            barEl.time.textContent = '';
+
+            // [▶ 지금 재개] 버튼 노출
+            barEl.btnPause.hidden = false;
+            barEl.btnPause.textContent = '▶';
+            barEl.btnPause.title = '지금 재개';
+            barEl.btnPause.setAttribute('aria-label', '지금 재개');
+
+            // btnStop 상시 노출 (ENV_PAUSED 중에도 완전 정지 허용)
+            barEl.btnStop.hidden = false;
+
+            if (barEl.pending) barEl.pending.hidden = true;
+            if (barEl.timerBadge) barEl.timerBadge.hidden = true;
+            if (barEl.autoBadge) barEl.autoBadge.hidden = true;
+            return;
+        }
+
+        // 정상 세션 상태: 호흡 정지
+        stopPauseBreathing();
+
+        const type = s ? parseType(s.type) : 0;
+        const typeName = s ? (s.typeName || (['NONE', 'PLAYLIST', 'PRESET', 'FIXED', 'AUTO_FULL', 'AUTO_SELECT'][type] || 'NONE')) : 'NONE';
         const stateStr = (typeof s.state === 'string') ? (s.state === 'RUNNING' ? 'ACTIVE' : s.state) : (s.state === 1 ? 'PAUSED' : 'ACTIVE');
         const isPaused = (stateStr === 'PAUSED');
 
-        // 1) 타이틀
+        // ─── 2. 타이틀 & AUTO 배지 ───
         let title = '';
-        if (type === 1) {
+        if (typeName === 'AUTO_FULL' || type === 4) {
+            title = `✨ ${SNW.I18n.t('session.autoFull')}`;
+        } else if (typeName === 'AUTO_SELECT' || type === 5) {
+            title = `🎯 ${SNW.I18n.t('session.autoSelect')}`;
+        } else if (type === 1) {
             title = s.profileName || (s.profileNo ? `프로필 #${s.profileNo}` : '플레이리스트');
         } else if (type === 2) {
             title = `${s.presetCode || '자연풍'} · ${s.styleCode || '표준'}`;
@@ -83,27 +187,43 @@ window.SNW = window.SNW || {};
         }
         barEl.title.textContent = title;
 
-        // 2) 서브 정보 (스텝, 남은 시간)
-        if (type === 1) {
-            barEl.step.textContent = `Step ${s.currentStep || 1}/${s.totalSteps || 1}`;
-            const remainSec = s.stepRemainSec || 0;
-            barEl.time.textContent = isPaused
-                ? `일시정지 (${formatTime(remainSec)})`
-                : (remainSec > 0 ? formatTime(remainSec) : '가동 중');
-        } else if (type === 3) {
-            barEl.step.textContent = `${Math.round(s.percent || 0)}%`;
-            barEl.time.textContent = isPaused ? '일시정지' : '가동 중';
-        } else {
-            barEl.step.textContent = '';
-            barEl.time.textContent = isPaused ? '일시정지' : '가동 중';
+        // ─── 3. 서브 정보 & 최단 종료 시각 단일 표기 ───
+        let subReason = s.autoSwitchReason ? ` · ${s.autoSwitchReason}` : '';
+
+        // 최단 종료 시각 계산 (타이머 vs 스텝 종료)
+        const timerStatus = (SNW.TimerManager && typeof SNW.TimerManager.getStatus === 'function')
+            ? SNW.TimerManager.getStatus()
+            : null;
+        let shortestSec = null;
+        if (timerStatus && timerStatus.active && timerStatus.remainMin > 0) {
+            shortestSec = timerStatus.remainMin * 60;
+        }
+        if (type === 1 && s.stepRemainSec && s.stepRemainSec > 0) {
+            if (shortestSec == null || s.stepRemainSec < shortestSec) {
+                shortestSec = s.stepRemainSec;
+            }
         }
 
-        // 3) 일시정지 / 재개 버튼 아이콘
+        if (type === 1) {
+            barEl.step.textContent = `Step ${s.currentStep || 1}/${s.totalSteps || 1}${subReason}`;
+            barEl.time.textContent = isPaused
+                ? `일시정지 (${formatTime(shortestSec)})`
+                : (shortestSec > 0 ? formatTime(shortestSec) : '가동 중');
+        } else if (type === 3) {
+            barEl.step.textContent = `${Math.round(s.percent || 0)}%${subReason}`;
+            barEl.time.textContent = isPaused ? '일시정지' : (shortestSec > 0 ? formatTime(shortestSec) : '가동 중');
+        } else {
+            barEl.step.textContent = s.autoSwitchReason || '';
+            barEl.time.textContent = isPaused ? '일시정지' : (shortestSec > 0 ? formatTime(shortestSec) : '가동 중');
+        }
+
+        // ─── 4. 일시정지 / 재개 버튼 & btnStop 상시 노출 ───
         barEl.btnPause.textContent = isPaused ? '▶' : '⏸';
         barEl.btnPause.setAttribute('aria-label', isPaused ? '재개' : '일시정지');
+        barEl.btnPause.hidden = false;
+        barEl.btnStop.hidden = false; // [Stage 5] btnStop 상시 노출
 
-        // 4) Pending Schedule 충돌 배지
-        const ctl = (SNW.Store && SNW.Store.get) ? SNW.Store.get().control : null;
+        // ─── 5. Pending Schedule 충돌 배지 ───
         const ps = ctl && ctl.pendingSchedule;
         if (ps && ps.active && ps.inactiveDueToManual) {
             barEl.pending.hidden = false;
@@ -124,10 +244,7 @@ window.SNW = window.SNW || {};
             barEl.pending.onclick = null;
         }
 
-        // 4-1) Timer 배지
-        const timerStatus = (SNW.TimerManager && typeof SNW.TimerManager.getStatus === 'function')
-            ? SNW.TimerManager.getStatus()
-            : null;
+        // ─── 6. Timer 배지 ───
         if (barEl.timerBadge && timerStatus && timerStatus.active) {
             barEl.timerBadge.hidden = false;
             const min = timerStatus.remainMin;
@@ -142,14 +259,13 @@ window.SNW = window.SNW || {};
             barEl.timerBadge.onclick = null;
         }
 
-        // 4-2) Auto Comfort 배지
+        // ─── 7. Auto Comfort 배지 ───
         if (barEl.autoBadge) {
-            const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
-            const isAuto = !!store.autoComfortEnabled || (s && (s.trigger === 3 || s.triggerName === 'AUTO_COMFORT'));
+            const isAuto = !!store.autoComfortEnabled || (s && (s.trigger === 3 || s.triggerName === 'AUTO_COMFORT' || type === 4 || type === 5));
             barEl.autoBadge.hidden = !isAuto;
         }
 
-        // 5) EQ 애니메이션
+        // ─── 8. EQ 애니메이션 ───
         if (isPaused) {
             stopEq();
             renderEqStatic();
@@ -213,6 +329,20 @@ window.SNW = window.SNW || {};
     // =========================================================
     async function onPauseOrResume(e) {
         if (e) e.stopPropagation();
+        const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+        const ctl = store.control;
+
+        // [Stage 5] ENV_PAUSED(7) 상태일 때 [▶ 지금 재개] 연동
+        if (ctl && ctl.stateCode === 7) {
+            try {
+                await SNW.Api.resumeSession();
+                if (SNW.ToastUtil) SNW.ToastUtil.success('바람이 재개되었습니다.');
+            } catch (err) {
+                if (SNW.ToastUtil) SNW.ToastUtil.error(err.message || '재개 실패');
+            }
+            return;
+        }
+
         const s = getSession();
         if (!s) return;
         try {
@@ -278,25 +408,25 @@ window.SNW = window.SNW || {};
         SNW.LogUtil.info('[NowPlaying] Bar initialized');
     }
 
-    SNW.NowPlaying = {
-        init,
-        render,
-        getSession
-    };
-
-
     // =========================================================
     // Now Playing 상세 확장 모달
     // =========================================================
     function showNowPlayingDetailsModal(s) {
         if (!SNW.UI || !SNW.UI.modal || !s) return;
         const type = parseType(s.type);
+        const typeName = s.typeName || (['NONE', 'PLAYLIST', 'PRESET', 'FIXED', 'AUTO_FULL', 'AUTO_SELECT'][type] || 'NONE');
         const stateStr = (typeof s.state === 'string') ? (s.state === 'RUNNING' ? 'ACTIVE' : s.state) : (s.state === 1 ? 'PAUSED' : 'ACTIVE');
         const isPaused = (stateStr === 'PAUSED');
 
         let title = '';
         let typeBadge = '';
-        if (type === 1) {
+        if (typeName === 'AUTO_FULL' || type === 4) {
+            title = SNW.I18n.t('session.autoFull');
+            typeBadge = '✨ AI 스마트 쾌적 (100% 자율)';
+        } else if (typeName === 'AUTO_SELECT' || type === 5) {
+            title = SNW.I18n.t('session.autoSelect');
+            typeBadge = '🎯 취향 맞춤 Auto';
+        } else if (type === 1) {
             title = s.profileName || (s.profileNo ? `프로필 #${s.profileNo}` : '플레이리스트');
             typeBadge = '🎵 맞춤 바람 (플레이리스트)';
         } else if (type === 2) {
@@ -356,7 +486,6 @@ window.SNW = window.SNW || {};
                 return true;
             },
             () => {
-                // Cancel = 닫기만 수행 (세션 유지)
                 return true;
             },
             {
@@ -431,5 +560,10 @@ window.SNW = window.SNW || {};
         );
     }
 
-})(window.SNW);
+    SNW.NowPlaying = {
+        init,
+        render,
+        getSession
+    };
 
+})(window.SNW);

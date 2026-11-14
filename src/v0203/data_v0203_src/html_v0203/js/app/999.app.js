@@ -182,11 +182,36 @@ window.SNW = window.SNW || {};
     function _bindConnectionStatus() {
         const dot = document.getElementById('conn-status');
         const footerStat = document.getElementById('footer-status');
-        if (!dot && !footerStat) return;
+        let reconnectBanner = document.getElementById('snw-reconnect-overlay');
+
         const render = (conn) => {
-            if (dot) { dot.className = 'snw-status-dot snw-status-dot--' + conn; dot.title = SNW.I18n.t('footer.' + conn); }
+            const isConn = (conn === 'connected');
+            if (dot) {
+                dot.className = 'snw-status-dot snw-status-dot--' + conn;
+                dot.title = SNW.I18n.t('footer.' + conn);
+            }
             if (footerStat) footerStat.textContent = SNW.I18n.t('footer.' + conn);
+
+            // [Stage 5] wsConnected === false 재연결 오버레이
+            if (!isConn && !window.SNW_OFFLINE) {
+                if (!reconnectBanner) {
+                    reconnectBanner = document.createElement('div');
+                    reconnectBanner.id = 'snw-reconnect-overlay';
+                    reconnectBanner.className = 'snw-reconnect-overlay';
+                    reconnectBanner.innerHTML = `
+                        <div class="snw-reconnect-box">
+                            <span class="snw-spinner"></span>
+                            <span>${SNW.I18n.t('reconnect.body')}</span>
+                        </div>
+                    `;
+                    document.body.appendChild(reconnectBanner);
+                }
+                reconnectBanner.style.display = 'flex';
+            } else {
+                if (reconnectBanner) reconnectBanner.style.display = 'none';
+            }
         };
+
         SNW.Store.watch('connection', render);
         render(SNW.Store.get().connection);
     }

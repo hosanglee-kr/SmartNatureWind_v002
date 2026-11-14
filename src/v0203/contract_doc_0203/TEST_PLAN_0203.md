@@ -1,4 +1,4 @@
-# TEST_PLAN_0203.md — 회귀 테스트 인덱스 (v4.3)
+# TEST_PLAN_0203.md — 회귀 테스트 인덱스 (v4.4)
 
 > **검증 대상**: Smart Nature Wind v0203 펌웨어 + v0203 SPA 프론트엔드
 > **기준선**: Batch A~F + Phase 0~7 + Batch G/H/I + Stage 8 AI/Live + Stage 9 UI/UX
@@ -358,6 +358,7 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-14** | **v4.4** | **Phase 2 — L12 회귀 (T-158~T-168)**: `ENV_PAUSED` 진입/해제, `TempLow`/`DiLow` PAUSE/STOP 이원화, `AUTO_FULL`/`AUTO_SELECT` 세션, AUTO 중 사용자 개입, PIR 시작 유예(T-167), `PATCH /session/rule`(T-168) 11건 신규 (`TEST_PLAN_L9_L11_0203.md` §3.8, `test/e2e_phase2.py`) | Antigravity AI |
 | **2026-11-10** | **v4.3** | **웹 UI/UX 인터랙션 고도화 검증 절차 반영 (T-156, b3d06c2)**: L11 계층에 T-156(모니터 히스토리 지그재그 타임라인/시간축, Wind Studio 하단 분리 액션바 및 AI FAB 자동 은닉, AI 어시스턴트 세그먼트/스마트 입력창 검증) 반영 | Antigravity AI |
 | **2026-11-09** | **v4.2** | **Stage 10.1 결함 패치 및 하드웨어 백엔드 타이머 검증 항목 반영 (0203_013_20_02)**: L11 계층 T-154-FE(Comfort 5상태 매트릭스) 강화 및 T-155(하드웨어 타이머 브라우저 종료 후 단독 만료/재기동 차단 E2E) 추가 | Antigravity AI |
 | **2026-11-09** | **v4.1** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: L9~L11 레이어에 T-153(Dashboard 3탭), T-154(Comfort 자동모드 백엔드), T-154-FE(Comfort UI 토글/배지) 반영 | Antigravity AI |

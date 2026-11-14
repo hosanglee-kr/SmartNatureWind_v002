@@ -1,4 +1,4 @@
-# CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.8)
+# CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.9)
 
 > **기준**: v0203 정적 감사 + 런타임 동시성 검증 완료 (F-01~F-10, I-1~I-6, N-1~N-4, G-1~G-3, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10, Batch G 전면 반영).  
 > **목적**: 멀티태스킹 환경에서 태스크 경계, 뮤텍스 획득 순서, 공유 자원 접근 규약 및 위임 패턴을 정의하여 데이터 레이스, 교착 상태(Deadlock), UAF를 원천 차단.  
@@ -104,6 +104,7 @@
 2. **쓰기**: 오직 `CT10::reloadAll()` 내부. `s_rootSwapMux` 스핀락 임계 구역에서 포인터 스왑.
 3. **지연 해제 (UAF)**: `v_old`는 `queuePendingFree(v_old)` 3초 grace 후 `processPendingFree()` 해제.
 4. **화이트리스트 (B-2)**: T-loop 컨텍스트 직접 접근 허용 위치 명시 (A00_run, CT10_Ctl_*, M10). T-async는 `getRootSnapshot()` 필수. 위반 시 코드 리뷰 리젝트.
+   - `CT10_Ctl_Ctl_0203.cpp::initRuleFromPayload` (세션 시작, T-async 경유)
 
 ---
 
@@ -330,12 +331,35 @@ startSession(type, trigger, payload) [T-async]
 - **[UI-12] 스튜디오 액션바 분리 및 AI FAB 은닉 계약**: Wind Studio 화면 활성화 시 하단 액션바(`snw-studio__bar`)를 좌측(`🎬 미리보기`)과 우측(`취소` / `저장/업데이트`)으로 분리 정렬하고 z-index를 1000으로 격상한다. 편집 시야 가림을 방지하기 위해 Studio 화면 활성화 시 우하단 AI FAB 버튼을 CSS 상에서 강제 은닉(`body:has(.snw-studio__bar) .snw-ai-fab { display: none !important; }`)한다.
 - **[UI-13] AI 어시스턴트 세그먼트 컨트롤 및 스마트 입력창 계약**: REST/Live 모드 전환은 `.snw-btn-group` 세그먼트 컨트롤로 단일화하고 비용 배지는 말줄임(`white-space: nowrap`, `text-overflow: ellipsis`)으로 2줄 개행을 방지한다. 대화 입력창(textarea)은 초기 1줄에서 입력 길이에 맞춰 최대 120px까지 동적 확장되어 가독성과 입력 편의성을 보장한다.
 
+### 7.23 Pause/Stop 이원화 결정 규칙 (Stage 6 신규)
+
+- **[PAUSE-STOP-1] 온도·DI 이원화 계약**: `tempLow.mode` / `diLow.mode`가 `PAUSE`이면 `ENV_PAUSED(7)` + `pauseReason`으로 진입하며 히스테리시스 재개. `STOP`이면 `AUTOOFF_STOPPED(5)` + reason 12/13으로 래치 진입, 사용자 ACK까지 유지.
+- **[PAUSE-STOP-2] PIR 고정 PAUSE**: `pirPause`는 mode 없이 **항상 PAUSE**. `pauseMask` 비트 0.
+- **[PAUSE-STOP-3] 다중 Pause 래치**: `pauseMask`에 여러 비트 활성 시, **모두 해소되어야 재개** (`pauseMask == 0`). 대표 `pauseReason`은 우선순위 (PIR > TEMP > DI).
+- **[PAUSE-STOP-4] 환경 센서 1초 게이트**: 온도/DI 판정은 `lastEnvCheckMs` 기준 1초 주기 (WCET 예산 25ms 준수). PIR은 게이트 없이 매 tick 판정.
+- **[PAUSE-STOP-5] 세션 스냅샷 우선**: `_session.rule`에 세션 시작 시 복사된 규칙만 사용. 세션 중 `profile.rule` 수정은 다음 세션부터 반영 (정책 A 확정).
+- **[PAUSE-STOP-6] AUTO 중 사용자 개입**: `AUTO_FULL`/`AUTO_SELECT` 세션 중 사용자 슬라이더/프리셋 조작 시 `_session.trigger` → `MANUAL`로 **즉시 전환**. `tickAutoComfort`의 AUTO 재평가 중단 (정책 A 확정).
+- **[PAUSE-STOP-7] `nextPauseReason` 전달**: `ST_CT10_Decision_t`에 `nextPauseReason` 필드 필수. `applyDecision()`에서 `onTriggerPause(p_d.nextPauseReason)` 호출. **`runCtx.pauseReason`을 Decision에서 명시 전달** (이전 값 유지 금지).
+- **[PAUSE-STOP-8] PIR 시작 유예**: `_session.startedAt > 0 && (now - _session.startedAt) < holdMs` 구간에서는 `pirPause` 부재(`absent`) 판정을 유예한다.
+- **[PAUSE-STOP-9] ENV_PAUSED 수동 재개 1시간 유예**: `POST /api/v001/session/resume` 시 `triggerRt.pauseBypassUntilMs = millis() + 3600000UL`, `pauseMask = 0` 설정. 유예 중 PAUSE 갱신은 스킵하되 STOP 조건(타이머/예약시각/STOP 임계)은 정상 감시한다.
+- **[RULE-LIVE-1] 가동 중 규칙 실시간 갱신**: `PATCH /api/v001/session/rule` → `updateActiveSessionRule()` (`s_stateMutex` 보호 하에 `C10_fromJson_TriggerRule` + `applyRuleToTriggerRt()`, `timerStartMs`/`pausedAccumMs` 보존). `exportStateJson_v02()`에 `_session.autoSwitchReason[64]`/`autoSwitchAtMs` 직렬화.
+
+### 7.24 AUTO_FULL / AUTO_SELECT 위임 계약 (Stage 6 신규)
+
+- **[AUTO-1] trigger 강제 매핑**: `startSession(AUTO_FULL, ...)` 호출 시 `trigger`는 **반드시** `MANUAL_AUTO_FULL(4)`. 클라이언트가 임의 trigger 지정해도 W10 라우트에서 강제 덮어씀.
+- **[AUTO-2] AUTO_SELECT base 고정**: `autoSelect.baseType`(PRESET/PLAYLIST)과 `basePresetCode`/`baseProfileId`는 세션 시작 시 확정. 세션 중 변경 불가 (다음 세션에 반영).
+- **[AUTO-3] AUTO_FULL 재평가 주기**: `tickAutoComfort()` 5분 주기 (`AUTO_COMFORT_INTERVAL_MS = 300000`). 환경 변화 시 프리셋 자동 전환 (S10 crossfade).
+- **[AUTO-4] AUTO 중 Pause/Stop 우선**: `checkTriggers()`가 AUTO 세션에도 동일 적용. ENV_PAUSED 진입 시 `tickAutoComfort` 재평가 스킵, STOP 진입 시 세션 종료.
+- **[AUTO-5] AUTO 세션의 스냅샷 rule**: `_session.rule`은 세션 시작 시 확정. AUTO_FULL 재평가 시에도 rule은 변경 안 함 (재평가는 프리셋/스타일만).
+- **[AUTO-6] rule 전역 기본값**: `payload.rule` 부재 시 `A20_resetTriggerRuleDefault()` 결과 사용 (모든 트리거 disabled). **사용자 명시 rule 없으면 자동 정지 미작동**.
+
 ---
 
 ## 8. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-14** | **v3.9** | **Phase 2 — Pause/Stop 이원화 + AUTO 위임 계약**: §3.1 `initRuleFromPayload` 화이트리스트 추가, §7.23 `PAUSE-STOP-1~9` 및 `RULE-LIVE-1` 신규 (히스테리시스·`pauseMask`·세션 스냅샷·AUTO 개입·유예·실시간 규칙 갱신), §7.24 `AUTO-1~6` 신규 (trigger 강제·base 고정·재평가·rule 스냅샷) | Antigravity AI |
 | **2026-11-10** | **v3.8** | **웹 UI/UX 인터랙션 고도화 및 컴포넌트 격리 계약 (§7.22 UI-11~UI-13, b3d06c2)**: 모니터 히스토리 2단 지그재그 타임라인/시간축 규약(UI-11), 스튜디오 하단 분리 액션바 및 AI FAB 강제 은닉 규약(UI-12), AI 어시스턴트 세그먼트 컨트롤 및 자동 신축 입력창 규약(UI-13) 명시 | Antigravity AI |
 | **2026-11-09** | **v3.7** | **Stage 10.1 하드웨어 백엔드 타이머 신뢰성 및 안전 계약 (§7.21 TIMER-1~TIMER-3, UI-10 갱신, 0203_013_20_02)**: 하드웨어 백엔드 타이머 신뢰성 계약(TIMER-1), 만료 시 Comfort 재기동 억제(TIMER-2: setAutoComfort(false)), 브라우저 동기 실패 경고(TIMER-3), Comfort 5상태 매트릭스 UI-10 명시 | Antigravity AI |
 | **2026-11-09** | **v3.6** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: §7.20 COMFORT-1(AutoOff 래치 억제), COMFORT-2(락 획득 순서 준수), UI-10(Now Playing 자동 배지 표출) 동시성 및 안전 계약 추가 | Antigravity AI |

@@ -1,4 +1,4 @@
-# BUDGET_0203.md — 시간 및 시스템 자원 예산 (v3.6)
+# BUDGET_0203.md — 시간 및 시스템 자원 예산 (v3.7)
 
 > **기준**: v0203 정적 감사 + 런타임 실측 반영 (Batch A~G 완료).  
 > **핵심 성과**: F-05(reload 위임)/F-06(motion sim 위임)으로 `async_tcp` 블로킹 제거, D-1(WS mutex 배치)/D-4(atomic)/D-5(고정 배열)로 loopTask 지터 감소, B-1(NVS 단일 commit 10ms)/B-9(스냅샷 캐시 2ms) 성능 최적화.  
@@ -88,6 +88,9 @@
 | `delay(G_A00_LOOP_DELAY_MS=10)` | 10 ms | **[C-5]** 상수 참조 |
 | **`CT10::startSession/pause/resume/stop`** | **< 10 ms** | T-async, s_stateMutex 재귀 (Phase 3) |
 | **`CT10::tickSchedule` (profileId 탐색)** | **< 1 ms** | 프로필 탐색 O(6), ADR-3 단일 규격 |
+| **`checkTriggers()` (Stage 6)** | **< 100 μs** (게이트 내) / **< 5 μs** (게이트 밖) | **PIR 매 tick / 온도·DI 1초 게이트** |
+| **`initRuleFromPayload()` (세션 시작)** | **< 50 μs** | 세션 시작 1회 (AUTO 계열) |
+| **`tickAutoComfort()` AUTO 재평가** | **< 200 μs** | 5분 주기, `AUTO_FULL`/`AUTO_SELECT` 세션 한정 |
 
 - **평상시 총**: 15~25 ms / 10ms 주기 → 오버런 평균화
 - **차트 브로드캐스트**: +10ms
@@ -461,12 +464,28 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 | **프론트엔드 번들 실측치** | JS gz: **130.0 KB** (129,987 B), CSS gz: **16.4 KB** (16,436 B), HTML gz: **1.7 KB** (1,741 B) | gzip 합계 **148.1 KB** (< 160KB 목표 대비 안정적) ✅ |
 | **LittleFS 총 점유** | 정적 자산(148.1 KB) + JSON 9종(20.8 KB) = **169.0 KB** | LittleFS 1MB 예산 대비 **16.9%** (여유 831 KB 이상 확보) ✅ |
 
+### 10.9 Phase 2 (Stage 1~6) 예산 영향
+
+| 항목 | 측정/추정 | 판정 |
+|---|---|---|
+| **C++ Flash (TriggerRule)** | +1.2 KB (신규 헬퍼·enum) | ✅ 여유 |
+| **C++ RAM (triggerRt)** | +32 B (`pauseMask`, `lastCheck*`) | ✅ 여유 |
+| **`checkTriggers()` WCET** | PIR 판정 < 5 μs / 온도·DI < 100 μs (1초 게이트) | ✅ loopTask 20ms 예산 대비 < 0.5% |
+| **`initRuleFromPayload()` WCET** | < 50 μs | ✅ 세션 시작 1회 |
+| **`tickAutoComfort` 재평가** | < 200 μs | ✅ 5분 주기 |
+| **JSON 파일 크기** | `rule` 추가로 +30% (`cfg_userProfile`: ~4KB) | ✅ LittleFS 여유 |
+| **`rule` 5탭 UI (FE)** | `_rules.css` 3.5 KB raw | ✅ |
+| **i18n +60 키** | +3.2 KB raw (ko+en) | ✅ gz +1.5 KB |
+
+**누적 판정**: Flash +2 KB, RAM +32 B, 프론트 gz +2 KB. 모두 기존 예산 여유 이내.
+
 ---
 
 ## 11. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-14** | **v3.7** | **Phase 2 — TriggerRule & AUTO 예산 영향**: §2 `checkTriggers` WCET < 100 μs / `initRuleFromPayload` < 50 μs / `tickAutoComfort` AUTO 재평가 < 200 μs, §10.9 Phase 2 누적 영향 (Flash +2KB / RAM +32B / FE gz +2KB) | Antigravity AI |
 | **2026-11-10** | **v3.6** | **Stage 10.1 UI/UX 고도화 프론트엔드 자산 실측치 반영 (§10.8, b3d06c2)**: 53개 JS 번들(130.0KB gz), 18개 CSS 번들(16.4KB gz), HTML(1.7KB gz), LittleFS 총 점유 169.0KB(1MB 예산 대비 16.9%) 실측치 현행화 | Antigravity AI |
 | **2026-11-09** | **v3.5** | **Stage 10.1 하드웨어 백엔드 타이머 및 5상태 매트릭스 누적 영향 (§10.7, 0203_013_20_02)**: `loopTask` WCET 만료 부하(<150μs), 53개 JS(129.5KB gz) 및 18개 CSS(15.3KB gz), LittleFS 총 점유 146.5KB(1MB 예산 대비 14.7%) 실측치 반영 | Antigravity AI |
 | **2026-11-09** | **v3.4** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: §2 `tickAutoComfort` loopTask WCET(<0.1μs), §10.6 번들 크기(127.3KB gz) 및 Flash(43.4%)/RAM(30.6%) 예산 영향 평가 반영 | Antigravity AI |

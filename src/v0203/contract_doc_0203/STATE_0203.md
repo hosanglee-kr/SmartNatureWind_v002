@@ -1,4 +1,4 @@
-# STATE_0203.md — 상태 소유권 및 FSM 명세 (v3.6)
+# STATE_0203.md — 상태 소유권 및 FSM 명세 (v3.7)
 
 > **단일 기록자 원칙**: 각 런타임 상태 변수는 원칙적으로 단 하나의 태스크만 쓰기 권한을 가진다. 다중 태스크 쓰기 시 전용 뮤텍스 또는 `std::atomic`으로 격리.  
 > F-01~F-10, I-1~I-6, N-1~N-4, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10, Batch G 반영.  
@@ -86,6 +86,11 @@
 | `s_promptCache` (CT10_AI) | T-async (`buildAIPromptStrict`) | T-async | 30초 유효 타임스탬프 | I2C 센서 블로킹 및 힙 파편화 방지 |
 | `runtimeAutoOff` (CT10 `_session.runtimeAutoOffMin`, `runtimeAutoOffStartMs`) | T-async (`setSessionAutoOff`, `POST /control/timer`, `AI set_timer`), T-loop (`tickLoop` 만료) | T-async (`getTimerDurationMin`, `getSessionAutoOffRemainSec`), T-loop | `CT10::s_stateMutex` | 하드웨어 백엔드 타이머 런타임 상태 (만료 시 stopSession + setAutoComfort(false)) |
 | `s_autoComfortEnabled` (CT10) | T-async (`POST /comfort/auto`), T-loop (`begin()`) | T-loop (`tickAutoComfort`), T-async (`GET /comfort/auto`) | `CT10::s_stateMutex` + NVS | Comfort 자동 모드 활성 플래그 |
+| `runCtx.pauseReason` | T-loop (`applyDecision`) | T-async (`exportStateJson_v02`) | `CT10::s_stateMutex` | **ENV_PAUSED 상태에서만 유효** |
+| `triggerRt.pauseMask` | T-loop (`checkTriggers`) | T-loop | `CT10::s_stateMutex` | **다중 Pause 비트마스크 (MOTION=1, TEMP=2, DI=4)** |
+| `_session.rule` | T-async (`initRuleFrom*`) | T-loop (`checkTriggers`), T-async (`exportStateJson_v02`) | `CT10::s_stateMutex` | **세션 스냅샷 (세션 중 불변)** |
+| `triggerRt.pauseBypassUntilMs` | T-async (`resumeSession`) | T-loop (`checkTriggers`) | `CT10::s_stateMutex` | **수동 재개 1시간 유예 만료 시각** |
+| `_session.autoSwitchReason` | T-loop (`tickAutoComfort`) | T-async (`exportStateJson_v02`) | `CT10::s_stateMutex` | **AUTO 프리셋/스타일 전환 사유** |
 
 ---
 
@@ -97,38 +102,25 @@
 2. **`EN_CT10_STATE_OVERRIDE`**: 수동/강제 풍속 실행
 3. **`EN_CT10_STATE_PROFILE_RUN`**: 사용자 프로파일 시퀀스 실행
 4. **`EN_CT10_STATE_SCHEDULE_RUN`**: 요일/시간 스케줄 세그먼트 실행
-5. **`EN_CT10_STATE_MOTION_BLOCKED`**: PIR 미감지(부재) 일시 중지
-6. **`EN_CT10_STATE_AUTOOFF_STOPPED`**: AutoOff 래치 정지
-7. **`EN_CT10_STATE_TIME_INVALID`**: NTP 미동기화로 스케줄 판정 불가
+5. **`EN_CT10_STATE_AUTOOFF_STOPPED`**: Stop 래치 (사용자 ACK 필요)
+6. **`EN_CT10_STATE_TIME_INVALID`**: NTP 미동기로 스케줄 판정 불가
+7. **`EN_CT10_STATE_ENV_PAUSED`**: 환경 일시정지 (P1/P2/P3 통합, 자동 재개) — **v3.7 신규**
+
+> **`EN_CT10_STATE_MOTION_BLOCKED = 4`**: **v3.7에서 제거/예약** — `ENV_PAUSED(7) + pauseReason=MOTION`으로 통합.
 
 ### 2.2 상태 전이 우선순위 (`decideRunSource`)
 
 ```text
-[1] overrideState.active == true
-    └──► OVERRIDE (수동이 모든 자동 제어 압도)
-
-[2] _autoOffLatched == true
-    └──► AUTOOFF_STOPPED (사용자 재개 전 재시작 차단)
-
-[3] useProfileMode == true
-    ├── profile 선택됨 (curProfileIndex >= 0)
-    │   ├── motionBlocked == true  ──► MOTION_BLOCKED
-    │   └── motionBlocked == false ──► PROFILE_RUN
-    └── profile 미선택  ──► IDLE (F-5: schedule fall-through 차단)
-
-[4] runSource == USER_PROFILE && curProfileIndex >= 0
-    ├── motionBlocked == true  ──► MOTION_BLOCKED
-    └── motionBlocked == false ──► PROFILE_RUN
-
-[5] !TM10::isTimeValid()
-    └──► TIME_INVALID (스케줄 판정 불가, 3초 홀드)
-
-[6] findActiveScheduleIndex() >= 0
-    ├── motionBlocked == true  ──► MOTION_BLOCKED
-    └── motionBlocked == false ──► SCHEDULE_RUN
-
-[7] 일치 없음
-    └──► IDLE
+[1] overrideState.active                → OVERRIDE
+[2] _autoOffLatched                     → AUTOOFF_STOPPED (Stop 래치)
+[3] checkTriggers() == STOP             → AUTOOFF_STOPPED (TEMP_LOW_STOP / DI_LOW_STOP)
+[4] checkTriggers() == PAUSE            → ENV_PAUSED (pauseMask != 0)
+[5] ENV_PAUSED 상태 + 모든 조건 해소     → 재개 (계속 진행)
+[6] useProfileMode + profile 유효         → PROFILE_RUN
+[7] useProfileMode + profile 미선택       → IDLE (F-5)
+[8] !TM10::isTimeValid()                → TIME_INVALID
+[9] findActiveScheduleIndex() >= 0       → SCHEDULE_RUN
+[10] else                               → IDLE
 ```
 
 ### 2.3 상태 전이표
@@ -394,6 +386,47 @@ stopSession()
 
 ## 7. AutoOff 래치 및 이벤트 상태
 
+### 7.4 Pause Reason 및 Stop Reason (v3.7 Phase 2)
+
+#### 7.4.1 Pause Reason (`EN_CT10_pause_t`, `runCtx.pauseReason`)
+
+| 값 | 이름 | 조건 | 해소 |
+|:---:|---|---|---|
+| 0 | `PAUSE_NONE` | - | - |
+| 1 | `PAUSE_MOTION` | `pirPause.enabled && !isActive()` | 재실 감지 |
+| 2 | `PAUSE_TEMP_LOW` | `tempLow.mode==PAUSE && tempC < threshold` | `tempC >= threshold + hysteresis` |
+| 3 | `PAUSE_DI_LOW` | `diLow.mode==PAUSE && DI < threshold` | `DI >= threshold + hysteresis` |
+
+**다중 Pause 래치** (`triggerRt.pauseMask`):
+```text
+MOTION = bit0, TEMP = bit1, DI = bit2
+pauseMask == 0 일 때만 ENV_PAUSED 해소 (완전 재개)
+대표 pauseReason 우선순위: MOTION > TEMP > DI
+```
+
+#### 7.4.2 Stop Reason (`EN_CT10_reason_t`, `runCtx.reason`)
+
+| 값 | 이름 | 조건 | ACK |
+|:---:|---|---|:---:|
+| 9 | `AUTOOFF_TIMER` | `timerArmed && elapsedMin >= timerMinutes` | ✅ |
+| 10 | `AUTOOFF_TIME` | `offTime` 도달 (yday 1회) | ✅ |
+| 11 | `USER_STOP` | `stopSession()` 명시 호출 | ✅ |
+| 12 | `TEMP_LOW_STOP` | `tempLow.mode==STOP && tempC < threshold` | ✅ |
+| 13 | `DI_LOW_STOP` | `diLow.mode==STOP && DI < threshold` | ✅ |
+
+#### 7.4.3 `autoOffRt` → `triggerRt` 이관
+
+| 기존 `autoOffRt` | 신규 `triggerRt` | 비고 |
+|---|---|---|
+| `timerArmed`/`timerStartMs`/`timerMinutes` | 동일 | - |
+| `offTimeEnabled`/`offTimeMinutes` | 동일 | - |
+| `offTimeLastYday`/`offTimeLastMin` | 동일 | 참고용 (실 트리거 방지는 `_persistOffTimeLastYday`) |
+| `offTempEnabled`/`offTemp` | 제거 | `rule.tempLow`로 이관 |
+| (없음) | `pauseMask` (uint8) | 신규 비트마스크 |
+| (없음) | `lastCheckTempC` (float) | 신규 |
+| (없음) | `lastCheckDI` (float) | 신규 |
+| (없음) | `lastEnvCheckMs` (uint32) | 신규 1초 게이트 |
+
 ### 7.1 래치 해제 경로
 
 `_autoOffLatched = false` 설정 위치 (모두 `s_stateMutex` 하):
@@ -443,6 +476,7 @@ stopSession()
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-14** | **v3.7** | **Phase 2 — Pause/Stop 이원화 + ENV_PAUSED 통합**: §1 `runCtx.pauseReason`/`triggerRt.pauseMask`/`_session.rule`/`pauseBypassUntilMs`/`autoSwitchReason` 필드 추가, §2.1 `ENV_PAUSED(7)` 신규 & `MOTION_BLOCKED` 제거, §2.2 `checkTriggers` 우선순위 재정의, §7.4 신규 (Pause/Stop reason enum, `pauseMask` 래치, `autoOffRt`→`triggerRt` 이관) | Antigravity AI |
 | **2026-11-10** | **v3.6** | **웹 UI/UX 클라이언트 상태 관리 및 히스토리/스튜디오 격리 규정 (b3d06c2)**: 모니터 '히스토리' 탭의 타임라인 레인 분기(lane 0/1) 순수 뷰 상태 격리, Wind Studio 진입 시 바텀바 뷰 상태와 AI FAB 토글 상태 무결성 확인, `SNW.CFG.LS_KEY` 내 AI 키 통합에 따른 단일 클라이언트 상태 소유권 보장 | Antigravity AI |
 | **2026-11-09** | **v3.5** | **Stage 10.1 결함 패치 및 하드웨어 백엔드 타이머 구현 (0203_013_20_02)**: `runtimeAutoOff` 백엔드 소유권 확장, `EN_CT10_TRIGGER_AUTO_COMFORT=3` 세션 트리거 추가, 타이머 만료 시 정지 사유 9번(AUTOOFF_TIMER) 및 `setAutoComfort(false)` 부수효과 명세, 13개 안전 도구 현행화 | Antigravity AI |
 | **2026-11-09** | **v3.4** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: §1 `s_autoComfortEnabled` NVS 소유권 및 접근 매트릭스 명세 반영 | Antigravity AI |

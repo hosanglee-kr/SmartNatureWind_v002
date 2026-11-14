@@ -1732,7 +1732,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 240.page.settings.js (41368 bytes) ---- */
+/* ---- 240.page.settings.js (43028 bytes) ---- */
 // =========================================================
 // 240.page.settings.js — SNW.Page.Settings
 // Layer 4 (페이지 로직)
@@ -2263,56 +2263,90 @@ SNW.Page = SNW.Page || {};
                 }
             }
 
-            // 페이로드 구성
-            const patch = {
-                meta: { deviceName: q('#meta-deviceName').value },
-                system: {
-                    logging: {
-                        level:      q('#log-level').value,
-                        maxEntries: Number(q('#log-maxEntries').value)
-                    },
-                    webSocket: {
-                        wsChConfig: wsChArr,
-                        wsEtcConfig: {
-                            chartLargeBytes:  Number(q('#ws-chartLarge').value),
-                            chartThrottleMul: Number(q('#ws-chartThrottle').value),
-                            wsCleanupMs:      Number(q('#ws-cleanup').value)
-                        }
-                    }
-                },
-                security: securityPatch,
-                hw: {
-                    fanPwm: {
-                        pin:     Number(q('#hw-pwm-pin').value),
-                        channel: Number(q('#hw-pwm-ch').value),
-                        freq:    Number(q('#hw-pwm-freq').value),
-                        res:     Number(q('#hw-pwm-res').value)
-                    },
-                    fanConfig: {
-                        startPercentMin:   Number(q('#hw-fan-start').value),
-                        comfortPercentMin: Number(q('#hw-fan-cmin').value),
-                        comfortPercentMax: Number(q('#hw-fan-cmax').value),
-                        hardPercentMax:    Number(q('#hw-fan-hmax').value)
-                    },
-                    pir: {
-                        enabled:     q('#hw-pir-enabled').checked,
-                        pin:         Number(q('#hw-pir-pin').value),
-                        debounceSec: Number(q('#hw-pir-debounce').value),
-                        holdSec:     Number(q('#hw-pir-hold').value)
-                    },
-                    tempHum: {
-                        enabled:     q('#hw-dht-enabled').checked,
-                        type:        q('#hw-dht-type').value,
-                        pin:         Number(q('#hw-dht-pin').value),
-                        intervalSec: Number(q('#hw-dht-int').value)
-                    },
-                    led: {
-                        pin:               Number(q('#hw-led-pin').value),
-                        numPixels:         Number(q('#hw-led-num').value),
-                        defaultBrightness: Number(q('#hw-led-bright').value)
+            // 페이로드 구성 (현재 활성 탭에 존재하는 DOM 요소만 안전하게 수집)
+            const patch = {};
+            const metaDevEl = q('#meta-deviceName');
+            if (metaDevEl) {
+                patch.meta = { deviceName: metaDevEl.value };
+            }
+
+            const logLvlEl = q('#log-level');
+            const logMaxEl = q('#log-maxEntries');
+            const wsLargeEl = q('#ws-chartLarge');
+            const wsThrottleEl = q('#ws-chartThrottle');
+            const wsCleanupEl = q('#ws-cleanup');
+            if (logLvlEl || logMaxEl || wsChArr.length || wsLargeEl || wsThrottleEl || wsCleanupEl) {
+                patch.system = {};
+                if (logLvlEl || logMaxEl) {
+                    patch.system.logging = {
+                        level:      logLvlEl ? logLvlEl.value : undefined,
+                        maxEntries: logMaxEl ? Number(logMaxEl.value) : undefined
+                    };
+                }
+                if (wsChArr.length || wsLargeEl || wsThrottleEl || wsCleanupEl) {
+                    patch.system.webSocket = {};
+                    if (wsChArr.length) patch.system.webSocket.wsChConfig = wsChArr;
+                    if (wsLargeEl || wsThrottleEl || wsCleanupEl) {
+                        patch.system.webSocket.wsEtcConfig = {
+                            chartLargeBytes:  wsLargeEl ? Number(wsLargeEl.value) : undefined,
+                            chartThrottleMul: wsThrottleEl ? Number(wsThrottleEl.value) : undefined,
+                            wsCleanupMs:      wsCleanupEl ? Number(wsCleanupEl.value) : undefined
+                        };
                     }
                 }
-            };
+            }
+
+            if (securityPatch && Object.keys(securityPatch).length) {
+                patch.security = securityPatch;
+            }
+
+            const pwmPinEl = q('#hw-pwm-pin');
+            const fanStartEl = q('#hw-fan-start');
+            const pirPinEl = q('#hw-pir-pin');
+            if (pwmPinEl || fanStartEl || pirPinEl) {
+                patch.hw = {};
+                if (pwmPinEl) {
+                    patch.hw.fanPwm = {
+                        pin:     Number(pwmPinEl.value),
+                        channel: Number(q('#hw-pwm-ch')?.value || 0),
+                        freq:    Number(q('#hw-pwm-freq')?.value || 0),
+                        res:     Number(q('#hw-pwm-res')?.value || 0)
+                    };
+                }
+                if (fanStartEl) {
+                    patch.hw.fanConfig = {
+                        startPercentMin:   Number(fanStartEl.value),
+                        comfortPercentMin: Number(q('#hw-fan-cmin')?.value || 0),
+                        comfortPercentMax: Number(q('#hw-fan-cmax')?.value || 0),
+                        hardPercentMax:    Number(q('#hw-fan-hmax')?.value || 0)
+                    };
+                }
+                if (pirPinEl) {
+                    patch.hw.pir = {
+                        enabled:     !!q('#hw-pir-enabled')?.checked,
+                        pin:         Number(pirPinEl.value),
+                        debounceSec: Number(q('#hw-pir-debounce')?.value || 0),
+                        holdSec:     Number(q('#hw-pir-hold')?.value || 0)
+                    };
+                }
+                const dhtPinEl = q('#hw-dht-pin');
+                if (dhtPinEl) {
+                    patch.hw.tempHum = {
+                        enabled:     !!q('#hw-dht-enabled')?.checked,
+                        type:        q('#hw-dht-type')?.value || 'DHT22',
+                        pin:         Number(dhtPinEl.value),
+                        intervalSec: Number(q('#hw-dht-int')?.value || 5)
+                    };
+                }
+                const ledPinEl = q('#hw-led-pin');
+                if (ledPinEl) {
+                    patch.hw.led = {
+                        pin:               Number(ledPinEl.value),
+                        numPixels:         Number(q('#hw-led-num')?.value || 1),
+                        defaultBrightness: Number(q('#hw-led-bright')?.value || 0)
+                    };
+                }
+            }
 
             try {
                 await SNW.Api.patchSystem(patch);
@@ -4436,7 +4470,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 291.studio.js (37783 bytes) ---- */
+/* ---- 291.studio.js (37827 bytes) ---- */
 // =========================================================
 // 291.studio.js — Wind Design Studio (작곡)
 // Layer 3 (Studio 패널 컴포넌트)
@@ -4547,8 +4581,8 @@ window.SNW = window.SNW || {};
                 <details class="snw-step-card__override" ${ovr.enabled ? 'open' : ''}>
                     <summary style="display:flex; align-items:center; justify-content:space-between; cursor:pointer; padding:4px 0; list-style:none; outline:none;">
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <!-- pointer-events:none으로 클릭 시 summary 이벤트를 유도 -->
-                            <input type="checkbox" data-field="overrideEnabled" ${ovr.enabled ? 'checked' : ''} style="pointer-events:none;">
+                            <!-- 비인터랙티브 span으로 summary 접근성 경고 방지 -->
+                            <span data-field="overrideEnabled" aria-hidden="true" style="font-size:14px;line-height:1;">${ovr.enabled ? '☑' : '☐'}</span>
                             <span>⚙ 물리 세부 조정 (Override)</span>
                         </div>
                         ${ovr.enabled ? `<span class="snw-badge snw-badge--warn" style="font-size:10px;padding:2px 6px;">수동 튜닝됨</span>` : ''}
@@ -4618,8 +4652,9 @@ window.SNW = window.SNW || {};
             if (detailsEl) {
                 detailsEl.addEventListener('toggle', () => {
                     const chk = el.querySelector('[data-field="overrideEnabled"]');
-                    if (chk && chk.checked !== detailsEl.open) {
+                    if (chk && Boolean(chk.checked) !== detailsEl.open) {
                         chk.checked = detailsEl.open;
+                        chk.textContent = detailsEl.open ? '☑' : '☐';
                         chk.dispatchEvent(new Event('change', { bubbles: true }));
                     }
                 });
@@ -4976,11 +5011,11 @@ window.SNW = window.SNW || {};
                 if (!ruleSummaryEl) return;
                 const r = this._currentRule || {};
                 const items = [];
-                if (r.timer?.enabled)     items.push(`⏱️${r.timer.minutes}m`);
-                if (r.offTime?.enabled)   items.push(`⏰${r.offTime.time}`);
-                if (r.tempLow?.enabled)   items.push(`🌡️${r.tempLow.mode}`);
-                if (r.diLow?.enabled)     items.push(`☀️${r.diLow.mode}`);
-                if (r.pirPause?.enabled)  items.push(`👤${r.pirPause.holdSec}s`);
+                if (r.timer?.enabled) items.push(`⏱️${r.timer.minutes}m`);
+                if (r.offTime?.enabled) items.push(`⏰${r.offTime.time}`);
+                if (r.tempLow?.enabled) items.push(`🌡️${r.tempLow.mode}`);
+                if (r.diLow?.enabled) items.push(`☀️${r.diLow.mode}`);
+                if (r.pirPause?.enabled) items.push(`👤${r.pirPause.holdSec}s`);
                 if (r.smartComfort?.enabled) items.push(`✨auto`);
                 ruleSummaryEl.textContent = items.length > 0 ? items.join(' · ') : '규칙 미설정 (클릭하여 추가)';
             };
@@ -5033,11 +5068,11 @@ window.SNW = window.SNW || {};
                 if (!ruleSummaryEl) return;
                 const r = this._currentRule || {};
                 const items = [];
-                if (r.timer?.enabled)     items.push(`⏱️${r.timer.minutes}m`);
-                if (r.offTime?.enabled)   items.push(`⏰${r.offTime.time}`);
-                if (r.tempLow?.enabled)   items.push(`🌡️${r.tempLow.mode}`);
-                if (r.diLow?.enabled)     items.push(`☀️${r.diLow.mode}`);
-                if (r.pirPause?.enabled)  items.push(`👤${r.pirPause.holdSec}s`);
+                if (r.timer?.enabled) items.push(`⏱️${r.timer.minutes}m`);
+                if (r.offTime?.enabled) items.push(`⏰${r.offTime.time}`);
+                if (r.tempLow?.enabled) items.push(`🌡️${r.tempLow.mode}`);
+                if (r.diLow?.enabled) items.push(`☀️${r.diLow.mode}`);
+                if (r.pirPause?.enabled) items.push(`👤${r.pirPause.holdSec}s`);
                 if (r.smartComfort?.enabled) items.push(`✨auto`);
                 ruleSummaryEl.textContent = items.length > 0 ? items.join(' · ') : '규칙 미설정 (클릭하여 추가)';
             };
@@ -5070,11 +5105,11 @@ window.SNW = window.SNW || {};
                 if (!ruleSummaryEl) return;
                 const r = this._currentRule || {};
                 const items = [];
-                if (r.timer?.enabled)     items.push(`⏱️${r.timer.minutes}m`);
-                if (r.offTime?.enabled)   items.push(`⏰${r.offTime.time}`);
-                if (r.tempLow?.enabled)   items.push(`🌡️${r.tempLow.mode}`);
-                if (r.diLow?.enabled)     items.push(`☀️${r.diLow.mode}`);
-                if (r.pirPause?.enabled)  items.push(`👤${r.pirPause.holdSec}s`);
+                if (r.timer?.enabled) items.push(`⏱️${r.timer.minutes}m`);
+                if (r.offTime?.enabled) items.push(`⏰${r.offTime.time}`);
+                if (r.tempLow?.enabled) items.push(`🌡️${r.tempLow.mode}`);
+                if (r.diLow?.enabled) items.push(`☀️${r.diLow.mode}`);
+                if (r.pirPause?.enabled) items.push(`👤${r.pirPause.holdSec}s`);
                 if (r.smartComfort?.enabled) items.push(`✨auto`);
                 ruleSummaryEl.textContent = items.length > 0 ? items.join(' · ') : '규칙 미설정 (클릭하여 추가)';
             };
@@ -5107,11 +5142,11 @@ window.SNW = window.SNW || {};
                 if (!ruleSummaryEl) return;
                 const r = this._currentRule || {};
                 const items = [];
-                if (r.timer?.enabled)     items.push(`⏱️${r.timer.minutes}m`);
-                if (r.offTime?.enabled)   items.push(`⏰${r.offTime.time}`);
-                if (r.tempLow?.enabled)   items.push(`🌡️${r.tempLow.mode}`);
-                if (r.diLow?.enabled)     items.push(`☀️${r.diLow.mode}`);
-                if (r.pirPause?.enabled)  items.push(`👤${r.pirPause.holdSec}s`);
+                if (r.timer?.enabled) items.push(`⏱️${r.timer.minutes}m`);
+                if (r.offTime?.enabled) items.push(`⏰${r.offTime.time}`);
+                if (r.tempLow?.enabled) items.push(`🌡️${r.tempLow.mode}`);
+                if (r.diLow?.enabled) items.push(`☀️${r.diLow.mode}`);
+                if (r.pirPause?.enabled) items.push(`👤${r.pirPause.holdSec}s`);
                 if (r.smartComfort?.enabled) items.push(`✨auto`);
                 ruleSummaryEl.textContent = items.length > 0 ? items.join(' · ') : '규칙 미설정 (클릭하여 추가)';
             };

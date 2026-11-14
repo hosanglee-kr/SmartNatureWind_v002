@@ -1819,7 +1819,7 @@ input[type="checkbox"] {
 
 
 
-/* ---- _rules.css (3635 bytes) ---- */
+/* ---- _rules.css (3633 bytes) ---- */
 /* ============================================================
  * _rules.css — 규칙 편집기 & 규칙 관리 탭
  * ============================================================ */
@@ -1828,7 +1828,7 @@ input[type="checkbox"] {
 .snw-rule-editor {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 10px;
 }
 
 .snw-rule-templates {
@@ -1950,14 +1950,14 @@ input[type="checkbox"] {
 .snw-rules-sections {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 12px;
 }
 
 .snw-rules-section h3 {
     font-size: 14px;
     font-weight: 600;
     color: var(--snw-text);
-    margin: 0 0 10px;
+    margin: 0 0 8px;
     padding-bottom: 6px;
     border-bottom: 1px solid var(--snw-border);
 }
@@ -1966,10 +1966,10 @@ input[type="checkbox"] {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 12px;
+    padding: 8px 12px;
     background: var(--snw-surface-2);
     border-radius: var(--snw-radius);
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .snw-rules-item__name {

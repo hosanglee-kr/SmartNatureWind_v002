@@ -1699,21 +1699,16 @@ body.snw-sidebar-open .snw-sidebar {
 .snw-chart-area {
 
 
-/* ---- _comp_form.css (17357 bytes) ---- */
-    width: 100%;
-    height: 320px;
-    background: var(--snw-surface-2);
-    border-radius: var(--snw-radius);
-    overflow: hidden;
-}
-
+/* ---- _comp_form.css (17434 bytes) ---- */
 /* =====================================================
  * 모달 레이아웃 고도화 (Header/Footer 고정, Body 단독 스크롤)
  * ===================================================== */
-.snw-modal-overlay {
+.snw-modal-overlay,
+.snw-modal-backdrop {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
     z-index: var(--snw-z-modal);
     display: flex;
     align-items: center;
@@ -1725,20 +1720,23 @@ body.snw-sidebar-open .snw-sidebar {
     padding: 16px;
 }
 
-.snw-modal-overlay.is-open {
+.snw-modal-overlay.is-open,
+.snw-modal-backdrop.is-open,
+.snw-modal-backdrop:not([hidden]) {
     opacity: 1;
     pointer-events: auto;
     visibility: visible;
 }
 
-.snw-modal-box {
+.snw-modal-box,
+.snw-modal {
     background: var(--snw-surface);
     border-radius: var(--snw-radius-lg);
     min-width: 300px;
-    max-width: 90%;
-    max-height: 90vh;
-    min-height: 320px;
+    max-width: 92%;
+    max-height: 88vh;
     width: 100%;
+    max-width: 480px;
     display: flex;
     flex-direction: column;
     transform: translateY(20px);
@@ -1748,12 +1746,14 @@ body.snw-sidebar-open .snw-sidebar {
     overflow: hidden;
 }
 
-.snw-modal-overlay.is-open .snw-modal-box {
+.snw-modal-overlay.is-open .snw-modal-box,
+.snw-modal-backdrop.is-open .snw-modal,
+.snw-modal-backdrop:not([hidden]) .snw-modal {
     transform: translateY(0);
 }
 
 .snw-modal-title {
-    padding: 16px 20px;
+    padding: 12px 16px;
     margin: 0;
     border-bottom: 1px solid var(--snw-border);
     flex-shrink: 0;

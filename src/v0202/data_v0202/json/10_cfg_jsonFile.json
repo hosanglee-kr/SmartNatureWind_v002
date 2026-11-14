@@ -1,0 +1,15 @@
+{
+	
+	"configJsonFile": {
+		"system"         : "/json/cfg_system_0202.json",
+		"wifi"           : "/json/cfg_wifi_0202.json",
+		"motion"         : "/json/cfg_motion_0202.json",
+		"nvsSpec"        : "/json/cfg_nvsSpec_0202.json",
+		"schedules"      : "/json/cfg_schedules_0202.json",
+		"userProfiles"   : "/json/cfg_userProfile_0202.json",
+		"windDict"       : "/json/cfg_windDict_0202.json",
+
+        "webPage"        : "/json/cfg_pages_0202.json"
+  }
+}
+

@@ -1,0 +1,34 @@
+/*
+ * ------------------------------------------------------
+ * 소스명   : _schedule.css
+ * 레이어   : CSS (빌드 시 P000_common_0200.css로 concat)
+ * 기능 요약:
+ *  - Schedule 페이지 전용 스타일
+ *  - 스케줄 카드 레이아웃 확장
+ * ------------------------------------------------------
+ */
+
+.snw-schedule-list {
+    gap: var(--snw-spacing);
+}
+
+.snw-schedule-item {
+    padding: var(--snw-spacing);
+}
+
+.snw-schedule-head {
+    padding-bottom: var(--snw-spacing-sm);
+    border-bottom: 1px solid var(--snw-border);
+}
+
+.snw-schedule-days {
+    letter-spacing: 2px;
+    color: var(--snw-primary);
+}
+
+@media (max-width: 767px) {
+    .snw-schedule-meta {
+        flex-direction: column;
+        gap: 4px;
+    }
+}

@@ -1,0 +1,74 @@
+name: Agent Guards
+
+on:
+  pull_request:
+    branches: [main, master, develop]
+  push:
+    branches: [main, master]
+
+jobs:
+  agent-consistency:
+    name: Agent Consistency (drift + 계약 + i18n)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          # cache: pip
+
+      - name: Setup Node (for any JS tooling)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      # ── 1. Agent config drift ──
+      - name: Verify .agents/ ↔ .claude/ sync
+        run: python tools/sync-agent-configs.py --check
+
+      # ── 2. Contract integrity ──
+      - name: Verify contract docs
+        run: |
+          python src/v0203/tools_0203/commit_contracts_0203.py --dry-run --strict
+
+      # ── 3. i18n completeness ──
+      - name: Verify i18n DICT
+        run: |
+          python src/v0203/tools_0203/check_i18n.py --strict
+
+      # ── 4. (선택) SSOT 자동 대조 ──
+      - name: Verify SSOT consistency (optional)
+        continue-on-error: true
+        run: |
+          if [ -f src/v0203/tools_0203/validate_contracts.py ]; then
+            python src/v0203/tools_0203/validate_contracts.py
+          else
+            echo "validate_contracts.py 미존재 → skip"
+          fi
+
+  diff-size-guard:
+    name: PR Diff Size Guard (경고)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Warn if huge diff
+        run: |
+          BASE=${{ github.event.pull_request.base.sha }}
+          HEAD=${{ github.event.pull_request.head.sha }}
+          FILES=$(git diff --name-only "$BASE" "$HEAD" | wc -l)
+          LINES=$(git diff --numstat "$BASE" "$HEAD" | awk '{s+=$1+$2} END {print s+0}')
+          echo "Changed files: $FILES, changed lines: $LINES"
+          if [ "$LINES" -gt 3000 ]; then
+            echo "::warning::PR diff가 3000줄을 초과합니다 (karpathy-guidelines §3 Surgical Changes 참조)"
+          fi
+

@@ -1,0 +1,215 @@
+/* ============================================================
+ * 소스명   : _monitor.css
+ * 모듈약어 : 
+ * 모듈명   : Monitor (실시간 및 히스토리)
+ * ============================================================ */
+
+.snw-monitor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--snw-spacing);
+}
+
+.snw-monitor__eq {
+    background: var(--snw-bg-2);
+    border-radius: var(--snw-radius);
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.snw-monitor__live-info {
+    font-size: 13px;
+    color: var(--snw-text);
+}
+
+.snw-monitor__live-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+}
+
+.snw-monitor__sensors {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.snw-sensor-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--snw-text);
+}
+
+/* ============================================================
+ * 히스토리 (구 회고) 탭
+ * ============================================================ */
+.snw-retro-summary {
+    background: var(--snw-surface-2);
+    border-radius: var(--snw-radius);
+    padding: 12px;
+    margin-bottom: 16px;
+}
+
+.snw-retro-summary__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--snw-text);
+    margin-bottom: 12px;
+}
+
+/* 요약 정보 그리드 반응형 처리 (화면이 좁아져도 글자가 깨지지 않음) */
+.snw-retro-summary__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 8px;
+    font-size: 12px;
+}
+
+.snw-retro-summary__grid>div {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+}
+
+.snw-retro-summary__grid span {
+    color: var(--snw-text-dim);
+}
+
+/* ============================================================
+ * 이벤트 타임라인 (마커 엇갈림 배치 및 시간축)
+ * ============================================================ */
+.snw-retro-timeline {
+    margin: 20px 0;
+}
+
+.snw-retro-timeline__title {
+    font-size: 13px;
+    color: var(--snw-text-dim);
+    margin-bottom: 12px;
+}
+
+/* 마커가 양 끝(0%, 100%)에서 잘리지 않도록 컨테이너에 좌우 여백 부여 */
+.snw-retro-timeline__container {
+    padding: 0 16px;
+}
+
+/* 타임라인 바: 높이를 늘려 마커가 위아래로 배치될 공간 확보 */
+.snw-retro-timeline__bar {
+    position: relative;
+    height: 48px;
+    background: transparent;
+    margin-bottom: 12px;
+}
+
+/* 타임라인 중앙 가로선 (기준점) */
+.snw-retro-timeline__bar::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--snw-surface-3, #2f3844);
+    border-radius: 2px;
+    transform: translateY(-50%);
+    z-index: 0;
+}
+
+/* 타임라인 하단 시간 축 */
+.snw-retro-timeline__axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--snw-text-dim, #8b949e);
+    font-variant-numeric: tabular-nums;
+    padding: 0 4px;
+}
+
+/* 기본 마커 (선 위쪽에 배치) */
+.snw-retro-marker {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -100%);
+    margin-top: -2px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    border: 2px solid var(--snw-surface, #1a2028);
+    z-index: 1;
+}
+
+/* 마커 호버 시 확대 */
+.snw-retro-marker:hover {
+    transform: translate(-50%, -100%) scale(1.2);
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+/* 이벤트가 겹칠 때 아래쪽으로 배치되는 마커 */
+.snw-retro-marker--bottom {
+    transform: translate(-50%, 0);
+    margin-top: 2px;
+}
+
+.snw-retro-marker--bottom:hover {
+    transform: translate(-50%, 0) scale(1.2);
+}
+
+/* ============================================================
+ * 이벤트 목록 (스크롤 지원)
+ * ============================================================ */
+.snw-retro-events {
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--snw-bg-2, #0a0f14);
+    border-radius: var(--snw-radius, 8px);
+    padding: 8px;
+    margin-top: 16px;
+}
+
+.snw-retro-events__title {
+    font-size: 13px;
+    color: var(--snw-text-dim);
+    margin-bottom: 8px;
+    padding-left: 4px;
+}
+
+.snw-retro-event-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    font-size: 12px;
+    color: var(--snw-text);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.snw-retro-event-row:last-child {
+    border-bottom: none;
+}
+
+/* 7일 조회 시 'MM/DD HH:mm'이 잘리지 않도록 너비 확보 */
+.snw-retro-event-row__time {
+    color: var(--snw-text-faint);
+    font-family: var(--snw-font-mono);
+    min-width: 68px;
+}
+
+.snw-retro-event-row__icon {
+    min-width: 20px;
+    text-align: center;
+}
+
+.snw-retro-event-row__label {
+    flex: 1;
+    color: var(--snw-text);
+}

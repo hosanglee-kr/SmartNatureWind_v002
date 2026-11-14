@@ -19,7 +19,7 @@ name: Close CI failure issues
 
 on:
   workflow_run:
-    # ci_1_build_008.yml의 name과 일치 필수
+    # ci_1_build_009.yml의 name과 일치 필수
     workflows: ["PR Build"]
     types: [completed]
   pull_request:

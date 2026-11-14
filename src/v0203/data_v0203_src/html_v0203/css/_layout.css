@@ -1,0 +1,406 @@
+/*
+ * ------------------------------------------------------
+ * 소스명   : _layout.css
+ * 레이어   : CSS
+ * 기능 요약:
+ *  - 앱 Shell 레이아웃 (Header/Sidebar/Main/Footer)
+ *  - 모바일 하단 탭 바 (Bottom Navigation) 및 반응형 대응
+ *  - 사이드바 오버레이(Dim) 및 데스크톱/모바일 레이아웃 분기
+ * ------------------------------------------------------
+ */
+
+body {
+    font-family: var(--snw-font);
+    background: var(--snw-bg);
+    color: var(--snw-text);
+    font-size: 14px;
+}
+
+.snw-app {
+    display: grid;
+    grid-template-rows: var(--snw-header-h) 1fr var(--snw-footer-h);
+    grid-template-columns: 1fr;
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+/* =====================================================
+ * Header
+ * ===================================================== */
+.snw-header {
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--snw-spacing-sm);
+    padding: 0 var(--snw-spacing-lg);
+    background: var(--snw-surface);
+    border-bottom: 1px solid var(--snw-border);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+}
+
+.snw-brand {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--snw-text);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.snw-header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--snw-spacing);
+}
+
+.snw-clock {
+    font-family: var(--snw-font-mono);
+    font-size: 13px;
+    color: var(--snw-text-dim);
+    min-width: 52px;
+    text-align: right;
+}
+
+.snw-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--snw-text-faint);
+    transition: background var(--snw-transition);
+}
+
+.snw-status-dot--online {
+    background: var(--snw-success);
+    box-shadow: 0 0 6px var(--snw-success);
+}
+
+.snw-status-dot--offline {
+    background: var(--snw-error);
+}
+
+.snw-status-dot--polling {
+    background: var(--snw-warn);
+}
+
+.snw-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--snw-radius);
+    font-size: 16px;
+    color: var(--snw-text);
+    background: transparent;
+    border: none;
+    transition: background var(--snw-transition);
+    cursor: pointer;
+}
+
+.snw-btn-icon:hover {
+    background: var(--snw-surface-2);
+}
+
+/* =====================================================
+ * Sidebar & Overlay
+ * (JS와의 충돌을 막기 위해 display: none/block 으로 확실하게 제어)
+ * ===================================================== */
+.snw-sidebar {
+    position: fixed;
+    top: var(--snw-header-h);
+    left: 0;
+    bottom: var(--snw-footer-h);
+    width: var(--snw-sidebar-w);
+    background: var(--snw-surface);
+    border-right: 1px solid var(--snw-border);
+    overflow-y: auto;
+    z-index: 1050;
+    display: none;
+    /* 기본: 숨김 */
+}
+
+/* 툴바가 상단에 존재할 때 사이드바 top 오프셋 보정 */
+#snw-offline-toolbar~.snw-app .snw-sidebar,
+.snw-offline-toolbar~.snw-app .snw-sidebar {
+    top: calc(var(--snw-header-h) + 38px);
+}
+
+/* 사이드바 열림 상태 */
+body.snw-sidebar-open .snw-sidebar {
+    display: block !important;
+}
+
+/* 오버레이 (배경 어둡게: 모바일 전용 < 768px 에서만 동작) */
+.snw-sidebar-overlay {
+    display: none !important;
+}
+
+@media (max-width: 767px) {
+    .snw-sidebar-overlay {
+        position: fixed;
+        top: var(--snw-header-h, 56px);
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4);
+        z-index: var(--snw-z-overlay);
+        display: none !important;
+    }
+
+    body.snw-sidebar-open .snw-sidebar-overlay {
+        display: block !important;
+    }
+}
+
+/* 네비게이션 메뉴 */
+#nav-menu {
+    display: flex;
+    flex-direction: column;
+    padding: var(--snw-spacing-sm) 0;
+}
+
+#nav-menu a {
+    display: flex;
+    align-items: center;
+    gap: var(--snw-spacing-sm);
+    padding: var(--snw-spacing-sm) var(--snw-spacing-lg);
+    color: var(--snw-text-dim);
+    font-size: 13px;
+    text-decoration: none;
+    border-left: 3px solid transparent;
+}
+
+#nav-menu a:hover {
+    background: var(--snw-surface-2);
+    color: var(--snw-text);
+}
+
+#nav-menu a.is-active {
+    color: var(--snw-primary);
+    background: var(--snw-surface-2);
+    border-left-color: var(--snw-primary);
+}
+
+.snw-nav-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    font-size: 14px;
+}
+
+.snw-nav-group {
+    margin-bottom: 12px;
+}
+
+.snw-nav-group__title {
+    padding: 8px 20px 4px;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--snw-text-faint);
+    font-weight: 600;
+}
+
+/* =====================================================
+ * Main / Footer
+ * ===================================================== */
+.snw-main {
+    grid-row: 2;
+    padding: var(--snw-spacing-lg);
+    padding-bottom: var(--snw-content-pb, 24px);
+    overflow-x: hidden;
+    min-width: 0;
+    transition: padding-bottom 0.25s ease;
+}
+
+.snw-footer {
+    grid-row: 3;
+    display: flex;
+    align-items: center;
+    gap: var(--snw-spacing);
+    padding: 0 var(--snw-spacing-lg);
+    background: var(--snw-surface);
+    border-top: 1px solid var(--snw-border);
+    font-size: 12px;
+    color: var(--snw-text-dim);
+}
+
+.snw-footer-spacer {
+    flex: 1;
+}
+
+/* 로딩/에러 */
+.snw-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    color: var(--snw-text-dim);
+}
+
+.snw-loading::before {
+    content: "";
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    border: 2px solid var(--snw-border-hi);
+    border-top-color: var(--snw-primary);
+    border-radius: 50%;
+    animation: snw-spin 0.8s linear infinite;
+}
+
+@keyframes snw-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.snw-error {
+    padding: var(--snw-spacing-lg);
+    color: var(--snw-error);
+    text-align: center;
+}
+
+.snw-empty {
+    padding: var(--snw-spacing-lg);
+    color: var(--snw-text-dim);
+    text-align: center;
+    font-size: 13px;
+}
+
+/* =====================================================
+ * 모바일 하단 탭 바 (Bottom Navigation)
+ * ===================================================== */
+.snw-bottom-nav {
+    display: none;
+    /* 데스크톱에서는 숨김 */
+}
+
+/* =====================================================
+ * 모바일 / 태블릿 반응형 (767px 이하)
+ * ===================================================== */
+@media (max-width: 767px) {
+    :root {
+        --snw-footer-h: 0px;
+        /* 하단 탭 바가 푸터 역할을 대신함 */
+    }
+
+    .snw-footer {
+        display: none;
+    }
+
+    /* 모바일에서도 햄버거 메뉴(더보기) 유지 */
+    #btn-menu {
+        display: inline-flex !important;
+    }
+
+    .snw-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: var(--snw-bottom-nav-h);
+        background: var(--snw-surface);
+        border-top: 1px solid var(--snw-border);
+        z-index: var(--snw-z-bottom);
+        justify-content: space-around;
+        align-items: center;
+        padding-bottom: env(safe-area-inset-bottom);
+        /* iOS 노치 대응 */
+    }
+
+    .snw-bottom-nav__item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        color: var(--snw-text-dim);
+        font-size: 10px;
+        gap: 4px;
+        flex: 1;
+        height: 100%;
+    }
+
+    .snw-bottom-nav__item.is-active {
+        color: var(--snw-primary);
+    }
+
+    .snw-bottom-nav__icon {
+        font-size: 20px;
+    }
+
+    /* 설정 페이지 저장 바가 하단 탭 바(60px) 위로 오도록 조정 */
+    .snw-form-sticky {
+        bottom: 60px !important;
+        z-index: 1001 !important;
+    }
+
+    /* 메인 컨텐츠가 하단 탭 바 및 Now Playing에 가려지지 않도록 패딩 동적 반영 */
+    .snw-main {
+        padding-bottom: var(--snw-content-pb, 80px);
+    }
+}
+
+/* =====================================================
+ * 데스크톱 반응형 (1024px 이상)
+ *  - ☰ 버튼 상시 유지 (데스크톱에서도 사이드바 토글 가능)
+ *  - 사이드바 열림 시 2열 그리드(220px 1fr)로 본문을 밀어냄
+ *  - 사이드바 닫힘 시 1열 그리드(1fr)로 본문 전체 확장
+ *  - 오버레이 완전 은닉 (본문을 어둡게 가리지 않음)
+ * ===================================================== */
+@media (min-width: 1024px) {
+
+    /* [ADR-10] 데스크톱 영구 사이드바 2열 그리드 규약 */
+    .snw-sidebar-overlay {
+        display: none !important;
+    }
+
+    /* 데스크톱에서는 사이드바가 상시 고정되므로 햄버거 메뉴 은닉 */
+    #btn-menu {
+        display: none !important;
+    }
+
+    /* 상시 2열 그리드: 좌측 사이드바 + 우측 메인 */
+    .snw-app {
+        grid-template-columns: var(--snw-sidebar-w) 1fr;
+    }
+
+    .snw-header {
+        grid-column: 1 / -1;
+    }
+
+    .snw-sidebar {
+        display: block !important;
+        position: sticky;
+        grid-column: 1;
+        grid-row: 2;
+        top: var(--snw-header-h);
+        bottom: auto;
+        height: calc(100vh - var(--snw-header-h) - var(--snw-footer-h));
+        height: calc(100dvh - var(--snw-header-h) - var(--snw-footer-h));
+        box-shadow: none;
+        transform: none !important;
+        z-index: 40;
+    }
+
+    #snw-offline-toolbar~.snw-app .snw-sidebar,
+    .snw-offline-toolbar~.snw-app .snw-sidebar {
+        top: calc(var(--snw-header-h) + 38px);
+        height: calc(100vh - var(--snw-header-h) - var(--snw-footer-h) - 38px);
+    }
+
+    .snw-main {
+        grid-column: 2;
+    }
+
+    .snw-footer {
+        grid-column: 1 / -1;
+    }
+}

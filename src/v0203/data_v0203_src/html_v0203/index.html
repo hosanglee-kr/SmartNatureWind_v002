@@ -9,8 +9,25 @@
     <title data-i18n="app.title">Smart Nature Wind</title>
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
-    <link rel="stylesheet" href="./common_base_0203.css.gz">
-    <link rel="stylesheet" href="./common_pages_0203.css.gz">
+    <script>
+        window.SNW_OFFLINE = (location.protocol === 'file:') ||
+            location.hostname === 'localhost' ||
+            location.hostname === '127.0.0.1' ||
+            new URLSearchParams(location.search).has('offline');
+
+        if (window.SNW_OFFLINE) {
+            [
+                './css/_base.css', './css/_layout.css', './css/_comp_ui.css', './css/_comp_form.css',
+                './css/_dashboard.css', './css/_player_bar.css', './css/_studio.css',
+                './css/_schedule.css', './css/_monitor.css', './css/_misc_pages.css', './css/_rules.css'
+            ].forEach(function (href) {
+                document.write('<link rel="stylesheet" href="' + href + '">');
+            });
+        } else {
+            document.write('<link rel="stylesheet" href="./common_base_0203.css.gz">');
+            document.write('<link rel="stylesheet" href="./common_pages_0203.css.gz">');
+        }
+    </script>
 </head>
 
 <body>
@@ -99,22 +116,40 @@
     </div>
 
     <script>
-        window.SNW_OFFLINE = (location.protocol === 'file:') ||
-            location.hostname === 'localhost' ||
-            location.hostname === '127.0.0.1' ||
-            new URLSearchParams(location.search).has('offline');
-
         console.log('[Loader] SNW_OFFLINE =', window.SNW_OFFLINE);
 
         if (window.SNW_OFFLINE) {
-            document.write('<script src="./js/998.offline_data_0203.js"><\/script>');
-            document.write('<script src="./js/998.offline_0203.js"><\/script>');
+            [
+                './js/998.offline_data_0203.js',
+                './js/998.offline_0203.js',
+                './js/core/000.const.js', './js/core/010.config.js', './js/core/020.i18n.js',
+                './js/core/030.util.level.js', './js/core/030.util.time.js', './js/core/031.util.dom.js',
+                './js/core/032.util.log.js', './js/core/033.util.template.js', './js/core/034.util.toast.js',
+                './js/core/035.util.feedback.js', './js/core/040.api.js', './js/core/050.ws.js',
+                './js/core/060.store.js', './js/core/070.router.js',
+                './js/core/100.ui.badge.js', './js/core/101.ui.toggle.js', './js/core/102.ui.gauge.js',
+                './js/core/110.ui.slider.js', './js/core/115.ui.eq.js', './js/core/116.ui.sparkline.js',
+                './js/core/117.ui.haptic.js', './js/core/120.ui.chart.js', './js/core/130.ui.form.js',
+                './js/core/135.util.preview.js', './js/core/140.ui.simulation.js',
+                './js/core/145.ai.client.js', './js/core/146.ai.voice.js', './js/core/147.ai.live.js',
+                './js/core/147a.audio.capture.js', './js/core/147b.audio.playback.js', './js/core/147c.ai.chat.core.js',
+                './js/core/150.ui.rule_editor.js',
+                './js/app/200.page.dashboard.js', './js/app/210.page.chart.js', './js/app/225.page.sensors.js',
+                './js/app/240.page.settings.js', './js/app/245.page.simulation.js', './js/app/250.page.diagnostics.js',
+                './js/app/260.page.firmware.js', './js/app/260.page.monitor.js', './js/app/270.page.network.js',
+                './js/app/280.page.logs.js', './js/app/290.page.ai.js', './js/app/290.page.automation.js',
+                './js/app/291.studio.js', './js/app/292.playlist.js', './js/app/293.schedule_panel.js',
+                './js/app/294.timer_panel.js', './js/app/300.page.windprofile.js', './js/app/310.page.rules.js',
+                './js/app/998.onboarding.js', './js/app/999.app.js', './js/app/999a.nowplaying.js', './js/app/999b.ai-sheet.js'
+            ].forEach(function (src) {
+                document.write('<script defer src="' + src + '"><\/script>');
+            });
+        } else {
+            document.write('<script defer src="./app_core_0203.js.gz"><\/script>');
+            document.write('<script defer src="./app_ui_0203.js.gz"><\/script>');
+            document.write('<script defer src="./app_pages_0203.js.gz"><\/script>');
         }
     </script>
-
-    <script defer src="./app_core_0203.js.gz"></script>
-    <script defer src="./app_ui_0203.js.gz"></script>
-    <script defer src="./app_pages_0203.js.gz"></script>
 
 </body>
 

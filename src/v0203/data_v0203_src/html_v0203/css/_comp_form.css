@@ -1,10 +1,3 @@
-    width: 100%;
-    height: 320px;
-    background: var(--snw-surface-2);
-    border-radius: var(--snw-radius);
-    overflow: hidden;
-}
-
 /* =====================================================
  * 모달 레이아웃 고도화 (Header/Footer 고정, Body 단독 스크롤)
  * ===================================================== */

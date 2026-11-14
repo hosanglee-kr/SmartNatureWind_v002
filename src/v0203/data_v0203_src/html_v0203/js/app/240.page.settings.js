@@ -528,41 +528,69 @@ SNW.Page = SNW.Page || {};
                 }
             }
 
-            // 페이로드 구성
-            const patch = {
-                meta: { deviceName: q('#meta-deviceName').value },
-                system: {
-                    logging: {
-                        level:      q('#log-level').value,
-                        maxEntries: Number(q('#log-maxEntries').value)
-                    },
-                    webSocket: {
-                        wsChConfig: wsChArr,
-                        wsEtcConfig: {
-                            chartLargeBytes:  Number(q('#ws-chartLarge').value),
-                            chartThrottleMul: Number(q('#ws-chartThrottle').value),
-                            wsCleanupMs:      Number(q('#ws-cleanup').value)
-                        }
+            // 페이로드 구성 (현재 활성 탭에 존재하는 DOM 요소만 안전하게 수집)
+            const patch = {};
+            const metaDevEl = q('#meta-deviceName');
+            if (metaDevEl) {
+                patch.meta = { deviceName: metaDevEl.value };
+            }
+
+            const logLvlEl = q('#log-level');
+            const logMaxEl = q('#log-maxEntries');
+            const wsLargeEl = q('#ws-chartLarge');
+            const wsThrottleEl = q('#ws-chartThrottle');
+            const wsCleanupEl = q('#ws-cleanup');
+            if (logLvlEl || logMaxEl || wsChArr.length || wsLargeEl || wsThrottleEl || wsCleanupEl) {
+                patch.system = {};
+                if (logLvlEl || logMaxEl) {
+                    patch.system.logging = {
+                        level:      logLvlEl ? logLvlEl.value : undefined,
+                        maxEntries: logMaxEl ? Number(logMaxEl.value) : undefined
+                    };
+                }
+                if (wsChArr.length || wsLargeEl || wsThrottleEl || wsCleanupEl) {
+                    patch.system.webSocket = {};
+                    if (wsChArr.length) patch.system.webSocket.wsChConfig = wsChArr;
+                    if (wsLargeEl || wsThrottleEl || wsCleanupEl) {
+                        patch.system.webSocket.wsEtcConfig = {
+                            chartLargeBytes:  wsLargeEl ? Number(wsLargeEl.value) : undefined,
+                            chartThrottleMul: wsThrottleEl ? Number(wsThrottleEl.value) : undefined,
+                            wsCleanupMs:      wsCleanupEl ? Number(wsCleanupEl.value) : undefined
+                        };
                     }
-                },
-                security: securityPatch,
-                hw: {
-                    fanPwm: {
-                        pin:     Number(q('#hw-pwm-pin').value),
-                        channel: Number(q('#hw-pwm-ch').value),
-                        freq:    Number(q('#hw-pwm-freq').value),
-                        res:     Number(q('#hw-pwm-res').value)
-                    },
-                    fanConfig: {
-                        startPercentMin:   Number(q('#hw-fan-start').value),
-                        comfortPercentMin: Number(q('#hw-fan-cmin').value),
-                        comfortPercentMax: Number(q('#hw-fan-cmax').value),
-                        hardPercentMax:    Number(q('#hw-fan-hmax').value)
-                    },
-                    pir: {
-                        enabled:     q('#hw-pir-enabled').checked,
-                        pin:         Number(q('#hw-pir-pin').value),
-                        debounceSec: Number(q('#hw-pir-debounce').value),
+                }
+            }
+
+            if (securityPatch && Object.keys(securityPatch).length) {
+                patch.security = securityPatch;
+            }
+
+            const pwmPinEl = q('#hw-pwm-pin');
+            const fanStartEl = q('#hw-fan-start');
+            const pirPinEl = q('#hw-pir-pin');
+            if (pwmPinEl || fanStartEl || pirPinEl) {
+                patch.hw = {};
+                if (pwmPinEl) {
+                    patch.hw.fanPwm = {
+                        pin:     Number(pwmPinEl.value),
+                        channel: Number(q('#hw-pwm-ch')?.value || 0),
+                        freq:    Number(q('#hw-pwm-freq')?.value || 0),
+                        res:     Number(q('#hw-pwm-res')?.value || 0)
+                    };
+                }
+                if (fanStartEl) {
+                    patch.hw.fanConfig = {
+                        startPercentMin:   Number(fanStartEl.value),
+                        comfortPercentMin: Number(q('#hw-fan-cmin')?.value || 0),
+                        comfortPercentMax: Number(q('#hw-fan-cmax')?.value || 0),
+                        hardPercentMax:    Number(q('#hw-fan-hmax')?.value || 0)
+                    };
+                }
+                if (pirPinEl) {
+                    patch.hw.pir = {
+                        enabled:     !!q('#hw-pir-enabled')?.checked,
+                        pin:         Number(pirPinEl.value),
+                        debounceSec: Number(q('#hw-pir-debounce')?.value || 0),
                         holdSec:     Number(q('#hw-pir-hold').value)
                     },
                     tempHum: {

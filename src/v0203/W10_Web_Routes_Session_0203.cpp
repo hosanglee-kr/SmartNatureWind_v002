@@ -20,12 +20,35 @@
 
 #include "W10_Web_0203.h"
 
+// ═══════════════════════════════════════════════════════════
+// [Phase 2] Session Type / Trigger 파서
+// ═══════════════════════════════════════════════════════════
+static EN_CT10_session_type_t W10_parseSessionType(const char* p_str) {
+    if (!p_str) return EN_CT10_SESSION_NONE;
+    if (strcasecmp(p_str, "PLAYLIST")    == 0) return EN_CT10_SESSION_PLAYLIST;
+    if (strcasecmp(p_str, "PRESET")      == 0) return EN_CT10_SESSION_PRESET;
+    if (strcasecmp(p_str, "FIXED")       == 0) return EN_CT10_SESSION_FIXED;
+    if (strcasecmp(p_str, "AUTO_FULL")   == 0) return EN_CT10_SESSION_AUTO_FULL;
+    if (strcasecmp(p_str, "AUTO_SELECT") == 0) return EN_CT10_SESSION_AUTO_SELECT;
+    return EN_CT10_SESSION_NONE;
+}
+
+static EN_CT10_trigger_t W10_parseTrigger(const char* p_str) {
+    if (!p_str) return EN_CT10_TRIGGER_MANUAL;
+    if (strcasecmp(p_str, "MANUAL")             == 0) return EN_CT10_TRIGGER_MANUAL;
+    if (strcasecmp(p_str, "SCHEDULE")           == 0) return EN_CT10_TRIGGER_SCHEDULE;
+    if (strcasecmp(p_str, "AUTO_COMFORT")       == 0) return EN_CT10_TRIGGER_AUTO_COMFORT;
+    if (strcasecmp(p_str, "MANUAL_AUTO_FULL")   == 0) return EN_CT10_TRIGGER_MANUAL_AUTO_FULL;
+    if (strcasecmp(p_str, "MANUAL_AUTO_SELECT") == 0) return EN_CT10_TRIGGER_MANUAL_AUTO_SELECT;
+    return EN_CT10_TRIGGER_MANUAL;
+}
+
 void CL_W10_WebAPI::routeSession() {
     if (!s_server) return;
 
     // ======================================================
     // 1. POST /api/v001/session/start
-    // Body: { "type": "PLAYLIST"|"PRESET"|"FIXED", "trigger": "MANUAL", "payload": {...} }
+    // Body: { "type": "PLAYLIST"|"PRESET"|"FIXED"|"AUTO_FULL"|"AUTO_SELECT", "trigger": "MANUAL", "payload": {...} }
     // ======================================================
     s_server->on(
         W10_Const::HTTP_API_SESSION_START,
@@ -45,31 +68,34 @@ void CL_W10_WebAPI::routeSession() {
                 return;
             }
 
-            const char*            v_typeStr = v_doc["type"] | "";
-            EN_CT10_session_type_t v_type    = EN_CT10_SESSION_NONE;
+            const char*            v_typeStr = v_doc["type"] | "PRESET";
+            EN_CT10_session_type_t v_type    = W10_parseSessionType(v_typeStr);
 
-            if (strcasecmp(v_typeStr, "PLAYLIST") == 0) {
-                v_type = EN_CT10_SESSION_PLAYLIST;
-            } else if (strcasecmp(v_typeStr, "PRESET") == 0) {
-                v_type = EN_CT10_SESSION_PRESET;
-            } else if (strcasecmp(v_typeStr, "FIXED") == 0) {
-                v_type = EN_CT10_SESSION_FIXED;
-            } else {
+            if (v_type == EN_CT10_SESSION_NONE) {
                 JsonDocument v_err;
                 v_err["error"] = "invalid_session_type";
                 sendJson(p_request, v_err, 400);
                 return;
             }
 
-            const char*       v_triggerStr = v_doc["trigger"] | "MANUAL";
-            EN_CT10_trigger_t v_trigger    = EN_CT10_TRIGGER_MANUAL;
-            if (strcasecmp(v_triggerStr, "SCHEDULE") == 0) {
-                v_trigger = EN_CT10_TRIGGER_SCHEDULE;
+            EN_CT10_trigger_t v_trigger;
+            switch (v_type) {
+                case EN_CT10_SESSION_AUTO_FULL:
+                    v_trigger = EN_CT10_TRIGGER_MANUAL_AUTO_FULL;
+                    break;
+                case EN_CT10_SESSION_AUTO_SELECT:
+                    v_trigger = EN_CT10_TRIGGER_MANUAL_AUTO_SELECT;
+                    break;
+                default:
+                    v_trigger = W10_parseTrigger(v_doc["trigger"] | "MANUAL");
+                    break;
             }
 
             JsonObjectConst v_payload = v_doc["payload"].as<JsonObjectConst>();
             JsonDocument    v_payloadDoc;
-            v_payloadDoc.set(v_payload);
+            if (!v_payload.isNull()) {
+                v_payloadDoc.set(v_payload);
+            }
 
             bool v_ok = CL_CT10_ControlManager::startSession(v_type, v_trigger, v_payloadDoc);
 
@@ -79,7 +105,7 @@ void CL_W10_WebAPI::routeSession() {
                 v_res["result"] = "session_started";
                 v_res["type"]   = v_typeStr;
                 sendJson(p_request, v_res, 200);
-                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Session started: type=%s, trigger=%s", v_typeStr, v_triggerStr);
+                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Session started: type=%s, trigger=%u", v_typeStr, (unsigned)v_trigger);
             } else {
                 v_res["error"] = "start_failed";
                 sendJson(p_request, v_res, 400);
@@ -147,6 +173,40 @@ void CL_W10_WebAPI::routeSession() {
         sendJson(p_request, v_res, 200);
         CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Session stopped");
     });
+
+    // ======================================================
+    // 4-1. PATCH /api/v001/session/rule [Stage 2 신규]
+    // ======================================================
+    s_server->on(
+        W10_Const::HTTP_API_SESSION_RULE,
+        HTTP_PATCH,
+        [](AsyncWebServerRequest* p_request) {},
+        nullptr,
+        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+            if (!checkApiKey(p_request)) {
+                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+                return;
+            }
+            if (p_index + p_len != p_total) return;
+
+            JsonDocument v_doc;
+            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
+                p_request->send(400, "application/json", "{\"error\":\"json parse error\"}");
+                return;
+            }
+
+            bool v_ok = CL_CT10_ControlManager::updateActiveSessionRule(v_doc);
+            JsonDocument v_res;
+            v_res["ok"] = v_ok;
+            if (v_ok) {
+                v_res["result"] = "session_rule_updated";
+                sendJson(p_request, v_res, 200);
+                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Session rule updated");
+            } else {
+                v_res["error"] = "session_not_active_or_invalid_rule";
+                sendJson(p_request, v_res, 400);
+            }
+        });
 
     // ======================================================
     // 5. GET /api/v001/session/current

@@ -267,6 +267,10 @@ class CL_CT10_ControlManager {
     static bool startPlaylistManual(uint8_t p_profileId);
     static bool startPresetManual(const char* p_presetCode, const char* p_styleCode);
     static bool startFixedManual(float p_percent);
+    static bool startAutoFullManual();
+    static bool startAutoSelectManual(EN_CT10_session_type_t baseType = EN_CT10_SESSION_PRESET,
+                                      const char* presetCode = nullptr,
+                                      uint8_t profileId = 0);
 
     static bool pauseSession();
     static bool resumeSession();
@@ -359,13 +363,15 @@ class CL_CT10_ControlManager {
     bool startUserProfileByNo(uint16_t p_profileNo);
     void stopUserProfile();
 
-    void startOverrideFixed(float p_percent, uint32_t p_seconds, bool p_forever = false);
+    void startOverrideFixed(float p_percent, uint32_t p_seconds, bool p_forever = false, bool p_isUserManual = true);
     void startOverridePreset(const char*                     p_presetCode,
                              const char*                     p_styleCode,
                              const ST_A20_SegmentOverride_t* p_override,
                              uint32_t                        p_seconds,
-                             bool                            p_forever = false);
-    void applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds, bool p_forever = false);
+                             bool                            p_forever = false,
+                             bool                            p_isUserManual = true);
+    void applyManualResolved(const ST_A20_ResolvedWind_t& p_wind, uint32_t p_seconds, bool p_forever = false, bool p_isUserManual = true);
+    bool applyPresetToSession(const char* p_preset, const char* p_style);
     void stopOverride();
 
     void tickLoop();

@@ -568,19 +568,20 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
         }
     }
 
-    // 8) AutoOff runtime snapshot
+    // 8) Trigger runtime snapshot (Clean Break: autoOffRt 제거)
     {
-        JsonObject v_ao        = A40_ComFunc::Json_ensureObject(v_ctl["autoOffRt"]);
-        v_ao["timerArmed"]     = autoOffRt.timerArmed;
-        v_ao["timerStartMs"]   = (uint32_t)autoOffRt.timerStartMs;
-        v_ao["timerMinutes"]   = (uint32_t)autoOffRt.timerMinutes;
-        v_ao["offTimeEnabled"] = autoOffRt.offTimeEnabled;
-        v_ao["offTimeMinutes"] = (uint16_t)autoOffRt.offTimeMinutes;
-        v_ao["offTempEnabled"] = autoOffRt.offTempEnabled;
-        v_ao["offTemp"]        = autoOffRt.offTemp;
-
-        v_ao["offTimeLastYday"] = (int)autoOffRt.offTimeLastYday;
-        v_ao["offTimeLastMin"]  = (int)autoOffRt.offTimeLastMin;
+        JsonObject v_tr        = A40_ComFunc::Json_ensureObject(v_ctl["triggerRt"]);
+        v_tr["timerArmed"]     = triggerRt.timerArmed;
+        v_tr["timerStartMs"]   = (uint32_t)triggerRt.timerStartMs;
+        v_tr["timerMinutes"]   = (uint32_t)triggerRt.timerMinutes;
+        v_tr["pausedAccumMs"]  = (uint32_t)triggerRt.pausedAccumMs;
+        v_tr["offTimeEnabled"] = triggerRt.offTimeEnabled;
+        v_tr["offTimeMinutes"] = (uint16_t)triggerRt.offTimeMinutes;
+        v_tr["offTimeLastYday"] = (int)triggerRt.offTimeLastYday;
+        v_tr["offTimeLastMin"]  = (int)triggerRt.offTimeLastMin;
+        v_tr["pauseMask"]      = (uint8_t)triggerRt.pauseMask;
+        v_tr["lastCheckTempC"] = triggerRt.lastCheckTempC;
+        v_tr["lastCheckDI"]    = triggerRt.lastCheckDI;
     }
 
     // 8-1) Sensor snapshot
@@ -634,8 +635,6 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
         v_rt["runSource"]         = v_st.runSource;
         v_rt["lastScheduleNo"]    = v_st.lastScheduleNo;
         v_rt["lastUserProfileNo"] = v_st.lastUserProfileNo;
-        v_rt["autoOffEnabled"]    = v_st.autoOffEnabled;
-        v_rt["autoOffMinutes"]    = v_st.autoOffMinutes;
         v_rt["overrideEnabled"]   = v_st.overrideEnabled;
         v_rt["overrideMode"]      = v_st.overrideMode;
     }
@@ -685,6 +684,53 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
             v_sess["percent"]  = s.payload.fixed.percent;
         } else {
             v_sess["typeName"] = "NONE";
+        }
+
+        // ─── [M1 수정] 세션 스냅샷 rule 노출 ───
+        {
+            JsonObject v_rule = A40_ComFunc::Json_ensureObject(v_sess["rule"]);
+
+            // timer
+            v_rule["timer"]["enabled"] = _session.rule.timer.enabled;
+            v_rule["timer"]["minutes"] = _session.rule.timer.minutes;
+
+            // offTime
+            v_rule["offTime"]["enabled"] = _session.rule.offTime.enabled;
+            v_rule["offTime"]["time"]    = _session.rule.offTime.time;
+
+            // tempLow
+            v_rule["tempLow"]["enabled"]    = _session.rule.tempLow.enabled;
+            v_rule["tempLow"]["mode"]       = (_session.rule.tempLow.mode == EN_A20_RULE_MODE_STOP)
+                                                ? "STOP" : "PAUSE";
+            v_rule["tempLow"]["threshold"]  = _session.rule.tempLow.threshold;
+            v_rule["tempLow"]["hysteresis"] = _session.rule.tempLow.hysteresis;
+
+            // diLow
+            v_rule["diLow"]["enabled"]    = _session.rule.diLow.enabled;
+            v_rule["diLow"]["mode"]       = (_session.rule.diLow.mode == EN_A20_RULE_MODE_STOP)
+                                                ? "STOP" : "PAUSE";
+            v_rule["diLow"]["threshold"]  = _session.rule.diLow.threshold;
+            v_rule["diLow"]["hysteresis"] = _session.rule.diLow.hysteresis;
+
+            // pirPause
+            v_rule["pirPause"]["enabled"] = _session.rule.pirPause.enabled;
+            v_rule["pirPause"]["holdSec"] = _session.rule.pirPause.holdSec;
+
+            // smartComfort
+            v_rule["smartComfort"]["enabled"]     = _session.rule.smartComfort.enabled;
+            v_rule["smartComfort"]["intervalMin"] = _session.rule.smartComfort.intervalMin;
+            v_rule["smartComfort"]["level"]       = _session.rule.smartComfort.level;
+        }
+
+        // [M1 수정] pauseReason / pauseSinceMs 노출 (ENV_PAUSED 시)
+        if (runCtx.state == EN_CT10_STATE_ENV_PAUSED) {
+            v_sess["pauseReason"]  = (uint8_t)runCtx.pauseReason;
+            v_sess["pauseSinceMs"] = runCtx.pauseSinceMs;
+        }
+
+        if (_session.autoSwitchReason[0] != '\0') {
+            v_sess["autoSwitchReason"] = _session.autoSwitchReason;
+            v_sess["autoSwitchAtMs"]   = _session.autoSwitchAtMs;
         }
     }
 
@@ -799,10 +845,10 @@ void CL_CT10_ControlManager::exportMetricsJson(JsonDocument& p_doc) {
     v_m["simGust"]    = sim.gustActive;
     v_m["simThermal"] = sim.thermalActive;
 
-    v_m["autoOffTimerArmed"]   = autoOffRt.timerArmed;
-    v_m["autoOffTimerMinutes"] = autoOffRt.timerMinutes;
-    v_m["autoOffOffTime"]      = autoOffRt.offTimeEnabled ? autoOffRt.offTimeMinutes : 0;
-    v_m["autoOffOffTemp"]      = autoOffRt.offTempEnabled ? autoOffRt.offTemp : 0.0f;
+    v_m["triggerTimerArmed"]   = triggerRt.timerArmed;
+    v_m["triggerTimerMinutes"] = triggerRt.timerMinutes;
+    v_m["triggerOffTime"]      = triggerRt.offTimeEnabled ? triggerRt.offTimeMinutes : 0;
+    v_m["pauseMask"]           = (uint8_t)triggerRt.pauseMask;
 
     v_m["stateCode"]  = (uint8_t)runCtx.state;
     v_m["reasonCode"] = (uint8_t)runCtx.reason;
@@ -853,8 +899,8 @@ ST_MON_Snapshot_t CL_CT10_ControlManager::getMonitorSnapshot() {
         s.gustActive          = sim.gustActive;
         s.thermalActive       = sim.thermalActive;
         s.overrideActive      = overrideState.active;
-        s.autoOffTimerArmed   = autoOffRt.timerArmed;
-        s.autoOffTimerMinutes = autoOffRt.timerMinutes;
+        s.triggerTimerArmed   = triggerRt.timerArmed;
+        s.triggerTimerMinutes = triggerRt.timerMinutes;
         s.tempC               = getCurrentTemperatureMock();
         s.humidity            = getCurrentHumidityMock();
         s.motionActive        = (motion != nullptr) ? motion->isActive() : false;

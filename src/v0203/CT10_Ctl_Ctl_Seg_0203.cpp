@@ -81,12 +81,6 @@ bool CL_CT10_ControlManager::tickUserProfile() {
     ST_A20_UserProfileItem_t& v_profile = v_cfg.items[(uint8_t)curProfileIndex];
     if (!v_profile.enabled || v_profile.segCount == 0) return false;
 
-    EN_CT10_reason_t v_reason = EN_CT10_REASON_NONE;
-    if (checkAutoOff(&v_reason)) {
-        onAutoOffTriggered(v_reason);
-        return true;
-    }
-
     return tickSegmentSequence(
         v_profile.repeatSegments,
         v_profile.repeatCount,
@@ -111,13 +105,6 @@ bool CL_CT10_ControlManager::tickSchedule() {
 
     ST_A20_ScheduleItem_t& v_schedule = v_cfg.items[(uint8_t)curScheduleIndex];
     if (!v_schedule.enabled) return false;
-
-    // AutoOff 검사
-    EN_CT10_reason_t v_reason = EN_CT10_REASON_NONE;
-    if (checkAutoOff(&v_reason)) {
-        onAutoOffTriggered(v_reason);
-        return true;
-    }
 
     // [단일 규격] profileId 참조 실행 (하위 호환 fallback 제외)
     if (v_schedule.profileId > 0 && g_A20_config_root.userProfiles) {
@@ -373,6 +360,12 @@ void CL_CT10_ControlManager::applySegmentOn(const ST_A20_UserProfileSegment_t& p
         if ((uint8_t)curProfileIndex < v_root.count) {
             updateRunCtxOnSegmentOn_Profile(v_root.items[(uint8_t)curProfileIndex], p_seg);
         }
+    }
+
+    if (p_seg.type == EN_A20_STEP_TYPE_REST) {
+        applySegmentOff();
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] SegmentOn(PROFILE) REST step=%u", (unsigned)p_seg.stepNo);
+        return;
     }
 
     if (!g_A20_config_root.windDict) return;

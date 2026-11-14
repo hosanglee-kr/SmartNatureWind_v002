@@ -44,8 +44,8 @@ typedef struct {
 
     bool overrideActive;
 
-    bool     autoOffTimerArmed;
-    uint32_t autoOffTimerMinutes;
+    bool     triggerTimerArmed;
+    uint32_t triggerTimerMinutes;
 
     float tempC;
     float humidity;

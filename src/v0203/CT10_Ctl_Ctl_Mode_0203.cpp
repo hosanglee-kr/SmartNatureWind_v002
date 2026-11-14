@@ -70,7 +70,7 @@ bool CL_CT10_ControlManager::startUserProfileByNo(uint16_t p_profileNo) {
             profileSegRt.phaseStartMs  = millis();
             profileSegRt.loopCount     = 0;
 
-            initAutoOffFromUserProfile(v_p);
+            initRuleFromProfile(v_p);
 
             CL_N10_NvsManager::setRunMode(2, 2);   // mode=USER_PROFILE, source=WEB
             CL_N10_NvsManager::setLastUserProfile((int16_t)p_profileNo);

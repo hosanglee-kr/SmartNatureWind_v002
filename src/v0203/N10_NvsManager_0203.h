@@ -31,8 +31,6 @@ typedef struct {
 	uint8_t	 runSource;			 // 0=UNKNOWN,1=BUTTON,2=WEB,3=API
 	int16_t	 lastScheduleNo;
 	int16_t	 lastUserProfileNo;
-	bool	 autoOffEnabled;
-	uint32_t autoOffMinutes;
 	bool	 overrideEnabled;
 	uint8_t	 overrideMode;	// 0=NONE,1=FIXED,2=PRESET
 	float	 overrideFixedPercent;
@@ -75,8 +73,6 @@ class CL_N10_NvsManager {
 	static constexpr const char* G_N10_KEY_RUN_SOURCE       = "run_src";      // uint8
 	static constexpr const char* G_N10_KEY_LAST_SCHEDULE    = "sched_no";     // int16
 	static constexpr const char* G_N10_KEY_LAST_PROFILE     = "uprofile_no";  // int16
-	static constexpr const char* G_N10_KEY_AUTOOFF_ENABLED  = "autoOff_en";   // uint8(bool)
-	static constexpr const char* G_N10_KEY_AUTOOFF_MINUTES  = "autoOff_min";  // uint32
 	static constexpr const char* G_N10_KEY_OVERRIDE_ENABLED = "ovr_en";       // uint8(bool)
 	static constexpr const char* G_N10_KEY_OVERRIDE_MODE    = "ovr_mode";     // uint8
 	static constexpr const char* G_N10_KEY_OVERRIDE_FIXED   = "ovr_fixed";    // float
@@ -134,7 +130,6 @@ class CL_N10_NvsManager {
 	static void setRunMode(uint8_t p_mode, uint8_t p_source);
 	static void setLastSchedule(int16_t p_schNo);
 	static void setLastUserProfile(int16_t p_profileNo);
-	static void setAutoOff(bool p_enabled, uint32_t p_minutes);
 	static void setOverrideFixed(bool p_enabled, float p_percent);
 	static void setOverridePreset(bool p_enabled, const char* p_presetCode, const char* p_styleCode);
 	static void clearOverride();

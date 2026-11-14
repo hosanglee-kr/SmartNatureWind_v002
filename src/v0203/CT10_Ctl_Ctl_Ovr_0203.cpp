@@ -17,11 +17,16 @@
 // --------------------------------------------------
 // override: fixed (PWM 고정 %)
 // --------------------------------------------------
-void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seconds, bool p_forever) {
+void CL_CT10_ControlManager::startOverrideFixed(float p_percent, uint32_t p_seconds, bool p_forever, bool p_isUserManual) {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return;
 
-    _autoOffLatched = false;
+    if (p_isUserManual) {
+        _autoOffLatched = false;
+        triggerRt.pauseMask = 0;
+        runCtx.pauseReason = EN_CT10_PAUSE_NONE;
+        runCtx.pauseSinceMs = 0;
+    }
 
     memset(&overrideState, 0, sizeof(overrideState));
     overrideState.active       = true;
@@ -51,7 +56,8 @@ void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
                                                  const char* p_styleCode,
                                                  const ST_A20_SegmentOverride_t* p_override,
                                                  uint32_t p_seconds,
-                                                 bool p_forever) {
+                                                 bool p_forever,
+                                                 bool p_isUserManual) {
     
     // [B-2] T-async 컨텍스트: 원자 스냅샷 경유 필수
     ST_A20_ConfigRoot_t v_snap;
@@ -72,7 +78,7 @@ void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
         return;
     }
 
-    applyManualResolved(v_resolved, p_seconds, p_forever);
+    applyManualResolved(v_resolved, p_seconds, p_forever, p_isUserManual);
 }
 
 // --------------------------------------------------
@@ -80,7 +86,8 @@ void CL_CT10_ControlManager::startOverridePreset(const char* p_presetCode,
 // --------------------------------------------------
 void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_wind,
                                                  uint32_t p_seconds,
-                                                 bool p_forever) {
+                                                 bool p_forever,
+                                                 bool p_isUserManual) {
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return;
 
@@ -90,11 +97,16 @@ void CL_CT10_ControlManager::applyManualResolved(const ST_A20_ResolvedWind_t& p_
     }
 
     if (p_wind.fixedMode) {
-        startOverrideFixed(p_wind.fixedSpeed, p_seconds, p_forever);
+        startOverrideFixed(p_wind.fixedSpeed, p_seconds, p_forever, p_isUserManual);
         return;
     }
 
-    _autoOffLatched = false;
+    if (p_isUserManual) {
+        _autoOffLatched = false;
+        triggerRt.pauseMask = 0;
+        runCtx.pauseReason = EN_CT10_PAUSE_NONE;
+        runCtx.pauseSinceMs = 0;
+    }
 
     memset(&overrideState, 0, sizeof(overrideState));
     overrideState.active          = true;

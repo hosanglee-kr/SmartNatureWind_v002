@@ -95,7 +95,7 @@ bool CL_CT10_ControlManager::reloadAll() {
     v_inst.useProfileMode   = false;
 
     memset(&v_inst.overrideState, 0, sizeof(v_inst.overrideState));
-    memset(&v_inst.autoOffRt, 0, sizeof(v_inst.autoOffRt));
+    memset(&v_inst.triggerRt, 0, sizeof(v_inst.triggerRt));
     memset(&v_inst.scheduleSegRt, 0, sizeof(v_inst.scheduleSegRt));
     memset(&v_inst.profileSegRt, 0, sizeof(v_inst.profileSegRt));
     memset(&v_inst.runCtx, 0, sizeof(v_inst.runCtx));
@@ -144,7 +144,7 @@ void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
     memset(&overrideState, 0, sizeof(overrideState));
     memset(&scheduleSegRt, 0, sizeof(scheduleSegRt));
     memset(&profileSegRt, 0, sizeof(profileSegRt));
-    memset(&autoOffRt, 0, sizeof(autoOffRt));
+    memset(&triggerRt, 0, sizeof(triggerRt));
     memset(&runCtx, 0, sizeof(runCtx));
 
     scheduleSegRt.index = -1;
@@ -160,8 +160,8 @@ void CL_CT10_ControlManager::begin(CL_P10_PWM& p_pwm) {
     profileSegRt.phaseStartMs = v_now;
     profileSegRt.loopCount    = 0;
 
-    autoOffRt.offTimeLastYday = -1;
-    autoOffRt.offTimeLastMin  = -1;
+    triggerRt.offTimeLastYday = -1;
+    triggerRt.offTimeLastMin  = -1;
 
     useProfileMode    = false;
     runSource         = EN_CT10_RUN_NONE;
@@ -365,6 +365,20 @@ void CL_CT10_ControlManager::exportSimJson(JsonDocument& p_doc) {
 // ======================================================
 // [Phase3 N-1] Session 엔진 (ADR-1 위임 모델)
 // ======================================================
+// [Phase 2] C10 로더 extern 승격 (C10_Config_UzProf_Internal_0203.h 참조)
+extern void C10_fromJson_TriggerRule(const JsonObjectConst& p_js,
+                                      ST_A20_TriggerRule_t& p_out,
+                                      const char* p_caller);
+
+bool CL_CT10_ControlManager::applyPresetToSession(const char* p_preset, const char* p_style) {
+    startOverridePreset(p_preset, p_style, nullptr, 0, true, false);
+    A40_ComFunc::copyStr2Buffer_safe(_session.payload.preset.presetCode, p_preset,
+                                     sizeof(_session.payload.preset.presetCode));
+    A40_ComFunc::copyStr2Buffer_safe(_session.payload.preset.styleCode, p_style,
+                                     sizeof(_session.payload.preset.styleCode));
+    return overrideState.active;
+}
+
 bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
                                           EN_CT10_trigger_t      p_trigger,
                                           const JsonDocument&    p_payloadDoc) {
@@ -430,6 +444,14 @@ bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
                 self._session.payload.playlist.currentStepStartMs = millis();
                 self._session.payload.playlist.currentStepDurationMs =
                     (uint32_t)v_profPtr->segments[0].durationMin * 60000UL;
+
+                // payload rule override 지원
+                if (p_payloadDoc["rule"].is<JsonObjectConst>()) {
+                    ST_A20_TriggerRule_t v_rule = {};
+                    C10_fromJson_TriggerRule(p_payloadDoc["rule"].as<JsonObjectConst>(),
+                                              v_rule, __func__);
+                    self.initRuleFromPayload(v_rule);
+                }
             }
             break;
         }
@@ -455,7 +477,7 @@ bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
                 if (ovr["gustFrequency"].is<float>()) v_ovr.gustFrequency = ovr["gustFrequency"].as<float>();
             }
 
-            self.startOverridePreset(pc, sc, &v_ovr, 0, true); // forever
+            self.startOverridePreset(pc, sc, &v_ovr, 0, true, false); // forever
             v_ok = self.overrideState.active;
 
             if (v_ok) {
@@ -466,6 +488,16 @@ bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
                                                  sc,
                                                  sizeof(self._session.payload.preset.styleCode));
                 self._session.payload.preset.override = v_ovr;
+
+                // rule 설정
+                ST_A20_TriggerRule_t v_rule = {};
+                if (p_payloadDoc["rule"].is<JsonObjectConst>()) {
+                    C10_fromJson_TriggerRule(p_payloadDoc["rule"].as<JsonObjectConst>(),
+                                              v_rule, __func__);
+                } else {
+                    A20_resetTriggerRuleDefault(v_rule);
+                }
+                self.initRuleFromPayload(v_rule);
             }
             break;
         }
@@ -475,10 +507,75 @@ bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
             if (v_pct < 0.0f) v_pct = 0.0f;
             if (v_pct > 100.0f) v_pct = 100.0f;
 
-            self.startOverrideFixed(v_pct, 0, true); // forever
+            self.startOverrideFixed(v_pct, 0, true, false); // forever
             v_ok = self.overrideState.active;
 
-            if (v_ok) self._session.payload.fixed.percent = v_pct;
+            if (v_ok) {
+                self._session.payload.fixed.percent = v_pct;
+
+                ST_A20_TriggerRule_t v_rule = {};
+                if (p_payloadDoc["rule"].is<JsonObjectConst>()) {
+                    C10_fromJson_TriggerRule(p_payloadDoc["rule"].as<JsonObjectConst>(),
+                                              v_rule, __func__);
+                } else {
+                    A20_resetTriggerRuleDefault(v_rule);
+                }
+                self.initRuleFromPayload(v_rule);
+            }
+            break;
+        }
+
+        case EN_CT10_SESSION_AUTO_FULL: {
+            // ① 규칙 로드 (payload.rule 또는 전역 기본)
+            ST_A20_TriggerRule_t v_rule = {};
+            if (p_payloadDoc["rule"].is<JsonObjectConst>()) {
+                C10_fromJson_TriggerRule(p_payloadDoc["rule"].as<JsonObjectConst>(),
+                                          v_rule, __func__);
+            } else {
+                A20_resetTriggerRuleDefault(v_rule);
+            }
+            self.initRuleFromPayload(v_rule);
+
+            // ② 초기 프리셋 자동 선택 (공통 헬퍼 사용)
+            v_ok = self.applyPresetToSession(getRecommendedPresetCode(),
+                                             getRecommendedStyleCode());
+
+            // ③ base 없음 (완전 자율)
+            self._session.autoSelect.baseType = EN_CT10_SESSION_NONE;
+            break;
+        }
+
+        case EN_CT10_SESSION_AUTO_SELECT: {
+            // ① 규칙 로드
+            ST_A20_TriggerRule_t v_rule = {};
+            if (p_payloadDoc["rule"].is<JsonObjectConst>()) {
+                C10_fromJson_TriggerRule(p_payloadDoc["rule"].as<JsonObjectConst>(),
+                                          v_rule, __func__);
+            } else {
+                A20_resetTriggerRuleDefault(v_rule);
+            }
+
+            // ② base 선택
+            JsonObjectConst p = p_payloadDoc.as<JsonObjectConst>();
+            const char* baseTypeStr = A40_ComFunc::Json_getStr(p, "baseType", "PRESET");
+
+            if (strcmp(baseTypeStr, "PLAYLIST") == 0) {
+                uint8_t pid = A40_ComFunc::Json_getNum<uint8_t>(p, "profileId", 0);
+                self._session.autoSelect.baseType      = EN_CT10_SESSION_PLAYLIST;
+                self._session.autoSelect.baseProfileId = pid;
+                v_ok = self.startUserProfileByNo(pid);
+                self.initRuleFromPayload(v_rule); // PLAYLIST 기본 rule 덮어쓰기 방지
+            } else {
+                self.initRuleFromPayload(v_rule);
+                const char* pc = A40_ComFunc::Json_getStr(p, "presetCode",
+                                    A20_Const::DEFAULT_PRESET_CODE);
+                const char* autoStyle = self.getRecommendedStyleCode();
+                self._session.autoSelect.baseType = EN_CT10_SESSION_PRESET;
+                A40_ComFunc::copyStr2Buffer_safe(
+                    self._session.autoSelect.basePresetCode,
+                    pc, sizeof(self._session.autoSelect.basePresetCode));
+                v_ok = self.applyPresetToSession(pc, autoStyle);
+            }
             break;
         }
 
@@ -513,7 +610,9 @@ bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
 
     const char* v_label = (p_type == EN_CT10_SESSION_PLAYLIST) ? "재생 시작"
                           : (p_type == EN_CT10_SESSION_PRESET) ? "프리셋 재생"
-                                                               : "일반 선풍기";
+                          : (p_type == EN_CT10_SESSION_AUTO_FULL) ? "AI 완전 자동"
+                          : (p_type == EN_CT10_SESSION_AUTO_SELECT) ? "선택 자동"
+                                                                    : "일반 선풍기";
     CL_MON_Monitor::pushSessionEvent(EN_MON_EVENT_SESSION_START,
                                      v_label,
                                      (uint8_t)p_type,
@@ -549,6 +648,32 @@ bool CL_CT10_ControlManager::startFixedManual(float p_percent) {
     return startSession(EN_CT10_SESSION_FIXED, EN_CT10_TRIGGER_MANUAL, d);
 }
 
+// ═══════════════════════════════════════════════════════════
+// [Phase 2] AUTO_FULL / AUTO_SELECT 진입점
+// ═══════════════════════════════════════════════════════════
+bool CL_CT10_ControlManager::startAutoFullManual() {
+    JsonDocument v_doc;
+    return startSession(EN_CT10_SESSION_AUTO_FULL,
+                        EN_CT10_TRIGGER_MANUAL_AUTO_FULL,
+                        v_doc);
+}
+
+bool CL_CT10_ControlManager::startAutoSelectManual(EN_CT10_session_type_t baseType,
+                                                   const char* presetCode,
+                                                   uint8_t profileId) {
+    JsonDocument v_doc;
+    if (baseType == EN_CT10_SESSION_PLAYLIST) {
+        v_doc["baseType"]  = "PLAYLIST";
+        v_doc["profileId"] = profileId;
+    } else {
+        v_doc["baseType"]   = "PRESET";
+        v_doc["presetCode"] = presetCode ? presetCode : A20_Const::DEFAULT_PRESET_CODE;
+    }
+    return startSession(EN_CT10_SESSION_AUTO_SELECT,
+                        EN_CT10_TRIGGER_MANUAL_AUTO_SELECT,
+                        v_doc);
+}
+
 // ======================================================
 // [Phase3 N-1] pauseSession — 실행 상태 백업 + 물리 정지
 // ======================================================
@@ -566,7 +691,7 @@ bool CL_CT10_ControlManager::pauseSession() {
     self._pausedExec.profileIndex = self.curProfileIndex;
     self._pausedExec.override     = self.overrideState;
     self._pausedExec.profileSegRt = self.profileSegRt;
-    self._pausedExec.autoOffRt    = self.autoOffRt;
+    self._pausedExec.triggerRt    = self.triggerRt;
 
     // ② 물리 정지
     self.sim.stop();
@@ -600,7 +725,7 @@ bool CL_CT10_ControlManager::pauseSession() {
 }
 
 // ======================================================
-// [Phase3 N-1] resumeSession — 백업 복원 + Smart Resume
+// [Phase3 N-1] resumeSession — 백업 복원 + Smart Resume + 1시간 유예
 // ======================================================
 bool CL_CT10_ControlManager::resumeSession() {
     auto&                       self = instance();
@@ -621,7 +746,17 @@ bool CL_CT10_ControlManager::resumeSession() {
     self.curProfileIndex = self._pausedExec.profileIndex;
     self.overrideState   = self._pausedExec.override;
     self.profileSegRt    = self._pausedExec.profileSegRt;
-    self.autoOffRt       = self._pausedExec.autoOffRt;
+    self.triggerRt       = self._pausedExec.triggerRt;
+
+    // [PAUSE-STOP-9] ENV_PAUSED 수동 재개 1시간 유예 + 누적 정지 시간 보정
+    self.triggerRt.pauseBypassUntilMs = millis() + 3600000UL;
+    self.triggerRt.pauseMask          = 0;
+    if (self.triggerRt.pauseStartedMs) {
+        self.triggerRt.pausedAccumMs += (uint32_t)millis() - self.triggerRt.pauseStartedMs;
+        self.triggerRt.pauseStartedMs = 0;
+    }
+    self.runCtx.pauseReason  = EN_CT10_PAUSE_NONE;
+    self.runCtx.pauseSinceMs = 0;
 
     // ③ Smart Resume 정책
     if (self._session.type == EN_CT10_SESSION_PLAYLIST) {
@@ -698,6 +833,10 @@ bool CL_CT10_ControlManager::stopSession() {
     self._session.type  = EN_CT10_SESSION_NONE;
     self._session.state = EN_SESSION_COMPLETED;
 
+    memset(&self.triggerRt, 0, sizeof(self.triggerRt));
+    self.runCtx.pauseReason  = EN_CT10_PAUSE_NONE;
+    self.runCtx.pauseSinceMs = 0;
+
     self._pausedExec.valid = false;
 
     // ⑤ NVS 해제
@@ -718,6 +857,43 @@ bool CL_CT10_ControlManager::stopSession() {
 }
 
 // ======================================================
+// [RULE-LIVE-1] updateActiveSessionRule — 활성 세션 규칙 갱신
+// ======================================================
+bool CL_CT10_ControlManager::updateActiveSessionRule(const JsonDocument& p_ruleDoc) {
+    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
+    if (!v_guard.isAcquired()) return false;
+
+    auto& self = instance();
+    if (self._session.state != EN_SESSION_ACTIVE) return false;
+
+    JsonObjectConst v_obj;
+    if (p_ruleDoc.is<JsonObjectConst>()) {
+        v_obj = p_ruleDoc.as<JsonObjectConst>();
+    } else if (p_ruleDoc["rule"].is<JsonObjectConst>()) {
+        v_obj = p_ruleDoc["rule"].as<JsonObjectConst>();
+    } else {
+        return false;
+    }
+
+    ST_A20_TriggerRule_t v_rule = self._session.rule;
+    C10_fromJson_TriggerRule(v_obj, v_rule, __func__);
+
+    uint32_t savedTimerStart   = self.triggerRt.timerStartMs;
+    uint32_t savedPausedAccum  = self.triggerRt.pausedAccumMs;
+    uint32_t savedPauseStarted = self.triggerRt.pauseStartedMs;
+
+    self.applyRuleToTriggerRt(v_rule);
+
+    self.triggerRt.timerStartMs   = savedTimerStart;
+    self.triggerRt.pausedAccumMs  = savedPausedAccum;
+    self.triggerRt.pauseStartedMs = savedPauseStarted;
+
+    self.markDirty("state");
+    self.markDirty("summary");
+    return true;
+}
+
+// ======================================================
 // [Stage 8 신규] AI set_timer 연동 런타임 AutoOff 제어
 // ======================================================
 bool CL_CT10_ControlManager::setSessionAutoOff(uint32_t p_minutes) {
@@ -728,6 +904,12 @@ bool CL_CT10_ControlManager::setSessionAutoOff(uint32_t p_minutes) {
 
     self._session.runtimeAutoOffStartMs = millis();
     self._session.runtimeAutoOffMin     = p_minutes;
+    self.triggerRt.timerArmed           = true;
+    self.triggerRt.timerMinutes         = p_minutes;
+    self.triggerRt.timerStartMs         = millis();
+    self.triggerRt.pausedAccumMs        = 0;
+    self.triggerRt.pauseStartedMs       = 0;
+
     self.markDirty("state");
     self.markDirty("metrics");
 
@@ -742,6 +924,8 @@ void CL_CT10_ControlManager::clearSessionAutoOff() {
 
     self._session.runtimeAutoOffStartMs = 0;
     self._session.runtimeAutoOffMin     = 0;
+    self.triggerRt.timerArmed           = false;
+    self.triggerRt.timerMinutes         = 0;
     self.markDirty("state");
     self.markDirty("metrics");
 }
@@ -750,10 +934,14 @@ uint32_t CL_CT10_ControlManager::getSessionAutoOffRemainSec() {
     auto&                       self = instance();
     CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) return 0;
-    if (self._session.runtimeAutoOffMin == 0) return 0;
+    if (self._session.runtimeAutoOffMin == 0 && !self.triggerRt.timerArmed) return 0;
 
-    uint32_t v_elapsedSec = (millis() - self._session.runtimeAutoOffStartMs) / 1000;
-    uint32_t v_totalSec   = self._session.runtimeAutoOffMin * 60;
+    uint32_t v_min = self._session.runtimeAutoOffMin > 0 ? self._session.runtimeAutoOffMin : self.triggerRt.timerMinutes;
+    uint32_t v_now = millis();
+    uint32_t v_start = self._session.runtimeAutoOffMin > 0 ? self._session.runtimeAutoOffStartMs : self.triggerRt.timerStartMs;
+    uint32_t v_pausedMs = self.triggerRt.pausedAccumMs + (self.triggerRt.pauseStartedMs ? (v_now - self.triggerRt.pauseStartedMs) : 0);
+    uint32_t v_elapsedSec = (v_now - v_start > v_pausedMs) ? (v_now - v_start - v_pausedMs) / 1000 : 0;
+    uint32_t v_totalSec   = v_min * 60;
     return (v_elapsedSec < v_totalSec) ? (v_totalSec - v_elapsedSec) : 0;
 }
 
@@ -797,7 +985,10 @@ void CL_CT10_ControlManager::updatePendingScheduleInfo() {
 
     // Manual Session 중일 때만 연산
     if (_session.type == EN_CT10_SESSION_NONE) return;
-    if (_session.trigger != EN_CT10_TRIGGER_MANUAL) return;
+    bool isManual = (_session.trigger == EN_CT10_TRIGGER_MANUAL ||
+                     _session.trigger == EN_CT10_TRIGGER_MANUAL_AUTO_FULL ||
+                     _session.trigger == EN_CT10_TRIGGER_MANUAL_AUTO_SELECT);
+    if (!isManual) return;
     if (!g_A20_config_root.schedules) return;
 
     auto&     cfg = *g_A20_config_root.schedules;

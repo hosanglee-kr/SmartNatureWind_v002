@@ -138,10 +138,6 @@ void CL_N10_NvsManager::toJson(JsonDocument& p_doc) {
 	o["lastScheduleNo"]	   = s_state.lastScheduleNo;
 	o["lastUserProfileNo"] = s_state.lastUserProfileNo;
 
-	JsonObject ao		   = o["autoOff"].to<JsonObject>();
-	ao["enabled"]		   = s_state.autoOffEnabled;
-	ao["minutes"]		   = s_state.autoOffMinutes;
-
 	JsonObject ov		   = o["override"].to<JsonObject>();
 	ov["enabled"]		   = s_state.overrideEnabled;
 	ov["mode"]			   = s_state.overrideMode;
@@ -198,17 +194,6 @@ void CL_N10_NvsManager::setLastUserProfile(int16_t p_profileNo) {
 	if (s_state.lastUserProfileNo == p_profileNo) return;
 	s_state.lastUserProfileNo = p_profileNo;
 	s_dirty.runtime			  = true;
-}
-
-void CL_N10_NvsManager::setAutoOff(bool p_enabled, uint32_t p_minutes) {
-	CL_A40_MutexGuard_Semaphore v_guard(s_mutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return;
-
-	if (!s_initialized) begin();
-	if (s_state.autoOffEnabled == p_enabled && s_state.autoOffMinutes == p_minutes) return;
-	s_state.autoOffEnabled = p_enabled;
-	s_state.autoOffMinutes = p_minutes;
-	s_dirty.runtime		   = true;
 }
 
 void CL_N10_NvsManager::setOverrideFixed(bool p_enabled, float p_percent) {
@@ -339,9 +324,6 @@ void CL_N10_NvsManager::loadRuntimeFromNvs() {
 	s_state.manualOvrSchedule     = s_prefs.getUChar(G_N10_KEY_MANUAL_OVR_SCH, 0) != 0;
 	s_state.autoComfortEnabled    = s_prefs.getUChar(G_N10_KEY_AUTO_COMFORT, 0) != 0;
 
-	s_state.autoOffEnabled		 = s_prefs.getUChar(G_N10_KEY_AUTOOFF_ENABLED, 0) != 0;
-	s_state.autoOffMinutes		 = s_prefs.getULong(G_N10_KEY_AUTOOFF_MINUTES, 0);
-
 	s_state.overrideEnabled		 = s_prefs.getUChar(G_N10_KEY_OVERRIDE_ENABLED, 0) != 0;
 	s_state.overrideMode		 = s_prefs.getUChar(G_N10_KEY_OVERRIDE_MODE, 0);
 	s_state.overrideFixedPercent = s_prefs.getFloat(G_N10_KEY_OVERRIDE_FIXED, 0.0f);
@@ -362,9 +344,9 @@ void CL_N10_NvsManager::loadRuntimeFromNvs() {
 	s_aiUsage.estCostUsdX1000 = s_prefs.getUInt(G_N10_KEY_AI_COST, 0);
 
 	s_dirty.runtime = false;
-	CL_D10_Logger::log(EN_L10_LOG_INFO, "[N10] Load runtime: mode=%u src=%u sch=%d up=%d autoOff(%d,%lu) ovr_en=%d",
+	CL_D10_Logger::log(EN_L10_LOG_INFO, "[N10] Load runtime: mode=%u src=%u sch=%d up=%d ovr_en=%d",
 		s_state.runMode, s_state.runSource, (int)s_state.lastScheduleNo, (int)s_state.lastUserProfileNo,
-		(int)s_state.autoOffEnabled, (unsigned long)s_state.autoOffMinutes, (int)s_state.overrideEnabled);
+		(int)s_state.overrideEnabled);
 }
 
 void CL_N10_NvsManager::flush(bool p_force) {
@@ -393,8 +375,6 @@ void CL_N10_NvsManager::flush(bool p_force) {
     if (nvs_set_u8  (v_handle, G_N10_KEY_RUN_SOURCE,       s_state.runSource)                               != ESP_OK) v_setFail = true;
     if (nvs_set_i16 (v_handle, G_N10_KEY_LAST_SCHEDULE,    s_state.lastScheduleNo)                          != ESP_OK) v_setFail = true;
     if (nvs_set_i16 (v_handle, G_N10_KEY_LAST_PROFILE,     s_state.lastUserProfileNo)                       != ESP_OK) v_setFail = true;
-    if (nvs_set_u8  (v_handle, G_N10_KEY_AUTOOFF_ENABLED,  s_state.autoOffEnabled ? 1 : 0)                  != ESP_OK) v_setFail = true;
-    if (nvs_set_u32 (v_handle, G_N10_KEY_AUTOOFF_MINUTES,  s_state.autoOffMinutes)                          != ESP_OK) v_setFail = true;
     if (nvs_set_u8  (v_handle, G_N10_KEY_OVERRIDE_ENABLED, s_state.overrideEnabled ? 1 : 0)                 != ESP_OK) v_setFail = true;
     if (nvs_set_u8  (v_handle, G_N10_KEY_OVERRIDE_MODE,    s_state.overrideMode)                            != ESP_OK) v_setFail = true;
     if (nvs_set_blob(v_handle, G_N10_KEY_OVERRIDE_FIXED,   &s_state.overrideFixedPercent, sizeof(float))    != ESP_OK) v_setFail = true;

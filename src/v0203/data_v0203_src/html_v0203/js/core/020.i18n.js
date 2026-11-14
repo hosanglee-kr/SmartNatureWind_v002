@@ -7,6 +7,9 @@ window.SNW = window.SNW || {};
 
     const DICT = {
         ko: {
+            'rule.title': '규칙 편집',
+            'rule.validate.hysteresisTemp': 'PAUSE 모드에서는 온도 히스테리시스(≥0.5°C)가 필요합니다',
+            'rule.validate.hysteresisDi': 'PAUSE 모드에서는 DI 히스테리시스(≥3.0)가 필요합니다',
             // =====================================================
             // 공통
             // =====================================================
@@ -735,6 +738,9 @@ window.SNW = window.SNW || {};
         },
 
         en: {
+            'rule.title': 'Edit Rule',
+            'rule.validate.hysteresisTemp': 'Temperature hysteresis (>=0.5°C) is required in PAUSE mode',
+            'rule.validate.hysteresisDi': 'DI hysteresis (>=3.0) is required in PAUSE mode',
             // =====================================================
             // Common
             // =====================================================

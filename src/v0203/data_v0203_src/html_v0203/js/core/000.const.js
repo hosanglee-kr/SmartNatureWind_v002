@@ -14,9 +14,9 @@ window.SNW = window.SNW || {};
             OVERRIDE: 1,
             PROFILE_RUN: 2,
             SCHEDULE_RUN: 3,
-            MOTION_BLOCKED: 4,
             AUTOOFF_STOPPED: 5,
-            TIME_INVALID: 6
+            TIME_INVALID: 6,
+            ENV_PAUSED: 7
         },
         FSM_REASON: {
             NONE: 0,
@@ -30,7 +30,9 @@ window.SNW = window.SNW || {};
             MOTION_NO_PRESENCE: 8,
             AUTOOFF_TIMER: 9,
             AUTOOFF_TIME: 10,
-            AUTOOFF_TEMP: 11
+            USER_STOP: 11,
+            TEMP_LOW_STOP: 12,
+            DI_LOW_STOP: 13
         },
         WIND_PHASE: { CALM: 'CALM', NORMAL: 'NORMAL', STRONG: 'STRONG' }
     };

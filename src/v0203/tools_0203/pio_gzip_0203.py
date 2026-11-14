@@ -70,8 +70,19 @@ if sys.platform == "win32":
 # ============================================================
 # 상수 (v0203)
 # ============================================================
-JS_BUNDLE_OUTPUT   = "P010_bundle_0203.js"
-CSS_BUNDLE_OUTPUT  = "P000_common_0203.css"
+JS_CHUNKS = {
+    "app_core_0203.js":  lambda f: f.parent.name == "core" and f.name[:3].isdigit() and 0 <= int(f.name[:3]) < 100,
+    "app_ui_0203.js":    lambda f: f.parent.name == "core" and f.name[:3].isdigit() and 100 <= int(f.name[:3]) < 200,
+    "app_pages_0203.js": lambda f: f.parent.name == "app"  and f.name[:3].isdigit() and 200 <= int(f.name[:3]) <= 999,
+}
+CSS_CHUNKS = {
+    "common_base_0203.css":  ["_base.css", "_layout.css", "_comp_ui.css", "_comp_form.css"],
+    "common_pages_0203.css": ["_dashboard.css", "_player_bar.css", "_studio.css", "_schedule.css", "_monitor.css", "_misc_pages.css", "_rules.css"],
+}
+LEGACY_BUNDLES = [
+    "P010_bundle_0203.js", "P010_bundle_0203.js.gz",
+    "P000_common_0203.css", "P000_common_0203.css.gz",
+]
 
 HTML_SHELL_INPUT   = "index.html"
 HTML_SHELL_OUTPUT  = "index.html"  # 배포 시에도 index.html 유지
@@ -298,69 +309,57 @@ def inject_json_to_offline_adapter(project_root: Path) -> int:
 # ============================================================
 # [1/6] JS 번들링
 # ============================================================
-def build_js_bundle(src_dir: Path, dst_dir: Path) -> int:
-    # 하위 폴더의 모든 .js 파일 검색
-    files = list(src_dir.glob("**/*.js"))
-    
-    # 번들 결과물과 제외 대상 필터링
-    files = [f for f in files 
-             if f.name != JS_BUNDLE_OUTPUT and f.name not in JS_BUNDLE_EXCLUDES]
-    
-    # [핵심] 파일명(000~999) 기준 정렬로 로드 순서 보장
-    files = sorted(files, key=lambda f: f.name)
+def _cleanup_legacy_bundles(src_dir: Path, dst_dir: Path) -> None:
+    for name in LEGACY_BUNDLES:
+        for d in (src_dir, dst_dir):
+            p = d / name
+            if p.is_file():
+                p.unlink()
+                _log(f"  [CLEAN] 구 번들 삭제: {p}", tag="clean")
 
-    if not files:
+
+def build_js_bundle(src_dir: Path, dst_dir: Path) -> int:
+    _cleanup_legacy_bundles(src_dir, dst_dir)
+    all_files = sorted(
+        [f for f in src_dir.glob("**/*.js")
+         if f.name not in JS_CHUNKS and f.name not in JS_BUNDLE_EXCLUDES],
+        key=lambda f: f.name,
+    )
+    if not all_files:
         print(f"[ERROR] JS 소스 없음: {src_dir}", file=sys.stderr)
         return 1
 
-    _log(f"[1/6] JS 번들링 ({len(files)} 파일 → {JS_BUNDLE_OUTPUT})", tag="js")
-    
-    parts: List[str] = []
-    total_raw = 0
-    prev_layer = None
+    for chunk_name, pred in JS_CHUNKS.items():
+        files = [f for f in all_files if pred(f)]
+        if not files:
+            _log(f"[1/6] JS 청크 {chunk_name}: 해당 파일 없음 — 스킵", tag="js")
+            continue
 
-    for f in files:
-        content = f.read_text(encoding="utf-8")
-        size = len(content.encode("utf-8"))
-        total_raw += size
+        _log(f"[1/6] JS 청크 ({len(files)} 파일 → {chunk_name})", tag="js")
+        parts: List[str] = []
+        total_raw = 0
+        for f in files:
+            content = f.read_text(encoding="utf-8")
+            size = len(content.encode("utf-8"))
+            total_raw += size
+            parts.append(f"\n/* ---- {f.name} ({size} bytes) ---- */\n")
+            parts.append(content)
+            parts.append("\n")
 
-        LAYER_MAP = {
-            "0": "Core (Constants, Config, I18n, Utilities)",
-            "1": "UI Components & Services (AudioWorklet, AI Live)",
-            "2": "Pages (Dashboard, Chart, Studio, AI, Automation)",
-            "3": "Info & Profiles",
-            "9": "App Bootstrap, Onboarding & Overlays",
-        }
-        layer = f.name.split(".")[0][:1] if f.name[0].isdigit() else "?"
-        if layer != prev_layer:
-            desc = LAYER_MAP.get(layer, layer)
-            parts.append(f"\n/* ===== LAYER {layer}: {desc} ===== */\n")
-            prev_layer = layer
+        bundle = "".join(parts)
+        (src_dir / chunk_name).write_text(bundle, encoding="utf-8")
 
-        parts.append(f"\n/* ---- {f.name} ({size} bytes) ---- */\n")
-        parts.append(content)
-        parts.append("\n")
-        _log(f"  + {f.name:<32} ({size:>7,} B)", tag="js")
+        out_gz = dst_dir / (chunk_name + ".gz")
+        with gzip.open(out_gz, "wb", compresslevel=9) as f_out:
+            f_out.write(bundle.encode("utf-8"))
 
-    bundle = "".join(parts)
+        out_raw = dst_dir / chunk_name
+        if out_raw.is_file():
+            out_raw.unlink()
 
-    # [로컬 UI 검증용] 소스 폴더(src_dir)에 번들 raw 파일 동기화
-    src_raw = src_dir / JS_BUNDLE_OUTPUT
-    src_raw.write_text(bundle, encoding="utf-8")
-
-    # [ESP32 LittleFS 배포용] 배포 폴더(dst_dir)에는 .gz 압축 파일만 배포 (플래시 824KB 버짓 보호)
-    out_gz = dst_dir / (JS_BUNDLE_OUTPUT + ".gz")
-    with gzip.open(out_gz, "wb", compresslevel=9) as f_out:
-        f_out.write(bundle.encode("utf-8"))
-
-    # 배포 폴더에 남아있는 비압축 raw 파일 제거
-    out_raw = dst_dir / JS_BUNDLE_OUTPUT
-    if out_raw.is_file():
-        out_raw.unlink()
-
-    gz_size = out_gz.stat().st_size
-    ratio = (1.0 - gz_size / total_raw) * 100.0 if total_raw > 0 else 0.0
-    _log(f"  ==> bundle: {total_raw:,} B → {gz_size:,} B (gz {ratio:.1f}% 절감, raw는 배포 제외)", tag="js")
+        gz_size = out_gz.stat().st_size
+        ratio = (1.0 - gz_size / total_raw) * 100.0 if total_raw > 0 else 0.0
+        _log(f"  ==> {chunk_name}: {total_raw:,} B → {gz_size:,} B (gz {ratio:.1f}% 절감)", tag="js")
     return 0
 
 
@@ -368,48 +367,42 @@ def build_js_bundle(src_dir: Path, dst_dir: Path) -> int:
 # [2/6] CSS 번들링
 # ============================================================
 def build_css_bundle(src_dir: Path, dst_dir: Path) -> int:
-    # 하위 폴더의 모든 _*.css 파일 검색
-    files = list(src_dir.glob("**/_*.css"))
-    
-    if not files:
-        _log(f"[2/6] CSS 소스 없음 — 스킵", tag="css")
+    css_dir = src_dir / "css"
+    if not css_dir.is_dir():
+        _log("[2/6] CSS 디렉토리 없음 — 스킵", tag="css")
         return 0
-    
-    files = sorted(files, key=lambda f: f.name)
-    
-    _log(f"[2/6] CSS 번들링 ({len(files)} 파일 → {CSS_BUNDLE_OUTPUT})", tag="css")
 
-    parts: List[str] = []
-    total_raw = 0
+    for chunk_name, file_list in CSS_CHUNKS.items():
+        files = [css_dir / n for n in file_list if (css_dir / n).is_file()]
+        if not files:
+            _log(f"[2/6] CSS 청크 {chunk_name}: 해당 파일 없음 — 스킵", tag="css")
+            continue
 
-    for f in files:
-        content = f.read_text(encoding="utf-8")
-        size = len(content.encode("utf-8"))
-        total_raw += size
-        parts.append(f"\n/* ---- {f.name} ({size} bytes) ---- */\n")
-        parts.append(content)
-        parts.append("\n")
-        _log(f"  + {f.name:<32} ({size:>7,} B)", tag="css")
+        _log(f"[2/6] CSS 청크 ({len(files)} 파일 → {chunk_name})", tag="css")
+        parts: List[str] = []
+        total_raw = 0
+        for f in files:
+            content = f.read_text(encoding="utf-8")
+            size = len(content.encode("utf-8"))
+            total_raw += size
+            parts.append(f"\n/* ---- {f.name} ({size} bytes) ---- */\n")
+            parts.append(content)
+            parts.append("\n")
 
-    bundle = "".join(parts)
+        bundle = "".join(parts)
+        (src_dir / chunk_name).write_text(bundle, encoding="utf-8")
 
-    # [로컬 UI 검증용] 소스 폴더(src_dir)에 번들 raw 파일 동기화
-    src_raw = src_dir / CSS_BUNDLE_OUTPUT
-    src_raw.write_text(bundle, encoding="utf-8")
+        out_gz = dst_dir / (chunk_name + ".gz")
+        with gzip.open(out_gz, "wb", compresslevel=9) as f_out:
+            f_out.write(bundle.encode("utf-8"))
 
-    # [ESP32 LittleFS 배포용] 배포 폴더(dst_dir)에는 .gz 압축 파일만 배포
-    out_gz = dst_dir / (CSS_BUNDLE_OUTPUT + ".gz")
-    with gzip.open(out_gz, "wb", compresslevel=9) as f_out:
-        f_out.write(bundle.encode("utf-8"))
+        out_raw = dst_dir / chunk_name
+        if out_raw.is_file():
+            out_raw.unlink()
 
-    # 배포 폴더에 남아있는 비압축 raw 파일 제거
-    out_raw = dst_dir / CSS_BUNDLE_OUTPUT
-    if out_raw.is_file():
-        out_raw.unlink()
-
-    gz_size = out_gz.stat().st_size
-    ratio = (1.0 - gz_size / total_raw) * 100.0 if total_raw > 0 else 0.0
-    _log(f"  ==> bundle: {total_raw:,} B → {gz_size:,} B (gz {ratio:.1f}% 절감, raw는 배포 제외)", tag="css")
+        gz_size = out_gz.stat().st_size
+        ratio = (1.0 - gz_size / total_raw) * 100.0 if total_raw > 0 else 0.0
+        _log(f"  ==> {chunk_name}: {total_raw:,} B → {gz_size:,} B (gz {ratio:.1f}% 절감)", tag="css")
     return 0
 
 
@@ -448,7 +441,7 @@ def process_html_shell(src_dir: Path, dst_dir: Path) -> int:
 def process_other_assets(src_dir: Path, dst_dir: Path) -> int:
     _log("[4/6] 기타 자산 처리", tag="assets")
 
-    handled = {JS_BUNDLE_OUTPUT, CSS_BUNDLE_OUTPUT, HTML_SHELL_INPUT, HTML_SHELL_OUTPUT}
+    handled = set(JS_CHUNKS.keys()) | set(CSS_CHUNKS.keys()) | {HTML_SHELL_INPUT, HTML_SHELL_OUTPUT}
 
     count = 0
     for item in sorted(src_dir.rglob("*")):
@@ -529,8 +522,11 @@ def build_offline_zip(project_root: Path, include_gz: bool = True) -> int:
     # 필수 파일 검증 (.gz 번들 + JSON 필수 파일)
     required = [
         stage_dir / "html_v0203" / (HTML_SHELL_OUTPUT + ".gz"),
-        stage_dir / "html_v0203" / (CSS_BUNDLE_OUTPUT + ".gz"),
-        stage_dir / "html_v0203" / (JS_BUNDLE_OUTPUT + ".gz"),
+        stage_dir / "html_v0203" / "common_base_0203.css.gz",
+        stage_dir / "html_v0203" / "common_pages_0203.css.gz",
+        stage_dir / "html_v0203" / "app_core_0203.js.gz",
+        stage_dir / "html_v0203" / "app_ui_0203.js.gz",
+        stage_dir / "html_v0203" / "app_pages_0203.js.gz",
         stage_dir / "json" / "10_cfg_jsonFile.json",
         stage_dir / "json" / "cfg_system_0203.json",
     ]

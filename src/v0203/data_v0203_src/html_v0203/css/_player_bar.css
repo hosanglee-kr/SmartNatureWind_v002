@@ -1,0 +1,304 @@
+/* === _eq.css === */
+/* ============================================================
+ * _eq.css — 이퀄라이저 (홈 큰 카드)
+ * ============================================================ */
+.snw-np-big {
+    display: flex;
+    flex-direction: column;
+    gap: var(--snw-spacing, 12px);
+}
+
+.snw-np-big__eq {
+    height: 80px;
+    background: var(--snw-surface-2, #12161c);
+    border-radius: var(--snw-radius, 8px);
+    overflow: hidden;
+    position: relative;
+}
+
+.snw-eq-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.snw-np-big__info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.snw-np-big__title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--snw-text, #e6edf3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.snw-np-big__sub {
+    font-size: 13px;
+    color: var(--snw-text-dim, #8b949e);
+}
+
+.snw-np-big__controls {
+    display: flex;
+    gap: 8px;
+}
+
+.snw-np-big__controls .snw-btn {
+    flex: 1;
+    min-height: 48px;
+    font-size: 16px;
+}
+
+/* 접근성: reduced-motion 시 정적 */
+@media (prefers-reduced-motion: reduce) {
+    .snw-eq-canvas {
+        animation: none !important;
+    }
+}
+
+
+
+/* === _player.css === */
+/* ============================================================
+ * 소스명   : _player.css
+ * 모듈약어 : W10
+ * 모듈명   : Playlist (재생 목록 스타일)
+ * ============================================================ */
+.snw-playlist {
+    display: flex;
+    flex-direction: column;
+    gap: var(--snw-spacing, 12px);
+}
+
+.snw-playlist__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--snw-text-dim, #8b949e);
+}
+
+.snw-playlist__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--snw-spacing, 12px);
+}
+
+.snw-playlist-item {
+    background: var(--snw-surface, #1a2028);
+    border: 1px solid var(--snw-border, #2f3844);
+    border-radius: var(--snw-radius-lg, 12px);
+    padding: var(--snw-spacing, 12px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--snw-spacing, 12px);
+    transition: border-color var(--snw-transition-fast, 0.1s ease);
+}
+.snw-playlist-item:hover {
+    border-color: var(--snw-border-hi, #4a5563);
+}
+
+.snw-playlist-item__main {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.snw-playlist-item__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+.snw-playlist-item__name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--snw-text, #e6edf3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1;
+}
+.snw-playlist-item__meta {
+    font-size: 12px;
+    color: var(--snw-text-dim, #8b949e);
+    flex-shrink: 0;
+}
+
+.snw-playlist-item__sparkline {
+    height: 48px;
+    background: var(--snw-bg-2, #0a0f14);
+    border-radius: var(--snw-radius-sm, 4px);
+    overflow: hidden;
+    padding: 4px;
+}
+
+.snw-playlist-item__refs {
+    font-size: 12px;
+    color: var(--snw-text-dim, #8b949e);
+}
+.snw-playlist-item__noref {
+    color: var(--snw-text-faint, #6e7a87);
+    font-style: italic;
+}
+
+.snw-playlist-item__actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.snw-btn--sm {
+    min-height: 32px;
+    padding: 4px 10px;
+    font-size: 12px;
+}
+
+
+
+/* === _nowplaying.css === */
+/* ============================================================
+ * 소스명   : _nowplaying.css
+ * 모듈약어 : W10
+ * 모듈명   : Now Playing Bar (전역 하단 플로팅 미니 플레이어)
+ * ============================================================ */
+.snw-nowplaying {
+    position: fixed;
+    bottom: var(--snw-bottom-nav-h, 60px);
+    left: 0;
+    right: 0;
+    height: var(--snw-np-h, 48px);
+    background: var(--snw-surface-2, #232b36);
+    border-top: 1px solid var(--snw-border, #2f3844);
+    display: flex;
+    align-items: center;
+    padding: 0 var(--snw-spacing, 12px);
+    gap: var(--snw-spacing-sm, 8px);
+    z-index: var(--snw-z-np, 95);
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    transition: transform var(--snw-transition, 0.2s ease), opacity var(--snw-transition, 0.2s ease);
+}
+
+.snw-nowplaying[hidden] {
+    display: none !important;
+}
+
+.snw-nowplaying__left {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.snw-nowplaying__left:hover .snw-nowplaying__title {
+    color: var(--snw-primary, #4a9eff);
+}
+
+.snw-nowplaying__eq {
+    width: 20px;
+    height: 16px;
+    flex-shrink: 0;
+    border-radius: 2px;
+}
+
+.snw-nowplaying__info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.snw-nowplaying__title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--snw-text, #e6edf3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.snw-nowplaying__sub {
+    display: flex;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--snw-text-dim, #8b949e);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+    margin-top: 2px;
+}
+
+.snw-nowplaying__badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    color: var(--snw-warn, #d29922);
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(210, 153, 34, 0.15);
+}
+
+.snw-nowplaying__badge .strike {
+    text-decoration: line-through;
+}
+
+.snw-nowplaying__badge--timer {
+    background: rgba(78, 168, 222, 0.2);
+    color: var(--snw-info, #4ea8de);
+    border: 1px solid var(--snw-info, #4ea8de);
+    border-radius: 12px;
+    padding: 1px 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.snw-nowplaying__badge--timer:hover {
+    background: rgba(78, 168, 222, 0.35);
+}
+
+.snw-nowplaying__controls {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.snw-np-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+    background: var(--snw-surface-3, #2f3844);
+    color: var(--snw-text, #e6edf3);
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.snw-np-btn:hover {
+    background: var(--snw-border-hi, #4a5563);
+    transform: scale(1.05);
+}
+
+.snw-np-btn:active {
+    transform: scale(0.95);
+}
+
+/* 데스크톱(하단 탭 바가 숨겨지는 화면 폭)에서는 바닥에 밀착 */
+@media (min-width: 768px) {
+    .snw-nowplaying {
+        bottom: 0;
+    }
+}

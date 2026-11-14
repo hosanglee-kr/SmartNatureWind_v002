@@ -1,3 +1,4 @@
+/* === _dashboard.css === */
 /*
  * ------------------------------------------------------
  * 소스명   : _dashboard.css
@@ -277,3 +278,71 @@
 .snw-snapslider__stop:active {
     transform: scale(0.94);
 }
+
+
+/* === _comfort.css === */
+/* ============================================================
+ * _comfort.css — Context 추천 카드
+ * ============================================================ */
+.snw-comfort {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.snw-comfort__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--snw-text-dim, #8b949e);
+}
+
+.snw-comfort__level {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--snw-surface-2, #12161c);
+    color: var(--snw-text, #e6edf3);
+}
+
+.snw-comfort__level--0 {
+    background: rgba(63, 185, 80, 0.15);
+    color: var(--snw-success, #3fb950);
+}
+.snw-comfort__level--1 {
+    background: rgba(210, 153, 34, 0.15);
+    color: var(--snw-warn, #d29922);
+}
+.snw-comfort__level--2 {
+    background: rgba(240, 136, 62, 0.2);
+    color: #f0883e;
+}
+.snw-comfort__level--3 {
+    background: rgba(248, 81, 73, 0.2);
+    color: var(--snw-error, #f85149);
+}
+
+.snw-comfort__body {
+    font-size: 14px;
+    color: var(--snw-text, #e6edf3);
+    line-height: 1.5;
+    padding: 12px;
+    background: var(--snw-surface-2, #12161c);
+    border-radius: var(--snw-radius, 8px);
+}
+
+.snw-btn--full {
+    width: 100%;
+    min-height: 44px;
+    font-size: 14px;
+    border-radius: var(--snw-radius-sm, 4px);
+    cursor: pointer;
+    font-weight: 600;
+}
+.snw-btn--full:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+

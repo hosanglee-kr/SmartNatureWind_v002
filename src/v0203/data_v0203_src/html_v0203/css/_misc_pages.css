@@ -1,0 +1,267 @@
+/* === _simulation.css === */
+.snw-sim {
+    display: flex;
+    flex-direction: column;
+    gap: var(--snw-spacing);
+    max-height: 80vh;
+}
+
+.snw-sim__tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--snw-border);
+    padding-bottom: 8px;
+}
+.snw-sim__tabs .snw-tab-btn {
+    padding: 8px 14px;
+}
+
+.snw-sim__wave-section {
+    background: var(--snw-bg-2);
+    border-radius: var(--snw-radius);
+    padding: 12px;
+}
+
+.snw-sim__wave-header {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 13px;
+    color: var(--snw-text-dim);
+    margin-bottom: 8px;
+}
+
+.snw-sim__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--snw-primary);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+}
+.snw-sim__badge--b { background: #f0883e; }
+
+.snw-sim__canvas {
+    width: 100%;
+    height: 180px;
+    display: block;
+    border-radius: var(--snw-radius-sm);
+}
+
+.snw-sim__meta {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--snw-text-dim);
+}
+.snw-sim__meta b { color: var(--snw-text); }
+
+.snw-sim__feelings h3 {
+    font-size: 13px;
+    color: var(--snw-text-dim);
+    margin-bottom: 8px;
+}
+
+.snw-sim__radar-wrap {
+    display: flex;
+    justify-content: center;
+}
+
+.snw-sim__radar {
+    max-width: 320px;
+    width: 100%;
+    height: auto;
+}
+
+.snw-sim__feelings-legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--snw-text-dim);
+    margin-top: 8px;
+}
+
+.snw-sim__legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.snw-sim__legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.snw-sim__actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding-top: 8px;
+    border-top: 1px solid var(--snw-border);
+    flex-wrap: wrap;
+}
+
+
+
+/* === _settings.css === */
+/*
+ * ------------------------------------------------------
+ * 소스명   : _settings.css
+ * 레이어   : CSS (빌드 시 P000_common_0200.css로 concat)
+ * 기능 요약:
+ *  - Settings 페이지 전용 스타일
+ *  - 폼 섹션 간격, 저장 액션 강조
+ * ------------------------------------------------------
+ */
+
+.snw-card [data-slot="form-log"],
+.snw-card [data-slot="form-api"] {
+    margin-bottom: var(--snw-spacing-lg);
+    padding-bottom: var(--snw-spacing-lg);
+    border-bottom: 1px solid var(--snw-border);
+}
+
+.snw-card [data-slot="form-api"] {
+    border-bottom: none;
+}
+
+.snw-card [data-slot="form-log"]::before {
+    content: "Logging";
+    display: block;
+    font-size: 11px;
+    color: var(--snw-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--snw-spacing-sm);
+}
+
+.snw-card [data-slot="form-api"]::before {
+    content: "Security";
+    display: block;
+    font-size: 11px;
+    color: var(--snw-text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--snw-spacing-sm);
+}
+
+
+/* === _onboarding.css === */
+.snw-onboarding-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    text-align: center;
+    padding: 8px 0;
+}
+
+.snw-onboarding-hero {
+    font-size: 64px;
+    line-height: 1;
+}
+
+.snw-onboarding-step h2 {
+    font-size: 20px;
+    color: var(--snw-text);
+    margin: 0;
+}
+
+.snw-onboarding-desc {
+    font-size: 14px;
+    color: var(--snw-text-dim);
+    line-height: 1.6;
+}
+
+.snw-onboarding-choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+    margin-top: 12px;
+}
+
+.snw-onboarding-choice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    background: var(--snw-surface-2);
+    border: 1.5px solid var(--snw-border);
+    border-radius: var(--snw-radius);
+    color: var(--snw-text);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.snw-onboarding-choice:hover {
+    border-color: var(--snw-primary);
+    background: rgba(74, 158, 255, 0.1);
+}
+
+.snw-onboarding-choice__icon {
+    font-size: 32px;
+}
+
+.snw-onboarding-info {
+    padding: 12px;
+    background: var(--snw-surface-2);
+    border-radius: var(--snw-radius);
+    font-size: 13px;
+    color: var(--snw-text);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    text-align: left;
+}
+
+/* 첫 바람 선택 */
+.snw-onboarding-breeze-choices {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.snw-breeze-choice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: var(--snw-surface-2);
+    border: 1.5px solid var(--snw-border);
+    border-radius: var(--snw-radius);
+    color: var(--snw-text);
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.snw-breeze-choice:hover {
+    border-color: var(--snw-primary);
+    background: rgba(74, 158, 255, 0.08);
+}
+
+.snw-breeze-choice__icon {
+    font-size: 36px;
+    flex-shrink: 0;
+}
+.snw-breeze-choice__title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--snw-text);
+}
+.snw-breeze-choice__desc {
+    font-size: 12px;
+    color: var(--snw-text-dim);
+    margin-top: 2px;
+}
+

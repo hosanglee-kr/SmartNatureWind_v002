@@ -108,8 +108,8 @@ window.SNW = window.SNW || {};
                 <details class="snw-step-card__override" ${ovr.enabled ? 'open' : ''}>
                     <summary style="display:flex; align-items:center; justify-content:space-between; cursor:pointer; padding:4px 0; list-style:none; outline:none;">
                         <div style="display:flex; align-items:center; gap:8px;">
-                            <!-- pointer-events:none으로 클릭 시 summary 이벤트를 유도 -->
-                            <input type="checkbox" data-field="overrideEnabled" ${ovr.enabled ? 'checked' : ''} style="pointer-events:none;">
+                            <!-- 비인터랙티브 span으로 summary 접근성 경고 방지 -->
+                            <span data-field="overrideEnabled" aria-hidden="true" style="font-size:14px;line-height:1;">${ovr.enabled ? '☑' : '☐'}</span>
                             <span>⚙ 물리 세부 조정 (Override)</span>
                         </div>
                         ${ovr.enabled ? `<span class="snw-badge snw-badge--warn" style="font-size:10px;padding:2px 6px;">수동 튜닝됨</span>` : ''}
@@ -179,8 +179,9 @@ window.SNW = window.SNW || {};
             if (detailsEl) {
                 detailsEl.addEventListener('toggle', () => {
                     const chk = el.querySelector('[data-field="overrideEnabled"]');
-                    if (chk && chk.checked !== detailsEl.open) {
+                    if (chk && Boolean(chk.checked) !== detailsEl.open) {
                         chk.checked = detailsEl.open;
+                        chk.textContent = detailsEl.open ? '☑' : '☐';
                         chk.dispatchEvent(new Event('change', { bubbles: true }));
                     }
                 });

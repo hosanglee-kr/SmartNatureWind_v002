@@ -672,7 +672,9 @@ body.snw-sidebar-open .snw-sidebar {
 
 /* FAB 간섭 회피: 모바일 하단 탭 및 Now Playing 바와 FAB 겹침 방지 */
 @media (max-width: 767px) {
-    .snw-fab, [data-slot="fab"] {
+
+    .snw-fab,
+    [data-slot="fab"] {
         bottom: calc(var(--snw-bottom-nav-h, 56px) + var(--snw-player-h, 0px) + 16px + env(safe-area-inset-bottom, 0px)) !important;
         transition: bottom 0.25s ease;
     }

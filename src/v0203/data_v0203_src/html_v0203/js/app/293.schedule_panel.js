@@ -3,7 +3,7 @@
 // Layer 3 (Schedule 패널 컴포넌트)
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     SNW.SchedulePanel = class SchedulePanel {
@@ -109,12 +109,12 @@ window.SNW = window.SNW || {};
             const profileName = profile ? profile.name : '(삭제된 프로필)';
             const profileMissing = !profile;
 
-            const days = (sch.period && sch.period.days) || [0,0,0,0,0,0,0];
+            const days = (sch.period && sch.period.days) || [0, 0, 0, 0, 0, 0, 0];
             const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
             const daysStr = days.map((d, i) => d ? dayNames[i] : '·').join(' ');
 
             const startTime = (sch.period && sch.period.startTime) || '00:00';
-            const endTime   = (sch.period && sch.period.endTime)   || '23:59';
+            const endTime = (sch.period && sch.period.endTime) || '23:59';
 
             card.innerHTML = `
                 <div class="snw-schedule-item__head">
@@ -156,7 +156,7 @@ window.SNW = window.SNW || {};
             let isSimpleMode = isEdit ? (sch.name && sch.name.startsWith('[간단]')) : true;
             let editedRule = (isEdit && sch.rule) ? JSON.parse(JSON.stringify(sch.rule)) : null;
             const isCustom = isEdit && sch.ruleOverride === true;
-            const days = sch ? ((sch.period && sch.period.days) || [0,0,0,0,0,0,0]) : [0,1,1,1,1,1,0];
+            const days = sch ? ((sch.period && sch.period.days) || [0, 0, 0, 0, 0, 0, 0]) : [0, 1, 1, 1, 1, 1, 0];
             const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
 
             const PRESETS = [
@@ -174,10 +174,10 @@ window.SNW = window.SNW || {};
 
             const STYLES = [
                 { code: 'BALANCE', name: '⚖️ 균형 (BALANCE)' },
-                { code: 'ACTIVE',  name: '⚡ 활력 (ACTIVE)' },
-                { code: 'FOCUS',   name: '🎯 집중 (FOCUS)' },
-                { code: 'RELAX',   name: '🍃 휴식 (RELAX)' },
-                { code: 'SLEEP',   name: '🌙 수면 (SLEEP)' },
+                { code: 'ACTIVE', name: '⚡ 활력 (ACTIVE)' },
+                { code: 'FOCUS', name: '🎯 집중 (FOCUS)' },
+                { code: 'RELAX', name: '🍃 휴식 (RELAX)' },
+                { code: 'SLEEP', name: '🌙 수면 (SLEEP)' },
             ];
 
             const content = document.createElement('div');
@@ -205,11 +205,11 @@ window.SNW = window.SNW || {};
                         <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;">요일</label>
                         <div class="snw-day-picker">
                             ${dayNames.map((d, i) =>
-                                `<label class="snw-day-chip ${days[i] ? 'is-active' : ''}">
+                `<label class="snw-day-chip ${days[i] ? 'is-active' : ''}">
                                     <input type="checkbox" data-day="${i}" ${days[i] ? 'checked' : ''}>
                                     <span>${d}</span>
                                 </label>`
-                            ).join('')}
+            ).join('')}
                         </div>
                     </div>
 
@@ -353,9 +353,9 @@ window.SNW = window.SNW || {};
                 isEdit ? '스케줄 편집' : '새 스케줄',
                 content,
                 async () => {
-                    const nameEl  = content.querySelector('[data-field="name"]');
+                    const nameEl = content.querySelector('[data-field="name"]');
                     const startEl = content.querySelector('[data-field="startTime"]');
-                    const endEl   = content.querySelector('[data-field="endTime"]');
+                    const endEl = content.querySelector('[data-field="endTime"]');
 
                     if (!nameEl.value.trim()) {
                         if (SNW.ToastUtil) SNW.ToastUtil.error('이름을 입력하세요');
@@ -370,7 +370,7 @@ window.SNW = window.SNW || {};
                     if (isSimpleMode) {
                         const selPreset = content.querySelector('#simple-preset-select').value;
                         const selStyle = content.querySelector('#simple-style-select').value;
-                        
+
                         // [Stage 10] 간단 모드 단일 Step 프로필 자동 생성
                         const autoProfile = {
                             profileNo: (Date.now() % 65530) + 1,

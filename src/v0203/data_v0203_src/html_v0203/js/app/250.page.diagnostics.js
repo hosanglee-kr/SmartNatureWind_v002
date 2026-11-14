@@ -18,7 +18,7 @@ SNW.Page = SNW.Page || {};
     'use strict';
     SNW.Page.Diagnostics = class Diagnostics {
         constructor(container) { this.el = container; this._active = true; this._timers = []; }
-        
+
         async mount() {
             this.el.innerHTML = '';
             this.el.appendChild(SNW.Tpl.diagnostics());
@@ -27,20 +27,20 @@ SNW.Page = SNW.Page || {};
             this._timers.push(id);
             SNW.DomUtil.delegate(this.el, '[data-action="show-config"]', 'click', () => this._showConfig());
             SNW.DomUtil.delegate(this.el, '[data-action="save-dirty"]', 'click', async () => {
-                try { await SNW.Api.saveConfig(); SNW.ToastUtil.success(SNW.I18n.t('diagnostics.saveDirtySuccess')); this._refresh(); } catch(e) { SNW.ErrorHandler.handle(e, 'diag.save'); }
+                try { await SNW.Api.saveConfig(); SNW.ToastUtil.success(SNW.I18n.t('diagnostics.saveDirtySuccess')); this._refresh(); } catch (e) { SNW.ErrorHandler.handle(e, 'diag.save'); }
             });
         }
-        unmount(){ this._active = false; this._timers.forEach(id => clearInterval(id)); }
+        unmount() { this._active = false; this._timers.forEach(id => clearInterval(id)); }
 
         async _refresh() {
-            const slot = this.el.querySelector('[data-slot="panel"]'); 
+            const slot = this.el.querySelector('[data-slot="panel"]');
             if (!slot) return;
             try {
                 const [state, diag, dirty, metrics] = await Promise.all([
-                    SNW.Api.getState().catch(()=>null),
-                    SNW.Api.diag().catch(()=>null),
-                    SNW.Api.getConfigDirty().catch(()=>null),
-                    SNW.Api.getMetrics ? SNW.Api.getMetrics().catch(()=>null) : null
+                    SNW.Api.getState().catch(() => null),
+                    SNW.Api.diag().catch(() => null),
+                    SNW.Api.getConfigDirty().catch(() => null),
+                    SNW.Api.getMetrics ? SNW.Api.getMetrics().catch(() => null) : null
                 ]);
                 if (!this._active) return;
                 const ctl = (state && state.control) || {};
@@ -91,7 +91,7 @@ SNW.Page = SNW.Page || {};
                     <div class="snw-kv"><span>lastScheduleNo</span><b>${rt.lastScheduleNo ?? '-'}</b></div>
                     <div class="snw-kv"><span>lastUserProfileNo</span><b>${rt.lastUserProfileNo ?? '-'}</b></div>
                 `;
-            } catch(e) { console.error('[Diagnostics] refresh', e); }
+            } catch (e) { console.error('[Diagnostics] refresh', e); }
         }
 
         async _showConfig() {
@@ -103,7 +103,7 @@ SNW.Page = SNW.Page || {};
                 pre.style.cssText = 'max-height:400px;overflow:auto;background:var(--snw-bg-2);padding:12px;border-radius:4px;font-size:11px;color:var(--snw-text);';
                 content.appendChild(pre);
                 SNW.UI.modal(SNW.I18n.t('diagnostics.allJson'), content, async () => true);
-            } catch(e) { SNW.ToastUtil.error(SNW.I18n.t('diagnostics.fetchFail')); }
+            } catch (e) { SNW.ToastUtil.error(SNW.I18n.t('diagnostics.fetchFail')); }
         }
     };
 })(window.SNW);

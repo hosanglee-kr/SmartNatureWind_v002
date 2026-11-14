@@ -355,9 +355,9 @@ window.SNW = window.SNW || {};
 		startSession({ type, payload = {}, trigger } = {}) {
 			let finalTrigger = trigger;
 			if (!finalTrigger) {
-				if (type === 'AUTO_FULL')        finalTrigger = 'MANUAL_AUTO_FULL';
+				if (type === 'AUTO_FULL') finalTrigger = 'MANUAL_AUTO_FULL';
 				else if (type === 'AUTO_SELECT') finalTrigger = 'MANUAL_AUTO_SELECT';
-				else                             finalTrigger = 'MANUAL';
+				else finalTrigger = 'MANUAL';
 			}
 			return _fetch(SNW.CFG.API.sessionStart, {
 				method: 'POST',

@@ -2659,7 +2659,7 @@ SNW.Page = SNW.Page || {};
         }) (window.SNW);
 
 
-/* ---- 250.page.diagnostics.js (6519 bytes) ---- */
+/* ---- 250.page.diagnostics.js (6522 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : 250.page.diagnostics.js
@@ -2680,7 +2680,7 @@ SNW.Page = SNW.Page || {};
     'use strict';
     SNW.Page.Diagnostics = class Diagnostics {
         constructor(container) { this.el = container; this._active = true; this._timers = []; }
-        
+
         async mount() {
             this.el.innerHTML = '';
             this.el.appendChild(SNW.Tpl.diagnostics());
@@ -2689,20 +2689,20 @@ SNW.Page = SNW.Page || {};
             this._timers.push(id);
             SNW.DomUtil.delegate(this.el, '[data-action="show-config"]', 'click', () => this._showConfig());
             SNW.DomUtil.delegate(this.el, '[data-action="save-dirty"]', 'click', async () => {
-                try { await SNW.Api.saveConfig(); SNW.ToastUtil.success(SNW.I18n.t('diagnostics.saveDirtySuccess')); this._refresh(); } catch(e) { SNW.ErrorHandler.handle(e, 'diag.save'); }
+                try { await SNW.Api.saveConfig(); SNW.ToastUtil.success(SNW.I18n.t('diagnostics.saveDirtySuccess')); this._refresh(); } catch (e) { SNW.ErrorHandler.handle(e, 'diag.save'); }
             });
         }
-        unmount(){ this._active = false; this._timers.forEach(id => clearInterval(id)); }
+        unmount() { this._active = false; this._timers.forEach(id => clearInterval(id)); }
 
         async _refresh() {
-            const slot = this.el.querySelector('[data-slot="panel"]'); 
+            const slot = this.el.querySelector('[data-slot="panel"]');
             if (!slot) return;
             try {
                 const [state, diag, dirty, metrics] = await Promise.all([
-                    SNW.Api.getState().catch(()=>null),
-                    SNW.Api.diag().catch(()=>null),
-                    SNW.Api.getConfigDirty().catch(()=>null),
-                    SNW.Api.getMetrics ? SNW.Api.getMetrics().catch(()=>null) : null
+                    SNW.Api.getState().catch(() => null),
+                    SNW.Api.diag().catch(() => null),
+                    SNW.Api.getConfigDirty().catch(() => null),
+                    SNW.Api.getMetrics ? SNW.Api.getMetrics().catch(() => null) : null
                 ]);
                 if (!this._active) return;
                 const ctl = (state && state.control) || {};
@@ -2753,7 +2753,7 @@ SNW.Page = SNW.Page || {};
                     <div class="snw-kv"><span>lastScheduleNo</span><b>${rt.lastScheduleNo ?? '-'}</b></div>
                     <div class="snw-kv"><span>lastUserProfileNo</span><b>${rt.lastUserProfileNo ?? '-'}</b></div>
                 `;
-            } catch(e) { console.error('[Diagnostics] refresh', e); }
+            } catch (e) { console.error('[Diagnostics] refresh', e); }
         }
 
         async _showConfig() {
@@ -2765,7 +2765,7 @@ SNW.Page = SNW.Page || {};
                 pre.style.cssText = 'max-height:400px;overflow:auto;background:var(--snw-bg-2);padding:12px;border-radius:4px;font-size:11px;color:var(--snw-text);';
                 content.appendChild(pre);
                 SNW.UI.modal(SNW.I18n.t('diagnostics.allJson'), content, async () => true);
-            } catch(e) { SNW.ToastUtil.error(SNW.I18n.t('diagnostics.fetchFail')); }
+            } catch (e) { SNW.ToastUtil.error(SNW.I18n.t('diagnostics.fetchFail')); }
         }
     };
 })(window.SNW);
@@ -4436,7 +4436,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 291.studio.js (33457 bytes) ---- */
+/* ---- 291.studio.js (37783 bytes) ---- */
 // =========================================================
 // 291.studio.js — Wind Design Studio (작곡)
 // Layer 3 (Studio 패널 컴포넌트)
@@ -5027,6 +5027,33 @@ window.SNW = window.SNW || {};
                 return;
             }
             this._steps.push(this._defaultStep());
+            // [Stage 5] 규칙 편집 진입점
+            const _updateRuleSummary = () => {
+                const ruleSummaryEl = this.el.querySelector('[data-slot="rule-summary"]');
+                if (!ruleSummaryEl) return;
+                const r = this._currentRule || {};
+                const items = [];
+                if (r.timer?.enabled)     items.push(`⏱️${r.timer.minutes}m`);
+                if (r.offTime?.enabled)   items.push(`⏰${r.offTime.time}`);
+                if (r.tempLow?.enabled)   items.push(`🌡️${r.tempLow.mode}`);
+                if (r.diLow?.enabled)     items.push(`☀️${r.diLow.mode}`);
+                if (r.pirPause?.enabled)  items.push(`👤${r.pirPause.holdSec}s`);
+                if (r.smartComfort?.enabled) items.push(`✨auto`);
+                ruleSummaryEl.textContent = items.length > 0 ? items.join(' · ') : '규칙 미설정 (클릭하여 추가)';
+            };
+            _updateRuleSummary();
+
+            const btnEditRule = this.el.querySelector('[data-action="edit-rule"]');
+            if (btnEditRule) {
+                btnEditRule.onclick = async () => {
+                    if (!SNW.UI.ruleEditor) return;
+                    const newRule = await SNW.UI.ruleEditor.showModal(this._currentRule);
+                    if (!newRule) return;
+                    this._currentRule = newRule;
+                    _updateRuleSummary();
+                };
+            }
+
             this._renderSteps();
         }
 
@@ -5037,6 +5064,33 @@ window.SNW = window.SNW || {};
             }
             this._steps.splice(idx, 1);
             this._steps.forEach((s, i) => { s.stepNo = i + 1; });
+            // [Stage 5] 규칙 편집 진입점
+            const _updateRuleSummary = () => {
+                const ruleSummaryEl = this.el.querySelector('[data-slot="rule-summary"]');
+                if (!ruleSummaryEl) return;
+                const r = this._currentRule || {};
+                const items = [];
+                if (r.timer?.enabled)     items.push(`⏱️${r.timer.minutes}m`);
+                if (r.offTime?.enabled)   items.push(`⏰${r.offTime.time}`);
+                if (r.tempLow?.enabled)   items.push(`🌡️${r.tempLow.mode}`);
+                if (r.diLow?.enabled)     items.push(`☀️${r.diLow.mode}`);
+                if (r.pirPause?.enabled)  items.push(`👤${r.pirPause.holdSec}s`);
+                if (r.smartComfort?.enabled) items.push(`✨auto`);
+                ruleSummaryEl.textContent = items.length > 0 ? items.join(' · ') : '규칙 미설정 (클릭하여 추가)';
+            };
+            _updateRuleSummary();
+
+            const btnEditRule = this.el.querySelector('[data-action="edit-rule"]');
+            if (btnEditRule) {
+                btnEditRule.onclick = async () => {
+                    if (!SNW.UI.ruleEditor) return;
+                    const newRule = await SNW.UI.ruleEditor.showModal(this._currentRule);
+                    if (!newRule) return;
+                    this._currentRule = newRule;
+                    _updateRuleSummary();
+                };
+            }
+
             this._renderSteps();
         }
 
@@ -5047,6 +5101,33 @@ window.SNW = window.SNW || {};
             this._steps[idx] = this._steps[target];
             this._steps[target] = tmp;
             this._steps.forEach((s, i) => { s.stepNo = i + 1; });
+            // [Stage 5] 규칙 편집 진입점
+            const _updateRuleSummary = () => {
+                const ruleSummaryEl = this.el.querySelector('[data-slot="rule-summary"]');
+                if (!ruleSummaryEl) return;
+                const r = this._currentRule || {};
+                const items = [];
+                if (r.timer?.enabled)     items.push(`⏱️${r.timer.minutes}m`);
+                if (r.offTime?.enabled)   items.push(`⏰${r.offTime.time}`);
+                if (r.tempLow?.enabled)   items.push(`🌡️${r.tempLow.mode}`);
+                if (r.diLow?.enabled)     items.push(`☀️${r.diLow.mode}`);
+                if (r.pirPause?.enabled)  items.push(`👤${r.pirPause.holdSec}s`);
+                if (r.smartComfort?.enabled) items.push(`✨auto`);
+                ruleSummaryEl.textContent = items.length > 0 ? items.join(' · ') : '규칙 미설정 (클릭하여 추가)';
+            };
+            _updateRuleSummary();
+
+            const btnEditRule = this.el.querySelector('[data-action="edit-rule"]');
+            if (btnEditRule) {
+                btnEditRule.onclick = async () => {
+                    if (!SNW.UI.ruleEditor) return;
+                    const newRule = await SNW.UI.ruleEditor.showModal(this._currentRule);
+                    if (!newRule) return;
+                    this._currentRule = newRule;
+                    _updateRuleSummary();
+                };
+            }
+
             this._renderSteps();
         }
 
@@ -5318,13 +5399,13 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 293.schedule_panel.js (26282 bytes) ---- */
+/* ---- 293.schedule_panel.js (26231 bytes) ---- */
 // =========================================================
 // 293.schedule_panel.js — Schedule 편집 (Profile 참조만)
 // Layer 3 (Schedule 패널 컴포넌트)
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     SNW.SchedulePanel = class SchedulePanel {
@@ -5430,12 +5511,12 @@ window.SNW = window.SNW || {};
             const profileName = profile ? profile.name : '(삭제된 프로필)';
             const profileMissing = !profile;
 
-            const days = (sch.period && sch.period.days) || [0,0,0,0,0,0,0];
+            const days = (sch.period && sch.period.days) || [0, 0, 0, 0, 0, 0, 0];
             const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
             const daysStr = days.map((d, i) => d ? dayNames[i] : '·').join(' ');
 
             const startTime = (sch.period && sch.period.startTime) || '00:00';
-            const endTime   = (sch.period && sch.period.endTime)   || '23:59';
+            const endTime = (sch.period && sch.period.endTime) || '23:59';
 
             card.innerHTML = `
                 <div class="snw-schedule-item__head">
@@ -5477,7 +5558,7 @@ window.SNW = window.SNW || {};
             let isSimpleMode = isEdit ? (sch.name && sch.name.startsWith('[간단]')) : true;
             let editedRule = (isEdit && sch.rule) ? JSON.parse(JSON.stringify(sch.rule)) : null;
             const isCustom = isEdit && sch.ruleOverride === true;
-            const days = sch ? ((sch.period && sch.period.days) || [0,0,0,0,0,0,0]) : [0,1,1,1,1,1,0];
+            const days = sch ? ((sch.period && sch.period.days) || [0, 0, 0, 0, 0, 0, 0]) : [0, 1, 1, 1, 1, 1, 0];
             const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
 
             const PRESETS = [
@@ -5495,10 +5576,10 @@ window.SNW = window.SNW || {};
 
             const STYLES = [
                 { code: 'BALANCE', name: '⚖️ 균형 (BALANCE)' },
-                { code: 'ACTIVE',  name: '⚡ 활력 (ACTIVE)' },
-                { code: 'FOCUS',   name: '🎯 집중 (FOCUS)' },
-                { code: 'RELAX',   name: '🍃 휴식 (RELAX)' },
-                { code: 'SLEEP',   name: '🌙 수면 (SLEEP)' },
+                { code: 'ACTIVE', name: '⚡ 활력 (ACTIVE)' },
+                { code: 'FOCUS', name: '🎯 집중 (FOCUS)' },
+                { code: 'RELAX', name: '🍃 휴식 (RELAX)' },
+                { code: 'SLEEP', name: '🌙 수면 (SLEEP)' },
             ];
 
             const content = document.createElement('div');
@@ -5526,11 +5607,11 @@ window.SNW = window.SNW || {};
                         <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;">요일</label>
                         <div class="snw-day-picker">
                             ${dayNames.map((d, i) =>
-                                `<label class="snw-day-chip ${days[i] ? 'is-active' : ''}">
+                `<label class="snw-day-chip ${days[i] ? 'is-active' : ''}">
                                     <input type="checkbox" data-day="${i}" ${days[i] ? 'checked' : ''}>
                                     <span>${d}</span>
                                 </label>`
-                            ).join('')}
+            ).join('')}
                         </div>
                     </div>
 
@@ -5674,9 +5755,9 @@ window.SNW = window.SNW || {};
                 isEdit ? '스케줄 편집' : '새 스케줄',
                 content,
                 async () => {
-                    const nameEl  = content.querySelector('[data-field="name"]');
+                    const nameEl = content.querySelector('[data-field="name"]');
                     const startEl = content.querySelector('[data-field="startTime"]');
-                    const endEl   = content.querySelector('[data-field="endTime"]');
+                    const endEl = content.querySelector('[data-field="endTime"]');
 
                     if (!nameEl.value.trim()) {
                         if (SNW.ToastUtil) SNW.ToastUtil.error('이름을 입력하세요');
@@ -5691,7 +5772,7 @@ window.SNW = window.SNW || {};
                     if (isSimpleMode) {
                         const selPreset = content.querySelector('#simple-preset-select').value;
                         const selStyle = content.querySelector('#simple-style-select').value;
-                        
+
                         // [Stage 10] 간단 모드 단일 Step 프로필 자동 생성
                         const autoProfile = {
                             profileNo: (Date.now() % 65530) + 1,

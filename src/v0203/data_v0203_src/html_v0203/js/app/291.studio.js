@@ -588,6 +588,33 @@ window.SNW = window.SNW || {};
                 return;
             }
             this._steps.push(this._defaultStep());
+            // [Stage 5] 규칙 편집 진입점
+            const _updateRuleSummary = () => {
+                const ruleSummaryEl = this.el.querySelector('[data-slot="rule-summary"]');
+                if (!ruleSummaryEl) return;
+                const r = this._currentRule || {};
+                const items = [];
+                if (r.timer?.enabled)     items.push(`⏱️${r.timer.minutes}m`);
+                if (r.offTime?.enabled)   items.push(`⏰${r.offTime.time}`);
+                if (r.tempLow?.enabled)   items.push(`🌡️${r.tempLow.mode}`);
+                if (r.diLow?.enabled)     items.push(`☀️${r.diLow.mode}`);
+                if (r.pirPause?.enabled)  items.push(`👤${r.pirPause.holdSec}s`);
+                if (r.smartComfort?.enabled) items.push(`✨auto`);
+                ruleSummaryEl.textContent = items.length > 0 ? items.join(' · ') : '규칙 미설정 (클릭하여 추가)';
+            };
+            _updateRuleSummary();
+
+            const btnEditRule = this.el.querySelector('[data-action="edit-rule"]');
+            if (btnEditRule) {
+                btnEditRule.onclick = async () => {
+                    if (!SNW.UI.ruleEditor) return;
+                    const newRule = await SNW.UI.ruleEditor.showModal(this._currentRule);
+                    if (!newRule) return;
+                    this._currentRule = newRule;
+                    _updateRuleSummary();
+                };
+            }
+
             this._renderSteps();
         }
 
@@ -598,6 +625,33 @@ window.SNW = window.SNW || {};
             }
             this._steps.splice(idx, 1);
             this._steps.forEach((s, i) => { s.stepNo = i + 1; });
+            // [Stage 5] 규칙 편집 진입점
+            const _updateRuleSummary = () => {
+                const ruleSummaryEl = this.el.querySelector('[data-slot="rule-summary"]');
+                if (!ruleSummaryEl) return;
+                const r = this._currentRule || {};
+                const items = [];
+                if (r.timer?.enabled)     items.push(`⏱️${r.timer.minutes}m`);
+                if (r.offTime?.enabled)   items.push(`⏰${r.offTime.time}`);
+                if (r.tempLow?.enabled)   items.push(`🌡️${r.tempLow.mode}`);
+                if (r.diLow?.enabled)     items.push(`☀️${r.diLow.mode}`);
+                if (r.pirPause?.enabled)  items.push(`👤${r.pirPause.holdSec}s`);
+                if (r.smartComfort?.enabled) items.push(`✨auto`);
+                ruleSummaryEl.textContent = items.length > 0 ? items.join(' · ') : '규칙 미설정 (클릭하여 추가)';
+            };
+            _updateRuleSummary();
+
+            const btnEditRule = this.el.querySelector('[data-action="edit-rule"]');
+            if (btnEditRule) {
+                btnEditRule.onclick = async () => {
+                    if (!SNW.UI.ruleEditor) return;
+                    const newRule = await SNW.UI.ruleEditor.showModal(this._currentRule);
+                    if (!newRule) return;
+                    this._currentRule = newRule;
+                    _updateRuleSummary();
+                };
+            }
+
             this._renderSteps();
         }
 
@@ -608,6 +662,33 @@ window.SNW = window.SNW || {};
             this._steps[idx] = this._steps[target];
             this._steps[target] = tmp;
             this._steps.forEach((s, i) => { s.stepNo = i + 1; });
+            // [Stage 5] 규칙 편집 진입점
+            const _updateRuleSummary = () => {
+                const ruleSummaryEl = this.el.querySelector('[data-slot="rule-summary"]');
+                if (!ruleSummaryEl) return;
+                const r = this._currentRule || {};
+                const items = [];
+                if (r.timer?.enabled)     items.push(`⏱️${r.timer.minutes}m`);
+                if (r.offTime?.enabled)   items.push(`⏰${r.offTime.time}`);
+                if (r.tempLow?.enabled)   items.push(`🌡️${r.tempLow.mode}`);
+                if (r.diLow?.enabled)     items.push(`☀️${r.diLow.mode}`);
+                if (r.pirPause?.enabled)  items.push(`👤${r.pirPause.holdSec}s`);
+                if (r.smartComfort?.enabled) items.push(`✨auto`);
+                ruleSummaryEl.textContent = items.length > 0 ? items.join(' · ') : '규칙 미설정 (클릭하여 추가)';
+            };
+            _updateRuleSummary();
+
+            const btnEditRule = this.el.querySelector('[data-action="edit-rule"]');
+            if (btnEditRule) {
+                btnEditRule.onclick = async () => {
+                    if (!SNW.UI.ruleEditor) return;
+                    const newRule = await SNW.UI.ruleEditor.showModal(this._currentRule);
+                    if (!newRule) return;
+                    this._currentRule = newRule;
+                    _updateRuleSummary();
+                };
+            }
+
             this._renderSteps();
         }
 

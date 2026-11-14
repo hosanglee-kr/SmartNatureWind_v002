@@ -52,14 +52,14 @@ window.SNW = window.SNW || {};
         // =====================================================
         FSM_STATE: AUTO_CONST.FSM_STATE,
         FSM_STATE_META: {
-            0: { code: 'IDLE',            icon: '⏸', color: 'gray',   labelKey: 'fsm.idle',           l1: true  },
-            1: { code: 'OVERRIDE',        icon: '✋', color: 'blue',   labelKey: 'fsm.override',       l1: true  },
-            2: { code: 'PROFILE_RUN',     icon: '👤', color: 'green',  labelKey: 'fsm.profileRun',     l1: false },
-            3: { code: 'SCHEDULE_RUN',    icon: '📅', color: 'cyan',   labelKey: 'fsm.scheduleRun',    l1: false },
-            4: { code: 'RESERVED_4',      icon: '⏸', color: 'gray',   labelKey: 'fsm.idle',           l1: false },
-            5: { code: 'AUTOOFF_STOPPED', icon: '⏹', color: 'orange', labelKey: 'fsm.autoOffStopped', l1: true  },
-            6: { code: 'TIME_INVALID',    icon: '🕐', color: 'red',    labelKey: 'fsm.timeInvalid',    l1: false },
-            7: { code: 'ENV_PAUSED',      icon: '⏸', color: 'orange', labelKey: 'fsm.envPaused',      l1: true  }
+            0: { code: 'IDLE', icon: '⏸', color: 'gray', labelKey: 'fsm.idle', l1: true },
+            1: { code: 'OVERRIDE', icon: '✋', color: 'blue', labelKey: 'fsm.override', l1: true },
+            2: { code: 'PROFILE_RUN', icon: '👤', color: 'green', labelKey: 'fsm.profileRun', l1: false },
+            3: { code: 'SCHEDULE_RUN', icon: '📅', color: 'cyan', labelKey: 'fsm.scheduleRun', l1: false },
+            4: { code: 'RESERVED_4', icon: '⏸', color: 'gray', labelKey: 'fsm.idle', l1: false },
+            5: { code: 'AUTOOFF_STOPPED', icon: '⏹', color: 'orange', labelKey: 'fsm.autoOffStopped', l1: true },
+            6: { code: 'TIME_INVALID', icon: '🕐', color: 'red', labelKey: 'fsm.timeInvalid', l1: false },
+            7: { code: 'ENV_PAUSED', icon: '⏸', color: 'orange', labelKey: 'fsm.envPaused', l1: true }
         },
 
         // =====================================================
@@ -67,18 +67,18 @@ window.SNW = window.SNW || {};
         // =====================================================
         FSM_REASON: AUTO_CONST.FSM_REASON,
         FSM_REASON_META: {
-            0:  { code: 'NONE',                labelKey: 'reason.none'             },
-            1:  { code: 'OVERRIDE_ACTIVE',     labelKey: 'reason.overrideActive'   },
-            2:  { code: 'PROFILE_MODE',        labelKey: 'reason.profileMode'      },
-            3:  { code: 'USER_PROFILE_ACTIVE', labelKey: 'reason.userProfileActive'},
-            4:  { code: 'SCHEDULE_ACTIVE',     labelKey: 'reason.scheduleActive'   },
-            5:  { code: 'NO_ACTIVE_SCHEDULE',  labelKey: 'reason.noActiveSchedule' },
-            6:  { code: 'NO_SCHEDULES',        labelKey: 'reason.noSchedules'      },
-            7:  { code: 'TIME_NOT_VALID',      labelKey: 'reason.timeNotValid'     },
-            8:  { code: 'MOTION_NO_PRESENCE',  labelKey: 'reason.motionNoPresence' },
-            9:  { code: 'AUTOOFF_TIMER',       labelKey: 'reason.autoOffTimer'     },
-            10: { code: 'AUTOOFF_TIME',        labelKey: 'reason.autoOffTime'      },
-            11: { code: 'AUTOOFF_TEMP',        labelKey: 'reason.autoOffTemp'      }
+            0: { code: 'NONE', labelKey: 'reason.none' },
+            1: { code: 'OVERRIDE_ACTIVE', labelKey: 'reason.overrideActive' },
+            2: { code: 'PROFILE_MODE', labelKey: 'reason.profileMode' },
+            3: { code: 'USER_PROFILE_ACTIVE', labelKey: 'reason.userProfileActive' },
+            4: { code: 'SCHEDULE_ACTIVE', labelKey: 'reason.scheduleActive' },
+            5: { code: 'NO_ACTIVE_SCHEDULE', labelKey: 'reason.noActiveSchedule' },
+            6: { code: 'NO_SCHEDULES', labelKey: 'reason.noSchedules' },
+            7: { code: 'TIME_NOT_VALID', labelKey: 'reason.timeNotValid' },
+            8: { code: 'MOTION_NO_PRESENCE', labelKey: 'reason.motionNoPresence' },
+            9: { code: 'AUTOOFF_TIMER', labelKey: 'reason.autoOffTimer' },
+            10: { code: 'AUTOOFF_TIME', labelKey: 'reason.autoOffTime' },
+            11: { code: 'AUTOOFF_TEMP', labelKey: 'reason.autoOffTemp' }
         },
 
         // =====================================================
@@ -86,8 +86,8 @@ window.SNW = window.SNW || {};
         // =====================================================
         WIND_PHASE: AUTO_CONST.WIND_PHASE,
         WIND_PHASE_META: {
-            CALM:   { icon: '🍃', color: 'gray',   labelKey: 'phase.calm'   },
-            NORMAL: { icon: '🟢', color: 'green',  labelKey: 'phase.normal' },
+            CALM: { icon: '🍃', color: 'gray', labelKey: 'phase.calm' },
+            NORMAL: { icon: '🟢', color: 'green', labelKey: 'phase.normal' },
             STRONG: { icon: '🌪', color: 'orange', labelKey: 'phase.strong' }
         },
 
@@ -126,11 +126,11 @@ window.SNW = window.SNW || {};
         // =====================================================
         LOG_LEVEL: { NONE: 0, ERROR: 1, WARN: 2, INFO: 3, DEBUG: 4 },
         LOG_LEVEL_META: {
-            0: { code: 'NONE',  color: 'gray',   labelKey: 'log.none'  },
-            1: { code: 'ERROR', color: 'red',    labelKey: 'log.error' },
-            2: { code: 'WARN',  color: 'yellow', labelKey: 'log.warn'  },
-            3: { code: 'INFO',  color: 'green',  labelKey: 'log.info'  },
-            4: { code: 'DEBUG', color: 'cyan',   labelKey: 'log.debug' }
+            0: { code: 'NONE', color: 'gray', labelKey: 'log.none' },
+            1: { code: 'ERROR', color: 'red', labelKey: 'log.error' },
+            2: { code: 'WARN', color: 'yellow', labelKey: 'log.warn' },
+            3: { code: 'INFO', color: 'green', labelKey: 'log.info' },
+            4: { code: 'DEBUG', color: 'cyan', labelKey: 'log.debug' }
         },
 
         // =====================================================
@@ -154,7 +154,7 @@ window.SNW = window.SNW || {};
         // =====================================================
         RELOAD: {
             POLL_INTERVAL_MS: 300,
-            POLL_TIMEOUT_MS:  5000
+            POLL_TIMEOUT_MS: 5000
         },
 
         // =====================================================
@@ -178,7 +178,7 @@ window.SNW = window.SNW || {};
         // AutoOff reason 라벨 매핑
         // =====================================================
         AUTOOFF_REASON_MAP: {
-            9:  'autoOff.timer',
+            9: 'autoOff.timer',
             10: 'autoOff.time',
             11: 'autoOff.temp'
         }

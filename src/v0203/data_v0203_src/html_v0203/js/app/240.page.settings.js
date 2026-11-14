@@ -591,21 +591,27 @@ SNW.Page = SNW.Page || {};
                         enabled:     !!q('#hw-pir-enabled')?.checked,
                         pin:         Number(pirPinEl.value),
                         debounceSec: Number(q('#hw-pir-debounce')?.value || 0),
-                        holdSec:     Number(q('#hw-pir-hold').value)
-                    },
-                    tempHum: {
-                        enabled:     q('#hw-dht-enabled').checked,
-                        type:        q('#hw-dht-type').value,
-                        pin:         Number(q('#hw-dht-pin').value),
-                        intervalSec: Number(q('#hw-dht-int').value)
-                    },
-                    led: {
-                        pin:               Number(q('#hw-led-pin').value),
-                        numPixels:         Number(q('#hw-led-num').value),
-                        defaultBrightness: Number(q('#hw-led-bright').value)
-                    }
+                        holdSec:     Number(q('#hw-pir-hold')?.value || 0)
+                    };
                 }
-            };
+                const dhtPinEl = q('#hw-dht-pin');
+                if (dhtPinEl) {
+                    patch.hw.tempHum = {
+                        enabled:     !!q('#hw-dht-enabled')?.checked,
+                        type:        q('#hw-dht-type')?.value || 'DHT22',
+                        pin:         Number(dhtPinEl.value),
+                        intervalSec: Number(q('#hw-dht-int')?.value || 5)
+                    };
+                }
+                const ledPinEl = q('#hw-led-pin');
+                if (ledPinEl) {
+                    patch.hw.led = {
+                        pin:               Number(ledPinEl.value),
+                        numPixels:         Number(q('#hw-led-num')?.value || 1),
+                        defaultBrightness: Number(q('#hw-led-bright')?.value || 0)
+                    };
+                }
+            }
 
             try {
                 await SNW.Api.patchSystem(patch);

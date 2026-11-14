@@ -16,6 +16,97 @@
 
 #include <string.h>
 
+// ═══════════════════════════════════════════════════════════
+// [Phase 2] TriggerRule 파싱 헬퍼 (extern, 3개)
+// ═══════════════════════════════════════════════════════════
+EN_A20_ruleMode_t C10_parseRuleMode(const char* p_str) {
+    if (!p_str || !p_str[0]) return EN_A20_RULE_MODE_PAUSE;
+    if (strcasecmp(p_str, "STOP") == 0) return EN_A20_RULE_MODE_STOP;
+    return EN_A20_RULE_MODE_PAUSE;
+}
+
+const char* C10_ruleModeToString(EN_A20_ruleMode_t p_mode) {
+    return (p_mode == EN_A20_RULE_MODE_STOP) ? "STOP" : "PAUSE";
+}
+
+void C10_fromJson_TriggerRule(const JsonObjectConst& p_js, ST_A20_TriggerRule_t& p_out, const char* p_caller) {
+    const char* v_caller = p_caller ? p_caller : "?";
+
+    // 초기화 (기본값 강제)
+    A20_resetTriggerRuleDefault(p_out);
+
+    if (p_js.isNull()) return;
+
+    // ─── timer ───
+    {
+        JsonObjectConst v_t = p_js["timer"].as<JsonObjectConst>();
+        if (!v_t.isNull()) {
+            p_out.timer.enabled = A40_ComFunc::Json_getBool(v_t, "enabled", false);
+            p_out.timer.minutes = A40_ComFunc::Json_getNum<uint32_t>(v_t, "minutes", 0);
+        }
+    }
+
+    // ─── offTime ───
+    {
+        JsonObjectConst v_ot = p_js["offTime"].as<JsonObjectConst>();
+        if (!v_ot.isNull()) {
+            p_out.offTime.enabled = A40_ComFunc::Json_getBool(v_ot, "enabled", false);
+            A40_ComFunc::Json_copyStr(v_ot, "time", p_out.offTime.time, sizeof(p_out.offTime.time), "00:00", v_caller);
+        }
+    }
+
+    // ─── tempLow ───
+    {
+        JsonObjectConst v_tl = p_js["tempLow"].as<JsonObjectConst>();
+        if (!v_tl.isNull()) {
+            p_out.tempLow.enabled    = A40_ComFunc::Json_getBool(v_tl, "enabled", false);
+            p_out.tempLow.mode       = C10_parseRuleMode(A40_ComFunc::Json_getStr(v_tl, "mode", "PAUSE"));
+            p_out.tempLow.threshold  = A40_ComFunc::Json_getNum<float>(v_tl, "threshold", 22.0f);
+            p_out.tempLow.hysteresis = A40_ComFunc::Json_getNum<float>(v_tl, "hysteresis", 0.5f);
+
+            // [검증] mode=PAUSE 시 hysteresis 최소값 강제
+            if (p_out.tempLow.mode == EN_A20_RULE_MODE_PAUSE && p_out.tempLow.hysteresis < 0.5f) {
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10][%s] tempLow.hysteresis < 0.5 clamped to 0.5", v_caller);
+                p_out.tempLow.hysteresis = 0.5f;
+            }
+        }
+    }
+
+    // ─── diLow ───
+    {
+        JsonObjectConst v_dl = p_js["diLow"].as<JsonObjectConst>();
+        if (!v_dl.isNull()) {
+            p_out.diLow.enabled    = A40_ComFunc::Json_getBool(v_dl, "enabled", false);
+            p_out.diLow.mode       = C10_parseRuleMode(A40_ComFunc::Json_getStr(v_dl, "mode", "PAUSE"));
+            p_out.diLow.threshold  = A40_ComFunc::Json_getNum<float>(v_dl, "threshold", 65.0f);
+            p_out.diLow.hysteresis = A40_ComFunc::Json_getNum<float>(v_dl, "hysteresis", 3.0f);
+
+            if (p_out.diLow.mode == EN_A20_RULE_MODE_PAUSE && p_out.diLow.hysteresis < 3.0f) {
+                CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10][%s] diLow.hysteresis < 3.0 clamped to 3.0", v_caller);
+                p_out.diLow.hysteresis = 3.0f;
+            }
+        }
+    }
+
+    // ─── pirPause ───
+    {
+        JsonObjectConst v_pp = p_js["pirPause"].as<JsonObjectConst>();
+        if (!v_pp.isNull()) {
+            p_out.pirPause.enabled = A40_ComFunc::Json_getBool(v_pp, "enabled", false);
+            p_out.pirPause.holdSec = A40_ComFunc::Json_getNum<uint16_t>(v_pp, "holdSec", 120);
+        }
+    }
+
+    // ─── smartComfort ───
+    {
+        JsonObjectConst v_sc = p_js["smartComfort"].as<JsonObjectConst>();
+        if (!v_sc.isNull()) {
+            p_out.smartComfort.enabled     = A40_ComFunc::Json_getBool(v_sc, "enabled", false);
+            p_out.smartComfort.intervalMin = A40_ComFunc::Json_getNum<uint16_t>(v_sc, "intervalMin", 5);
+            p_out.smartComfort.level       = A40_ComFunc::Json_getNum<uint8_t>(v_sc, "level", 2);
+        }
+    }
+}
 
 // =====================================================
 // profileId (uint8) 자동 발급
@@ -101,25 +192,30 @@ bool C10_fromJson_UserProfileItem(const JsonObjectConst&    p_jp,
 
             // 1. stepNo 단일화
             uint16_t v_stepNoIn = (uint16_t)(jstep["stepNo"] | (uint32_t)(p_up.segCount + 1));
-            sg.stepNo = (uint8_t)(v_stepNoIn > 255u ? 255u : v_stepNoIn);
-            sg.segNo  = v_stepNoIn;
-            sg.segId  = (uint8_t)sg.stepNo;
+            sg.stepNo           = (uint8_t)(v_stepNoIn > 255u ? 255u : v_stepNoIn);
+            sg.segNo            = v_stepNoIn;
+            sg.segId            = (uint8_t)sg.stepNo;
 
             // 2. durationMin 단일화
             sg.durationMin = (uint16_t)(jstep["durationMin"] | 20u);
             if (sg.durationMin < A20_Const::MIN_STEP_DURATION_MIN) sg.durationMin = A20_Const::MIN_STEP_DURATION_MIN;
             if (sg.durationMin > A20_Const::MAX_STEP_DURATION_MIN) sg.durationMin = A20_Const::MAX_STEP_DURATION_MIN;
-            sg.onMinutes   = sg.durationMin;
-            sg.offMinutes  = 0;
+            sg.onMinutes  = sg.durationMin;
+            sg.offMinutes = 0;
 
             // 3. type 단일화
             const char* v_typeStr = jstep["type"] | "PRESET";
-            sg.type = A20_stepTypeFromString(v_typeStr);
+            sg.type               = A20_stepTypeFromString(v_typeStr);
             sg.mode = (sg.type == EN_A20_STEP_TYPE_FIXED) ? EN_A20_SEG_MODE_FIXED : EN_A20_SEG_MODE_PRESET;
 
             // 4. 프리셋/스타일 코드
-            A40_ComFunc::Json_copyStr(jstep, "presetCode", sg.presetCode, sizeof(sg.presetCode), A20_Const::DEFAULT_PRESET_CODE, v_caller);
-            A40_ComFunc::Json_copyStr(jstep, "styleCode",  sg.styleCode,  sizeof(sg.styleCode),  A20_Const::DEFAULT_STYLE_CODE,  v_caller);
+            A40_ComFunc::Json_copyStr(jstep,
+                                      "presetCode",
+                                      sg.presetCode,
+                                      sizeof(sg.presetCode),
+                                      A20_Const::DEFAULT_PRESET_CODE,
+                                      v_caller);
+            A40_ComFunc::Json_copyStr(jstep, "styleCode", sg.styleCode, sizeof(sg.styleCode), A20_Const::DEFAULT_STYLE_CODE, v_caller);
 
             // 5. 물리 Override
             memset(&sg.override, 0, sizeof(sg.override));
@@ -128,8 +224,8 @@ bool C10_fromJson_UserProfileItem(const JsonObjectConst&    p_jp,
             sg.override.gustFrequency   = -1.0f;
 
             if (jstep["override"].is<JsonObjectConst>()) {
-                JsonObjectConst ovr         = jstep["override"].as<JsonObjectConst>();
-                sg.override.enabled         = ovr["enabled"] | false;
+                JsonObjectConst ovr = jstep["override"].as<JsonObjectConst>();
+                sg.override.enabled = ovr["enabled"] | false;
                 if (ovr["windIntensity"].is<float>()) {
                     sg.override.windIntensity = ovr["windIntensity"].as<float>();
                 }
@@ -147,27 +243,18 @@ bool C10_fromJson_UserProfileItem(const JsonObjectConst&    p_jp,
         }
     }
 
-    memset(&p_up.autoOff, 0, sizeof(p_up.autoOff));
-    if (p_jp["autoOff"].is<JsonObjectConst>()) {
-        JsonObjectConst ao              = p_jp["autoOff"].as<JsonObjectConst>();
-        JsonObjectConst aoTimer         = ao["timer"].as<JsonObjectConst>();
-        JsonObjectConst aoOffTime       = ao["offTime"].as<JsonObjectConst>();
-        JsonObjectConst aoOffTemp       = ao["offTemp"].as<JsonObjectConst>();
-
-        p_up.autoOff.timer.enabled      = A40_ComFunc::Json_getBool(aoTimer, "enabled", false);
-        p_up.autoOff.timer.minutes      = A40_ComFunc::Json_getNum<uint32_t>(aoTimer, "minutes", 0u);
-        p_up.autoOff.offTime.enabled    = A40_ComFunc::Json_getBool(aoOffTime, "enabled", false);
-        A40_ComFunc::Json_copyStr(aoOffTime, "time",
-                                  p_up.autoOff.offTime.time, sizeof(p_up.autoOff.offTime.time), "", v_caller);
-        p_up.autoOff.offTemp.enabled    = A40_ComFunc::Json_getBool(aoOffTemp, "enabled", false);
-        p_up.autoOff.offTemp.temp       = A40_ComFunc::Json_getNum<float>(aoOffTemp, "temp", 0.0f);
+    // [Phase 2] rule 파싱 (신규 단일 스키마)
+    if (p_jp["rule"].is<JsonObjectConst>()) {
+        C10_fromJson_TriggerRule(p_jp["rule"].as<JsonObjectConst>(), p_up.rule, v_caller);
+    } else {
+        // rule 없으면 기본값 (자동 정지 규칙 미설정)
+        A20_resetTriggerRuleDefault(p_up.rule);
     }
 
-    JsonObjectConst m    = p_jp["motion"].as<JsonObjectConst>();
-    JsonObjectConst mpir = m["pir"].as<JsonObjectConst>();
-
-    p_up.motion.pir.enabled = A40_ComFunc::Json_getBool(mpir, "enabled", false);
-    p_up.motion.pir.holdSec = (uint16_t)(mpir["holdSec"] | 0u);
+    // [deprecated] 레거시 autoOff/motion 감지 경고 (파싱은 무시)
+    if (p_jp["autoOff"].is<JsonObjectConst>() || p_jp["motion"].is<JsonObjectConst>()) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10][%s] legacy autoOff/motion detected (ignored, use 'rule')", v_caller);
+    }
 
     return true;
 }
@@ -185,7 +272,10 @@ bool C10_reissueProfileSegIdsAndValidateSegNos(ST_A20_UserProfileItem_t& p_up, c
         }
         for (uint8_t v_j = (uint8_t)(v_i + 1); v_j < p_up.segCount && v_j < A20_Const::MAX_SEGMENTS_PER_PROFILE; v_j++) {
             if (p_up.segments[v_i].segNo == p_up.segments[v_j].segNo) {
-                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: duplicated segNo=%u", v_caller, (unsigned)p_up.segments[v_i].segNo);
+                CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                                   "[C10] %s: duplicated segNo=%u",
+                                   v_caller,
+                                   (unsigned)p_up.segments[v_i].segNo);
                 return false;
             }
         }
@@ -206,7 +296,8 @@ bool C10_reissueProfileSegIdsAndValidateSegNos(ST_A20_UserProfileItem_t& p_up, c
             if (p_up.segments[v_i].segId == p_up.segments[v_j].segId) {
                 CL_D10_Logger::log(EN_L10_LOG_ERROR,
                                    "[C10] %s: duplicated segId=%u after reissue",
-                                   v_caller, (unsigned)p_up.segments[v_i].segId);
+                                   v_caller,
+                                   (unsigned)p_up.segments[v_i].segId);
                 return false;
             }
         }
@@ -230,7 +321,11 @@ bool C10_validateUserProfilesLoaded(const ST_A20_UserProfilesRoot_t& p_root, con
 
         uint16_t v_pid = (uint16_t)up.profileId;
         if (v_pid == 0u || v_pid > 255u) {
-            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: invalid profileId=%u (idx=%u)", v_caller, (unsigned)v_pid, (unsigned)v_i);
+            CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                               "[C10] %s: invalid profileId=%u (idx=%u)",
+                               v_caller,
+                               (unsigned)v_pid,
+                               (unsigned)v_i);
             return false;
         }
         if (up.profileNo == 0u) {
@@ -257,8 +352,11 @@ bool C10_validateUserProfilesLoaded(const ST_A20_UserProfilesRoot_t& p_root, con
         for (uint8_t v_k = 0; v_k < up.segCount && v_k < A20_Const::MAX_SEGMENTS_PER_PROFILE; v_k++) {
             const ST_A20_UserProfileSegment_t& sg = up.segments[v_k];
             if (sg.segId == 0u) {
-                CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: invalid segId=%u (profileId=%u)",
-                                   v_caller, (unsigned)sg.segId, (unsigned)v_pid);
+                CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                                   "[C10] %s: invalid segId=%u (profileId=%u)",
+                                   v_caller,
+                                   (unsigned)sg.segId,
+                                   (unsigned)v_pid);
                 return false;
             }
             if (sg.segNo == 0u) {
@@ -269,13 +367,19 @@ bool C10_validateUserProfilesLoaded(const ST_A20_UserProfilesRoot_t& p_root, con
             for (uint8_t v_m = (uint8_t)(v_k + 1); v_m < up.segCount && v_m < A20_Const::MAX_SEGMENTS_PER_PROFILE; v_m++) {
                 const ST_A20_UserProfileSegment_t& sg2 = up.segments[v_m];
                 if (sg.segId == sg2.segId) {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: duplicated segId=%u (profileId=%u)",
-                                       v_caller, (unsigned)sg.segId, (unsigned)v_pid);
+                    CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                                       "[C10] %s: duplicated segId=%u (profileId=%u)",
+                                       v_caller,
+                                       (unsigned)sg.segId,
+                                       (unsigned)v_pid);
                     return false;
                 }
                 if (sg.segNo == sg2.segNo) {
-                    CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: duplicated segNo=%u (profileId=%u)",
-                                       v_caller, (unsigned)sg.segNo, (unsigned)v_pid);
+                    CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                                       "[C10] %s: duplicated segNo=%u (profileId=%u)",
+                                       v_caller,
+                                       (unsigned)sg.segNo,
+                                       (unsigned)v_pid);
                     return false;
                 }
             }

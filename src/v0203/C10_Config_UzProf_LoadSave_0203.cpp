@@ -13,7 +13,7 @@
 
 #include "A40_Com_Utils_0203.h"
 #include "A23_Com_ResetCfg_0203.h"
-#include "A22_Com_Lookup_0203.h"    // [FIX] A20_modeToString
+#include "A22_Com_Lookup_0203.h" // [FIX] A20_modeToString
 
 #include <string.h>
 
@@ -25,7 +25,7 @@ bool CL_C10_ConfigManager::loadUserProfiles(ST_A20_UserProfilesRoot_t& p_cfg) {
     }
 
     JsonDocument d;
-    const char* v_cfgJsonPath = nullptr;
+    const char*  v_cfgJsonPath = nullptr;
     if (s_cfgJsonFileMap.userProfiles[0] != '\0') v_cfgJsonPath = s_cfgJsonFileMap.userProfiles;
 
     if (!v_cfgJsonPath) {
@@ -55,8 +55,10 @@ bool CL_C10_ConfigManager::loadUserProfiles(ST_A20_UserProfilesRoot_t& p_cfg) {
         memset(&up, 0, sizeof(up));
 
         if (!C10_fromJson_UserProfileItem(jp, up, true, false, false, __func__)) {
-            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: profile decode failed (idx=%u). Load rejected.",
-                               __func__, (unsigned)p_cfg.count);
+            CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                               "[C10] %s: profile decode failed (idx=%u). Load rejected.",
+                               __func__,
+                               (unsigned)p_cfg.count);
             A20_resetUserProfilesDefault(p_cfg);
             return false;
         }
@@ -105,8 +107,8 @@ bool CL_C10_ConfigManager::saveUserProfiles(const ST_A20_UserProfilesRoot_t& p_c
         // [Phase4 ADR-2] steps[] 단일 표준 저장 (하위 호환성 제외)
         // ======================================================
         for (uint8_t v_k = 0; v_k < up.segCount && v_k < A20_Const::MAX_STEPS_PER_PROFILE; v_k++) {
-            const ST_A20_Step_t& sg = up.segments[v_k];
-            JsonObject jstep = jp["steps"][v_k].to<JsonObject>();
+            const ST_A20_Step_t& sg    = up.segments[v_k];
+            JsonObject           jstep = jp["steps"][v_k].to<JsonObject>();
 
             jstep["stepNo"]      = sg.stepNo ? sg.stepNo : (v_k + 1);
             jstep["durationMin"] = sg.durationMin ? sg.durationMin : (sg.onMinutes + sg.offMinutes);
@@ -115,8 +117,8 @@ bool CL_C10_ConfigManager::saveUserProfiles(const ST_A20_UserProfilesRoot_t& p_c
             jstep["styleCode"]   = sg.styleCode;
             jstep["fixedSpeed"]  = sg.fixedSpeed;
 
-            JsonObject ovr              = jstep["override"].to<JsonObject>();
-            ovr["enabled"]              = sg.override.enabled;
+            JsonObject ovr = jstep["override"].to<JsonObject>();
+            ovr["enabled"] = sg.override.enabled;
             if (sg.override.enabled) {
                 ovr["windIntensity"]   = sg.override.windIntensity;
                 ovr["windVariability"] = sg.override.windVariability;
@@ -124,8 +126,8 @@ bool CL_C10_ConfigManager::saveUserProfiles(const ST_A20_UserProfilesRoot_t& p_c
             }
         }
 
-        A40_ComFunc::Json_writeAutoOff(jp["autoOff"].to<JsonObject>(), up.autoOff);
-        A40_ComFunc::Json_writeMotion(jp, up.motion);
+        // [Phase 2] rule 직렬화 (단일 스키마)
+        C10_toJson_TriggerRule(jp["rule"].to<JsonObject>(), up.rule);
     }
 
     return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.userProfiles, d, true, true, __func__);

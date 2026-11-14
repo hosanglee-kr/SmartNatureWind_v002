@@ -10,6 +10,7 @@
 
 #include "C10_Config_0203.h"
 #include "C10_Config_Sch_Internal_0203.h"
+#include "C10_Config_UzProf_Internal_0203.h"   // [Phase 2] C10_toJson_TriggerRule
 
 #include "A40_Com_Utils_0203.h"
 #include "A22_Com_Lookup_0203.h" // [FIX] A20_modeToString
@@ -141,6 +142,10 @@ bool CL_C10_ConfigManager::saveSchedules(const ST_A20_SchedulesRoot_t& p_cfg, bo
         }
         jp["startTime"] = s.period.startTime;
         jp["endTime"]   = s.period.endTime;
+
+        // [Phase 2] ruleOverride + rule 직렬화
+        js["ruleOverride"] = s.ruleOverride;
+        C10_toJson_TriggerRule(js["rule"].to<JsonObject>(), s.rule);
     }
 
     return A40_IO::Save_JsonDoc2File_V21(s_cfgJsonFileMap.schedules, d, true, true, __func__);

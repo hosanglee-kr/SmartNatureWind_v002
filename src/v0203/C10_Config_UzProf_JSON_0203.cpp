@@ -14,9 +14,43 @@
 #include "A40_Com_Utils_0203.h"
 #include "A23_Com_ResetCfg_0203.h"
 
-#include "A22_Com_Lookup_0203.h"    // [FIX] A20_modeToString
+#include "A22_Com_Lookup_0203.h" // [FIX] A20_modeToString
 
 #include <string.h>
+
+// ═══════════════════════════════════════════════════════════
+// [Phase 2] TriggerRule 직렬화 헬퍼 (extern)
+// ═══════════════════════════════════════════════════════════
+void C10_toJson_TriggerRule(JsonObject p_js, const ST_A20_TriggerRule_t& p_rule) {
+    // timer
+    p_js["timer"]["enabled"] = p_rule.timer.enabled;
+    p_js["timer"]["minutes"] = p_rule.timer.minutes;
+
+    // offTime
+    p_js["offTime"]["enabled"] = p_rule.offTime.enabled;
+    p_js["offTime"]["time"]    = p_rule.offTime.time;
+
+    // tempLow
+    p_js["tempLow"]["enabled"]    = p_rule.tempLow.enabled;
+    p_js["tempLow"]["mode"]       = C10_ruleModeToString(p_rule.tempLow.mode);
+    p_js["tempLow"]["threshold"]  = p_rule.tempLow.threshold;
+    p_js["tempLow"]["hysteresis"] = p_rule.tempLow.hysteresis;
+
+    // diLow
+    p_js["diLow"]["enabled"]    = p_rule.diLow.enabled;
+    p_js["diLow"]["mode"]       = C10_ruleModeToString(p_rule.diLow.mode);
+    p_js["diLow"]["threshold"]  = p_rule.diLow.threshold;
+    p_js["diLow"]["hysteresis"] = p_rule.diLow.hysteresis;
+
+    // pirPause
+    p_js["pirPause"]["enabled"] = p_rule.pirPause.enabled;
+    p_js["pirPause"]["holdSec"] = p_rule.pirPause.holdSec;
+
+    // smartComfort
+    p_js["smartComfort"]["enabled"]     = p_rule.smartComfort.enabled;
+    p_js["smartComfort"]["intervalMin"] = p_rule.smartComfort.intervalMin;
+    p_js["smartComfort"]["level"]       = p_rule.smartComfort.level;
+}
 
 void CL_C10_ConfigManager::toJson_UserProfiles(const ST_A20_UserProfilesRoot_t& p_cfg, JsonDocument& d) {
     CL_A40_MutexGuard_Semaphore v_MutxGuard(s_recursiveMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
@@ -45,7 +79,7 @@ void CL_C10_ConfigManager::toJson_UserProfiles(const ST_A20_UserProfilesRoot_t& 
 
         // [v0203] steps[] 배열 생성 (단일 JsonDocument 규격)
         for (uint8_t v_k = 0; v_k < up.segCount && v_k < A20_Const::MAX_STEPS_PER_PROFILE; v_k++) {
-            const ST_A20_Step_t& sg   = up.segments[v_k];
+            const ST_A20_Step_t& sg    = up.segments[v_k];
             JsonObject           jstep = jp["steps"][v_k].to<JsonObject>();
 
             jstep["stepNo"]      = sg.stepNo ? sg.stepNo : (v_k + 1);
@@ -55,8 +89,8 @@ void CL_C10_ConfigManager::toJson_UserProfiles(const ST_A20_UserProfilesRoot_t& 
             jstep["styleCode"]   = sg.styleCode;
             jstep["fixedSpeed"]  = sg.fixedSpeed;
 
-            JsonObject ovr       = jstep["override"].to<JsonObject>();
-            ovr["enabled"]       = sg.override.enabled;
+            JsonObject ovr = jstep["override"].to<JsonObject>();
+            ovr["enabled"] = sg.override.enabled;
             if (sg.override.enabled) {
                 ovr["windIntensity"]   = sg.override.windIntensity;
                 ovr["windVariability"] = sg.override.windVariability;
@@ -64,8 +98,8 @@ void CL_C10_ConfigManager::toJson_UserProfiles(const ST_A20_UserProfilesRoot_t& 
             }
         }
 
-        A40_ComFunc::Json_writeAutoOff(jp["autoOff"].to<JsonObject>(), up.autoOff);
-        A40_ComFunc::Json_writeMotion(jp, up.motion);
+        // [Phase 2] rule 직렬화 (단일 스키마)
+        C10_toJson_TriggerRule(jp["rule"].to<JsonObject>(), up.rule);
     }
 }
 
@@ -99,8 +133,10 @@ bool CL_C10_ConfigManager::patchUserProfilesFromJson(ST_A20_UserProfilesRoot_t& 
         }
 
         if (C10_isProfileNoDuplicated(p_cfg, up.profileNo, p_cfg.count)) {
-            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[C10] %s: duplicated profileNo=%u. Patch rejected.",
-                               __func__, (unsigned)up.profileNo);
+            CL_D10_Logger::log(EN_L10_LOG_ERROR,
+                               "[C10] %s: duplicated profileNo=%u. Patch rejected.",
+                               __func__,
+                               (unsigned)up.profileNo);
             A20_resetUserProfilesDefault(p_cfg);
             return false;
         }

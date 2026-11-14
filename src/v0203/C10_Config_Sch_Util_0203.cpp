@@ -11,6 +11,7 @@
  */
 
 #include "C10_Config_Sch_Internal_0203.h"
+#include "C10_Config_UzProf_Internal_0203.h"   // [Phase 2] C10_fromJson_TriggerRule
 
 #include "A40_Com_Utils_0203.h"    // A40_ComFunc / CL_A40_MutexGuard_Semaphore
 #include "A22_Com_Lookup_0203.h"   // A20_modeFromString
@@ -118,6 +119,16 @@ bool C10_fromJson_ScheduleItem(const JsonObjectConst& p_js,
                                      p_js["period"]["endTime"] | "23:59",
                                      sizeof(p_s.period.endTime),
                                      p_callerForLog);
+
+    // [Phase 2] ruleOverride + rule 파싱
+    p_s.ruleOverride = A40_ComFunc::Json_getBool(p_js, "ruleOverride", false);
+
+    if (p_s.ruleOverride && p_js["rule"].is<JsonObjectConst>()) {
+        C10_fromJson_TriggerRule(p_js["rule"].as<JsonObjectConst>(),
+                                  p_s.rule, p_callerForLog);
+    } else {
+        A20_resetTriggerRuleDefault(p_s.rule);
+    }
 
     return true;
 }

@@ -38,21 +38,21 @@ const { chromium, devices } = playwright;
 
 // 경로 설정
 const REPO_ROOT = path.resolve(__dirname, '..');
-const HTML_DIR  = path.join(REPO_ROOT, 'src/v0203/data_v0203_src/html_v0203');
+const HTML_DIR = path.join(REPO_ROOT, 'src/v0203/data_v0203_src/html_v0203');
 const DIST_HTML_DIR = path.join(REPO_ROOT, 'src/v0203/data_v0203/html_v0203');
-const JSON_DIR  = path.join(REPO_ROOT, 'src/v0203/data_v0203_src/json');
-const REPORT_DIR= path.join(__dirname, 'reports_ui');
+const JSON_DIR = path.join(REPO_ROOT, 'src/v0203/data_v0203_src/json');
+const REPORT_DIR = path.join(__dirname, 'reports_ui');
 
 // 2. 경량 임베디드 정적 웹 서버 (LittleFS 시뮬레이션)
 function startStaticServer(initialPort = 8899) {
     const mimeTypes = {
         '.html': 'text/html; charset=utf-8',
-        '.js':   'application/javascript; charset=utf-8',
-        '.css':  'text/css; charset=utf-8',
+        '.js': 'application/javascript; charset=utf-8',
+        '.css': 'text/css; charset=utf-8',
         '.json': 'application/json; charset=utf-8',
-        '.png':  'image/png',
-        '.svg':  'image/svg+xml',
-        '.ico':  'image/x-icon'
+        '.png': 'image/png',
+        '.svg': 'image/svg+xml',
+        '.ico': 'image/x-icon'
     };
 
     return new Promise((resolve, reject) => {
@@ -67,7 +67,7 @@ function startStaticServer(initialPort = 8899) {
             } else {
                 if (uri === '/' || uri === '') uri = '/index.html';
                 filePath = path.join(HTML_DIR, uri);
-                
+
                 // .gz 요청 처리 (LittleFS / Nginx 시뮬레이션)
                 if (!fs.existsSync(filePath) && uri.endsWith('.gz')) {
                     const uncompressedPath = path.join(HTML_DIR, uri.slice(0, -3));

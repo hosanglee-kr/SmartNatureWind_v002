@@ -8,7 +8,8 @@
 /* =====================================================
  * 모달 레이아웃 고도화 (Header/Footer 고정, Body 단독 스크롤)
  * ===================================================== */
-.snw-modal-overlay {
+.snw-modal-overlay,
+.snw-modal-backdrop {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
@@ -24,20 +25,23 @@
     padding: 16px;
 }
 
-.snw-modal-overlay.is-open {
+.snw-modal-overlay.is-open,
+.snw-modal-backdrop.is-open,
+.snw-modal-backdrop:not([hidden]) {
     opacity: 1;
     pointer-events: auto;
     visibility: visible;
 }
 
-.snw-modal-box {
+.snw-modal-box,
+.snw-modal {
     background: var(--snw-surface);
     border-radius: var(--snw-radius-lg);
     min-width: 300px;
-    max-width: 90%;
-    max-height: 90vh;
-    min-height: 320px;
+    max-width: 92%;
+    max-height: 88vh;
     width: 100%;
+    max-width: 480px;
     display: flex;
     flex-direction: column;
     transform: translateY(20px);
@@ -47,7 +51,9 @@
     overflow: hidden;
 }
 
-.snw-modal-overlay.is-open .snw-modal-box {
+.snw-modal-overlay.is-open .snw-modal-box,
+.snw-modal-backdrop.is-open .snw-modal,
+.snw-modal-backdrop:not([hidden]) .snw-modal {
     transform: translateY(0);
 }
 

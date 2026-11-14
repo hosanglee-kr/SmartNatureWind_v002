@@ -38,17 +38,21 @@
  * [v0203 신규] Session Type / Trigger / Runtime State
  * ====================================================== */
 typedef enum : uint8_t {
-    EN_CT10_SESSION_NONE     = 0,
-    EN_CT10_SESSION_PLAYLIST = 1, // Profile 재생 (Step 시퀀스)
-    EN_CT10_SESSION_PRESET   = 2, // 프리셋 1개 즉시 실행
-    EN_CT10_SESSION_FIXED    = 3, // PWM 고정 (일반 선풍기)
+    EN_CT10_SESSION_NONE        = 0,
+    EN_CT10_SESSION_PLAYLIST    = 1, // Profile 재생 (Step 시퀀스)
+    EN_CT10_SESSION_PRESET      = 2, // 프리셋 1개 즉시 실행
+    EN_CT10_SESSION_FIXED       = 3, // PWM 고정 (일반 선풍기)
+    EN_CT10_SESSION_AUTO_FULL   = 4, // [Phase 2] 완전 자동 (5분 주기 프리셋 자동 선택)
+    EN_CT10_SESSION_AUTO_SELECT = 5, // [Phase 2] 선택 자동 (기본 유지 + 환경 보정)
 } EN_CT10_session_type_t;
 
 typedef enum : uint8_t {
-    EN_CT10_TRIGGER_NONE         = 0,
-    EN_CT10_TRIGGER_MANUAL       = 1, // 사용자 "▶ 재생" / 1~5단
-    EN_CT10_TRIGGER_SCHEDULE     = 2, // 시간 윈도우 진입
-    EN_CT10_TRIGGER_AUTO_COMFORT = 3, // [Stage 10.1 갭 3-A] Comfort 자동 모드
+    EN_CT10_TRIGGER_NONE               = 0,
+    EN_CT10_TRIGGER_MANUAL             = 1, // 사용자 "▶ 재생" / 1~5단
+    EN_CT10_TRIGGER_SCHEDULE           = 2, // 시간 윈도우 진입
+    EN_CT10_TRIGGER_AUTO_COMFORT       = 3, // [Stage 10.1 갭 3-A] Comfort 자동 모드
+    EN_CT10_TRIGGER_MANUAL_AUTO_FULL   = 4, // [Phase 2] 완전 자동 수동 트리거
+    EN_CT10_TRIGGER_MANUAL_AUTO_SELECT = 5, // [Phase 2] 선택 자동 수동 트리거
 } EN_CT10_trigger_t;
 
 typedef enum : uint8_t {
@@ -102,6 +106,16 @@ typedef struct ST_CT10_SessionContext_t {
     uint32_t runtimeAutoOffStartMs;
     uint32_t runtimeAutoOffMin;
 
+    // [Phase 2] TriggerRule 세션 스냅샷 및 AUTO_SELECT/AUTO_FULL 확장
+    ST_A20_TriggerRule_t rule;
+    struct {
+        EN_CT10_session_type_t baseType;
+        char                   basePresetCode[24];
+        uint8_t                baseProfileId;
+    } autoSelect;
+    char     autoSwitchReason[64];
+    uint32_t autoSwitchAtMs;
+
     ST_CT10_SessionContext_t() { memset(this, 0, sizeof(*this)); }
 } ST_CT10_SessionContext_t;
 
@@ -116,10 +130,16 @@ typedef enum : uint8_t {
     EN_CT10_STATE_OVERRIDE        = 1,
     EN_CT10_STATE_PROFILE_RUN     = 2,
     EN_CT10_STATE_SCHEDULE_RUN    = 3,
-    EN_CT10_STATE_MOTION_BLOCKED  = 4,
     EN_CT10_STATE_AUTOOFF_STOPPED = 5,
-    EN_CT10_STATE_TIME_INVALID    = 6
+    EN_CT10_STATE_ENV_PAUSED                                  = 7,
 } EN_CT10_state_t;
+
+typedef enum : uint8_t {
+    EN_CT10_PAUSE_NONE     = 0,
+    EN_CT10_PAUSE_MOTION   = 1,
+    EN_CT10_PAUSE_TEMP_LOW = 2,
+    EN_CT10_PAUSE_DI_LOW   = 3,
+} EN_CT10_pause_t;
 
 typedef enum : uint8_t {
     EN_CT10_REASON_NONE                = 0,
@@ -133,23 +153,25 @@ typedef enum : uint8_t {
     EN_CT10_REASON_MOTION_NO_PRESENCE  = 8,
     EN_CT10_REASON_AUTOOFF_TIMER       = 9,
     EN_CT10_REASON_AUTOOFF_TIME        = 10,
-    EN_CT10_REASON_AUTOOFF_TEMP        = 11
+    EN_CT10_REASON_TEMP_LOW_STOP                              = 12,
+    EN_CT10_REASON_DI_LOW_STOP                                = 13,
 } EN_CT10_reason_t;
 
 typedef struct {
     EN_CT10_state_t      nextState;
     EN_CT10_reason_t     reason;
+    EN_CT10_pause_t      nextPauseReason;
     EN_CT10_run_source_t nextRunSource;
     int8_t               nextScheduleIndex;
     int8_t               nextProfileIndex;
     bool                 wantSimStop;
-    // bool                 wantResetSegRt;
-    // bool                 wantResetAutoOff;
 } ST_CT10_Decision_t;
 
 typedef struct {
     EN_CT10_state_t  state;
     EN_CT10_reason_t reason;
+    EN_CT10_pause_t  pauseReason;
+    uint32_t         pauseSinceMs;
     uint32_t         lastDecisionMs;
     uint32_t         lastStateChangeMs;
     uint32_t         stateHoldUntilMs;
@@ -186,6 +208,10 @@ typedef struct {
     uint8_t       loopCount;
 } ST_CT10_SegmentRuntime_t;
 
+#define CT10_PAUSE_MASK_MOTION (1 << 0)
+#define CT10_PAUSE_MASK_TEMP   (1 << 1)
+#define CT10_PAUSE_MASK_DI     (1 << 2)
+
 typedef struct {
     bool          timerArmed;
     unsigned long timerStartMs;
@@ -194,9 +220,20 @@ typedef struct {
     uint16_t      offTimeMinutes;
     int16_t       offTimeLastYday;
     int16_t       offTimeLastMin;
-    bool          offTempEnabled;
-    float         offTemp;
-} ST_CT10_AutoOffRuntime_t;
+int16_t  startYday;
+int16_t  startMin;
+bool     offTimeCrossMidnight;
+float    lastCheckTempC;
+float    lastCheckDI;
+bool     tempPaused;
+bool     diPaused;
+uint8_t  pauseMask;
+uint32_t pausedAccumMs;
+uint32_t pauseStartedMs;
+uint32_t pauseBypassUntilMs;
+uint32_t lastEnvCheckMs;
+}
+ST_CT10_TriggerRuntime_t;
 
 const char* CT10_stateToString(EN_CT10_state_t p_s);
 const char* CT10_reasonToString(EN_CT10_reason_t p_r);
@@ -234,6 +271,7 @@ class CL_CT10_ControlManager {
     static bool pauseSession();
     static bool resumeSession();
     static bool stopSession();
+    static bool updateActiveSessionRule(const JsonDocument& p_ruleDoc);
 
     // [Stage 8 신규] AI set_timer 연동 런타임 AutoOff 제어
     static bool     setSessionAutoOff(uint32_t p_minutes);
@@ -362,7 +400,7 @@ class CL_CT10_ControlManager {
     ST_CT10_SegmentRuntime_t profileSegRt;
 
     ST_CT10_Override_t       overrideState;
-    ST_CT10_AutoOffRuntime_t autoOffRt;
+    ST_CT10_TriggerRuntime_t triggerRt;
 
     CL_P10_PWM* pwm = nullptr;
 
@@ -419,7 +457,7 @@ class CL_CT10_ControlManager {
         int8_t                   profileIndex = -1;
         ST_CT10_Override_t       override     = {};
         ST_CT10_SegmentRuntime_t profileSegRt = {-1, true, 0, 0};
-        ST_CT10_AutoOffRuntime_t autoOffRt    = {};
+        ST_CT10_TriggerRuntime_t triggerRt    = {};
     };
     ST_CT10_PausedExec _pausedExec;
 
@@ -454,18 +492,21 @@ class CL_CT10_ControlManager {
     void applySegmentOn(const ST_A20_UserProfileSegment_t& p_seg);
     void applySegmentOff();
 
-    void initAutoOffFromUserProfile(const ST_A20_UserProfileItem_t& p_up);
-    void initAutoOffFromSchedule(const ST_A20_ScheduleItem_t& p_s);
+    void applyRuleToTriggerRt(const ST_A20_TriggerRule_t& p_rule);
+    void initRuleFromProfile(const ST_A20_UserProfileItem_t& p_up);
+    void initRuleFromSchedule(const ST_A20_ScheduleItem_t& p_s);
+    void initRuleFromPayload(const ST_A20_TriggerRule_t& p_rule);
 
     void ackEventState();
-    void onAutoOffTriggered(EN_CT10_reason_t p_reason);
-    bool checkAutoOff(EN_CT10_reason_t* p_reasonOrNull = nullptr);
+    bool checkTriggers(EN_CT10_pause_t* p_pauseOut, EN_CT10_reason_t* p_stopOut);
+    bool isPauseResumed();
+    bool evalLowPauseHysteresis(bool p_curPaused, float p_val, float p_thr, float p_hys);
+    void onTriggerStop(EN_CT10_reason_t p_reason);
+    void onTriggerPause(EN_CT10_pause_t p_pause);
 
     int findActiveScheduleIndex(const ST_A20_SchedulesRoot_t& p_cfg, bool p_allowOverlap = true);
 
     bool shouldHoldEventState() const;
-    bool isMotionBlocked(const ST_A20_Motion_t& p_motionCfg);
-    void onMotionBlocked(EN_CT10_reason_t p_reason);
 
     void maybePushMetricsDirty();
 

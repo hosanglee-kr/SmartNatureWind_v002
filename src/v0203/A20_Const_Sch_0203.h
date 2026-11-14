@@ -188,8 +188,33 @@ inline constexpr ST_A20_SegmentMode_t G_A20_SegmentMode_Arr[EN_A20_SEG_MODE_COUN
 };
 
 /* ======================================================
- * AutoOff : camelCase 정합
+ * [Phase 2] TriggerRule 공통 스키마 (신규, Clean Break)
+ *  - profile.rule / schedule.rule / session.rule 공통 사용
  * ====================================================== */
+typedef enum : uint8_t {
+    EN_A20_RULE_MODE_PAUSE = 0, // 자동 재개 (편의)
+    EN_A20_RULE_MODE_STOP  = 1, // 완전 종료 (안전, ACK 필요)
+} EN_A20_ruleMode_t;
+
+typedef struct {
+bool              enabled    = false;
+EN_A20_ruleMode_t mode       = EN_A20_RULE_MODE_PAUSE;
+float             threshold  = 0.0f;
+float             hysteresis = 0.0f;
+}
+ST_A20_ThresholdRule_t;
+
+typedef struct {
+    bool     enabled = false;
+    uint16_t holdSec = 120;
+} ST_A20_TriggerPir_t;
+
+typedef struct {
+    bool     enabled     = false;
+    uint16_t intervalMin = 5;
+    uint8_t  level       = 2;
+} ST_A20_TriggerSmartComfort_t;
+
 typedef struct {
     struct {
         bool     enabled = false;
@@ -199,23 +224,19 @@ typedef struct {
         bool enabled = false;
         char time[6] = {0};
     } offTime;
-    struct {
-        bool  enabled = false;
-        float temp    = 0.0f;
-    } offTemp;
-} ST_A20_AutoOff_t;
+    ST_A20_ThresholdRule_t       tempLow{false, EN_A20_RULE_MODE_PAUSE, 22.0f, 0.5f};
+    ST_A20_ThresholdRule_t       diLow{false, EN_A20_RULE_MODE_PAUSE, 65.0f, 3.0f};
+    ST_A20_TriggerPir_t          pirPause;
+    ST_A20_TriggerSmartComfort_t smartComfort;
+} ST_A20_TriggerRule_t;
 
 /* ======================================================
- * Motion (userProfiles/schedules 공통) : camelCase 정합
+ * Motion (시스템 설정 공용 PIR)
  * ====================================================== */
 typedef struct {
     bool     enabled = false;
     uint16_t holdSec = 0;
 } ST_A20_PIR_t;
-
-typedef struct {
-    ST_A20_PIR_t pir;
-} ST_A20_Motion_t;
 
 /* ======================================================
  * Segment Override (세그먼트 개별 물리 파라미터 덮어쓰기)
@@ -290,9 +311,11 @@ typedef struct {
     char     name[A20_Const::MAX_NAME_LEN] = {0};
     bool     enabled                       = true;
 
-    ST_A20_SchedulePeriod_t  period;
+    ST_A20_SchedulePeriod_t period;
     // [v0203 단일 규격] Schedule -> Profile 참조 ID (트리거만 유지)
-    uint8_t                  profileId = 0;
+    uint8_t                 profileId    = 0;
+    bool                    ruleOverride = false;
+    ST_A20_TriggerRule_t    rule;
 } ST_A20_ScheduleItem_t;
 
 typedef struct {
@@ -317,8 +340,7 @@ typedef struct {
     uint8_t                     segCount = 0;
     ST_A20_UserProfileSegment_t segments[A20_Const::MAX_SEGMENTS_PER_PROFILE];
 
-    ST_A20_AutoOff_t autoOff;
-    ST_A20_Motion_t  motion;
+    ST_A20_TriggerRule_t rule;
 } ST_A20_UserProfileItem_t;
 
 typedef struct {

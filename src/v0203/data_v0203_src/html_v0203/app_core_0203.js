@@ -68,6 +68,7 @@ window.SNW = window.SNW || {};
         // CT10 Reason Code (SPEC §2.2) - 자동 동기화 연동
         // =====================================================
         FSM_REASON: AUTO_CONST.FSM_REASON,
+        // [수정 1] FSM_REASON_META 교체 (라인 67~80 부근)
         FSM_REASON_META: {
             0: { code: 'NONE', labelKey: 'reason.none' },
             1: { code: 'OVERRIDE_ACTIVE', labelKey: 'reason.overrideActive' },
@@ -80,8 +81,11 @@ window.SNW = window.SNW || {};
             8: { code: 'MOTION_NO_PRESENCE', labelKey: 'reason.motionNoPresence' },
             9: { code: 'AUTOOFF_TIMER', labelKey: 'reason.autoOffTimer' },
             10: { code: 'AUTOOFF_TIME', labelKey: 'reason.autoOffTime' },
-            11: { code: 'AUTOOFF_TEMP', labelKey: 'reason.autoOffTemp' }
+            11: { code: 'USER_STOP', labelKey: 'reason.userStop' },
+            12: { code: 'TEMP_LOW_STOP', labelKey: 'reason.tempLowStop' },
+            13: { code: 'DI_LOW_STOP', labelKey: 'reason.diLowStop' }
         },
+
 
         // =====================================================
         // S10 Wind Phase - 자동 동기화 연동
@@ -179,11 +183,14 @@ window.SNW = window.SNW || {};
         // =====================================================
         // AutoOff reason 라벨 매핑
         // =====================================================
+        // [수정 2] AUTOOFF_REASON_MAP 교체 (라인 161~166 부근)
         AUTOOFF_REASON_MAP: {
             9: 'autoOff.timer',
             10: 'autoOff.time',
-            11: 'autoOff.temp'
+            12: 'autoOff.temp',
+            13: 'autoOff.di'
         }
+
     };
 
 })(window.SNW);
@@ -3525,11 +3532,13 @@ window.SNW = window.SNW || {};
 		level: (SNW.LevelUtil && SNW.LevelUtil.current) ? SNW.LevelUtil.current() : 'L1'
 	});
 
+
 	// =====================================================
-	// 세션 정규화 헬퍼 (R-1)
+	// 세션 정규화 헬퍼 (R-1 + Phase 2 AUTO 확장)
 	// =====================================================
-	const SESSION_TYPE_NAMES = ['NONE', 'PLAYLIST', 'PRESET', 'FIXED'];
-	const SESSION_TRIGGER_NAMES = ['NONE', 'MANUAL', 'SCHEDULE', 'AUTO_COMFORT'];
+	const SESSION_TYPE_NAMES = ['NONE', 'PLAYLIST', 'PRESET', 'FIXED', 'AUTO_FULL', 'AUTO_SELECT'];
+	const SESSION_TRIGGER_NAMES = ['NONE', 'MANUAL', 'SCHEDULE', 'AUTO_COMFORT', 'MANUAL_AUTO_FULL', 'MANUAL_AUTO_SELECT'];
+
 
 	function normalizeSession(s) {
 		if (!s || typeof s !== 'object') {

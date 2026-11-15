@@ -50,7 +50,7 @@ window.SNW = window.SNW || {};
                         </div>
                     </div>`;
                 this.el.querySelector('[data-action="new"]').onclick = () => {
-                    SNW.Router.navigate('/automation/studio');
+                    SNW.Router.navigate('/wind/studio');
                 };
                 return;
             }
@@ -67,7 +67,7 @@ window.SNW = window.SNW || {};
                 </div>`;
 
             this.el.querySelector('[data-action="new"]').onclick = () => {
-                SNW.Router.navigate('/automation/studio');
+                SNW.Router.navigate('/wind/studio');
             };
 
             const listSlot = this.el.querySelector('[data-slot="list"]');

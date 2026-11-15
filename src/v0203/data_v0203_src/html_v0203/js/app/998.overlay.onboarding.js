@@ -1,5 +1,5 @@
 // =========================================================
-// 998.onboarding.js — 첫 방문 온보딩 (4단계)
+// 998.overlay.onboarding.js — 첫 방문 온보딩 (4단계)
 // =========================================================
 window.SNW = window.SNW || {};
 (function(SNW) {
@@ -40,12 +40,18 @@ window.SNW = window.SNW || {};
                     try {
                         if (typeof SNW.Api.startPreset === 'function') {
                             await SNW.Api.startPreset(choice.presetCode, choice.styleCode);
+                        
+                        // [998.onboarding.js] _stepStartNow 이후 startSession 폴백 수정 (라인 45~49 부근)
                         } else if (typeof SNW.Api.startSession === 'function') {
-                            await SNW.Api.startSession('PRESET', {
-                                presetCode: choice.presetCode,
-                                styleCode: choice.styleCode,
+                            await SNW.Api.startSession({
+                                type: 'PRESET',
+                                payload: {
+                                    presetCode: choice.presetCode,
+                                    styleCode: choice.styleCode,
+                                }
                             });
                         }
+
                     } catch (e) {
                         if (SNW.LogUtil && typeof SNW.LogUtil.warn === 'function') {
                             SNW.LogUtil.warn('onboarding start failed', e);

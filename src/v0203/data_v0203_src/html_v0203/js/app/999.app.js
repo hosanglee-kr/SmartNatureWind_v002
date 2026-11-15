@@ -184,8 +184,9 @@ window.SNW = window.SNW || {};
         const footerStat = document.getElementById('footer-status');
         let reconnectBanner = document.getElementById('snw-reconnect-overlay');
 
+        // [수정 1] _bindConnectionStatus() 내부 (라인 172 부근)
         const render = (conn) => {
-            const isConn = (conn === 'connected');
+            const isConn = (conn === 'online' || conn === 'connected');
             if (dot) {
                 dot.className = 'snw-status-dot snw-status-dot--' + conn;
                 dot.title = SNW.I18n.t('footer.' + conn);
@@ -340,6 +341,13 @@ window.SNW = window.SNW || {};
             if (SNW.NowPlaying && typeof SNW.NowPlaying.init === 'function') {
                 SNW.NowPlaying.init();
             }
+            
+            // [수정 2] SNW_BOOT() 내부 (SNW.Router.init() 직전, 라인 305 부근)
+            const clockEl = document.getElementById('header-clock');
+            if (clockEl && SNW.TimeUtil && typeof SNW.TimeUtil.startClock === 'function') {
+                SNW.TimeUtil.startClock(clockEl, () => (SNW.Store && SNW.Store.get().time) || { hour: -1, min: -1 });
+            }
+            
             SNW.Router.init();
             SNW.LogUtil.info('App bootstrap complete');
 

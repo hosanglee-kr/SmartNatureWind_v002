@@ -5280,7 +5280,7 @@ window.SNW = window.SNW || {};
                         </div>
                     </div>`;
                 this.el.querySelector('[data-action="new"]').onclick = () => {
-                    SNW.Router.navigate('/automation/studio');
+                    SNW.Router.navigate('/wind/studio');
                 };
                 return;
             }
@@ -5297,7 +5297,7 @@ window.SNW = window.SNW || {};
                 </div>`;
 
             this.el.querySelector('[data-action="new"]').onclick = () => {
-                SNW.Router.navigate('/automation/studio');
+                SNW.Router.navigate('/wind/studio');
             };
 
             const listSlot = this.el.querySelector('[data-slot="list"]');
@@ -6287,10 +6287,10 @@ window.SNW = window.SNW || {};
                             ⚠️ ${t('timer.noSession')}
                         </div>
                         <div style="display:flex;justify-content:center;gap:8px;">
-                            <button type="button" class="snw-btn snw-btn--sm snw-btn--secondary" onclick="SNW.Router.navigate('/automation/playlist')">
+                            <button type="button" class="snw-btn snw-btn--sm snw-btn--secondary" onclick="SNW.Router.navigate('/wind/playlist')">
                                 ${t('timer.gotoPlaylist')}
                             </button>
-                            <button type="button" class="snw-btn snw-btn--sm snw-btn--secondary" onclick="SNW.Router.navigate('/dashboard')">
+                            <button type="button" class="snw-btn snw-btn--sm snw-btn--secondary" onclick="SNW.Router.navigate('/home')">
                                 ${t('timer.gotoHome')}
                             </button>
                         </div>
@@ -6703,9 +6703,9 @@ SNW.Page = SNW.Page || {};
 
 
 
-/* ---- 998.onboarding.js (10532 bytes) ---- */
+/* ---- 998.overlay.onboarding.js (10532 bytes) ---- */
 // =========================================================
-// 998.onboarding.js — 첫 방문 온보딩 (4단계)
+// 998.overlay.onboarding.js — 첫 방문 온보딩 (4단계)
 // =========================================================
 window.SNW = window.SNW || {};
 (function(SNW) {
@@ -7123,8 +7123,9 @@ window.SNW = window.SNW || {};
         const footerStat = document.getElementById('footer-status');
         let reconnectBanner = document.getElementById('snw-reconnect-overlay');
 
+        // [수정 1] _bindConnectionStatus() 내부 (라인 172 부근)
         const render = (conn) => {
-            const isConn = (conn === 'connected');
+            const isConn = (conn === 'online' || conn === 'connected');
             if (dot) {
                 dot.className = 'snw-status-dot snw-status-dot--' + conn;
                 dot.title = SNW.I18n.t('footer.' + conn);
@@ -7279,7 +7280,14 @@ window.SNW = window.SNW || {};
             if (SNW.NowPlaying && typeof SNW.NowPlaying.init === 'function') {
                 SNW.NowPlaying.init();
             }
+            
+            // [수정 2] SNW_BOOT() 내부 (SNW.Router.init() 직전, 라인 305 부근)
+            const clockEl = document.getElementById('header-clock');
+            if (clockEl && SNW.TimeUtil && typeof SNW.TimeUtil.startClock === 'function') {
+                SNW.TimeUtil.startClock(clockEl, () => (SNW.Store && SNW.Store.get().time) || { hour: -1, min: -1 });
+            }
             SNW.Router.init();
+
             SNW.LogUtil.info('App bootstrap complete');
 
             // [Stage 7] 첫 방문 온보딩 4단계

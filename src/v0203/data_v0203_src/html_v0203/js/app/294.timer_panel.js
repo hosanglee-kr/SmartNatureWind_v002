@@ -369,10 +369,10 @@ window.SNW = window.SNW || {};
                             ⚠️ ${t('timer.noSession')}
                         </div>
                         <div style="display:flex;justify-content:center;gap:8px;">
-                            <button type="button" class="snw-btn snw-btn--sm snw-btn--secondary" onclick="SNW.Router.navigate('/automation/playlist')">
+                            <button type="button" class="snw-btn snw-btn--sm snw-btn--secondary" onclick="SNW.Router.navigate('/wind/playlist')">
                                 ${t('timer.gotoPlaylist')}
                             </button>
-                            <button type="button" class="snw-btn snw-btn--sm snw-btn--secondary" onclick="SNW.Router.navigate('/dashboard')">
+                            <button type="button" class="snw-btn snw-btn--sm snw-btn--secondary" onclick="SNW.Router.navigate('/home')">
                                 ${t('timer.gotoHome')}
                             </button>
                         </div>

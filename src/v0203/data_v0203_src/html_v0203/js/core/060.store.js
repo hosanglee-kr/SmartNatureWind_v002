@@ -76,11 +76,12 @@ window.SNW = window.SNW || {};
 		level: (SNW.LevelUtil && SNW.LevelUtil.current) ? SNW.LevelUtil.current() : 'L1'
 	});
 
+
 	// =====================================================
-	// 세션 정규화 헬퍼 (R-1)
+	// 세션 정규화 헬퍼 (R-1 + Phase 2 AUTO 확장)
 	// =====================================================
-	const SESSION_TYPE_NAMES = ['NONE', 'PLAYLIST', 'PRESET', 'FIXED'];
-	const SESSION_TRIGGER_NAMES = ['NONE', 'MANUAL', 'SCHEDULE', 'AUTO_COMFORT'];
+	const SESSION_TYPE_NAMES = ['NONE', 'PLAYLIST', 'PRESET', 'FIXED', 'AUTO_FULL', 'AUTO_SELECT'];
+	const SESSION_TRIGGER_NAMES = ['NONE', 'MANUAL', 'SCHEDULE', 'AUTO_COMFORT', 'MANUAL_AUTO_FULL', 'MANUAL_AUTO_SELECT'];
 
 	function normalizeSession(s) {
 		if (!s || typeof s !== 'object') {

@@ -47,7 +47,6 @@ window.SNW = window.SNW || {};
             system: { uptimeMs: 1000, epochNowMs: 0 },
             schedule: { index: 0, schId: 1, schNo: 10, name: '아침 바람 (Morning Breeze)', fromRunSource: true },
             profile: { index: -1, profileNo: 0, name: '', fromRunSource: false },
-            autoOffRt: { timerArmed: true, timerStartMs: 0, timerMinutes: 180, offTimeEnabled: false, offTimeMinutes: 0, offTempEnabled: false, offTemp: 0 },
             segment: { segId: 0, segNo: 0, scheduleRt: { index: -1, onPhase: false, phaseStartMs: 0, loopCount: 0 }, profileRt: { index: -1, onPhase: false, phaseStartMs: 0, loopCount: 0 } },
             override: { active: false, useFixed: false, remainSec: 0, fixedPercent: 0, presetCode: '', styleCode: '' },
             dirty: { state: false, metrics: false, chart: false, summary: false },
@@ -1027,10 +1026,15 @@ window.SNW = window.SNW || {};
             },
             AUTOOFF: {
                 state: 'AUTOOFF_STOPPED', stateCode: 5,
-                reason: 'AUTOOFF_TIMER', reasonCode: 9,
+                reason: 'TEMP_LOW_STOP', reasonCode: 12,
+                stopReason: 12,
                 active: false,
             },
+            
         };
+        
+        runtime.control.stopReason = cfg.stopReason || 0;
+
 
         const cfg = scenarios[type] || scenarios.NATURAL;
 

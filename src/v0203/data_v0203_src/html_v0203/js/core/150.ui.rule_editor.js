@@ -9,11 +9,11 @@ SNW.UI = SNW.UI || {};
     'use strict';
 
     const DEFAULT_RULE = {
-        timer:        { enabled: false, minutes: 0 },
-        offTime:      { enabled: false, time: '00:00' },
-        tempLow:      { enabled: false, mode: 'PAUSE', threshold: 22.0, hysteresis: 0.5 },
-        diLow:        { enabled: false, mode: 'PAUSE', threshold: 65.0, hysteresis: 3.0 },
-        pirPause:     { enabled: false, holdSec: 120 },
+        timer: { enabled: false, minutes: 0 },
+        offTime: { enabled: false, time: '00:00' },
+        tempLow: { enabled: false, mode: 'PAUSE', threshold: 22.0, hysteresis: 0.5 },
+        diLow: { enabled: false, mode: 'PAUSE', threshold: 65.0, hysteresis: 3.0 },
+        pirPause: { enabled: false, holdSec: 120 },
         smartComfort: { enabled: false, intervalMin: 5, level: 2 },
     };
 
@@ -22,10 +22,10 @@ SNW.UI = SNW.UI || {};
         deepSleep: {
             labelKey: 'rule.template.deepSleep',
             rule: {
-                timer:    { enabled: true, minutes: 480 },
-                offTime:  { enabled: true, time: '06:00' },
-                tempLow:  { enabled: true, mode: 'STOP',  threshold: 23.0, hysteresis: 0.0 },
-                diLow:    { enabled: false, mode: 'PAUSE', threshold: 65.0, hysteresis: 3.0 },
+                timer: { enabled: true, minutes: 480 },
+                offTime: { enabled: true, time: '06:00' },
+                tempLow: { enabled: true, mode: 'STOP', threshold: 23.0, hysteresis: 0.0 },
+                diLow: { enabled: false, mode: 'PAUSE', threshold: 65.0, hysteresis: 3.0 },
                 pirPause: { enabled: true, holdSec: 600 },
                 smartComfort: { enabled: true, intervalMin: 5, level: 2 },
             },
@@ -33,10 +33,10 @@ SNW.UI = SNW.UI || {};
         babySafe: {
             labelKey: 'rule.template.babySafe',
             rule: {
-                timer:    { enabled: false, minutes: 0 },
-                offTime:  { enabled: false, time: '00:00' },
-                tempLow:  { enabled: true, mode: 'STOP',  threshold: 24.0, hysteresis: 0.0 },
-                diLow:    { enabled: true, mode: 'STOP',  threshold: 68.0, hysteresis: 0.0 },
+                timer: { enabled: false, minutes: 0 },
+                offTime: { enabled: false, time: '00:00' },
+                tempLow: { enabled: true, mode: 'STOP', threshold: 24.0, hysteresis: 0.0 },
+                diLow: { enabled: true, mode: 'STOP', threshold: 68.0, hysteresis: 0.0 },
                 pirPause: { enabled: true, holdSec: 300 },
                 smartComfort: { enabled: true, intervalMin: 5, level: 2 },
             },
@@ -44,10 +44,10 @@ SNW.UI = SNW.UI || {};
         officeFocus: {
             labelKey: 'rule.template.officeFocus',
             rule: {
-                timer:    { enabled: true, minutes: 120 },
-                offTime:  { enabled: false, time: '00:00' },
-                tempLow:  { enabled: false, mode: 'PAUSE', threshold: 22.0, hysteresis: 0.5 },
-                diLow:    { enabled: true, mode: 'PAUSE', threshold: 70.0, hysteresis: 3.0 },
+                timer: { enabled: true, minutes: 120 },
+                offTime: { enabled: false, time: '00:00' },
+                tempLow: { enabled: false, mode: 'PAUSE', threshold: 22.0, hysteresis: 0.5 },
+                diLow: { enabled: true, mode: 'PAUSE', threshold: 70.0, hysteresis: 3.0 },
                 pirPause: { enabled: true, holdSec: 180 },
                 smartComfort: { enabled: false, intervalMin: 5, level: 2 },
             },
@@ -145,14 +145,16 @@ SNW.UI = SNW.UI || {};
                     <label><input type="checkbox" data-rule="tempLow.enabled" ${r.tempLow.enabled ? 'checked' : ''}> ${t('rule.tempLow.enabled')}</label>
                     <div class="snw-rule-mode">
                         <label><input type="radio" name="tempLowMode" value="PAUSE" ${r.tempLow.mode === 'PAUSE' ? 'checked' : ''}> ${t('rule.tempLow.modePause')}</label>
-                        <label><input type="radio" name="tempLowMode" value="STOP"  ${r.tempLow.mode === 'STOP'  ? 'checked' : ''}> ${t('rule.tempLow.modeStop')}</label>
+                        <label><input type="radio" name="tempLowMode" value="STOP"  ${r.tempLow.mode === 'STOP' ? 'checked' : ''}> ${t('rule.tempLow.modeStop')}</label>
                     </div>
                     <div class="snw-rule-inputs">
                         <span>${t('rule.tempLow.threshold')}</span>
                         <input type="number" step="0.5" min="10" max="35" data-rule="tempLow.threshold" value="${_nz(r.tempLow.threshold, 22.0)}" class="snw-input-sm">
                         <span class="snw-rule-unit">°C</span>
                         <span class="snw-rule-hint" data-rule-hint="tempLow">${t('rule.tempLow.hysteresis')}</span>
-                        <input type="number" step="0.5" min="0" max="10" data-rule="tempLow.hysteresis" value="${_nz(r.tempLow.hysteresis, 0.5)}" class="snw-input-sm">
+                        <input type="number" step="0.5" min="0" max="10" data-rule="tempLow.hysteresis"
+                               value="${r.tempLow.mode === 'STOP' ? 0 : _nz(r.tempLow.hysteresis, 0.5)}"
+                               ${r.tempLow.mode === 'STOP' ? 'disabled' : ''} class="snw-input-sm">
                         <span class="snw-rule-unit">°C</span>
                     </div>
                 </div>
@@ -161,14 +163,16 @@ SNW.UI = SNW.UI || {};
                     <label><input type="checkbox" data-rule="diLow.enabled" ${r.diLow.enabled ? 'checked' : ''}> ${t('rule.diLow.enabled')}</label>
                     <div class="snw-rule-mode">
                         <label><input type="radio" name="diLowMode" value="PAUSE" ${r.diLow.mode === 'PAUSE' ? 'checked' : ''}> ${t('rule.tempLow.modePause')}</label>
-                        <label><input type="radio" name="diLowMode" value="STOP"  ${r.diLow.mode === 'STOP'  ? 'checked' : ''}> ${t('rule.tempLow.modeStop')}</label>
+                        <label><input type="radio" name="diLowMode" value="STOP"  ${r.diLow.mode === 'STOP' ? 'checked' : ''}> ${t('rule.tempLow.modeStop')}</label>
                     </div>
                     <div class="snw-rule-inputs">
                         <span>${t('rule.tempLow.threshold')}</span>
                         <input type="number" step="1" min="0" max="100" data-rule="diLow.threshold" value="${_nz(r.diLow.threshold, 65.0)}" class="snw-input-sm">
                         <span class="snw-rule-unit">DI</span>
                         <span class="snw-rule-hint">${t('rule.tempLow.hysteresis')}</span>
-                        <input type="number" step="1" min="0" max="20" data-rule="diLow.hysteresis" value="${_nz(r.diLow.hysteresis, 3.0)}" class="snw-input-sm">
+                        <input type="number" step="1" min="0" max="20" data-rule="diLow.hysteresis"
+                               value="${r.diLow.mode === 'STOP' ? 0 : _nz(r.diLow.hysteresis, 3.0)}"
+                               ${r.diLow.mode === 'STOP' ? 'disabled' : ''} class="snw-input-sm">
                         <span class="snw-rule-unit">DI</span>
                     </div>
                 </div>
@@ -200,6 +204,9 @@ SNW.UI = SNW.UI || {};
                         <input type="number" min="1" max="60" data-rule="smartComfort.intervalMin" value="${_nz(r.smartComfort.intervalMin, 5)}" class="snw-input-sm">
                         <span class="snw-rule-unit">분 주기</span>
                     </div>
+                </div>
+                <div class="snw-rule-row">
+                    <label><input type="checkbox" data-always-on ${(SNW.Store && SNW.Store.get().autoComfortEnabled) ? 'checked' : ''}> ${t('rule.smartComfort.alwaysOn')}</label>
                 </div>
             </fieldset>
 
@@ -289,14 +296,26 @@ SNW.UI = SNW.UI || {};
                     el.addEventListener('input', handler);
                 });
 
-                // mode 라디오
+                // mode 라디오 (STOP 선택 시 hysteresis=0 및 disabled 강제)
                 ['tempLowMode', 'diLowMode'].forEach(name => {
                     const arr = content.querySelectorAll(`input[name="${name}"]`);
-                    const key = name === 'tempLowMode' ? 'tempLow.mode' : 'diLow.mode';
+                    const prefix = name === 'tempLowMode' ? 'tempLow' : 'diLow';
+                    const key = `${prefix}.mode`;
+                    const hyKey = `${prefix}.hysteresis`;
+                    const defHy = prefix === 'tempLow' ? 0.5 : 3.0;
                     arr.forEach(radio => {
                         radio.addEventListener('change', () => {
                             if (radio.checked) {
                                 _setPath(working, key, radio.value);
+                                const hyInput = content.querySelector(`[data-rule="${hyKey}"]`);
+                                if (radio.value === 'STOP') {
+                                    _setPath(working, hyKey, 0);
+                                    if (hyInput) { hyInput.value = '0'; hyInput.disabled = true; }
+                                } else {
+                                    const nextHy = Number(working[prefix].hysteresis) > 0 ? working[prefix].hysteresis : defHy;
+                                    _setPath(working, hyKey, nextHy);
+                                    if (hyInput) { hyInput.value = String(nextHy); hyInput.disabled = false; }
+                                }
                                 const prev = _calcPreview(working);
                                 const detailEl = content.querySelector('[data-slot="preview-detail"]');
                                 if (detailEl) detailEl.textContent = prev.detail;
@@ -332,6 +351,16 @@ SNW.UI = SNW.UI || {};
                         }
 
                         // 가동 중 세션 즉시 적용 체크 시 PATCH /session/rule 호출
+                        // 상시 쾌적 감시(autoComfort) 동기화
+                        const chkAlways = content.querySelector('[data-always-on]');
+                        if (chkAlways && SNW.Store && chkAlways.checked !== !!SNW.Store.get().autoComfortEnabled) {
+                            try {
+                                if (SNW.Api && typeof SNW.Api.setAutoComfort === 'function') {
+                                    await SNW.Api.setAutoComfort(chkAlways.checked);
+                                    SNW.Store.set({ autoComfortEnabled: chkAlways.checked });
+                                }
+                            } catch (e) { }
+                        }
                         const chkApply = content.querySelector('[data-apply-session]');
                         if (chkApply && chkApply.checked) {
                             try {

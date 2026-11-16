@@ -4,7 +4,7 @@
 // =========================================================
 window.SNW = window.SNW || {};
 SNW.UI = SNW.UI || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     /**
@@ -16,7 +16,7 @@ SNW.UI = SNW.UI || {};
      *   onApply: (chosenConfig) => void,         // "적용" 버튼
      * }
      */
-    SNW.UI.simulationModal = async function(config) {
+    SNW.UI.simulationModal = async function (config) {
         if (!config || !config.a) return null;
         if (SNW.Preview && typeof SNW.Preview.init === 'function') {
             await SNW.Preview.init();
@@ -28,8 +28,8 @@ SNW.UI = SNW.UI || {};
         const waveA = await SNW.Preview.generateStep({
             type: 'PRESET',
             presetCode: config.a.presetCode || 'OCEAN',
-            styleCode:  config.a.styleCode  || 'BALANCE',
-            override:   config.a.override || { enabled: false },
+            styleCode: config.a.styleCode || 'BALANCE',
+            override: config.a.override || { enabled: false },
         });
 
         const feelingsA = SNW.Preview.toFeelings(
@@ -43,8 +43,8 @@ SNW.UI = SNW.UI || {};
             waveB = await SNW.Preview.generateStep({
                 type: 'PRESET',
                 presetCode: config.b.presetCode || 'COUNTRY_BREEZE',
-                styleCode:  config.b.styleCode  || 'RELAX',
-                override:   config.b.override || { enabled: false },
+                styleCode: config.b.styleCode || 'RELAX',
+                override: config.b.override || { enabled: false },
             });
             feelingsB = SNW.Preview.toFeelings(
                 waveB.intensity, waveB.variability, waveB.gustFreq);
@@ -90,9 +90,9 @@ SNW.UI = SNW.UI || {};
             <div class="snw-sim__actions" style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
                 <button type="button" class="snw-btn" data-action="close" style="padding:8px 16px;">닫기</button>
                 ${config.mode === 'ab'
-                    ? `<button type="button" class="snw-btn" data-action="apply-b" style="padding:8px 16px;">B로 적용</button>
+                ? `<button type="button" class="snw-btn" data-action="apply-b" style="padding:8px 16px;">B로 적용</button>
                        <button type="button" class="snw-btn snw-btn-primary" data-action="apply-a" style="padding:8px 16px;">A로 적용</button>`
-                    : `<button type="button" class="snw-btn snw-btn-primary" data-action="apply-a" style="padding:8px 16px;">✓ 이 설정 적용</button>`}
+                : `<button type="button" class="snw-btn snw-btn-primary" data-action="apply-a" style="padding:8px 16px;">✓ 이 설정 적용</button>`}
             </div>
         `;
 
@@ -101,7 +101,7 @@ SNW.UI = SNW.UI || {};
         // =========================================================
         const canvasA = content.querySelector('[data-slot="canvas-a"]');
         const canvasB = content.querySelector('[data-slot="canvas-b"]');
-        const radar   = content.querySelector('[data-slot="radar"]');
+        const radar = content.querySelector('[data-slot="radar"]');
 
         animateWave(canvasA, waveA.points, '#4a9eff');
         if (waveB) animateWave(canvasB, waveB.points, '#f0883e');
@@ -225,7 +225,7 @@ SNW.UI = SNW.UI || {};
                 const x = (i / (points.length - 1)) * w;
                 const y = h - ((p.wind - minV) / (maxV - minV)) * (h - 20) - 10;
                 if (i === 0) ctx.moveTo(x, y);
-                else         ctx.lineTo(x, y);
+                else ctx.lineTo(x, y);
             }
             ctx.stroke();
 
@@ -275,11 +275,11 @@ SNW.UI = SNW.UI || {};
         ctx.clearRect(0, 0, w, h);
 
         const axes = [
-            { key: 'coolness',   label: '시원함',   angle: -Math.PI / 2 },
-            { key: 'freshness',  label: '청량감',   angle: -Math.PI / 2 + Math.PI * 2 / 5 },
-            { key: 'dynamism',   label: '역동성',   angle: -Math.PI / 2 + Math.PI * 4 / 5 },
-            { key: 'smoothness', label: '부드러움', angle: -Math.PI / 2 + Math.PI * 6 / 5 },
-            { key: 'calmness',   label: '차분함',   angle: -Math.PI / 2 + Math.PI * 8 / 5 },
+            { key: 'coolness', label: '시원함', angle: -Math.PI / 2 },
+            { key: 'smoothness', label: '부드러움', angle: -Math.PI / 2 + Math.PI * 2 / 5 },
+            { key: 'freshness', label: '자연미', angle: -Math.PI / 2 + Math.PI * 4 / 5 },
+            { key: 'dynamism', label: '활력', angle: -Math.PI / 2 + Math.PI * 6 / 5 },
+            { key: 'calmness', label: '수면적합도', angle: -Math.PI / 2 + Math.PI * 8 / 5 },
         ];
 
         // 그리드 (5단계 원)
@@ -292,7 +292,7 @@ SNW.UI = SNW.UI || {};
                 const x = cx + Math.cos(axis.angle) * r;
                 const y = cy + Math.sin(axis.angle) * r;
                 if (i === 0) ctx.moveTo(x, y);
-                else         ctx.lineTo(x, y);
+                else ctx.lineTo(x, y);
             });
             ctx.closePath();
             ctx.stroke();
@@ -343,7 +343,7 @@ SNW.UI = SNW.UI || {};
             const x = cx + Math.cos(axis.angle) * r;
             const y = cy + Math.sin(axis.angle) * r;
             if (i === 0) ctx.moveTo(x, y);
-            else         ctx.lineTo(x, y);
+            else ctx.lineTo(x, y);
         });
         ctx.closePath();
         ctx.fillStyle = fillColor;

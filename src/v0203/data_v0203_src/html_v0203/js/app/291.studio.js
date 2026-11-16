@@ -469,6 +469,7 @@ window.SNW = window.SNW || {};
                         <button type="button" class="snw-btn snw-btn--add-step" data-action="add-step">
                             + Step 추가 (최대 8개)
                         </button>
+                        <div data-slot="studio-feelings" style="margin-top:12px;font-size:12px;color:var(--snw-text-dim);"></div>
 
                         <!-- [Stage 5] 스마트 쾌적 & 자동 정지 규칙 -->
                         <details class="snw-studio-rules" style="margin-top:20px;border:1px dashed var(--snw-border,#2f3844);border-radius:8px;padding:12px;background:var(--snw-surface-2,#232b36);">
@@ -581,6 +582,22 @@ window.SNW = window.SNW || {};
                 slot.appendChild(stepEl);
                 this._stepEditors.push(editor);
             });
+
+            const feelSlot = this.el.querySelector('[data-slot="studio-feelings"]');
+            if (feelSlot) {
+                const firstPreset = this._steps.find(s => s.type === 'PRESET') || this._steps[0];
+                if (firstPreset && SNW.Preview && typeof SNW.Preview.toFeelings === 'function') {
+                    const ovr = firstPreset.override || {};
+                    const f = SNW.Preview.toFeelings(
+                        ovr.enabled ? ovr.windIntensity : 50,
+                        ovr.enabled ? ovr.windVariability : 30,
+                        ovr.enabled ? ovr.gustFrequency : 20
+                    );
+                    feelSlot.textContent = `감성 요약 (${firstPreset.presetCode || 'CUSTOM'}): 시원함 ${Math.round(f.coolness)}% · 부드러움 ${Math.round(f.smoothness)}% · 자연미 ${Math.round(f.freshness)}% · 활력 ${Math.round(f.dynamism)}% · 수면적합도 ${Math.round(f.calmness)}%`;
+                } else {
+                    feelSlot.textContent = '';
+                }
+            }
         }
 
         _onAddStep() {
@@ -589,33 +606,6 @@ window.SNW = window.SNW || {};
                 return;
             }
             this._steps.push(this._defaultStep());
-            // [Stage 5] 규칙 편집 진입점
-            const _updateRuleSummary = () => {
-                const ruleSummaryEl = this.el.querySelector('[data-slot="rule-summary"]');
-                if (!ruleSummaryEl) return;
-                const r = this._currentRule || {};
-                const items = [];
-                if (r.timer?.enabled) items.push(`⏱️${r.timer.minutes}m`);
-                if (r.offTime?.enabled) items.push(`⏰${r.offTime.time}`);
-                if (r.tempLow?.enabled) items.push(`🌡️${r.tempLow.mode}`);
-                if (r.diLow?.enabled) items.push(`☀️${r.diLow.mode}`);
-                if (r.pirPause?.enabled) items.push(`👤${r.pirPause.holdSec}s`);
-                if (r.smartComfort?.enabled) items.push(`✨auto`);
-                ruleSummaryEl.textContent = items.length > 0 ? items.join(' · ') : '규칙 미설정 (클릭하여 추가)';
-            };
-            _updateRuleSummary();
-
-            const btnEditRule = this.el.querySelector('[data-action="edit-rule"]');
-            if (btnEditRule) {
-                btnEditRule.onclick = async () => {
-                    if (!SNW.UI.ruleEditor) return;
-                    const newRule = await SNW.UI.ruleEditor.showModal(this._currentRule);
-                    if (!newRule) return;
-                    this._currentRule = newRule;
-                    _updateRuleSummary();
-                };
-            }
-
             this._renderSteps();
         }
 
@@ -626,33 +616,6 @@ window.SNW = window.SNW || {};
             }
             this._steps.splice(idx, 1);
             this._steps.forEach((s, i) => { s.stepNo = i + 1; });
-            // [Stage 5] 규칙 편집 진입점
-            const _updateRuleSummary = () => {
-                const ruleSummaryEl = this.el.querySelector('[data-slot="rule-summary"]');
-                if (!ruleSummaryEl) return;
-                const r = this._currentRule || {};
-                const items = [];
-                if (r.timer?.enabled) items.push(`⏱️${r.timer.minutes}m`);
-                if (r.offTime?.enabled) items.push(`⏰${r.offTime.time}`);
-                if (r.tempLow?.enabled) items.push(`🌡️${r.tempLow.mode}`);
-                if (r.diLow?.enabled) items.push(`☀️${r.diLow.mode}`);
-                if (r.pirPause?.enabled) items.push(`👤${r.pirPause.holdSec}s`);
-                if (r.smartComfort?.enabled) items.push(`✨auto`);
-                ruleSummaryEl.textContent = items.length > 0 ? items.join(' · ') : '규칙 미설정 (클릭하여 추가)';
-            };
-            _updateRuleSummary();
-
-            const btnEditRule = this.el.querySelector('[data-action="edit-rule"]');
-            if (btnEditRule) {
-                btnEditRule.onclick = async () => {
-                    if (!SNW.UI.ruleEditor) return;
-                    const newRule = await SNW.UI.ruleEditor.showModal(this._currentRule);
-                    if (!newRule) return;
-                    this._currentRule = newRule;
-                    _updateRuleSummary();
-                };
-            }
-
             this._renderSteps();
         }
 
@@ -663,33 +626,6 @@ window.SNW = window.SNW || {};
             this._steps[idx] = this._steps[target];
             this._steps[target] = tmp;
             this._steps.forEach((s, i) => { s.stepNo = i + 1; });
-            // [Stage 5] 규칙 편집 진입점
-            const _updateRuleSummary = () => {
-                const ruleSummaryEl = this.el.querySelector('[data-slot="rule-summary"]');
-                if (!ruleSummaryEl) return;
-                const r = this._currentRule || {};
-                const items = [];
-                if (r.timer?.enabled) items.push(`⏱️${r.timer.minutes}m`);
-                if (r.offTime?.enabled) items.push(`⏰${r.offTime.time}`);
-                if (r.tempLow?.enabled) items.push(`🌡️${r.tempLow.mode}`);
-                if (r.diLow?.enabled) items.push(`☀️${r.diLow.mode}`);
-                if (r.pirPause?.enabled) items.push(`👤${r.pirPause.holdSec}s`);
-                if (r.smartComfort?.enabled) items.push(`✨auto`);
-                ruleSummaryEl.textContent = items.length > 0 ? items.join(' · ') : '규칙 미설정 (클릭하여 추가)';
-            };
-            _updateRuleSummary();
-
-            const btnEditRule = this.el.querySelector('[data-action="edit-rule"]');
-            if (btnEditRule) {
-                btnEditRule.onclick = async () => {
-                    if (!SNW.UI.ruleEditor) return;
-                    const newRule = await SNW.UI.ruleEditor.showModal(this._currentRule);
-                    if (!newRule) return;
-                    this._currentRule = newRule;
-                    _updateRuleSummary();
-                };
-            }
-
             this._renderSteps();
         }
 

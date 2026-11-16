@@ -22,85 +22,87 @@ SNW.Page = SNW.Page || {};
     }
 
     SNW.Page.Settings = class Settings {
-        constructor(container) {
-            this.el = container;
-            this._active = true;
-            this._wsChBaseline = [];
-            this._currentTab = 'general';
-        }
+            constructor(container, params = {}) {
+                this.el = container;
+                this.params = params || {};
+                this._active = true;
+                this._wsChBaseline = [];
+                const validTabs = ['general', 'hardware', 'comm'];
+                this._currentTab = validTabs.includes(this.params.tab) ? this.params.tab : 'general';
+            }
 
         async mount() {
-            this.el.innerHTML = '';
-            this.el.appendChild(SNW.Tpl.settings());
-            SNW.I18n.applyTo(this.el);
+                this.el.innerHTML = '';
+                this.el.appendChild(SNW.Tpl.settings());
+                SNW.I18n.applyTo(this.el);
 
-            await this._loadSystem();
-            if (!this._active) return;
+                await this._loadSystem();
+                if (!this._active) return;
 
-            // 액션 이벤트 바인딩 (저장, 재적용, 테스트, 초기화)
-            SNW.DomUtil.delegate(this.el, '[data-action="save"]', 'click', () => this._onSave());
-            SNW.DomUtil.delegate(this.el, '[data-action="reload"]', 'click', () => this._onReload());
-            SNW.DomUtil.delegate(this.el, '[data-action="test-api"]', 'click', () => this._onTestApi());
-            SNW.DomUtil.delegate(this.el, '[data-action="factory-reset"]', 'click', () => this._onFactoryReset());
-        }
+                // 액션 이벤트 바인딩 (저장, 재적용, 테스트, 초기화)
+                SNW.DomUtil.delegate(this.el, '[data-action="save"]', 'click', () => this._onSave());
+                SNW.DomUtil.delegate(this.el, '[data-action="reload"]', 'click', () => this._onReload());
+                SNW.DomUtil.delegate(this.el, '[data-action="test-api"]', 'click', () => this._onTestApi());
+                SNW.DomUtil.delegate(this.el, '[data-action="factory-reset"]', 'click', () => this._onFactoryReset());
+            }
 
-        unmount() { this._active = false; }
+            unmount() { this._active = false; }
 
-        // =========================================================
-        // 탭 제어 로직
-        // =========================================================
-        _bindTabs() {
-            const tabsContainer = this.el.querySelector('.snw-tabs');
-            if (!tabsContainer) return;
+            // =========================================================
+            // 탭 제어 로직
+            // =========================================================
+            _bindTabs() {
+                const tabsContainer = this.el.querySelector('.snw-tabs');
+                if (!tabsContainer) return;
 
-            // 기존 이벤트 리스너 제거를 위해 cloneNode 사용 (중복 방지)
-            const newTabs = tabsContainer.cloneNode(true);
-            tabsContainer.parentNode.replaceChild(newTabs, tabsContainer);
+                // 기존 이벤트 리스너 제거를 위해 cloneNode 사용 (중복 방지)
+                const newTabs = tabsContainer.cloneNode(true);
+                tabsContainer.parentNode.replaceChild(newTabs, tabsContainer);
 
-            newTabs.addEventListener('click', (e) => {
-                const btn = e.target.closest('.snw-tab-btn');
-                if (!btn) return;
+                newTabs.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.snw-tab-btn');
+                    if (!btn) return;
 
-                const target = btn.getAttribute('data-tab');
-                this._currentTab = target;
+                    const target = btn.getAttribute('data-tab');
+                    this._currentTab = target;
 
-                // 버튼 활성화
-                this.el.querySelectorAll('.snw-tab-btn').forEach(b => b.classList.toggle('is-active', b === btn));
-                // 콘텐츠 활성화
-                this.el.querySelectorAll('.snw-tab-content').forEach(c => c.classList.toggle('is-active', c.getAttribute('data-tab-content') === target));
-            });
-        }
+                    // 버튼 활성화
+                    this.el.querySelectorAll('.snw-tab-btn').forEach(b => b.classList.toggle('is-active', b === btn));
+                    // 콘텐츠 활성화
+                    this.el.querySelectorAll('.snw-tab-content').forEach(c => c.classList.toggle('is-active', c.getAttribute('data-tab-content') === target));
+                });
+            }
 
         // =========================================================
         // _loadSystem : 데이터 로드 및 탭 UI 렌더링
         // =========================================================
         async _loadSystem() {
-            try {
-                
-                const data = await SNW.Api.getSystem();
-                if (!this._active) return;
-                
-                // [BUGFIX] API 응답은 루트 flat 구조 {meta, system:{logging,webSocket}, hw, security, timeCfg}
-                //  - 이전: data.system 이 ST_A20_SystemConfig_t 전체라고 오판 → 모든 하위 필드가 defaults로 fallback
-                //  - 이후: 루트(data)에서 직접 추출 (오프라인 mock / C++ toJson_System 모두 동일 shape)
-                const sys = data || {};
-                const hw = sys.hw || {};
-                const logCfg = (sys.system && sys.system.logging) || {};
-                const ws = (sys.system && sys.system.webSocket) || {};
-                const sec = sys.security || {};
-                const meta = sys.meta || {};
+                try {
 
-                const esc = SNW.DomUtil.escape;
-                const T = SNW.I18n.t.bind(SNW.I18n);
+                    const data = await SNW.Api.getSystem();
+                    if (!this._active) return;
 
-                const apiKeySet    = typeof sec.apiKey       === 'string' && sec.apiKey.length       > 0;
-                const geminiKeySet = typeof sec.geminiApiKey === 'string' && sec.geminiApiKey.length > 0;
+                    // [BUGFIX] API 응답은 루트 flat 구조 {meta, system:{logging,webSocket}, hw, security, timeCfg}
+                    //  - 이전: data.system 이 ST_A20_SystemConfig_t 전체라고 오판 → 모든 하위 필드가 defaults로 fallback
+                    //  - 이후: 루트(data)에서 직접 추출 (오프라인 mock / C++ toJson_System 모두 동일 shape)
+                    const sys = data || {};
+                    const hw = sys.hw || {};
+                    const logCfg = (sys.system && sys.system.logging) || {};
+                    const ws = (sys.system && sys.system.webSocket) || {};
+                    const sec = sys.security || {};
+                    const meta = sys.meta || {};
 
-                // 탭 컨테이너 렌더링
-                const formContainer = this.el.querySelector('[data-slot="form-container"]');
-                if (!formContainer) return;
+                    const esc = SNW.DomUtil.escape;
+                    const T = SNW.I18n.t.bind(SNW.I18n);
 
-                formContainer.innerHTML = `
+                    const apiKeySet = typeof sec.apiKey === 'string' && sec.apiKey.length > 0;
+                    const geminiKeySet = typeof sec.geminiApiKey === 'string' && sec.geminiApiKey.length > 0;
+
+                    // 탭 컨테이너 렌더링
+                    const formContainer = this.el.querySelector('[data-slot="form-container"]');
+                    if (!formContainer) return;
+
+                    formContainer.innerHTML = `
                     <div class="snw-tabs">
                         <button type="button" class="snw-tab-btn is-active" data-tab="general">${T('settings.tabGeneral')}</button>
                         <button type="button" class="snw-tab-btn" data-tab="hardware">${T('settings.tabHardware')}</button>
@@ -123,11 +125,17 @@ SNW.Page = SNW.Page || {};
                     </div>
                 `;
 
-                this._bindTabs();
+                    this._bindTabs();
+                    if (this._currentTab !== 'general') {
+                        this.el.querySelectorAll('.snw-tab-btn').forEach(b =>
+                            b.classList.toggle('is-active', b.getAttribute('data-tab') === this._currentTab));
+                        this.el.querySelectorAll('.snw-tab-content').forEach(c =>
+                            c.classList.toggle('is-active', c.getAttribute('data-tab-content') === this._currentTab));
+                    }
 
-                // ---------- 1. 일반 / 보안 탭 ----------
-                const logSlot = formContainer.querySelector('[data-slot="form-log"]');
-                logSlot.innerHTML = `
+                    // ---------- 1. 일반 / 보안 탭 ----------
+                    const logSlot = formContainer.querySelector('[data-slot="form-log"]');
+                    logSlot.innerHTML = `
                     <h3 class="snw-form-section">${T('settings.secUiMode')}</h3>
                     <div class="snw-form-row">
                         <label>${T('settings.uiLevel')}</label>
@@ -149,9 +157,9 @@ SNW.Page = SNW.Page || {};
                     <div class="snw-form-row">
                         <label>${T('settings.fieldLogLevel')}</label>
                         <select id="log-level" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                            <option value="INFO"  ${logCfg.level === 'INFO'  ? 'selected' : ''}>INFO</option>
+                            <option value="INFO"  ${logCfg.level === 'INFO' ? 'selected' : ''}>INFO</option>
                             <option value="DEBUG" ${logCfg.level === 'DEBUG' ? 'selected' : ''}>DEBUG</option>
-                            <option value="WARN"  ${logCfg.level === 'WARN'  ? 'selected' : ''}>WARN</option>
+                            <option value="WARN"  ${logCfg.level === 'WARN' ? 'selected' : ''}>WARN</option>
                             <option value="ERROR" ${logCfg.level === 'ERROR' ? 'selected' : ''}>ERROR</option>
                         </select>
                     </div>
@@ -160,7 +168,7 @@ SNW.Page = SNW.Page || {};
                         <input type="number" id="log-maxEntries" min="10" max="1000"
                                value="${nz(logCfg.maxEntries, 300)}"
                                style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        <small class="snw-form-row__hint">${T('settings.fieldRange', {min:10, max:1000})}</small>
+                        <small class="snw-form-row__hint">${T('settings.fieldRange', { min: 10, max: 1000 })}</small>
                     </div>
                     <div class="snw-form-row">
                         <label>API Key ${apiKeySet
@@ -216,22 +224,22 @@ SNW.Page = SNW.Page || {};
                     </div>
                 `;
 
-                // ---------- 2. 하드웨어 탭 ----------
-                const pwm   = hw.fanPwm    || {};
-                const curve = hw.fanConfig || {};
-                const pir   = hw.pir       || {};
-                const dht   = hw.tempHum   || {};
-                const led   = hw.led       || {};
+                    // ---------- 2. 하드웨어 탭 ----------
+                    const pwm = hw.fanPwm || {};
+                    const curve = hw.fanConfig || {};
+                    const pir = hw.pir || {};
+                    const dht = hw.tempHum || {};
+                    const led = hw.led || {};
 
-                const _rangeHint = (min, max, rec) => {
-                    const range = T('settings.fieldRange', { min, max });
-                    return rec
-                        ? `<small class="snw-form-row__hint">${range} · ${T('settings.fieldRecommended', { range: rec })}</small>`
-                        : `<small class="snw-form-row__hint">${range}</small>`;
-                };
+                    const _rangeHint = (min, max, rec) => {
+                        const range = T('settings.fieldRange', { min, max });
+                        return rec
+                            ? `<small class="snw-form-row__hint">${range} · ${T('settings.fieldRecommended', { range: rec })}</small>`
+                            : `<small class="snw-form-row__hint">${range}</small>`;
+                    };
 
-                const hwSlot = formContainer.querySelector('[data-slot="form-hw"]');
-                hwSlot.innerHTML = `
+                    const hwSlot = formContainer.querySelector('[data-slot="form-hw"]');
+                    hwSlot.innerHTML = `
                     <h3 class="snw-form-section">${T('settings.secFanPwm')}</h3>
                     <div class="snw-form-row">
                         <label>${T('settings.fieldPinPwm')}</label>
@@ -291,11 +299,6 @@ SNW.Page = SNW.Page || {};
                         <input type="number" id="hw-pir-debounce" min="0" max="60" value="${nz(pir.debounceSec, 5)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                         ${_rangeHint(0, 60)}
                     </div>
-                    <div class="snw-form-row">
-                        <label>${T('settings.fieldHold')}</label>
-                        <input type="number" id="hw-pir-hold" min="0" max="3600" value="${nz(pir.holdSec, 120)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
-                        ${_rangeHint(0, 3600, '60~300')}
-                    </div>
 
                     <h3 class="snw-form-section">${T('settings.secDht')}</h3>
                     <div class="snw-form-row" style="flex-direction:row;gap:8px;align-items:center;">
@@ -335,33 +338,33 @@ SNW.Page = SNW.Page || {};
                     </div>
                 `;
 
-                // ---------- 3. 통신/WS 탭 ----------
-                const wsCh = (Array.isArray(ws.wsChConfig) && ws.wsChConfig.length > 0)
-                    ? ws.wsChConfig
-                    : [
-                        { chIdx: 0, chName: 'state',   chIntervalMs: 800,  priority: 0 },
-                        { chIdx: 1, chName: 'metrics', chIntervalMs: 1500, priority: 1 },
-                        { chIdx: 2, chName: 'chart',   chIntervalMs: 1200, priority: 2 },
-                        { chIdx: 3, chName: 'summary', chIntervalMs: 1500, priority: 3 }
-                    ];
+                    // ---------- 3. 통신/WS 탭 ----------
+                    const wsCh = (Array.isArray(ws.wsChConfig) && ws.wsChConfig.length > 0)
+                        ? ws.wsChConfig
+                        : [
+                            { chIdx: 0, chName: 'state', chIntervalMs: 800, priority: 0 },
+                            { chIdx: 1, chName: 'metrics', chIntervalMs: 1500, priority: 1 },
+                            { chIdx: 2, chName: 'chart', chIntervalMs: 1200, priority: 2 },
+                            { chIdx: 3, chName: 'summary', chIntervalMs: 1500, priority: 3 }
+                        ];
 
-                this._wsChBaseline = wsCh.map((ch, i) => ({
-                    chIdx:  (ch.chIdx != null) ? ch.chIdx : i,
-                    chName: ch.chName || ('ch' + i)
-                }));
+                    this._wsChBaseline = wsCh.map((ch, i) => ({
+                        chIdx: (ch.chIdx != null) ? ch.chIdx : i,
+                        chName: ch.chName || ('ch' + i)
+                    }));
 
-                const wsEtc = ws.wsEtcConfig || {};
-                let wsHtml = `<h3 class="snw-form-section">${T('settings.wsChannelConfig')}</h3>`;
-                wsCh.forEach((ch, idx) => {
-                    wsHtml += `
+                    const wsEtc = ws.wsEtcConfig || {};
+                    let wsHtml = `<h3 class="snw-form-section">${T('settings.wsChannelConfig')}</h3>`;
+                    wsCh.forEach((ch, idx) => {
+                        wsHtml += `
                         <div style="display:flex;gap:8px;margin-bottom:4px;align-items:center;font-size:12px;">
                             <span style="width:70px;color:var(--snw-text-dim);">${esc(ch.chName || ('ch' + idx))}</span>
                             <input type="number" value="${nz(ch.chIntervalMs, 1000)}" placeholder="Interval(ms)" style="flex:1;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);" data-ws-itv="${idx}">
                             <input type="number" value="${nz(ch.priority, 0)}" placeholder="Priority" style="flex:1;padding:4px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);" data-ws-prio="${idx}">
                         </div>
                     `;
-                });
-                wsHtml += `
+                    });
+                    wsHtml += `
                     <div class="snw-form-row" style="margin-top:12px;">
                         <label>Chart Large Bytes</label>
                         <input type="number" id="ws-chartLarge" value="${nz(wsEtc.chartLargeBytes, 3500)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
@@ -375,12 +378,12 @@ SNW.Page = SNW.Page || {};
                         <input type="number" id="ws-cleanup" value="${nz(wsEtc.wsCleanupMs, 10000)}" style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                     </div>
                 `;
-                formContainer.querySelector('[data-slot="form-ws"]').innerHTML = wsHtml;
+                    formContainer.querySelector('[data-slot="form-ws"]').innerHTML = wsHtml;
 
-                // ---------- 하단 Sticky 액션 바 ----------
-                const actionBar = this.el.querySelector('[data-slot="action-bar"]');
-                if (actionBar) {
-                    actionBar.innerHTML = `
+                    // ---------- 하단 Sticky 액션 바 ----------
+                    const actionBar = this.el.querySelector('[data-slot="action-bar"]');
+                    if (actionBar) {
+                        actionBar.innerHTML = `
                         <div class="snw-form-sticky">
                             <label class="snw-form-row--bool" style="flex:1;margin:0;">
                                 <input type="checkbox" id="save-and-reload" checked>
@@ -391,315 +394,313 @@ SNW.Page = SNW.Page || {};
                         </div>
                         <div class="snw-form-sticky-spacer"></div>
                     `;
+                    }
+
+                    // [Stage 5 + m1 수정] 시스템 정보 로드 (완전 흡수)
+                    try {
+                        const [v, d, wifi] = await Promise.all([
+                            SNW.Api.version ? SNW.Api.version().catch(() => null) : null,
+                            SNW.Api.diag ? SNW.Api.diag().catch(() => null) : null,
+                            SNW.Api.getWifiState ? SNW.Api.getWifiState().catch(() => null) : null,
+                        ]);
+                        const state = (wifi && wifi.wifi && wifi.wifi.state) || {};
+                        const sys = SNW.Store.get().system || {};
+                        const uptimeSec = sys.uptimeMs ? Math.floor(sys.uptimeMs / 1000) : 0;
+                        const uptimeStr = uptimeSec > 3600
+                            ? `${Math.floor(uptimeSec / 3600)}h ${Math.floor((uptimeSec % 3600) / 60)}m`
+                            : `${Math.floor(uptimeSec / 60)}m ${uptimeSec % 60}s`;
+
+                        const setKV = (slot, val) => {
+                            const el = this.el.querySelector(`[data-slot="${slot}"]`);
+                            if (el) el.textContent = val;
+                        };
+
+                        // Version 5종
+                        setKV('sys-fw', (v && v.fw) || '-');
+                        setKV('sys-ctl', (v && v.control) || '-');
+                        setKV('sys-cfg', (v && v.config) || '-');
+                        setKV('sys-api', (v && v.api) || '-');
+                        setKV('sys-sim', (v && v.simul) || '-');
+
+                        // Device 4종
+                        setKV('sys-host', state.hostname || '-');
+                        setKV('sys-mac', state.mac || '-');
+                        setKV('sys-ip', state.ip || '-');
+                        setKV('sys-uptime', uptimeStr);
+
+                        // Storage 3종
+                        setKV('sys-heap', d && d.heap != null ? d.heap + ' B' : '-');
+                        setKV('sys-fs-used', d && d.fs_used != null ? d.fs_used + ' B' : '-');
+                        setKV('sys-fs-total', d && d.fs_total != null ? d.fs_total + ' B' : '-');
+                    } catch (e) { }
+
+                    // 온보딩 재실행
+                    const btnReplay = this.el.querySelector('[data-action="replay-onboarding"]');
+                    if (btnReplay) {
+                        btnReplay.onclick = () => {
+                            localStorage.removeItem('snw.onboarded');
+                            if (SNW.Onboarding && typeof SNW.Onboarding.start === 'function') {
+                                SNW.Onboarding.start();
+                            }
+                        };
+                    }
+                } catch (e) {
+                    SNW.ErrorHandler.handle(e, 'settings.load');
                 }
-
-                // [Stage 5 + m1 수정] 시스템 정보 로드 (완전 흡수)
-                try {
-                    const [v, d, wifi] = await Promise.all([
-                        SNW.Api.version ? SNW.Api.version().catch(() => null) : null,
-                        SNW.Api.diag ? SNW.Api.diag().catch(() => null) : null,
-                        SNW.Api.getWifiState ? SNW.Api.getWifiState().catch(() => null) : null,
-                    ]);
-                    const state = (wifi && wifi.wifi && wifi.wifi.state) || {};
-                    const sys = SNW.Store.get().system || {};
-                    const uptimeSec = sys.uptimeMs ? Math.floor(sys.uptimeMs / 1000) : 0;
-                    const uptimeStr = uptimeSec > 3600
-                        ? `${Math.floor(uptimeSec / 3600)}h ${Math.floor((uptimeSec % 3600) / 60)}m`
-                        : `${Math.floor(uptimeSec / 60)}m ${uptimeSec % 60}s`;
-
-                    const setKV = (slot, val) => {
-                        const el = this.el.querySelector(`[data-slot="${slot}"]`);
-                        if (el) el.textContent = val;
-                    };
-
-                    // Version 5종
-                    setKV('sys-fw',  (v && v.fw)      || '-');
-                    setKV('sys-ctl', (v && v.control) || '-');
-                    setKV('sys-cfg', (v && v.config)  || '-');
-                    setKV('sys-api', (v && v.api)     || '-');
-                    setKV('sys-sim', (v && v.simul)   || '-');
-
-                    // Device 4종
-                    setKV('sys-host', state.hostname || '-');
-                    setKV('sys-mac',  state.mac      || '-');
-                    setKV('sys-ip',   state.ip       || '-');
-                    setKV('sys-uptime', uptimeStr);
-
-                    // Storage 3종
-                    setKV('sys-heap', d && d.heap != null ? d.heap + ' B' : '-');
-                    setKV('sys-fs-used',  d && d.fs_used  != null ? d.fs_used + ' B'  : '-');
-                    setKV('sys-fs-total', d && d.fs_total != null ? d.fs_total + ' B' : '-');
-                } catch (e) {}
-
-                // 온보딩 재실행
-                const btnReplay = this.el.querySelector('[data-action="replay-onboarding"]');
-                if (btnReplay) {
-                    btnReplay.onclick = () => {
-                        localStorage.removeItem('snw.onboarded');
-                        if (SNW.Onboarding && typeof SNW.Onboarding.start === 'function') {
-                            SNW.Onboarding.start();
-                        }
-                    };
-                }
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'settings.load');
             }
-        }
 
         // =========================================================
         // _onSave : 저장 (탭에 상관없이 모든 input 값을 수집)
         // =========================================================
         async _onSave() {
-            const q = sel => this.el.querySelector(sel);
+                const q = sel => this.el.querySelector(sel);
 
-            // [O-18] 범위 검증
-            const validations = [
-                { sel: '#hw-pwm-pin',     min: 0,    max: 48,    field: 'PWM Pin' },
-                { sel: '#hw-pwm-freq',    min: 1000, max: 80000, field: 'Frequency' },
-                { sel: '#hw-pwm-res',     min: 1,    max: 16,    field: 'Resolution' },
-                { sel: '#hw-led-pin',     min: 0,    max: 48,    field: 'LED Pin' },
-                { sel: '#hw-led-bright',  min: 0,    max: 255,   field: 'Brightness' },
-                { sel: '#hw-led-num',     min: 1,    max: 16,    field: 'Num Pixels' },
-                { sel: '#hw-pir-hold',    min: 0,    max: 3600,  field: 'PIR Hold' },
-                { sel: '#hw-dht-int',     min: 1,    max: 3600,  field: 'DHT Interval' }
-            ];
-            let hasError = false;
-            validations.forEach(v => {
-                const el = q(v.sel);
-                if (!el) return;
-                const val = Number(el.value);
-                if (isNaN(val) || val < v.min || val > v.max) {
-                    el.classList.add('is-error');
-                    hasError = true;
-                } else {
-                    el.classList.remove('is-error');
-                }
-            });
-            if (hasError) {
-                SNW.ToastUtil.error(SNW.I18n.t('validate.multiErrors', { count: validations.length }));
-                const firstErr = this.el.querySelector('.is-error');
-                if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                return;
-            }
-
-            // 보안 (API Key) 처리
-            const apiKeyVal      = q('#api-key')         ? q('#api-key').value.trim()      : '';
-            const geminiKeyVal   = q('#gemini-key')      ? q('#gemini-key').value.trim()   : '';
-            const clearApiKey    = q('#clear-api-key')   ? q('#clear-api-key').checked     : false;
-            const clearGeminiKey = q('#clear-gemini-key')? q('#clear-gemini-key').checked  : false;
-
-            const securityPatch = {};
-            if (clearApiKey)              securityPatch.clearApiKey = true;
-            else if (apiKeyVal.length)    securityPatch.apiKey = apiKeyVal;
-            if (clearGeminiKey)           securityPatch.clearGeminiApiKey = true;
-            else if (geminiKeyVal.length) securityPatch.geminiApiKey = geminiKeyVal;
-
-            // WS 채널 처리
-            const wsChArr = [];
-            const seenIdx = new Set();
-            this.el.querySelectorAll('[data-ws-itv]').forEach(el => {
-                const idx    = Number(el.getAttribute('data-ws-itv'));
-                const prioEl = q(`[data-ws-prio="${idx}"]`);
-                const base   = this._wsChBaseline.find(b => b.chIdx === idx) || { chName: 'ch' + idx };
-                seenIdx.add(idx);
-                wsChArr.push({
-                    chIdx:        idx,
-                    chName:       base.chName || ('ch' + idx),
-                    chIntervalMs: Number(el.value) || 0,
-                    priority:     prioEl ? Number(prioEl.value) : 0
+                // [O-18] 범위 검증
+                const validations = [
+                    { sel: '#hw-pwm-pin', min: 0, max: 48, field: 'PWM Pin' },
+                    { sel: '#hw-pwm-freq', min: 1000, max: 80000, field: 'Frequency' },
+                    { sel: '#hw-pwm-res', min: 1, max: 16, field: 'Resolution' },
+                    { sel: '#hw-led-pin', min: 0, max: 48, field: 'LED Pin' },
+                    { sel: '#hw-led-bright', min: 0, max: 255, field: 'Brightness' },
+                    { sel: '#hw-led-num', min: 1, max: 16, field: 'Num Pixels' },
+                    { sel: '#hw-dht-int', min: 1, max: 3600, field: 'DHT Interval' }
+                ];
+                let hasError = false;
+                validations.forEach(v => {
+                    const el = q(v.sel);
+                    if (!el) return;
+                    const val = Number(el.value);
+                    if (isNaN(val) || val < v.min || val > v.max) {
+                        el.classList.add('is-error');
+                        hasError = true;
+                    } else {
+                        el.classList.remove('is-error');
+                    }
                 });
-            });
-            this._wsChBaseline.forEach(b => {
-                if (!seenIdx.has(b.chIdx)) {
-                    wsChArr.push({ chIdx: b.chIdx, chName: b.chName, chIntervalMs: 1000, priority: 0 });
+                if (hasError) {
+                    SNW.ToastUtil.error(SNW.I18n.t('validate.multiErrors', { count: validations.length }));
+                    const firstErr = this.el.querySelector('.is-error');
+                    if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
                 }
-            });
-            wsChArr.sort((a, b) => a.chIdx - b.chIdx);
 
-            // [Stage 10] 인터페이스 모드 저장 (FE 로컬스토리지)
-            const uiLevelEl = q('#ui-level');
-            if (uiLevelEl && uiLevelEl.value !== SNW.LevelUtil.current()) {
-                try {
-                    localStorage.setItem((SNW.CFG && SNW.CFG.LS_KEY && SNW.CFG.LS_KEY.LEVEL) || 'snw.level', uiLevelEl.value);
-                    SNW.ToastUtil.info(SNW.I18n.t('settings.uiLevelSaved'));
-                    setTimeout(() => location.reload(), 2500);
-                } catch (e) {
-                    SNW.LogUtil.warn('[Settings] UI level save failed', e);
+                // 보안 (API Key) 처리
+                const apiKeyVal = q('#api-key') ? q('#api-key').value.trim() : '';
+                const geminiKeyVal = q('#gemini-key') ? q('#gemini-key').value.trim() : '';
+                const clearApiKey = q('#clear-api-key') ? q('#clear-api-key').checked : false;
+                const clearGeminiKey = q('#clear-gemini-key') ? q('#clear-gemini-key').checked : false;
+
+                const securityPatch = {};
+                if (clearApiKey) securityPatch.clearApiKey = true;
+                else if (apiKeyVal.length) securityPatch.apiKey = apiKeyVal;
+                if (clearGeminiKey) securityPatch.clearGeminiApiKey = true;
+                else if (geminiKeyVal.length) securityPatch.geminiApiKey = geminiKeyVal;
+
+                // WS 채널 처리
+                const wsChArr = [];
+                const seenIdx = new Set();
+                this.el.querySelectorAll('[data-ws-itv]').forEach(el => {
+                    const idx = Number(el.getAttribute('data-ws-itv'));
+                    const prioEl = q(`[data-ws-prio="${idx}"]`);
+                    const base = this._wsChBaseline.find(b => b.chIdx === idx) || { chName: 'ch' + idx };
+                    seenIdx.add(idx);
+                    wsChArr.push({
+                        chIdx: idx,
+                        chName: base.chName || ('ch' + idx),
+                        chIntervalMs: Number(el.value) || 0,
+                        priority: prioEl ? Number(prioEl.value) : 0
+                    });
+                });
+                this._wsChBaseline.forEach(b => {
+                    if (!seenIdx.has(b.chIdx)) {
+                        wsChArr.push({ chIdx: b.chIdx, chName: b.chName, chIntervalMs: 1000, priority: 0 });
+                    }
+                });
+                wsChArr.sort((a, b) => a.chIdx - b.chIdx);
+
+                // [Stage 10] 인터페이스 모드 저장 (FE 로컬스토리지)
+                const uiLevelEl = q('#ui-level');
+                if (uiLevelEl && uiLevelEl.value !== SNW.LevelUtil.current()) {
+                    try {
+                        localStorage.setItem((SNW.CFG && SNW.CFG.LS_KEY && SNW.CFG.LS_KEY.LEVEL) || 'snw.level', uiLevelEl.value);
+                        SNW.ToastUtil.info(SNW.I18n.t('settings.uiLevelSaved'));
+                        setTimeout(() => location.reload(), 2500);
+                    } catch (e) {
+                        SNW.LogUtil.warn('[Settings] UI level save failed', e);
+                    }
                 }
-            }
 
-            // 페이로드 구성 (현재 활성 탭에 존재하는 DOM 요소만 안전하게 수집)
-            const patch = {};
-            const metaDevEl = q('#meta-deviceName');
-            if (metaDevEl) {
-                patch.meta = { deviceName: metaDevEl.value };
-            }
-
-            const logLvlEl = q('#log-level');
-            const logMaxEl = q('#log-maxEntries');
-            const wsLargeEl = q('#ws-chartLarge');
-            const wsThrottleEl = q('#ws-chartThrottle');
-            const wsCleanupEl = q('#ws-cleanup');
-            if (logLvlEl || logMaxEl || wsChArr.length || wsLargeEl || wsThrottleEl || wsCleanupEl) {
-                patch.system = {};
-                if (logLvlEl || logMaxEl) {
-                    patch.system.logging = {
-                        level:      logLvlEl ? logLvlEl.value : undefined,
-                        maxEntries: logMaxEl ? Number(logMaxEl.value) : undefined
-                    };
+                // 페이로드 구성 (현재 활성 탭에 존재하는 DOM 요소만 안전하게 수집)
+                const patch = {};
+                const metaDevEl = q('#meta-deviceName');
+                if (metaDevEl) {
+                    patch.meta = { deviceName: metaDevEl.value };
                 }
-                if (wsChArr.length || wsLargeEl || wsThrottleEl || wsCleanupEl) {
-                    patch.system.webSocket = {};
-                    if (wsChArr.length) patch.system.webSocket.wsChConfig = wsChArr;
-                    if (wsLargeEl || wsThrottleEl || wsCleanupEl) {
-                        patch.system.webSocket.wsEtcConfig = {
-                            chartLargeBytes:  wsLargeEl ? Number(wsLargeEl.value) : undefined,
-                            chartThrottleMul: wsThrottleEl ? Number(wsThrottleEl.value) : undefined,
-                            wsCleanupMs:      wsCleanupEl ? Number(wsCleanupEl.value) : undefined
+
+                const logLvlEl = q('#log-level');
+                const logMaxEl = q('#log-maxEntries');
+                const wsLargeEl = q('#ws-chartLarge');
+                const wsThrottleEl = q('#ws-chartThrottle');
+                const wsCleanupEl = q('#ws-cleanup');
+                if (logLvlEl || logMaxEl || wsChArr.length || wsLargeEl || wsThrottleEl || wsCleanupEl) {
+                    patch.system = {};
+                    if (logLvlEl || logMaxEl) {
+                        patch.system.logging = {
+                            level: logLvlEl ? logLvlEl.value : undefined,
+                            maxEntries: logMaxEl ? Number(logMaxEl.value) : undefined
+                        };
+                    }
+                    if (wsChArr.length || wsLargeEl || wsThrottleEl || wsCleanupEl) {
+                        patch.system.webSocket = {};
+                        if (wsChArr.length) patch.system.webSocket.wsChConfig = wsChArr;
+                        if (wsLargeEl || wsThrottleEl || wsCleanupEl) {
+                            patch.system.webSocket.wsEtcConfig = {
+                                chartLargeBytes: wsLargeEl ? Number(wsLargeEl.value) : undefined,
+                                chartThrottleMul: wsThrottleEl ? Number(wsThrottleEl.value) : undefined,
+                                wsCleanupMs: wsCleanupEl ? Number(wsCleanupEl.value) : undefined
+                            };
+                        }
+                    }
+                }
+
+                if (securityPatch && Object.keys(securityPatch).length) {
+                    patch.security = securityPatch;
+                }
+
+                const pwmPinEl = q('#hw-pwm-pin');
+                const fanStartEl = q('#hw-fan-start');
+                const pirPinEl = q('#hw-pir-pin');
+                if (pwmPinEl || fanStartEl || pirPinEl) {
+                    patch.hw = {};
+                    if (pwmPinEl) {
+                        patch.hw.fanPwm = {
+                            pin: Number(pwmPinEl.value),
+                            channel: Number(q('#hw-pwm-ch')?.value || 0),
+                            freq: Number(q('#hw-pwm-freq')?.value || 0),
+                            res: Number(q('#hw-pwm-res')?.value || 0)
+                        };
+                    }
+                    if (fanStartEl) {
+                        patch.hw.fanConfig = {
+                            startPercentMin: Number(fanStartEl.value),
+                            comfortPercentMin: Number(q('#hw-fan-cmin')?.value || 0),
+                            comfortPercentMax: Number(q('#hw-fan-cmax')?.value || 0),
+                            hardPercentMax: Number(q('#hw-fan-hmax')?.value || 0)
+                        };
+                    }
+                    if (pirPinEl) {
+                        patch.hw.pir = {
+                            enabled: !!q('#hw-pir-enabled')?.checked,
+                            pin: Number(pirPinEl.value),
+                        debounceSec: Number(q('#hw-pir-debounce')?.value || 0)
+                        };
+                    }
+                    const dhtPinEl = q('#hw-dht-pin');
+                    if (dhtPinEl) {
+                        patch.hw.tempHum = {
+                            enabled: !!q('#hw-dht-enabled')?.checked,
+                            type: q('#hw-dht-type')?.value || 'DHT22',
+                            pin: Number(dhtPinEl.value),
+                            intervalSec: Number(q('#hw-dht-int')?.value || 5)
+                        };
+                    }
+                    const ledPinEl = q('#hw-led-pin');
+                    if (ledPinEl) {
+                        patch.hw.led = {
+                            pin: Number(ledPinEl.value),
+                            numPixels: Number(q('#hw-led-num')?.value || 1),
+                            defaultBrightness: Number(q('#hw-led-bright')?.value || 0)
                         };
                     }
                 }
-            }
 
-            if (securityPatch && Object.keys(securityPatch).length) {
-                patch.security = securityPatch;
-            }
+                try {
+                    await SNW.Api.patchSystem(patch);
+                    await SNW.Api.saveConfig();
 
-            const pwmPinEl = q('#hw-pwm-pin');
-            const fanStartEl = q('#hw-fan-start');
-            const pirPinEl = q('#hw-pir-pin');
-            if (pwmPinEl || fanStartEl || pirPinEl) {
-                patch.hw = {};
-                if (pwmPinEl) {
-                    patch.hw.fanPwm = {
-                        pin:     Number(pwmPinEl.value),
-                        channel: Number(q('#hw-pwm-ch')?.value || 0),
-                        freq:    Number(q('#hw-pwm-freq')?.value || 0),
-                        res:     Number(q('#hw-pwm-res')?.value || 0)
-                    };
-                }
-                if (fanStartEl) {
-                    patch.hw.fanConfig = {
-                        startPercentMin:   Number(fanStartEl.value),
-                        comfortPercentMin: Number(q('#hw-fan-cmin')?.value || 0),
-                        comfortPercentMax: Number(q('#hw-fan-cmax')?.value || 0),
-                        hardPercentMax:    Number(q('#hw-fan-hmax')?.value || 0)
-                    };
-                }
-                if (pirPinEl) {
-                    patch.hw.pir = {
-                        enabled:     !!q('#hw-pir-enabled')?.checked,
-                        pin:         Number(pirPinEl.value),
-                        debounceSec: Number(q('#hw-pir-debounce')?.value || 0),
-                        holdSec:     Number(q('#hw-pir-hold')?.value || 0)
-                    };
-                }
-                const dhtPinEl = q('#hw-dht-pin');
-                if (dhtPinEl) {
-                    patch.hw.tempHum = {
-                        enabled:     !!q('#hw-dht-enabled')?.checked,
-                        type:        q('#hw-dht-type')?.value || 'DHT22',
-                        pin:         Number(dhtPinEl.value),
-                        intervalSec: Number(q('#hw-dht-int')?.value || 5)
-                    };
-                }
-                const ledPinEl = q('#hw-led-pin');
-                if (ledPinEl) {
-                    patch.hw.led = {
-                        pin:               Number(ledPinEl.value),
-                        numPixels:         Number(q('#hw-led-num')?.value || 1),
-                        defaultBrightness: Number(q('#hw-led-bright')?.value || 0)
-                    };
+                    const autoReload = q('#save-and-reload') ? q('#save-and-reload').checked : false;
+                    if (autoReload && !window.SNW_OFFLINE) {
+                        await SNW.Api.reload();
+                        SNW.ToastUtil.success(SNW.I18n.t('msg.saveAndReloadSuccess'));
+                    } else {
+                        SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
+                    }
+
+                    await this._loadSystem();
+                } catch (e) {
+                    SNW.ErrorHandler.handle(e, 'settings.save');
                 }
             }
-
-            try {
-                await SNW.Api.patchSystem(patch);
-                await SNW.Api.saveConfig();
-
-                const autoReload = q('#save-and-reload') ? q('#save-and-reload').checked : false;
-                if (autoReload && !window.SNW_OFFLINE) {
-                    await SNW.Api.reload();
-                    SNW.ToastUtil.success(SNW.I18n.t('msg.saveAndReloadSuccess'));
-                } else {
-                    SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
-                }
-
-                await this._loadSystem();
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'settings.save');
-            }
-        }
 
         // =========================================================
         // _onReload : 재적용 (dirty 경고 포함)
         // =========================================================
         async _onReload() {
-            try {
-                const dirty = await SNW.Api.getConfigDirty().catch(() => null);
-                const hasDirty = dirty && Object.values(dirty).some(v => v === true);
-                if (hasDirty) {
-                    const content = document.createElement('div');
-                    content.textContent = SNW.I18n.t('settings.dirtyWarning');
-                    content.style.cssText = 'padding: 8px 0; color: var(--snw-warn);';
-                    SNW.UI.modal(
-                        SNW.I18n.t('common.warning'),
-                        content,
-                        () => { this._doReload(); return true; },
-                        null
-                    );
-                    return;
+                try {
+                    const dirty = await SNW.Api.getConfigDirty().catch(() => null);
+                    const hasDirty = dirty && Object.values(dirty).some(v => v === true);
+                    if (hasDirty) {
+                        const content = document.createElement('div');
+                        content.textContent = SNW.I18n.t('settings.dirtyWarning');
+                        content.style.cssText = 'padding: 8px 0; color: var(--snw-warn);';
+                        SNW.UI.modal(
+                            SNW.I18n.t('common.warning'),
+                            content,
+                            () => { this._doReload(); return true; },
+                            null
+                        );
+                        return;
+                    }
+                    await this._doReload();
+                } catch (e) {
+                    SNW.ErrorHandler.handle(e, 'settings.reload');
                 }
-                await this._doReload();
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'settings.reload');
             }
-        }
 
         async _doReload() {
-            if (window.SNW_OFFLINE) {
-                SNW.ToastUtil.info(SNW.I18n.t('settings.offlineReloadNotice'));
-                return;
+                if (window.SNW_OFFLINE) {
+                    SNW.ToastUtil.info(SNW.I18n.t('settings.offlineReloadNotice'));
+                    return;
+                }
+                try {
+                    const res = await SNW.Api.reload();
+                    SNW.ToastUtil.success(SNW.I18n.t('settings.reloadRequested', { status: (res && res.result) || 'queued' }));
+                    setTimeout(async () => {
+                        try {
+                            const st = await SNW.Api.getState();
+                            const ctl = (st && st.control) || {};
+                            if (ctl.pendingReload === true) {
+                                SNW.ToastUtil.info(SNW.I18n.t('settings.reloadInProgress'));
+                            } else if (ctl.lastReloadOk === false) {
+                                SNW.ToastUtil.error(SNW.I18n.t('settings.reloadFailed'));
+                            } else {
+                                SNW.ToastUtil.success(SNW.I18n.t('settings.reloadComplete'));
+                            }
+                        } catch { /* ignore */ }
+                    }, 2000);
+                } catch (e) {
+                    SNW.ErrorHandler.handle(e, 'settings.reload');
+                }
             }
-            try {
-                const res = await SNW.Api.reload();
-                SNW.ToastUtil.success(SNW.I18n.t('settings.reloadRequested', { status: (res && res.result) || 'queued' }));
-                setTimeout(async () => {
-                    try {
-                        const st = await SNW.Api.getState();
-                        const ctl = (st && st.control) || {};
-                        if (ctl.pendingReload === true) {
-                            SNW.ToastUtil.info(SNW.I18n.t('settings.reloadInProgress'));
-                        } else if (ctl.lastReloadOk === false) {
-                            SNW.ToastUtil.error(SNW.I18n.t('settings.reloadFailed'));
-                        } else {
-                            SNW.ToastUtil.success(SNW.I18n.t('settings.reloadComplete'));
-                        }
-                    } catch { /* ignore */ }
-                }, 2000);
-            } catch (e) {
-                SNW.ErrorHandler.handle(e, 'settings.reload');
-            }
-        }
 
         // =========================================================
         // _onTestApi : 저장된 API Key로 테스트
         // =========================================================
         async _onTestApi() {
-            try {
-                await SNW.Api.getState();
-                SNW.ToastUtil.success(SNW.I18n.t('settings.testApiSuccess'));
-            } catch (e) {
-                SNW.ToastUtil.error(SNW.I18n.t('settings.testApiFail', { msg: e.message || 'HTTP 401' }));
+                try {
+                    await SNW.Api.getState();
+                    SNW.ToastUtil.success(SNW.I18n.t('settings.testApiSuccess'));
+                } catch (e) {
+                    SNW.ToastUtil.error(SNW.I18n.t('settings.testApiFail', { msg: e.message || 'HTTP 401' }));
+                }
             }
-        }
 
         // =========================================================
         // _onFactoryReset : 공장 초기화 (확인 단어 입력)
         // =========================================================
         async _onFactoryReset() {
-            const content = document.createElement('div');
-            content.innerHTML = `
+                const content = document.createElement('div');
+                content.innerHTML = `
                 <p style="color:var(--snw-error); margin-bottom:12px;">
                     <strong>${SNW.I18n.t('settings.factoryResetItems')}</strong>
                 </p>
@@ -716,26 +717,26 @@ SNW.Page = SNW.Page || {};
                        style="width:100%; padding:8px; background:var(--snw-surface-2); border:1px solid var(--snw-border); color:var(--snw-text);">
             `;
 
-            SNW.UI.modal(
-                SNW.I18n.t('settings.factoryResetTitle'),
-                content,
-                async () => {
-                    const word = content.querySelector('#confirm-word').value.trim();
-                    if (word !== SNW.I18n.t('settings.factoryResetWord')) {
-                        SNW.ToastUtil.warn(SNW.I18n.t('settings.factoryResetConfirmWord'));
-                        return false;
-                    }
-                    try {
-                        await SNW.Api.factoryReset();
-                        SNW.ToastUtil.success(SNW.I18n.t('settings.factoryResetSuccess'), 8000);
-                        return true;
-                    } catch (e) {
-                        return false;
-                    }
-                },
-                null,
-                { okLabel: SNW.I18n.t('settings.factoryReset'), width: '440px' }
-            );
-        }
-    };
-})(window.SNW);
+                SNW.UI.modal(
+                    SNW.I18n.t('settings.factoryResetTitle'),
+                    content,
+                    async () => {
+                        const word = content.querySelector('#confirm-word').value.trim();
+                        if (word !== SNW.I18n.t('settings.factoryResetWord')) {
+                            SNW.ToastUtil.warn(SNW.I18n.t('settings.factoryResetConfirmWord'));
+                            return false;
+                        }
+                        try {
+                            await SNW.Api.factoryReset();
+                            SNW.ToastUtil.success(SNW.I18n.t('settings.factoryResetSuccess'), 8000);
+                            return true;
+                        } catch (e) {
+                            return false;
+                        }
+                    },
+                    null,
+                    { okLabel: SNW.I18n.t('settings.factoryReset'), width: '440px' }
+                );
+            }
+        };
+    }) (window.SNW);

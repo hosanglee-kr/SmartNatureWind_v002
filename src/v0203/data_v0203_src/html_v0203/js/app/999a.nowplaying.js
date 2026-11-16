@@ -399,6 +399,23 @@ window.SNW = window.SNW || {};
         const leftEl = $('[data-action="expand"]', barEl.root);
         if (leftEl) leftEl.addEventListener('click', onExpand);
 
+        // 모바일 한 손 스와이프 제스처 (좌: 일시정지/재개, 우: 즉시 정지)
+        let touchStartX = 0;
+        barEl.root.addEventListener('touchstart', (e) => {
+            if (e.touches && e.touches[0]) touchStartX = e.touches[0].clientX;
+        }, { passive: true });
+        barEl.root.addEventListener('touchend', (e) => {
+            if (!e.changedTouches || !e.changedTouches[0]) return;
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            if (dx > 70) {
+                if (SNW.Haptic) SNW.Haptic.stop();
+                onStop();
+            } else if (dx < -70) {
+                if (SNW.Haptic) SNW.Haptic.snap();
+                onPauseOrResume();
+            }
+        }, { passive: true });
+
         // Store 구독
         if (SNW.Store && typeof SNW.Store.subscribe === 'function') {
             SNW.Store.subscribe(() => render());
@@ -475,6 +492,21 @@ window.SNW = window.SNW || {};
                 <button type="button" class="snw-btn snw-btn--full" id="np-btn-timer-link" style="justify-content:center;background:${timerActive ? 'rgba(78,168,222,0.15)' : 'var(--snw-surface-2,#12161c)'};border:1px solid ${timerActive ? 'var(--snw-info,#4ea8de)' : 'var(--snw-border,#2f3844)'};color:${timerActive ? 'var(--snw-info,#4ea8de)' : 'var(--snw-text,#e6edf3)'};">
                     ${timerText} ➔
                 </button>
+
+                <button type="button" class="snw-btn snw-btn--full" id="np-btn-rule-link" style="justify-content:center;background:var(--snw-surface-2,#12161c);border:1px solid var(--snw-border,#2f3844);color:var(--snw-text,#e6edf3);">
+                    ⚙ 규칙 보기 ➔
+                </button>
+
+                ${(typeName === 'AUTO_FULL' || type === 4) ? `
+                <div style="display:flex;gap:8px;">
+                    <button type="button" class="snw-btn" id="np-btn-comfort-info" style="flex:1;">✨ 쾌적 분석 보기</button>
+                    <button type="button" class="snw-btn" id="np-btn-manual-switch" style="flex:1;">🎨 수동 전환</button>
+                </div>` : ''}
+
+                ${(typeName === 'AUTO_SELECT' || type === 5) ? `
+                <button type="button" class="snw-btn snw-btn--full" id="np-btn-select-switch" style="justify-content:center;">
+                    🎯 맞춤 세기 자동/수동 전환
+                </button>` : ''}
             </div>
         `;
 
@@ -512,6 +544,46 @@ window.SNW = window.SNW || {};
             timerBtn.onclick = () => {
                 if (modalRef && typeof modalRef.close === 'function') modalRef.close();
                 location.hash = '/automation/timer';
+            };
+        }
+
+        const ruleBtn = content.querySelector('#np-btn-rule-link');
+        if (ruleBtn) {
+            ruleBtn.onclick = async () => {
+                if (modalRef && typeof modalRef.close === 'function') modalRef.close();
+                if (SNW.UI && SNW.UI.ruleEditor) {
+                    const st = SNW.Store ? SNW.Store.get() : {};
+                    const curRule = (st.control && st.control.session && st.control.session.rule) || s.rule || {};
+                    await SNW.UI.ruleEditor.showModal(curRule, { allowApplySession: true });
+                }
+            };
+        }
+
+        const btnComfort = content.querySelector('#np-btn-comfort-info');
+        if (btnComfort) {
+            btnComfort.onclick = () => {
+                if (modalRef && typeof modalRef.close === 'function') modalRef.close();
+                location.hash = '/home/env';
+            };
+        }
+
+        const btnManualSwitch = content.querySelector('#np-btn-manual-switch');
+        if (btnManualSwitch) {
+            btnManualSwitch.onclick = async () => {
+                if (modalRef && typeof modalRef.close === 'function') modalRef.close();
+                const sim = (SNW.Store && SNW.Store.get().sim) || {};
+                await SNW.Api.startPreset(sim.presetCode || 'OCEAN', sim.styleCode || 'BALANCE');
+                if (SNW.ToastUtil) SNW.ToastUtil.info('수동 제어로 전환되었습니다');
+            };
+        }
+
+        const btnSelectSwitch = content.querySelector('#np-btn-select-switch');
+        if (btnSelectSwitch) {
+            btnSelectSwitch.onclick = async () => {
+                if (modalRef && typeof modalRef.close === 'function') modalRef.close();
+                const sim = (SNW.Store && SNW.Store.get().sim) || {};
+                await SNW.Api.startPreset(sim.presetCode || 'OCEAN', sim.styleCode || 'BALANCE');
+                if (SNW.ToastUtil) SNW.ToastUtil.info('수동 세기 제어로 전환되었습니다');
             };
         }
     }

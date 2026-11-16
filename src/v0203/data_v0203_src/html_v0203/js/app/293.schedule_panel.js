@@ -386,8 +386,9 @@ window.SNW = window.SNW || {};
                                 styleCode: selStyle,
                                 override: { enabled: false }
                             }],
-                            autoOff: { timer: { enabled: false }, offTime: { enabled: false }, offTemp: { enabled: false } },
-                            motion: { pir: { enabled: false } }
+                            rule: (SNW.UI && SNW.UI.ruleEditor)
+                                ? JSON.parse(JSON.stringify(SNW.UI.ruleEditor.DEFAULT_RULE))
+                                : {}
                         };
                         try {
                             if (SNW.Api && typeof SNW.Api.addProfile === 'function') {

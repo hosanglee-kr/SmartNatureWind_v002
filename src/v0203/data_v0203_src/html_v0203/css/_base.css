@@ -156,9 +156,9 @@ a {
     --snw-np-h: 48px;
 
     /* [v0203-UI] 하단 뷰포트 레이아웃 스택 (기본: Now Playing 숨김) */
-    --snw-fab-bottom: 76px;
-    --snw-toast-bottom: 76px;
-    --snw-content-pb: 80px;
+    --snw-fab-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    --snw-toast-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    --snw-content-pb: calc(80px + env(safe-area-inset-bottom, 0px));
 
     /* 그림자 */
     --snw-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -189,14 +189,14 @@ a {
 
 /* [v0203-UI] Now Playing Bar 활성화 시 동적 부상 레이아웃 */
 body.has-nowplaying {
-    --snw-fab-bottom: 124px;
+    --snw-fab-bottom: calc(124px + env(safe-area-inset-bottom, 0px));
     /* 60px(BottomNav) + 48px(NP) + 16px */
-    --snw-toast-bottom: 124px;
-    --snw-content-pb: 128px;
+    --snw-toast-bottom: calc(124px + env(safe-area-inset-bottom, 0px));
+    --snw-content-pb: calc(128px + env(safe-area-inset-bottom, 0px));
 }
 
 /* [v0203-UI] 데스크톱 (Bottom Nav 없음) 레이아웃 스택 */
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
     :root {
         --snw-fab-bottom: 24px;
         --snw-toast-bottom: 24px;

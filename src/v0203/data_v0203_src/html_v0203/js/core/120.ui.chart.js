@@ -30,7 +30,7 @@ window.SNW = window.SNW || {};
             yMax = null
         } = opts || {};
 
-        if (!root) return { push: () => {}, clear: () => {}, setMaxPoints: () => {}, destroy: () => {} };
+        if (!root) return { push: () => { }, clear: () => { }, setMaxPoints: () => { }, destroy: () => { } };
 
         root.innerHTML = '';
         const canvas = document.createElement('canvas');
@@ -40,7 +40,7 @@ window.SNW = window.SNW || {};
 
         // DPR 대응
         let dpr = window.devicePixelRatio || 1;
-        let cw  = 0, ch = 0;
+        let cw = 0, ch = 0;
 
         const buffers = {};
         series.forEach(s => { buffers[s.key] = []; });
@@ -49,11 +49,11 @@ window.SNW = window.SNW || {};
 
         function resize() {
             const rect = root.getBoundingClientRect();
-            cw = Math.max(200, Math.floor(rect.width  || root.clientWidth  || 800));
-            ch = Math.max(80,  Math.floor(rect.height || root.clientHeight || 200));
-            canvas.width  = Math.floor(cw * dpr);
+            cw = Math.max(200, Math.floor(rect.width || root.clientWidth || 800));
+            ch = Math.max(80, Math.floor(rect.height || root.clientHeight || 200));
+            canvas.width = Math.floor(cw * dpr);
             canvas.height = Math.floor(ch * dpr);
-            canvas.style.width  = cw + 'px';
+            canvas.style.width = cw + 'px';
             canvas.style.height = ch + 'px';
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             draw();
@@ -62,7 +62,7 @@ window.SNW = window.SNW || {};
         function push(point) {
             series.forEach(s => {
                 const arr = buffers[s.key];
-                const v   = (point && point[s.key]);
+                const v = (point && point[s.key]);
                 arr.push({ x: (point && point.t) || Date.now(), y: v });
                 if (arr.length > curMaxPoints) arr.shift();
             });
@@ -77,61 +77,127 @@ window.SNW = window.SNW || {};
         function _drawSeries(arr, color) {
             if (arr.length < 2) return;
             ctx.strokeStyle = color;
-            ctx.lineWidth   = 2;
-            ctx.lineJoin    = 'round';
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'round';
             ctx.beginPath();
             for (let i = 0; i < arr.length; i++) {
                 const p = arr[i];
                 const x = (i / (curMaxPoints - 1)) * cw;
                 const y = ch - p.py;
                 if (i === 0) ctx.moveTo(x, y);
-                else         ctx.lineTo(x, y);
+                else ctx.lineTo(x, y);
             }
             ctx.stroke();
         }
 
+        let hoverIdx = -1;
+        let gustExpanded = false;
+
+        function updateHover(clientX) {
+            const rect = canvas.getBoundingClientRect();
+            if (!rect.width) return;
+            const relX = Math.max(0, Math.min(rect.width, clientX - rect.left));
+            hoverIdx = Math.round((relX / rect.width) * (curMaxPoints - 1));
+            draw();
+        }
+        canvas.addEventListener('pointermove', (e) => updateHover(e.clientX));
+        canvas.addEventListener('pointerdown', (e) => updateHover(e.clientX));
+        canvas.addEventListener('pointerleave', () => { hoverIdx = -1; draw(); });
+
         function draw() {
             ctx.clearRect(0, 0, cw, ch);
 
-            // 범위 계산 (모든 시리즈 통합)
-            let dataMin = Infinity, dataMax = -Infinity;
-            series.forEach(s => {
-                buffers[s.key].forEach(p => {
-                    if (!Number.isFinite(p.y)) return;
-                    if (p.y < dataMin) dataMin = p.y;
-                    if (p.y > dataMax) dataMax = p.y;
+            // 돌풍(>8.0 m/s) 감지 시 12.0 m/s 계단 확장, 기본 0.0~8.0 m/s 고정
+            let maxWindVal = 0;
+            ['windSpeed', 'targetWind'].forEach(k => {
+                (buffers[k] || []).forEach(p => {
+                    if (Number.isFinite(p.y) && p.y > maxWindVal) maxWindVal = p.y;
                 });
             });
-            if (yMin != null) dataMin = yMin;
-            if (yMax != null) dataMax = yMax;
-            if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) return;
-            if (dataMax <= dataMin) dataMax = dataMin + 1;
+            if (maxWindVal > 8.0) gustExpanded = true;
+            const windMin = (yMin != null) ? yMin : 0.0;
+            const windMax = (yMax != null) ? yMax : (gustExpanded ? 12.0 : 8.0);
 
-            const pad = 6;
-            const yRange = dataMax - dataMin;
-            const innerH = ch - pad * 2;
+            const padL = 32, padR = 36, padY = 10;
+            const innerW = Math.max(40, cw - padL - padR);
+            const innerH = Math.max(40, ch - padY * 2);
+            const yRange = Math.max(1, windMax - windMin);
 
-            // Y축 그리드 (5줄)
-            ctx.strokeStyle = 'rgba(139,148,158,0.15)';
-            ctx.lineWidth = 1;
-            for (let i = 0; i <= 4; i++) {
-                const y = pad + (innerH / 4) * i;
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(cw, y);
-                ctx.stroke();
+            // 좌측 Y축 정량 눈금(2.0 m/s 단위) & 우측 PWM(0~100%) 라벨
+            ctx.font = '10px monospace';
+            ctx.fillStyle = '#8b949e';
+            const stepUnit = 2.0;
+            for (let v = windMin; v <= windMax + 0.01; v += stepUnit) {
+                const ratio = (v - windMin) / yRange;
+                const y = padY + innerH - ratio * innerH;
+                ctx.strokeStyle = 'rgba(139,148,158,0.14)';
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + innerW, y); ctx.stroke();
+
+                ctx.textAlign = 'right';
+                ctx.fillText(v.toFixed(1), padL - 4, y + 3);
+
+                ctx.textAlign = 'left';
+                ctx.fillText(Math.round(ratio * 100) + '%', padL + innerW + 4, y + 3);
             }
 
-            // 각 시리즈 픽셀 좌표 미리 계산
-            series.forEach(s => {
-                buffers[s.key].forEach(p => {
-                    if (!Number.isFinite(p.y)) { p.py = 0; return; }
-                    p.py = pad + ((p.y - dataMin) / yRange) * innerH;
-                });
+            // 3대 기준 보조선 (2.0 / 5.0 / 7.0 m/s)
+            [
+                { v: 2.0, color: 'rgba(45,212,191,0.45)' },
+                { v: 5.0, color: 'rgba(63,185,80,0.45)' },
+                { v: 7.0, color: 'rgba(240,136,62,0.55)' }
+            ].forEach(ref => {
+                if (ref.v > windMax) return;
+                const y = padY + innerH - ((ref.v - windMin) / yRange) * innerH;
+                ctx.save();
+                ctx.strokeStyle = ref.color;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + innerW, y); ctx.stroke();
+                ctx.restore();
             });
 
-            // 라인 렌더
-            series.forEach(s => _drawSeries(buffers[s.key], s.color));
+            // 시리즈별 축 분리 렌더링 (pwmDuty: 우측 0~100%, 풍속: 좌측 windMin~windMax)
+            series.forEach(s => {
+                const isPwm = (s.key === 'pwmDuty');
+                const arr = buffers[s.key] || [];
+                if (arr.length < 2) return;
+                ctx.strokeStyle = s.color;
+                ctx.lineWidth = 2;
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                arr.forEach((p, i) => {
+                    const val = Number.isFinite(p.y) ? p.y : 0;
+                    const ratio = isPwm ? (val / 100) : ((val - windMin) / yRange);
+                    const x = padL + (i / (curMaxPoints - 1)) * innerW;
+                    const y = padY + innerH - Math.max(0, Math.min(1, ratio)) * innerH;
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+            });
+
+            // 모바일/데스크톱 터치 십자선 (Crosshair Tooltip)
+            const wArr = buffers.windSpeed || [];
+            if (hoverIdx >= 0 && hoverIdx < wArr.length) {
+                const x = padL + (hoverIdx / (curMaxPoints - 1)) * innerW;
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.setLineDash([2, 2]);
+                ctx.beginPath(); ctx.moveTo(x, padY); ctx.lineTo(x, padY + innerH); ctx.stroke();
+                ctx.restore();
+
+                const wVal = (wArr[hoverIdx]?.y ?? 0).toFixed(2);
+                const pVal = Math.round((buffers.pwmDuty?.[hoverIdx]?.y) ?? 0);
+                const label = `${wVal} m/s · PWM ${pVal}%`;
+                const boxW = 132, boxH = 22;
+                const bx = Math.min(padL + innerW - boxW, Math.max(padL, x - boxW / 2));
+                ctx.fillStyle = 'rgba(15,20,25,0.9)';
+                ctx.fillRect(bx, padY, boxW, boxH);
+                ctx.strokeStyle = '#4a9eff';
+                ctx.strokeRect(bx, padY, boxW, boxH);
+                ctx.fillStyle = '#e6edf3';
+                ctx.textAlign = 'center';
+                ctx.fillText(label, bx + boxW / 2, padY + 14);
+            }
         }
 
         // 리사이즈 옵저버 (없으면 window resize)

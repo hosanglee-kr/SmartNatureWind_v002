@@ -151,6 +151,18 @@ window.SNW = window.SNW || {};
         A.getState = async () => ({ control: runtime.control, sim: runtime.sim, runtime: runtime.runtime });
         A.getSim = async () => ({ sim: runtime.sim });
         A.getSimState = async () => ({ sim: runtime.sim, control: runtime.control });
+        A.getMonitor = async (type, range) => {
+            const now = Math.floor(Date.now() / 1000);
+            return {
+                data: [
+                    { t: now - 7200, new: 0 },
+                    { t: now - 5400, new: 2 },
+                    { t: now - 3600, new: 7 },
+                    { t: now - 2400, new: 2 },
+                    { t: now - 600, new: 0 }
+                ]
+            };
+        };
         A.getSystem = async () => cache.system;
         A.getMotion = async () => cache.motion;
         A.listSchedules = async () => cache.schedules;
@@ -296,6 +308,7 @@ window.SNW = window.SNW || {};
                 if (b.motion.timing) Object.assign(cache.motion.motion.timing, b.motion.timing);
                 if (b.motion.sim) Object.assign(cache.motion.motion.sim, b.motion.sim);
             }
+            persistCache('motion');
             return { updated: true };
         };
         A.patchSystem = async (b) => {
@@ -310,6 +323,7 @@ window.SNW = window.SNW || {};
             }
             if (b.security && cache.system) Object.assign(cache.system.security, b.security);
             if (b.timeCfg && cache.system) Object.assign(cache.system.timeCfg, b.timeCfg);
+            persistCache('system');
             return { updated: true };
         };
         A.patchWifi = async (b) => {
@@ -318,6 +332,7 @@ window.SNW = window.SNW || {};
                 if (b.wifi.ap) cache.wifi.wifi.ap = b.wifi.ap;
                 if (b.wifi.sta) cache.wifi.wifi.sta = b.wifi.sta;
             }
+            persistCache('wifi');
             return { updated: true };
         };
         A.saveConfig = async () => ({ result: 'saved' });
@@ -359,9 +374,9 @@ window.SNW = window.SNW || {};
                 trigger = triggerArg;
             }
             if (!trigger) {
-                if (type === 'AUTO_FULL')        trigger = 'MANUAL_AUTO_FULL';
+                if (type === 'AUTO_FULL') trigger = 'MANUAL_AUTO_FULL';
                 else if (type === 'AUTO_SELECT') trigger = 'MANUAL_AUTO_SELECT';
-                else                             trigger = 'MANUAL';
+                else trigger = 'MANUAL';
             }
 
             const isPlaylist = (type === 'PLAYLIST' || type === 1);
@@ -399,6 +414,17 @@ window.SNW = window.SNW || {};
             } else if (isAutoSelect) {
                 if (payload.baseType === 'PRESET') {
                     const pc = payload.presetCode || 'OCEAN';
+                    runtime.sim.presetCode = pc;
+                    runtime.sim.styleCode = 'BALANCE';
+                    const r = resolvePreset(pc, 'BALANCE');
+                    runtime.sim.intensity = r.intensity;
+                    runtime.sim.variability = r.variability;
+                    runtime.sim.gustFreq = r.gustFreq;
+                } else if (payload.baseType === 'PLAYLIST' && payload.profileId) {
+                    const profiles = (cache.userProfiles?.userProfiles?.profiles) || [];
+                    const prof = profiles.find(p => p.profileId === payload.profileId);
+                    const s0 = prof && prof.steps && prof.steps[0];
+                    const pc = (s0 && s0.presetCode) || 'OCEAN';
                     runtime.sim.presetCode = pc;
                     runtime.sim.styleCode = 'BALANCE';
                     const r = resolvePreset(pc, 'BALANCE');
@@ -1030,11 +1056,8 @@ window.SNW = window.SNW || {};
                 stopReason: 12,
                 active: false,
             },
-            
-        };
-        
-        runtime.control.stopReason = cfg.stopReason || 0;
 
+        };
 
         const cfg = scenarios[type] || scenarios.NATURAL;
 
@@ -1054,6 +1077,7 @@ window.SNW = window.SNW || {};
         runtime.control.active = cfg.active;
         runtime.control.state = cfg.state;
         runtime.control.stateCode = cfg.stateCode;
+        runtime.control.stopReason = cfg.stopReason || 0;
         if (cfg.reason) {
             runtime.control.reason = cfg.reason;
             runtime.control.reasonCode = cfg.reasonCode;
@@ -1062,11 +1086,11 @@ window.SNW = window.SNW || {};
             runtime.control.sensor.motionActive = cfg.motionActive;
         }
 
-        // ③ Store 브로드캐스트
+        // ③ Store 브로드캐스트 (참조 변경으로 watch('control') 트리거 보장)
         if (SNW.Store) {
             SNW.Store.set({
-                control: runtime.control,
-                sim: runtime.sim,
+                control: { ...runtime.control },
+                sim: { ...runtime.sim },
                 fsmState: runtime.control.stateCode,
                 fsmReason: runtime.control.reasonCode,
                 lastUpdateMs: Date.now(),
@@ -1207,7 +1231,7 @@ window.SNW = window.SNW || {};
 
     // 브라우저 DOM 준비 완료 시 번들 덮어쓰기 방어 및 L4 고정, 툴바 렌더링
     if (typeof window !== 'undefined') {
-        try { localStorage.setItem('snw.level', 'L4'); } catch (e) {}
+        try { localStorage.setItem('snw.level', 'L4'); } catch (e) { }
         window.addEventListener('DOMContentLoaded', () => {
             // ======================================================
             // [API 재정의 필수 시점 - 유일한 시점]

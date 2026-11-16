@@ -88,25 +88,20 @@
     font-size: 14px;
 }
 
-/* 프리셋 그리드: 8개 프리셋 4x2 대칭 배치 */
+/* 프리셋 그리드: 10개 프리셋 대칭 배치 (데스크톱 5×2, 모바일/태블릿 2×5) */
 @media (min-width: 1024px) {
-    .snw-card--preset .snw-preset-grid {
-        grid-template-columns: repeat(4, 1fr);
+    .snw-card--preset .snw-preset-grid,
+    .snw-preset-grid {
+        grid-template-columns: repeat(5, 1fr);
         gap: 10px;
     }
 }
 
-@media (min-width: 768px) and (max-width: 1023px) {
-    .snw-card--preset .snw-preset-grid {
-        grid-template-columns: repeat(4, 1fr);
+@media (max-width: 1023px) {
+    .snw-card--preset .snw-preset-grid,
+    .snw-preset-grid {
+        grid-template-columns: repeat(2, 1fr);
         gap: 8px;
-    }
-}
-
-@media (max-width: 767px) {
-    .snw-card--preset .snw-preset-grid {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
     }
 }
 

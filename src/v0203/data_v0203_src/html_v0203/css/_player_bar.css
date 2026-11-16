@@ -297,7 +297,10 @@
 }
 
 /* 데스크톱(하단 탭 바가 숨겨지는 화면 폭)에서는 바닥에 밀착 */
-@media (min-width: 768px) {
+.snw-nowplaying {
+    bottom: calc(var(--snw-bottom-nav-h, 60px) + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 1024px) {
     .snw-nowplaying {
         bottom: 0;
     }

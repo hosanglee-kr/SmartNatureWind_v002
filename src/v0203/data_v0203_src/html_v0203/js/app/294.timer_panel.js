@@ -42,15 +42,30 @@ window.SNW = window.SNW || {};
                 // Ignore LS error
             }
 
-            // 세션 종료 감지 시 타이머 자동 해제
+            // 세션 종료 및 서버 하드웨어 타이머(triggerRt) 역동기화
             if (SNW.Store && typeof SNW.Store.watch === 'function') {
                 this._storeUnsub = SNW.Store.watch('control', (ctl) => {
-                    if (!this._active) return;
                     const sess = ctl && ctl.session;
-                    if (sess && (sess.state === 'COMPLETED' || sess.state === 'NONE' || !sess.active)) {
-                        this.cancel(false); // 세션이 이미 끝났으므로 조용히 해제
-                    }
-                });
+                        if (this._active && sess && (sess.state === 'COMPLETED' || sess.state === 'NONE' || !sess.active)) {
+                            this.cancel(false);
+                            return;
+                        }
+                        const tr = ctl && ctl.triggerRt;
+                        const uptimeMs = ctl && ctl.system && ctl.system.uptimeMs;
+                        if (tr && tr.timerArmed && tr.timerMinutes > 0 && uptimeMs > 0) {
+                            const totalMs = Number(tr.timerMinutes) * 60000;
+                            const pausedMs = Number(tr.pausedAccumMs || 0);
+                            const elapsedMs = Math.max(0, Number(uptimeMs) - Number(tr.timerStartMs || 0) - pausedMs);
+                            const remainMs = Math.max(0, totalMs - elapsedMs);
+                            if (remainMs > 0 && !this._active) {
+                                this._active = true;
+                                this._durationMin = Number(tr.timerMinutes);
+                                this._targetEndMs = Date.now() + remainMs;
+                                this._startInterval();
+                                this._notify();
+                            }
+                        }
+                    });
             }
         },
 

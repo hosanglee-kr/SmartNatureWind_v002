@@ -8,14 +8,16 @@
     display: flex;
     flex-direction: column;
     gap: var(--snw-spacing-lg, 20px);
-    padding-bottom: 80px;   /* sticky bar 공간 */
+    padding-bottom: 80px;
+    /* sticky bar 공간 */
 }
 
 /* 하단 액션 바 좌우 분리 */
 .snw-studio__bar {
     position: fixed;
     bottom: var(--snw-bottom-nav-h, 60px);
-    left: 0; right: 0;
+    left: 0;
+    right: 0;
     padding: 12px 16px;
     padding-bottom: calc(12px + env(safe-area-inset-bottom));
     background: var(--snw-surface, #1a2028);
@@ -31,9 +33,14 @@ body.has-nowplaying .snw-studio__bar {
     bottom: calc(var(--snw-bottom-nav-h, 60px) + var(--snw-np-h, 48px));
 }
 
-@media (min-width: 768px) {
-    .snw-studio__bar { bottom: 0; }
-    body.has-nowplaying .snw-studio__bar { bottom: var(--snw-np-h, 48px); }
+@media (min-width: 1024px) {
+    .snw-studio__bar {
+        bottom: 0;
+    }
+
+    body.has-nowplaying .snw-studio__bar {
+        bottom: var(--snw-np-h, 48px);
+    }
 }
 
 /* Studio 화면일 때는 AI FAB 버튼 숨김 */
@@ -60,11 +67,13 @@ body:has(.snw-studio__bar) .snw-ai-fab {
     padding-bottom: 8px;
     border-bottom: 1px dashed var(--snw-border, #2f3844);
 }
+
 .snw-step-card__title {
     font-weight: 600;
     color: var(--snw-primary, #4a9eff);
     font-size: 14px;
 }
+
 .snw-step-card__actions {
     display: flex;
     gap: 4px;
@@ -84,9 +93,19 @@ body:has(.snw-studio__bar) .snw-ai-fab {
     font-size: 14px;
     transition: background 0.15s;
 }
-.snw-icon-btn:hover:not(:disabled) { background: var(--snw-border-hi, #4a5563); }
-.snw-icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.snw-icon-btn--danger { color: var(--snw-error, #f85149); }
+
+.snw-icon-btn:hover:not(:disabled) {
+    background: var(--snw-border-hi, #4a5563);
+}
+
+.snw-icon-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.snw-icon-btn--danger {
+    color: var(--snw-error, #f85149);
+}
 
 /* 2열 그리드 레이아웃 */
 .snw-step-card__grid {
@@ -95,9 +114,11 @@ body:has(.snw-studio__bar) .snw-ai-fab {
     gap: 12px;
     margin-bottom: 12px;
 }
+
 @media (max-width: 480px) {
     .snw-step-card__grid {
-        grid-template-columns: 1fr; /* 모바일에서는 1열 */
+        grid-template-columns: 1fr;
+        /* 모바일에서는 1열 */
     }
 }
 
@@ -108,12 +129,15 @@ body:has(.snw-studio__bar) .snw-ai-fab {
     font-size: 12px;
     color: var(--snw-text-dim, #8b949e);
 }
+
 .snw-step-field--full {
     grid-column: span 2;
 }
-.snw-step-field > span {
+
+.snw-step-field>span {
     font-weight: 500;
 }
+
 .snw-step-field input[type="number"],
 .snw-step-field input[type="text"],
 .snw-step-field select {
@@ -126,20 +150,24 @@ body:has(.snw-studio__bar) .snw-ai-fab {
     width: 100%;
     box-sizing: border-box;
 }
+
 .snw-step-field input[type="range"] {
     width: 100%;
     accent-color: var(--snw-primary, #4a9eff);
 }
+
 .snw-step-field__row {
     display: flex;
     align-items: center;
     gap: 6px;
 }
+
 .snw-step-field__row input[type="number"] {
     width: 100%;
     max-width: 100px;
     text-align: center;
 }
+
 .snw-step-field__unit {
     color: var(--snw-text-dim, #8b949e);
     font-size: 12px;
@@ -153,6 +181,7 @@ body:has(.snw-studio__bar) .snw-ai-fab {
     border-radius: var(--snw-radius-sm, 4px);
     padding: 8px 10px;
 }
+
 .snw-step-card__override summary {
     cursor: pointer;
     font-size: 12px;
@@ -161,6 +190,7 @@ body:has(.snw-studio__bar) .snw-ai-fab {
     justify-content: space-between;
     align-items: center;
 }
+
 .snw-step-card__override-body {
     margin-top: 10px;
     display: flex;
@@ -195,6 +225,7 @@ input[type="checkbox"] {
     overflow: hidden;
     padding: 8px;
 }
+
 .snw-step-card__sparkline-meta {
     font-size: 11px;
     color: var(--snw-text-dim, #8b949e);
@@ -220,7 +251,11 @@ input[type="checkbox"] {
     border-bottom: 1px solid var(--snw-border, #2f3844);
     margin-bottom: var(--snw-spacing, 12px);
 }
-.snw-automation__tabs::-webkit-scrollbar { display: none; }
+
+.snw-automation__tabs::-webkit-scrollbar {
+    display: none;
+}
+
 .snw-tab-btn {
     padding: 10px 14px;
     background: transparent;
@@ -232,6 +267,7 @@ input[type="checkbox"] {
     cursor: pointer;
     white-space: nowrap;
 }
+
 .snw-tab-btn.is-active {
     color: var(--snw-primary, #4a9eff);
     border-bottom-color: var(--snw-primary, #4a9eff);
@@ -246,10 +282,12 @@ input[type="checkbox"] {
     flex-wrap: wrap;
     gap: 8px !important;
 }
+
 .snw-form-hint {
     font-size: 11px;
     color: var(--snw-text-dim, #8b949e);
 }
+
 .snw-form-section {
     font-size: 13px;
     color: var(--snw-text-dim, #8b949e);
@@ -301,6 +339,7 @@ input[type="checkbox"] {
     .snw-profile-actions {
         flex-direction: column;
     }
+
     .snw-profile-actions .snw-btn {
         width: 100%;
     }

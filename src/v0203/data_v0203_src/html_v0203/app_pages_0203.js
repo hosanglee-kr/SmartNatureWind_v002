@@ -7522,7 +7522,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 999a.nowplaying.js (29696 bytes) ---- */
+/* ---- 999a.nowplaying.js (29687 bytes) ---- */
 // =========================================================
 // 999a.nowplaying.js — 전역 Now Playing Bar (Stage 5 UX 완성형)
 // Layer 3 (애플리케이션 전역 컴포넌트)
@@ -7669,7 +7669,7 @@ window.SNW = window.SNW || {};
                 subText = SNW.I18n.t('fsm.envPaused');
             }
 
-            barEl.title.textContent = `⏸ ${SNW.I18n.t('fsm.envPaused')}`;
+            barEl.title.textContent = SNW.I18n.t('fsm.envPaused');
             barEl.step.textContent = subText;
             barEl.time.textContent = '';
 

@@ -144,7 +144,7 @@ window.SNW = window.SNW || {};
                 subText = SNW.I18n.t('fsm.envPaused');
             }
 
-            barEl.title.textContent = `⏸ ${SNW.I18n.t('fsm.envPaused')}`;
+            barEl.title.textContent = SNW.I18n.t('fsm.envPaused');
             barEl.step.textContent = subText;
             barEl.time.textContent = '';
 

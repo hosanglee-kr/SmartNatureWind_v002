@@ -303,6 +303,10 @@
 @media (min-width: 1024px) {
     .snw-nowplaying {
         bottom: 0;
+        transition: left var(--snw-transition, 0.2s ease), transform var(--snw-transition, 0.2s ease), opacity var(--snw-transition, 0.2s ease);
+    }
+    body.snw-sidebar-open .snw-nowplaying {
+        left: var(--snw-sidebar-w, 220px);
     }
 }
 

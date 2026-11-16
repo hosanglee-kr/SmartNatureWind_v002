@@ -15,6 +15,7 @@ window.SNW = window.SNW || {};
             // =====================================================
             'app.title': 'Smart Nature Wind',
             'common.ok': '확인',
+            'common.auto': '자동',
             'common.cancel': '취소',
             'common.close': '닫기',
             'common.save': '저장',
@@ -773,6 +774,7 @@ window.SNW = window.SNW || {};
             // =====================================================
             'app.title': 'Smart Nature Wind',
             'common.ok': 'OK',
+            'common.auto': 'Auto',
             'common.cancel': 'Cancel',
             'common.close': 'Close',
             'common.save': 'Save',

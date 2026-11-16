@@ -726,9 +726,9 @@
     "semantic_hash": ""
   },
   "src/v0203/data_v0203_src/html_v0203/js/core/020.i18n.js": {
-    "mtime": 1794823761.7377427,
-    "seen": 1794823938.7281134,
-    "ast_hash": "b7c5a2807a0d84e282d7f08dd5b71158",
+    "mtime": 1794829357.7114346,
+    "seen": 1794829426.4037712,
+    "ast_hash": "321982823d7a668fdfd1d459d08c1056",
     "semantic_hash": ""
   },
   "src/v0203/data_v0203_src/html_v0203/js/core/030.util.level.js": {
@@ -984,9 +984,9 @@
     "semantic_hash": ""
   },
   "src/v0203/data_v0203_src/html_v0203/index.html": {
-    "mtime": 1794787568.2592914,
-    "seen": 1794823938.7281134,
-    "ast_hash": "16fe9eac8c3e7505f63b90c70a6c58fb",
+    "mtime": 1794829359.6838665,
+    "seen": 1794829426.4037712,
+    "ast_hash": "5bb74f6e1891feef586cd020b5de4c37",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/\uc81c\ud488 \uc18c\uac1c \ube0c\ub85c\uc154_001.pdf": {
@@ -1050,9 +1050,9 @@
     "semantic_hash": ""
   },
   "src/v0203/data_v0203_src/html_v0203/js/app/999a.nowplaying.js": {
-    "mtime": 1794801440.9514453,
-    "seen": 1794823938.7281134,
-    "ast_hash": "0577b933e3e4e5fc84c7d9cd80764a7a",
+    "mtime": 1794829355.2742069,
+    "seen": 1794829426.4037712,
+    "ast_hash": "a8c9a0c9cf29d4908b7c25b1476eeafa",
     "semantic_hash": ""
   },
   "src/v0203/data_v0203_src/html_v0203/js/core/115.ui.eq.js": {
@@ -1440,9 +1440,9 @@
     "semantic_hash": ""
   },
   "test/capture_manual_screenshots_0203.cjs": {
-    "mtime": 1794275625.3340695,
-    "seen": 1794543700.165913,
-    "ast_hash": "109c264076ba2e1c22908a9e6270c199",
+    "mtime": 1794826739.3915722,
+    "seen": 1794829426.4037712,
+    "ast_hash": "01199f72ed806c08f692361a33271e54",
     "semantic_hash": ""
   },
   "src/v0203/Req_ImplPlan_0203/0203_014/0203_014_10_01.md": {
@@ -1488,141 +1488,141 @@
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/01_dashboard_main.png": {
-    "mtime": 1794275636.4689498,
-    "seen": 1794543700.165913,
-    "ast_hash": "950aba1a17129b75df886c59fc638305",
+    "mtime": 1794826720.6555848,
+    "seen": 1794829426.4037712,
+    "ast_hash": "6f61f1b75d4dddb3abdafd444ae5c329",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/02_dashboard_env.png": {
-    "mtime": 1794275637.2800398,
-    "seen": 1794543700.165913,
-    "ast_hash": "da2be42f3658673fb9609423196e2d2b",
+    "mtime": 1794826721.7482245,
+    "seen": 1794829426.4037712,
+    "ast_hash": "270a967433676e0231896d89da8f6b5e",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/03_dashboard_preset.png": {
-    "mtime": 1794275638.166016,
-    "seen": 1794543700.165913,
-    "ast_hash": "4f059aeb3873cf8aa3c464b7537f5cb1",
+    "mtime": 1794826722.6332674,
+    "seen": 1794829426.4037712,
+    "ast_hash": "d6b8de0674221022fa79c11a960795e8",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/04_sidebar_drawer.png": {
-    "mtime": 1794275640.7091904,
-    "seen": 1794543700.165913,
-    "ast_hash": "70f2bc600c10072e6bb0700f0d6d0b6b",
+    "mtime": 1794826725.2137163,
+    "seen": 1794829426.4037712,
+    "ast_hash": "6ee3574b650210fb32dc7c4808060e5f",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/05_wind_studio.png": {
-    "mtime": 1794275641.9476972,
-    "seen": 1794543700.165913,
-    "ast_hash": "0365bb3a1037fa885d7ce3610d2b67e4",
+    "mtime": 1794826726.4541607,
+    "seen": 1794829426.4037712,
+    "ast_hash": "f0a2b105c28533cddb3869b583364c81",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/06_playlist.png": {
-    "mtime": 1794275643.5319903,
-    "seen": 1794543700.165913,
-    "ast_hash": "25b286141db8459298c96aced510fec7",
+    "mtime": 1794826730.4518702,
+    "seen": 1794829426.4037712,
+    "ast_hash": "038535b5cfb17d61620b5a6ba1360e77",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/07_timer.png": {
-    "mtime": 1794275645.4046147,
-    "seen": 1794543700.165913,
-    "ast_hash": "d2a0205b826370cae45b22a0fa642e5b",
+    "mtime": 1794826732.2477636,
+    "seen": 1794829426.4037712,
+    "ast_hash": "daf91772ae769542d9d4919154eff579",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/08_ai_assistant.png": {
-    "mtime": 1794275646.300146,
-    "seen": 1794543700.165913,
-    "ast_hash": "031b972ee0c6e4d2591c1cfa45f6013e",
+    "mtime": 1794826734.0615537,
+    "seen": 1794829426.4037712,
+    "ast_hash": "6b765e3beba9fb9629b51d4022b3f7ee",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/09_chart.png": {
-    "mtime": 1794275649.375893,
-    "seen": 1794543700.165913,
-    "ast_hash": "8e86a318f329839eb849bc868168a961",
+    "mtime": 1794826737.0716193,
+    "seen": 1794829426.4037712,
+    "ast_hash": "3b6eadf47a625527797a0716193bf4e1",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/10_monitor_history.png": {
-    "mtime": 1794275650.696191,
-    "seen": 1794543700.165913,
-    "ast_hash": "b683a8e4e292a504652d2cc0c3fbd268",
+    "mtime": 1794826738.397687,
+    "seen": 1794829426.4037712,
+    "ast_hash": "b39011ac37bbcae5d184d235736908b0",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/11_nowplaying_bar.png": {
-    "mtime": 1794275639.0822623,
-    "seen": 1794543700.165913,
-    "ast_hash": "9d8e636f20b8f34b467ac98996d1e40e",
+    "mtime": 1794826723.5041783,
+    "seen": 1794829426.4037712,
+    "ast_hash": "b34723fcdd6420ef5012a415e001ca32",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/12_nowplaying_modal.png": {
-    "mtime": 1794275639.8113039,
-    "seen": 1794543700.165913,
-    "ast_hash": "b734e9332349c3df4010790a8e5c36b9",
+    "mtime": 1794826724.3631027,
+    "seen": 1794829426.4037712,
+    "ast_hash": "8d723def14eb5f281bc5d6ec7c8e1716",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/13_comfort_card.png": {
-    "mtime": 1794275637.372061,
-    "seen": 1794543700.165913,
-    "ast_hash": "612ab0b9c73f64ce94664e99cb6491b6",
+    "mtime": 1794826721.828019,
+    "seen": 1794829426.4037712,
+    "ast_hash": "08b373460e11d86a8f343e90af7db66b",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/14_style_selector.png": {
-    "mtime": 1794275638.2477336,
-    "seen": 1794543700.165913,
-    "ast_hash": "abb78a890232fee892c93f9dc7e09a02",
+    "mtime": 1794826722.7018347,
+    "seen": 1794829426.4037712,
+    "ast_hash": "d8977aa1a07c6d532c148c9dbb47ecbf",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/15_preset_grid.png": {
-    "mtime": 1794275638.3451357,
-    "seen": 1794543700.165913,
-    "ast_hash": "aa082fb5b6ec3fa368b0db3b1b295def",
+    "mtime": 1794826722.7786942,
+    "seen": 1794829426.4037712,
+    "ast_hash": "cdf620fe38404a330be0e3396c048825",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/16_fan_slider.png": {
-    "mtime": 1794275636.5649066,
-    "seen": 1794543700.165913,
-    "ast_hash": "a7fadc9abcd05474029afb69746e119d",
+    "mtime": 1794826720.901228,
+    "seen": 1794829426.4037712,
+    "ast_hash": "ec644f3ecf4eeb1af5b68c0e9a8f4f05",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/17_studio_step_card.png": {
-    "mtime": 1794275642.057886,
-    "seen": 1794543700.165913,
-    "ast_hash": "38ce4ce2d2eafcd885f3e4dcc2f3136b",
+    "mtime": 1794826726.5608377,
+    "seen": 1794829426.4037712,
+    "ast_hash": "a3e27d22db8d66100fee14913fdbe22c",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/18_studio_override.png": {
-    "mtime": 1794275642.5848908,
-    "seen": 1794543700.165913,
-    "ast_hash": "c2e744207c94ce1571586408809e41ec",
+    "mtime": 1794826727.0836341,
+    "seen": 1794829426.4037712,
+    "ast_hash": "cdca2182786127fe5bf4389f5bd78924",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/19_weekly_schedule.png": {
-    "mtime": 1794275644.4669783,
-    "seen": 1794543700.165913,
-    "ast_hash": "a11eb48d8a5a73b118e00dd07b8bfe95",
+    "mtime": 1794826731.3493123,
+    "seen": 1794829426.4037712,
+    "ast_hash": "6c58e4d401019b74591c802267800963",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/20_ai_fab_sheet.png": {
-    "mtime": 1794275647.9539535,
-    "seen": 1794543700.165913,
-    "ast_hash": "3f6180d71cb8237c28ee01a3d00ba09d",
+    "mtime": 1794826735.6551511,
+    "seen": 1794829426.4037712,
+    "ast_hash": "2a103e6964c6e1883fa88bc4fc2e0c7d",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/21_settings_page.png": {
-    "mtime": 1794275651.6021137,
-    "seen": 1794543700.165913,
-    "ast_hash": "ca00d803ab858f053ac378b2fec12f13",
+    "mtime": 1794826739.29445,
+    "seen": 1794829426.4037712,
+    "ast_hash": "d2a465adec64779547dfa9640d029a90",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/22_diagnostics_page.png": {
-    "mtime": 1794275652.4892068,
-    "seen": 1794543700.165913,
-    "ast_hash": "862cbdb0efcaba794b424cffc7fa16ac",
+    "mtime": 1794826740.1786075,
+    "seen": 1794829426.4037712,
+    "ast_hash": "dd8186a556b6c43889a3f360f6205d5c",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/23_logs_page.png": {
-    "mtime": 1794275653.380291,
-    "seen": 1794543700.165913,
-    "ast_hash": "ce64a456ac48c0e0d41c461a3bf650b9",
+    "mtime": 1794826741.0580597,
+    "seen": 1794829426.4037712,
+    "ast_hash": "adf655f141e704026cd964d6134d1729",
     "semantic_hash": ""
   },
   "src/v0203/Req_ImplPlan_0203/0203_014/0203_014_11_03.md": {
@@ -1704,20 +1704,20 @@
     "semantic_hash": ""
   },
   "src/v0203/data_v0203_src/html_v0203/app_core_0203.js": {
-    "mtime": 1794823910.7716439,
-    "seen": 1794823938.7281134,
-    "ast_hash": "7a41169e214542193bc426b11fc07c01",
+    "mtime": 1794829369.113094,
+    "seen": 1794829426.4037712,
+    "ast_hash": "091e54cad334796f6308ff2388f2d04f",
     "semantic_hash": ""
   },
   "src/v0203/data_v0203_src/html_v0203/app_pages_0203.js": {
-    "mtime": 1794823910.8031974,
-    "seen": 1794823938.7281134,
-    "ast_hash": "c0c6451a400f92aa1fd2255f93b8baa8",
+    "mtime": 1794829369.1544628,
+    "seen": 1794829426.4037712,
+    "ast_hash": "38f6146e3fa64d92097bb5b5874d7fbe",
     "semantic_hash": ""
   },
   "src/v0203/data_v0203_src/html_v0203/app_ui_0203.js": {
-    "mtime": 1794823910.7855651,
-    "seen": 1794823938.7281134,
+    "mtime": 1794829369.1328378,
+    "seen": 1794829426.4037712,
     "ast_hash": "395f165aed7f20e6e85ad76df9a4e78f",
     "semantic_hash": ""
   },
@@ -1758,33 +1758,45 @@
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/UserManual_0203_005.md": {
-    "mtime": 1794647125.184285,
-    "seen": 1794823938.7281134,
-    "ast_hash": "6d56929006e917186b17f92c478c8d2e",
+    "mtime": 1794826849.2089143,
+    "seen": 1794829426.4037712,
+    "ast_hash": "ef36e2bb46cee01b1ebdab98e5488d6e",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/24_studio_rule_editor_modal.png": {
-    "mtime": 1794646766.8195848,
-    "seen": 1794823938.7281134,
-    "ast_hash": "6ad2dfb9c5cd04292ef515dff5dec687",
+    "mtime": 1794826728.3541813,
+    "seen": 1794829426.4037712,
+    "ast_hash": "c40908e962532e238b135997b8842031",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/25_home_onetouch.png": {
-    "mtime": 1794647046.0769305,
-    "seen": 1794823938.7281134,
-    "ast_hash": "4b03e2d9dfc1cf62e58f0fdbeaf385bc",
+    "mtime": 1794826720.7646947,
+    "seen": 1794829426.4037712,
+    "ast_hash": "63f9edd615e26db9149602c4c2a29eb5",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/26_automation_rules.png": {
-    "mtime": 1794647054.8498416,
-    "seen": 1794823938.7281134,
-    "ast_hash": "2e25ff3e063aab44056c636641e2fb11",
+    "mtime": 1794826733.168421,
+    "seen": 1794829426.4037712,
+    "ast_hash": "0d7abf28c37192c7460aa69c09788f57",
     "semantic_hash": ""
   },
   "src/v0203/User_Manual_0203/images/27_wind_studio_v2.png": {
-    "mtime": 1794647062.8875873,
-    "seen": 1794823938.7281134,
-    "ast_hash": "a3cac8528c30752957e38274967ec6d2",
+    "mtime": 1794826727.1655703,
+    "seen": 1794829426.4037712,
+    "ast_hash": "582825fa558af3a85fbcbd3a65772dcb",
+    "semantic_hash": ""
+  },
+  "src/v0203/User_Manual_0203/images/28_desktop_layout.png": {
+    "mtime": 1794826742.7168896,
+    "seen": 1794829426.4037712,
+    "ast_hash": "8d1ff001050992eb82ad6de7cd6670ad",
+    "semantic_hash": ""
+  },
+  "src/v0203/User_Manual_0203/images/29_wind_simulation.png": {
+    "mtime": 1794826729.557702,
+    "seen": 1794829426.4037712,
+    "ast_hash": "b733184c080133469560fbc37dfee1b9",
     "semantic_hash": ""
   }
 }

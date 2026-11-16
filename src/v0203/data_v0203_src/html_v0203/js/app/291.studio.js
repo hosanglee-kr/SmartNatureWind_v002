@@ -582,7 +582,7 @@ window.SNW = window.SNW || {};
                 slot.appendChild(stepEl);
                 this._stepEditors.push(editor);
             });
-
+            
             const feelSlot = this.el.querySelector('[data-slot="studio-feelings"]');
             if (feelSlot) {
                 const firstPreset = this._steps.find(s => s.type === 'PRESET') || this._steps[0];
@@ -593,11 +593,12 @@ window.SNW = window.SNW || {};
                         ovr.enabled ? ovr.windVariability : 30,
                         ovr.enabled ? ovr.gustFrequency : 20
                     );
-                    feelSlot.textContent = `감성 요약 (${firstPreset.presetCode || 'CUSTOM'}): 시원함 ${Math.round(f.coolness)}% · 부드러움 ${Math.round(f.smoothness)}% · 자연미 ${Math.round(f.freshness)}% · 활력 ${Math.round(f.dynamism)}% · 수면적합도 ${Math.round(f.calmness)}%`;
+                    feelSlot.textContent = `감성 요약 (${firstPreset.presetCode || 'CUSTOM'}): 시원함 ${f.coolness}/5 · 부드러움 ${f.smoothness}/5 · 자연미 ${f.freshness}/5 · 활력 ${f.dynamism}/5 · 수면적합도 ${f.calmness}/5`;
                 } else {
                     feelSlot.textContent = '';
                 }
             }
+
         }
 
         _onAddStep() {

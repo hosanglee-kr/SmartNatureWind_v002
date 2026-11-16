@@ -121,29 +121,14 @@
  * ------------------------------------------------------
  */
 
-.snw-card [data-slot="form-log"],
-.snw-card [data-slot="form-api"] {
+.snw-card [data-slot="form-log"] {
     margin-bottom: var(--snw-spacing-lg);
     padding-bottom: var(--snw-spacing-lg);
     border-bottom: 1px solid var(--snw-border);
 }
 
-.snw-card [data-slot="form-api"] {
-    border-bottom: none;
-}
-
 .snw-card [data-slot="form-log"]::before {
     content: "Logging";
-    display: block;
-    font-size: 11px;
-    color: var(--snw-text-faint);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: var(--snw-spacing-sm);
-}
-
-.snw-card [data-slot="form-api"]::before {
-    content: "Security";
     display: block;
     font-size: 11px;
     color: var(--snw-text-faint);

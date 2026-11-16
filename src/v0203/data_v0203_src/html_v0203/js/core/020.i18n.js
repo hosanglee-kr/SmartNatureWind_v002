@@ -283,22 +283,11 @@ window.SNW = window.SNW || {};
             // =====================================================
             // [Phase5 5.6] 네비게이션 완전판
             // =====================================================
-            'nav.dashboard': '대시보드',
-            'nav.chart': '차트',
-            'nav.schedule': '스케줄',
-            'nav.profiles': '프로필',
-            'nav.sensors': '센서',
             'nav.monitor': '모니터',
             'nav.simulation': '시뮬레이션',
-            'nav.windprofile': '바람 프리셋',
-            'nav.network': '네트워크',
             'nav.logs': '시스템 로그',
-            'nav.diagnostics': '진단',
-            'nav.firmware': '펌웨어',
             'nav.ai': 'AI 어시스턴트',
-            'nav.info': '정보',
             'nav.groupControl': '제어',
-            'nav.groupSettings': '설정',
             'nav.groupSystem': '시스템',
 
             // =====================================================
@@ -602,7 +591,6 @@ window.SNW = window.SNW || {};
             'fsm.override': '수동 제어',
             'fsm.profileRun': '프로필 실행',
             'fsm.scheduleRun': '스케줄 실행',
-            'fsm.motionBlocked': '모션 차단',
             'fsm.autoOffStopped': '자동 종료',
             'fsm.timeInvalid': '시간 미동기',
 
@@ -620,13 +608,12 @@ window.SNW = window.SNW || {};
             'reason.motionNoPresence': '재실 감지 안됨',
             'reason.autoOffTimer': '자동 종료 타이머',
             'reason.autoOffTime': '자동 종료 시각',
-            
+
             'reason.userStop': '사용자 정지',
             'reason.tempLowStop': '저온 안전 정지',
             'reason.diLowStop': '불쾌지수 저하 정지',
             'autoOff.di': '불쾌지수 종료',
 
-            'reason.autoOffTemp': '자동 종료 온도',
 
             // =====================================================
             // [Phase5 5.6] Wind Phase
@@ -757,7 +744,7 @@ window.SNW = window.SNW || {};
             'home.scenario.studyMeta': '미풍·집중스타일',
             'home.scenario.restMeta': '밸런스·자연풍',
             'home.scenario.exerciseMeta': '강풍·돌풍활력',
-            'home.scenario.babyMeta': '24°C정지·초미풍',
+            'home.scenario.babyMeta': '23°C정지·초미풍',
             'home.scenario.petMeta': 'PIR감지·온도감시',
             'home.scenario.autoFullMeta': '실시간 100% 자율',
             'home.scenario.autoSelectMeta': '바람고정·세기자동',
@@ -1096,22 +1083,11 @@ window.SNW = window.SNW || {};
             'msg.timeOrder': 'End time must be after start time',
 
             // Nav
-            'nav.dashboard': 'Dashboard',
-            'nav.chart': 'Chart',
-            'nav.schedule': 'Schedule',
-            'nav.profiles': 'Profiles',
-            'nav.sensors': 'Sensors',
             'nav.monitor': 'Monitor',
             'nav.simulation': 'Simulation',
-            'nav.windprofile': 'Wind Presets',
-            'nav.network': 'Network',
             'nav.logs': 'System Logs',
-            'nav.diagnostics': 'Diagnostics',
-            'nav.firmware': 'Firmware',
             'nav.ai': 'AI Assistant',
-            'nav.info': 'Info',
             'nav.groupControl': 'Control',
-            'nav.groupSettings': 'Settings',
             'nav.groupSystem': 'System',
 
             'common.start': 'Start',
@@ -1377,7 +1353,6 @@ window.SNW = window.SNW || {};
             'fsm.override': 'Manual',
             'fsm.profileRun': 'Profile',
             'fsm.scheduleRun': 'Schedule',
-            'fsm.motionBlocked': 'Motion Blocked',
             'fsm.autoOffStopped': 'AutoOff',
             'fsm.timeInvalid': 'Time Invalid',
 
@@ -1393,14 +1368,13 @@ window.SNW = window.SNW || {};
             'reason.motionNoPresence': 'No presence',
             'reason.autoOffTimer': 'AutoOff timer',
             'reason.autoOffTime': 'AutoOff time',
-            
+
             'reason.userStop': 'User stopped',
             'reason.tempLowStop': 'Low temp safety stop',
             'reason.diLowStop': 'Low DI stop',
             'autoOff.di': 'DI threshold stop',
-            
 
-            'reason.autoOffTemp': 'AutoOff temp',
+
 
             // Wind Phase
             'phase.calm': 'Calm',
@@ -1524,7 +1498,7 @@ window.SNW = window.SNW || {};
             'home.scenario.studyMeta': 'Gentle · Focus style',
             'home.scenario.restMeta': 'Balance · Natural',
             'home.scenario.exerciseMeta': 'Strong · Gusty',
-            'home.scenario.babyMeta': '24°C stop · Ultra gentle',
+            'home.scenario.babyMeta': '23°C stop · Ultra gentle',
             'home.scenario.petMeta': 'PIR · Temp monitoring',
             'home.scenario.autoFullMeta': '100% Autonomous',
             'home.scenario.autoSelectMeta': 'Fixed base · Auto strength',

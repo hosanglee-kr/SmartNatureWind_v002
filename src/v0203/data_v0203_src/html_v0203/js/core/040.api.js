@@ -254,20 +254,6 @@ window.SNW = window.SNW || {};
 		overrideClear() {
 			return _fetch(SNW.CFG.API.overrideClear, { method: 'POST' });
 		},
-		overrideParams(body) {
-			// ======================================================
-			// [N-3] Deprecated: /control/override 라우트 부재(404) 해소
-			//  - /simulation + override 객체로 변환하여 전송
-			// ======================================================
-			if (SNW.LogUtil) {
-				SNW.LogUtil.warn('[API] overrideParams is deprecated. Use patchSim({override}) instead.');
-			}
-			const ovr = { enabled: true };
-			if (body && body.windIntensity != null) ovr.windIntensity = body.windIntensity;
-			if (body && body.windVariability != null) ovr.windVariability = body.windVariability;
-			if (body && body.gustFrequency != null) ovr.gustFrequency = body.gustFrequency;
-			return _fetch(SNW.CFG.API.simulation, { method: 'POST', body: { sim: { override: ovr } } });
-		},
 		ackEvent() {
 			return _fetch(SNW.CFG.API.ack, { method: 'POST' });
 		},
@@ -290,9 +276,6 @@ window.SNW = window.SNW || {};
 		getChartHistory() { return _fetch(SNW.CFG.API.chartHistory); },
 		getMonitor(type, range) {
 			return _fetch(`${SNW.CFG.API.monitor}?type=${type}&range=${range}`);
-		},
-		getPastEvents(days) {
-			return _fetch(`${SNW.CFG.API.monitor}/events?days=${days || 7}`);
 		},
 
 		// --- WindDict ---
@@ -348,8 +331,6 @@ window.SNW = window.SNW || {};
 		updateProfile(id, b) { return _fetch(`${SNW.CFG.API.userProfiles}/${id}`, { method: 'PUT', body: b }); },
 		deleteProfile(id) { return _fetch(`${SNW.CFG.API.userProfiles}/${id}`, { method: 'DELETE' }); },
 		patchProfiles(body) { return _fetch(SNW.CFG.API.userProfilesPatch, { method: 'POST', body }); },
-		selectProfile(id) { return _fetch(SNW.CFG.API.profileSelect, { method: 'POST', body: { id } }); },
-		stopProfile() { return _fetch(SNW.CFG.API.profileStop, { method: 'POST' }); },
 
 		// --- Session (Stage 5 신규: startSession 단일화) ---
 		startSession({ type, payload = {}, trigger } = {}) {

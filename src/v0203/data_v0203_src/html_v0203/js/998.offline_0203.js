@@ -30,6 +30,29 @@ window.SNW = window.SNW || {};
         cache[key] = defaultVal ? JSON.parse(JSON.stringify(defaultVal)) : null;
     }
 
+    // [Phase6 6.1 N-12] resolvePreset (outer IIFE scope — API Mock & applyScenario 공용)
+    function resolvePreset(presetCode, styleCode) {
+        const presets = (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.presets) || [];
+        const styles = (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.styles) || [];
+
+        const target = presets.find(p => p.code === presetCode);
+        const pf = target?.factors || {};
+
+        let intensity = pf.windIntensity ?? 50;
+        let variability = pf.windVariability ?? 40;
+        let gustFreq = pf.gustFrequency ?? 30;
+
+        // [S20 미러] 스타일 factor 적용 (곱연산)
+        const sf = (styles.find(s => s.code === styleCode)?.factors) || {
+            intensityFactor: 1, variabilityFactor: 1, gustFactor: 1,
+        };
+        intensity = Math.max(0, Math.min(100, Math.round(intensity * (sf.intensityFactor ?? 1))));
+        variability = Math.max(0, Math.min(100, Math.round(variability * (sf.variabilityFactor ?? 1))));
+        gustFreq = Math.max(0, Math.min(100, Math.round(gustFreq * (sf.gustFactor ?? 1))));
+
+        return { intensity, variability, gustFreq };
+    }
+
     const runtime = {
         control: {
             active: true,
@@ -234,32 +257,7 @@ window.SNW = window.SNW || {};
             return { result: 'ok' };
         };
         // ======================================================
-        // [Phase6 6.1 N-12] resolvePreset 재작성
-        //  - 이전: target.params.* (C++/JSON 모두 factors 사용 → 항상 undefined)
-        //  - 이후: target.factors.* + 스타일 factors 곱연산 (S20 미러)
-        //  - REFRESH/WAVE는 실존하지 않는 스타일 → ACTIVE/RELAX로 매핑
-        // ======================================================
-        function resolvePreset(presetCode, styleCode) {
-            const presets = (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.presets) || [];
-            const styles = (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.styles) || [];
-
-            const target = presets.find(p => p.code === presetCode);
-            const pf = target?.factors || {};
-
-            let intensity = pf.windIntensity ?? 50;
-            let variability = pf.windVariability ?? 40;
-            let gustFreq = pf.gustFrequency ?? 30;
-
-            // [S20 미러] 스타일 factor 적용 (곱연산)
-            const sf = (styles.find(s => s.code === styleCode)?.factors) || {
-                intensityFactor: 1, variabilityFactor: 1, gustFactor: 1,
-            };
-            intensity = Math.max(0, Math.min(100, Math.round(intensity * (sf.intensityFactor ?? 1))));
-            variability = Math.max(0, Math.min(100, Math.round(variability * (sf.variabilityFactor ?? 1))));
-            gustFreq = Math.max(0, Math.min(100, Math.round(gustFreq * (sf.gustFactor ?? 1))));
-
-            return { intensity, variability, gustFreq };
-        }
+        // resolvePreset은 outer IIFE 스코프에 정의됨
 
         A.overridePreset = async (b) => {
             runtime.sim.active = true;
@@ -278,14 +276,6 @@ window.SNW = window.SNW || {};
         // ======================================================
         // [N-3] Deprecated: 온라인 patchSim과 동일 시맨틱으로 통일
         // ======================================================
-        A.overrideParams = async (b) => {
-            const ovr = { enabled: true };
-            if (b && b.windIntensity != null) ovr.windIntensity = b.windIntensity;
-            if (b && b.windVariability != null) ovr.windVariability = b.windVariability;
-            if (b && b.gustFrequency != null) ovr.gustFrequency = b.gustFrequency;
-            return A.patchSim({ override: ovr });
-        };
-
         A.patchSim = async (p) => {
             if (p.presetCode || p.styleCode) {
                 const code = p.presetCode || runtime.sim.presetCode || 'FOREST';
@@ -339,18 +329,6 @@ window.SNW = window.SNW || {};
         A.reload = async () => ({ result: 'queued' });
         A.ackEvent = async () => { runtime.control.event.ackRequired = false; return { result: 'ok' }; };
         A.feedPir = async (fired) => { runtime.control.sensor.motionActive = !!fired; return { fed: true }; };
-        A.selectProfile = async (id) => {
-            runtime.control.profileMode = true;
-            runtime.control.state = 'PROFILE_RUN';
-            runtime.control.stateCode = 2;
-            runtime.control.profile.profileNo = id;
-            runtime.control.profile.name = (cache.userProfiles.userProfiles.profiles.find(p => p.profileNo === id) || {}).name || ''; return { result: 'ok' };
-        };
-        A.stopProfile = async () => {
-            runtime.control.state = 'IDLE';
-            runtime.control.stateCode = 0;
-            runtime.control.profile.profileNo = 0; return { result: 'ok' };
-        };
 
         // Session (Stage 3 신규)
         // ======================================================
@@ -441,7 +419,7 @@ window.SNW = window.SNW || {};
             let totalSteps = 1;
             let stepDurationMs = 20 * 60000;   // 기본 20분
 
-            if (isPlaylist && payload && payload.profileId) {
+            if ((isPlaylist || (isAutoSelect && payload.baseType === 'PLAYLIST')) && payload && payload.profileId) {
                 profileId = payload.profileId;
                 const profiles = (cache.userProfiles?.userProfiles?.profiles) || [];
                 const profile = profiles.find(p => p.profileId === profileId);
@@ -498,7 +476,6 @@ window.SNW = window.SNW || {};
 
             return { ok: true, result: 'session_started' };
         };
-        A.sessionStart = A.startSession;
         A.patchSessionRule = async (rule) => {
             if (runtime.control.session) {
                 runtime.control.session.rule = rule;
@@ -630,7 +607,7 @@ window.SNW = window.SNW || {};
             let hint = '완료했습니다.';
 
             if (msg.includes('바다') || msg.includes('시원')) {
-                await A.sessionStart('PRESET', { presetCode: 'OCEAN', styleCode: 'BALANCE' });
+                await A.startSession({ type: 'PRESET', payload: { presetCode: 'OCEAN', styleCode: 'BALANCE' } });
                 actions.push({ name: 'start_preset', args: { presetCode: 'OCEAN' }, result: 'ok' });
                 text = '시원한 바다 바람을 틀어드렸습니다.';
                 hint = '바다 바람을 틀어드렸습니다.';
@@ -669,7 +646,7 @@ window.SNW = window.SNW || {};
                 return { ok: true, name, result: 'ok' };
             }
             if (name === 'start_preset') {
-                await A.sessionStart('PRESET', { presetCode: args?.presetCode || 'OCEAN', styleCode: args?.styleCode || 'BALANCE' });
+                await A.startSession({ type: 'PRESET', payload: { presetCode: args?.presetCode || 'OCEAN', styleCode: args?.styleCode || 'BALANCE' } });
                 return { ok: true, name, result: 'ok' };
             }
             if (name === 'set_fan_speed') {
@@ -896,6 +873,12 @@ window.SNW = window.SNW || {};
                 const elapsed = Date.now() - sess.currentStepStartMs;
                 const remainMs = Math.max(0, sess.currentStepDurationMs - elapsed);
                 sess.stepRemainSec = Math.floor(remainMs / 1000);
+                if ((sess.type === 4 || sess.type === 5) && !sess.autoSwitchReason) {
+                    const di = (runtime.control.sensor && runtime.control.sensor.di != null) ? runtime.control.sensor.di : 71.5;
+                    sess.autoSwitchReason = (sess.type === 4)
+                        ? `DI ${Number(di).toFixed(1)} · 자동 프리셋/스타일 최적화`
+                        : `DI ${Number(di).toFixed(1)} · 맞춤 세기 자동 조절`;
+                }
 
                 if (remainMs <= 0) {
                     // Step 전환

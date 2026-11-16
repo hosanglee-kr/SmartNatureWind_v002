@@ -694,7 +694,6 @@
     background: rgba(74, 158, 255, 0.08);
 }
 
-.snw-schedule-head,
 .snw-profile-head {
     display: flex;
     align-items: center;
@@ -734,12 +733,6 @@
 
 .snw-schedule-days {
     font-family: var(--snw-font-mono);
-}
-
-.snw-schedule-segcount,
-.snw-profile-segcount {
-    font-size: 11px;
-    color: var(--snw-text-faint);
 }
 
 .snw-profile-actions {

@@ -67,12 +67,16 @@ window.SNW = window.SNW || {};
                 { path: '/automation', key: 'nav.automation', icon: '⚙️', minLevel: 'L2' },
                 { path: '/ai',         key: 'nav.ai',         icon: '✨', minLevel: 'L2' },
                 { path: '/monitor',    key: 'nav.monitor',    icon: '📊', minLevel: 'L2' },
+                { path: '/monitor/logs', key: 'nav.logs',     icon: '📜', minLevel: 'L3' }, // 추가됨
             ]
         },
         {
             key: 'nav.groupSystem',
             items: [
-                { path: '/settings', key: 'nav.settings', icon: '🔧', minLevel: 'L2' },
+                { path: '/settings',          key: 'nav.settings',    icon: '🔧', minLevel: 'L2' },
+                { path: '/settings/network',  key: 'nav.network',     icon: '📶', minLevel: 'L3' }, // 추가됨 (L3 이상)
+                { path: '/settings/firmware', key: 'nav.firmware',    icon: '📦', minLevel: 'L4' }, // 추가됨 (L4 전문가용)
+                { path: '/settings/diagnostics', key: 'nav.diagnostics', icon: '🔍', minLevel: 'L4' }, // 추가됨 (L4 전문가용)
             ]
         },
     ];

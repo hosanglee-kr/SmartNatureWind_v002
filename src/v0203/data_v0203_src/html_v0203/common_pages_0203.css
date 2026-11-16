@@ -615,21 +615,21 @@
  * ============================================================ */
 .snw-nowplaying {
     position: fixed;
-    bottom: var(--snw-bottom-nav-h, 60px);
+    bottom: calc(var(--snw-bottom-nav-h, 60px) + env(safe-area-inset-bottom, 0px));
     left: 0;
     right: 0;
     height: var(--snw-np-h, 48px);
-    background: var(--snw-surface-2, #232b36);
-    border-top: 1px solid var(--snw-border, #2f3844);
+    background: var(--snw-surface, #1a2028);
+    border-top: 1.5px solid var(--snw-primary, #4a9eff);
     display: flex;
     align-items: center;
     padding: 0 var(--snw-spacing, 12px);
     gap: var(--snw-spacing-sm, 8px);
-    z-index: var(--snw-z-np, 95);
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
+    z-index: 1005;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.28);
     transition: transform var(--snw-transition, 0.2s ease), opacity var(--snw-transition, 0.2s ease);
 }
+
 
 .snw-nowplaying[hidden] {
     display: none !important;

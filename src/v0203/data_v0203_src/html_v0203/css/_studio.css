@@ -330,17 +330,3 @@ input[type="checkbox"] {
 .snw-profile-item.is-active .snw-profile-no {
     color: var(--snw-primary);
 }
-
-.snw-profile-actions .snw-btn {
-    min-width: 80px;
-}
-
-@media (max-width: 767px) {
-    .snw-profile-actions {
-        flex-direction: column;
-    }
-
-    .snw-profile-actions .snw-btn {
-        width: 100%;
-    }
-}

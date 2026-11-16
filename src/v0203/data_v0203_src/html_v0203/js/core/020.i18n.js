@@ -308,21 +308,9 @@ window.SNW = window.SNW || {};
             // =====================================================
             // [Phase5 5.6] Dashboard
             // =====================================================
-            'dashboard.modeTitle': '작동 모드 설정',
-            'dashboard.modeSchedule': '◻ 스케줄 자동 모드',
-            'dashboard.modeProfile': '◼ 프로필 수동 모드',
-            'dashboard.realtimeState': '실시간 상태',
-            'dashboard.currentWind': '현재 풍속',
-            'dashboard.targetWind': '목표 풍속',
-            'dashboard.phase': 'Phase',
-            'dashboard.pwm': 'PWM',
-            'dashboard.sch': '스케줄',
-            'dashboard.prof': '프로필',
-            'dashboard.powerTitle': '전원 제어',
             'dashboard.sensorTitle': '센서',
             'dashboard.styleTitle': '바람 스타일',
             'dashboard.presetTitle': '자연풍 프리셋',
-            'dashboard.physicsTitle': '바람 세부 조절 (3대 물리 제어)',
             'dashboard.powerOn': '전원 켜기',
             'dashboard.powerOff': '전원 끄기',
             'dashboard.temp': '온도',
@@ -330,9 +318,6 @@ window.SNW = window.SNW || {};
             'dashboard.motion': '인체감지',
             'dashboard.motionDetected': '감지됨',
             'dashboard.motionAbsent': '부재',
-            'dashboard.modeSwitchedProfile': '프로필 모드로 전환되었습니다',
-            'dashboard.fanStop': '끔',
-            'dashboard.fanStage': '{n}단',
 
             // =====================================================
             // [Phase5 5.6] Chart
@@ -376,7 +361,6 @@ window.SNW = window.SNW || {};
             'settings.fieldEnabled': '활성화',
             'settings.fieldPinPir': 'PIR 핀',
             'settings.fieldDebounce': '디바운스 (초)',
-            'settings.fieldHold': '유지 시간 (초)',
             'settings.fieldPinDht': 'DHT 핀',
             'settings.fieldType': '센서 타입',
             'settings.fieldInterval': '읽기 주기 (초)',
@@ -471,23 +455,6 @@ window.SNW = window.SNW || {};
             // =====================================================
             // [Phase5 5.6] Segment (Studio/Profile/Schedule 공통)
             // =====================================================
-            'segment.onMinutes': '작동 시간(분)',
-            'segment.offMinutes': '정지 시간(분)',
-            'segment.mode': '모드',
-            'segment.modePreset': '프리셋 모드',
-            'segment.modeFixed': '고정풍속 모드',
-            'segment.presetSelect': '프리셋 선택',
-            'segment.styleSelect': '스타일 선택',
-            'segment.fixedSpeed': '고정 풍속(%)',
-            'segment.overrideTitle': '⚙️ 고급 물리 설정 (Override 직접 지정)',
-            'segment.overrideDesc': '이 세그먼트에서 바람 세부 설정 직접 지정',
-            'segment.overrideIntensity': '바람 강도 (%)',
-            'segment.overrideVariability': '바람 변동성 (%)',
-            'segment.overrideGust': '돌풍 빈도 (%)',
-            'segment.moveUp': '위로',
-            'segment.moveDown': '아래로',
-            'segment.deleted': '세그먼트가 삭제되었습니다',
-            'segment.summaryPrefix': '세그먼트',
 
             // =====================================================
             // [Phase5 5.6] Schedule 추가
@@ -502,21 +469,10 @@ window.SNW = window.SNW || {};
             'schedule.repeatCount': '반복 횟수',
             'schedule.startTime': '시작 시각',
             'schedule.endTime': '종료 시각',
-            'scheduler.title': '스케줄 예약',
-            'scheduler.day': '요일',
-            'scheduler.segment': '세그먼트',
-            'scheduler.scheduledOff': '예약 종료',
-            'scheduler.tempOff': '온도 도달 종료',
 
             // =====================================================
             // [Phase5 5.6] Profiles 추가
             // =====================================================
-            'profiles.add': '프로필 추가',
-            'profiles.no': '프로필 번호',
-            'profiles.enabled': '활성화',
-            'profiles.name': '프로필 이름',
-            'profiles.addSegmentBtn': '세그먼트 추가',
-            'profiles.autoOffTimer': '자동 종료 (분)',
             'profile.title': '사용자 프로필',
             'profile.active': '활성',
 
@@ -788,9 +744,9 @@ window.SNW = window.SNW || {};
             'rule.tipBabySafe': '유아방·수면에는 완전 종료를 권장합니다',
             'rule.validate.saveDisabled': '규칙 입력값을 확인하세요',
             'auto.rules.globalSection': '🌐 전역 기본 규칙',
-            'auto.rules.profileSection': '📋 프로파일별 규칙',
+            'auto.rules.profileSection': '📋 프로필별 규칙',
             'auto.rules.scheduleSection': '📅 스케줄별 규칙',
-            'auto.rules.inheritHint': '프로파일 규칙 상속',
+            'auto.rules.inheritHint': '프로필 규칙 상속',
             'auto.rules.customHint': '직접 설정',
             'nav.wind': '바람 만들기',
             'nav.wind.studio': '🎨 작곡',
@@ -1100,21 +1056,9 @@ window.SNW = window.SNW || {};
             'footer.polling': '🟡 Polling',
 
             // Dashboard
-            'dashboard.modeTitle': 'Operation Mode',
-            'dashboard.modeSchedule': '◻ Schedule Auto Mode',
-            'dashboard.modeProfile': '◼ Profile Manual Mode',
-            'dashboard.realtimeState': 'Real-time State',
-            'dashboard.currentWind': 'Current Wind',
-            'dashboard.targetWind': 'Target Wind',
-            'dashboard.phase': 'Phase',
-            'dashboard.pwm': 'PWM',
-            'dashboard.sch': 'Schedule',
-            'dashboard.prof': 'Profile',
-            'dashboard.powerTitle': 'Power Control',
             'dashboard.sensorTitle': 'Sensors',
             'dashboard.styleTitle': 'Wind Style',
             'dashboard.presetTitle': 'Nature Presets',
-            'dashboard.physicsTitle': 'Physics Fine Tuning (3 params)',
             'dashboard.powerOn': 'Power On',
             'dashboard.powerOff': 'Power Off',
             'dashboard.temp': 'Temp',
@@ -1122,9 +1066,6 @@ window.SNW = window.SNW || {};
             'dashboard.motion': 'Motion',
             'dashboard.motionDetected': 'Detected',
             'dashboard.motionAbsent': 'Absent',
-            'dashboard.modeSwitchedProfile': 'Switched to Profile mode',
-            'dashboard.fanStop': 'Off',
-            'dashboard.fanStage': 'Stage {n}',
 
             // Chart
             'chart.title': 'Live Physics Chart',
@@ -1164,7 +1105,6 @@ window.SNW = window.SNW || {};
             'settings.fieldEnabled': 'Enabled',
             'settings.fieldPinPir': 'PIR Pin',
             'settings.fieldDebounce': 'Debounce (sec)',
-            'settings.fieldHold': 'Hold (sec)',
             'settings.fieldPinDht': 'DHT Pin',
             'settings.fieldType': 'Sensor Type',
             'settings.fieldInterval': 'Interval (sec)',
@@ -1251,23 +1191,6 @@ window.SNW = window.SNW || {};
             'firmware.fileUpload': 'File Upload',
 
             // Segment
-            'segment.onMinutes': 'On (min)',
-            'segment.offMinutes': 'Off (min)',
-            'segment.mode': 'Mode',
-            'segment.modePreset': 'Preset Mode',
-            'segment.modeFixed': 'Fixed Speed Mode',
-            'segment.presetSelect': 'Preset',
-            'segment.styleSelect': 'Style',
-            'segment.fixedSpeed': 'Fixed Speed (%)',
-            'segment.overrideTitle': '⚙️ Advanced Physics (Override)',
-            'segment.overrideDesc': 'Override wind physics for this segment',
-            'segment.overrideIntensity': 'Wind Intensity (%)',
-            'segment.overrideVariability': 'Wind Variability (%)',
-            'segment.overrideGust': 'Gust Frequency (%)',
-            'segment.moveUp': 'Up',
-            'segment.moveDown': 'Down',
-            'segment.deleted': 'Segment deleted',
-            'segment.summaryPrefix': 'Segments',
 
             // Schedule additions
             'schedule.secBasic': 'Basic Info',
@@ -1280,19 +1203,8 @@ window.SNW = window.SNW || {};
             'schedule.repeatCount': 'Repeat Count',
             'schedule.startTime': 'Start Time',
             'schedule.endTime': 'End Time',
-            'scheduler.title': 'Schedule',
-            'scheduler.day': 'Days',
-            'scheduler.segment': 'Segment',
-            'scheduler.scheduledOff': 'Scheduled Off',
-            'scheduler.tempOff': 'Temp Threshold Off',
 
             // Profiles additions
-            'profiles.add': 'Add Profile',
-            'profiles.no': 'Profile No.',
-            'profiles.enabled': 'Enabled',
-            'profiles.name': 'Profile Name',
-            'profiles.addSegmentBtn': 'Add Segment',
-            'profiles.autoOffTimer': 'Auto Off (min)',
             'profile.title': 'User Profiles',
             'profile.active': 'Active',
 

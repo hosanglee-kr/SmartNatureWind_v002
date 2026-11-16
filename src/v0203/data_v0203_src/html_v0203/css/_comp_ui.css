@@ -371,12 +371,6 @@
     cursor: pointer;
 }
 
-.snw-form-actions {
-    display: flex;
-    gap: var(--snw-spacing-sm);
-    margin-top: var(--snw-spacing);
-}
-
 /* Settings 섹션 헤더 */
 .snw-form-section {
     font-size: 13px;
@@ -663,7 +657,6 @@
 /* =====================================================
  * 스케줄 / 프로필 리스트 (HOTFIX 텍스트 말줄임 적용)
  * ===================================================== */
-.snw-schedule-list,
 .snw-profile-list {
     display: flex;
     flex-direction: column;
@@ -703,7 +696,6 @@
     overflow: hidden;
 }
 
-.snw-schedule-name,
 .snw-profile-name {
     flex: 1;
     font-weight: 500;
@@ -714,7 +706,6 @@
     min-width: 0;
 }
 
-.snw-schedule-no,
 .snw-profile-no {
     font-size: 11px;
     color: var(--snw-text-faint);
@@ -729,16 +720,6 @@
     margin-bottom: 4px;
     flex-wrap: wrap;
     word-break: keep-all;
-}
-
-.snw-schedule-days {
-    font-family: var(--snw-font-mono);
-}
-
-.snw-profile-actions {
-    display: flex;
-    gap: var(--snw-spacing-sm);
-    margin-top: var(--snw-spacing-sm);
 }
 
 /* =====================================================

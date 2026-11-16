@@ -79,74 +79,6 @@
 }
 
 /* =====================================================
- * 세그먼트 카드 2열 그리드 UI
- * ===================================================== */
-.snw-seg-card {
-    background: var(--snw-surface-2);
-    border: 1px solid var(--snw-border);
-    border-radius: var(--snw-radius);
-    padding: 12px;
-    margin-bottom: 10px;
-}
-
-.snw-seg-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-    padding-bottom: 6px;
-    border-bottom: 1px dashed var(--snw-border);
-}
-
-.snw-seg-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--snw-primary);
-}
-
-.snw-seg-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-
-.snw-seg-grid label {
-    font-size: 11px;
-    color: var(--snw-text-dim);
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.snw-seg-grid input,
-.snw-seg-grid select {
-    width: 100%;
-    padding: 6px 8px;
-    background: var(--snw-surface);
-    border: 1px solid var(--snw-border);
-    border-radius: var(--snw-radius-sm);
-    color: var(--snw-text);
-    font-size: 12px;
-}
-
-.snw-seg-grid input:focus,
-.snw-seg-grid select:focus {
-    border-color: var(--snw-primary);
-    outline: none;
-}
-
-.snw-seg-preset-area {
-    grid-column: span 2;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-
-.snw-seg-fixed-area {
-    grid-column: span 2;
-}
-
-/* =====================================================
  * 배너 (경고/오프라인)
  * ===================================================== */
 .snw-banner {
@@ -337,13 +269,6 @@
     transition: width 0.2s ease;
 }
 
-.snw-wifi-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-top: var(--snw-spacing-sm);
-}
-
 .snw-wifi-item {
     display: grid;
     grid-template-columns: 1fr auto auto;
@@ -353,21 +278,6 @@
     border-radius: var(--snw-radius);
     font-size: 12px;
     align-items: center;
-}
-
-.snw-wifi-ssid {
-    color: var(--snw-text);
-}
-
-.snw-wifi-enc {
-    color: var(--snw-text-dim);
-    font-size: 11px;
-}
-
-.snw-wifi-rssi {
-    color: var(--snw-text-dim);
-    font-variant-numeric: tabular-nums;
-    font-size: 11px;
 }
 
 .snw-ai-chat {
@@ -508,8 +418,6 @@
     color: var(--snw-success, #4ade80);
 }
 
-.snw-diag-panel,
-.snw-info-panel,
 .snw-firmware-panel {
     display: flex;
     flex-direction: column;
@@ -529,15 +437,6 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-}
-
-.snw-profile-picker__item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    text-align: left;
-    padding: 12px 16px;
 }
 
 

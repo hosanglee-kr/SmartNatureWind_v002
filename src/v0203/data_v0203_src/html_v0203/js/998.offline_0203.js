@@ -592,9 +592,135 @@ window.SNW = window.SNW || {};
         });
         A.setTime = async () => ({ updated: true });
         A.factoryReset = async () => ({ factory: true });
-
+        
+        
         // ======================================================
-        // [Stage 8] AI Mock 핸들러 (오프라인 시뮬레이션)
+        // [Stage 8-1] AI 제미나이 실제 핸들러 
+        // ======================================================
+        
+		        // ======================================================
+        // [실제 연동] Gemini 3.1 Flash Lite REST API & 로컬 상태 제어 브리지
+        // ======================================================
+        let s_mockAudioSec = 45;
+        let s_mockTurns = 2;
+        let s_mockCostX1000 = 14;
+
+        A.gemini = async (body) => {
+            const msg = (body && body.message || '').trim();
+            
+            // 1. 설정 또는 로컬스토리지에 저장된 Gemini API 키 확인
+            const systemCache = cache.system || {};
+            const apiKey = systemCache.security?.geminiApiKey || localStorage.getItem('snw.geminiKey') || '';
+            
+            // 2. API 키가 없는 경우 기본 가상 모드로 폴백
+            if (!apiKey) {
+                return {
+                    ok: true,
+                    text: '⚠️ Gemini API 키가 설정되지 않았습니다. [설정] 탭에서 구글 AI Studio API 키를 입력해주세요.',
+                    _speechHint: 'API 키가 필요합니다.',
+                    actions: []
+                };
+            }
+
+            // 3. 실제 gemini-3.1-flash-lite REST API 호출
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
+            
+            // AI에게 선풍기 제어 권한을 부여하는 시스템 인스트럭션 및 도구 명령 유도
+            const systemPrompt = `너는 스마트 자연풍 선풍기 'Smart Nature Wind'의 전용 AI 어시스턴트야. 
+사용자의 자연어 요청을 분석해서 선풍기를 제어하고, 답변은 친절한 한국어로 해줘.
+사용자가 바람을 켜거나, 속도를 바꾸거나, 끄거나, 타이머를 설정하면 응답 텍스트와 함께 아래 JSON 형식의 액션 명령을 응답 끝에 반드시 포함해줘.
+가능한 액션 이름(name):
+- "start_preset": args: {"presetCode": "OCEAN" | "COUNTRY_BREEZE" | "FOREST_CANOPY" | ...}
+- "set_fan_speed": args: {"speed": 0~100 숫자}
+- "stop_session": args: {}
+- "set_timer": args: {"minutes": 숫자}
+
+응답 예시:
+바다 바람을 켜드릴게요! [ACTION:{"name":"start_preset","args":{"presetCode":"OCEAN"}}]`;
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            role: 'user',
+                            parts: [
+                                { text: `${systemPrompt}\n\n사용자 요청: ${msg}` }
+                            ]
+                        }
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error?.message || `Gemini API 통신 실패 (HTTP ${response.status})`);
+            }
+
+            const data = await response.json();
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 생성하지 못했습니다.';
+
+            // 4. 응답 텍스트에서 [ACTION: {...}] 파싱 및 로컬 런타임 즉시 실행
+            let replyText = rawText;
+            const actions = [];
+            const actionMatch = rawText.match(/\[ACTION:\s*({.*?})\]/);
+
+            if (actionMatch && actionMatch[1]) {
+                try {
+                    const actionObj = JSON.parse(actionMatch[1]);
+                    actions.push(actionObj);
+                    replyText = rawText.replace(/\[ACTION:\s*({.*?})\]/, '').trim();
+
+                    // 💡 브라우저 오프라인 런타임 상태 실제 변경 수행
+                    await A.executeAiAction(actionObj.name, actionObj.args);
+                } catch (e) {
+                    console.warn('[AI Action Parse Error]', e);
+                }
+            } else {
+                // 액션 블록이 없더라도 키워드 기반 자동 매핑 보완
+                if (msg.includes('바다') || msg.includes('오션')) {
+                    await A.startPreset('OCEAN', 'BALANCE');
+                    actions.push({ name: 'start_preset', args: { presetCode: 'OCEAN' }, result: 'ok' });
+                } else if (msg.includes('숲') || msg.includes('산들')) {
+                    await A.startPreset('FOREST_CANOPY', 'BALANCE');
+                    actions.push({ name: 'start_preset', args: { presetCode: 'FOREST_CANOPY' }, result: 'ok' });
+                } else if (msg.includes('꺼') || msg.includes('정지') || msg.includes('중지')) {
+                    await A.stopSession();
+                    actions.push({ name: 'stop_session', args: {}, result: 'ok' });
+                }
+            }
+
+            return {
+                ok: true,
+                text: replyText,
+                _speechHint: replyText,
+                actions: actions,
+                session: runtime.control.session
+            };
+        };
+
+        A.executeAiAction = async (name, args) => {
+            if (name === 'stop_session') {
+                await A.stopSession();
+            } else if (name === 'start_preset') {
+                await A.startSession({ type: 'PRESET', payload: { presetCode: args?.presetCode || 'OCEAN', styleCode: args?.styleCode || 'BALANCE' } });
+            } else if (name === 'set_fan_speed') {
+                await A.overrideFixed(args?.speed || 50);
+            } else if (name === 'set_timer') {
+                if (SNW.TimerManager && typeof SNW.TimerManager.start === 'function') {
+                    SNW.TimerManager.start(args?.minutes || 30);
+                }
+            }
+            return { ok: true, name, result: 'ok', session: runtime.control.session };
+        };
+
+
+
+		
+		/*
+        // ======================================================
+        // [Stage 8-2] AI Mock 핸들러 (오프라인 시뮬레이션)
         // ======================================================
         let s_mockAudioSec = 45;
         let s_mockTurns = 2;
@@ -639,6 +765,8 @@ window.SNW = window.SNW || {};
                 session: runtime.control.session
             };
         };
+        
+        */
 
         A.executeAiAction = async (name, args) => {
             if (name === 'stop_session') {

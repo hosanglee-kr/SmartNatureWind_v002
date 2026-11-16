@@ -250,14 +250,25 @@ window.SNW = window.SNW || {};
             'settings.deleteApiKey': 'API Key 삭제',
             'settings.deleteGeminiKey': 'Gemini Key 삭제',
 
+
             // =====================================================
-            // Header / Nav
+            // [Phase5 5.6] 네비게이션 완전판
             // =====================================================
             'nav.home': '홈',
             'nav.wind': '바람',
             'nav.automation': '자동화',
             'nav.monitor': '모니터',
             'nav.settings': '설정',
+            'nav.simulation': '시뮬레이션',
+            'nav.logs': '시스템 로그',
+            'nav.ai': 'AI 어시스턴트',
+            'nav.groupControl': '제어',
+            'nav.groupSystem': '시스템',
+
+
+            // =====================================================
+            // Header
+            // =====================================================
             'header.menu': '메뉴',
             'header.language': '언어',
             'header.online': '온라인',
@@ -281,16 +292,7 @@ window.SNW = window.SNW || {};
             'msg.selectProfile': '실행할 플레이리스트를 선택하세요',
             'msg.timeOrder': '종료 시각이 시작 시각보다 빨라야 합니다',
 
-            // =====================================================
-            // [Phase5 5.6] 네비게이션 완전판
-            // =====================================================
-            'nav.monitor': '모니터',
-            'nav.simulation': '시뮬레이션',
-            'nav.logs': '시스템 로그',
-            'nav.ai': 'AI 어시스턴트',
-            'nav.groupControl': '제어',
-            'nav.groupSystem': '시스템',
-
+   
             // =====================================================
             // [Phase5 5.6] 공통
             // =====================================================
@@ -309,9 +311,14 @@ window.SNW = window.SNW || {};
             // =====================================================
             // [Phase5 5.6] Dashboard
             // =====================================================
-            'dashboard.sensorTitle': '센서',
+            'dashboard.tabControl': '제어',
+            'dashboard.tabEnv': '스마트쾌적',
+            'dashboard.tabPreset': '프리셋',
+            'dashboard.sensorTitle': '센서 모니터링',
             'dashboard.styleTitle': '바람 스타일',
+            'dashboard.styleHint': '바람 변동 패턴 보정',
             'dashboard.presetTitle': '자연풍 프리셋',
+            'dashboard.presetHint': '10대 시뮬레이션 환경 선택',
             'dashboard.powerOn': '전원 켜기',
             'dashboard.powerOff': '전원 끄기',
             'dashboard.temp': '온도',
@@ -649,14 +656,7 @@ window.SNW = window.SNW || {};
             'settings.levelL2': '표준 (일반 사용 권장)',
             'settings.levelL3': '고급 (세부 파라미터)',
             'settings.levelL4': '전문가 (모든 엔지니어링 기능)',
-            'dashboard.tabControl': '제어',
-            'dashboard.tabEnv': '스마트쾌적',
-            'dashboard.tabPreset': '프리셋',
-            'dashboard.sensorTitle': '센서 모니터링',
-            'dashboard.styleTitle': '바람 스타일',
-            'dashboard.styleHint': '바람 변동 패턴 보정',
-            'dashboard.presetTitle': '자연풍 프리셋',
-            'dashboard.presetHint': '10대 시뮬레이션 환경 선택',
+
             'common.details': '상세보기',
             'timer.quickPrompt': '몇 분 후 종료할까요? (분 단위 입력)',
             'comfort.autoTitle': '스마트 쾌적 자동 모드',
@@ -1009,14 +1009,22 @@ window.SNW = window.SNW || {};
             'settings.deleteApiKey': 'Delete API Key',
             'settings.deleteGeminiKey': 'Delete Gemini Key',
 
-            // =====================================================
-            // Header / Nav
-            // =====================================================
+            // Nav
             'nav.home': 'Home',
             'nav.wind': 'Wind',
             'nav.automation': 'Auto',
             'nav.monitor': 'Monitor',
             'nav.settings': 'Settings',
+            'nav.simulation': 'Simulation',
+            'nav.logs': 'System Logs',
+            'nav.ai': 'AI Assistant',
+            'nav.groupControl': 'Control',
+            'nav.groupSystem': 'System',
+
+
+            // =====================================================
+            // Header
+            // =====================================================
             'header.menu': 'Menu',
             'header.language': 'Language',
             'header.online': 'Online',
@@ -1040,13 +1048,6 @@ window.SNW = window.SNW || {};
             'msg.selectProfile': 'Please select a playlist',
             'msg.timeOrder': 'End time must be after start time',
 
-            // Nav
-            'nav.monitor': 'Monitor',
-            'nav.simulation': 'Simulation',
-            'nav.logs': 'System Logs',
-            'nav.ai': 'AI Assistant',
-            'nav.groupControl': 'Control',
-            'nav.groupSystem': 'System',
 
             'common.start': 'Start',
             'common.stop': 'Stop',
@@ -1058,9 +1059,14 @@ window.SNW = window.SNW || {};
             'footer.polling': '🟡 Polling',
 
             // Dashboard
-            'dashboard.sensorTitle': 'Sensors',
+            'dashboard.tabControl': 'Control',
+            'dashboard.tabEnv': 'Environment',
+            'dashboard.tabPreset': 'Presets',
+            'dashboard.sensorTitle': 'Sensors Monitoring',
             'dashboard.styleTitle': 'Wind Style',
+            'dashboard.styleHint': 'Waveform pattern modifier',
             'dashboard.presetTitle': 'Nature Presets',
+            'dashboard.presetHint': '10 nature presets',
             'dashboard.powerOn': 'Power On',
             'dashboard.powerOff': 'Power Off',
             'dashboard.temp': 'Temp',
@@ -1359,14 +1365,7 @@ window.SNW = window.SNW || {};
             'settings.levelL2': 'Standard (Recommended)',
             'settings.levelL3': 'Advanced (Detailed Tuning)',
             'settings.levelL4': 'Expert (All Engineering Tools)',
-            'dashboard.tabControl': 'Control',
-            'dashboard.tabEnv': 'Environment',
-            'dashboard.tabPreset': 'Presets',
-            'dashboard.sensorTitle': 'Sensors Monitoring',
-            'dashboard.styleTitle': 'Wind Style',
-            'dashboard.styleHint': 'Waveform pattern modifier',
-            'dashboard.presetTitle': 'Nature Presets',
-            'dashboard.presetHint': '10 nature presets',
+    
             'common.details': 'Details',
             'timer.quickPrompt': 'Minutes until fan auto stop? (Enter number)',
             'comfort.autoTitle': 'Smart Comfort Auto Mode',

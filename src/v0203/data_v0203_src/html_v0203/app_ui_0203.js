@@ -799,7 +799,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 120.ui.chart.js (5705 bytes) ---- */
+/* ---- 120.ui.chart.js (9211 bytes) ---- */
 // =========================================================
 // 120.ui.chart.js — SNW.UI.chart (Canvas 2D)
 // Layer 3 (UI 컴포넌트) — Layer 0~2 참조
@@ -832,7 +832,7 @@ window.SNW = window.SNW || {};
             yMax = null
         } = opts || {};
 
-        if (!root) return { push: () => {}, clear: () => {}, setMaxPoints: () => {}, destroy: () => {} };
+        if (!root) return { push: () => { }, clear: () => { }, setMaxPoints: () => { }, destroy: () => { } };
 
         root.innerHTML = '';
         const canvas = document.createElement('canvas');
@@ -842,7 +842,7 @@ window.SNW = window.SNW || {};
 
         // DPR 대응
         let dpr = window.devicePixelRatio || 1;
-        let cw  = 0, ch = 0;
+        let cw = 0, ch = 0;
 
         const buffers = {};
         series.forEach(s => { buffers[s.key] = []; });
@@ -851,11 +851,11 @@ window.SNW = window.SNW || {};
 
         function resize() {
             const rect = root.getBoundingClientRect();
-            cw = Math.max(200, Math.floor(rect.width  || root.clientWidth  || 800));
-            ch = Math.max(80,  Math.floor(rect.height || root.clientHeight || 200));
-            canvas.width  = Math.floor(cw * dpr);
+            cw = Math.max(200, Math.floor(rect.width || root.clientWidth || 800));
+            ch = Math.max(80, Math.floor(rect.height || root.clientHeight || 200));
+            canvas.width = Math.floor(cw * dpr);
             canvas.height = Math.floor(ch * dpr);
-            canvas.style.width  = cw + 'px';
+            canvas.style.width = cw + 'px';
             canvas.style.height = ch + 'px';
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             draw();
@@ -864,7 +864,7 @@ window.SNW = window.SNW || {};
         function push(point) {
             series.forEach(s => {
                 const arr = buffers[s.key];
-                const v   = (point && point[s.key]);
+                const v = (point && point[s.key]);
                 arr.push({ x: (point && point.t) || Date.now(), y: v });
                 if (arr.length > curMaxPoints) arr.shift();
             });
@@ -879,61 +879,127 @@ window.SNW = window.SNW || {};
         function _drawSeries(arr, color) {
             if (arr.length < 2) return;
             ctx.strokeStyle = color;
-            ctx.lineWidth   = 2;
-            ctx.lineJoin    = 'round';
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'round';
             ctx.beginPath();
             for (let i = 0; i < arr.length; i++) {
                 const p = arr[i];
                 const x = (i / (curMaxPoints - 1)) * cw;
                 const y = ch - p.py;
                 if (i === 0) ctx.moveTo(x, y);
-                else         ctx.lineTo(x, y);
+                else ctx.lineTo(x, y);
             }
             ctx.stroke();
         }
 
+        let hoverIdx = -1;
+        let gustExpanded = false;
+
+        function updateHover(clientX) {
+            const rect = canvas.getBoundingClientRect();
+            if (!rect.width) return;
+            const relX = Math.max(0, Math.min(rect.width, clientX - rect.left));
+            hoverIdx = Math.round((relX / rect.width) * (curMaxPoints - 1));
+            draw();
+        }
+        canvas.addEventListener('pointermove', (e) => updateHover(e.clientX));
+        canvas.addEventListener('pointerdown', (e) => updateHover(e.clientX));
+        canvas.addEventListener('pointerleave', () => { hoverIdx = -1; draw(); });
+
         function draw() {
             ctx.clearRect(0, 0, cw, ch);
 
-            // 범위 계산 (모든 시리즈 통합)
-            let dataMin = Infinity, dataMax = -Infinity;
-            series.forEach(s => {
-                buffers[s.key].forEach(p => {
-                    if (!Number.isFinite(p.y)) return;
-                    if (p.y < dataMin) dataMin = p.y;
-                    if (p.y > dataMax) dataMax = p.y;
+            // 돌풍(>8.0 m/s) 감지 시 12.0 m/s 계단 확장, 기본 0.0~8.0 m/s 고정
+            let maxWindVal = 0;
+            ['windSpeed', 'targetWind'].forEach(k => {
+                (buffers[k] || []).forEach(p => {
+                    if (Number.isFinite(p.y) && p.y > maxWindVal) maxWindVal = p.y;
                 });
             });
-            if (yMin != null) dataMin = yMin;
-            if (yMax != null) dataMax = yMax;
-            if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax)) return;
-            if (dataMax <= dataMin) dataMax = dataMin + 1;
+            if (maxWindVal > 8.0) gustExpanded = true;
+            const windMin = (yMin != null) ? yMin : 0.0;
+            const windMax = (yMax != null) ? yMax : (gustExpanded ? 12.0 : 8.0);
 
-            const pad = 6;
-            const yRange = dataMax - dataMin;
-            const innerH = ch - pad * 2;
+            const padL = 32, padR = 36, padY = 10;
+            const innerW = Math.max(40, cw - padL - padR);
+            const innerH = Math.max(40, ch - padY * 2);
+            const yRange = Math.max(1, windMax - windMin);
 
-            // Y축 그리드 (5줄)
-            ctx.strokeStyle = 'rgba(139,148,158,0.15)';
-            ctx.lineWidth = 1;
-            for (let i = 0; i <= 4; i++) {
-                const y = pad + (innerH / 4) * i;
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(cw, y);
-                ctx.stroke();
+            // 좌측 Y축 정량 눈금(2.0 m/s 단위) & 우측 PWM(0~100%) 라벨
+            ctx.font = '10px monospace';
+            ctx.fillStyle = '#8b949e';
+            const stepUnit = 2.0;
+            for (let v = windMin; v <= windMax + 0.01; v += stepUnit) {
+                const ratio = (v - windMin) / yRange;
+                const y = padY + innerH - ratio * innerH;
+                ctx.strokeStyle = 'rgba(139,148,158,0.14)';
+                ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + innerW, y); ctx.stroke();
+
+                ctx.textAlign = 'right';
+                ctx.fillText(v.toFixed(1), padL - 4, y + 3);
+
+                ctx.textAlign = 'left';
+                ctx.fillText(Math.round(ratio * 100) + '%', padL + innerW + 4, y + 3);
             }
 
-            // 각 시리즈 픽셀 좌표 미리 계산
-            series.forEach(s => {
-                buffers[s.key].forEach(p => {
-                    if (!Number.isFinite(p.y)) { p.py = 0; return; }
-                    p.py = pad + ((p.y - dataMin) / yRange) * innerH;
-                });
+            // 3대 기준 보조선 (2.0 / 5.0 / 7.0 m/s)
+            [
+                { v: 2.0, color: 'rgba(45,212,191,0.45)' },
+                { v: 5.0, color: 'rgba(63,185,80,0.45)' },
+                { v: 7.0, color: 'rgba(240,136,62,0.55)' }
+            ].forEach(ref => {
+                if (ref.v > windMax) return;
+                const y = padY + innerH - ((ref.v - windMin) / yRange) * innerH;
+                ctx.save();
+                ctx.strokeStyle = ref.color;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + innerW, y); ctx.stroke();
+                ctx.restore();
             });
 
-            // 라인 렌더
-            series.forEach(s => _drawSeries(buffers[s.key], s.color));
+            // 시리즈별 축 분리 렌더링 (pwmDuty: 우측 0~100%, 풍속: 좌측 windMin~windMax)
+            series.forEach(s => {
+                const isPwm = (s.key === 'pwmDuty');
+                const arr = buffers[s.key] || [];
+                if (arr.length < 2) return;
+                ctx.strokeStyle = s.color;
+                ctx.lineWidth = 2;
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                arr.forEach((p, i) => {
+                    const val = Number.isFinite(p.y) ? p.y : 0;
+                    const ratio = isPwm ? (val / 100) : ((val - windMin) / yRange);
+                    const x = padL + (i / (curMaxPoints - 1)) * innerW;
+                    const y = padY + innerH - Math.max(0, Math.min(1, ratio)) * innerH;
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+            });
+
+            // 모바일/데스크톱 터치 십자선 (Crosshair Tooltip)
+            const wArr = buffers.windSpeed || [];
+            if (hoverIdx >= 0 && hoverIdx < wArr.length) {
+                const x = padL + (hoverIdx / (curMaxPoints - 1)) * innerW;
+                ctx.save();
+                ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                ctx.setLineDash([2, 2]);
+                ctx.beginPath(); ctx.moveTo(x, padY); ctx.lineTo(x, padY + innerH); ctx.stroke();
+                ctx.restore();
+
+                const wVal = (wArr[hoverIdx]?.y ?? 0).toFixed(2);
+                const pVal = Math.round((buffers.pwmDuty?.[hoverIdx]?.y) ?? 0);
+                const label = `${wVal} m/s · PWM ${pVal}%`;
+                const boxW = 132, boxH = 22;
+                const bx = Math.min(padL + innerW - boxW, Math.max(padL, x - boxW / 2));
+                ctx.fillStyle = 'rgba(15,20,25,0.9)';
+                ctx.fillRect(bx, padY, boxW, boxH);
+                ctx.strokeStyle = '#4a9eff';
+                ctx.strokeRect(bx, padY, boxW, boxH);
+                ctx.fillStyle = '#e6edf3';
+                ctx.textAlign = 'center';
+                ctx.fillText(label, bx + boxW / 2, padY + 14);
+            }
         }
 
         // 리사이즈 옵저버 (없으면 window resize)
@@ -1673,14 +1739,14 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 140.ui.simulation.js (16087 bytes) ---- */
+/* ---- 140.ui.simulation.js (16035 bytes) ---- */
 // =========================================================
 // 140.ui.simulation.js — Simulation 모달 (5축 레이더 + A/B 비교)
 // Layer 3 (UI 시뮬레이션 컴포넌트)
 // =========================================================
 window.SNW = window.SNW || {};
 SNW.UI = SNW.UI || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     /**
@@ -1692,7 +1758,7 @@ SNW.UI = SNW.UI || {};
      *   onApply: (chosenConfig) => void,         // "적용" 버튼
      * }
      */
-    SNW.UI.simulationModal = async function(config) {
+    SNW.UI.simulationModal = async function (config) {
         if (!config || !config.a) return null;
         if (SNW.Preview && typeof SNW.Preview.init === 'function') {
             await SNW.Preview.init();
@@ -1704,8 +1770,8 @@ SNW.UI = SNW.UI || {};
         const waveA = await SNW.Preview.generateStep({
             type: 'PRESET',
             presetCode: config.a.presetCode || 'OCEAN',
-            styleCode:  config.a.styleCode  || 'BALANCE',
-            override:   config.a.override || { enabled: false },
+            styleCode: config.a.styleCode || 'BALANCE',
+            override: config.a.override || { enabled: false },
         });
 
         const feelingsA = SNW.Preview.toFeelings(
@@ -1719,8 +1785,8 @@ SNW.UI = SNW.UI || {};
             waveB = await SNW.Preview.generateStep({
                 type: 'PRESET',
                 presetCode: config.b.presetCode || 'COUNTRY_BREEZE',
-                styleCode:  config.b.styleCode  || 'RELAX',
-                override:   config.b.override || { enabled: false },
+                styleCode: config.b.styleCode || 'RELAX',
+                override: config.b.override || { enabled: false },
             });
             feelingsB = SNW.Preview.toFeelings(
                 waveB.intensity, waveB.variability, waveB.gustFreq);
@@ -1766,9 +1832,9 @@ SNW.UI = SNW.UI || {};
             <div class="snw-sim__actions" style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
                 <button type="button" class="snw-btn" data-action="close" style="padding:8px 16px;">닫기</button>
                 ${config.mode === 'ab'
-                    ? `<button type="button" class="snw-btn" data-action="apply-b" style="padding:8px 16px;">B로 적용</button>
+                ? `<button type="button" class="snw-btn" data-action="apply-b" style="padding:8px 16px;">B로 적용</button>
                        <button type="button" class="snw-btn snw-btn-primary" data-action="apply-a" style="padding:8px 16px;">A로 적용</button>`
-                    : `<button type="button" class="snw-btn snw-btn-primary" data-action="apply-a" style="padding:8px 16px;">✓ 이 설정 적용</button>`}
+                : `<button type="button" class="snw-btn snw-btn-primary" data-action="apply-a" style="padding:8px 16px;">✓ 이 설정 적용</button>`}
             </div>
         `;
 
@@ -1777,7 +1843,7 @@ SNW.UI = SNW.UI || {};
         // =========================================================
         const canvasA = content.querySelector('[data-slot="canvas-a"]');
         const canvasB = content.querySelector('[data-slot="canvas-b"]');
-        const radar   = content.querySelector('[data-slot="radar"]');
+        const radar = content.querySelector('[data-slot="radar"]');
 
         animateWave(canvasA, waveA.points, '#4a9eff');
         if (waveB) animateWave(canvasB, waveB.points, '#f0883e');
@@ -1901,7 +1967,7 @@ SNW.UI = SNW.UI || {};
                 const x = (i / (points.length - 1)) * w;
                 const y = h - ((p.wind - minV) / (maxV - minV)) * (h - 20) - 10;
                 if (i === 0) ctx.moveTo(x, y);
-                else         ctx.lineTo(x, y);
+                else ctx.lineTo(x, y);
             }
             ctx.stroke();
 
@@ -1951,11 +2017,11 @@ SNW.UI = SNW.UI || {};
         ctx.clearRect(0, 0, w, h);
 
         const axes = [
-            { key: 'coolness',   label: '시원함',   angle: -Math.PI / 2 },
-            { key: 'freshness',  label: '청량감',   angle: -Math.PI / 2 + Math.PI * 2 / 5 },
-            { key: 'dynamism',   label: '역동성',   angle: -Math.PI / 2 + Math.PI * 4 / 5 },
-            { key: 'smoothness', label: '부드러움', angle: -Math.PI / 2 + Math.PI * 6 / 5 },
-            { key: 'calmness',   label: '차분함',   angle: -Math.PI / 2 + Math.PI * 8 / 5 },
+            { key: 'coolness', label: '시원함', angle: -Math.PI / 2 },
+            { key: 'smoothness', label: '부드러움', angle: -Math.PI / 2 + Math.PI * 2 / 5 },
+            { key: 'freshness', label: '자연미', angle: -Math.PI / 2 + Math.PI * 4 / 5 },
+            { key: 'dynamism', label: '활력', angle: -Math.PI / 2 + Math.PI * 6 / 5 },
+            { key: 'calmness', label: '수면적합도', angle: -Math.PI / 2 + Math.PI * 8 / 5 },
         ];
 
         // 그리드 (5단계 원)
@@ -1968,7 +2034,7 @@ SNW.UI = SNW.UI || {};
                 const x = cx + Math.cos(axis.angle) * r;
                 const y = cy + Math.sin(axis.angle) * r;
                 if (i === 0) ctx.moveTo(x, y);
-                else         ctx.lineTo(x, y);
+                else ctx.lineTo(x, y);
             });
             ctx.closePath();
             ctx.stroke();
@@ -2019,7 +2085,7 @@ SNW.UI = SNW.UI || {};
             const x = cx + Math.cos(axis.angle) * r;
             const y = cy + Math.sin(axis.angle) * r;
             if (i === 0) ctx.moveTo(x, y);
-            else         ctx.lineTo(x, y);
+            else ctx.lineTo(x, y);
         });
         ctx.closePath();
         ctx.fillStyle = fillColor;
@@ -3017,7 +3083,7 @@ registerProcessor('pcm-capture-processor', PcmCaptureProcessor);
 
 
 
-/* ---- 147c.ai.chat.core.js (3515 bytes) ---- */
+/* ---- 147c.ai.chat.core.js (3797 bytes) ---- */
 // =========================================================
 // 147c.ai.chat.core.js — AI 대화 공용 코어 (REST/Live)
 // Layer 3 (AI 공용 로직)
@@ -3075,15 +3141,19 @@ window.SNW = window.SNW || {};
                 this._onStateChange({ busy: true });
                 let replyText = '(응답 없음)';
                 let toolCalls = [];
-
-                if (SNW.Api && typeof SNW.Api.postAI === 'function') {
-                    const res = await SNW.Api.postAI({ prompt: msg, mode: this._mode });
-                    if (res && res.reply) replyText = res.reply;
-                    if (res && res.toolCalls) toolCalls = res.toolCalls;
+                
+                // [147c.ai.chat.core.js] AIChatCore.send() 내부 API 호출 교체 (라인 56~62 부근)
+                if (SNW.AIClient && typeof SNW.AIClient.send === 'function') {
+                    const res = await SNW.AIClient.send(msg, this._history.slice(0, -1), {
+                        lang: (SNW.I18n && SNW.I18n.getLang ? SNW.I18n.getLang() : 'ko'),
+                        voiceMode: this._mode === 'live'
+                    });
+                    if (res && res.text) replyText = res.text;
+                    if (res && res.actions) toolCalls = res.actions;
                 } else {
                     replyText = 'AI 클라이언트를 초기화할 수 없습니다.';
                 }
-                
+
                 const modelEntry = {
                     role: 'model',
                     text: replyText,
@@ -3118,7 +3188,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 150.ui.rule_editor.js (19002 bytes) ---- */
+/* ---- 150.ui.rule_editor.js (21079 bytes) ---- */
 // =========================================================
 // core/150.ui.rule_editor.js — 규칙 편집기 (Pause/Stop 이원화)
 // Layer 3 (UI Component) — 전역 재사용
@@ -3130,11 +3200,11 @@ SNW.UI = SNW.UI || {};
     'use strict';
 
     const DEFAULT_RULE = {
-        timer:        { enabled: false, minutes: 0 },
-        offTime:      { enabled: false, time: '00:00' },
-        tempLow:      { enabled: false, mode: 'PAUSE', threshold: 22.0, hysteresis: 0.5 },
-        diLow:        { enabled: false, mode: 'PAUSE', threshold: 65.0, hysteresis: 3.0 },
-        pirPause:     { enabled: false, holdSec: 120 },
+        timer: { enabled: false, minutes: 0 },
+        offTime: { enabled: false, time: '00:00' },
+        tempLow: { enabled: false, mode: 'PAUSE', threshold: 22.0, hysteresis: 0.5 },
+        diLow: { enabled: false, mode: 'PAUSE', threshold: 65.0, hysteresis: 3.0 },
+        pirPause: { enabled: false, holdSec: 120 },
         smartComfort: { enabled: false, intervalMin: 5, level: 2 },
     };
 
@@ -3143,10 +3213,10 @@ SNW.UI = SNW.UI || {};
         deepSleep: {
             labelKey: 'rule.template.deepSleep',
             rule: {
-                timer:    { enabled: true, minutes: 480 },
-                offTime:  { enabled: true, time: '06:00' },
-                tempLow:  { enabled: true, mode: 'STOP',  threshold: 23.0, hysteresis: 0.0 },
-                diLow:    { enabled: false, mode: 'PAUSE', threshold: 65.0, hysteresis: 3.0 },
+                timer: { enabled: true, minutes: 480 },
+                offTime: { enabled: true, time: '06:00' },
+                tempLow: { enabled: true, mode: 'STOP', threshold: 23.0, hysteresis: 0.0 },
+                diLow: { enabled: false, mode: 'PAUSE', threshold: 65.0, hysteresis: 3.0 },
                 pirPause: { enabled: true, holdSec: 600 },
                 smartComfort: { enabled: true, intervalMin: 5, level: 2 },
             },
@@ -3154,10 +3224,10 @@ SNW.UI = SNW.UI || {};
         babySafe: {
             labelKey: 'rule.template.babySafe',
             rule: {
-                timer:    { enabled: false, minutes: 0 },
-                offTime:  { enabled: false, time: '00:00' },
-                tempLow:  { enabled: true, mode: 'STOP',  threshold: 24.0, hysteresis: 0.0 },
-                diLow:    { enabled: true, mode: 'STOP',  threshold: 68.0, hysteresis: 0.0 },
+                timer: { enabled: false, minutes: 0 },
+                offTime: { enabled: false, time: '00:00' },
+                tempLow: { enabled: true, mode: 'STOP', threshold: 24.0, hysteresis: 0.0 },
+                diLow: { enabled: true, mode: 'STOP', threshold: 68.0, hysteresis: 0.0 },
                 pirPause: { enabled: true, holdSec: 300 },
                 smartComfort: { enabled: true, intervalMin: 5, level: 2 },
             },
@@ -3165,10 +3235,10 @@ SNW.UI = SNW.UI || {};
         officeFocus: {
             labelKey: 'rule.template.officeFocus',
             rule: {
-                timer:    { enabled: true, minutes: 120 },
-                offTime:  { enabled: false, time: '00:00' },
-                tempLow:  { enabled: false, mode: 'PAUSE', threshold: 22.0, hysteresis: 0.5 },
-                diLow:    { enabled: true, mode: 'PAUSE', threshold: 70.0, hysteresis: 3.0 },
+                timer: { enabled: true, minutes: 120 },
+                offTime: { enabled: false, time: '00:00' },
+                tempLow: { enabled: false, mode: 'PAUSE', threshold: 22.0, hysteresis: 0.5 },
+                diLow: { enabled: true, mode: 'PAUSE', threshold: 70.0, hysteresis: 3.0 },
                 pirPause: { enabled: true, holdSec: 180 },
                 smartComfort: { enabled: false, intervalMin: 5, level: 2 },
             },
@@ -3266,14 +3336,16 @@ SNW.UI = SNW.UI || {};
                     <label><input type="checkbox" data-rule="tempLow.enabled" ${r.tempLow.enabled ? 'checked' : ''}> ${t('rule.tempLow.enabled')}</label>
                     <div class="snw-rule-mode">
                         <label><input type="radio" name="tempLowMode" value="PAUSE" ${r.tempLow.mode === 'PAUSE' ? 'checked' : ''}> ${t('rule.tempLow.modePause')}</label>
-                        <label><input type="radio" name="tempLowMode" value="STOP"  ${r.tempLow.mode === 'STOP'  ? 'checked' : ''}> ${t('rule.tempLow.modeStop')}</label>
+                        <label><input type="radio" name="tempLowMode" value="STOP"  ${r.tempLow.mode === 'STOP' ? 'checked' : ''}> ${t('rule.tempLow.modeStop')}</label>
                     </div>
                     <div class="snw-rule-inputs">
                         <span>${t('rule.tempLow.threshold')}</span>
                         <input type="number" step="0.5" min="10" max="35" data-rule="tempLow.threshold" value="${_nz(r.tempLow.threshold, 22.0)}" class="snw-input-sm">
                         <span class="snw-rule-unit">°C</span>
                         <span class="snw-rule-hint" data-rule-hint="tempLow">${t('rule.tempLow.hysteresis')}</span>
-                        <input type="number" step="0.5" min="0" max="10" data-rule="tempLow.hysteresis" value="${_nz(r.tempLow.hysteresis, 0.5)}" class="snw-input-sm">
+                        <input type="number" step="0.5" min="0" max="10" data-rule="tempLow.hysteresis"
+                               value="${r.tempLow.mode === 'STOP' ? 0 : _nz(r.tempLow.hysteresis, 0.5)}"
+                               ${r.tempLow.mode === 'STOP' ? 'disabled' : ''} class="snw-input-sm">
                         <span class="snw-rule-unit">°C</span>
                     </div>
                 </div>
@@ -3282,14 +3354,16 @@ SNW.UI = SNW.UI || {};
                     <label><input type="checkbox" data-rule="diLow.enabled" ${r.diLow.enabled ? 'checked' : ''}> ${t('rule.diLow.enabled')}</label>
                     <div class="snw-rule-mode">
                         <label><input type="radio" name="diLowMode" value="PAUSE" ${r.diLow.mode === 'PAUSE' ? 'checked' : ''}> ${t('rule.tempLow.modePause')}</label>
-                        <label><input type="radio" name="diLowMode" value="STOP"  ${r.diLow.mode === 'STOP'  ? 'checked' : ''}> ${t('rule.tempLow.modeStop')}</label>
+                        <label><input type="radio" name="diLowMode" value="STOP"  ${r.diLow.mode === 'STOP' ? 'checked' : ''}> ${t('rule.tempLow.modeStop')}</label>
                     </div>
                     <div class="snw-rule-inputs">
                         <span>${t('rule.tempLow.threshold')}</span>
                         <input type="number" step="1" min="0" max="100" data-rule="diLow.threshold" value="${_nz(r.diLow.threshold, 65.0)}" class="snw-input-sm">
                         <span class="snw-rule-unit">DI</span>
                         <span class="snw-rule-hint">${t('rule.tempLow.hysteresis')}</span>
-                        <input type="number" step="1" min="0" max="20" data-rule="diLow.hysteresis" value="${_nz(r.diLow.hysteresis, 3.0)}" class="snw-input-sm">
+                        <input type="number" step="1" min="0" max="20" data-rule="diLow.hysteresis"
+                               value="${r.diLow.mode === 'STOP' ? 0 : _nz(r.diLow.hysteresis, 3.0)}"
+                               ${r.diLow.mode === 'STOP' ? 'disabled' : ''} class="snw-input-sm">
                         <span class="snw-rule-unit">DI</span>
                     </div>
                 </div>
@@ -3321,6 +3395,9 @@ SNW.UI = SNW.UI || {};
                         <input type="number" min="1" max="60" data-rule="smartComfort.intervalMin" value="${_nz(r.smartComfort.intervalMin, 5)}" class="snw-input-sm">
                         <span class="snw-rule-unit">분 주기</span>
                     </div>
+                </div>
+                <div class="snw-rule-row">
+                    <label><input type="checkbox" data-always-on ${(SNW.Store && SNW.Store.get().autoComfortEnabled) ? 'checked' : ''}> ${t('rule.smartComfort.alwaysOn')}</label>
                 </div>
             </fieldset>
 
@@ -3410,14 +3487,26 @@ SNW.UI = SNW.UI || {};
                     el.addEventListener('input', handler);
                 });
 
-                // mode 라디오
+                // mode 라디오 (STOP 선택 시 hysteresis=0 및 disabled 강제)
                 ['tempLowMode', 'diLowMode'].forEach(name => {
                     const arr = content.querySelectorAll(`input[name="${name}"]`);
-                    const key = name === 'tempLowMode' ? 'tempLow.mode' : 'diLow.mode';
+                    const prefix = name === 'tempLowMode' ? 'tempLow' : 'diLow';
+                    const key = `${prefix}.mode`;
+                    const hyKey = `${prefix}.hysteresis`;
+                    const defHy = prefix === 'tempLow' ? 0.5 : 3.0;
                     arr.forEach(radio => {
                         radio.addEventListener('change', () => {
                             if (radio.checked) {
                                 _setPath(working, key, radio.value);
+                                const hyInput = content.querySelector(`[data-rule="${hyKey}"]`);
+                                if (radio.value === 'STOP') {
+                                    _setPath(working, hyKey, 0);
+                                    if (hyInput) { hyInput.value = '0'; hyInput.disabled = true; }
+                                } else {
+                                    const nextHy = Number(working[prefix].hysteresis) > 0 ? working[prefix].hysteresis : defHy;
+                                    _setPath(working, hyKey, nextHy);
+                                    if (hyInput) { hyInput.value = String(nextHy); hyInput.disabled = false; }
+                                }
                                 const prev = _calcPreview(working);
                                 const detailEl = content.querySelector('[data-slot="preview-detail"]');
                                 if (detailEl) detailEl.textContent = prev.detail;
@@ -3453,6 +3542,16 @@ SNW.UI = SNW.UI || {};
                         }
 
                         // 가동 중 세션 즉시 적용 체크 시 PATCH /session/rule 호출
+                        // 상시 쾌적 감시(autoComfort) 동기화
+                        const chkAlways = content.querySelector('[data-always-on]');
+                        if (chkAlways && SNW.Store && chkAlways.checked !== !!SNW.Store.get().autoComfortEnabled) {
+                            try {
+                                if (SNW.Api && typeof SNW.Api.setAutoComfort === 'function') {
+                                    await SNW.Api.setAutoComfort(chkAlways.checked);
+                                    SNW.Store.set({ autoComfortEnabled: chkAlways.checked });
+                                }
+                            } catch (e) { }
+                        }
                         const chkApply = content.querySelector('[data-apply-session]');
                         if (chkApply && chkApply.checked) {
                             try {

@@ -1,5 +1,5 @@
 
-/* ---- _base.css (5826 bytes) ---- */
+/* ---- _base.css (6073 bytes) ---- */
 /* === _reset.css === */
 /*
  * ------------------------------------------------------
@@ -158,9 +158,9 @@ a {
     --snw-np-h: 48px;
 
     /* [v0203-UI] 하단 뷰포트 레이아웃 스택 (기본: Now Playing 숨김) */
-    --snw-fab-bottom: 76px;
-    --snw-toast-bottom: 76px;
-    --snw-content-pb: 80px;
+    --snw-fab-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    --snw-toast-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    --snw-content-pb: calc(80px + env(safe-area-inset-bottom, 0px));
 
     /* 그림자 */
     --snw-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -191,14 +191,14 @@ a {
 
 /* [v0203-UI] Now Playing Bar 활성화 시 동적 부상 레이아웃 */
 body.has-nowplaying {
-    --snw-fab-bottom: 124px;
+    --snw-fab-bottom: calc(124px + env(safe-area-inset-bottom, 0px));
     /* 60px(BottomNav) + 48px(NP) + 16px */
-    --snw-toast-bottom: 124px;
-    --snw-content-pb: 128px;
+    --snw-toast-bottom: calc(124px + env(safe-area-inset-bottom, 0px));
+    --snw-content-pb: calc(128px + env(safe-area-inset-bottom, 0px));
 }
 
 /* [v0203-UI] 데스크톱 (Bottom Nav 없음) 레이아웃 스택 */
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
     :root {
         --snw-fab-bottom: 24px;
         --snw-toast-bottom: 24px;
@@ -233,7 +233,7 @@ body.has-nowplaying {
     }
 }
 
-/* ---- _layout.css (16488 bytes) ---- */
+/* ---- _layout.css (16546 bytes) ---- */
 /* === _layout.css === */
 /*
  * ------------------------------------------------------
@@ -519,9 +519,9 @@ body.snw-sidebar-open .snw-sidebar {
 }
 
 /* =====================================================
- * 모바일 / 태블릿 반응형 (767px 이하)
+ * 모바일 / 태블릿 반응형 (1023px 이하)
  * ===================================================== */
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
     :root {
         --snw-footer-h: 0px;
         /* 하단 탭 바가 푸터 역할을 대신함 */
@@ -531,7 +531,7 @@ body.snw-sidebar-open .snw-sidebar {
         display: none;
     }
 
-    /* 모바일에서도 햄버거 메뉴(더보기) 유지 */
+    /* 모바일/태블릿에서도 햄버거 메뉴(더보기) 유지 */
     #btn-menu {
         display: inline-flex !important;
     }
@@ -542,13 +542,13 @@ body.snw-sidebar-open .snw-sidebar {
         bottom: 0;
         left: 0;
         right: 0;
-        height: var(--snw-bottom-nav-h);
+        height: calc(var(--snw-bottom-nav-h) + env(safe-area-inset-bottom, 0px));
         background: var(--snw-surface);
         border-top: 1px solid var(--snw-border);
         z-index: var(--snw-z-bottom);
         justify-content: space-around;
         align-items: center;
-        padding-bottom: env(safe-area-inset-bottom);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
         /* iOS 노치 대응 */
     }
 
@@ -916,7 +916,7 @@ body.snw-sidebar-open .snw-sidebar {
     }
 }
 
-/* ---- _comp_ui.css (16847 bytes) ---- */
+/* ---- _comp_ui.css (16828 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : _components.css
@@ -1695,7 +1695,6 @@ body.snw-sidebar-open .snw-sidebar {
     border-radius: var(--snw-radius);
     cursor: pointer;
 }
-
 
 
 /* ---- _comp_form.css (17434 bytes) ---- */

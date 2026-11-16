@@ -1,5 +1,5 @@
 
-/* ---- 000.const.js (8379 bytes) ---- */
+/* ---- 000.const.js (8689 bytes) ---- */
 // =========================================================
 // 000.const.js — 프론트엔드 상수 (변경 불변)
 // Layer 0 (기반) — 어떤 모듈도 참조하지 않음
@@ -85,7 +85,6 @@ window.SNW = window.SNW || {};
             12: { code: 'TEMP_LOW_STOP', labelKey: 'reason.tempLowStop' },
             13: { code: 'DI_LOW_STOP', labelKey: 'reason.diLowStop' }
         },
-
 
         // =====================================================
         // S10 Wind Phase - 자동 동기화 연동
@@ -412,7 +411,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 020.i18n.js (82314 bytes) ---- */
+/* ---- 020.i18n.js (82775 bytes) ---- */
 // =========================================================
 // 020.i18n.js — 다국어 완전판 (ko/en)
 // =========================================================
@@ -1035,6 +1034,12 @@ window.SNW = window.SNW || {};
             'reason.motionNoPresence': '재실 감지 안됨',
             'reason.autoOffTimer': '자동 종료 타이머',
             'reason.autoOffTime': '자동 종료 시각',
+            
+            'reason.userStop': '사용자 정지',
+            'reason.tempLowStop': '저온 안전 정지',
+            'reason.diLowStop': '불쾌지수 저하 정지',
+            'autoOff.di': '불쾌지수 종료',
+
             'reason.autoOffTemp': '자동 종료 온도',
 
             // =====================================================
@@ -1161,7 +1166,7 @@ window.SNW = window.SNW || {};
             'home.scenario.autoFull': '✨ AI 스마트 쾌적',
             'home.scenario.autoSelect': '🎯 취향 맞춤 Auto',
             'home.scenario.skipConfirm': '☑ 다음부터 이 확인창 없이 바로 시작',
-            'home.scenario.sleepMeta': '8h타이머·22°C정지',
+            'home.scenario.sleepMeta': '8h타이머·맞춤Auto',
             'home.scenario.officeMeta': 'DI·PIR연동',
             'home.scenario.studyMeta': '미풍·집중스타일',
             'home.scenario.restMeta': '밸런스·자연풍',
@@ -1802,6 +1807,13 @@ window.SNW = window.SNW || {};
             'reason.motionNoPresence': 'No presence',
             'reason.autoOffTimer': 'AutoOff timer',
             'reason.autoOffTime': 'AutoOff time',
+            
+            'reason.userStop': 'User stopped',
+            'reason.tempLowStop': 'Low temp safety stop',
+            'reason.diLowStop': 'Low DI stop',
+            'autoOff.di': 'DI threshold stop',
+            
+
             'reason.autoOffTemp': 'AutoOff temp',
 
             // Wind Phase
@@ -1920,7 +1932,8 @@ window.SNW = window.SNW || {};
             'home.scenario.autoFull': '✨ AI Smart Comfort',
             'home.scenario.autoSelect': '🎯 Custom Auto',
             'home.scenario.skipConfirm': '☑ Skip this confirmation next time',
-            'home.scenario.sleepMeta': '8h timer · 22°C stop',
+            'home.scenario.sleepMeta': '8h timer · Custom Auto',
+
             'home.scenario.officeMeta': 'DI · PIR linked',
             'home.scenario.studyMeta': 'Gentle · Focus style',
             'home.scenario.restMeta': 'Balance · Natural',
@@ -3453,7 +3466,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 060.store.js (5527 bytes) ---- */
+/* ---- 060.store.js (5620 bytes) ---- */
 // =========================================================
 // 060.store.js — SNW.Store + SNW.StoreBridge
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -3538,7 +3551,6 @@ window.SNW = window.SNW || {};
 	// =====================================================
 	const SESSION_TYPE_NAMES = ['NONE', 'PLAYLIST', 'PRESET', 'FIXED', 'AUTO_FULL', 'AUTO_SELECT'];
 	const SESSION_TRIGGER_NAMES = ['NONE', 'MANUAL', 'SCHEDULE', 'AUTO_COMFORT', 'MANUAL_AUTO_FULL', 'MANUAL_AUTO_SELECT'];
-
 
 	function normalizeSession(s) {
 		if (!s || typeof s !== 'object') {

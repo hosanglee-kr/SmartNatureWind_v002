@@ -193,7 +193,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 110.ui.slider.js (9241 bytes) ---- */
+/* ---- 110.ui.slider.js (9614 bytes) ---- */
 // =========================================================
 // 110.ui.slider.js — SNW.UI.slider
 // Layer 3 (UI 컴포넌트)
@@ -264,6 +264,11 @@ window.SNW = window.SNW || {};
         
         let dragging = false;
         
+        input.addEventListener('pointerdown', () => {
+            dragging = true;
+            document.body.classList.add('is-sliding');
+        });
+        
         input.addEventListener('input', () => {
             dragging = true;
             if (valEl) valEl.textContent = input.value;
@@ -272,12 +277,19 @@ window.SNW = window.SNW || {};
         
         input.addEventListener('change', () => {
             dragging = false;
+            document.body.classList.remove('is-sliding');
             updateFeedback(input.value);
             debounced(Number(input.value));
         });
         
-        input.addEventListener('pointerup', () => { dragging = false; });
-        input.addEventListener('pointercancel', () => { dragging = false; });
+        input.addEventListener('pointerup', () => {
+            dragging = false;
+            document.body.classList.remove('is-sliding');
+        });
+        input.addEventListener('pointercancel', () => {
+            dragging = false;
+            document.body.classList.remove('is-sliding');
+        });
         
         return {
             set(v) {
@@ -2356,7 +2368,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 147.ai.live.js (9572 bytes) ---- */
+/* ---- 147.ai.live.js (10664 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명 : 147.ai.live.js
@@ -2385,6 +2397,8 @@ window.SNW = window.SNW || {};
 	let _sessionStartTime = 0;
 	let _lastReportTime = 0;
 	let _usageIntervalId = null;
+	let _sessionWarnId = null;
+	let _sessionLimitId = null;
 
 	let _callbacks = {
 		onStateChange: null, // (state, details)
@@ -2468,6 +2482,22 @@ window.SNW = window.SNW || {};
 
 					// 30초 주기 사용량 보고 타이머 시작
 					this._startUsageReporting();
+
+					// 14분 세션 제한 경고 & 안전 종료 타이머
+					const liveCfg = (SNW.CFG && SNW.CFG.AI_LIVE) || {};
+					const maxMs = Number(liveCfg.MAX_SESSION_MS || 14 * 60000);
+					const warnBeforeMs = Number(liveCfg.SESSION_WARN_MS || 60000);
+					if (_sessionWarnId) clearTimeout(_sessionWarnId);
+					if (_sessionLimitId) clearTimeout(_sessionLimitId);
+					if (maxMs > warnBeforeMs) {
+						_sessionWarnId = setTimeout(() => {
+							if (SNW.ToastUtil) SNW.ToastUtil.warn('1분 후 음성 세션이 자동 종료됩니다.');
+						}, maxMs - warnBeforeMs);
+					}
+					_sessionLimitId = setTimeout(() => {
+						if (SNW.ToastUtil) SNW.ToastUtil.info('최대 음성 세션 시간(14분) 도달로 안전 종료합니다.');
+						this.stopSession();
+					}, maxMs);
 
 					this._emitState('connected');
 				};
@@ -2681,9 +2711,15 @@ window.SNW = window.SNW || {};
 			}
 		},
 
+		_clearSessionTimers() {
+			if (_sessionWarnId) { clearTimeout(_sessionWarnId); _sessionWarnId = null; }
+			if (_sessionLimitId) { clearTimeout(_sessionLimitId); _sessionLimitId = null; }
+		},
+
 		_handleClose(event) {
 			_isConnected = false;
 			_isConnecting = false;
+			this._clearSessionTimers();
 			this._stopUsageReporting();
 			this._reportUsageDelta(); // 남은 사용량 최종 보고
 
@@ -2703,6 +2739,7 @@ window.SNW = window.SNW || {};
 			_ws = null;
 			_isConnected = false;
 
+			this._clearSessionTimers();
 			this._stopUsageReporting();
 			this._reportUsageDelta();
 

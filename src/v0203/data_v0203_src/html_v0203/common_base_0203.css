@@ -233,7 +233,7 @@ body.has-nowplaying {
     }
 }
 
-/* ---- _layout.css (16546 bytes) ---- */
+/* ---- _layout.css (16685 bytes) ---- */
 /* === _layout.css === */
 /*
  * ------------------------------------------------------
@@ -573,10 +573,14 @@ body.snw-sidebar-open .snw-sidebar {
         font-size: 20px;
     }
 
-    /* 설정 페이지 저장 바가 하단 탭 바(60px) 위로 오도록 조정 */
+    /* 설정 페이지 저장 바가 하단 탭 바(60px) / Now Playing 위로 오도록 조정 */
     .snw-form-sticky {
         bottom: 60px !important;
         z-index: 1001 !important;
+    }
+
+    body.has-nowplaying .snw-form-sticky {
+        bottom: calc(108px + env(safe-area-inset-bottom, 0px)) !important;
     }
 
     /* 메인 컨텐츠가 하단 탭 바 및 Now Playing에 가려지지 않도록 패딩 동적 반영 */
@@ -916,7 +920,7 @@ body.snw-sidebar-open .snw-sidebar {
     }
 }
 
-/* ---- _comp_ui.css (16828 bytes) ---- */
+/* ---- _comp_ui.css (16702 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : _components.css
@@ -1613,7 +1617,6 @@ body.snw-sidebar-open .snw-sidebar {
     background: rgba(74, 158, 255, 0.08);
 }
 
-.snw-schedule-head,
 .snw-profile-head {
     display: flex;
     align-items: center;
@@ -1653,12 +1656,6 @@ body.snw-sidebar-open .snw-sidebar {
 
 .snw-schedule-days {
     font-family: var(--snw-font-mono);
-}
-
-.snw-schedule-segcount,
-.snw-profile-segcount {
-    font-size: 11px;
-    color: var(--snw-text-faint);
 }
 
 .snw-profile-actions {

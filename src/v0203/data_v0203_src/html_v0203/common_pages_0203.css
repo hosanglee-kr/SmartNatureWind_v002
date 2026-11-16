@@ -1,5 +1,5 @@
 
-/* ---- _dashboard.css (11662 bytes) ---- */
+/* ---- _dashboard.css (11894 bytes) ---- */
 /* === _dashboard.css === */
 /*
  * ------------------------------------------------------
@@ -88,6 +88,15 @@
 /* Phase 표시 (컬러) */
 .snw-card--state .snw-kv b[data-slot="phase"] {
     font-size: 14px;
+}
+
+/* [Phase C] 제어 탭 적응형 레이아웃: 가동 중일 때 Now Playing 최상단 배치 */
+[data-dash-content="control"] {
+    display: flex;
+    flex-direction: column;
+}
+.snw-card--nowplaying.is-running {
+    order: -1;
 }
 
 /* 프리셋 그리드: 10개 프리셋 대칭 배치 (데스크톱 5×2, 모바일/태블릿 2×5) */
@@ -466,7 +475,7 @@
 
 
 
-/* ---- _player_bar.css (6674 bytes) ---- */
+/* ---- _player_bar.css (6921 bytes) ---- */
 /* === _eq.css === */
 /* ============================================================
  * _eq.css — 이퀄라이저 (홈 큰 카드)
@@ -773,6 +782,15 @@
     .snw-nowplaying {
         bottom: 0;
     }
+}
+
+/* 슬라이더 드래그 중 우하단 AI FAB 간섭 회피 */
+body.is-sliding #snw-ai-fab,
+body.is-sliding .snw-ai-fab {
+    opacity: 0.25;
+    pointer-events: none;
+    transform: scale(0.85);
+    transition: opacity 0.15s, transform 0.15s;
 }
 
 /* ---- _studio.css (7660 bytes) ---- */
@@ -1667,7 +1685,7 @@ input[type="checkbox"] {
     background: #3a4552;
 }
 
-/* ---- _misc_pages.css (5331 bytes) ---- */
+/* ---- _misc_pages.css (4988 bytes) ---- */
 /* === _simulation.css === */
 .snw-sim {
     display: flex;
@@ -1791,29 +1809,14 @@ input[type="checkbox"] {
  * ------------------------------------------------------
  */
 
-.snw-card [data-slot="form-log"],
-.snw-card [data-slot="form-api"] {
+.snw-card [data-slot="form-log"] {
     margin-bottom: var(--snw-spacing-lg);
     padding-bottom: var(--snw-spacing-lg);
     border-bottom: 1px solid var(--snw-border);
 }
 
-.snw-card [data-slot="form-api"] {
-    border-bottom: none;
-}
-
 .snw-card [data-slot="form-log"]::before {
     content: "Logging";
-    display: block;
-    font-size: 11px;
-    color: var(--snw-text-faint);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: var(--snw-spacing-sm);
-}
-
-.snw-card [data-slot="form-api"]::before {
-    content: "Security";
     display: block;
     font-size: 11px;
     color: var(--snw-text-faint);

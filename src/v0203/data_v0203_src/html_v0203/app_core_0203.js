@@ -411,7 +411,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 020.i18n.js (82775 bytes) ---- */
+/* ---- 020.i18n.js (81636 bytes) ---- */
 // =========================================================
 // 020.i18n.js — 다국어 완전판 (ko/en)
 // =========================================================
@@ -697,22 +697,11 @@ window.SNW = window.SNW || {};
             // =====================================================
             // [Phase5 5.6] 네비게이션 완전판
             // =====================================================
-            'nav.dashboard': '대시보드',
-            'nav.chart': '차트',
-            'nav.schedule': '스케줄',
-            'nav.profiles': '프로필',
-            'nav.sensors': '센서',
             'nav.monitor': '모니터',
             'nav.simulation': '시뮬레이션',
-            'nav.windprofile': '바람 프리셋',
-            'nav.network': '네트워크',
             'nav.logs': '시스템 로그',
-            'nav.diagnostics': '진단',
-            'nav.firmware': '펌웨어',
             'nav.ai': 'AI 어시스턴트',
-            'nav.info': '정보',
             'nav.groupControl': '제어',
-            'nav.groupSettings': '설정',
             'nav.groupSystem': '시스템',
 
             // =====================================================
@@ -1016,7 +1005,6 @@ window.SNW = window.SNW || {};
             'fsm.override': '수동 제어',
             'fsm.profileRun': '프로필 실행',
             'fsm.scheduleRun': '스케줄 실행',
-            'fsm.motionBlocked': '모션 차단',
             'fsm.autoOffStopped': '자동 종료',
             'fsm.timeInvalid': '시간 미동기',
 
@@ -1034,13 +1022,12 @@ window.SNW = window.SNW || {};
             'reason.motionNoPresence': '재실 감지 안됨',
             'reason.autoOffTimer': '자동 종료 타이머',
             'reason.autoOffTime': '자동 종료 시각',
-            
+
             'reason.userStop': '사용자 정지',
             'reason.tempLowStop': '저온 안전 정지',
             'reason.diLowStop': '불쾌지수 저하 정지',
             'autoOff.di': '불쾌지수 종료',
 
-            'reason.autoOffTemp': '자동 종료 온도',
 
             // =====================================================
             // [Phase5 5.6] Wind Phase
@@ -1171,7 +1158,7 @@ window.SNW = window.SNW || {};
             'home.scenario.studyMeta': '미풍·집중스타일',
             'home.scenario.restMeta': '밸런스·자연풍',
             'home.scenario.exerciseMeta': '강풍·돌풍활력',
-            'home.scenario.babyMeta': '24°C정지·초미풍',
+            'home.scenario.babyMeta': '23°C정지·초미풍',
             'home.scenario.petMeta': 'PIR감지·온도감시',
             'home.scenario.autoFullMeta': '실시간 100% 자율',
             'home.scenario.autoSelectMeta': '바람고정·세기자동',
@@ -1510,22 +1497,11 @@ window.SNW = window.SNW || {};
             'msg.timeOrder': 'End time must be after start time',
 
             // Nav
-            'nav.dashboard': 'Dashboard',
-            'nav.chart': 'Chart',
-            'nav.schedule': 'Schedule',
-            'nav.profiles': 'Profiles',
-            'nav.sensors': 'Sensors',
             'nav.monitor': 'Monitor',
             'nav.simulation': 'Simulation',
-            'nav.windprofile': 'Wind Presets',
-            'nav.network': 'Network',
             'nav.logs': 'System Logs',
-            'nav.diagnostics': 'Diagnostics',
-            'nav.firmware': 'Firmware',
             'nav.ai': 'AI Assistant',
-            'nav.info': 'Info',
             'nav.groupControl': 'Control',
-            'nav.groupSettings': 'Settings',
             'nav.groupSystem': 'System',
 
             'common.start': 'Start',
@@ -1791,7 +1767,6 @@ window.SNW = window.SNW || {};
             'fsm.override': 'Manual',
             'fsm.profileRun': 'Profile',
             'fsm.scheduleRun': 'Schedule',
-            'fsm.motionBlocked': 'Motion Blocked',
             'fsm.autoOffStopped': 'AutoOff',
             'fsm.timeInvalid': 'Time Invalid',
 
@@ -1807,14 +1782,13 @@ window.SNW = window.SNW || {};
             'reason.motionNoPresence': 'No presence',
             'reason.autoOffTimer': 'AutoOff timer',
             'reason.autoOffTime': 'AutoOff time',
-            
+
             'reason.userStop': 'User stopped',
             'reason.tempLowStop': 'Low temp safety stop',
             'reason.diLowStop': 'Low DI stop',
             'autoOff.di': 'DI threshold stop',
-            
 
-            'reason.autoOffTemp': 'AutoOff temp',
+
 
             // Wind Phase
             'phase.calm': 'Calm',
@@ -1938,7 +1912,7 @@ window.SNW = window.SNW || {};
             'home.scenario.studyMeta': 'Gentle · Focus style',
             'home.scenario.restMeta': 'Balance · Natural',
             'home.scenario.exerciseMeta': 'Strong · Gusty',
-            'home.scenario.babyMeta': '24°C stop · Ultra gentle',
+            'home.scenario.babyMeta': '23°C stop · Ultra gentle',
             'home.scenario.petMeta': 'PIR · Temp monitoring',
             'home.scenario.autoFullMeta': '100% Autonomous',
             'home.scenario.autoSelectMeta': 'Fixed base · Auto strength',
@@ -2269,7 +2243,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 033.util.template.js (16336 bytes) ---- */
+/* ---- 033.util.template.js (9334 bytes) ---- */
 // =========================================================
 // 033.util.template.js — SNW.Tpl (페이지 HTML 템플릿)
 // Layer 1 (유틸) — SNW.C, SNW.DomUtil 참조
@@ -2291,85 +2265,6 @@ window.SNW = window.SNW || {};
         
         // =========================================================
         // 1. Dashboard (바람 스타일 선택 UI 추가됨)
-        // =========================================================
-        dashboard() {
-            return tpl`
-                <div class="snw-dashboard">
-                    <!-- 작동 모드 제어 카드 -->
-                    <section class="snw-card snw-card--mode" style="grid-column: 1 / -1; margin-bottom: 16px;">
-                        <h2 data-i18n="dashboard.modeTitle">작동 모드 설정</h2>
-                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-                            <span style="font-size:15px; font-weight:bold; color:var(--snw-primary);" data-slot="current-mode-text">-</span>
-                            <label class="snw-switch" style="transform: scale(1.2);">
-                                <input type="checkbox" id="mode-switch">
-                                <span class="snw-switch__slider"></span>
-                            </label>
-                        </div>
-                        <div style="font-size:12px; color:var(--snw-text-dim);">
-                            <span style="margin-right:12px;" data-i18n="dashboard.modeSchedule">◻ 스케줄 자동 모드</span>
-                            <span data-i18n="dashboard.modeProfile">◼ 프로필 수동 모드</span>
-                        </div>
-                    </section>
-        
-                    <section class="snw-card snw-card--state">
-                        <h2 data-i18n="dashboard.realtimeState">실시간 상태</h2>
-                        <div data-slot="badge" class="snw-state-badge"></div>
-                        <div class="snw-kv"><span data-i18n="dashboard.currentWind">현재 풍속</span><b data-slot="cur-wind">-</b><span data-i18n="unit.windSpeed">m/s</span></div>
-                        <div class="snw-kv"><span data-i18n="dashboard.targetWind">목표 풍속</span><b data-slot="target-wind">-</b><span data-i18n="unit.windSpeed">m/s</span></div>
-                        <div class="snw-kv"><span data-i18n="dashboard.phase">Phase</span><b data-slot="phase">-</b></div>
-                        <div class="snw-kv"><span data-i18n="dashboard.pwm">PWM</span><span data-slot="gauge"></span></div>
-                        <div class="snw-kv"><span data-i18n="dashboard.sch">스케줄</span><b data-slot="sch-name">-</b></div>
-                        <div class="snw-kv"><span data-i18n="dashboard.prof">프로필</span><b data-slot="prof-name">-</b></div>
-                        <div class="snw-kv"><span>AutoOff</span><b data-slot="autooff">-</b></div>
-                    </section>
-                    
-                    <section class="snw-card snw-card--power">
-                        <h2 data-i18n="dashboard.powerTitle">전원 제어</h2>
-                        <div data-slot="power" class="snw-power-slot"></div>
-                    </section>
-                    
-                    <section class="snw-card snw-card--sensor">
-                        <h2 data-i18n="dashboard.sensorTitle">센서</h2>
-                        <div data-slot="sensors"></div>
-                    </section>
-                    
-                    <section class="snw-card snw-card--preset">
-                        <!-- 1. 바람 스타일 선택 (상단 세그먼트 탭) -->
-                        <div class="snw-style-section" style="margin-bottom: 20px;">
-                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
-                                <h2 style="margin:0; font-size:14px; font-weight:600;" data-i18n="dashboard.styleTitle">바람 스타일</h2>
-                                <span style="font-size:11px; color:var(--snw-text-dim);">스타일 보정</span>
-                            </div>
-                            <div class="snw-style-selector" id="style-selector">
-                                <button type="button" class="snw-style-btn" data-style="BALANCE" data-i18n="style.BALANCE">⚖ 균형</button>
-                                <button type="button" class="snw-style-btn" data-style="ACTIVE" data-i18n="style.ACTIVE">⚡ 활동</button>
-                                <button type="button" class="snw-style-btn" data-style="FOCUS" data-i18n="style.FOCUS">🎯 집중</button>
-                                <button type="button" class="snw-style-btn" data-style="RELAX" data-i18n="style.RELAX">🍃 휴식</button>
-                                <button type="button" class="snw-style-btn" data-style="SLEEP" data-i18n="style.SLEEP">🌙 수면</button>
-                            </div>
-                        </div>
-
-                        <!-- 2. 자연풍 프리셋 선택 (하단 4x2 그리드) -->
-                        <div class="snw-preset-section">
-                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
-                                <h2 style="margin:0; font-size:14px; font-weight:600;" data-i18n="dashboard.presetTitle">자연풍 프리셋</h2>
-                                <span style="font-size:11px; color:var(--snw-text-dim);">8대 자연 환경</span>
-                            </div>
-                            <div data-slot="presets"></div>
-                        </div>
-                    </section>
-                    
-                    <section class="snw-card snw-card--slider" style="grid-column: 1 / -1;">
-                        <h2 data-i18n="dashboard.physicsTitle">바람 세부 조절 (3대 물리 제어)</h2>
-                        <div style="display:flex;flex-direction:column;gap:16px;">
-                            <div data-slot="intensity"></div>
-                            <div data-slot="variability"></div>
-                            <div data-slot="gust"></div>
-                        </div>
-                    </section>
-                </div>`;
-        },
-        
         // =========================================================
         // 2. Chart
         // =========================================================
@@ -2429,26 +2324,6 @@ window.SNW = window.SNW || {};
         
         // =========================================================
         // 5. Schedule
-        // =========================================================
-        schedule() {
-            return tpl`
-                <section class="snw-card">
-                    <h2 data-i18n="scheduler.title">스케줄 예약</h2>
-                    <div data-slot="list"></div>
-                </section>`;
-        },
-        
-        // =========================================================
-        // 6. Profiles
-        // =========================================================
-        profiles() {
-            return tpl`
-                <section class="snw-card">
-                    <h2 data-i18n="profile.title">사용자 프로필</h2>
-                    <div data-slot="list"></div>
-                </section>`;
-        },
-        
         // =========================================================
         // 7. Network
         // =========================================================
@@ -2541,16 +2416,6 @@ window.SNW = window.SNW || {};
         },
         
         // =========================================================
-        // 13. Info
-        // =========================================================
-        info() {
-            return tpl`
-                <section class="snw-card">
-                    <h2 data-i18n="nav.info">정보</h2>
-                    <div data-slot="panel"></div>
-                </section>`;
-        },
-        
         // =========================================================
         // 14. WindProfile
         // =========================================================
@@ -2818,7 +2683,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 040.api.js (17395 bytes) ---- */
+/* ---- 040.api.js (16323 bytes) ---- */
 // =========================================================
 // 040.api.js — SNW.Api (REST 클라이언트)
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -3075,20 +2940,6 @@ window.SNW = window.SNW || {};
 		overrideClear() {
 			return _fetch(SNW.CFG.API.overrideClear, { method: 'POST' });
 		},
-		overrideParams(body) {
-			// ======================================================
-			// [N-3] Deprecated: /control/override 라우트 부재(404) 해소
-			//  - /simulation + override 객체로 변환하여 전송
-			// ======================================================
-			if (SNW.LogUtil) {
-				SNW.LogUtil.warn('[API] overrideParams is deprecated. Use patchSim({override}) instead.');
-			}
-			const ovr = { enabled: true };
-			if (body && body.windIntensity != null) ovr.windIntensity = body.windIntensity;
-			if (body && body.windVariability != null) ovr.windVariability = body.windVariability;
-			if (body && body.gustFrequency != null) ovr.gustFrequency = body.gustFrequency;
-			return _fetch(SNW.CFG.API.simulation, { method: 'POST', body: { sim: { override: ovr } } });
-		},
 		ackEvent() {
 			return _fetch(SNW.CFG.API.ack, { method: 'POST' });
 		},
@@ -3111,9 +2962,6 @@ window.SNW = window.SNW || {};
 		getChartHistory() { return _fetch(SNW.CFG.API.chartHistory); },
 		getMonitor(type, range) {
 			return _fetch(`${SNW.CFG.API.monitor}?type=${type}&range=${range}`);
-		},
-		getPastEvents(days) {
-			return _fetch(`${SNW.CFG.API.monitor}/events?days=${days || 7}`);
 		},
 
 		// --- WindDict ---
@@ -3169,8 +3017,6 @@ window.SNW = window.SNW || {};
 		updateProfile(id, b) { return _fetch(`${SNW.CFG.API.userProfiles}/${id}`, { method: 'PUT', body: b }); },
 		deleteProfile(id) { return _fetch(`${SNW.CFG.API.userProfiles}/${id}`, { method: 'DELETE' }); },
 		patchProfiles(body) { return _fetch(SNW.CFG.API.userProfilesPatch, { method: 'POST', body }); },
-		selectProfile(id) { return _fetch(SNW.CFG.API.profileSelect, { method: 'POST', body: { id } }); },
-		stopProfile() { return _fetch(SNW.CFG.API.profileStop, { method: 'POST' }); },
 
 		// --- Session (Stage 5 신규: startSession 단일화) ---
 		startSession({ type, payload = {}, trigger } = {}) {

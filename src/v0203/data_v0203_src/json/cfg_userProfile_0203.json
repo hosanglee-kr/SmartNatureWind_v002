@@ -11,12 +11,35 @@
         "repeatSegments": true,
         "repeatCount": 1,
         "rule": {
-          "timer": { "enabled": true, "minutes": 480 },
-          "offTime": { "enabled": true, "time": "06:00" },
-          "tempLow": { "enabled": true, "mode": "STOP", "threshold": 22.0, "hysteresis": 0.0 },
-          "diLow": { "enabled": false, "mode": "PAUSE", "threshold": 65.0, "hysteresis": 3.0 },
-          "pirPause": { "enabled": true, "holdSec": 300 },
-          "smartComfort": { "enabled": false, "intervalMin": 5, "level": 2 }
+          "timer": {
+            "enabled": true,
+            "minutes": 480
+          },
+          "offTime": {
+            "enabled": true,
+            "time": "06:00"
+          },
+          "tempLow": {
+            "enabled": true,
+            "mode": "STOP",
+            "threshold": 22.0,
+            "hysteresis": 0.0
+          },
+          "diLow": {
+            "enabled": false,
+            "mode": "PAUSE",
+            "threshold": 65.0,
+            "hysteresis": 3.0
+          },
+          "pirPause": {
+            "enabled": true,
+            "holdSec": 300
+          },
+          "smartComfort": {
+            "enabled": false,
+            "intervalMin": 5,
+            "level": 2
+          }
         },
         "steps": [
           {
@@ -26,7 +49,12 @@
             "presetCode": "OCEAN",
             "styleCode": "SLEEP",
             "fixedSpeed": 50.0,
-            "override": { "enabled": true, "windIntensity": 35.0, "windVariability": 20.0, "gustFrequency": 15.0 }
+            "override": {
+              "enabled": true,
+              "windIntensity": 35.0,
+              "windVariability": 20.0,
+              "gustFrequency": 15.0
+            }
           },
           {
             "stepNo": 20,
@@ -35,7 +63,12 @@
             "presetCode": "FOREST_CANOPY",
             "styleCode": "SLEEP",
             "fixedSpeed": 50.0,
-            "override": { "enabled": true, "windIntensity": 25.0, "windVariability": 15.0, "gustFrequency": 10.0 }
+            "override": {
+              "enabled": true,
+              "windIntensity": 25.0,
+              "windVariability": 15.0,
+              "gustFrequency": 10.0
+            }
           },
           {
             "stepNo": 30,
@@ -44,7 +77,9 @@
             "presetCode": "OCEAN",
             "styleCode": "BALANCE",
             "fixedSpeed": 45.0,
-            "override": { "enabled": false }
+            "override": {
+              "enabled": false
+            }
           }
         ]
       },
@@ -56,12 +91,35 @@
         "repeatSegments": true,
         "repeatCount": 2,
         "rule": {
-          "timer": { "enabled": true, "minutes": 180 },
-          "offTime": { "enabled": false, "time": "00:00" },
-          "tempLow": { "enabled": false, "mode": "PAUSE", "threshold": 22.0, "hysteresis": 0.5 },
-          "diLow": { "enabled": true, "mode": "PAUSE", "threshold": 65.0, "hysteresis": 3.0 },
-          "pirPause": { "enabled": true, "holdSec": 300 },
-          "smartComfort": { "enabled": false, "intervalMin": 5, "level": 2 }
+          "timer": {
+            "enabled": true,
+            "minutes": 180
+          },
+          "offTime": {
+            "enabled": false,
+            "time": "00:00"
+          },
+          "tempLow": {
+            "enabled": false,
+            "mode": "PAUSE",
+            "threshold": 22.0,
+            "hysteresis": 0.5
+          },
+          "diLow": {
+            "enabled": true,
+            "mode": "PAUSE",
+            "threshold": 65.0,
+            "hysteresis": 3.0
+          },
+          "pirPause": {
+            "enabled": true,
+            "holdSec": 300
+          },
+          "smartComfort": {
+            "enabled": false,
+            "intervalMin": 5,
+            "level": 2
+          }
         },
         "steps": [
           {
@@ -71,7 +129,12 @@
             "presetCode": "URBAN_SUNSET",
             "styleCode": "FOCUS",
             "fixedSpeed": 50.0,
-            "override": { "enabled": true, "windIntensity": 55.0, "windVariability": 30.0, "gustFrequency": 25.0 }
+            "override": {
+              "enabled": true,
+              "windIntensity": 55.0,
+              "windVariability": 30.0,
+              "gustFrequency": 25.0
+            }
           }
         ]
       },
@@ -83,12 +146,35 @@
         "repeatSegments": true,
         "repeatCount": 2,
         "rule": {
-          "timer": { "enabled": false, "minutes": 0 },
-          "offTime": { "enabled": false, "time": "00:00" },
-          "tempLow": { "enabled": false, "mode": "PAUSE", "threshold": 22.0, "hysteresis": 0.5 },
-          "diLow": { "enabled": false, "mode": "PAUSE", "threshold": 65.0, "hysteresis": 3.0 },
-          "pirPause": { "enabled": true, "holdSec": 180 },
-          "smartComfort": { "enabled": false, "intervalMin": 5, "level": 2 }
+          "timer": {
+            "enabled": false,
+            "minutes": 0
+          },
+          "offTime": {
+            "enabled": false,
+            "time": "00:00"
+          },
+          "tempLow": {
+            "enabled": false,
+            "mode": "PAUSE",
+            "threshold": 22.0,
+            "hysteresis": 0.5
+          },
+          "diLow": {
+            "enabled": false,
+            "mode": "PAUSE",
+            "threshold": 65.0,
+            "hysteresis": 3.0
+          },
+          "pirPause": {
+            "enabled": true,
+            "holdSec": 180
+          },
+          "smartComfort": {
+            "enabled": false,
+            "intervalMin": 5,
+            "level": 2
+          }
         },
         "steps": [
           {
@@ -98,7 +184,12 @@
             "presetCode": "HARBOR_BREEZE",
             "styleCode": "RELAX",
             "fixedSpeed": 50.0,
-            "override": { "enabled": true, "windIntensity": 45.0, "windVariability": 35.0, "gustFrequency": 20.0 }
+            "override": {
+              "enabled": true,
+              "windIntensity": 45.0,
+              "windVariability": 35.0,
+              "gustFrequency": 20.0
+            }
           }
         ]
       },
@@ -110,12 +201,35 @@
         "repeatSegments": false,
         "repeatCount": 0,
         "rule": {
-          "timer": { "enabled": true, "minutes": 30 },
-          "offTime": { "enabled": false, "time": "00:00" },
-          "tempLow": { "enabled": false, "mode": "PAUSE", "threshold": 22.0, "hysteresis": 0.5 },
-          "diLow": { "enabled": false, "mode": "PAUSE", "threshold": 65.0, "hysteresis": 3.0 },
-          "pirPause": { "enabled": false, "holdSec": 120 },
-          "smartComfort": { "enabled": false, "intervalMin": 5, "level": 2 }
+          "timer": {
+            "enabled": true,
+            "minutes": 30
+          },
+          "offTime": {
+            "enabled": false,
+            "time": "00:00"
+          },
+          "tempLow": {
+            "enabled": false,
+            "mode": "PAUSE",
+            "threshold": 22.0,
+            "hysteresis": 0.5
+          },
+          "diLow": {
+            "enabled": false,
+            "mode": "PAUSE",
+            "threshold": 65.0,
+            "hysteresis": 3.0
+          },
+          "pirPause": {
+            "enabled": false,
+            "holdSec": 120
+          },
+          "smartComfort": {
+            "enabled": false,
+            "intervalMin": 5,
+            "level": 2
+          }
         },
         "steps": [
           {
@@ -125,7 +239,12 @@
             "presetCode": "PLAINS",
             "styleCode": "BALANCE",
             "fixedSpeed": 50.0,
-            "override": { "enabled": true, "windIntensity": 60.0, "windVariability": 50.0, "gustFrequency": 40.0 }
+            "override": {
+              "enabled": true,
+              "windIntensity": 60.0,
+              "windVariability": 50.0,
+              "gustFrequency": 40.0
+            }
           }
         ]
       },
@@ -137,12 +256,35 @@
         "repeatSegments": true,
         "repeatCount": 3,
         "rule": {
-          "timer": { "enabled": false, "minutes": 0 },
-          "offTime": { "enabled": false, "time": "00:00" },
-          "tempLow": { "enabled": false, "mode": "PAUSE", "threshold": 22.0, "hysteresis": 0.5 },
-          "diLow": { "enabled": false, "mode": "PAUSE", "threshold": 65.0, "hysteresis": 3.0 },
-          "pirPause": { "enabled": true, "holdSec": 150 },
-          "smartComfort": { "enabled": false, "intervalMin": 5, "level": 2 }
+          "timer": {
+            "enabled": false,
+            "minutes": 0
+          },
+          "offTime": {
+            "enabled": false,
+            "time": "00:00"
+          },
+          "tempLow": {
+            "enabled": false,
+            "mode": "PAUSE",
+            "threshold": 22.0,
+            "hysteresis": 0.5
+          },
+          "diLow": {
+            "enabled": false,
+            "mode": "PAUSE",
+            "threshold": 65.0,
+            "hysteresis": 3.0
+          },
+          "pirPause": {
+            "enabled": true,
+            "holdSec": 150
+          },
+          "smartComfort": {
+            "enabled": false,
+            "intervalMin": 5,
+            "level": 2
+          }
         },
         "steps": [
           {
@@ -152,7 +294,12 @@
             "presetCode": "MOUNTAIN",
             "styleCode": "ACTIVE",
             "fixedSpeed": 50.0,
-            "override": { "enabled": true, "windIntensity": 85.0, "windVariability": 70.0, "gustFrequency": 65.0 }
+            "override": {
+              "enabled": true,
+              "windIntensity": 85.0,
+              "windVariability": 70.0,
+              "gustFrequency": 65.0
+            }
           }
         ]
       },
@@ -164,12 +311,35 @@
         "repeatSegments": false,
         "repeatCount": 0,
         "rule": {
-          "timer": { "enabled": false, "minutes": 0 },
-          "offTime": { "enabled": false, "time": "00:00" },
-          "tempLow": { "enabled": false, "mode": "PAUSE", "threshold": 22.0, "hysteresis": 0.5 },
-          "diLow": { "enabled": false, "mode": "PAUSE", "threshold": 65.0, "hysteresis": 3.0 },
-          "pirPause": { "enabled": false, "holdSec": 120 },
-          "smartComfort": { "enabled": false, "intervalMin": 5, "level": 2 }
+          "timer": {
+            "enabled": false,
+            "minutes": 0
+          },
+          "offTime": {
+            "enabled": false,
+            "time": "00:00"
+          },
+          "tempLow": {
+            "enabled": false,
+            "mode": "PAUSE",
+            "threshold": 22.0,
+            "hysteresis": 0.5
+          },
+          "diLow": {
+            "enabled": false,
+            "mode": "PAUSE",
+            "threshold": 65.0,
+            "hysteresis": 3.0
+          },
+          "pirPause": {
+            "enabled": false,
+            "holdSec": 120
+          },
+          "smartComfort": {
+            "enabled": false,
+            "intervalMin": 5,
+            "level": 2
+          }
         },
         "steps": []
       },
@@ -181,12 +351,35 @@
         "repeatSegments": true,
         "repeatCount": 0,
         "rule": {
-          "timer": { "enabled": false, "minutes": 0 },
-          "offTime": { "enabled": false, "time": "00:00" },
-          "tempLow": { "enabled": true, "mode": "PAUSE", "threshold": 24.0, "hysteresis": 1.0 },
-          "diLow": { "enabled": false, "mode": "PAUSE", "threshold": 65.0, "hysteresis": 3.0 },
-          "pirPause": { "enabled": false, "holdSec": 120 },
-          "smartComfort": { "enabled": false, "intervalMin": 5, "level": 2 }
+          "timer": {
+            "enabled": false,
+            "minutes": 0
+          },
+          "offTime": {
+            "enabled": false,
+            "time": "00:00"
+          },
+          "tempLow": {
+            "enabled": true,
+            "mode": "PAUSE",
+            "threshold": 24.0,
+            "hysteresis": 1.0
+          },
+          "diLow": {
+            "enabled": false,
+            "mode": "PAUSE",
+            "threshold": 65.0,
+            "hysteresis": 3.0
+          },
+          "pirPause": {
+            "enabled": false,
+            "holdSec": 120
+          },
+          "smartComfort": {
+            "enabled": false,
+            "intervalMin": 5,
+            "level": 2
+          }
         },
         "steps": [
           {
@@ -196,7 +389,9 @@
             "presetCode": "FOREST_CANOPY",
             "styleCode": "RELAX",
             "fixedSpeed": 0.0,
-            "override": { "enabled": false }
+            "override": {
+              "enabled": false
+            }
           }
         ]
       },
@@ -208,12 +403,35 @@
         "repeatSegments": true,
         "repeatCount": 0,
         "rule": {
-          "timer": { "enabled": true, "minutes": 180 },
-          "offTime": { "enabled": false, "time": "00:00" },
-          "tempLow": { "enabled": true, "mode": "STOP", "threshold": 23.0, "hysteresis": 0.0 },
-          "diLow": { "enabled": false, "mode": "PAUSE", "threshold": 65.0, "hysteresis": 3.0 },
-          "pirPause": { "enabled": false, "holdSec": 120 },
-          "smartComfort": { "enabled": false, "intervalMin": 5, "level": 2 }
+          "timer": {
+            "enabled": true,
+            "minutes": 180
+          },
+          "offTime": {
+            "enabled": false,
+            "time": "00:00"
+          },
+          "tempLow": {
+            "enabled": true,
+            "mode": "STOP",
+            "threshold": 23.0,
+            "hysteresis": 0.0
+          },
+          "diLow": {
+            "enabled": false,
+            "mode": "PAUSE",
+            "threshold": 65.0,
+            "hysteresis": 3.0
+          },
+          "pirPause": {
+            "enabled": false,
+            "holdSec": 120
+          },
+          "smartComfort": {
+            "enabled": false,
+            "intervalMin": 5,
+            "level": 2
+          }
         },
         "steps": [
           {
@@ -223,11 +441,15 @@
             "presetCode": "OCEAN",
             "styleCode": "SLEEP",
             "fixedSpeed": 0.0,
-            "override": { "enabled": true, "windIntensity": 25.0, "windVariability": 15.0, "gustFrequency": 5.0 }
+            "override": {
+              "enabled": true,
+              "windIntensity": 25.0,
+              "windVariability": 15.0,
+              "gustFrequency": 5.0
+            }
           }
         ]
       }
     ]
   }
 }
-

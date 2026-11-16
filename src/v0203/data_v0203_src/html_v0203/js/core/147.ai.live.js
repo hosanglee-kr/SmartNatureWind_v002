@@ -26,6 +26,8 @@
 	let _sessionStartTime = 0;
 	let _lastReportTime = 0;
 	let _usageIntervalId = null;
+	let _sessionWarnId = null;
+	let _sessionLimitId = null;
 
 	let _callbacks = {
 		onStateChange: null, // (state, details)
@@ -109,6 +111,22 @@
 
 					// 30초 주기 사용량 보고 타이머 시작
 					this._startUsageReporting();
+
+					// 14분 세션 제한 경고 & 안전 종료 타이머
+					const liveCfg = (SNW.CFG && SNW.CFG.AI_LIVE) || {};
+					const maxMs = Number(liveCfg.MAX_SESSION_MS || 14 * 60000);
+					const warnBeforeMs = Number(liveCfg.SESSION_WARN_MS || 60000);
+					if (_sessionWarnId) clearTimeout(_sessionWarnId);
+					if (_sessionLimitId) clearTimeout(_sessionLimitId);
+					if (maxMs > warnBeforeMs) {
+						_sessionWarnId = setTimeout(() => {
+							if (SNW.ToastUtil) SNW.ToastUtil.warn('1분 후 음성 세션이 자동 종료됩니다.');
+						}, maxMs - warnBeforeMs);
+					}
+					_sessionLimitId = setTimeout(() => {
+						if (SNW.ToastUtil) SNW.ToastUtil.info('최대 음성 세션 시간(14분) 도달로 안전 종료합니다.');
+						this.stopSession();
+					}, maxMs);
 
 					this._emitState('connected');
 				};
@@ -322,9 +340,15 @@
 			}
 		},
 
+		_clearSessionTimers() {
+			if (_sessionWarnId) { clearTimeout(_sessionWarnId); _sessionWarnId = null; }
+			if (_sessionLimitId) { clearTimeout(_sessionLimitId); _sessionLimitId = null; }
+		},
+
 		_handleClose(event) {
 			_isConnected = false;
 			_isConnecting = false;
+			this._clearSessionTimers();
 			this._stopUsageReporting();
 			this._reportUsageDelta(); // 남은 사용량 최종 보고
 
@@ -344,6 +368,7 @@
 			_ws = null;
 			_isConnected = false;
 
+			this._clearSessionTimers();
 			this._stopUsageReporting();
 			this._reportUsageDelta();
 

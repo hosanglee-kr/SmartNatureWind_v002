@@ -323,12 +323,19 @@ SNW.Page = SNW.Page || {};
                 <h3 style="margin:0 0 6px;font-size:13px;">상태 밴드 (${range})</h3>
                 <div class="snw-state-band__track">${segHtml || '<div class="snw-state-band__seg snw-state-band__seg--idle" style="left:0;width:100%;"></div>'}</div>
                 <div class="snw-state-band__axis"><span>${startStr}</span><span>${midStr}</span><span>${endStr}</span></div>
+                <div data-slot="band-caption" style="font-size:11px;color:var(--snw-primary,#4a9eff);text-align:center;min-height:16px;margin-top:6px;">구간을 탭/클릭하면 상세 시각과 상태를 확인할 수 있습니다.</div>
                 <div class="snw-state-band__legend">
                     <span class="snw-state-band__legend-item"><span class="snw-state-band__dot snw-state-band__dot--running"></span>가동</span>
                     <span class="snw-state-band__legend-item"><span class="snw-state-band__dot snw-state-band__dot--paused"></span>환경 일시정지</span>
                     <span class="snw-state-band__legend-item"><span class="snw-state-band__dot snw-state-band__dot--idle"></span>대기/정지</span>
                 </div>
             `;
+            const capEl = card.querySelector('[data-slot="band-caption"]');
+            card.querySelectorAll('.snw-state-band__seg').forEach(seg => {
+                seg.addEventListener('click', () => {
+                    if (capEl && seg.title) capEl.textContent = seg.title;
+                });
+            });
             return card;
         }
 

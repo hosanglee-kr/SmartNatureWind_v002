@@ -45,6 +45,7 @@ window.SNW = window.SNW || {};
         const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
         const ctl = store.control;
         // [Stage 5] ENV_PAUSED(7) 상태일 때는 세션이 pause 되어 있어도 바 상시 노출
+        if (ctl && ctl.stateCode === 5) return false;
         if (ctl && ctl.stateCode === 7) return true;
 
         const s = store.session;
@@ -175,7 +176,8 @@ window.SNW = window.SNW || {};
         if (typeName === 'AUTO_FULL' || type === 4) {
             title = `✨ ${SNW.I18n.t('session.autoFull')}`;
         } else if (typeName === 'AUTO_SELECT' || type === 5) {
-            title = `🎯 ${SNW.I18n.t('session.autoSelect')}`;
+            const baseLabel = s.profileName || (s.presetCode ? SNW.I18n.t('preset.' + s.presetCode) : '');
+            title = baseLabel ? `🎯 ${baseLabel} (맞춤Auto)` : `🎯 ${SNW.I18n.t('session.autoSelect')}`;
         } else if (type === 1) {
             title = s.profileName || (s.profileNo ? `프로필 #${s.profileNo}` : '플레이리스트');
         } else if (type === 2) {
@@ -441,7 +443,8 @@ window.SNW = window.SNW || {};
             title = SNW.I18n.t('session.autoFull');
             typeBadge = '✨ AI 스마트 쾌적 (100% 자율)';
         } else if (typeName === 'AUTO_SELECT' || type === 5) {
-            title = SNW.I18n.t('session.autoSelect');
+            const baseLabel = s.profileName || (s.presetCode ? SNW.I18n.t('preset.' + s.presetCode) : '');
+            title = baseLabel ? `${baseLabel} (맞춤Auto)` : SNW.I18n.t('session.autoSelect');
             typeBadge = '🎯 취향 맞춤 Auto';
         } else if (type === 1) {
             title = s.profileName || (s.profileNo ? `프로필 #${s.profileNo}` : '플레이리스트');
@@ -503,9 +506,9 @@ window.SNW = window.SNW || {};
                     <button type="button" class="snw-btn" id="np-btn-manual-switch" style="flex:1;">🎨 수동 전환</button>
                 </div>` : ''}
 
-                ${(typeName === 'AUTO_SELECT' || type === 5) ? `
+                ${(typeName === 'AUTO_SELECT' || type === 5 || typeName === 'PRESET' || typeName === 'PLAYLIST') ? `
                 <button type="button" class="snw-btn snw-btn--full" id="np-btn-select-switch" style="justify-content:center;">
-                    🎯 맞춤 세기 자동/수동 전환
+                    ${(typeName === 'AUTO_SELECT' || type === 5) ? '🎨 수동 세기 제어로 전환' : '🎯 취향 맞춤 Auto로 전환'}
                 </button>` : ''}
             </div>
         `;
@@ -581,9 +584,23 @@ window.SNW = window.SNW || {};
         if (btnSelectSwitch) {
             btnSelectSwitch.onclick = async () => {
                 if (modalRef && typeof modalRef.close === 'function') modalRef.close();
-                const sim = (SNW.Store && SNW.Store.get().sim) || {};
-                await SNW.Api.startPreset(sim.presetCode || 'OCEAN', sim.styleCode || 'BALANCE');
-                if (SNW.ToastUtil) SNW.ToastUtil.info('수동 세기 제어로 전환되었습니다');
+                const isAutoSel = (typeName === 'AUTO_SELECT' || type === 5);
+                if (isAutoSel) {
+                    const sim = (SNW.Store && SNW.Store.get().sim) || {};
+                    await SNW.Api.startPreset(sim.presetCode || 'OCEAN', sim.styleCode || 'BALANCE');
+                    if (SNW.ToastUtil) SNW.ToastUtil.info('수동 세기 제어로 전환되었습니다');
+                } else {
+                    let base = null;
+                    try { base = JSON.parse(localStorage.getItem('snw.lastAutoSelectBase') || 'null'); } catch (e) { }
+                    if (!base) {
+                        const sim = (SNW.Store && SNW.Store.get().sim) || {};
+                        base = s.profileId
+                            ? { baseType: 'PLAYLIST', profileId: s.profileId }
+                            : { baseType: 'PRESET', presetCode: sim.presetCode || 'OCEAN', styleCode: sim.styleCode || 'BALANCE' };
+                    }
+                    await SNW.Api.startSession({ type: 'AUTO_SELECT', payload: base });
+                    if (SNW.ToastUtil) SNW.ToastUtil.info('취향 맞춤 Auto로 전환되었습니다');
+                }
             };
         }
     }

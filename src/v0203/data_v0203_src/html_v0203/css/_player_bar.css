@@ -305,3 +305,12 @@
         bottom: 0;
     }
 }
+
+/* 슬라이더 드래그 중 우하단 AI FAB 간섭 회피 */
+body.is-sliding #snw-ai-fab,
+body.is-sliding .snw-ai-fab {
+    opacity: 0.25;
+    pointer-events: none;
+    transform: scale(0.85);
+    transition: opacity 0.15s, transform 0.15s;
+}

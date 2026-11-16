@@ -68,6 +68,11 @@ window.SNW = window.SNW || {};
         
         let dragging = false;
         
+        input.addEventListener('pointerdown', () => {
+            dragging = true;
+            document.body.classList.add('is-sliding');
+        });
+        
         input.addEventListener('input', () => {
             dragging = true;
             if (valEl) valEl.textContent = input.value;
@@ -76,12 +81,19 @@ window.SNW = window.SNW || {};
         
         input.addEventListener('change', () => {
             dragging = false;
+            document.body.classList.remove('is-sliding');
             updateFeedback(input.value);
             debounced(Number(input.value));
         });
         
-        input.addEventListener('pointerup', () => { dragging = false; });
-        input.addEventListener('pointercancel', () => { dragging = false; });
+        input.addEventListener('pointerup', () => {
+            dragging = false;
+            document.body.classList.remove('is-sliding');
+        });
+        input.addEventListener('pointercancel', () => {
+            dragging = false;
+            document.body.classList.remove('is-sliding');
+        });
         
         return {
             set(v) {

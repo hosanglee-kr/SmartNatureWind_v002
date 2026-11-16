@@ -360,6 +360,10 @@ window.SNW = window.SNW || {};
                     ? sess.profileName
                     : (sess.typeName || '세션');
                 const escape = (s) => (SNW.DomUtil ? SNW.DomUtil.escape(s) : s);
+                const tr = st && st.control && st.control.triggerRt;
+                const offTimeLine = (tr && tr.offTimeEnabled && tr.offTimeMinutes >= 0)
+                    ? `<div style="font-size:0.75rem;color:var(--snw-warn,#d29922);margin-top:2px;">⏰ 예약 자동 종료: ${String(Math.floor(tr.offTimeMinutes / 60)).padStart(2, '0')}:${String(tr.offTimeMinutes % 60).padStart(2, '0')} 예정</div>`
+                    : '';
                 slot.innerHTML = `
                     <div style="background:var(--snw-surface,#1b2028);border:1px solid var(--snw-border,#2f3844);border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:space-between;">
                         <div style="display:flex;align-items:center;gap:10px;">
@@ -371,6 +375,7 @@ window.SNW = window.SNW || {};
                                 <div style="font-size:0.8rem;color:var(--snw-text-dim,#8b949e);">
                                     ${escape(sess.typeName || 'PLAYLIST')} · ${t('timer.sessionActive')}
                                 </div>
+                                ${offTimeLine}
                             </div>
                         </div>
                         <span class="snw-badge snw-badge--success" style="font-size:0.75rem;">

@@ -337,10 +337,14 @@ body.snw-sidebar-open .snw-sidebar {
         font-size: 20px;
     }
 
-    /* 설정 페이지 저장 바가 하단 탭 바(60px) 위로 오도록 조정 */
+    /* 설정 페이지 저장 바가 하단 탭 바(60px) / Now Playing 위로 오도록 조정 */
     .snw-form-sticky {
         bottom: 60px !important;
         z-index: 1001 !important;
+    }
+
+    body.has-nowplaying .snw-form-sticky {
+        bottom: calc(108px + env(safe-area-inset-bottom, 0px)) !important;
     }
 
     /* 메인 컨텐츠가 하단 탭 바 및 Now Playing에 가려지지 않도록 패딩 동적 반영 */

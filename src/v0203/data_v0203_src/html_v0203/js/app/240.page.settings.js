@@ -219,8 +219,9 @@ SNW.Page = SNW.Page || {};
                     <div class="snw-kv"><span>FS Used</span><b data-slot="sys-fs-used">-</b></div>
                     <div class="snw-kv"><span>FS Total</span><b data-slot="sys-fs-total">-</b></div>
 
-                    <div style="margin-top:12px;">
+                    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
                         <button type="button" class="snw-btn snw-btn--sm" data-action="replay-onboarding">🌿 시작 가이드 다시 보기</button>
+                        <button type="button" class="snw-btn snw-btn--sm" data-action="open-feature-guide">📖 주요 기능 가이드</button>
                     </div>
                 `;
 
@@ -240,6 +241,9 @@ SNW.Page = SNW.Page || {};
 
                     const hwSlot = formContainer.querySelector('[data-slot="form-hw"]');
                     hwSlot.innerHTML = `
+                    <div style="padding:10px 12px;margin-bottom:14px;border-radius:6px;background:rgba(210,153,34,0.12);border:1px solid rgba(210,153,34,0.35);font-size:12px;color:var(--snw-text);">
+                        ⚠️ GPIO 핀 번호 변경 사항은 저장 후 <b>기기 재부팅</b> 시 하드웨어에 반영됩니다. (PWM·곡선 수치는 즉시 반영)
+                    </div>
                     <h3 class="snw-form-section">${T('settings.secFanPwm')}</h3>
                     <div class="snw-form-row">
                         <label>${T('settings.fieldPinPwm')}</label>
@@ -442,6 +446,20 @@ SNW.Page = SNW.Page || {};
                             if (SNW.Onboarding && typeof SNW.Onboarding.start === 'function') {
                                 SNW.Onboarding.start();
                             }
+                        };
+                    }
+                    const btnGuide = this.el.querySelector('[data-action="open-feature-guide"]');
+                    if (btnGuide) {
+                        btnGuide.onclick = () => {
+                            if (!SNW.UI || typeof SNW.UI.modal !== 'function') return;
+                            const body = document.createElement('div');
+                            body.style.cssText = 'font-size:13px;line-height:1.7;';
+                            body.innerHTML = `
+                                <p style="margin:0 0 8px;"><b>1. 원터치 9종 시나리오</b>: 홈 화면 상단 3×3 카드에서 수면·사무·학습·휴식·운동·유아·반려동물 및 AI/취향 맞춤 Auto를 즉시 실행할 수 있습니다.</p>
+                                <p style="margin:0 0 8px;"><b>2. 일시정지(Pause) vs 완전 정지(Stop)</b>: 저온/불쾌지수/PIR 조건에서 Pause는 조건 회복 시 자동 재개되며, Stop은 안전 래치 후 사용자 확인으로만 재개됩니다.</p>
+                                <p style="margin:0;"><b>3. Wind Studio & 규칙</b>: 최대 8스텝 시나리오를 작곡하고, 스텝별 물리 Override 및 온·습도/타이머 규칙을 조합할 수 있습니다.</p>
+                            `;
+                            SNW.UI.modal('📖 주요 기능 가이드', body, () => true, null, { okLabel: '닫기', hideCancel: true });
                         };
                     }
                 } catch (e) {

@@ -132,6 +132,9 @@ window.SNW = window.SNW || {};
                 <div class="snw-schedule-item__days">${daysStr}</div>
                 <div class="snw-schedule-item__ref ${profileMissing ? 'is-missing' : ''}">
                     🎵 ${SNW.DomUtil ? SNW.DomUtil.escape(profileName) : profileName}
+                </div>
+                <div style="font-size:11px;color:var(--snw-text-dim);margin-top:4px;">
+                    ${sch.ruleOverride ? '⚙ 직접 설정 (커스텀 규칙)' : '⚙ 프로필 규칙 상속'}
                 </div>`;
 
             // 액션 바인딩

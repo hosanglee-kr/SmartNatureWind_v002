@@ -137,6 +137,7 @@
 
 					<!-- Quick Chips -->
 					<div style="display:flex;gap:6px;overflow-x:auto;padding:10px 0;scrollbar-width:none;">
+						<button type="button" class="snw-btn snw-btn--sm" data-quick="AI 알아서 쾌적하게 틀어줘">✨ AI 스마트 쾌적</button>
 						<button type="button" class="snw-btn snw-btn--sm" data-quick="바다 바람 틀어줘">바다 바람</button>
 						<button type="button" class="snw-btn snw-btn--sm" data-quick="30분 후 꺼줘">30분 후 꺼줘</button>
 						<button type="button" class="snw-btn snw-btn--sm" data-quick="스케줄대로 해줘">스케줄 복귀</button>

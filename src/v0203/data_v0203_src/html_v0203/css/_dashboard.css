@@ -88,6 +88,15 @@
     font-size: 14px;
 }
 
+/* [Phase C] 제어 탭 적응형 레이아웃: 가동 중일 때 Now Playing 최상단 배치 */
+[data-dash-content="control"] {
+    display: flex;
+    flex-direction: column;
+}
+.snw-card--nowplaying.is-running {
+    order: -1;
+}
+
 /* 프리셋 그리드: 10개 프리셋 대칭 배치 (데스크톱 5×2, 모바일/태블릿 2×5) */
 @media (min-width: 1024px) {
     .snw-card--preset .snw-preset-grid,

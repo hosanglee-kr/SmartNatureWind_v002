@@ -76,8 +76,8 @@ JS_CHUNKS = {
     "app_pages_0203.js": lambda f: f.parent.name == "app"  and f.name[:3].isdigit() and 200 <= int(f.name[:3]) <= 999,
 }
 CSS_CHUNKS = {
-    "common_base_0203.css":  ["_base.css", "_layout.css", "_comp_ui.css", "_comp_form.css"],
-    "common_pages_0203.css": ["_dashboard.css", "_player_bar.css", "_studio.css", "_schedule.css", "_monitor.css", "_misc_pages.css", "_rules.css"],
+    "common_base_0203.css":  ["_reset.css", "_variables.css", "_layout.css", "_responsive.css", "_comp_ui.css", "_comp_form.css"],
+    "common_pages_0203.css": ["_dashboard.css", "_comfort.css", "_eq.css", "_player.css", "_nowplaying.css", "_studio.css", "_profiles.css", "_schedule.css", "_monitor.css", "_chart.css", "_simulation.css", "_settings.css", "_onboarding.css", "_rules.css"],
 }
 LEGACY_BUNDLES = [
     "P010_bundle_0203.js", "P010_bundle_0203.js.gz",

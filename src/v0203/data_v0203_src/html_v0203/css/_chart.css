@@ -1,0 +1,114 @@
+/* === _chart.css === */
+/*
+ * ------------------------------------------------------
+ * 소스명   : _chart.css
+ * 레이어   : CSS (빌드 시 P000_common_0200.css로 concat)
+ * 기능 요약:
+ *  - Chart 페이지 전용 스타일
+ *  - 대형 캔버스 영역, 범위 선택 툴바 확장
+ * ------------------------------------------------------
+ */
+
+.snw-chart-area {
+    height: 60vh;
+    min-height: 320px;
+    max-height: 700px;
+}
+
+@media (max-width: 767px) {
+    .snw-chart-area {
+        height: 50vh;
+        min-height: 240px;
+    }
+}
+
+/* 차트 페이지 툴바 */
+.snw-chart-toolbar {
+    justify-content: space-between;
+    padding-bottom: var(--snw-spacing-sm);
+    border-bottom: 1px solid var(--snw-border);
+    margin-bottom: var(--snw-spacing);
+}
+
+/* [M5] 3색 상태 밴드 타임라인 */
+.snw-state-band {
+    margin: 12px 0 20px;
+    padding: 0 16px;
+}
+
+.snw-state-band__track {
+    position: relative;
+    height: 24px;
+    background: var(--snw-surface-2, #12161c);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.snw-state-band__seg {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    transition: opacity 0.15s;
+    cursor: pointer;
+}
+
+.snw-state-band__seg:hover {
+    opacity: 0.8;
+}
+
+.snw-state-band__seg--running {
+    background: linear-gradient(180deg, #4a9eff 0%, #2e7bdb 100%);
+}
+
+.snw-state-band__seg--paused {
+    background: linear-gradient(180deg, #f0b429 0%, #d29922 100%);
+}
+
+.snw-state-band__seg--idle {
+    background: linear-gradient(180deg, #3a4552 0%, #2a333d 100%);
+}
+
+.snw-state-band__axis {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--snw-text-dim, #8b949e);
+    font-variant-numeric: tabular-nums;
+    padding: 0 2px;
+}
+
+.snw-state-band__legend {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--snw-text-dim, #8b949e);
+    flex-wrap: wrap;
+}
+
+.snw-state-band__legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.snw-state-band__dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.snw-state-band__dot--running {
+    background: #4a9eff;
+}
+
+.snw-state-band__dot--paused {
+    background: #f0b429;
+}
+
+.snw-state-band__dot--idle {
+    background: #3a4552;
+}

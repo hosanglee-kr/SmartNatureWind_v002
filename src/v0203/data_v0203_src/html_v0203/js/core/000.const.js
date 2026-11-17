@@ -56,7 +56,7 @@ window.SNW = window.SNW || {};
             1: { code: 'OVERRIDE', icon: '✋', color: 'blue', labelKey: 'fsm.override', l1: true },
             2: { code: 'PROFILE_RUN', icon: '👤', color: 'green', labelKey: 'fsm.profileRun', l1: false },
             3: { code: 'SCHEDULE_RUN', icon: '📅', color: 'cyan', labelKey: 'fsm.scheduleRun', l1: false },
-            4: { code: 'RESERVED_4', icon: '⏸', color: 'gray', labelKey: 'fsm.idle', l1: false },
+            4: { code: 'RESERVED_4', icon: '⏸', color: 'gray', labelKey: 'fsm.reserved', l1: false },
             5: { code: 'AUTOOFF_STOPPED', icon: '⏹', color: 'orange', labelKey: 'fsm.autoOffStopped', l1: true },
             6: { code: 'TIME_INVALID', icon: '🕐', color: 'red', labelKey: 'fsm.timeInvalid', l1: false },
             7: { code: 'ENV_PAUSED', icon: '⏸', color: 'orange', labelKey: 'fsm.envPaused', l1: true }
@@ -178,9 +178,8 @@ window.SNW = window.SNW || {};
         ],
 
         // =====================================================
-        // AutoOff reason 라벨 매핑
+        // AutoOff reason 라벨 매핑 (11=USER_STOP은 정상 사용자 정지이므로 의도적 제외)
         // =====================================================
-        // [수정 2] AUTOOFF_REASON_MAP 교체 (라인 161~166 부근)
         AUTOOFF_REASON_MAP: {
             9: 'autoOff.timer',
             10: 'autoOff.time',

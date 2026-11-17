@@ -13,20 +13,20 @@ window.SNW = window.SNW || {};
         _host: null,
 
         _ensure() {
-            if (this._host) return this._host;
-            this._host = document.getElementById('toast-host');
-            if (!this._host) {
-                this._host = document.createElement('div');
-                this._host.id = 'toast-host';
-                this._host.className = 'snw-toast-host';
-                document.body.appendChild(this._host);
+            if (SNW.ToastUtil._host) return SNW.ToastUtil._host;
+            SNW.ToastUtil._host = document.getElementById('toast-host');
+            if (!SNW.ToastUtil._host) {
+                SNW.ToastUtil._host = document.createElement('div');
+                SNW.ToastUtil._host.id = 'toast-host';
+                SNW.ToastUtil._host.className = 'snw-toast-host';
+                document.body.appendChild(SNW.ToastUtil._host);
             }
-            return this._host;
+            return SNW.ToastUtil._host;
         },
 
         show(msg, type = 'info', ms = null) {
-            const host = this._ensure();
-            const duration = ms != null ? ms : SNW.CFG.UI.TOAST_DEFAULT_MS;
+            const host = SNW.ToastUtil._ensure();
+            const duration = ms ?? (SNW.CFG?.UI?.TOAST_DEFAULT_MS ?? 3000);
 
             const t = document.createElement('div');
             t.className = `snw-toast snw-toast--${type}`;
@@ -37,10 +37,10 @@ window.SNW = window.SNW || {};
             setTimeout(() => t.remove(), duration);
         },
 
-        success(m, t = SNW.CFG.UI.TOAST_SUCCESS_MS) { this.show(m, 'success', t); },
-        warn(m, t = SNW.CFG.UI.TOAST_DEFAULT_MS)     { this.show(m, 'warn',    t); },
-        error(m, t = SNW.CFG.UI.TOAST_ERROR_MS)      { this.show(m, 'error',   t); },
-        info(m, t = SNW.CFG.UI.TOAST_DEFAULT_MS)     { this.show(m, 'info',    t); }
+        success(m, t = SNW.CFG.UI.TOAST_SUCCESS_MS) { SNW.ToastUtil.show(m, 'success', t); },
+        warn(m, t = SNW.CFG.UI.TOAST_DEFAULT_MS) { SNW.ToastUtil.show(m, 'warn', t); },
+        error(m, t = SNW.CFG.UI.TOAST_ERROR_MS) { SNW.ToastUtil.show(m, 'error', t); },
+        info(m, t = SNW.CFG.UI.TOAST_DEFAULT_MS) { SNW.ToastUtil.show(m, 'info', t); }
     };
 
     // =====================================================
@@ -91,6 +91,9 @@ window.SNW = window.SNW || {};
             // ApiError 판정 (SNW.Api.ApiError)
             if (typeof err.status === 'number') {
                 switch (err.status) {
+                    case 0:
+                        SNW.ToastUtil.error(SNW.I18n.t('msg.networkError'));
+                        break;
                     case SNW.C.HTTP.UNAUTHORIZED:
                         SNW.ToastUtil.error(SNW.I18n.t('msg.apiKeyRequired'));
                         break;

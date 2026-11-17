@@ -187,19 +187,21 @@ window.SNW = window.SNW || {};
         // =====================================================
         // localStorage 오버라이드 헬퍼
         // =====================================================
-        get(path) {
+        get(path, fallback) {
+            if (typeof path !== 'string' || !/^[a-zA-Z0-9_.]+$/.test(path)) return fallback;
+            const segs = path.split('.');
+            if (segs.some(s => s === '__proto__' || s === 'constructor' || s === 'prototype')) return fallback;
             const lsKey = LS_PREFIX + 'cfg.' + path;
             const lsVal = localStorage.getItem(lsKey);
             if (lsVal != null) {
                 try { return JSON.parse(lsVal); } catch { return lsVal; }
             }
-            const segs = path.split('.');
             let v = SNW.CFG;
             for (const s of segs) {
-                if (v == null) return undefined;
+                if (v == null || !Object.prototype.hasOwnProperty.call(v, s)) return fallback;
                 v = v[s];
             }
-            return v;
+            return v === undefined ? fallback : v;
         },
         setOverride(path, value) {
             localStorage.setItem(LS_PREFIX + 'cfg.' + path, JSON.stringify(value));

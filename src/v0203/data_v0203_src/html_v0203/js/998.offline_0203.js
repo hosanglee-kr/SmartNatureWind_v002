@@ -114,6 +114,7 @@ window.SNW = window.SNW || {};
             thermalActive: false,
             fanPowerEnabled: true
         },
+        timer: { active: false, remainSec: 0, durationMin: 0 },
         runtime: { runMode: 1, runSource: 2, lastScheduleNo: 10, lastUserProfileNo: -1 },
         chart: Array.from({ length: 20 }).map((_, i) => ({
             t: Date.now() - (20 - i) * 1000,
@@ -592,13 +593,13 @@ window.SNW = window.SNW || {};
         });
         A.setTime = async () => ({ updated: true });
         A.factoryReset = async () => ({ factory: true });
-        
-        
+
+
         // ======================================================
         // [Stage 8-1] AI 제미나이 실제 핸들러 
         // ======================================================
-        
-		        // ======================================================
+
+        // ======================================================
         // [실제 연동] Gemini 3.1 Flash Lite REST API & 로컬 상태 제어 브리지
         // ======================================================
         let s_mockAudioSec = 45;
@@ -607,11 +608,11 @@ window.SNW = window.SNW || {};
 
         A.gemini = async (body) => {
             const msg = (body && body.message || '').trim();
-            
+
             // 1. 설정 또는 로컬스토리지에 저장된 Gemini API 키 확인
             const systemCache = cache.system || {};
             const apiKey = systemCache.security?.geminiApiKey || localStorage.getItem('snw.geminiKey') || '';
-            
+
             // 2. API 키가 없는 경우 기본 가상 모드로 폴백
             if (!apiKey) {
                 return {
@@ -624,7 +625,7 @@ window.SNW = window.SNW || {};
 
             // 3. 실제 gemini-3.1-flash-lite REST API 호출
             const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
-            
+
             // AI에게 선풍기 제어 권한을 부여하는 시스템 인스트럭션 및 도구 명령 유도
             const systemPrompt = `너는 스마트 자연풍 선풍기 'Smart Nature Wind'의 전용 AI 어시스턴트야. 
 사용자의 자연어 요청을 분석해서 선풍기를 제어하고, 답변은 친절한 한국어로 해줘.
@@ -717,8 +718,8 @@ window.SNW = window.SNW || {};
 
 
 
-		
-		/*
+
+        /*
         // ======================================================
         // [Stage 8-2] AI Mock 핸들러 (오프라인 시뮬레이션)
         // ======================================================
@@ -768,21 +769,7 @@ window.SNW = window.SNW || {};
         
         */
 
-        A.executeAiAction = async (name, args) => {
-            if (name === 'stop_session') {
-                await A.stopSession();
-                return { ok: true, name, result: 'ok' };
-            }
-            if (name === 'start_preset') {
-                await A.startSession({ type: 'PRESET', payload: { presetCode: args?.presetCode || 'OCEAN', styleCode: args?.styleCode || 'BALANCE' } });
-                return { ok: true, name, result: 'ok' };
-            }
-            if (name === 'set_fan_speed') {
-                await A.overrideFixed(args?.speed || 50);
-                return { ok: true, name, result: 'ok' };
-            }
-            return { ok: true, name, result: 'ok', session: runtime.control.session };
-        };
+        /* 중복 executeAiAction 제거 (L703 통합본 사용) */
 
         A.getAiLiveToken = async () => ({
             token: 'mock-offline-token-12345',
@@ -987,6 +974,26 @@ window.SNW = window.SNW || {};
     function startSimulator() {
         if (window._snw_sim_timer) return;
         window._snw_sim_timer = setInterval(() => {
+            // [B-2] 오프라인 세션 타이머 카운트다운 및 만료 자동 종료
+            if (runtime.timer && runtime.timer.active && runtime.timer.remainSec > 0) {
+                runtime.timer.remainSec = Math.max(0, runtime.timer.remainSec - 1);
+                if (runtime.timer.remainSec === 0) {
+                    runtime.timer.active = false;
+                    runtime.control.active = false;
+                    runtime.control.stateCode = 5;
+                    runtime.control.state = 'AUTOOFF_STOPPED';
+                    runtime.control.reasonCode = 9;
+                    runtime.control.reason = 'AUTOOFF_TIMER';
+                    runtime.sim.active = false;
+                    runtime.sim.windSpeed = 0;
+                    runtime.sim.targetWind = 0;
+                    runtime.sim.pwmDuty = 0;
+                    if (runtime.control.session) {
+                        runtime.control.session.active = false;
+                        runtime.control.session.state = 'COMPLETED';
+                    }
+                }
+            }
             if (!runtime.sim.active && !runtime.control.session?.active) return;
 
             // ─────────── ① 세션 step 진행 (N-28) ───────────
@@ -1311,6 +1318,8 @@ window.SNW = window.SNW || {};
 
     SNW.Offline = Object.assign(SNW.Offline || {}, {
         ready: null,
+        active: !!window.SNW_OFFLINE,
+        setActive(flag) { SNW.Offline.active = !!flag; },
         _cache: cache,
         _runtime: runtime,
         isReady: () => true,

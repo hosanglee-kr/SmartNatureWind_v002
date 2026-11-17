@@ -10,16 +10,19 @@
     <link rel="icon"
         href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
     <script>
+        const _qs = new URLSearchParams(location.search);
         window.SNW_OFFLINE = (location.protocol === 'file:') ||
-            location.hostname === 'localhost' ||
-            location.hostname === '127.0.0.1' ||
-            new URLSearchParams(location.search).has('offline');
+            _qs.has('offline') ||
+            (['localhost', '127.0.0.1'].includes(location.hostname) && !_qs.has('prod'));
 
         if (window.SNW_OFFLINE) {
             [
-                './css/_base.css', './css/_layout.css', './css/_comp_ui.css', './css/_comp_form.css',
-                './css/_dashboard.css', './css/_player_bar.css', './css/_studio.css',
-                './css/_schedule.css', './css/_monitor.css', './css/_misc_pages.css', './css/_rules.css'
+                './css/_reset.css', './css/_variables.css', './css/_layout.css', './css/_responsive.css',
+                './css/_comp_ui.css', './css/_comp_form.css',
+                './css/_dashboard.css', './css/_comfort.css', './css/_eq.css', './css/_player.css', './css/_nowplaying.css',
+                './css/_studio.css', './css/_profiles.css', './css/_schedule.css',
+                './css/_monitor.css', './css/_chart.css',
+                './css/_simulation.css', './css/_settings.css', './css/_onboarding.css', './css/_rules.css'
             ].forEach(function (href) {
                 document.write('<link rel="stylesheet" href="' + href + '">');
             });

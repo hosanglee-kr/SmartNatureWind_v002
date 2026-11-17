@@ -1,6 +1,9 @@
 // =========================================================
 // 033.util.template.js — SNW.Tpl (페이지 HTML 템플릿)
 // Layer 1 (유틸) — SNW.C, SNW.DomUtil 참조
+// [P2-8] 분리된 페이지별 템플릿 구현 위치:
+//  - Dashboard: 200.page.dashboard.js
+//  - Settings / Monitor / AI: 240/260/290.page.*.js
 // =========================================================
 window.SNW = window.SNW || {};
 (function(SNW) {

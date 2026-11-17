@@ -292,7 +292,7 @@ window.SNW = window.SNW || {};
             'msg.selectProfile': '실행할 플레이리스트를 선택하세요',
             'msg.timeOrder': '종료 시각이 시작 시각보다 빨라야 합니다',
 
-   
+
             // =====================================================
             // [Phase5 5.6] 공통
             // =====================================================
@@ -552,6 +552,29 @@ window.SNW = window.SNW || {};
             // [Phase5 5.6] FSM 상태 배지
             // =====================================================
             'fsm.idle': '대기',
+            'fsm.reserved': '예약됨',
+            'feedback.intensity.off.title': '0.0 m/s · 팬 정지',
+            'feedback.intensity.off.desc': '팬 모터가 대기 상태입니다.',
+            'feedback.intensity.gentle.title': '체감 약 {speed} m/s (초미풍 · 수면풍)',
+            'feedback.intensity.gentle.desc': '부채질 수준의 고요한 미풍 (수면 시 또는 영유아에 적합, 저소음 <25dB)',
+            'feedback.intensity.natural.title': '체감 약 {speed} m/s (표준 자연풍 · 1~2단)',
+            'feedback.intensity.natural.desc': '나뭇잎이 살랑거리는 기분 좋은 산들바람 (일상 생활 및 휴식에 가장 쾌적)',
+            'feedback.intensity.strong.title': '체감 약 {speed} m/s (강풍 · 급속 환기 3~4단)',
+            'feedback.intensity.strong.desc': '창문을 열었을 때 부는 시원한 야외 바람 (운동 직후나 빠른 환기에 적합)',
+            'feedback.variability.low.title': '풍속 전환 약 10~15초 소요 (변화폭 <10%)',
+            'feedback.variability.low.desc': '바람 세기가 천천히 바뀌어 체감상 거의 일정하고 부드럽습니다.',
+            'feedback.variability.mid.title': '풍속 전환 약 5~8초 소요 (변화폭 ±30%)',
+            'feedback.variability.mid.desc': '숲속 바람처럼 5~8초 간격으로 오르내리며 자연스러운 리듬감을 줍니다.',
+            'feedback.variability.high.title': '풍속 전환 약 2~4초 소요 (변화폭 최대 ±60%)',
+            'feedback.variability.high.desc': '2~3초 만에 풍속이 급격히 전환되어 계곡이나 해변처럼 역동적입니다.',
+            'feedback.gust.none.title': '돌풍 없음 (기본 기류만 유지)',
+            'feedback.gust.none.desc': '돌풍 없이 평온한 기류만 부드럽게 유지됩니다.',
+            'feedback.gust.low.title': '약 60~120초(1~2분)에 1회 유입',
+            'feedback.gust.low.desc': '가벼운 돌풍이 드물게 지나가 수면이나 독서에 방해되지 않습니다.',
+            'feedback.gust.mid.title': '약 30~50초에 1회 유입 (순간 풍속 ×1.5~2.0배)',
+            'feedback.gust.mid.desc': '30~45초마다 시원한 바람이 훅 불어와 답답함을 해소해 줍니다.',
+            'feedback.gust.high.title': '약 15~25초에 1회 유입 (순간 풍속 최대 ×2.5배)',
+            'feedback.gust.high.desc': '15~20초마다 강력한 돌풍이 연속 유입되어 야외 언덕에 있는 듯 상쾌합니다.',
             'fsm.override': '수동 제어',
             'fsm.profileRun': '프로필 실행',
             'fsm.scheduleRun': '스케줄 실행',
@@ -1270,6 +1293,29 @@ window.SNW = window.SNW || {};
 
             // FSM
             'fsm.idle': 'Idle',
+            'fsm.reserved': 'Reserved',
+            'feedback.intensity.off.title': '0.0 m/s · Fan Stopped',
+            'feedback.intensity.off.desc': 'Fan motor is in standby mode.',
+            'feedback.intensity.gentle.title': 'Approx {speed} m/s (Gentle / Sleep)',
+            'feedback.intensity.gentle.desc': 'Gentle breeze comparable to fanning (ideal for sleep or infants, quiet <25dB)',
+            'feedback.intensity.natural.title': 'Approx {speed} m/s (Natural Breeze · Stage 1-2)',
+            'feedback.intensity.natural.desc': 'Pleasant fluttering breeze (most comfortable for daily living and relaxation)',
+            'feedback.intensity.strong.title': 'Approx {speed} m/s (Strong Wind · Stage 3-4)',
+            'feedback.intensity.strong.desc': 'Cool open-window breeze (ideal after workouts or quick cooling)',
+            'feedback.variability.low.title': 'Transition ~10-15s (Delta <10%)',
+            'feedback.variability.low.desc': 'Wind changes very slowly, maintaining a smooth and steady flow.',
+            'feedback.variability.mid.title': 'Transition ~5-8s (Delta ±30%)',
+            'feedback.variability.mid.desc': 'Rhythmic fluctuation like a forest breeze every 5-8s.',
+            'feedback.variability.high.title': 'Transition ~2-4s (Delta up to ±60%)',
+            'feedback.variability.high.desc': 'Rapid 2-4s velocity changes creating dynamic coastal or valley winds.',
+            'feedback.gust.none.title': 'No Gust (Base flow only)',
+            'feedback.gust.none.desc': 'Maintains gentle airflow without sudden gusts.',
+            'feedback.gust.low.title': 'Inflow every ~60-120s (1-2 min)',
+            'feedback.gust.low.desc': 'Rare gentle gusts suitable for sleep or quiet focus.',
+            'feedback.gust.mid.title': 'Inflow every ~30-50s (Peak ×1.5~2.0)',
+            'feedback.gust.mid.desc': 'Refreshing bursts every 30-50s relieving stuffiness.',
+            'feedback.gust.high.title': 'Inflow every ~15-25s (Peak up to ×2.5)',
+            'feedback.gust.high.desc': 'Frequent energetic gusts giving an invigorating hilltop sensation.',
             'fsm.override': 'Manual',
             'fsm.profileRun': 'Profile',
             'fsm.scheduleRun': 'Schedule',
@@ -1365,7 +1411,7 @@ window.SNW = window.SNW || {};
             'settings.levelL2': 'Standard (Recommended)',
             'settings.levelL3': 'Advanced (Detailed Tuning)',
             'settings.levelL4': 'Expert (All Engineering Tools)',
-    
+
             'common.details': 'Details',
             'timer.quickPrompt': 'Minutes until fan auto stop? (Enter number)',
             'comfort.autoTitle': 'Smart Comfort Auto Mode',
@@ -1488,6 +1534,8 @@ window.SNW = window.SNW || {};
         } catch { return 'ko'; }
     })();
 
+    const ALL_KEYS = new Set([...Object.keys(DICT.ko), ...Object.keys(DICT.en)]);
+
     SNW.I18n = {
         getLang() { return currentLang; },
 
@@ -1510,13 +1558,20 @@ window.SNW = window.SNW || {};
         },
 
         hasKey(key) {
-            return DICT.ko[key] != null || DICT.en[key] != null;
+            return ALL_KEYS.has(key);
         },
 
         applyTo(root) {
-            (root || document).querySelectorAll('[data-i18n]').forEach(el => {
+            const r = root || document;
+            r.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (key && this.hasKey(key)) el.textContent = this.t(key);
+            });
+            ['placeholder', 'title', 'aria-label', 'alt'].forEach(attr => {
+                r.querySelectorAll(`[data-i18n-${attr}]`).forEach(el => {
+                    const key = el.getAttribute(`data-i18n-${attr}`);
+                    if (key && this.hasKey(key)) el.setAttribute(attr, this.t(key));
+                });
             });
         },
     };

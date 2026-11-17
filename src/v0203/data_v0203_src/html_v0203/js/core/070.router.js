@@ -15,41 +15,41 @@ window.SNW = window.SNW || {};
     // ═══════════════════════════════════════════════════════════
     const ROUTES = {
         // ─── L1 일상 (홈 3탭) ───
-        '/home':                    { page: 'Dashboard', params: { tab: 'control' }, level: 'L1' },
-        '/home/control':            { page: 'Dashboard', params: { tab: 'control' }, level: 'L1' },
-        '/home/env':                { page: 'Dashboard', params: { tab: 'env' },     level: 'L1' },
-        '/home/preset':             { page: 'Dashboard', params: { tab: 'preset' },  level: 'L1' },
+        '/home': { page: 'Dashboard', params: { tab: 'control' }, level: 'L1' },
+        '/home/control': { page: 'Dashboard', params: { tab: 'control' }, level: 'L1' },
+        '/home/env': { page: 'Dashboard', params: { tab: 'env' }, level: 'L1' },
+        '/home/preset': { page: 'Dashboard', params: { tab: 'preset' }, level: 'L1' },
 
         // ─── L2 바람 만들기 (4탭) ───
-        '/wind':                    { page: 'Automation', params: { tab: 'studio' },     level: 'L2' },
-        '/wind/studio':             { page: 'Automation', params: { tab: 'studio' },     level: 'L2' },
-        '/wind/simulation':         { page: 'Automation', params: { tab: 'simulation' }, level: 'L2' },
-        '/wind/playlist':           { page: 'Automation', params: { tab: 'playlist' },   level: 'L2' },
-        '/wind/presets':            { page: 'Windprofile', level: 'L3' },
+        '/wind': { page: 'Automation', params: { tab: 'studio' }, level: 'L2' },
+        '/wind/studio': { page: 'Automation', params: { tab: 'studio' }, level: 'L2' },
+        '/wind/simulation': { page: 'Automation', params: { tab: 'simulation' }, level: 'L2' },
+        '/wind/playlist': { page: 'Automation', params: { tab: 'playlist' }, level: 'L2' },
+        '/wind/presets': { page: 'Windprofile', level: 'L3' },
 
         // ─── L2 자동화 (3탭) ───
-        '/automation':              { page: 'Automation', params: { tab: 'schedule' }, level: 'L2' },
-        '/automation/schedule':     { page: 'Automation', params: { tab: 'schedule' }, level: 'L2' },
-        '/automation/timer':        { page: 'Automation', params: { tab: 'timer' },    level: 'L2' },
-        '/automation/rules':        { page: 'Automation', params: { tab: 'rules' },    level: 'L2' },
+        '/automation': { page: 'Automation', params: { tab: 'schedule' }, level: 'L2' },
+        '/automation/schedule': { page: 'Automation', params: { tab: 'schedule' }, level: 'L2' },
+        '/automation/timer': { page: 'Automation', params: { tab: 'timer' }, level: 'L2' },
+        '/automation/rules': { page: 'Automation', params: { tab: 'rules' }, level: 'L2' },
 
         // ─── L2 AI ───
-        '/ai':                      { page: 'AI', level: 'L2' },
+        '/ai': { page: 'AI', level: 'L2' },
 
         // ─── L2 모니터 (4탭) ───
-        '/monitor':                 { page: 'Monitor', level: 'L2' },
-        '/monitor/chart':           { page: 'Chart',   level: 'L2' },
-        '/monitor/sensors':         { page: 'Sensors', level: 'L2' },
-        '/monitor/history':         { page: 'Monitor', level: 'L2' },
-        '/monitor/logs':            { page: 'Logs',    level: 'L3' },
+        '/monitor': { page: 'Monitor', level: 'L2' },
+        '/monitor/chart': { page: 'Chart', level: 'L2' },
+        '/monitor/sensors': { page: 'Sensors', level: 'L2' },
+        '/monitor/history': { page: 'Monitor', level: 'L2' },
+        '/monitor/logs': { page: 'Logs', level: 'L3' },
 
         // ─── L3 설정 (5탭) ───
-        '/settings':                { page: 'Settings',    params: { tab: 'general' },  level: 'L2' },
-        '/settings/general':        { page: 'Settings',    params: { tab: 'general' },  level: 'L2' },
-        '/settings/network':        { page: 'Network',     params: { tab: 'network' },  level: 'L3' },
-        '/settings/hardware':       { page: 'Settings',    params: { tab: 'hardware' }, level: 'L2' },
-        '/settings/firmware':       { page: 'Firmware',                                 level: 'L4' },
-        '/settings/diagnostics':    { page: 'Diagnostics',                              level: 'L4' },
+        '/settings': { page: 'Settings', params: { tab: 'general' }, level: 'L2' },
+        '/settings/general': { page: 'Settings', params: { tab: 'general' }, level: 'L2' },
+        '/settings/network': { page: 'Network', params: { tab: 'network' }, level: 'L3' },
+        '/settings/hardware': { page: 'Settings', params: { tab: 'hardware' }, level: 'L2' },
+        '/settings/firmware': { page: 'Firmware', level: 'L4' },
+        '/settings/diagnostics': { page: 'Diagnostics', level: 'L4' },
     };
 
     // ─── 사이드바 그룹 (3개 최상위 그룹) ───
@@ -63,19 +63,19 @@ window.SNW = window.SNW || {};
         {
             key: 'nav.groupControl',
             items: [
-                { path: '/wind',       key: 'nav.wind',       icon: '🌬️', minLevel: 'L2' },
+                { path: '/wind', key: 'nav.wind', icon: '🌬️', minLevel: 'L2' },
                 { path: '/automation', key: 'nav.automation', icon: '⚙️', minLevel: 'L2' },
-                { path: '/ai',         key: 'nav.ai',         icon: '✨', minLevel: 'L2' },
-                { path: '/monitor',    key: 'nav.monitor',    icon: '📊', minLevel: 'L2' },
-                { path: '/monitor/logs', key: 'nav.logs',     icon: '📜', minLevel: 'L3' }, // 추가됨
+                { path: '/ai', key: 'nav.ai', icon: '✨', minLevel: 'L2' },
+                { path: '/monitor', key: 'nav.monitor', icon: '📊', minLevel: 'L2' },
+                { path: '/monitor/logs', key: 'nav.logs', icon: '📜', minLevel: 'L3' }, // 추가됨
             ]
         },
         {
             key: 'nav.groupSystem',
             items: [
-                { path: '/settings',          key: 'nav.settings',    icon: '🔧', minLevel: 'L2' },
-                { path: '/settings/network',  key: 'nav.network',     icon: '📶', minLevel: 'L3' }, // 추가됨 (L3 이상)
-                { path: '/settings/firmware', key: 'nav.firmware',    icon: '📦', minLevel: 'L4' }, // 추가됨 (L4 전문가용)
+                { path: '/settings', key: 'nav.settings', icon: '🔧', minLevel: 'L2' },
+                { path: '/settings/network', key: 'nav.network', icon: '📶', minLevel: 'L3' }, // 추가됨 (L3 이상)
+                { path: '/settings/firmware', key: 'nav.firmware', icon: '📦', minLevel: 'L4' }, // 추가됨 (L4 전문가용)
                 { path: '/settings/diagnostics', key: 'nav.diagnostics', icon: '🔍', minLevel: 'L4' }, // 추가됨 (L4 전문가용)
             ]
         },
@@ -232,7 +232,14 @@ window.SNW = window.SNW || {};
         ROUTES,
         init() {
             window.addEventListener('hashchange', dispatch);
-            document.addEventListener('snw:langchange', renderNavMenu);
+            document.addEventListener('snw:langchange', () => {
+                renderNavMenu();
+                document.title = SNW.I18n.t('app.title');
+            });
+            document.addEventListener('snw:levelchange', () => {
+                renderNavMenu();
+                dispatch();
+            });
             renderNavMenu();
             dispatch();
         },

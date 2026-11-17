@@ -40,16 +40,31 @@ window.SNW = window.SNW || {};
 				c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } [c]));
 		},
 		
-		/** HTML 템플릿 → Element (값은 escape) */
+		/** HTML 템플릿 → Element (비문자열·배열·객체 포함 escape, raw()만 opt-in 허용) */
 		html(strings, ...vals) {
 			const div = document.createElement('div');
 			div.innerHTML = strings.reduce((acc, s, i) => {
 				const v = vals[i];
-				const safe = (v == null) ? '' :
-					(typeof v === 'string' ? this.escape(v) : v);
+				let safe;
+				if (v == null) {
+					safe = '';
+				} else if (typeof v === 'string') {
+					safe = this.escape(v);
+				} else if (typeof v === 'number' || typeof v === 'boolean') {
+					safe = String(v);
+				} else if (v && typeof v === 'object' && typeof v.__raw === 'string') {
+					safe = v.__raw;
+				} else {
+					safe = this.escape(String(v));
+				}
 				return acc + s + (i < vals.length ? safe : '');
 			}, '').trim();
 			return div.firstElementChild;
+		},
+
+		/** 명시적 pre-escaped HTML 삽입용 opt-in 헬퍼 */
+		raw(str) {
+			return { __raw: String(str) };
 		},
 		
 		/** 반응형 뷰포트 클래스 */

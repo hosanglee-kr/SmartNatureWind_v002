@@ -7522,14 +7522,16 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 999a.nowplaying.js (29687 bytes) ---- */
+/* ---- 999a.nowplaying.js (32764 bytes) ---- */
 // =========================================================
 // 999a.nowplaying.js — 전역 Now Playing Bar (Stage 5 UX 완성형)
 // Layer 3 (애플리케이션 전역 컴포넌트)
 //  - ENV_PAUSED 3초 호흡 애니메이션 + [▶ 지금 재개]
-//  - AUTO 배지 (✨ / 🎯)
-//  - 최단 종료 시각 표기 + autoSwitchReason 1줄 병기
+//  - AUTO 배지 (✨ / 🎯) + 실시간 환경 센서(온도/DI) 배지
+//  - 로컬 TimerManager + 서버 triggerRt 통합 최단 종료 시각 표기
+//  - autoSwitchReason 1줄 병기
 //  - btnStop 상시 노출 (ENV_PAUSED 중에도 완전 정지 허용)
+//  - 상세 확장 모달 양방향 자동/수동 토글 및 실시간 세션 감시
 // =========================================================
 window.SNW = window.SNW || {};
 (function (SNW) {
@@ -7569,9 +7571,8 @@ window.SNW = window.SNW || {};
     function isSessionVisible() {
         const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
         const ctl = store.control;
-        // [Stage 5] ENV_PAUSED(7) 상태일 때는 세션이 pause 되어 있어도 바 상시 노출
-        if (ctl && ctl.stateCode === 5) return false;
-        if (ctl && ctl.stateCode === 7) return true;
+        if (ctl && ctl.stateCode === 5) return false; // AUTOOFF_STOPPED 시 Bar 숨김 (야간 리포트 전담)
+        if (ctl && ctl.stateCode === 7) return true;  // ENV_PAUSED(7) 시 Bar 상시 노출
 
         const s = store.session;
         if (!s) return false;
@@ -7708,22 +7709,35 @@ window.SNW = window.SNW || {};
         } else if (type === 2) {
             title = `${s.presetCode || '자연풍'} · ${s.styleCode || '표준'}`;
         } else if (type === 3) {
-            title = `일반 선풍기 (${Math.round(s.percent || 0)}%)`;
+            const fixedPct = s.percent ?? s.fixedPercent ?? s.fixedSpeed ?? (ctl && ctl.override && ctl.override.fixedPercent) ?? 0;
+            title = `일반 선풍기 (${Math.round(fixedPct)}%)`;
         } else {
             title = '재생 중';
         }
         barEl.title.textContent = title;
 
-        // ─── 3. 서브 정보 & 최단 종료 시각 단일 표기 ───
+        // ─── 3. 서브 정보 & 최단 종료 시각 단일 표기 (로컬 TimerManager + 서버 triggerRt 통합) ───
         let subReason = s.autoSwitchReason ? ` · ${s.autoSwitchReason}` : '';
-
-        // 최단 종료 시각 계산 (타이머 vs 스텝 종료)
         const timerStatus = (SNW.TimerManager && typeof SNW.TimerManager.getStatus === 'function')
             ? SNW.TimerManager.getStatus()
             : null;
+        const tr = ctl && ctl.triggerRt;
+        const uptimeMs = ctl && ctl.system && ctl.system.uptimeMs;
+
+        let serverTimerRemainSec = null;
+        if (tr && tr.timerArmed && tr.timerMinutes > 0 && uptimeMs > 0) {
+            const totalMs = Number(tr.timerMinutes) * 60000;
+            const pausedMs = Number(tr.pausedAccumMs || 0);
+            const elapsedMs = Math.max(0, Number(uptimeMs) - Number(tr.timerStartMs || 0) - pausedMs);
+            serverTimerRemainSec = Math.max(0, Math.ceil((totalMs - elapsedMs) / 1000));
+        }
+
         let shortestSec = null;
-        if (timerStatus && timerStatus.active && timerStatus.remainMin > 0) {
-            shortestSec = timerStatus.remainMin * 60;
+        const activeTimerSec = (timerStatus && timerStatus.active && timerStatus.remainSec > 0)
+            ? timerStatus.remainSec
+            : serverTimerRemainSec;
+        if (activeTimerSec && activeTimerSec > 0) {
+            shortestSec = activeTimerSec;
         }
         if (type === 1 && s.stepRemainSec && s.stepRemainSec > 0) {
             if (shortestSec == null || s.stepRemainSec < shortestSec) {
@@ -7737,7 +7751,8 @@ window.SNW = window.SNW || {};
                 ? `일시정지 (${formatTime(shortestSec)})`
                 : (shortestSec > 0 ? formatTime(shortestSec) : '가동 중');
         } else if (type === 3) {
-            barEl.step.textContent = `${Math.round(s.percent || 0)}%${subReason}`;
+            const fixedPct = s.percent ?? s.fixedPercent ?? s.fixedSpeed ?? (ctl && ctl.override && ctl.override.fixedPercent) ?? 0;
+            barEl.step.textContent = `${Math.round(fixedPct)}%${subReason}`;
             barEl.time.textContent = isPaused ? '일시정지' : (shortestSec > 0 ? formatTime(shortestSec) : '가동 중');
         } else {
             barEl.step.textContent = s.autoSwitchReason || '';
@@ -7771,10 +7786,10 @@ window.SNW = window.SNW || {};
             barEl.pending.onclick = null;
         }
 
-        // ─── 6. Timer 배지 ───
-        if (barEl.timerBadge && timerStatus && timerStatus.active) {
+        // ─── 6. Timer 배지 (로컬 또는 서버 하드웨어 타이머 활성 시) ───
+        if (barEl.timerBadge && activeTimerSec && activeTimerSec > 0) {
             barEl.timerBadge.hidden = false;
-            const min = timerStatus.remainMin;
+            const min = Math.ceil(activeTimerSec / 60);
             const text = min > 60 ? `${Math.floor(min / 60)}h${min % 60}m` : `${min}m`;
             if (barEl.timerVal) barEl.timerVal.textContent = text;
             barEl.timerBadge.onclick = (e) => {
@@ -7786,10 +7801,25 @@ window.SNW = window.SNW || {};
             barEl.timerBadge.onclick = null;
         }
 
-        // ─── 7. Auto Comfort 배지 ───
+        // ─── 7. Auto Comfort & 실시간 환경 센서 배지 ───
         if (barEl.autoBadge) {
             const isAuto = !!store.autoComfortEnabled || (s && (s.trigger === 3 || s.triggerName === 'AUTO_COMFORT' || type === 4 || type === 5));
             barEl.autoBadge.hidden = !isAuto;
+            if (isAuto) {
+                const sen = (ctl && ctl.sensor) || {};
+                const tempStr = (sen.tempC != null) ? `${Number(sen.tempC).toFixed(0)}°C` : '';
+                const diVal = (tr && tr.lastCheckDI != null) ? Number(tr.lastCheckDI).toFixed(0) : '';
+                const spanEl = barEl.autoBadge.querySelector('span');
+                if (spanEl) {
+                    if ((typeName === 'AUTO_FULL' || type === 4) && tempStr) {
+                        spanEl.textContent = diVal ? `🌡 ${tempStr} · DI ${diVal}` : `🌡 ${tempStr}`;
+                    } else if ((typeName === 'AUTO_SELECT' || type === 5) && tempStr) {
+                        spanEl.textContent = `🌡 ${tempStr}`;
+                    } else {
+                        spanEl.textContent = '🌱 자동';
+                    }
+                }
+            }
         }
 
         // ─── 8. EQ 애니메이션 ───
@@ -7898,8 +7928,10 @@ window.SNW = window.SNW || {};
 
     function onExpand() {
         const s = getSession();
-        if (!s) return;
-        showNowPlayingDetailsModal(s);
+        const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+        const ctl = store.control;
+        if (!s && (!ctl || ctl.stateCode !== 7)) return;
+        showNowPlayingDetailsModal(s || {});
     }
 
     // =========================================================
@@ -7956,11 +7988,15 @@ window.SNW = window.SNW || {};
     // Now Playing 상세 확장 모달
     // =========================================================
     function showNowPlayingDetailsModal(s) {
-        if (!SNW.UI || !SNW.UI.modal || !s) return;
+        if (!SNW.UI || !SNW.UI.modal) return;
+        const store = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+        const ctl = store.control;
+        const isEnvPaused = (ctl && ctl.stateCode === 7);
+
         const type = parseType(s.type);
         const typeName = s.typeName || (['NONE', 'PLAYLIST', 'PRESET', 'FIXED', 'AUTO_FULL', 'AUTO_SELECT'][type] || 'NONE');
         const stateStr = (typeof s.state === 'string') ? (s.state === 'RUNNING' ? 'ACTIVE' : s.state) : (s.state === 1 ? 'PAUSED' : 'ACTIVE');
-        const isPaused = (stateStr === 'PAUSED');
+        const isPaused = isEnvPaused || (stateStr === 'PAUSED');
 
         let title = '';
         let typeBadge = '';
@@ -7978,7 +8014,8 @@ window.SNW = window.SNW || {};
             title = `${s.presetCode || '자연풍'} · ${s.styleCode || '표준'}`;
             typeBadge = '🌿 자연풍 프리셋';
         } else if (type === 3) {
-            title = `일반 선풍기 (${Math.round(s.percent || 0)}%)`;
+            const fixedPct = s.percent ?? s.fixedPercent ?? s.fixedSpeed ?? (ctl && ctl.override && ctl.override.fixedPercent) ?? 0;
+            title = `일반 선풍기 (${Math.round(fixedPct)}%)`;
             typeBadge = '🌀 고정 풍속';
         } else {
             title = '재생 중인 바람';
@@ -7986,9 +8023,11 @@ window.SNW = window.SNW || {};
         }
 
         const remainSec = s.stepRemainSec || 0;
-        const timeStr = isPaused
-            ? `일시정지 (${formatTime(remainSec)})`
-            : (remainSec > 0 ? `${formatTime(remainSec)} 남음` : '연속 가동 중');
+        const timeStr = isEnvPaused
+            ? '환경 조건 회복 대기 중'
+            : (isPaused
+                ? `일시정지 (${formatTime(remainSec)})`
+                : (remainSec > 0 ? `${formatTime(remainSec)} 남음` : '연속 가동 중'));
 
         const stepStr = (type === 1) ? `Step ${s.currentStep || 1} / ${s.totalSteps || 1}` : '';
 
@@ -8010,7 +8049,7 @@ window.SNW = window.SNW || {};
                     <div style="font-size:13px;color:var(--snw-text-dim,#8b949e);margin-top:6px;display:flex;justify-content:center;gap:8px;">
                         ${stepStr ? `<span><b>${stepStr}</b></span><span>·</span>` : ''}
                         <span style="color:${isPaused ? 'var(--snw-warn,#d29922)' : 'var(--snw-success,#3fb950)'};font-weight:600;">
-                            ${isPaused ? '⏸ 일시정지' : '▶ 재생 중'}
+                            ${isEnvPaused ? '⏸ 환경 일시정지' : (isPaused ? '⏸ 일시정지' : '▶ 재생 중')}
                         </span>
                         <span>·</span>
                         <span>${timeStr}</span>
@@ -8031,25 +8070,35 @@ window.SNW = window.SNW || {};
                     <button type="button" class="snw-btn" id="np-btn-manual-switch" style="flex:1;">🎨 수동 전환</button>
                 </div>` : ''}
 
-                ${(typeName === 'AUTO_SELECT' || type === 5 || typeName === 'PRESET' || typeName === 'PLAYLIST') ? `
+                ${(typeName === 'AUTO_SELECT' || type === 5 || type === 1 || type === 2) ? `
                 <button type="button" class="snw-btn snw-btn--full" id="np-btn-select-switch" style="justify-content:center;">
-                    ${(typeName === 'AUTO_SELECT' || type === 5) ? '🎨 수동 세기 제어로 전환' : '🎯 취향 맞춤 Auto로 전환'}
+                    🎯 맞춤 세기 자동/수동 전환
                 </button>` : ''}
             </div>
         `;
+
+        let watchId = null;
+        const cleanupWatch = () => {
+            if (watchId) {
+                clearInterval(watchId);
+                watchId = null;
+            }
+        };
 
         const modalRef = SNW.UI.modal(
             '🍃 바람 세션 상세',
             content,
             async () => {
+                cleanupWatch();
                 await onPauseOrResume();
                 return true;
             },
             () => {
+                cleanupWatch();
                 return true;
             },
             {
-                okLabel: isPaused ? '▶ 재개' : '⏸ 일시정지',
+                okLabel: isEnvPaused ? '▶ 지금 재개 (1시간 유예)' : (isPaused ? '▶ 재개' : '⏸ 일시정지'),
                 cancelLabel: (SNW.I18n && SNW.I18n.t) ? SNW.I18n.t('common.close') : '닫기',
                 width: '380px'
             }
@@ -8062,6 +8111,7 @@ window.SNW = window.SNW || {};
         stopBtn.style.cssText = 'margin-top:10px;justify-content:center;background:rgba(248,81,73,0.15);color:var(--snw-error,#f85149);border:1px solid var(--snw-error,#f85149);';
         stopBtn.textContent = `⏹ ${(SNW.I18n && SNW.I18n.t) ? SNW.I18n.t('common.stopSession') : '세션 정지'}`;
         stopBtn.onclick = async () => {
+            cleanupWatch();
             if (modalRef && typeof modalRef.close === 'function') modalRef.close();
             await onStop();
         };
@@ -8070,6 +8120,7 @@ window.SNW = window.SNW || {};
         const timerBtn = content.querySelector('#np-btn-timer-link');
         if (timerBtn) {
             timerBtn.onclick = () => {
+                cleanupWatch();
                 if (modalRef && typeof modalRef.close === 'function') modalRef.close();
                 location.hash = '/automation/timer';
             };
@@ -8078,6 +8129,7 @@ window.SNW = window.SNW || {};
         const ruleBtn = content.querySelector('#np-btn-rule-link');
         if (ruleBtn) {
             ruleBtn.onclick = async () => {
+                cleanupWatch();
                 if (modalRef && typeof modalRef.close === 'function') modalRef.close();
                 if (SNW.UI && SNW.UI.ruleEditor) {
                     const st = SNW.Store ? SNW.Store.get() : {};
@@ -8090,6 +8142,7 @@ window.SNW = window.SNW || {};
         const btnComfort = content.querySelector('#np-btn-comfort-info');
         if (btnComfort) {
             btnComfort.onclick = () => {
+                cleanupWatch();
                 if (modalRef && typeof modalRef.close === 'function') modalRef.close();
                 location.hash = '/home/env';
             };
@@ -8098,6 +8151,7 @@ window.SNW = window.SNW || {};
         const btnManualSwitch = content.querySelector('#np-btn-manual-switch');
         if (btnManualSwitch) {
             btnManualSwitch.onclick = async () => {
+                cleanupWatch();
                 if (modalRef && typeof modalRef.close === 'function') modalRef.close();
                 const sim = (SNW.Store && SNW.Store.get().sim) || {};
                 await SNW.Api.startPreset(sim.presetCode || 'OCEAN', sim.styleCode || 'BALANCE');
@@ -8108,26 +8162,34 @@ window.SNW = window.SNW || {};
         const btnSelectSwitch = content.querySelector('#np-btn-select-switch');
         if (btnSelectSwitch) {
             btnSelectSwitch.onclick = async () => {
+                cleanupWatch();
                 if (modalRef && typeof modalRef.close === 'function') modalRef.close();
-                const isAutoSel = (typeName === 'AUTO_SELECT' || type === 5);
-                if (isAutoSel) {
-                    const sim = (SNW.Store && SNW.Store.get().sim) || {};
-                    await SNW.Api.startPreset(sim.presetCode || 'OCEAN', sim.styleCode || 'BALANCE');
+                const sim = (SNW.Store && SNW.Store.get().sim) || {};
+                const isCurrentlyAuto = (typeName === 'AUTO_SELECT' || type === 5);
+                if (isCurrentlyAuto) {
+                    await SNW.Api.startPreset(s.presetCode || sim.presetCode || 'OCEAN', s.styleCode || sim.styleCode || 'BALANCE');
                     if (SNW.ToastUtil) SNW.ToastUtil.info('수동 세기 제어로 전환되었습니다');
                 } else {
-                    let base = null;
-                    try { base = JSON.parse(localStorage.getItem('snw.lastAutoSelectBase') || 'null'); } catch (e) { }
-                    if (!base) {
-                        const sim = (SNW.Store && SNW.Store.get().sim) || {};
-                        base = s.profileId
-                            ? { baseType: 'PLAYLIST', profileId: s.profileId }
-                            : { baseType: 'PRESET', presetCode: sim.presetCode || 'OCEAN', styleCode: sim.styleCode || 'BALANCE' };
-                    }
-                    await SNW.Api.startSession({ type: 'AUTO_SELECT', payload: base });
-                    if (SNW.ToastUtil) SNW.ToastUtil.info('취향 맞춤 Auto로 전환되었습니다');
+                    await SNW.Api.startSession({
+                        type: 'AUTO_SELECT',
+                        payload: { baseType: 'PRESET', presetCode: s.presetCode || sim.presetCode || 'OCEAN' }
+                    });
+                    if (SNW.ToastUtil) SNW.ToastUtil.success('취향 맞춤 Auto로 전환되었습니다');
                 }
             };
         }
+
+        // 모달 오픈 중 세션 종료 시 자동 닫힘 감시 (1초 주기)
+        watchId = setInterval(() => {
+            if (!content.isConnected) {
+                cleanupWatch();
+                return;
+            }
+            if (!isSessionVisible() && modalRef && typeof modalRef.close === 'function') {
+                cleanupWatch();
+                modalRef.close();
+            }
+        }, 1000);
     }
 
     // =========================================================
@@ -8181,6 +8243,7 @@ window.SNW = window.SNW || {};
     };
 
 })(window.SNW);
+
 
 
 /* ---- 999b.ai-sheet.js (12619 bytes) ---- */

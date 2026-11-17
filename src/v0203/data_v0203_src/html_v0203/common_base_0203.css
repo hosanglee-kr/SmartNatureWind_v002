@@ -1,5 +1,5 @@
 
-/* ---- _base.css (6073 bytes) ---- */
+/* ---- _reset.css (1572 bytes) ---- */
 /* === _reset.css === */
 /*
  * ------------------------------------------------------
@@ -86,6 +86,7 @@ a {
 }
 
 
+/* ---- _variables.css (4623 bytes) ---- */
 /* === _variables.css === */
 /*
  * ------------------------------------------------------
@@ -213,6 +214,9 @@ body.has-nowplaying {
     }
 }
 
+/* [P0-3] 레벨 필터 클래스 (원본 flex/grid display 보존) */
+.snw-hidden-by-level { display: none !important; }
+
 /* 라이트 모드 자동 전환 */
 @media (prefers-color-scheme: light) {
     :root {
@@ -233,7 +237,8 @@ body.has-nowplaying {
     }
 }
 
-/* ---- _layout.css (16685 bytes) ---- */
+
+/* ---- _layout.css (10178 bytes) ---- */
 /* === _layout.css === */
 /*
  * ------------------------------------------------------
@@ -269,7 +274,8 @@ body {
     display: flex;
     align-items: center;
     gap: var(--snw-spacing-sm);
-    padding: 0 var(--snw-spacing-lg);
+    padding: env(safe-area-inset-top, 0px) var(--snw-spacing-lg) 0;
+    height: calc(var(--snw-header-h) + env(safe-area-inset-top, 0px));
     background: var(--snw-surface);
     border-bottom: 1px solid var(--snw-border);
     position: sticky;
@@ -646,6 +652,8 @@ body.snw-sidebar-open .snw-sidebar {
     }
 }
 
+
+/* ---- _responsive.css (6525 bytes) ---- */
 /* === _responsive.css === */
 /*
  * ------------------------------------------------------
@@ -915,10 +923,11 @@ body.snw-sidebar-open .snw-sidebar {
 
     .snw-fab,
     [data-slot="fab"] {
-        bottom: calc(var(--snw-bottom-nav-h, 56px) + var(--snw-player-h, 0px) + 16px + env(safe-area-inset-bottom, 0px)) !important;
+        bottom: var(--snw-fab-bottom) !important;
         transition: bottom 0.25s ease;
     }
 }
+
 
 /* ---- _comp_ui.css (16355 bytes) ---- */
 /*

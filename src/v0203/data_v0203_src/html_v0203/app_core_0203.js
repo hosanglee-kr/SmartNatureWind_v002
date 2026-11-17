@@ -58,7 +58,7 @@ window.SNW = window.SNW || {};
             1: { code: 'OVERRIDE', icon: '✋', color: 'blue', labelKey: 'fsm.override', l1: true },
             2: { code: 'PROFILE_RUN', icon: '👤', color: 'green', labelKey: 'fsm.profileRun', l1: false },
             3: { code: 'SCHEDULE_RUN', icon: '📅', color: 'cyan', labelKey: 'fsm.scheduleRun', l1: false },
-            4: { code: 'RESERVED_4', icon: '⏸', color: 'gray', labelKey: 'fsm.idle', l1: false },
+            4: { code: 'RESERVED_4', icon: '⏸', color: 'gray', labelKey: 'fsm.reserved', l1: false },
             5: { code: 'AUTOOFF_STOPPED', icon: '⏹', color: 'orange', labelKey: 'fsm.autoOffStopped', l1: true },
             6: { code: 'TIME_INVALID', icon: '🕐', color: 'red', labelKey: 'fsm.timeInvalid', l1: false },
             7: { code: 'ENV_PAUSED', icon: '⏸', color: 'orange', labelKey: 'fsm.envPaused', l1: true }
@@ -180,9 +180,8 @@ window.SNW = window.SNW || {};
         ],
 
         // =====================================================
-        // AutoOff reason 라벨 매핑
+        // AutoOff reason 라벨 매핑 (11=USER_STOP은 정상 사용자 정지이므로 의도적 제외)
         // =====================================================
-        // [수정 2] AUTOOFF_REASON_MAP 교체 (라인 161~166 부근)
         AUTOOFF_REASON_MAP: {
             9: 'autoOff.timer',
             10: 'autoOff.time',
@@ -195,223 +194,225 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 010.config.js (7306 bytes) ---- */
+/* ---- 010.config.js (9105 bytes) ---- */
 // =========================================================
 // 010.config.js — 프론트엔드 런타임 설정
 // Layer 0 (기반) — SNW.C 참조만 허용
 // =========================================================
 window.SNW = window.SNW || {};
 (function (SNW) {
-	'use strict';
+    'use strict';
 
-	const LS_PREFIX = 'snw.';
-	
-	SNW.CFG = {
-		// =====================================================
-		// localStorage 키 (중앙 관리)
-		// =====================================================
-		LS_PREFIX: LS_PREFIX,
-		LS_KEY: {
-			API_KEY: LS_PREFIX + 'apiKey',
-			LEVEL: LS_PREFIX + 'level',
-			LANG: LS_PREFIX + 'lang',
-			DEBUG: LS_PREFIX + 'debug',
-			LAST_PRESET: LS_PREFIX + 'lastPreset',
-			UI_THEME: LS_PREFIX + 'theme',
-			
-			// [PATCH] AI 키를 여기로 통합 (최종 문자열은 기존과 동일)
-			AI_MODE: LS_PREFIX + 'ai.mode', // 'snw.ai.mode'
-			AI_LIVE_WARNED: LS_PREFIX + 'ai.liveWarned', // 'snw.ai.liveWarned'
-			AI_HISTORY: LS_PREFIX + 'ai.history' // 'snw.ai.history'
-				
-		},
+    const LS_PREFIX = 'snw.';
 
-		// =====================================================
-		// API 경로 (버전 prefix 중앙 관리)
-		// =====================================================
-		API_BASE: '/api/v001',
-		API: {
-			version: '/api/v001/version',
-			state: '/api/v001/state',
-			metrics: '/api/v001/metrics',
-			controlSummary: '/api/v001/control/summary',
-			// Session (Stage 3 신규)
-			sessionStart: '/api/v001/session/start',
-			sessionPause: '/api/v001/session/pause',
-			sessionResume: '/api/v001/session/resume',
-			sessionStop: '/api/v001/session/stop',
-			sessionCurrent: '/api/v001/session/current',
-			sessionRule: '/api/v001/session/rule',
-			sessionSchOverride: '/api/v001/session/schedule-override',
-			overrideFixed: '/api/v001/control/override/fixed',
-			overridePreset: '/api/v001/control/override/preset',
-			overrideClear: '/api/v001/control/override/clear',
-			overrideParams: '/api/v001/control/override',
-			ack: '/api/v001/control/ack',
-			controlMode: '/api/v001/control/mode',
-			simulation: '/api/v001/simulation',
-			simState: '/api/v001/sim/state',
-			chartHistory: '/api/v001/sim/chart',
-			monitor: '/api/v001/monitor',
-			windProfile: '/api/v001/windProfile',
-			windDict: '/api/v001/windDict', // [v0203 Stage 4]
-			comfort: '/api/v001/comfort', // [v0203 Stage 6]
-			comfortAuto: '/api/v001/comfort/auto', // [Stage 10 Phase 3]
-			controlTimer: '/api/v001/control/timer', // [Stage 10.1 신규]
-			monitorTimeline: '/api/v001/monitor/timeline', // [v0203 Stage 7]
-			monitorSessionSummary: '/api/v001/monitor/session-summary', // [v0203 Stage 7]
-			schedules: '/api/v001/schedules',
-			userProfiles: '/api/v001/user_profiles',
-			userProfilesPatch: '/api/v001/user_profiles/patch',
-			profileSelect: '/api/v001/control/profile/select',
-			profileStop: '/api/v001/control/profile/stop',
-			motion: '/api/v001/motion',
-			motionPirFeed: '/api/v001/motion/pir/feed',
-			system: '/api/v001/system',
-			config: '/api/v001/config',
-			configSave: '/api/v001/config/save',
-			configDirty: '/api/v001/config/dirty',
-			configInit: '/api/v001/config/init',
-			reload: '/api/v001/reload',
-			wifiState: '/api/v001/wifi/state',
-			wifiConfig: '/api/v001/wifi/config',
-			wifiScan: '/api/v001/wifi/scan',
-			timeSet: '/api/v001/system/time/set',
-			logs: '/api/v001/logs',
-			diag: '/api/v001/diag',
-			firmwareCheck: '/api/v001/system/firmware/check',
-			fwUpdate: '/api/v001/fwUpdate',
-			fileUpload: '/api/v001/fileUpload',
-			gemini: '/api/v001/ai/gemini',
-			aiExecute: '/api/v001/ai/execute-action',
-			aiLiveToken: '/api/v001/ai/live-token',
-			aiLiveFunc: '/api/v001/ai/live-function',
-			aiLiveCfg: '/api/v001/ai/live-config',
-			aiCostStatus: '/api/v001/ai/cost-status',
-			aiUsage: '/api/v001/ai/usage',
-			aiCostReset: '/api/v001/ai/cost-reset',
-			menu: '/api/v001/menu'
-		},
+    SNW.CFG = {
+        // =====================================================
+        // localStorage 키 (중앙 관리)
+        // =====================================================
+        LS_PREFIX: LS_PREFIX,
+        LS_KEY: {
+            API_KEY: LS_PREFIX + 'apiKey',
+            LEVEL: LS_PREFIX + 'level',
+            LANG: LS_PREFIX + 'lang',
+            DEBUG: LS_PREFIX + 'debug',
+            LAST_PRESET: LS_PREFIX + 'lastPreset',
+            UI_THEME: LS_PREFIX + 'theme',
 
-		// =====================================================
-		// WS 경로
-		// =====================================================
-		WS_BASE_PATH: '/ws',
-		WS_PATH: {
-			state: '/ws/state',
-			metrics: '/ws/metrics',
-			chart: '/ws/chart',
-			summary: '/ws/summary',
-			log: '/ws/log'
-		},
+            // [PATCH] AI 키를 여기로 통합 (최종 문자열은 기존과 동일)
+            AI_MODE: LS_PREFIX + 'ai.mode', // 'snw.ai.mode'
+            AI_LIVE_WARNED: LS_PREFIX + 'ai.liveWarned', // 'snw.ai.liveWarned'
+            AI_HISTORY: LS_PREFIX + 'ai.history' // 'snw.ai.history'
 
-		// =====================================================
-		// HTTP 타임아웃 (ms)
-		// =====================================================
-		TIMEOUT_MS: {
-			DEFAULT: 8000,
-			GEMINI: 20000,
-			UPLOAD: 60000,
-			SCAN: 15000
-		},
+        },
 
-		// =====================================================
-		// WS 재연결 (exponential backoff)
-		// =====================================================
-		WS_RECONNECT: {
-			BACKOFF_MS: [1000, 2000, 4000, 8000, 16000, 30000],
-			FAIL_THRESHOLD: 3,
-			FALLBACK_POLL_MS: 2000
-		},
+        // =====================================================
+        // API 경로 (버전 prefix 중앙 관리)
+        // =====================================================
+        API_BASE: '/api/v001',
+        API: {
+            version: '/api/v001/version',
+            state: '/api/v001/state',
+            metrics: '/api/v001/metrics',
+            controlSummary: '/api/v001/control/summary',
+            // Session (Stage 3 신규)
+            sessionStart: '/api/v001/session/start',
+            sessionPause: '/api/v001/session/pause',
+            sessionResume: '/api/v001/session/resume',
+            sessionStop: '/api/v001/session/stop',
+            sessionCurrent: '/api/v001/session/current',
+            sessionRule: '/api/v001/session/rule',
+            sessionSchOverride: '/api/v001/session/schedule-override',
+            overrideFixed: '/api/v001/control/override/fixed',
+            overridePreset: '/api/v001/control/override/preset',
+            overrideClear: '/api/v001/control/override/clear',
+            overrideParams: '/api/v001/control/override',
+            ack: '/api/v001/control/ack',
+            controlMode: '/api/v001/control/mode',
+            simulation: '/api/v001/simulation',
+            simState: '/api/v001/sim/state',
+            chartHistory: '/api/v001/sim/chart',
+            monitor: '/api/v001/monitor',
+            windProfile: '/api/v001/windProfile',
+            windDict: '/api/v001/windDict', // [v0203 Stage 4]
+            comfort: '/api/v001/comfort', // [v0203 Stage 6]
+            comfortAuto: '/api/v001/comfort/auto', // [Stage 10 Phase 3]
+            controlTimer: '/api/v001/control/timer', // [Stage 10.1 신규]
+            monitorTimeline: '/api/v001/monitor/timeline', // [v0203 Stage 7]
+            monitorSessionSummary: '/api/v001/monitor/session-summary', // [v0203 Stage 7]
+            schedules: '/api/v001/schedules',
+            userProfiles: '/api/v001/user_profiles',
+            userProfilesPatch: '/api/v001/user_profiles/patch',
+            profileSelect: '/api/v001/control/profile/select',
+            profileStop: '/api/v001/control/profile/stop',
+            motion: '/api/v001/motion',
+            motionPirFeed: '/api/v001/motion/pir/feed',
+            system: '/api/v001/system',
+            config: '/api/v001/config',
+            configSave: '/api/v001/config/save',
+            configDirty: '/api/v001/config/dirty',
+            configInit: '/api/v001/config/init',
+            reload: '/api/v001/reload',
+            wifiState: '/api/v001/wifi/state',
+            wifiConfig: '/api/v001/wifi/config',
+            wifiScan: '/api/v001/wifi/scan',
+            timeSet: '/api/v001/system/time/set',
+            logs: '/api/v001/logs',
+            diag: '/api/v001/diag',
+            firmwareCheck: '/api/v001/system/firmware/check',
+            fwUpdate: '/api/v001/fwUpdate',
+            fileUpload: '/api/v001/fileUpload',
+            gemini: '/api/v001/ai/gemini',
+            aiExecute: '/api/v001/ai/execute-action',
+            aiLiveToken: '/api/v001/ai/live-token',
+            aiLiveFunc: '/api/v001/ai/live-function',
+            aiLiveCfg: '/api/v001/ai/live-config',
+            aiCostStatus: '/api/v001/ai/cost-status',
+            aiUsage: '/api/v001/ai/usage',
+            aiCostReset: '/api/v001/ai/cost-reset',
+            menu: '/api/v001/menu'
+        },
 
-		// =====================================================
-		// 시뮬레이션 기본값 (서버 미응답 시)
-		// =====================================================
-		SIM_DEFAULT: {
-			intensity: 70,
-			variability: 50,
-			gustFreq: 45,
-			fanLimit: 90,
-			minFan: 10,
-			fanPowerEnabled: true
-		},
+        // =====================================================
+        // WS 경로
+        // =====================================================
+        WS_BASE_PATH: '/ws',
+        WS_PATH: {
+            state: '/ws/state',
+            metrics: '/ws/metrics',
+            chart: '/ws/chart',
+            summary: '/ws/summary',
+            log: '/ws/log'
+        },
 
-		// =====================================================
-		// 사용자 레벨 기본값
-		// =====================================================
-		DEFAULT_LEVEL: 'L4',
+        // =====================================================
+        // HTTP 타임아웃 (ms)
+        // =====================================================
+        TIMEOUT_MS: {
+            DEFAULT: 8000,
+            GEMINI: 20000,
+            UPLOAD: 60000,
+            SCAN: 15000
+        },
 
-		// =====================================================
-		// UI 상수 (컴포넌트 공용)
-		// =====================================================
-		UI: {
-			TOAST_DEFAULT_MS: 3000,
-			TOAST_SUCCESS_MS: 2000,
-			TOAST_ERROR_MS: 4000,
-			PRESET_GRID_MIN_COL: 2,
-			PRESET_GRID_MAX_COL: 5,
-			MINI_CHART_POINTS: 120,
-			MINI_CHART_SERIES: [
-				{ key: 'windSpeed', color: '#4a9eff', labelKey: 'chart.wind' },
-				{ key: 'targetWind', color: '#9aa5b1', labelKey: 'chart.target' },
-				{ key: 'pwmDuty', color: '#f5a623', labelKey: 'chart.pwm' }
-			],
-			LOG_MAX_LINES: 256
-		},
+        // =====================================================
+        // WS 재연결 (exponential backoff)
+        // =====================================================
+        WS_RECONNECT: {
+            BACKOFF_MS: [1000, 2000, 4000, 8000, 16000, 30000],
+            FAIL_THRESHOLD: 3,
+            FALLBACK_POLL_MS: 2000
+        },
 
-		// =====================================================
-		// AI Gemini Live & Cost 상수 (Stage 8)
-		// =====================================================
-		AI_LIVE: {
-			WS_URL: 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent',
-			RECONNECT_MS: [1000, 2000, 4000, 8000],
-			MAX_SESSION_MS: 14 * 60 * 1000,   // 14분 (15분 제약 대비 재연결)
-			SESSION_WARN_MS: 60 * 1000,       // 60초 경고
-			CONNECT_TIMEOUT_MS: 10000,
-			DEFAULT_VOICE: 'Aoede'
-		},
-		AI_COST: {
-			CAP_SEC: 30 * 60,  // 일일 30분 상한
-			WARN_SEC: 25 * 60, // 25분 경고
-			POLL_MS: 60000,
-			REPORT_MS: 30000
-		},
-	
-		// =====================================================
-		// 개발 모드
-		// =====================================================
-		IS_DEV: (location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
+        // =====================================================
+        // 시뮬레이션 기본값 (서버 미응답 시)
+        // =====================================================
+        SIM_DEFAULT: {
+            intensity: 70,
+            variability: 50,
+            gustFreq: 45,
+            fanLimit: 90,
+            minFan: 10,
+            fanPowerEnabled: true
+        },
 
-		// =====================================================
-		// localStorage 오버라이드 헬퍼
-		// =====================================================
-		get(path) {
-			const lsKey = LS_PREFIX + 'cfg.' + path;
-			const lsVal = localStorage.getItem(lsKey);
-			if (lsVal != null) {
-				try { return JSON.parse(lsVal); } catch { return lsVal; }
-			}
-			const segs = path.split('.');
-			let v = SNW.CFG;
-			for (const s of segs) {
-				if (v == null) return undefined;
-				v = v[s];
-			}
-			return v;
-		},
-		setOverride(path, value) {
-			localStorage.setItem(LS_PREFIX + 'cfg.' + path, JSON.stringify(value));
-		},
-		clearOverride(path) {
-			localStorage.removeItem(LS_PREFIX + 'cfg.' + path);
-		}
-	};
+        // =====================================================
+        // 사용자 레벨 기본값
+        // =====================================================
+        DEFAULT_LEVEL: 'L4',
+
+        // =====================================================
+        // UI 상수 (컴포넌트 공용)
+        // =====================================================
+        UI: {
+            TOAST_DEFAULT_MS: 3000,
+            TOAST_SUCCESS_MS: 2000,
+            TOAST_ERROR_MS: 4000,
+            PRESET_GRID_MIN_COL: 2,
+            PRESET_GRID_MAX_COL: 5,
+            MINI_CHART_POINTS: 120,
+            MINI_CHART_SERIES: [
+                { key: 'windSpeed', color: '#4a9eff', labelKey: 'chart.wind' },
+                { key: 'targetWind', color: '#9aa5b1', labelKey: 'chart.target' },
+                { key: 'pwmDuty', color: '#f5a623', labelKey: 'chart.pwm' }
+            ],
+            LOG_MAX_LINES: 256
+        },
+
+        // =====================================================
+        // AI Gemini Live & Cost 상수 (Stage 8)
+        // =====================================================
+        AI_LIVE: {
+            WS_URL: 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent',
+            RECONNECT_MS: [1000, 2000, 4000, 8000],
+            MAX_SESSION_MS: 14 * 60 * 1000,   // 14분 (15분 제약 대비 재연결)
+            SESSION_WARN_MS: 60 * 1000,       // 60초 경고
+            CONNECT_TIMEOUT_MS: 10000,
+            DEFAULT_VOICE: 'Aoede'
+        },
+        AI_COST: {
+            CAP_SEC: 30 * 60,  // 일일 30분 상한
+            WARN_SEC: 25 * 60, // 25분 경고
+            POLL_MS: 60000,
+            REPORT_MS: 30000
+        },
+
+        // =====================================================
+        // 개발 모드
+        // =====================================================
+        IS_DEV: (location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
+
+        // =====================================================
+        // localStorage 오버라이드 헬퍼
+        // =====================================================
+        get(path, fallback) {
+            if (typeof path !== 'string' || !/^[a-zA-Z0-9_.]+$/.test(path)) return fallback;
+            const segs = path.split('.');
+            if (segs.some(s => s === '__proto__' || s === 'constructor' || s === 'prototype')) return fallback;
+            const lsKey = LS_PREFIX + 'cfg.' + path;
+            const lsVal = localStorage.getItem(lsKey);
+            if (lsVal != null) {
+                try { return JSON.parse(lsVal); } catch { return lsVal; }
+            }
+            let v = SNW.CFG;
+            for (const s of segs) {
+                if (v == null || !Object.prototype.hasOwnProperty.call(v, s)) return fallback;
+                v = v[s];
+            }
+            return v === undefined ? fallback : v;
+        },
+        setOverride(path, value) {
+            localStorage.setItem(LS_PREFIX + 'cfg.' + path, JSON.stringify(value));
+        },
+        clearOverride(path) {
+            localStorage.removeItem(LS_PREFIX + 'cfg.' + path);
+        }
+    };
 
 })(window.SNW);
 
 
 
-/* ---- 020.i18n.js (77003 bytes) ---- */
+/* ---- 020.i18n.js (81667 bytes) ---- */
 // =========================================================
 // 020.i18n.js — 다국어 완전판 (ko/en)
 // =========================================================
@@ -664,14 +665,25 @@ window.SNW = window.SNW || {};
             'settings.deleteApiKey': 'API Key 삭제',
             'settings.deleteGeminiKey': 'Gemini Key 삭제',
 
+
             // =====================================================
-            // Header / Nav
+            // [Phase5 5.6] 네비게이션 완전판
             // =====================================================
             'nav.home': '홈',
             'nav.wind': '바람',
             'nav.automation': '자동화',
             'nav.monitor': '모니터',
             'nav.settings': '설정',
+            'nav.simulation': '시뮬레이션',
+            'nav.logs': '시스템 로그',
+            'nav.ai': 'AI 어시스턴트',
+            'nav.groupControl': '제어',
+            'nav.groupSystem': '시스템',
+
+
+            // =====================================================
+            // Header
+            // =====================================================
             'header.menu': '메뉴',
             'header.language': '언어',
             'header.online': '온라인',
@@ -695,15 +707,6 @@ window.SNW = window.SNW || {};
             'msg.selectProfile': '실행할 플레이리스트를 선택하세요',
             'msg.timeOrder': '종료 시각이 시작 시각보다 빨라야 합니다',
 
-            // =====================================================
-            // [Phase5 5.6] 네비게이션 완전판
-            // =====================================================
-            'nav.monitor': '모니터',
-            'nav.simulation': '시뮬레이션',
-            'nav.logs': '시스템 로그',
-            'nav.ai': 'AI 어시스턴트',
-            'nav.groupControl': '제어',
-            'nav.groupSystem': '시스템',
 
             // =====================================================
             // [Phase5 5.6] 공통
@@ -723,9 +726,14 @@ window.SNW = window.SNW || {};
             // =====================================================
             // [Phase5 5.6] Dashboard
             // =====================================================
-            'dashboard.sensorTitle': '센서',
+            'dashboard.tabControl': '제어',
+            'dashboard.tabEnv': '스마트쾌적',
+            'dashboard.tabPreset': '프리셋',
+            'dashboard.sensorTitle': '센서 모니터링',
             'dashboard.styleTitle': '바람 스타일',
+            'dashboard.styleHint': '바람 변동 패턴 보정',
             'dashboard.presetTitle': '자연풍 프리셋',
+            'dashboard.presetHint': '10대 시뮬레이션 환경 선택',
             'dashboard.powerOn': '전원 켜기',
             'dashboard.powerOff': '전원 끄기',
             'dashboard.temp': '온도',
@@ -959,6 +967,29 @@ window.SNW = window.SNW || {};
             // [Phase5 5.6] FSM 상태 배지
             // =====================================================
             'fsm.idle': '대기',
+            'fsm.reserved': '예약됨',
+            'feedback.intensity.off.title': '0.0 m/s · 팬 정지',
+            'feedback.intensity.off.desc': '팬 모터가 대기 상태입니다.',
+            'feedback.intensity.gentle.title': '체감 약 {speed} m/s (초미풍 · 수면풍)',
+            'feedback.intensity.gentle.desc': '부채질 수준의 고요한 미풍 (수면 시 또는 영유아에 적합, 저소음 <25dB)',
+            'feedback.intensity.natural.title': '체감 약 {speed} m/s (표준 자연풍 · 1~2단)',
+            'feedback.intensity.natural.desc': '나뭇잎이 살랑거리는 기분 좋은 산들바람 (일상 생활 및 휴식에 가장 쾌적)',
+            'feedback.intensity.strong.title': '체감 약 {speed} m/s (강풍 · 급속 환기 3~4단)',
+            'feedback.intensity.strong.desc': '창문을 열었을 때 부는 시원한 야외 바람 (운동 직후나 빠른 환기에 적합)',
+            'feedback.variability.low.title': '풍속 전환 약 10~15초 소요 (변화폭 <10%)',
+            'feedback.variability.low.desc': '바람 세기가 천천히 바뀌어 체감상 거의 일정하고 부드럽습니다.',
+            'feedback.variability.mid.title': '풍속 전환 약 5~8초 소요 (변화폭 ±30%)',
+            'feedback.variability.mid.desc': '숲속 바람처럼 5~8초 간격으로 오르내리며 자연스러운 리듬감을 줍니다.',
+            'feedback.variability.high.title': '풍속 전환 약 2~4초 소요 (변화폭 최대 ±60%)',
+            'feedback.variability.high.desc': '2~3초 만에 풍속이 급격히 전환되어 계곡이나 해변처럼 역동적입니다.',
+            'feedback.gust.none.title': '돌풍 없음 (기본 기류만 유지)',
+            'feedback.gust.none.desc': '돌풍 없이 평온한 기류만 부드럽게 유지됩니다.',
+            'feedback.gust.low.title': '약 60~120초(1~2분)에 1회 유입',
+            'feedback.gust.low.desc': '가벼운 돌풍이 드물게 지나가 수면이나 독서에 방해되지 않습니다.',
+            'feedback.gust.mid.title': '약 30~50초에 1회 유입 (순간 풍속 ×1.5~2.0배)',
+            'feedback.gust.mid.desc': '30~45초마다 시원한 바람이 훅 불어와 답답함을 해소해 줍니다.',
+            'feedback.gust.high.title': '약 15~25초에 1회 유입 (순간 풍속 최대 ×2.5배)',
+            'feedback.gust.high.desc': '15~20초마다 강력한 돌풍이 연속 유입되어 야외 언덕에 있는 듯 상쾌합니다.',
             'fsm.override': '수동 제어',
             'fsm.profileRun': '프로필 실행',
             'fsm.scheduleRun': '스케줄 실행',
@@ -1063,14 +1094,7 @@ window.SNW = window.SNW || {};
             'settings.levelL2': '표준 (일반 사용 권장)',
             'settings.levelL3': '고급 (세부 파라미터)',
             'settings.levelL4': '전문가 (모든 엔지니어링 기능)',
-            'dashboard.tabControl': '제어',
-            'dashboard.tabEnv': '스마트쾌적',
-            'dashboard.tabPreset': '프리셋',
-            'dashboard.sensorTitle': '센서 모니터링',
-            'dashboard.styleTitle': '바람 스타일',
-            'dashboard.styleHint': '바람 변동 패턴 보정',
-            'dashboard.presetTitle': '자연풍 프리셋',
-            'dashboard.presetHint': '10대 시뮬레이션 환경 선택',
+
             'common.details': '상세보기',
             'timer.quickPrompt': '몇 분 후 종료할까요? (분 단위 입력)',
             'comfort.autoTitle': '스마트 쾌적 자동 모드',
@@ -1423,14 +1447,22 @@ window.SNW = window.SNW || {};
             'settings.deleteApiKey': 'Delete API Key',
             'settings.deleteGeminiKey': 'Delete Gemini Key',
 
-            // =====================================================
-            // Header / Nav
-            // =====================================================
+            // Nav
             'nav.home': 'Home',
             'nav.wind': 'Wind',
             'nav.automation': 'Auto',
             'nav.monitor': 'Monitor',
             'nav.settings': 'Settings',
+            'nav.simulation': 'Simulation',
+            'nav.logs': 'System Logs',
+            'nav.ai': 'AI Assistant',
+            'nav.groupControl': 'Control',
+            'nav.groupSystem': 'System',
+
+
+            // =====================================================
+            // Header
+            // =====================================================
             'header.menu': 'Menu',
             'header.language': 'Language',
             'header.online': 'Online',
@@ -1454,13 +1486,6 @@ window.SNW = window.SNW || {};
             'msg.selectProfile': 'Please select a playlist',
             'msg.timeOrder': 'End time must be after start time',
 
-            // Nav
-            'nav.monitor': 'Monitor',
-            'nav.simulation': 'Simulation',
-            'nav.logs': 'System Logs',
-            'nav.ai': 'AI Assistant',
-            'nav.groupControl': 'Control',
-            'nav.groupSystem': 'System',
 
             'common.start': 'Start',
             'common.stop': 'Stop',
@@ -1472,9 +1497,14 @@ window.SNW = window.SNW || {};
             'footer.polling': '🟡 Polling',
 
             // Dashboard
-            'dashboard.sensorTitle': 'Sensors',
+            'dashboard.tabControl': 'Control',
+            'dashboard.tabEnv': 'Environment',
+            'dashboard.tabPreset': 'Presets',
+            'dashboard.sensorTitle': 'Sensors Monitoring',
             'dashboard.styleTitle': 'Wind Style',
+            'dashboard.styleHint': 'Waveform pattern modifier',
             'dashboard.presetTitle': 'Nature Presets',
+            'dashboard.presetHint': '10 nature presets',
             'dashboard.powerOn': 'Power On',
             'dashboard.powerOff': 'Power Off',
             'dashboard.temp': 'Temp',
@@ -1678,6 +1708,29 @@ window.SNW = window.SNW || {};
 
             // FSM
             'fsm.idle': 'Idle',
+            'fsm.reserved': 'Reserved',
+            'feedback.intensity.off.title': '0.0 m/s · Fan Stopped',
+            'feedback.intensity.off.desc': 'Fan motor is in standby mode.',
+            'feedback.intensity.gentle.title': 'Approx {speed} m/s (Gentle / Sleep)',
+            'feedback.intensity.gentle.desc': 'Gentle breeze comparable to fanning (ideal for sleep or infants, quiet <25dB)',
+            'feedback.intensity.natural.title': 'Approx {speed} m/s (Natural Breeze · Stage 1-2)',
+            'feedback.intensity.natural.desc': 'Pleasant fluttering breeze (most comfortable for daily living and relaxation)',
+            'feedback.intensity.strong.title': 'Approx {speed} m/s (Strong Wind · Stage 3-4)',
+            'feedback.intensity.strong.desc': 'Cool open-window breeze (ideal after workouts or quick cooling)',
+            'feedback.variability.low.title': 'Transition ~10-15s (Delta <10%)',
+            'feedback.variability.low.desc': 'Wind changes very slowly, maintaining a smooth and steady flow.',
+            'feedback.variability.mid.title': 'Transition ~5-8s (Delta ±30%)',
+            'feedback.variability.mid.desc': 'Rhythmic fluctuation like a forest breeze every 5-8s.',
+            'feedback.variability.high.title': 'Transition ~2-4s (Delta up to ±60%)',
+            'feedback.variability.high.desc': 'Rapid 2-4s velocity changes creating dynamic coastal or valley winds.',
+            'feedback.gust.none.title': 'No Gust (Base flow only)',
+            'feedback.gust.none.desc': 'Maintains gentle airflow without sudden gusts.',
+            'feedback.gust.low.title': 'Inflow every ~60-120s (1-2 min)',
+            'feedback.gust.low.desc': 'Rare gentle gusts suitable for sleep or quiet focus.',
+            'feedback.gust.mid.title': 'Inflow every ~30-50s (Peak ×1.5~2.0)',
+            'feedback.gust.mid.desc': 'Refreshing bursts every 30-50s relieving stuffiness.',
+            'feedback.gust.high.title': 'Inflow every ~15-25s (Peak up to ×2.5)',
+            'feedback.gust.high.desc': 'Frequent energetic gusts giving an invigorating hilltop sensation.',
             'fsm.override': 'Manual',
             'fsm.profileRun': 'Profile',
             'fsm.scheduleRun': 'Schedule',
@@ -1773,14 +1826,7 @@ window.SNW = window.SNW || {};
             'settings.levelL2': 'Standard (Recommended)',
             'settings.levelL3': 'Advanced (Detailed Tuning)',
             'settings.levelL4': 'Expert (All Engineering Tools)',
-            'dashboard.tabControl': 'Control',
-            'dashboard.tabEnv': 'Environment',
-            'dashboard.tabPreset': 'Presets',
-            'dashboard.sensorTitle': 'Sensors Monitoring',
-            'dashboard.styleTitle': 'Wind Style',
-            'dashboard.styleHint': 'Waveform pattern modifier',
-            'dashboard.presetTitle': 'Nature Presets',
-            'dashboard.presetHint': '10 nature presets',
+
             'common.details': 'Details',
             'timer.quickPrompt': 'Minutes until fan auto stop? (Enter number)',
             'comfort.autoTitle': 'Smart Comfort Auto Mode',
@@ -1903,6 +1949,8 @@ window.SNW = window.SNW || {};
         } catch { return 'ko'; }
     })();
 
+    const ALL_KEYS = new Set([...Object.keys(DICT.ko), ...Object.keys(DICT.en)]);
+
     SNW.I18n = {
         getLang() { return currentLang; },
 
@@ -1925,13 +1973,20 @@ window.SNW = window.SNW || {};
         },
 
         hasKey(key) {
-            return DICT.ko[key] != null || DICT.en[key] != null;
+            return ALL_KEYS.has(key);
         },
 
         applyTo(root) {
-            (root || document).querySelectorAll('[data-i18n]').forEach(el => {
+            const r = root || document;
+            r.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (key && this.hasKey(key)) el.textContent = this.t(key);
+            });
+            ['placeholder', 'title', 'aria-label', 'alt'].forEach(attr => {
+                r.querySelectorAll(`[data-i18n-${attr}]`).forEach(el => {
+                    const key = el.getAttribute(`data-i18n-${attr}`);
+                    if (key && this.hasKey(key)) el.setAttribute(attr, this.t(key));
+                });
             });
         },
     };
@@ -1940,7 +1995,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 030.util.level.js (1458 bytes) ---- */
+/* ---- 030.util.level.js (1715 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : 030.util.level.js
@@ -1954,46 +2009,52 @@ window.SNW = window.SNW || {};
  * ------------------------------------------------------
  */
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
 	'use strict';
-	
+
 	SNW.LevelUtil = {
 		LEVELS: SNW.C.LEVEL.ORDER,
-		
+
 		current() {
 			try {
 				const v = localStorage.getItem(SNW.CFG.LS_KEY.LEVEL);
 				return this.LEVELS.includes(v) ? v : SNW.CFG.DEFAULT_LEVEL;
 			} catch { return SNW.CFG.DEFAULT_LEVEL; }
 		},
-		
-		set(level) {
+
+		set(level, opts = {}) {
 			if (!this.LEVELS.includes(level)) return;
-			try { localStorage.setItem(SNW.CFG.LS_KEY.LEVEL, level); } catch {}
-			// 페이지 재로드 (레벨별 라우트 재검증)
-			location.reload();
+			try { localStorage.setItem(SNW.CFG.LS_KEY.LEVEL, level); } catch { }
+			const reload = (opts.reload !== false);
+			if (reload) {
+				location.reload();
+			} else {
+				this.applyTo(document);
+				document.dispatchEvent(new CustomEvent('snw:levelchange', { detail: { level } }));
+			}
 		},
-		
+
 		atLeast(minLevel) {
 			const cur = this.current();
 			return this.LEVELS.indexOf(cur) >= this.LEVELS.indexOf(minLevel);
 		},
-		
-		/** data-min-level 요소 자동 표시/숨김 */
+
+		/** data-min-level 요소 자동 표시/숨김 (클래스 토글로 원본 flex/grid 보존) */
 		applyTo(root) {
 			const cur = this.current();
 			(root || document).querySelectorAll('[data-min-level]').forEach(el => {
 				const min = el.getAttribute('data-min-level');
 				const show = this.LEVELS.indexOf(cur) >= this.LEVELS.indexOf(min);
-				el.style.display = show ? '' : 'none';
+				el.classList.toggle('snw-hidden-by-level', !show);
+				el.setAttribute('aria-hidden', show ? 'false' : 'true');
 			});
 		}
 	};
-	
+
 })(window.SNW);
 
 
-/* ---- 030.util.time.js (2042 bytes) ---- */
+/* ---- 030.util.time.js (2383 bytes) ---- */
 // =========================================================
 // 030.util.time.js — SNW.TimeUtil (SPEC §5.3 준수)
 // Layer 1 (유틸) — SNW.C 참조
@@ -2002,6 +2063,8 @@ window.SNW = window.SNW || {};
 (function(SNW) {
 	'use strict';
 	
+	const _clockMap = new WeakMap();
+
 	SNW.TimeUtil = {
 		/**
 		 * uptimeMs → 절대 시각 (Date)
@@ -2045,21 +2108,35 @@ window.SNW = window.SNW || {};
 			return `${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
 		},
 		
-		/** 1초 주기 시계 (WS 무관 UI 시계) */
+		/** 1초 주기 시계 (WS 무관 UI 시계, 중복 방지) */
 		startClock(el, getHmFn) {
+			if (!el) return null;
+			SNW.TimeUtil.stopClock(el);
 			const tick = () => {
 				const hm = getHmFn();
 				el.textContent = SNW.TimeUtil.clockStr(hm.hour ?? -1, hm.min ?? -1);
 			};
 			tick();
-			return setInterval(tick, 1000);
+			const id = setInterval(tick, 1000);
+			_clockMap.set(el, id);
+			return id;
+		},
+
+		/** 시계 인터벌 정리 */
+		stopClock(el) {
+			if (!el) return;
+			const prev = _clockMap.get(el);
+			if (prev != null) {
+				clearInterval(prev);
+				_clockMap.delete(el);
+			}
 		}
 	};
 	
 })(window.SNW);
 
 
-/* ---- 031.util.dom.js (2114 bytes) ---- */
+/* ---- 031.util.dom.js (2553 bytes) ---- */
 // =========================================================
 // 031.util.dom.js — SNW.DomUtil (PATCHED)
 //  - 원본의 DomUtil 재할당 → 단일 리터럴로 통합
@@ -2102,16 +2179,31 @@ window.SNW = window.SNW || {};
 				c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } [c]));
 		},
 		
-		/** HTML 템플릿 → Element (값은 escape) */
+		/** HTML 템플릿 → Element (비문자열·배열·객체 포함 escape, raw()만 opt-in 허용) */
 		html(strings, ...vals) {
 			const div = document.createElement('div');
 			div.innerHTML = strings.reduce((acc, s, i) => {
 				const v = vals[i];
-				const safe = (v == null) ? '' :
-					(typeof v === 'string' ? this.escape(v) : v);
+				let safe;
+				if (v == null) {
+					safe = '';
+				} else if (typeof v === 'string') {
+					safe = this.escape(v);
+				} else if (typeof v === 'number' || typeof v === 'boolean') {
+					safe = String(v);
+				} else if (v && typeof v === 'object' && typeof v.__raw === 'string') {
+					safe = v.__raw;
+				} else {
+					safe = this.escape(String(v));
+				}
 				return acc + s + (i < vals.length ? safe : '');
 			}, '').trim();
 			return div.firstElementChild;
+		},
+
+		/** 명시적 pre-escaped HTML 삽입용 opt-in 헬퍼 */
+		raw(str) {
+			return { __raw: String(str) };
 		},
 		
 		/** 반응형 뷰포트 클래스 */
@@ -2157,10 +2249,13 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 033.util.template.js (9334 bytes) ---- */
+/* ---- 033.util.template.js (9484 bytes) ---- */
 // =========================================================
 // 033.util.template.js — SNW.Tpl (페이지 HTML 템플릿)
 // Layer 1 (유틸) — SNW.C, SNW.DomUtil 참조
+// [P2-8] 분리된 페이지별 템플릿 구현 위치:
+//  - Dashboard: 200.page.dashboard.js
+//  - Settings / Monitor / AI: 240/260/290.page.*.js
 // =========================================================
 window.SNW = window.SNW || {};
 (function(SNW) {
@@ -2344,7 +2439,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 034.util.toast.js (4888 bytes) ---- */
+/* ---- 034.util.toast.js (5129 bytes) ---- */
 // =========================================================
 // 034.util.toast.js — ToastUtil, ErrorHandler, DebounceUtil
 // Layer 1 (유틸) — SNW.C, SNW.CFG, SNW.LogUtil 참조
@@ -2360,20 +2455,20 @@ window.SNW = window.SNW || {};
         _host: null,
 
         _ensure() {
-            if (this._host) return this._host;
-            this._host = document.getElementById('toast-host');
-            if (!this._host) {
-                this._host = document.createElement('div');
-                this._host.id = 'toast-host';
-                this._host.className = 'snw-toast-host';
-                document.body.appendChild(this._host);
+            if (SNW.ToastUtil._host) return SNW.ToastUtil._host;
+            SNW.ToastUtil._host = document.getElementById('toast-host');
+            if (!SNW.ToastUtil._host) {
+                SNW.ToastUtil._host = document.createElement('div');
+                SNW.ToastUtil._host.id = 'toast-host';
+                SNW.ToastUtil._host.className = 'snw-toast-host';
+                document.body.appendChild(SNW.ToastUtil._host);
             }
-            return this._host;
+            return SNW.ToastUtil._host;
         },
 
         show(msg, type = 'info', ms = null) {
-            const host = this._ensure();
-            const duration = ms != null ? ms : SNW.CFG.UI.TOAST_DEFAULT_MS;
+            const host = SNW.ToastUtil._ensure();
+            const duration = ms ?? (SNW.CFG?.UI?.TOAST_DEFAULT_MS ?? 3000);
 
             const t = document.createElement('div');
             t.className = `snw-toast snw-toast--${type}`;
@@ -2384,10 +2479,10 @@ window.SNW = window.SNW || {};
             setTimeout(() => t.remove(), duration);
         },
 
-        success(m, t = SNW.CFG.UI.TOAST_SUCCESS_MS) { this.show(m, 'success', t); },
-        warn(m, t = SNW.CFG.UI.TOAST_DEFAULT_MS)     { this.show(m, 'warn',    t); },
-        error(m, t = SNW.CFG.UI.TOAST_ERROR_MS)      { this.show(m, 'error',   t); },
-        info(m, t = SNW.CFG.UI.TOAST_DEFAULT_MS)     { this.show(m, 'info',    t); }
+        success(m, t = SNW.CFG.UI.TOAST_SUCCESS_MS) { SNW.ToastUtil.show(m, 'success', t); },
+        warn(m, t = SNW.CFG.UI.TOAST_DEFAULT_MS) { SNW.ToastUtil.show(m, 'warn', t); },
+        error(m, t = SNW.CFG.UI.TOAST_ERROR_MS) { SNW.ToastUtil.show(m, 'error', t); },
+        info(m, t = SNW.CFG.UI.TOAST_DEFAULT_MS) { SNW.ToastUtil.show(m, 'info', t); }
     };
 
     // =====================================================
@@ -2438,6 +2533,9 @@ window.SNW = window.SNW || {};
             // ApiError 판정 (SNW.Api.ApiError)
             if (typeof err.status === 'number') {
                 switch (err.status) {
+                    case 0:
+                        SNW.ToastUtil.error(SNW.I18n.t('msg.networkError'));
+                        break;
                     case SNW.C.HTTP.UNAUTHORIZED:
                         SNW.ToastUtil.error(SNW.I18n.t('msg.apiKeyRequired'));
                         break;
@@ -2477,127 +2575,81 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 035.util.feedback.js (5935 bytes) ---- */
+/* ---- 035.util.feedback.js (2993 bytes) ---- */
 // =========================================================
 // 035.util.feedback.js — SNW.Feedback (정량적 물리 피드백 헬퍼)
 // Layer 1 (유틸) — 0203_007 설계 기반
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
+
+    function _clamp(val, min = 0, max = 100) {
+        const n = Number(val);
+        if (!Number.isFinite(n)) return min;
+        return Math.max(min, Math.min(max, n));
+    }
+
+    function _tr(key, params) {
+        return (SNW.I18n && typeof SNW.I18n.t === 'function') ? SNW.I18n.t(key, params) : key;
+    }
 
     SNW.Feedback = {
         /**
          * 바람 강도 (Intensity 0~100%) 실시간 정량 가이드
          */
         getIntensityGuide(val) {
-            const isEn = (SNW.I18n && SNW.I18n.getLang() === 'en');
-            const v = Number(val) || 0;
+            const v = _clamp(val);
             if (v <= 0) {
-                return {
-                    title: isEn ? '0.0 m/s · Fan Stopped' : '0.0 m/s · 팬 정지',
-                    desc: isEn ? 'Fan motor is in standby mode.' : '팬 모터가 대기 상태입니다.'
-                };
+                return { title: _tr('feedback.intensity.off.title'), desc: _tr('feedback.intensity.off.desc') };
             }
             if (v <= 30) {
                 const speed = (0.5 + (v / 30) * 1.0).toFixed(1);
-                return {
-                    title: isEn ? `Approx ${speed} m/s (Gentle / Sleep)` : `체감 약 ${speed} m/s (초미풍 · 수면풍)`,
-                    desc: isEn
-                        ? 'Gentle breeze comparable to fanning (ideal for sleep or infants, quiet <25dB)'
-                        : '부채질 수준의 고요한 미풍 (수면 시 또는 영유아에 적합, 저소음 <25dB)'
-                };
+                return { title: _tr('feedback.intensity.gentle.title', { speed }), desc: _tr('feedback.intensity.gentle.desc') };
             }
             if (v <= 70) {
                 const speed = (1.5 + ((v - 30) / 40) * 2.0).toFixed(1);
-                return {
-                    title: isEn ? `Approx ${speed} m/s (Natural Breeze · Stage 1-2)` : `체감 약 ${speed} m/s (표준 자연풍 · 1~2단)`,
-                    desc: isEn
-                        ? 'Pleasant fluttering breeze (most comfortable for daily living and relaxation)'
-                        : '나뭇잎이 살랑거리는 기분 좋은 산들바람 (일상 생활 및 휴식에 가장 쾌적)'
-                };
+                return { title: _tr('feedback.intensity.natural.title', { speed }), desc: _tr('feedback.intensity.natural.desc') };
             }
             const speed = (3.5 + ((v - 70) / 30) * 2.0).toFixed(1);
-            return {
-                title: isEn ? `Approx ${speed} m/s (Strong Wind · Stage 3-4)` : `체감 약 ${speed} m/s (강풍 · 급속 환기 3~4단)`,
-                desc: isEn
-                    ? 'Cool open-window breeze (ideal after workouts or quick cooling)'
-                    : '창문을 열었을 때 부는 시원한 야외 바람 (운동 직후나 빠른 환기에 적합)'
-            };
+            return { title: _tr('feedback.intensity.strong.title', { speed }), desc: _tr('feedback.intensity.strong.desc') };
         },
 
         /**
          * 바람 변동성 (Variability 0~100%) 실시간 정량 가이드
          */
         getVariabilityGuide(val) {
-            const isEn = (SNW.I18n && SNW.I18n.getLang() === 'en');
-            const v = Number(val) || 0;
+            const v = _clamp(val);
             if (v <= 30) {
-                return {
-                    title: isEn ? 'Transition ~10-15s (Delta <10%)' : '풍속 전환 약 10~15초 소요 (변화폭 <10%)',
-                    desc: isEn
-                        ? 'Wind changes very slowly, maintaining a smooth and steady flow.'
-                        : '바람 세기가 천천히 바뀌어 체감상 거의 일정하고 부드럽습니다.'
-                };
+                return { title: _tr('feedback.variability.low.title'), desc: _tr('feedback.variability.low.desc') };
             }
             if (v <= 70) {
-                return {
-                    title: isEn ? 'Transition ~5-8s (Delta ±30%)' : '풍속 전환 약 5~8초 소요 (변화폭 ±30%)',
-                    desc: isEn
-                        ? 'Rhythmic fluctuation like a forest breeze every 5-8s.'
-                        : '숲속 바람처럼 5~8초 간격으로 오르내리며 자연스러운 리듬감을 줍니다.'
-                };
+                return { title: _tr('feedback.variability.mid.title'), desc: _tr('feedback.variability.mid.desc') };
             }
-            return {
-                title: isEn ? 'Transition ~2-4s (Delta up to ±60%)' : '풍속 전환 약 2~4초 소요 (변화폭 최대 ±60%)',
-                desc: isEn
-                    ? 'Rapid 2-4s velocity changes creating dynamic coastal or valley winds.'
-                    : '2~3초 만에 풍속이 급격히 전환되어 계곡이나 해변처럼 역동적입니다.'
-            };
+            return { title: _tr('feedback.variability.high.title'), desc: _tr('feedback.variability.high.desc') };
         },
 
         /**
          * 돌풍 빈도 (Gust Frequency 0~100%) 실시간 정량 가이드
          */
         getGustGuide(val) {
-            const isEn = (SNW.I18n && SNW.I18n.getLang() === 'en');
-            const v = Number(val) || 0;
+            const v = _clamp(val);
             if (v <= 0) {
-                return {
-                    title: isEn ? 'No Gust (Base flow only)' : '돌풍 없음 (기본 기류만 유지)',
-                    desc: isEn
-                        ? 'Maintains gentle airflow without sudden gusts.'
-                        : '돌풍 없이 평온한 기류만 부드럽게 유지됩니다.'
-                };
+                return { title: _tr('feedback.gust.none.title'), desc: _tr('feedback.gust.none.desc') };
             }
             if (v <= 20) {
-                return {
-                    title: isEn ? 'Inflow every ~60-120s (1-2 min)' : '약 60~120초(1~2분)에 1회 유입',
-                    desc: isEn
-                        ? 'Rare gentle gusts suitable for sleep or quiet focus.'
-                        : '가벼운 돌풍이 드물게 지나가 수면이나 독서에 방해되지 않습니다.'
-                };
+                return { title: _tr('feedback.gust.low.title'), desc: _tr('feedback.gust.low.desc') };
             }
             if (v <= 60) {
-                return {
-                    title: isEn ? 'Inflow every ~30-50s (Peak ×1.5~2.0)' : '약 30~50초에 1회 유입 (순간 풍속 ×1.5~2.0배)',
-                    desc: isEn
-                        ? 'Refreshing bursts every 30-50s relieving stuffiness.'
-                        : '30~45초마다 시원한 바람이 훅 불어와 답답함을 해소해 줍니다.'
-                };
+                return { title: _tr('feedback.gust.mid.title'), desc: _tr('feedback.gust.mid.desc') };
             }
-            return {
-                title: isEn ? 'Inflow every ~15-25s (Peak up to ×2.5)' : '약 15~25초에 1회 유입 (순간 풍속 최대 ×2.5배)',
-                desc: isEn
-                    ? 'Frequent energetic gusts giving an invigorating hilltop sensation.'
-                    : '15~20초마다 강력한 돌풍이 연속 유입되어 야외 언덕에 있는 듯 상쾌합니다.'
-            };
+            return { title: _tr('feedback.gust.high.title'), desc: _tr('feedback.gust.high.desc') };
         }
     };
 })(window.SNW);
 
 
-/* ---- 040.api.js (16323 bytes) ---- */
+/* ---- 040.api.js (18971 bytes) ---- */
 // =========================================================
 // 040.api.js — SNW.Api (REST 클라이언트)
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -2652,83 +2704,55 @@ window.SNW = window.SNW || {};
 	}
 
 	// =====================================================
+	// =====================================================
+	// [P0-1 / Stage 3] 선언형 오프라인 라우트 테이블 (정규식 매칭 + method 분기)
+	// =====================================================
+	const _rt = () => (SNW.Offline && SNW.Offline._runtime) ? SNW.Offline._runtime : {};
+	const _cache = () => (SNW.Offline && SNW.Offline._cache) ? SNW.Offline._cache : {};
+
+	const OFFLINE_ROUTES = [
+		{ re: /\/wifi\/state$/i, method: 'GET', handle: () => ({ wifi: { state: { mode: 2, mode_name: 'AP+STA (Offline)', status: 'CONNECTED', ssid: '(offline)', ip: '192.168.4.1', mac: 'AA:BB:CC:DD:EE:FF', rssi: -50, hostname: 'naturewind-offline', connected: false, timeSynced: false, reconnectAttempts: 0 } } }) },
+		{ re: /\/wifi\/config$/i, method: 'GET', handle: () => _cache().wifi || { wifi: { wifiMode: 2, ap: { ssid: 'NatureWind', pass: '2540' }, sta: [{ ssid: 'HomeWiFi_5G', pass: '12345678' }, { ssid: 'Office_AP', pass: 'admin1234' }] } } },
+		{ re: /\/wifi\/config$/i, method: 'POST', handle: (body) => { const c = _cache(); if (body && body.wifi) { const prev = (c.wifi && c.wifi.wifi) ? c.wifi.wifi : {}; c.wifi = { wifi: { ...prev, ...body.wifi } }; } return { result: 'ok', offline: true, queued: true }; } },
+		{ re: /\/wifi\/scan$/i, method: 'GET', handle: () => ({ wifi: { scan: [{ ssid: 'TestWiFi1', rssi: -45, enc: 'WPA2' }, { ssid: 'TestWiFi2', rssi: -70, enc: 'OPEN' }] } }) },
+		{ re: /\/sim\/chart$/i, method: 'GET', handle: () => ({ chart: _rt().chart || [], series: _rt().chart || [], offline: true }) },
+		{ re: /\/sim\/state$/i, method: 'GET', handle: () => ({ sim: _rt().sim || {} }) },
+		{ re: /\/state$/i, method: 'GET', handle: () => { const r = _rt(); return { control: r.control || {}, sim: r.sim || {}, runtime: r.runtime || {} }; } },
+		{ re: /\/system$/i, method: 'GET', handle: () => _cache().system || {} },
+		{ re: /\/system$/i, method: 'POST', handle: (body) => { const c = _cache(); if (body && c.system) Object.assign(c.system, body); return { result: 'ok', offline: true }; } },
+		{ re: /\/motion$/i, method: 'GET', handle: () => _cache().motion || { motion: {} } },
+		{ re: /\/motion$/i, method: 'POST', handle: (body) => { const c = _cache(); if (body && c.motion) Object.assign(c.motion, body); return _cache().motion || { motion: {} }; } },
+		{ re: /\/schedules/i, method: 'GET', handle: () => _cache().schedules || { schedules: [] } },
+		{ re: /\/user_profiles\/patch$/i, method: 'POST', handle: (body) => { const c = _cache(); if (c.userProfiles?.userProfiles?.profiles && Array.isArray(body?.profiles)) { const list = c.userProfiles.userProfiles.profiles; for (const patch of body.profiles) { const idx = list.findIndex(p => String(p.profileId) === String(patch.profileId)); if (idx >= 0) Object.assign(list[idx], patch); } if (SNW.Offline && typeof SNW.Offline.persistCache === 'function') SNW.Offline.persistCache('userProfiles'); } return { result: 'ok', patched: body?.profiles?.length || 0, offline: true }; } },
+		{ re: /\/user_profiles/i, method: 'GET', handle: () => _cache().userProfiles || { userProfiles: { profiles: [] } } },
+		{ re: /\/(windDict|windProfile)/i, method: 'GET', handle: () => { const c = _cache(); return (c.windDict && c.windDict.windDict) ? c.windDict.windDict : (c.windDict || { presets: [], styles: [] }); } },
+		{ re: /\/control\/mode$/i, method: 'POST', handle: (body) => { const r = _rt(); if (!r.control) r.control = {}; r.control.profileMode = !!(body && body.profileMode); return { result: 'ok', offline: true }; } },
+		{ re: /\/control\/mode$/i, method: 'GET', handle: () => ({ profileMode: !!(_rt().control && _rt().control.profileMode) }) },
+		{ re: /\/control\/timer$/i, method: 'DELETE', handle: () => { const r = _rt(); if (r.timer) { r.timer.active = false; r.timer.remainSec = 0; } return { success: true, active: false }; } },
+		{ re: /\/control\/timer$/i, method: 'POST', handle: (body) => { const r = _rt(); const min = (body && body.minutes) || 30; r.timer = { active: true, remainSec: min * 60, durationMin: min }; return { success: true, active: true, remainSec: min * 60 }; } },
+		{ re: /\/control\/timer$/i, method: 'GET', handle: () => { const t = _rt().timer; return t ? { ...t } : { active: false, remainSec: 0, durationMin: 0 }; } },
+		{ re: /\/control\/override$/i, method: 'POST', handle: (body) => { const r = _rt(); if (body && r.sim) { if (body.windIntensity != null) r.sim.intensity = body.windIntensity; if (body.windVariability != null) r.sim.variability = body.windVariability; if (body.gustFrequency != null) r.sim.gustFreq = body.gustFrequency; } return { result: 'ok', updated: true, offline: true }; } },
+		{ re: /\/logs$/i, method: 'GET', handle: () => ({ logs: [{ ts: 0, lv: 3, msg: '[Offline]' }] }) },
+		{ re: /\/diag$/i, method: 'GET', handle: () => ({ heap: 120000, fs_used: 160000, fs_total: 1000000 }) },
+		{ re: /\/version$/i, method: 'GET', handle: () => ({ fw: 'FW_Ver_2.0.3' }) },
+		{ re: /\/metrics$/i, method: 'GET', handle: () => ({ metrics: {} }) },
+		{ re: /\/config$/i, method: 'GET', handle: () => _cache() },
+		{ re: /\/config$/i, method: 'POST', handle: (body) => { if (body) Object.assign(_cache(), body); return { result: 'ok', saved: true, offline: true }; } },
+	];
+
+	// =====================================================
 	// Core fetch (_fetch)
 	// =====================================================
 	async function _fetch(path, opts = {}) {
-		// ======================================================
-		// [OFFLINE 방어막] 오프라인일 때 정확한 데이터 반환
-		// ======================================================
-		if (window.SNW_OFFLINE) {
-			console.log('[Offline Fetch] 요청 가로채기:', path);
-			const rt = (SNW.Offline && SNW.Offline._runtime) ? SNW.Offline._runtime : {};
-			const cache = (SNW.Offline && SNW.Offline._cache) ? SNW.Offline._cache : {};
-
-			// Wi-Fi 상태
-			if (path.includes('/wifi/state')) {
-				return {
-					wifi: {
-						state: {
-							mode: 2, mode_name: 'AP+STA (Offline)', status: 'CONNECTED',
-							ssid: '(offline)', ip: '192.168.4.1', mac: 'AA:BB:CC:DD:EE:FF',
-							rssi: -50, hostname: 'naturewind-offline', connected: false,
-							timeSynced: false, reconnectAttempts: 0
-						}
-					}
-				};
-			}
-			// Wi-Fi 설정 (cache 우선)
-			if (path.includes('/wifi/config')) {
-				return cache.wifi || {
-					wifi: {
-						wifiMode: 2, ap: { ssid: "NatureWind", pass: "2540" },
-						sta: [{ ssid: "HomeWiFi_5G", pass: "12345678" }, { ssid: "Office_AP", pass: "admin1234" }]
-					}
-				};
-			}
-			if (path.includes('/wifi/scan')) {
-				return {
-					wifi: {
-						scan: [
-							{ ssid: "TestWiFi1", rssi: -45, enc: "WPA2" },
-							{ ssid: "TestWiFi2", rssi: -70, enc: "OPEN" }
-						]
-					}
-				};
-			}
-			// 시스템 (cache 우선)
-			if (path.includes('/system') && (opts.method || 'GET') === 'GET') {
-				return cache.system || {};
-			}
-			// 상태
-			if (path.includes('/state')) {
-				return { control: rt.control || {}, sim: rt.sim || {}, runtime: rt.runtime || {} };
-			}
-			if (path.includes('/motion')) {
-				return cache.motion || { motion: {} };
-			}
-			if (path.includes('/schedules')) return cache.schedules || { schedules: [] };
-			if (path.includes('/user_profiles')) return cache.userProfiles || { userProfiles: { profiles: [] } };
-			if (path.includes('/windDict') || path.includes('/windProfile')) return (cache.windDict && cache.windDict.windDict) ? cache.windDict.windDict : (cache.windDict || { presets: [], styles: [] });
-			if (path.includes('/logs')) return { logs: [{ ts: 0, lv: 3, msg: '[Offline]' }] };
-			if (path.includes('/diag')) return { heap: 120000, fs_used: 160000, fs_total: 1000000 };
-			if (path.includes('/version')) return { fw: 'FW_Ver_2.0.3' };
-			if (path.includes('/metrics')) return { metrics: {} };
-			if (path.includes('/control/timer')) {
-				if (opts.method === 'DELETE') return { success: true, active: false };
-				if (opts.method === 'POST') return { success: true, active: true, remainSec: ((opts.body && opts.body.minutes) || 30) * 60 };
-				return { active: false, remainSec: 0, durationMin: 0 };
-			}
-			if (path.includes('/control/override')) {
-				if (opts.body && rt.sim) {
-					if (opts.body.windIntensity != null) rt.sim.intensity = opts.body.windIntensity;
-					if (opts.body.windVariability != null) rt.sim.variability = opts.body.windVariability;
-					if (opts.body.gustFrequency != null) rt.sim.gustFreq = opts.body.gustFrequency;
-				}
-				return { result: 'ok', updated: true };
-			}
-			if (path.includes('/config')) return cache;
-
-			return { result: 'ok', updated: true };
+		const isOffline = (SNW.Offline && typeof SNW.Offline.active === 'boolean')
+			? SNW.Offline.active
+			: !!window.SNW_OFFLINE;
+		if (isOffline) {
+			const M = (opts.method || 'GET').toUpperCase();
+			const cleanPath = String(path).split('?')[0];
+			const route = OFFLINE_ROUTES.find(r => r.method === M && r.re.test(cleanPath));
+			if (route) return route.handle(opts.body);
+			return { result: 'ok', updated: true, offline: true };
 		}
 
 		// GET 요청에 대해서만 in-flight dedupe
@@ -2861,7 +2885,7 @@ window.SNW = window.SNW || {};
 			return _fetch(SNW.CFG.API.controlMode, { method: 'POST', body: { profileMode: !!isProfileMode } });
 		},
 		setControlMode(isProfileMode) {
-			return this.setMode(isProfileMode);
+			return SNW.Api.setMode(isProfileMode);
 		},
 		getMode() {
 			return _fetch(SNW.CFG.API.controlMode);
@@ -2875,7 +2899,7 @@ window.SNW = window.SNW || {};
 		getSimState() { return _fetch(SNW.CFG.API.simState); },
 		getChartHistory() { return _fetch(SNW.CFG.API.chartHistory); },
 		getMonitor(type, range) {
-			return _fetch(`${SNW.CFG.API.monitor}?type=${type}&range=${range}`);
+			return _fetch(SNW.CFG.API.monitor + buildQuery({ type, range }));
 		},
 
 		// --- WindDict ---
@@ -2906,7 +2930,7 @@ window.SNW = window.SNW || {};
 			return _fetch(`${SNW.CFG.API.monitorTimeline}${q}`);
 		},
 		getTimeline(since = 0) {
-			return this.getMonitorTimeline(since);
+			return SNW.Api.getMonitorTimeline(since);
 		},
 		getSessionSummary(from = 0, to = 0) {
 			const params = [];
@@ -2946,13 +2970,13 @@ window.SNW = window.SNW || {};
 			});
 		},
 		startPlaylist(profileId) {
-			return this.startSession({ type: 'PLAYLIST', payload: { profileId } });
+			return SNW.Api.startSession({ type: 'PLAYLIST', payload: { profileId } });
 		},
 		startPreset(presetCode, styleCode) {
-			return this.startSession({ type: 'PRESET', payload: { presetCode, styleCode } });
+			return SNW.Api.startSession({ type: 'PRESET', payload: { presetCode, styleCode } });
 		},
 		startFixed(percent) {
-			return this.startSession({ type: 'FIXED', payload: { percent } });
+			return SNW.Api.startSession({ type: 'FIXED', payload: { percent } });
 		},
 		patchSessionRule(rule) {
 			return _fetch(SNW.CFG.API.sessionRule, {
@@ -2990,6 +3014,7 @@ window.SNW = window.SNW || {};
 		saveConfig() { return _fetch(SNW.CFG.API.configSave, { method: 'POST' }); },
 		getConfigDirty() { return _fetch(SNW.CFG.API.configDirty); },
 		getConfigAll() { return _fetch(SNW.CFG.API.config); },
+		// Zero-Reboot RAM 즉시 반영 구조이므로 단발 POST 유지 (Q-4 확정 안 A)
 		reload() { return _fetch(SNW.CFG.API.reload, { method: 'POST' }); },
 		factoryReset() { return _fetch(SNW.CFG.API.configInit, { method: 'POST' }); },
 
@@ -3438,7 +3463,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 070.router.js (10465 bytes) ---- */
+/* ---- 070.router.js (10794 bytes) ---- */
 // =========================================================
 // core/070.router.js — Fresh Start 라우터
 // Layer 2 (Service) — Alias/리다이렉트 완전 배제
@@ -3456,41 +3481,41 @@ window.SNW = window.SNW || {};
     // ═══════════════════════════════════════════════════════════
     const ROUTES = {
         // ─── L1 일상 (홈 3탭) ───
-        '/home':                    { page: 'Dashboard', params: { tab: 'control' }, level: 'L1' },
-        '/home/control':            { page: 'Dashboard', params: { tab: 'control' }, level: 'L1' },
-        '/home/env':                { page: 'Dashboard', params: { tab: 'env' },     level: 'L1' },
-        '/home/preset':             { page: 'Dashboard', params: { tab: 'preset' },  level: 'L1' },
+        '/home': { page: 'Dashboard', params: { tab: 'control' }, level: 'L1' },
+        '/home/control': { page: 'Dashboard', params: { tab: 'control' }, level: 'L1' },
+        '/home/env': { page: 'Dashboard', params: { tab: 'env' }, level: 'L1' },
+        '/home/preset': { page: 'Dashboard', params: { tab: 'preset' }, level: 'L1' },
 
         // ─── L2 바람 만들기 (4탭) ───
-        '/wind':                    { page: 'Automation', params: { tab: 'studio' },     level: 'L2' },
-        '/wind/studio':             { page: 'Automation', params: { tab: 'studio' },     level: 'L2' },
-        '/wind/simulation':         { page: 'Automation', params: { tab: 'simulation' }, level: 'L2' },
-        '/wind/playlist':           { page: 'Automation', params: { tab: 'playlist' },   level: 'L2' },
-        '/wind/presets':            { page: 'Windprofile', level: 'L3' },
+        '/wind': { page: 'Automation', params: { tab: 'studio' }, level: 'L2' },
+        '/wind/studio': { page: 'Automation', params: { tab: 'studio' }, level: 'L2' },
+        '/wind/simulation': { page: 'Automation', params: { tab: 'simulation' }, level: 'L2' },
+        '/wind/playlist': { page: 'Automation', params: { tab: 'playlist' }, level: 'L2' },
+        '/wind/presets': { page: 'Windprofile', level: 'L3' },
 
         // ─── L2 자동화 (3탭) ───
-        '/automation':              { page: 'Automation', params: { tab: 'schedule' }, level: 'L2' },
-        '/automation/schedule':     { page: 'Automation', params: { tab: 'schedule' }, level: 'L2' },
-        '/automation/timer':        { page: 'Automation', params: { tab: 'timer' },    level: 'L2' },
-        '/automation/rules':        { page: 'Automation', params: { tab: 'rules' },    level: 'L2' },
+        '/automation': { page: 'Automation', params: { tab: 'schedule' }, level: 'L2' },
+        '/automation/schedule': { page: 'Automation', params: { tab: 'schedule' }, level: 'L2' },
+        '/automation/timer': { page: 'Automation', params: { tab: 'timer' }, level: 'L2' },
+        '/automation/rules': { page: 'Automation', params: { tab: 'rules' }, level: 'L2' },
 
         // ─── L2 AI ───
-        '/ai':                      { page: 'AI', level: 'L2' },
+        '/ai': { page: 'AI', level: 'L2' },
 
         // ─── L2 모니터 (4탭) ───
-        '/monitor':                 { page: 'Monitor', level: 'L2' },
-        '/monitor/chart':           { page: 'Chart',   level: 'L2' },
-        '/monitor/sensors':         { page: 'Sensors', level: 'L2' },
-        '/monitor/history':         { page: 'Monitor', level: 'L2' },
-        '/monitor/logs':            { page: 'Logs',    level: 'L3' },
+        '/monitor': { page: 'Monitor', level: 'L2' },
+        '/monitor/chart': { page: 'Chart', level: 'L2' },
+        '/monitor/sensors': { page: 'Sensors', level: 'L2' },
+        '/monitor/history': { page: 'Monitor', level: 'L2' },
+        '/monitor/logs': { page: 'Logs', level: 'L3' },
 
         // ─── L3 설정 (5탭) ───
-        '/settings':                { page: 'Settings',    params: { tab: 'general' },  level: 'L2' },
-        '/settings/general':        { page: 'Settings',    params: { tab: 'general' },  level: 'L2' },
-        '/settings/network':        { page: 'Network',     params: { tab: 'network' },  level: 'L3' },
-        '/settings/hardware':       { page: 'Settings',    params: { tab: 'hardware' }, level: 'L2' },
-        '/settings/firmware':       { page: 'Firmware',                                 level: 'L4' },
-        '/settings/diagnostics':    { page: 'Diagnostics',                              level: 'L4' },
+        '/settings': { page: 'Settings', params: { tab: 'general' }, level: 'L2' },
+        '/settings/general': { page: 'Settings', params: { tab: 'general' }, level: 'L2' },
+        '/settings/network': { page: 'Network', params: { tab: 'network' }, level: 'L3' },
+        '/settings/hardware': { page: 'Settings', params: { tab: 'hardware' }, level: 'L2' },
+        '/settings/firmware': { page: 'Firmware', level: 'L4' },
+        '/settings/diagnostics': { page: 'Diagnostics', level: 'L4' },
     };
 
     // ─── 사이드바 그룹 (3개 최상위 그룹) ───
@@ -3504,16 +3529,20 @@ window.SNW = window.SNW || {};
         {
             key: 'nav.groupControl',
             items: [
-                { path: '/wind',       key: 'nav.wind',       icon: '🌬️', minLevel: 'L2' },
+                { path: '/wind', key: 'nav.wind', icon: '🌬️', minLevel: 'L2' },
                 { path: '/automation', key: 'nav.automation', icon: '⚙️', minLevel: 'L2' },
-                { path: '/ai',         key: 'nav.ai',         icon: '✨', minLevel: 'L2' },
-                { path: '/monitor',    key: 'nav.monitor',    icon: '📊', minLevel: 'L2' },
+                { path: '/ai', key: 'nav.ai', icon: '✨', minLevel: 'L2' },
+                { path: '/monitor', key: 'nav.monitor', icon: '📊', minLevel: 'L2' },
+                { path: '/monitor/logs', key: 'nav.logs', icon: '📜', minLevel: 'L3' }, // 추가됨
             ]
         },
         {
             key: 'nav.groupSystem',
             items: [
                 { path: '/settings', key: 'nav.settings', icon: '🔧', minLevel: 'L2' },
+                { path: '/settings/network', key: 'nav.network', icon: '📶', minLevel: 'L3' }, // 추가됨 (L3 이상)
+                { path: '/settings/firmware', key: 'nav.firmware', icon: '📦', minLevel: 'L4' }, // 추가됨 (L4 전문가용)
+                { path: '/settings/diagnostics', key: 'nav.diagnostics', icon: '🔍', minLevel: 'L4' }, // 추가됨 (L4 전문가용)
             ]
         },
     ];
@@ -3669,7 +3698,14 @@ window.SNW = window.SNW || {};
         ROUTES,
         init() {
             window.addEventListener('hashchange', dispatch);
-            document.addEventListener('snw:langchange', renderNavMenu);
+            document.addEventListener('snw:langchange', () => {
+                renderNavMenu();
+                document.title = SNW.I18n.t('app.title');
+            });
+            document.addEventListener('snw:levelchange', () => {
+                renderNavMenu();
+                dispatch();
+            });
             renderNavMenu();
             dispatch();
         },

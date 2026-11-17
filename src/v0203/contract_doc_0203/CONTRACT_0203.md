@@ -359,6 +359,7 @@ startSession(type, trigger, payload) [T-async]
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-17** | **v3.10** | **FE Core·Offline 정합성 및 20종 CSS 분리 계약 현행화 (0203_014_18_02)**: `040.api.js` `OFFLINE_ROUTES`·`998.offline_0203.js` `setActive()`/타이머 만료 동기화 및 Now Playing Bar 데스크톱 사이드바/Footer 여백 규약 확인 | Antigravity AI |
 | **2026-11-14** | **v3.9** | **Phase 2 — Pause/Stop 이원화 + AUTO 위임 계약**: §3.1 `initRuleFromPayload` 화이트리스트 추가, §7.23 `PAUSE-STOP-1~9` 및 `RULE-LIVE-1` 신규 (히스테리시스·`pauseMask`·세션 스냅샷·AUTO 개입·유예·실시간 규칙 갱신), §7.24 `AUTO-1~6` 신규 (trigger 강제·base 고정·재평가·rule 스냅샷) | Antigravity AI |
 | **2026-11-10** | **v3.8** | **웹 UI/UX 인터랙션 고도화 및 컴포넌트 격리 계약 (§7.22 UI-11~UI-13, b3d06c2)**: 모니터 히스토리 2단 지그재그 타임라인/시간축 규약(UI-11), 스튜디오 하단 분리 액션바 및 AI FAB 강제 은닉 규약(UI-12), AI 어시스턴트 세그먼트 컨트롤 및 자동 신축 입력창 규약(UI-13) 명시 | Antigravity AI |
 | **2026-11-09** | **v3.7** | **Stage 10.1 하드웨어 백엔드 타이머 신뢰성 및 안전 계약 (§7.21 TIMER-1~TIMER-3, UI-10 갱신, 0203_013_20_02)**: 하드웨어 백엔드 타이머 신뢰성 계약(TIMER-1), 만료 시 Comfort 재기동 억제(TIMER-2: setAutoComfort(false)), 브라우저 동기 실패 경고(TIMER-3), Comfort 5상태 매트릭스 UI-10 명시 | Antigravity AI |

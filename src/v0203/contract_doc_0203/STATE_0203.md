@@ -476,6 +476,7 @@ pauseMask == 0 일 때만 ENV_PAUSED 해소 (완전 재개)
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-17** | **v3.8** | **FE Core·Offline 클라이언트 상태 정합성 반영 (0203_014_18_02)**: `SNW.Offline.active`/`setActive()` 단일 진실 소스, `runtime.control.profileMode` 통합, `runtime.timer` 만료 시 `AUTOOFF_STOPPED(5)`/`AUTOOFF_TIMER(9)` 전이, `snw:levelchange` 상태 동기화 | Antigravity AI |
 | **2026-11-14** | **v3.7** | **Phase 2 — Pause/Stop 이원화 + ENV_PAUSED 통합**: §1 `runCtx.pauseReason`/`triggerRt.pauseMask`/`_session.rule`/`pauseBypassUntilMs`/`autoSwitchReason` 필드 추가, §2.1 `ENV_PAUSED(7)` 신규 & `MOTION_BLOCKED` 제거, §2.2 `checkTriggers` 우선순위 재정의, §7.4 신규 (Pause/Stop reason enum, `pauseMask` 래치, `autoOffRt`→`triggerRt` 이관) | Antigravity AI |
 | **2026-11-10** | **v3.6** | **웹 UI/UX 클라이언트 상태 관리 및 히스토리/스튜디오 격리 규정 (b3d06c2)**: 모니터 '히스토리' 탭의 타임라인 레인 분기(lane 0/1) 순수 뷰 상태 격리, Wind Studio 진입 시 바텀바 뷰 상태와 AI FAB 토글 상태 무결성 확인, `SNW.CFG.LS_KEY` 내 AI 키 통합에 따른 단일 클라이언트 상태 소유권 보장 | Antigravity AI |
 | **2026-11-09** | **v3.5** | **Stage 10.1 결함 패치 및 하드웨어 백엔드 타이머 구현 (0203_013_20_02)**: `runtimeAutoOff` 백엔드 소유권 확장, `EN_CT10_TRIGGER_AUTO_COMFORT=3` 세션 트리거 추가, 타이머 만료 시 정지 사유 9번(AUTOOFF_TIMER) 및 `setAutoComfort(false)` 부수효과 명세, 13개 안전 도구 현행화 | Antigravity AI |

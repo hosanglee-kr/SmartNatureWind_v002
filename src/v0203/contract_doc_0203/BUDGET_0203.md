@@ -476,9 +476,9 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 | **JSON 파일 크기** | `rule` 추가로 +30% (`cfg_userProfile`: ~4KB) | ✅ LittleFS 여유 |
 | **`rule` 5탭 UI (FE)** | `_rules.css` 3.5 KB raw | ✅ |
 | **i18n +60 키** | +3.2 KB raw (ko+en) | ✅ gz +1.5 KB |
-| **Batch 1~4 최종 실측 (5청크)** | JS 3청크 `154.0 KB gz` + CSS 2청크 `19.4 KB gz` + HTML `2.4 KB gz` + JSON 9종 `25.8 KB` = **총 201.6 KB** | ✅ LittleFS 1MB 대비 **19.7%** |
+| **0203_014_18_02 최종 실측 (5청크, 20 CSS)** | JS 3청크 `156.4 KB gz` + CSS 2청크 `19.2 KB gz` + HTML `2.5 KB gz` + JSON 9종 `25.8 KB` = **총 203.9 KB** | ✅ LittleFS 1MB 대비 **19.9%** |
 
-**누적 판정**: Flash +2 KB, RAM +32 B, LittleFS 총 점유 201.6 KB (1MB 대비 19.7%). 모두 기존 예산 여유 이내.
+**누적 판정**: Flash +2 KB, RAM +32 B, LittleFS 총 점유 203.9 KB (1MB 대비 19.9%). 모두 기존 예산 여유 이내.
 
 ---
 
@@ -486,6 +486,7 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-17** | **v3.9** | **FE Core·Offline 정비 및 20종 CSS 분리 실측치 반영 (§10.9)**: JS 3청크(156.4KB gz) + CSS 2청크(19.2KB gz) + HTML(2.5KB gz) + JSON 9종(25.8KB) = LittleFS 총 점유 203.9KB (1MB 대비 19.9%) | Antigravity AI |
 | **2026-11-16** | **v3.8** | **Batch 1~4 최종 프론트엔드 5청크 실측치 반영 (§10.9)**: JS 3청크(154.0KB gz) + CSS 2청크(19.4KB gz) + HTML(2.4KB gz) + JSON 9종(25.8KB) = LittleFS 총 점유 201.6KB (1MB 대비 19.7%) | Antigravity AI |
 | **2026-11-14** | **v3.7** | **Phase 2 — TriggerRule & AUTO 예산 영향**: §2 `checkTriggers` WCET < 100 μs / `initRuleFromPayload` < 50 μs / `tickAutoComfort` AUTO 재평가 < 200 μs, §10.9 Phase 2 누적 영향 (Flash +2KB / RAM +32B / FE gz +2KB) | Antigravity AI |
 | **2026-11-10** | **v3.6** | **Stage 10.1 UI/UX 고도화 프론트엔드 자산 실측치 반영 (§10.8, b3d06c2)**: 53개 JS 번들(130.0KB gz), 18개 CSS 번들(16.4KB gz), HTML(1.7KB gz), LittleFS 총 점유 169.0KB(1MB 예산 대비 16.9%) 실측치 현행화 | Antigravity AI |

@@ -255,15 +255,29 @@ window.SNW = window.SNW || {};
             // [Phase5 5.6] 네비게이션 완전판
             // =====================================================
             'nav.home': '홈',
-            'nav.wind': '바람',
+            // 'nav.wind': '바람',
             'nav.automation': '자동화',
             'nav.monitor': '모니터',
             'nav.settings': '설정',
             'nav.simulation': '시뮬레이션',
             'nav.logs': '시스템 로그',
             'nav.ai': 'AI 어시스턴트',
-            'nav.groupControl': '제어',
+            // 'nav.groupControl': '제어',
+            // 'nav.groupSystem': '시스템',
+            'nav.network': 'Wifi 설정',
+            'nav.firmware': 'firmware',
+            'nav.diagnostics': 'diagnostics',
+            
+            'nav.wind': '바람 만들기',
+            'nav.wind.studio': '🎨 작곡',
+            'nav.wind.simulation': '🎮 체험실',
+            'nav.wind.playlist': '📋 플레이리스트',
+            'nav.wind.presets': '🌿 프리셋 관리',
+            'nav.groupDaily': '일상',
+            'nav.groupControl': '주요 제어',
             'nav.groupSystem': '시스템',
+
+            
 
 
             // =====================================================
@@ -772,14 +786,8 @@ window.SNW = window.SNW || {};
             'auto.rules.scheduleSection': '📅 스케줄별 규칙',
             'auto.rules.inheritHint': '프로필 규칙 상속',
             'auto.rules.customHint': '직접 설정',
-            'nav.wind': '바람 만들기',
-            'nav.wind.studio': '🎨 작곡',
-            'nav.wind.simulation': '🎮 체험실',
-            'nav.wind.playlist': '📋 플레이리스트',
-            'nav.wind.presets': '🌿 프리셋 관리',
-            'nav.groupDaily': '일상',
-            'nav.groupControl': '주요 제어',
-            'nav.groupSystem': '시스템',
+            
+            
             'monitor.timeline.running': '■ 가동',
             'monitor.timeline.paused': '■ 환경 일시정지',
             'monitor.timeline.idle': '■ 대기',
@@ -1034,15 +1042,30 @@ window.SNW = window.SNW || {};
 
             // Nav
             'nav.home': 'Home',
-            'nav.wind': 'Wind',
+            //'nav.wind': 'Wind',
             'nav.automation': 'Auto',
             'nav.monitor': 'Monitor',
             'nav.settings': 'Settings',
             'nav.simulation': 'Simulation',
             'nav.logs': 'System Logs',
             'nav.ai': 'AI Assistant',
-            'nav.groupControl': 'Control',
+            // 'nav.groupControl': 'Control',
+            // 'nav.groupSystem': 'System',
+            
+            'nav.network': 'Wifi Config',
+            'nav.firmware': 'firmware',
+            'nav.diagnostics': 'diagnostics',
+            
+
+            'nav.wind': 'Wind Studio',
+            'nav.wind.studio': '🎨 Studio',
+            'nav.wind.simulation': '🎮 Simulation',
+            'nav.wind.playlist': '📋 Playlist',
+            'nav.wind.presets': '🌿 Presets',
+            'nav.groupDaily': 'Daily',
+            'nav.groupControl': 'Main Control',
             'nav.groupSystem': 'System',
+          
 
 
             // =====================================================
@@ -1505,14 +1528,7 @@ window.SNW = window.SNW || {};
             'auto.rules.scheduleSection': '📅 Per-Schedule Rules',
             'auto.rules.inheritHint': 'Inherit profile rule',
             'auto.rules.customHint': 'Custom',
-            'nav.wind': 'Wind Studio',
-            'nav.wind.studio': '🎨 Studio',
-            'nav.wind.simulation': '🎮 Simulation',
-            'nav.wind.playlist': '📋 Playlist',
-            'nav.wind.presets': '🌿 Presets',
-            'nav.groupDaily': 'Daily',
-            'nav.groupControl': 'Main Control',
-            'nav.groupSystem': 'System',
+  
             'monitor.timeline.running': '■ Running',
             'monitor.timeline.paused': '■ Env. Paused',
             'monitor.timeline.idle': '■ Idle',

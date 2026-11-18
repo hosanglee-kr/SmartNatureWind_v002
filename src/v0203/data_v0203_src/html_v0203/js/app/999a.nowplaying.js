@@ -28,10 +28,39 @@ window.SNW = window.SNW || {};
         _eqBuffer: [],
     };
 
+    let _initialized = false;
     let _pauseBreathingId = null;
     let _pauseBreathingPhase = 0;
 
     function $(sel, root) { return (root || document).querySelector(sel); }
+
+    const SCENARIO_BY_PROFILE_NO = {
+        10: 'sleep',
+        20: 'office',
+        30: 'study',
+        40: 'rest',
+        50: 'exercise',
+        70: 'pet',
+        80: 'baby'
+    };
+    const DEFAULT_PROFILE_NAMES = new Set([
+        '수면모드', '집중모드', '휴식모드', '환기모드', '활동모드', '반려동물 케어', '아기/유아 케어'
+    ]);
+
+    function getProfileDisplayName(s) {
+        if (!s) return '';
+        const pNo = Number(s.profileNo || 0);
+        const rawName = s.profileName || s.name || '';
+        const scenarioKey = SCENARIO_BY_PROFILE_NO[pNo];
+        if (scenarioKey && (!rawName || DEFAULT_PROFILE_NAMES.has(rawName))) {
+            const full = SNW.I18n.t('home.scenario.' + scenarioKey);
+            const parts = full.split(' ');
+            const base = (parts.length > 1 ? parts.slice(1).join(' ') : full).trim();
+            const lang = (SNW.I18n.getLang && SNW.I18n.getLang()) || 'ko';
+            return lang === 'ko' ? `${base}모드` : `${base} Mode`;
+        }
+        return rawName || (pNo ? `프로필 #${pNo}` : '');
+    }
 
     function getSession() {
         return (SNW.Store && SNW.Store.get) ? SNW.Store.get().session : null;
@@ -173,19 +202,28 @@ window.SNW = window.SNW || {};
         const isPaused = (stateStr === 'PAUSED');
 
         // ─── 2. 타이틀 & AUTO 배지 ───
+        const isManual = (s.trigger === 1 || s.trigger === 'MANUAL' || s.triggerName === 'MANUAL');
+        const triggerIcon = isManual ? '✋' : '⏰';
         let title = '';
         if (typeName === 'AUTO_FULL' || type === 4) {
-            title = `✨ ${SNW.I18n.t('session.autoFull')}`;
+            const af = SNW.I18n.t('session.autoFull');
+            title = af.startsWith('✨') ? af : `✨ ${af}`;
         } else if (typeName === 'AUTO_SELECT' || type === 5) {
-            const baseLabel = s.profileName || (s.presetCode ? SNW.I18n.t('preset.' + s.presetCode) : '');
-            title = baseLabel ? `🎯 ${baseLabel} (맞춤Auto)` : `🎯 ${SNW.I18n.t('session.autoSelect')}`;
+            const baseLabel = getProfileDisplayName(s) || (s.presetCode ? SNW.I18n.t('preset.' + s.presetCode) : '');
+            if (baseLabel) {
+                title = `🎯 ${baseLabel} (맞춤Auto)`;
+            } else {
+                const as = SNW.I18n.t('session.autoSelect');
+                title = as.startsWith('🎯') ? as : `🎯 ${as}`;
+            }
         } else if (type === 1) {
-            title = s.profileName || (s.profileNo ? `프로필 #${s.profileNo}` : '플레이리스트');
+            const pTitle = getProfileDisplayName(s) || '플레이리스트';
+            title = `${triggerIcon} ${pTitle}`;
         } else if (type === 2) {
-            title = `${s.presetCode || '자연풍'} · ${s.styleCode || '표준'}`;
+            title = `${triggerIcon} ${s.presetCode || '자연풍'} · ${s.styleCode || '표준'}`;
         } else if (type === 3) {
             const fixedPct = s.percent ?? s.fixedPercent ?? s.fixedSpeed ?? (ctl && ctl.override && ctl.override.fixedPercent) ?? 0;
-            title = `일반 선풍기 (${Math.round(fixedPct)}%)`;
+            title = `${triggerIcon} 일반 선풍기 (${Math.round(fixedPct)}%)`;
         } else {
             title = '재생 중';
         }
@@ -230,7 +268,10 @@ window.SNW = window.SNW || {};
             barEl.step.textContent = `${Math.round(fixedPct)}%${subReason}`;
             barEl.time.textContent = isPaused ? '일시정지' : (shortestSec > 0 ? formatTime(shortestSec) : '가동 중');
         } else {
-            barEl.step.textContent = s.autoSwitchReason || '';
+            const defaultSub = (typeName === 'AUTO_FULL' || type === 4)
+                ? '실시간 100% 자율 제어'
+                : ((typeName === 'AUTO_SELECT' || type === 5) ? '바람 기준 고정 · 자동 세기 조절' : '');
+            barEl.step.textContent = s.autoSwitchReason || defaultSub;
             barEl.time.textContent = isPaused ? '일시정지' : (shortestSec > 0 ? formatTime(shortestSec) : '가동 중');
         }
 
@@ -413,8 +454,10 @@ window.SNW = window.SNW || {};
     // 초기화
     // =========================================================
     function init() {
+        if (_initialized) return;
         barEl.root = document.getElementById('now-playing-bar');
         if (!barEl.root) return;
+        _initialized = true;
 
         barEl.eq = $('.snw-nowplaying__eq', barEl.root);
         barEl.title = $('.snw-nowplaying__title', barEl.root);
@@ -714,8 +757,16 @@ window.SNW = window.SNW || {};
     SNW.NowPlaying = {
         init,
         render,
-        getSession
+        getSession,
+        getProfileDisplayName
     };
+
+    // 번들(999.app.js 이후 알파벳 순 실행) 포함 환경에서 초기화 누락 방지
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => init());
+    } else {
+        init();
+    }
 
 })(window.SNW);
 

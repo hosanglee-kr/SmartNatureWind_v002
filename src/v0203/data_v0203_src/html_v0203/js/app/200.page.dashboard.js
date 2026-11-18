@@ -842,11 +842,16 @@ SNW.Page = SNW.Page || {};
                 title = SNW.I18n.t('session.autoFull');
                 sub = isPaused ? '일시정지' : (s.autoSwitchReason ? `✨ ${s.autoSwitchReason}` : '실시간 100% 자율 제어');
             } else if (typeName === 'AUTO_SELECT' || s.type === 5) {
-                const baseLabel = s.profileName || (s.presetCode ? SNW.I18n.t('preset.' + s.presetCode) : '');
+                const profLabel = (SNW.NowPlaying && SNW.NowPlaying.getProfileDisplayName)
+                    ? SNW.NowPlaying.getProfileDisplayName(s)
+                    : (s.profileName || '');
+                const baseLabel = profLabel || (s.presetCode ? SNW.I18n.t('preset.' + s.presetCode) : '');
                 title = baseLabel ? `${baseLabel} (맞춤Auto)` : SNW.I18n.t('session.autoSelect');
                 sub = isPaused ? '일시정지' : (s.autoSwitchReason ? `🎯 ${s.autoSwitchReason}` : '바람 기준 고정 · 자동 세기 조절');
             } else if (typeName === 'PLAYLIST') {
-                title = s.profileName || s.name || `프로필 #${s.profileNo || s.profileId || ''}`;
+                title = (SNW.NowPlaying && SNW.NowPlaying.getProfileDisplayName)
+                    ? SNW.NowPlaying.getProfileDisplayName(s)
+                    : (s.profileName || s.name || `프로필 #${s.profileNo || s.profileId || ''}`);
                 const remain = this._fmtRemain(s.stepRemainSec || s.remainSec || 0);
                 sub = `Step ${s.currentStep || s.stepNo || 1}/${s.totalSteps || 1} · ${remain}`;
             } else if (typeName === 'PRESET') {
@@ -861,10 +866,13 @@ SNW.Page = SNW.Page || {};
 
             const isManual = (s.trigger === 1 || s.trigger === 'MANUAL' || s.triggerName === 'MANUAL');
             let triggerIcon = isManual ? '✋' : '⏰';
-            if (typeName === 'AUTO_FULL' || s.type === 4) triggerIcon = '✨';
-            else if (typeName === 'AUTO_SELECT' || s.type === 5) triggerIcon = '🎯';
-
-            titleEl.textContent = `${triggerIcon} ${title}`;
+            if (typeName === 'AUTO_FULL' || s.type === 4) {
+                titleEl.textContent = title.startsWith('✨') ? title : `✨ ${title}`;
+            } else if (typeName === 'AUTO_SELECT' || s.type === 5) {
+                titleEl.textContent = title.startsWith('🎯') ? title : `🎯 ${title}`;
+            } else {
+                titleEl.textContent = `${triggerIcon} ${title}`;
+            }
             subEl.textContent = isPaused ? `⏸ ${sub}` : sub;
 
             if (btnPause) {

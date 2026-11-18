@@ -422,15 +422,14 @@ SNW.Page = SNW.Page || {};
                     }
                     base = { baseType: 'PLAYLIST', profileId: 1 };
                 } else {
+                    let savedBase = null;
                     const saved = localStorage.getItem('snw.lastAutoSelectBase');
-                    if (saved && !forceDialog) {
-                        try { base = JSON.parse(saved); } catch (e) { }
+                    if (saved) {
+                        try { savedBase = JSON.parse(saved); } catch (e) { }
                     }
-                    if (!base || forceDialog) {
-                        base = await this._showAutoSelectDialog(key === 'sleep');
-                        if (!base) return;
-                        try { localStorage.setItem('snw.lastAutoSelectBase', JSON.stringify(base)); } catch (e) { }
-                    }
+                    base = await this._showAutoSelectDialog(key === 'sleep', savedBase);
+                    if (!base) return;
+                    try { localStorage.setItem('snw.lastAutoSelectBase', JSON.stringify(base)); } catch (e) { }
                 }
 
                 try {
@@ -572,7 +571,7 @@ SNW.Page = SNW.Page || {};
             });
         }
 
-        async _showAutoSelectDialog(isSleepMode = false) {
+        async _showAutoSelectDialog(isSleepMode = false, savedBase = null) {
             const t = (k) => SNW.I18n.t(k);
             // 프로파일 목록 로드
             let profiles = [];
@@ -583,6 +582,13 @@ SNW.Page = SNW.Page || {};
             } catch (e) { }
 
             const hasProfiles = profiles.length > 0;
+            const useSavedPlaylist = !isSleepMode && savedBase && savedBase.baseType === 'PLAYLIST' && hasProfiles;
+            const initPresetCode = isSleepMode
+                ? 'OCEAN'
+                : ((savedBase && savedBase.baseType === 'PRESET' && savedBase.presetCode) ? savedBase.presetCode : '');
+            const initProfileId = (!isSleepMode && savedBase && savedBase.baseType === 'PLAYLIST')
+                ? Number(savedBase.profileId || 0)
+                : 0;
 
             return new Promise(resolve => {
                 const content = document.createElement('div');
@@ -590,20 +596,20 @@ SNW.Page = SNW.Page || {};
                     <p style="font-weight:600;margin-bottom:12px;">${t('session.autoSelectPrompt')}</p>
                     <div style="display:flex;flex-direction:column;gap:12px;">
                         <label style="display:flex;align-items:center;gap:8px;">
-                            <input type="radio" name="autoSelectBase" value="PRESET" checked>
+                            <input type="radio" name="autoSelectBase" value="PRESET" ${useSavedPlaylist ? '' : 'checked'}>
                             <span>${t('session.autoSelectPreset')}</span>
                             <select data-preset-select style="margin-left:auto;padding:4px 8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
                                 ${(SNW.C.PRESET_DISPLAY_ORDER || ['OCEAN', 'COUNTRY_BREEZE', 'FOREST_CANOPY', 'MOUNTAIN']).map(code =>
-                    `<option value="${code}" ${(isSleepMode && code === 'OCEAN') ? 'selected' : ''}>${SNW.I18n.t('preset.' + code)}</option>`
+                    `<option value="${code}" ${(initPresetCode && code === initPresetCode) ? 'selected' : ''}>${SNW.I18n.t('preset.' + code)}</option>`
                 ).join('')}
                             </select>
                         </label>
                         <label style="display:flex;align-items:center;gap:8px;${hasProfiles ? '' : 'opacity:0.5;'}">
-                            <input type="radio" name="autoSelectBase" value="PLAYLIST" ${hasProfiles ? '' : 'disabled'}>
+                            <input type="radio" name="autoSelectBase" value="PLAYLIST" ${hasProfiles ? (useSavedPlaylist ? 'checked' : '') : 'disabled'}>
                             <span>${t('session.autoSelectPlaylist')}</span>
                             <select data-profile-select ${hasProfiles ? '' : 'disabled'} style="margin-left:auto;padding:4px 8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
                                 ${hasProfiles
-                        ? profiles.map(p => `<option value="${p.profileId}">${SNW.DomUtil ? SNW.DomUtil.escape(p.name) : p.name}</option>`).join('')
+                        ? profiles.map(p => `<option value="${p.profileId}" ${(initProfileId && Number(p.profileId) === initProfileId) ? 'selected' : ''}>${SNW.DomUtil ? SNW.DomUtil.escape(p.name) : p.name}</option>`).join('')
                         : '<option value="">프로파일 없음</option>'}
                             </select>
                         </label>
@@ -846,7 +852,7 @@ SNW.Page = SNW.Page || {};
                     ? SNW.NowPlaying.getProfileDisplayName(s)
                     : (s.profileName || '');
                 const baseLabel = profLabel || (s.presetCode ? SNW.I18n.t('preset.' + s.presetCode) : '');
-                title = baseLabel ? `${baseLabel} (맞춤Auto)` : SNW.I18n.t('session.autoSelect');
+                title = baseLabel ? `${baseLabel} ${SNW.I18n.t('session.autoSelectSuffix')}` : SNW.I18n.t('session.autoSelect');
                 sub = isPaused ? '일시정지' : (s.autoSwitchReason ? `🎯 ${s.autoSwitchReason}` : '바람 기준 고정 · 자동 세기 조절');
             } else if (typeName === 'PLAYLIST') {
                 title = (SNW.NowPlaying && SNW.NowPlaying.getProfileDisplayName)

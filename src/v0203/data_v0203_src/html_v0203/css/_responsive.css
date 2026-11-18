@@ -85,10 +85,13 @@
         padding: var(--snw-spacing-lg);
     }
 
-    /* AI 채팅 높이 축소 */
+    /* AI 채팅 높이 (모바일 하단 네비 및 NowPlaying Bar 고려) */
     .snw-ai-chat {
-        height: calc(100vh - 300px);
-        min-height: 350px;
+        height: calc(100dvh - 190px);
+        min-height: 320px;
+    }
+    body.has-nowplaying .snw-ai-chat {
+        height: calc(100dvh - 242px);
     }
 }
 

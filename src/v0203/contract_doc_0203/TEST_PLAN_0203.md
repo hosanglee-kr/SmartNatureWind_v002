@@ -358,6 +358,7 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-18** | **v4.7** | **FE/오프라인 AI·NowPlaying·AUTO_SELECT 보완 검증 기준 반영 (0203_014_20/21)**: Now Playing Bar 자동 초기화 및 시나리오/모드명 일치, `#/ai` 모바일 레이아웃·`.snw-ai-fab` 비노출, 오프라인 AI 키워드 폴백(타이머 우선), `AUTO_SELECT` 매회 base 모달·`PLAYLIST` 규칙 보존, `check_i18n.py --strict` (`ko=601/en=601`) 검증 반영 | Antigravity AI |
 | **2026-11-18** | **v4.6** | **Stage 12~13 웹 API 보안·안정화 검증 기준 반영 (0203_014_19)**: 정적 MIME(`nosniff`+`endsWith`)·missing `404`·`Cache-Control`, `requireApiKey` 401/`W10_USE_API_KEY`·WS 핸드셰이크, 4KB+ TCP 단편화 JSON POST, 빈 body `400`(`cost-reset` `200`/`control/mode` form), `1MB` 초과 `413`, 동시 업로드/OTA `429` 검증 항목 현행화 | Antigravity AI |
 | **2026-11-17** | **v4.5** | **FE Core·Offline 정비 및 20종 CSS 분리 검증 결과 반영 (0203_014_18_02)**: `e2e_ui_browser_check_0203.cjs` 24/24 PASS, Core 스모크 10/10(`?prod` 포함) 및 `check_i18n.py --strict` (`ko=597/en=597`) 통과 반영 | Antigravity AI |
 | **2026-11-14** | **v4.4** | **Phase 2 — L12 회귀 (T-158~T-168)**: `ENV_PAUSED` 진입/해제, `TempLow`/`DiLow` PAUSE/STOP 이원화, `AUTO_FULL`/`AUTO_SELECT` 세션, AUTO 중 사용자 개입, PIR 시작 유예(T-167), `PATCH /session/rule`(T-168) 11건 신규 (`TEST_PLAN_L9_L11_0203.md` §3.8, `test/e2e_phase2.py`) | Antigravity AI |

@@ -284,11 +284,20 @@
     display: flex;
     flex-direction: column;
     gap: var(--snw-spacing-sm);
-    height: 500px;
+    height: 540px;
+}
+
+.snw-ai-rest-view {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    gap: var(--snw-spacing-sm);
 }
 
 .snw-ai-messages {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -334,6 +343,7 @@
     display: flex;
     gap: var(--snw-spacing-sm);
     align-items: flex-end;
+    flex-shrink: 0;
 }
 
 .snw-ai-input textarea {
@@ -344,8 +354,9 @@
     border-radius: var(--snw-radius);
     color: var(--snw-text);
     font-size: 13px;
-    resize: vertical;
-    min-height: 60px;
+    resize: none;
+    min-height: 40px;
+    line-height: 1.4;
     font-family: inherit;
 }
 
@@ -669,11 +680,17 @@ body.snw-night-mode {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    margin-bottom: 12px;
+    flex-shrink: 0;
+    margin-bottom: 0;
 }
 .snw-ai-examples .snw-btn {
     width: 100%;
     justify-content: flex-start;
     text-align: left;
     padding: 8px 12px;
+}
+
+/* AI 전용 페이지(#/ai)에서는 전역 플로팅 AI FAB 숨김 (버튼 겹침 방지) */
+body.is-ai-page .snw-ai-fab {
+    display: none !important;
 }

@@ -1,5 +1,5 @@
 
-/* ---- 200.page.dashboard.js (72561 bytes) ---- */
+/* ---- 200.page.dashboard.js (73198 bytes) ---- */
 // =========================================================
 // 200.page.dashboard.js — 홈 (Stage 5 UX 완성형)
 // Layer 4 (페이지 로직)
@@ -424,15 +424,14 @@ SNW.Page = SNW.Page || {};
                     }
                     base = { baseType: 'PLAYLIST', profileId: 1 };
                 } else {
+                    let savedBase = null;
                     const saved = localStorage.getItem('snw.lastAutoSelectBase');
-                    if (saved && !forceDialog) {
-                        try { base = JSON.parse(saved); } catch (e) { }
+                    if (saved) {
+                        try { savedBase = JSON.parse(saved); } catch (e) { }
                     }
-                    if (!base || forceDialog) {
-                        base = await this._showAutoSelectDialog(key === 'sleep');
-                        if (!base) return;
-                        try { localStorage.setItem('snw.lastAutoSelectBase', JSON.stringify(base)); } catch (e) { }
-                    }
+                    base = await this._showAutoSelectDialog(key === 'sleep', savedBase);
+                    if (!base) return;
+                    try { localStorage.setItem('snw.lastAutoSelectBase', JSON.stringify(base)); } catch (e) { }
                 }
 
                 try {
@@ -574,7 +573,7 @@ SNW.Page = SNW.Page || {};
             });
         }
 
-        async _showAutoSelectDialog(isSleepMode = false) {
+        async _showAutoSelectDialog(isSleepMode = false, savedBase = null) {
             const t = (k) => SNW.I18n.t(k);
             // 프로파일 목록 로드
             let profiles = [];
@@ -585,6 +584,13 @@ SNW.Page = SNW.Page || {};
             } catch (e) { }
 
             const hasProfiles = profiles.length > 0;
+            const useSavedPlaylist = !isSleepMode && savedBase && savedBase.baseType === 'PLAYLIST' && hasProfiles;
+            const initPresetCode = isSleepMode
+                ? 'OCEAN'
+                : ((savedBase && savedBase.baseType === 'PRESET' && savedBase.presetCode) ? savedBase.presetCode : '');
+            const initProfileId = (!isSleepMode && savedBase && savedBase.baseType === 'PLAYLIST')
+                ? Number(savedBase.profileId || 0)
+                : 0;
 
             return new Promise(resolve => {
                 const content = document.createElement('div');
@@ -592,20 +598,20 @@ SNW.Page = SNW.Page || {};
                     <p style="font-weight:600;margin-bottom:12px;">${t('session.autoSelectPrompt')}</p>
                     <div style="display:flex;flex-direction:column;gap:12px;">
                         <label style="display:flex;align-items:center;gap:8px;">
-                            <input type="radio" name="autoSelectBase" value="PRESET" checked>
+                            <input type="radio" name="autoSelectBase" value="PRESET" ${useSavedPlaylist ? '' : 'checked'}>
                             <span>${t('session.autoSelectPreset')}</span>
                             <select data-preset-select style="margin-left:auto;padding:4px 8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
                                 ${(SNW.C.PRESET_DISPLAY_ORDER || ['OCEAN', 'COUNTRY_BREEZE', 'FOREST_CANOPY', 'MOUNTAIN']).map(code =>
-                    `<option value="${code}" ${(isSleepMode && code === 'OCEAN') ? 'selected' : ''}>${SNW.I18n.t('preset.' + code)}</option>`
+                    `<option value="${code}" ${(initPresetCode && code === initPresetCode) ? 'selected' : ''}>${SNW.I18n.t('preset.' + code)}</option>`
                 ).join('')}
                             </select>
                         </label>
                         <label style="display:flex;align-items:center;gap:8px;${hasProfiles ? '' : 'opacity:0.5;'}">
-                            <input type="radio" name="autoSelectBase" value="PLAYLIST" ${hasProfiles ? '' : 'disabled'}>
+                            <input type="radio" name="autoSelectBase" value="PLAYLIST" ${hasProfiles ? (useSavedPlaylist ? 'checked' : '') : 'disabled'}>
                             <span>${t('session.autoSelectPlaylist')}</span>
                             <select data-profile-select ${hasProfiles ? '' : 'disabled'} style="margin-left:auto;padding:4px 8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
                                 ${hasProfiles
-                        ? profiles.map(p => `<option value="${p.profileId}">${SNW.DomUtil ? SNW.DomUtil.escape(p.name) : p.name}</option>`).join('')
+                        ? profiles.map(p => `<option value="${p.profileId}" ${(initProfileId && Number(p.profileId) === initProfileId) ? 'selected' : ''}>${SNW.DomUtil ? SNW.DomUtil.escape(p.name) : p.name}</option>`).join('')
                         : '<option value="">프로파일 없음</option>'}
                             </select>
                         </label>
@@ -848,7 +854,7 @@ SNW.Page = SNW.Page || {};
                     ? SNW.NowPlaying.getProfileDisplayName(s)
                     : (s.profileName || '');
                 const baseLabel = profLabel || (s.presetCode ? SNW.I18n.t('preset.' + s.presetCode) : '');
-                title = baseLabel ? `${baseLabel} (맞춤Auto)` : SNW.I18n.t('session.autoSelect');
+                title = baseLabel ? `${baseLabel} ${SNW.I18n.t('session.autoSelectSuffix')}` : SNW.I18n.t('session.autoSelect');
                 sub = isPaused ? '일시정지' : (s.autoSwitchReason ? `🎯 ${s.autoSwitchReason}` : '바람 기준 고정 · 자동 세기 조절');
             } else if (typeName === 'PLAYLIST') {
                 title = (SNW.NowPlaying && SNW.NowPlaying.getProfileDisplayName)
@@ -4146,7 +4152,7 @@ SNW.Page = SNW.Page || {};
 	};
 })(window.SNW);
 
-/* ---- 290.page.ai.js (16877 bytes) ---- */
+/* ---- 290.page.ai.js (16972 bytes) ---- */
 // =========================================================
 // 290.page.ai.js — SNW.Page.AI
 // Layer 4 (페이지 로직: AI 스튜디오, 2-turn REST 제어 & Gemini Live Voice)
@@ -4169,6 +4175,7 @@ SNW.Page = SNW.Page || {};
 		}
 
 		async mount() {
+			document.body.classList.add('is-ai-page');
 			this.el.innerHTML = '';
 			this.el.appendChild(SNW.Tpl.ai());
 			SNW.I18n.applyTo(this.el);
@@ -4285,6 +4292,7 @@ SNW.Page = SNW.Page || {};
 		}
 
 		unmount() {
+			document.body.classList.remove('is-ai-page');
 			this._active = false;
 			if (SNW.AIVoice) {
 				SNW.AIVoice.stopListening();
@@ -7530,7 +7538,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 999a.nowplaying.js (34892 bytes) ---- */
+/* ---- 999a.nowplaying.js (34921 bytes) ---- */
 // =========================================================
 // 999a.nowplaying.js — 전역 Now Playing Bar (Stage 5 UX 완성형)
 // Layer 3 (애플리케이션 전역 컴포넌트)
@@ -7744,7 +7752,7 @@ window.SNW = window.SNW || {};
         } else if (typeName === 'AUTO_SELECT' || type === 5) {
             const baseLabel = getProfileDisplayName(s) || (s.presetCode ? SNW.I18n.t('preset.' + s.presetCode) : '');
             if (baseLabel) {
-                title = `🎯 ${baseLabel} (맞춤Auto)`;
+                title = `🎯 ${baseLabel} ${SNW.I18n.t('session.autoSelectSuffix')}`;
             } else {
                 const as = SNW.I18n.t('session.autoSelect');
                 title = as.startsWith('🎯') ? as : `🎯 ${as}`;

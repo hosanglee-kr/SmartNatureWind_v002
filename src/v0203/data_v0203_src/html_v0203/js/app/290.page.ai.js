@@ -20,6 +20,7 @@ SNW.Page = SNW.Page || {};
 		}
 
 		async mount() {
+			document.body.classList.add('is-ai-page');
 			this.el.innerHTML = '';
 			this.el.appendChild(SNW.Tpl.ai());
 			SNW.I18n.applyTo(this.el);
@@ -136,6 +137,7 @@ SNW.Page = SNW.Page || {};
 		}
 
 		unmount() {
+			document.body.classList.remove('is-ai-page');
 			this._active = false;
 			if (SNW.AIVoice) {
 				SNW.AIVoice.stopListening();

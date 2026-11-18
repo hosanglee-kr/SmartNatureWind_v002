@@ -391,11 +391,16 @@ window.SNW = window.SNW || {};
                 runtime.sim.variability = r.variability;
                 runtime.sim.gustFreq = r.gustFreq;
             } else if (isAutoSelect) {
+                const sTemp = (runtime.sensor && runtime.sensor.tempC != null) ? Number(runtime.sensor.tempC) : 25.0;
+                const sDi = (runtime.sensor && runtime.sensor.di != null) ? Number(runtime.sensor.di) : 71.5;
+                const autoSc = (payload && payload.styleCode)
+                    ? payload.styleCode
+                    : (sTemp <= 23.0 ? 'SLEEP' : (sDi >= 75.0 ? 'VITAL' : 'BALANCE'));
                 if (payload.baseType === 'PRESET') {
                     const pc = payload.presetCode || 'OCEAN';
                     runtime.sim.presetCode = pc;
-                    runtime.sim.styleCode = 'BALANCE';
-                    const r = resolvePreset(pc, 'BALANCE');
+                    runtime.sim.styleCode = autoSc;
+                    const r = resolvePreset(pc, autoSc);
                     runtime.sim.intensity = r.intensity;
                     runtime.sim.variability = r.variability;
                     runtime.sim.gustFreq = r.gustFreq;
@@ -405,8 +410,8 @@ window.SNW = window.SNW || {};
                     const s0 = prof && prof.steps && prof.steps[0];
                     const pc = (s0 && s0.presetCode) || 'OCEAN';
                     runtime.sim.presetCode = pc;
-                    runtime.sim.styleCode = 'BALANCE';
-                    const r = resolvePreset(pc, 'BALANCE');
+                    runtime.sim.styleCode = autoSc;
+                    const r = resolvePreset(pc, autoSc);
                     runtime.sim.intensity = r.intensity;
                     runtime.sim.variability = r.variability;
                     runtime.sim.gustFreq = r.gustFreq;
@@ -606,6 +611,50 @@ window.SNW = window.SNW || {};
         let s_mockTurns = 2;
         let s_mockCostX1000 = 14;
 
+        async function _offlineKeywordFallback(msg) {
+            const actions = [];
+            let replyText = '';
+
+            if (msg.includes('바다') || msg.includes('오션')) {
+                await A.startSession({ type: 'PRESET', payload: { presetCode: 'OCEAN', styleCode: 'BALANCE' } });
+                actions.push({ name: 'start_preset', args: { presetCode: 'OCEAN' }, result: 'ok' });
+                replyText = '바다 바람을 틀어드렸습니다.';
+            } else if (msg.includes('숲') || msg.includes('산들')) {
+                await A.startSession({ type: 'PRESET', payload: { presetCode: 'FOREST_CANOPY', styleCode: 'BALANCE' } });
+                actions.push({ name: 'start_preset', args: { presetCode: 'FOREST_CANOPY' }, result: 'ok' });
+                replyText = '숲속 바람을 틀어드렸습니다.';
+            } else if (msg.includes('산') || msg.includes('계곡')) {
+                await A.startSession({ type: 'PRESET', payload: { presetCode: 'MOUNTAIN', styleCode: 'BALANCE' } });
+                actions.push({ name: 'start_preset', args: { presetCode: 'MOUNTAIN' }, result: 'ok' });
+                replyText = '산바람을 틀어드렸습니다.';
+            } else if (msg.includes('분') || msg.includes('타이머') || msg.includes('시간')) {
+                const m = parseInt((msg.match(/(\d+)\s*분/) || [])[1] || 30, 10);
+                if (SNW.Api && typeof SNW.Api.setControlTimer === 'function') {
+                    await SNW.Api.setControlTimer(m);
+                }
+                actions.push({ name: 'set_timer', args: { minutes: m }, result: 'ok' });
+                replyText = `${m}분 후 자동으로 꺼드릴게요.`;
+            } else if (msg.includes('꺼') || msg.includes('정지') || msg.includes('중지') || msg.toLowerCase().includes('off')) {
+                await A.stopSession();
+                actions.push({ name: 'stop_session', args: {}, result: 'ok' });
+                replyText = '바람을 껐습니다.';
+            } else if (msg.includes('스케줄') || msg.includes('자동')) {
+                runtime.control.manualOverrideSchedule = false;
+                actions.push({ name: 'release_manual_to_schedule', args: {}, result: 'ok' });
+                replyText = '스케줄 자동 실행 모드로 전환했습니다.';
+            } else {
+                replyText = `"${msg}" 요청을 이해했습니다. (오프라인 사용 가능: 바다/숲/산/끄기/N분 타이머/스케줄)`;
+            }
+
+            return {
+                ok: true,
+                text: replyText,
+                _speechHint: replyText,
+                actions,
+                session: runtime.control.session
+            };
+        }
+
         A.gemini = async (body) => {
             const msg = (body && body.message || '').trim();
 
@@ -613,21 +662,17 @@ window.SNW = window.SNW || {};
             const systemCache = cache.system || {};
             const apiKey = systemCache.security?.geminiApiKey || localStorage.getItem('snw.geminiKey') || '';
 
-            // 2. API 키가 없는 경우 기본 가상 모드로 폴백
+            // 2. API 키가 없는 경우 키워드 폴백으로 즉시 실행
             if (!apiKey) {
-                return {
-                    ok: true,
-                    text: '⚠️ Gemini API 키가 설정되지 않았습니다. [설정] 탭에서 구글 AI Studio API 키를 입력해주세요.',
-                    _speechHint: 'API 키가 필요합니다.',
-                    actions: []
-                };
+                return _offlineKeywordFallback(msg);
             }
 
             // 3. 실제 gemini-3.1-flash-lite REST API 호출
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
+            try {
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
 
-            // AI에게 선풍기 제어 권한을 부여하는 시스템 인스트럭션 및 도구 명령 유도
-            const systemPrompt = `너는 스마트 자연풍 선풍기 'Smart Nature Wind'의 전용 AI 어시스턴트야. 
+                // AI에게 선풍기 제어 권한을 부여하는 시스템 인스트럭션 및 도구 명령 유도
+                const systemPrompt = `너는 스마트 자연풍 선풍기 'Smart Nature Wind'의 전용 AI 어시스턴트야. 
 사용자의 자연어 요청을 분석해서 선풍기를 제어하고, 답변은 친절한 한국어로 해줘.
 사용자가 바람을 켜거나, 속도를 바꾸거나, 끄거나, 타이머를 설정하면 응답 텍스트와 함께 아래 JSON 형식의 액션 명령을 응답 끝에 반드시 포함해줘.
 가능한 액션 이름(name):
@@ -639,66 +684,65 @@ window.SNW = window.SNW || {};
 응답 예시:
 바다 바람을 켜드릴게요! [ACTION:{"name":"start_preset","args":{"presetCode":"OCEAN"}}]`;
 
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [
-                        {
-                            role: 'user',
-                            parts: [
-                                { text: `${systemPrompt}\n\n사용자 요청: ${msg}` }
-                            ]
-                        }
-                    ]
-                })
-            });
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [
+                            {
+                                role: 'user',
+                                parts: [
+                                    { text: `${systemPrompt}\n\n사용자 요청: ${msg}` }
+                                ]
+                            }
+                        ]
+                    })
+                });
 
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.error?.message || `Gemini API 통신 실패 (HTTP ${response.status})`);
-            }
-
-            const data = await response.json();
-            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 생성하지 못했습니다.';
-
-            // 4. 응답 텍스트에서 [ACTION: {...}] 파싱 및 로컬 런타임 즉시 실행
-            let replyText = rawText;
-            const actions = [];
-            const actionMatch = rawText.match(/\[ACTION:\s*({.*?})\]/);
-
-            if (actionMatch && actionMatch[1]) {
-                try {
-                    const actionObj = JSON.parse(actionMatch[1]);
-                    actions.push(actionObj);
-                    replyText = rawText.replace(/\[ACTION:\s*({.*?})\]/, '').trim();
-
-                    // 💡 브라우저 오프라인 런타임 상태 실제 변경 수행
-                    await A.executeAiAction(actionObj.name, actionObj.args);
-                } catch (e) {
-                    console.warn('[AI Action Parse Error]', e);
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.error?.message || `Gemini API 통신 실패 (HTTP ${response.status})`);
                 }
-            } else {
-                // 액션 블록이 없더라도 키워드 기반 자동 매핑 보완
-                if (msg.includes('바다') || msg.includes('오션')) {
-                    await A.startPreset('OCEAN', 'BALANCE');
-                    actions.push({ name: 'start_preset', args: { presetCode: 'OCEAN' }, result: 'ok' });
-                } else if (msg.includes('숲') || msg.includes('산들')) {
-                    await A.startPreset('FOREST_CANOPY', 'BALANCE');
-                    actions.push({ name: 'start_preset', args: { presetCode: 'FOREST_CANOPY' }, result: 'ok' });
-                } else if (msg.includes('꺼') || msg.includes('정지') || msg.includes('중지')) {
-                    await A.stopSession();
-                    actions.push({ name: 'stop_session', args: {}, result: 'ok' });
-                }
-            }
 
-            return {
-                ok: true,
-                text: replyText,
-                _speechHint: replyText,
-                actions: actions,
-                session: runtime.control.session
-            };
+                const data = await response.json();
+                const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 생성하지 못했습니다.';
+
+                // 4. 응답 텍스트에서 [ACTION: {...}] 파싱 및 로컬 런타임 즉시 실행
+                let replyText = rawText;
+                const actions = [];
+                const actionMatch = rawText.match(/\[ACTION:\s*({.*?})\]/);
+
+                if (actionMatch && actionMatch[1]) {
+                    try {
+                        const actionObj = JSON.parse(actionMatch[1]);
+                        actions.push(actionObj);
+                        replyText = rawText.replace(/\[ACTION:\s*({.*?})\]/, '').trim();
+
+                        // 💡 브라우저 오프라인 런타임 상태 실제 변경 수행
+                        await A.executeAiAction(actionObj.name, actionObj.args);
+                    } catch (e) {
+                        console.warn('[AI Action Parse Error]', e);
+                    }
+                } else {
+                    // 액션 블록이 없더라도 키워드 기반 자동 매핑 보완
+                    const fb = await _offlineKeywordFallback(msg);
+                    if (fb.actions.length > 0) {
+                        actions.push(...fb.actions);
+                        if (!replyText) replyText = fb.text;
+                    }
+                }
+
+                return {
+                    ok: true,
+                    text: replyText,
+                    _speechHint: replyText,
+                    actions: actions,
+                    session: runtime.control.session
+                };
+            } catch (e) {
+                console.error('[AI] Gemini 호출 실패 → 폴백:', e);
+                return _offlineKeywordFallback(msg);
+            }
         };
 
         A.executeAiAction = async (name, args) => {
@@ -706,12 +750,16 @@ window.SNW = window.SNW || {};
                 await A.stopSession();
             } else if (name === 'start_preset') {
                 await A.startSession({ type: 'PRESET', payload: { presetCode: args?.presetCode || 'OCEAN', styleCode: args?.styleCode || 'BALANCE' } });
+            } else if (name === 'start_playlist') {
+                await A.startSession({ type: 'PLAYLIST', payload: { profileId: args?.profileId } });
             } else if (name === 'set_fan_speed') {
                 await A.overrideFixed(args?.speed || 50);
             } else if (name === 'set_timer') {
-                if (SNW.TimerManager && typeof SNW.TimerManager.start === 'function') {
-                    SNW.TimerManager.start(args?.minutes || 30);
+                if (SNW.Api && typeof SNW.Api.setControlTimer === 'function') {
+                    await SNW.Api.setControlTimer(args?.minutes || 30);
                 }
+            } else if (name === 'release_manual_to_schedule') {
+                runtime.control.manualOverrideSchedule = false;
             }
             return { ok: true, name, result: 'ok', session: runtime.control.session };
         };

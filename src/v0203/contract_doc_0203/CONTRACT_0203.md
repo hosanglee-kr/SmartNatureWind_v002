@@ -367,6 +367,7 @@ startSession(type, trigger, payload) [T-async]
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-18** | **v3.12** | **FE/오프라인 AI·NowPlaying·AUTO_SELECT 계약 현행화 (0203_014_20/21)**: `CT10_Ctl_Ctl_0203.cpp` `AUTO_SELECT` `PLAYLIST` `hasExplicitRule` 조건부 `initRuleFromPayload` 계약, `040.api.js` `OFFLINE_ROUTES` AI 명시적 오류(`ok: false`), `999a.nowplaying.js` 멱등 초기화·표시명 일원화 계약 반영 | Antigravity AI |
 | **2026-11-18** | **v3.11** | **Stage 12~13 웹 API 보안·안정화 계약 반영 (§7.25, 0203_014_19)**: `§3.1` 위반 4건 교정(`System`/`Network`/`WF10`), 단편화 body 단일 블록 누적(`WEB-BODY-1`), 이중 `send`/빈 body hang 방지(`WEB-BODY-2`), 단일 업로드/OTA 소유권 `s_uploadOwner`+`onDisconnect`(`WEB-UP-1`), `CRUD`·`Monitor` 정적 경로 상수화(`WEB-STR-1`) | Antigravity AI |
 | **2026-11-17** | **v3.10** | **FE Core·Offline 정합성 및 20종 CSS 분리 계약 현행화 (0203_014_18_02)**: `040.api.js` `OFFLINE_ROUTES`·`998.offline_0203.js` `setActive()`/타이머 만료 동기화 및 Now Playing Bar 데스크톱 사이드바/Footer 여백 규약 확인 | Antigravity AI |
 | **2026-11-14** | **v3.9** | **Phase 2 — Pause/Stop 이원화 + AUTO 위임 계약**: §3.1 `initRuleFromPayload` 화이트리스트 추가, §7.23 `PAUSE-STOP-1~9` 및 `RULE-LIVE-1` 신규 (히스테리시스·`pauseMask`·세션 스냅샷·AUTO 개입·유예·실시간 규칙 갱신), §7.24 `AUTO-1~6` 신규 (trigger 강제·base 고정·재평가·rule 스냅샷) | Antigravity AI |

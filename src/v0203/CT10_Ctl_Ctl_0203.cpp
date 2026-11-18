@@ -547,8 +547,9 @@ bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
 
         case EN_CT10_SESSION_AUTO_SELECT: {
             // ① 규칙 로드
+            const bool hasExplicitRule = p_payloadDoc["rule"].is<JsonObjectConst>();
             ST_A20_TriggerRule_t v_rule = {};
-            if (p_payloadDoc["rule"].is<JsonObjectConst>()) {
+            if (hasExplicitRule) {
                 C10_fromJson_TriggerRule(p_payloadDoc["rule"].as<JsonObjectConst>(),
                                           v_rule, __func__);
             } else {
@@ -564,7 +565,9 @@ bool CL_CT10_ControlManager::startSession(EN_CT10_session_type_t p_type,
                 self._session.autoSelect.baseType      = EN_CT10_SESSION_PLAYLIST;
                 self._session.autoSelect.baseProfileId = pid;
                 v_ok = self.startUserProfileByNo(pid);
-                self.initRuleFromPayload(v_rule); // PLAYLIST 기본 rule 덮어쓰기 방지
+                if (hasExplicitRule) {
+                    self.initRuleFromPayload(v_rule); // 명시 규칙이 있을 때만 PLAYLIST 기본 rule 덮어쓰기
+                }
             } else {
                 self.initRuleFromPayload(v_rule);
                 const char* pc = A40_ComFunc::Json_getStr(p, "presetCode",

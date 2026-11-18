@@ -412,7 +412,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 020.i18n.js (82034 bytes) ---- */
+/* ---- 020.i18n.js (82155 bytes) ---- */
 // =========================================================
 // 020.i18n.js — 다국어 완전판 (ko/en)
 // =========================================================
@@ -1159,6 +1159,7 @@ window.SNW = window.SNW || {};
             'home.scenario.autoSelectMeta': '바람고정·세기자동',
             'session.autoFull': '✨ AI 스마트 쾌적',
             'session.autoSelect': '🎯 취향 맞춤 Auto',
+            'session.autoSelectSuffix': '(취향 맞춤 Auto)',
             'session.autoSelectPrompt': '내가 원하는 바람 기준 선택',
             'session.autoSelectPreset': '프리셋',
             'session.autoSelectPlaylist': '플레이리스트',
@@ -1901,6 +1902,7 @@ window.SNW = window.SNW || {};
             'home.scenario.autoSelectMeta': 'Fixed base · Auto strength',
             'session.autoFull': '✨ AI Smart Comfort',
             'session.autoSelect': '🎯 Custom Auto',
+            'session.autoSelectSuffix': '(Custom Auto)',
             'session.autoSelectPrompt': 'Select your preferred base',
             'session.autoSelectPreset': 'Preset',
             'session.autoSelectPlaylist': 'Playlist',
@@ -2665,7 +2667,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 040.api.js (18971 bytes) ---- */
+/* ---- 040.api.js (19305 bytes) ---- */
 // =========================================================
 // 040.api.js — SNW.Api (REST 클라이언트)
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -2754,6 +2756,8 @@ window.SNW = window.SNW || {};
 		{ re: /\/metrics$/i, method: 'GET', handle: () => ({ metrics: {} }) },
 		{ re: /\/config$/i, method: 'GET', handle: () => _cache() },
 		{ re: /\/config$/i, method: 'POST', handle: (body) => { if (body) Object.assign(_cache(), body); return { result: 'ok', saved: true, offline: true }; } },
+		{ re: /\/ai\/gemini$/i, method: 'POST', handle: () => ({ ok: false, error: 'offline', text: '⚠️ AI 오프라인 핸들러가 초기화되지 않았습니다. 페이지를 새로고침하세요.', actions: [] }) },
+		{ re: /\/ai\/execute-action$/i, method: 'POST', handle: () => ({ ok: false, error: 'offline', actions: [] }) },
 	];
 
 	// =====================================================

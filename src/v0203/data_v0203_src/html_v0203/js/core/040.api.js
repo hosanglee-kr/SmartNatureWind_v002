@@ -86,6 +86,8 @@ window.SNW = window.SNW || {};
 		{ re: /\/metrics$/i, method: 'GET', handle: () => ({ metrics: {} }) },
 		{ re: /\/config$/i, method: 'GET', handle: () => _cache() },
 		{ re: /\/config$/i, method: 'POST', handle: (body) => { if (body) Object.assign(_cache(), body); return { result: 'ok', saved: true, offline: true }; } },
+		{ re: /\/ai\/gemini$/i, method: 'POST', handle: () => ({ ok: false, error: 'offline', text: '⚠️ AI 오프라인 핸들러가 초기화되지 않았습니다. 페이지를 새로고침하세요.', actions: [] }) },
+		{ re: /\/ai\/execute-action$/i, method: 'POST', handle: () => ({ ok: false, error: 'offline', actions: [] }) },
 	];
 
 	// =====================================================

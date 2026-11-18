@@ -211,7 +211,7 @@ window.SNW = window.SNW || {};
         } else if (typeName === 'AUTO_SELECT' || type === 5) {
             const baseLabel = getProfileDisplayName(s) || (s.presetCode ? SNW.I18n.t('preset.' + s.presetCode) : '');
             if (baseLabel) {
-                title = `🎯 ${baseLabel} (맞춤Auto)`;
+                title = `🎯 ${baseLabel} ${SNW.I18n.t('session.autoSelectSuffix')}`;
             } else {
                 const as = SNW.I18n.t('session.autoSelect');
                 title = as.startsWith('🎯') ? as : `🎯 ${as}`;

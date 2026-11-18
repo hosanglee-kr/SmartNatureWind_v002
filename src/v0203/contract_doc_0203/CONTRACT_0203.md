@@ -353,12 +353,21 @@ startSession(type, trigger, payload) [T-async]
 - **[AUTO-5] AUTO 세션의 스냅샷 rule**: `_session.rule`은 세션 시작 시 확정. AUTO_FULL 재평가 시에도 rule은 변경 안 함 (재평가는 프리셋/스타일만).
 - **[AUTO-6] rule 전역 기본값**: `payload.rule` 부재 시 `A20_resetTriggerRuleDefault()` 결과 사용 (모든 트리거 disabled). **사용자 명시 rule 없으면 자동 정지 미작동**.
 
+### 7.25 Stage 12~13 웹 API 보안·안정화 계약 (0203_014_19 신규)
+
+- **[WEB-SEC-1] 비-`T-loop` 태스크 → `getRootSnapshot()` 규약 준수**: `_routeSystemPatchBody`, `_routeWifiConfigPatchBody`, `routeTimeSet` (`T-async`) 및 `WF10_WiFiMgr::attachWiFiEvents` (`T-sys_evt`) 내 `g_A20_config_root` 직접 접근 4건 제거, `getRootSnapshot()` 원자 스냅샷으로 일원화.
+- **[WEB-BODY-1] 단편화 Body 누적 및 누수 차단**: 전 POST/PUT/PATCH 라우트(20건)에 `beginBody`·`appendBody`·`takeBodyBuf`·`freeBody` 적용. `p_index == 0`에서 `requireApiKey` 1회 검사 + 크기 선검사(`1MB`/`G_MAX_REQUEST_BODY`), `ST_W10_BodyAccum` 단일 블록 할당으로 연결 끊김 시 `_tempObject` 자동 해제 보장.
+- **[WEB-BODY-2] 이중 `send()` 및 빈 Body Hang 방지**: `onRequest`는 `requireApiKey` + `contentLength() == 0` 분기만 처리(`/ai/cost-reset`은 기본 리셋 `200`, `/control/mode`는 form-urlencoded 지원, 기타 `400`).
+- **[WEB-UP-1] 단일 업로드/OTA 소유권 (`s_uploadOwner`)**: 동시 업로드/OTA 진입 시 `G_W10_UPLOAD_BUSY_TAG` 마킹 후 완료 핸들러에서 `429` 응답, `onDisconnect` 콜백으로 파일 핸들/`Update.abort()` 자동 정리.
+- **[WEB-STR-1] 정적 경로 상수 및 스레드 안전성**: `CRUD` ID 경로 3종 및 `Monitor` 경로 2종(`G_W10_PATH_MONITOR_EVENTS`/`EXPORT`) `constexpr const char*` 정적 상수화(임시 `String` dangling 방지), `W10_getGeminiApiKey()` `async_tcp` 단일 태스크 전용 문서화.
+
 ---
 
 ## 8. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-18** | **v3.11** | **Stage 12~13 웹 API 보안·안정화 계약 반영 (§7.25, 0203_014_19)**: `§3.1` 위반 4건 교정(`System`/`Network`/`WF10`), 단편화 body 단일 블록 누적(`WEB-BODY-1`), 이중 `send`/빈 body hang 방지(`WEB-BODY-2`), 단일 업로드/OTA 소유권 `s_uploadOwner`+`onDisconnect`(`WEB-UP-1`), `CRUD`·`Monitor` 정적 경로 상수화(`WEB-STR-1`) | Antigravity AI |
 | **2026-11-17** | **v3.10** | **FE Core·Offline 정합성 및 20종 CSS 분리 계약 현행화 (0203_014_18_02)**: `040.api.js` `OFFLINE_ROUTES`·`998.offline_0203.js` `setActive()`/타이머 만료 동기화 및 Now Playing Bar 데스크톱 사이드바/Footer 여백 규약 확인 | Antigravity AI |
 | **2026-11-14** | **v3.9** | **Phase 2 — Pause/Stop 이원화 + AUTO 위임 계약**: §3.1 `initRuleFromPayload` 화이트리스트 추가, §7.23 `PAUSE-STOP-1~9` 및 `RULE-LIVE-1` 신규 (히스테리시스·`pauseMask`·세션 스냅샷·AUTO 개입·유예·실시간 규칙 갱신), §7.24 `AUTO-1~6` 신규 (trigger 강제·base 고정·재평가·rule 스냅샷) | Antigravity AI |
 | **2026-11-10** | **v3.8** | **웹 UI/UX 인터랙션 고도화 및 컴포넌트 격리 계약 (§7.22 UI-11~UI-13, b3d06c2)**: 모니터 히스토리 2단 지그재그 타임라인/시간축 규약(UI-11), 스튜디오 하단 분리 액션바 및 AI FAB 강제 은닉 규약(UI-12), AI 어시스턴트 세그먼트 컨트롤 및 자동 신축 입력창 규약(UI-13) 명시 | Antigravity AI |

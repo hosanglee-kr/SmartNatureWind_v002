@@ -34,6 +34,7 @@ static const char* G_W10_LIVE_WS_URL =
     "google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent";
 static const char*        G_W10_LIVE_DEFAULT_VOICE = "Aoede";
 static constexpr uint32_t G_W10_LIVE_DAILY_CAP_SEC = 1800; // 30분
+static constexpr uint32_t G_W10_LIVE_WARN_SEC      = 1500; // 25분 경고
 
 // API Key 스냅샷 조회
 static const char* W10_getGeminiApiKeySnapshot() {
@@ -55,9 +56,14 @@ static const char* W10_getGeminiApiKeySnapshot() {
 void CL_W10_WebAPI::routeAILive() {
     // ==================================================
     // 1. POST /api/v001/ai/live-token
+    // [결정사항 3-A] 보안 주석 (API Key 평문 반환)
+    //  - 현재 동작: Gemini API Key를 클라이언트에 그대로 반환
+    //  - 전제: 클라이언트는 AP 모드(192.168.4.1) 직접 접속 사용자 및 CORS 보호
+    //  - FE 조치 필수: 토큰을 localStorage에 저장 금지, 메모리 전용 사용
+    //  - 향후 개선: Google ephemeral token API 지원 시 교체
     // ==================================================
     s_server->on(HTTP_API_AI_LIVE_TOKEN, HTTP_POST, [](AsyncWebServerRequest* request) {
-        if (!checkApiKey(request)) return;
+        if (!requireApiKey(request)) return;
 
         // 날짜 파라미터가 있으면 리셋 검사
         if (request->hasParam("today")) {
@@ -96,7 +102,7 @@ void CL_W10_WebAPI::routeAILive() {
         v_resDoc["capSec"]    = G_W10_LIVE_DAILY_CAP_SEC;
         v_resDoc["remainingSec"] =
             (G_W10_LIVE_DAILY_CAP_SEC > v_usage.audioSec) ? (G_W10_LIVE_DAILY_CAP_SEC - v_usage.audioSec) : 0;
-        v_resDoc["level"] = (v_usage.audioSec >= 1500) ? "warn" : "normal";
+        v_resDoc["level"] = (v_usage.audioSec >= G_W10_LIVE_WARN_SEC) ? "warn" : "normal";
 
         String v_out;
         serializeJson(v_resDoc, v_out);
@@ -110,24 +116,41 @@ void CL_W10_WebAPI::routeAILive() {
         HTTP_API_AI_LIVE_FUNC,
         HTTP_POST,
         [](AsyncWebServerRequest* request) {
-            if (!checkApiKey(request)) return;
-            if (!request->_tempObject) {
+            if (!requireApiKey(request)) return;
+            if (request->contentLength() == 0) {
                 request->send(400, "application/json", "{\"error\":\"Empty body\"}");
             }
         },
         nullptr,
         [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
-            if (!checkApiKey(request)) return;
-            if (index == 0) request->_tempObject = reinterpret_cast<void*>(1);
-            if (index + len != total) return; // 단편화 패킷 완결 대기
+            if (index == 0) {
+                if (!requireApiKey(request)) return;
+                if (total == 0) {
+                    request->send(400, "application/json", "{\"error\":\"Empty body\"}");
+                    return;
+                }
+                if (total > W10_AI_Limits::G_MAX_REQUEST_BODY) {
+                    request->send(413, "application/json", "{\"error\":\"payload too large\"}");
+                    return;
+                }
+                if (!beginBody(request, total)) {
+                    request->send(500, "application/json", "{\"error\":\"oom\"}");
+                    return;
+                }
+            }
+            if (!appendBody(request, data, len, index, total)) return;
 
-            if (len == 0 || total > W10_AI_Limits::G_MAX_REQUEST_BODY) {
-                request->send(400, "application/json", "{\"error\":\"Invalid payload size\"}");
+            size_t   v_bodyLen = 0;
+            uint8_t* v_bodyBuf = takeBodyBuf(request, v_bodyLen);
+            if (!v_bodyBuf) {
+                freeBody(request);
+                request->send(500, "application/json", "{\"error\":\"acc\"}");
                 return;
             }
 
             JsonDocument         v_inDoc;
-            DeserializationError v_err = deserializeJson(v_inDoc, data, len);
+            DeserializationError v_err = deserializeJson(v_inDoc, (const char*)v_bodyBuf, v_bodyLen);
+            freeBody(request);
             if (v_err) {
                 request->send(400, "application/json", "{\"error\":\"JSON parse error\"}");
                 return;
@@ -183,7 +206,7 @@ void CL_W10_WebAPI::routeAILive() {
     // 3. GET /api/v001/ai/live-config
     // ==================================================
     s_server->on(HTTP_API_AI_LIVE_CFG, HTTP_GET, [](AsyncWebServerRequest* request) {
-        if (!checkApiKey(request)) return;
+        if (!requireApiKey(request)) return;
 
         JsonDocument v_cfgDoc;
         v_cfgDoc["voiceName"] = G_W10_LIVE_DEFAULT_VOICE;
@@ -208,7 +231,7 @@ void CL_W10_WebAPI::routeAILive() {
     // 4. GET /api/v001/ai/cost-status
     // ==================================================
     s_server->on(HTTP_API_AI_COST_STATUS, HTTP_GET, [](AsyncWebServerRequest* request) {
-        if (!checkApiKey(request)) return;
+        if (!requireApiKey(request)) return;
 
         if (request->hasParam("today")) {
             String v_today = request->getParam("today")->value();
@@ -224,8 +247,9 @@ void CL_W10_WebAPI::routeAILive() {
         v_doc["capSec"]          = G_W10_LIVE_DAILY_CAP_SEC;
         v_doc["remainingSec"] =
             (G_W10_LIVE_DAILY_CAP_SEC > v_usage.audioSec) ? (G_W10_LIVE_DAILY_CAP_SEC - v_usage.audioSec) : 0;
-        v_doc["level"] =
-            (v_usage.audioSec >= G_W10_LIVE_DAILY_CAP_SEC) ? "cap" : ((v_usage.audioSec >= 1500) ? "warn" : "normal");
+        v_doc["level"] = (v_usage.audioSec >= G_W10_LIVE_DAILY_CAP_SEC)
+                             ? "cap"
+                             : ((v_usage.audioSec >= G_W10_LIVE_WARN_SEC) ? "warn" : "normal");
 
         String v_out;
         serializeJson(v_doc, v_out);
@@ -239,22 +263,45 @@ void CL_W10_WebAPI::routeAILive() {
         HTTP_API_AI_USAGE,
         HTTP_POST,
         [](AsyncWebServerRequest* request) {
-            if (!checkApiKey(request)) return;
-            if (!request->_tempObject) {
+            if (!requireApiKey(request)) return;
+            if (request->contentLength() == 0) {
                 request->send(400, "application/json", "{\"error\":\"Empty body\"}");
             }
         },
         nullptr,
         [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
-            if (!checkApiKey(request)) return;
-            if (index == 0) request->_tempObject = reinterpret_cast<void*>(1);
-            if (index + len != total) return; // 단편화 패킷 완결 대기
+            if (index == 0) {
+                if (!requireApiKey(request)) return;
+                if (total == 0) {
+                    request->send(400, "application/json", "{\"error\":\"Empty body\"}");
+                    return;
+                }
+                if (total > W10_AI_Limits::G_MAX_REQUEST_BODY) {
+                    request->send(413, "application/json", "{\"error\":\"payload too large\"}");
+                    return;
+                }
+                if (!beginBody(request, total)) {
+                    request->send(500, "application/json", "{\"error\":\"oom\"}");
+                    return;
+                }
+            }
+            if (!appendBody(request, data, len, index, total)) return;
+
+            size_t   v_bodyLen = 0;
+            uint8_t* v_bodyBuf = takeBodyBuf(request, v_bodyLen);
+            if (!v_bodyBuf) {
+                freeBody(request);
+                request->send(500, "application/json", "{\"error\":\"acc\"}");
+                return;
+            }
 
             JsonDocument v_inDoc;
-            if (deserializeJson(v_inDoc, data, total)) {
+            if (deserializeJson(v_inDoc, (const char*)v_bodyBuf, v_bodyLen)) {
+                freeBody(request);
                 request->send(400, "application/json", "{\"error\":\"JSON parse error\"}");
                 return;
             }
+            freeBody(request);
 
             if (v_inDoc["todayDate"].is<const char*>()) {
                 CL_N10_NvsManager::resetAIDailyUsageIfNeeded(v_inDoc["todayDate"].as<const char*>());
@@ -277,8 +324,9 @@ void CL_W10_WebAPI::routeAILive() {
             v_outDoc["capSec"]          = G_W10_LIVE_DAILY_CAP_SEC;
             v_outDoc["remainingSec"] =
                 (G_W10_LIVE_DAILY_CAP_SEC > v_usage.audioSec) ? (G_W10_LIVE_DAILY_CAP_SEC - v_usage.audioSec) : 0;
-            v_outDoc["level"] =
-                (v_usage.audioSec >= G_W10_LIVE_DAILY_CAP_SEC) ? "cap" : ((v_usage.audioSec >= 1500) ? "warn" : "normal");
+            v_outDoc["level"] = (v_usage.audioSec >= G_W10_LIVE_DAILY_CAP_SEC)
+                                    ? "cap"
+                                    : ((v_usage.audioSec >= G_W10_LIVE_WARN_SEC) ? "warn" : "normal");
 
             String v_out;
             serializeJson(v_outDoc, v_out);
@@ -292,15 +340,44 @@ void CL_W10_WebAPI::routeAILive() {
         HTTP_API_AI_COST_RESET,
         HTTP_POST,
         [](AsyncWebServerRequest* request) {
-            if (!checkApiKey(request)) return;
-            CL_N10_NvsManager::forceResetAIDailyUsage("");
-            request->send(200, "application/json", "{\"success\":true}");
+            if (!requireApiKey(request)) return;
+            if (request->contentLength() == 0) {
+                CL_N10_NvsManager::forceResetAIDailyUsage("");
+                request->send(200, "application/json", "{\"success\":true}");
+            }
         },
         nullptr,
         [](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
-            if (!checkApiKey(request)) return;
+            if (index == 0) {
+                if (!requireApiKey(request)) return;
+                if (total == 0) {
+                    CL_N10_NvsManager::forceResetAIDailyUsage("");
+                    request->send(200, "application/json", "{\"success\":true}");
+                    return;
+                }
+                if (total > W10_AI_Limits::G_MAX_REQUEST_BODY) {
+                    request->send(413, "application/json", "{\"error\":\"payload too large\"}");
+                    return;
+                }
+                if (!beginBody(request, total)) {
+                    request->send(500, "application/json", "{\"error\":\"oom\"}");
+                    return;
+                }
+            }
+            if (!appendBody(request, data, len, index, total)) return;
+
+            size_t   v_bodyLen = 0;
+            uint8_t* v_bodyBuf = takeBodyBuf(request, v_bodyLen);
+            if (!v_bodyBuf) {
+                freeBody(request);
+                request->send(500, "application/json", "{\"error\":\"acc\"}");
+                return;
+            }
+
             JsonDocument v_inDoc;
-            deserializeJson(v_inDoc, data, len);
+            deserializeJson(v_inDoc, (const char*)v_bodyBuf, v_bodyLen);
+            freeBody(request);
+
             const char* v_today = v_inDoc["todayDate"] | "";
             CL_N10_NvsManager::forceResetAIDailyUsage(v_today);
             request->send(200, "application/json", "{\"success\":true}");

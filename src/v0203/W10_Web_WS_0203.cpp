@@ -46,6 +46,11 @@
 static bool _wsHandshakeAuth(AsyncWebServerRequest* p_request) {
     if (!p_request) return false;
 
+    // [Stage 13] W10_USE_API_KEY=0 → 컴파일 타임 개방 모드
+#if defined(W10_USE_API_KEY) && (W10_USE_API_KEY == 0)
+    return true;
+#endif
+
     // [B-2] async_tcp → getRootSnapshot 필수 (CONTRACT §3.1)
     //  - 이전: reloadAll 중 system 포인터 swap 시 dangling 참조 위험
     //  - 이후: 원자 스냅샷 + 즉시 키 문자열 로컬 복사

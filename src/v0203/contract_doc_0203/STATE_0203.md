@@ -91,6 +91,7 @@
 | `_session.rule` | T-async (`initRuleFrom*`) | T-loop (`checkTriggers`), T-async (`exportStateJson_v02`) | `CT10::s_stateMutex` | **세션 스냅샷 (세션 중 불변)** |
 | `triggerRt.pauseBypassUntilMs` | T-async (`resumeSession`) | T-loop (`checkTriggers`) | `CT10::s_stateMutex` | **수동 재개 1시간 유예 만료 시각** |
 | `_session.autoSwitchReason` | T-loop (`tickAutoComfort`) | T-async (`exportStateJson_v02`) | `CT10::s_stateMutex` | **AUTO 프리셋/스타일 전환 사유** |
+| `s_uploadOwner` (W10) | T-async (`routeUpload`, `routeUpdate`, `onDisconnect`) | T-async (`routeUpload`, `routeUpdate`) | T-async 단일 태스크 | **업로드/OTA 단일 세션 점유 포인터 (`429` busy 및 비정상 종료 시 자동 해제)** |
 
 ---
 
@@ -476,6 +477,7 @@ pauseMask == 0 일 때만 ENV_PAUSED 해소 (완전 재개)
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-18** | **v3.9** | **Stage 12~13 웹 API 상태 소유권 현행화 (0203_014_19)**: §1 `s_uploadOwner` 단일 업로드/OTA 점유 상태(`onDisconnect` 자동 해제) 추가, `/ai/execute-action` 응답 `session.type`(숫자)+`typeName`(문자열) 계약 통일 | Antigravity AI |
 | **2026-11-17** | **v3.8** | **FE Core·Offline 클라이언트 상태 정합성 반영 (0203_014_18_02)**: `SNW.Offline.active`/`setActive()` 단일 진실 소스, `runtime.control.profileMode` 통합, `runtime.timer` 만료 시 `AUTOOFF_STOPPED(5)`/`AUTOOFF_TIMER(9)` 전이, `snw:levelchange` 상태 동기화 | Antigravity AI |
 | **2026-11-14** | **v3.7** | **Phase 2 — Pause/Stop 이원화 + ENV_PAUSED 통합**: §1 `runCtx.pauseReason`/`triggerRt.pauseMask`/`_session.rule`/`pauseBypassUntilMs`/`autoSwitchReason` 필드 추가, §2.1 `ENV_PAUSED(7)` 신규 & `MOTION_BLOCKED` 제거, §2.2 `checkTriggers` 우선순위 재정의, §7.4 신규 (Pause/Stop reason enum, `pauseMask` 래치, `autoOffRt`→`triggerRt` 이관) | Antigravity AI |
 | **2026-11-10** | **v3.6** | **웹 UI/UX 클라이언트 상태 관리 및 히스토리/스튜디오 격리 규정 (b3d06c2)**: 모니터 '히스토리' 탭의 타임라인 레인 분기(lane 0/1) 순수 뷰 상태 격리, Wind Studio 진입 시 바텀바 뷰 상태와 AI FAB 토글 상태 무결성 확인, `SNW.CFG.LS_KEY` 내 AI 키 통합에 따른 단일 클라이언트 상태 소유권 보장 | Antigravity AI |

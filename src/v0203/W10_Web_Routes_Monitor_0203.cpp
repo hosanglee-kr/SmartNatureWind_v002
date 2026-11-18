@@ -1,13 +1,14 @@
 #include "W10_Web_0203.h"
 #include "CT10_Monitor_0203.h"
 
+// [P-22] 정적 경로 상수 (임시 String .c_str() dangling 방지)
+static constexpr const char* G_W10_PATH_MONITOR_EVENTS = "/api/v001/monitor/events";
+static constexpr const char* G_W10_PATH_MONITOR_EXPORT = "/api/v001/monitor/export";
+
 void CL_W10_WebAPI::routeMonitor() {
     // 1. /api/v001/monitor (기본 실시간 쿼리)
     s_server->on(W10_Const::HTTP_API_MONITOR, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         if (!CL_MON_Monitor::isEnabled()) {
             p_request->send(503, "application/json", "{\"error\":\"monitor not enabled\"}");
             return;
@@ -36,63 +37,51 @@ void CL_W10_WebAPI::routeMonitor() {
     });
 
     // 2. [MON-E] GET /api/v001/monitor/events?days=7
-    s_server->on((String(W10_Const::HTTP_API_MONITOR) + "/events").c_str(), HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
-        uint8_t days = 7;
-        if (p_request->hasParam("days")) days = (uint8_t)p_request->getParam("days")->value().toInt();
-        JsonDocument v_doc;
-        CL_MON_Monitor::queryPastEvents(days, v_doc);
-        sendJson(p_request, v_doc);
-    });
+        s_server->on(G_W10_PATH_MONITOR_EVENTS, HTTP_GET, [](AsyncWebServerRequest* p_request) {
+            if (!requireApiKey(p_request)) return;
+            uint8_t days = 7;
+            if (p_request->hasParam("days")) days = (uint8_t)p_request->getParam("days")->value().toInt();
+            JsonDocument v_doc;
+            CL_MON_Monitor::queryPastEvents(days, v_doc);
+            sendJson(p_request, v_doc);
+        });
 
     // 3. [MON-F] GET /api/v001/monitor/export?type=wind&range=30m&format=csv[&all=1]
-    s_server->on((String(W10_Const::HTTP_API_MONITOR) + "/export").c_str(), HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
-        const char* type  = p_request->hasParam("type") ? p_request->getParam("type")->value().c_str() : "wind";
-        const char* range = p_request->hasParam("range") ? p_request->getParam("range")->value().c_str() : "30m";
-        bool        all   = p_request->hasParam("all") && p_request->getParam("all")->value() == "1";
+            s_server->on(G_W10_PATH_MONITOR_EXPORT, HTTP_GET, [](AsyncWebServerRequest* p_request) {
+                if (!requireApiKey(p_request)) return;
+                const char* type = p_request->hasParam("type") ? p_request->getParam("type")->value().c_str() : "wind";
+                const char* range = p_request->hasParam("range") ? p_request->getParam("range")->value().c_str() : "30m";
+                bool all = p_request->hasParam("all") && p_request->getParam("all")->value() == "1";
 
-        String csv;
-        CL_MON_Monitor::exportCsv(type, range, all, csv);
+                String csv;
+                CL_MON_Monitor::exportCsv(type, range, all, csv);
 
-        auto*  resp     = p_request->beginResponse(200, "text/csv; charset=utf-8", csv);
-        String filename = String(type) + "_" + (all ? "all" : range) + ".csv";
-        resp->addHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
-        p_request->send(resp);
-    });
+                auto*  resp     = p_request->beginResponse(200, "text/csv; charset=utf-8", csv);
+                String filename = String(type) + "_" + (all ? "all" : range) + ".csv";
+                resp->addHeader("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+                p_request->send(resp);
+            });
 
-    // 4. [Stage 7] GET /api/v001/monitor/timeline?since=<epoch>
-    s_server->on(W10_Const::HTTP_API_MONITOR_TIMELINE, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
-        uint32_t since = 0;
-        if (p_request->hasParam("since")) {
-            since = (uint32_t)p_request->getParam("since")->value().toInt();
-        }
-        JsonDocument doc;
-        CL_MON_Monitor::queryTimeline(since, doc);
-        sendJson(p_request, doc);
-    });
+            // 4. [Stage 7] GET /api/v001/monitor/timeline?since=<epoch>
+            s_server->on(W10_Const::HTTP_API_MONITOR_TIMELINE, HTTP_GET, [](AsyncWebServerRequest* p_request) {
+                if (!requireApiKey(p_request)) return;
+                uint32_t since = 0;
+                if (p_request->hasParam("since")) {
+                    since = (uint32_t)p_request->getParam("since")->value().toInt();
+                }
+                JsonDocument doc;
+                CL_MON_Monitor::queryTimeline(since, doc);
+                sendJson(p_request, doc);
+            });
 
-    // 5. [Stage 7] GET /api/v001/monitor/session-summary?from=<epoch>&to=<epoch>
-    s_server->on(W10_Const::HTTP_API_MONITOR_SESSION_SUMMARY, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
-        uint32_t from = 0, to = 0;
-        if (p_request->hasParam("from")) from = (uint32_t)p_request->getParam("from")->value().toInt();
-        if (p_request->hasParam("to"))   to   = (uint32_t)p_request->getParam("to")->value().toInt();
-        JsonDocument doc;
-        CL_MON_Monitor::querySessionSummary(from, to, doc);
-        sendJson(p_request, doc);
-    });
+            // 5. [Stage 7] GET /api/v001/monitor/session-summary?from=<epoch>&to=<epoch>
+            s_server->on(W10_Const::HTTP_API_MONITOR_SESSION_SUMMARY, HTTP_GET, [](AsyncWebServerRequest* p_request) {
+                if (!requireApiKey(p_request)) return;
+                uint32_t from = 0, to = 0;
+                if (p_request->hasParam("from")) from = (uint32_t)p_request->getParam("from")->value().toInt();
+                if (p_request->hasParam("to")) to = (uint32_t)p_request->getParam("to")->value().toInt();
+                JsonDocument doc;
+                CL_MON_Monitor::querySessionSummary(from, to, doc);
+                sendJson(p_request, doc);
+            });
 }

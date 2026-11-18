@@ -36,9 +36,12 @@
 
 static unsigned long s_lastGeminiCallMs = 0;
 
-// ------------------------------------------------------
-// Gemini API Key 조회 (스냅샷 안전 조회)
-// ------------------------------------------------------
+/**
+ * [스레드 안전성] static buffer 반환 — async_tcp 단일 태스크 컨텍스트 전용.
+ *  - 호출자는 반환 포인터를 "즉시 사용 후 폐기"해야 함
+ *  - 다른 태스크(loop 등)에서 동시 호출 시 덮어쓰기 위험
+ *  - 현재 모든 호출부는 async_tcp 컨텍스트에서 즉시 사용 (v_http.addHeader 등)
+ */
 static const char* W10_getGeminiApiKey() {
     ST_A20_ConfigRoot_t v_snap;
     CL_C10_ConfigManager::getRootSnapshot(v_snap);
@@ -70,14 +73,23 @@ static String W10_callGeminiApi(const char* p_body, size_t p_len, int& r_httpCod
     }
 
     WiFiClientSecure v_client;
-    v_client.setInsecure(); // ESP32 제약: 인증서 검증 생략
+    // ======================================================
+    // [결정사항 2-A] setInsecure 유지 + 문서화
+    //  - 사유: LittleFS 공간 제약 + 인증서 갱신 주기 운영 부담
+    //  - 위험: MITM 공격 시 Gemini API Key 탈취 가능
+    //  - 완화:
+    //    1) API Key를 URL이 아닌 헤더로 이동 (x-goog-api-key, 로그 노출 제거)
+    //    2) 클라이언트는 사내 WiFi(AP 모드)만 사용 권장
+    //    3) 향후 인증서 탑재 시 loadCACert()로 교체 예정
+    // ======================================================
+    v_client.setInsecure(); // [결정 2-A] 문서화된 예외
     v_client.setTimeout(G_W10_GEMINI_TIMEOUT / 1000);
 
     HTTPClient v_http;
     v_http.setTimeout(G_W10_GEMINI_TIMEOUT);
 
-    String v_url  = "https://" G_W10_GEMINI_HOST "/v1beta/models/gemini-2.5-flash:generateContent?key=";
-    v_url        += v_apiKey;
+    // [신규 P0] API Key를 URL이 아닌 헤더로 (로그 노출 + MITM 위험 제거)
+    String v_url = "https://" G_W10_GEMINI_HOST "/v1beta/models/gemini-2.5-flash:generateContent";
 
     if (!v_http.begin(v_client, v_url)) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10][Gemini] HTTPClient begin failed");
@@ -86,6 +98,7 @@ static String W10_callGeminiApi(const char* p_body, size_t p_len, int& r_httpCod
     }
 
     v_http.addHeader("Content-Type", "application/json");
+    v_http.addHeader("x-goog-api-key", v_apiKey);
     v_http.addHeader("Connection", "close");
 
     int v_code = v_http.POST((uint8_t*)p_body, p_len);
@@ -290,32 +303,53 @@ void CL_W10_WebAPI::routeGeminiProxy() {
     s_server->on(
         W10_Const::HTTP_API_GEMINI_PROXY,
         HTTP_POST,
-        [](AsyncWebServerRequest* p_request) {},
+        [](AsyncWebServerRequest* p_request) {
+            if (!requireApiKey(p_request)) return;
+            if (p_request->contentLength() == 0) {
+                p_request->send(400, "application/json", "{\"error\":\"Empty body\"}");
+            }
+        },
         nullptr,
         [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            // [신규 P0] 단편화 body 누적 (p_index==0에서 인증 + 크기 사전 검사)
+            if (p_index == 0) {
+                if (!requireApiKey(p_request)) return;
+                if (p_total == 0) {
+                    p_request->send(400, "application/json", "{\"error\":\"Empty body\"}");
+                    return;
+                }
+                if (p_total > W10_AI_Limits::G_MAX_REQUEST_BODY) {
+                    p_request->send(413, "application/json", "{\"error\":\"payload too large\"}");
+                    return;
+                }
+                if (!beginBody(p_request, p_total)) {
+                    p_request->send(500, "application/json", "{\"error\":\"oom\"}");
+                    return;
+                }
+            }
+            if (!appendBody(p_request, p_data, p_len, p_index, p_total)) return;
+
+            size_t   v_bodyLen = 0;
+            uint8_t* v_bodyBuf = takeBodyBuf(p_request, v_bodyLen);
+            if (!v_bodyBuf) {
+                freeBody(p_request);
+                p_request->send(500, "application/json", "{\"error\":\"acc\"}");
                 return;
             }
-
-            if (p_index + p_len != p_total) return;
 
             // 레이트 리밋 검사 (W10_AI_Limits::G_RATE_LIMIT_MS)
             unsigned long v_now = millis();
             if (v_now - s_lastGeminiCallMs < G_W10_GEMINI_RATE_LIMIT_MS) {
+                freeBody(p_request);
                 p_request->send(429, "application/json", "{\"error\":\"rate limited, please wait a few seconds\"}");
                 return;
             }
             s_lastGeminiCallMs = v_now;
 
-            if (p_len > W10_AI_Limits::G_MAX_REQUEST_BODY) {
-                p_request->send(413, "application/json", "{\"error\":\"payload too large\"}");
-                return;
-            }
-
             JsonDocument v_doc;
-            auto         v_err = deserializeJson(v_doc, (const char*)p_data, p_len);
+            auto         v_err = deserializeJson(v_doc, (const char*)v_bodyBuf, v_bodyLen);
             if (v_err) {
+                freeBody(p_request);
                 p_request->send(400, "application/json", "{\"error\":\"invalid JSON\"}");
                 return;
             }
@@ -323,12 +357,14 @@ void CL_W10_WebAPI::routeGeminiProxy() {
             // 분기 1: 자연어 제어 모드 (message 필드 존재 시)
             if (v_doc["message"].is<const char*>()) {
                 handleNaturalLanguageTurn(p_request, v_doc);
+                freeBody(p_request);
                 return;
             }
 
-            // 분기 2: 레거시 프록시 모드 (기존 투명 중계)
+            // 분기 2: 레거시 프록시 모드 (누적 버퍼 재사용)
             int    v_httpCode = 0;
-            String v_resp     = W10_callGeminiApi((const char*)p_data, p_len, v_httpCode);
+            String v_resp     = W10_callGeminiApi((const char*)v_bodyBuf, v_bodyLen, v_httpCode);
+            freeBody(p_request);
 
             if (v_httpCode == 200) {
                 sendText(p_request, v_resp, 200, "application/json; charset=utf-8");
@@ -351,18 +387,42 @@ void CL_W10_WebAPI::routeAIExecuteAction() {
     s_server->on(
         W10_Const::HTTP_API_GEMINI_EXECUTE,
         HTTP_POST,
-        [](AsyncWebServerRequest* p_request) {},
+        [](AsyncWebServerRequest* p_request) {
+            if (!requireApiKey(p_request)) return;
+            if (p_request->contentLength() == 0) {
+                p_request->send(400, "application/json", "{\"error\":\"Empty body\"}");
+            }
+        },
         nullptr,
         [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            if (p_index == 0) {
+                if (!requireApiKey(p_request)) return;
+                if (p_total == 0) {
+                    p_request->send(400, "application/json", "{\"error\":\"Empty body\"}");
+                    return;
+                }
+                if (p_total > W10_AI_Limits::G_MAX_REQUEST_BODY) {
+                    p_request->send(413, "application/json", "{\"error\":\"payload too large\"}");
+                    return;
+                }
+                if (!beginBody(p_request, p_total)) {
+                    p_request->send(500, "application/json", "{\"error\":\"oom\"}");
+                    return;
+                }
+            }
+            if (!appendBody(p_request, p_data, p_len, p_index, p_total)) return;
+
+            size_t   v_bodyLen = 0;
+            uint8_t* v_bodyBuf = takeBodyBuf(p_request, v_bodyLen);
+            if (!v_bodyBuf) {
+                freeBody(p_request);
+                p_request->send(500, "application/json", "{\"error\":\"acc\"}");
                 return;
             }
 
-            if (p_index + p_len != p_total) return;
-
             JsonDocument v_in;
-            if (deserializeJson(v_in, (const char*)p_data, p_len)) {
+            if (deserializeJson(v_in, (const char*)v_bodyBuf, v_bodyLen)) {
+                freeBody(p_request);
                 p_request->send(400, "application/json", "{\"error\":\"invalid JSON\"}");
                 return;
             }
@@ -372,6 +432,7 @@ void CL_W10_WebAPI::routeAIExecuteAction() {
 
             String v_res = CT10_AI::executeAIAction(v_name, v_args);
             bool   v_ok  = (v_res == "ok" || v_res.startsWith("{"));
+            freeBody(p_request);
 
             JsonDocument v_out;
             v_out["ok"]          = v_ok;
@@ -379,9 +440,11 @@ void CL_W10_WebAPI::routeAIExecuteAction() {
             v_out["result"]      = v_res;
             v_out["_speechHint"] = CT10_AI::buildSpeechHint(v_name, v_args, v_ok);
 
+            // [신규 P1] 세션 계약 통일 (routeGeminiProxy와 동일: type=숫자 + typeName=문자열)
             ST_CT10_SessionContext_t v_s    = CL_CT10_ControlManager::getSessionSnapshot();
             JsonObject               v_sess = v_out["session"].to<JsonObject>();
-            v_sess["type"]                  = (v_s.type == EN_CT10_SESSION_FIXED)      ? "FIXED"
+            v_sess["type"]                  = (uint8_t)v_s.type;
+            v_sess["typeName"]              = (v_s.type == EN_CT10_SESSION_FIXED)      ? "FIXED"
                                               : (v_s.type == EN_CT10_SESSION_PRESET)   ? "PRESET"
                                               : (v_s.type == EN_CT10_SESSION_PLAYLIST) ? "PLAYLIST"
                                                                                        : "NONE";

@@ -25,15 +25,12 @@ void CL_W10_WebAPI::routeComfort() {
     // GET /api/v001/comfort
     // ======================================================
     s_server->on(W10_Const::HTTP_API_COMFORT, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
-        float v_di       = CL_CT10_ControlManager::getDiscomfortIndex();
-        uint8_t v_level  = CL_CT10_ControlManager::getComfortLevel();
-        float v_tempC    = CL_CT10_ControlManager::getCurrentTemperatureMock();
-        float v_hum      = CL_CT10_ControlManager::getCurrentHumidityMock();
+        float   v_di    = CL_CT10_ControlManager::getDiscomfortIndex();
+        uint8_t v_level = CL_CT10_ControlManager::getComfortLevel();
+        float   v_tempC = CL_CT10_ControlManager::getCurrentTemperatureMock();
+        float   v_hum   = CL_CT10_ControlManager::getCurrentHumidityMock();
 
         JsonDocument v_doc;
         v_doc["di"]       = roundf(v_di * 10.0f) / 10.0f;
@@ -43,15 +40,25 @@ void CL_W10_WebAPI::routeComfort() {
 
         const char* v_levelText = "쾌적";
         switch (v_level) {
-            case 0: v_levelText = "쾌적"; break;
-            case 1: v_levelText = "약간 덥네요"; break;
-            case 2: v_levelText = "끈적이는 날씨"; break;
-            case 3: v_levelText = "숨이 막혀요"; break;
-            default: v_levelText = "쾌적"; break;
+            case 0:
+                v_levelText = "쾌적";
+                break;
+            case 1:
+                v_levelText = "약간 덥네요";
+                break;
+            case 2:
+                v_levelText = "끈적이는 날씨";
+                break;
+            case 3:
+                v_levelText = "숨이 막혀요";
+                break;
+            default:
+                v_levelText = "쾌적";
+                break;
         }
         v_doc["levelText"] = v_levelText;
 
-        JsonObject v_rec = v_doc["recommend"].to<JsonObject>();
+        JsonObject v_rec    = v_doc["recommend"].to<JsonObject>();
         v_rec["profileId"]  = CL_CT10_ControlManager::getRecommendedProfileId();
         v_rec["presetCode"] = CL_CT10_ControlManager::getRecommendedPresetCode();
         v_rec["styleCode"]  = CL_CT10_ControlManager::getRecommendedStyleCode();
@@ -62,39 +69,66 @@ void CL_W10_WebAPI::routeComfort() {
     // ======================================================
     // POST /api/v001/comfort/auto — Comfort 자동 모드 On/Off 설정
     // ======================================================
-    s_server->on(W10_Const::HTTP_API_COMFORT_AUTO, HTTP_POST, [](AsyncWebServerRequest* p_request) {}, NULL,
-    [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+            s_server->on(
+                W10_Const::HTTP_API_COMFORT_AUTO,
+                HTTP_POST,
+                [](AsyncWebServerRequest* p_request) {
+                    if (!requireApiKey(p_request)) return;
+                    if (p_request->contentLength() == 0) {
+                        p_request->send(400, "application/json", "{\"error\":\"BAD_REQUEST\"}");
+                    }
+                },
+                NULL,
+                [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+                    if (p_index == 0) {
+                        if (!requireApiKey(p_request)) return;
+                        if (p_total == 0) {
+                            p_request->send(400, "application/json", "{\"error\":\"BAD_REQUEST\"}");
+                            return;
+                        }
+                        if (p_total > (1024 * 1024)) {
+                            p_request->send(413, "application/json", "{\"error\":\"payload too large\"}");
+                            return;
+                        }
+                        if (!beginBody(p_request, p_total)) {
+                            p_request->send(500, "application/json", "{\"error\":\"oom\"}");
+                            return;
+                        }
+                    }
+                    if (!appendBody(p_request, p_data, p_len, p_index, p_total)) return;
 
-        JsonDocument v_doc;
-        DeserializationError v_err = deserializeJson(v_doc, p_data, p_len);
-        if (v_err || !v_doc["enabled"].is<bool>()) {
-            p_request->send(400, "application/json", "{\"error\":\"BAD_REQUEST\"}");
-            return;
-        }
+                    size_t   v_bodyLen = 0;
+                    uint8_t* v_bodyBuf = takeBodyBuf(p_request, v_bodyLen);
+                    if (!v_bodyBuf) {
+                        freeBody(p_request);
+                        p_request->send(500, "application/json", "{\"error\":\"acc\"}");
+                        return;
+                    }
 
-        bool v_en = v_doc["enabled"].as<bool>();
-        CL_CT10_ControlManager::setAutoComfort(v_en);
+                    JsonDocument v_doc;
+                    bool         v_parsed = parseJsonBody(p_request, v_bodyBuf, v_bodyLen, v_doc);
+                    freeBody(p_request);
+                    if (!v_parsed || !v_doc["enabled"].is<bool>()) {
+                        p_request->send(400, "application/json", "{\"error\":\"BAD_REQUEST\"}");
+                        return;
+                    }
 
-        JsonDocument v_resp;
-        v_resp["success"]     = true;
-        v_resp["autoComfort"] = v_en;
-        v_resp["remainSec"]   = CL_CT10_ControlManager::getAutoComfortRemainSec();
+                    bool v_en             = v_doc["enabled"].as<bool>();
+                    CL_CT10_ControlManager::setAutoComfort(v_en);
 
-        sendJson(p_request, v_resp, 200);
-    });
+            JsonDocument v_resp;
+            v_resp["success"]     = true;
+            v_resp["autoComfort"] = v_en;
+            v_resp["remainSec"]   = CL_CT10_ControlManager::getAutoComfortRemainSec();
+
+            sendJson(p_request, v_resp, 200);
+        });
 
     // ======================================================
     // GET /api/v001/comfort/auto — Comfort 자동 모드 상태 조회
     // ======================================================
     s_server->on(W10_Const::HTTP_API_COMFORT_AUTO, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
         JsonDocument v_resp;
         v_resp["autoComfort"] = CL_CT10_ControlManager::isAutoComfortEnabled();
@@ -103,4 +137,3 @@ void CL_W10_WebAPI::routeComfort() {
         sendJson(p_request, v_resp, 200);
     });
 }
-

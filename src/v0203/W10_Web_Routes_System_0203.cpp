@@ -25,38 +25,62 @@
 #include "TM10_TimeMg_0203.h"
 
 // ======================================================
-// [F-2] routeSystem POST/PATCH 공통 헬퍼
-//  - 중복 람다 본문 1개로 통합
-//  - public 정적 메서드(checkApiKey/parseJsonBody/sendJson)만 참조
+// [Stage 13 P0] CONTRACT §3.1 준수: async_tcp → getRootSnapshot
+//  - 이전: g_A20_config_root.system 직접 참조 → reloadAll swap 시 dangling crash
+//  - 이후: 원자 스냅샷 + body 누적 버퍼 + 빈 body/다중 청크 보완
 // ======================================================
 static void _routeSystemPatchBody(AsyncWebServerRequest* p_request,
                                   uint8_t* p_data, size_t p_len,
                                   size_t p_index, size_t p_total) {
-    if (!CL_W10_WebAPI::checkApiKey(p_request)) {
-        p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+    if (p_index == 0) {
+        if (!CL_W10_WebAPI::requireApiKey(p_request)) return;
+        if (p_total == 0) {
+            p_request->send(400, "application/json", "{\"error\":\"empty body\"}");
+            return;
+        }
+        if (p_total > (1024 * 1024)) {
+            p_request->send(413, "application/json", "{\"error\":\"payload too large\"}");
+            return;
+        }
+        if (!CL_W10_WebAPI::beginBody(p_request, p_total)) {
+            p_request->send(500, "application/json", "{\"error\":\"oom\"}");
+            return;
+        }
+    }
+    if (!CL_W10_WebAPI::appendBody(p_request, p_data, p_len, p_index, p_total)) return;
+
+    size_t   v_bodyLen = 0;
+    uint8_t* v_bodyBuf = CL_W10_WebAPI::takeBodyBuf(p_request, v_bodyLen);
+    if (!v_bodyBuf) {
+        CL_W10_WebAPI::freeBody(p_request);
+        p_request->send(500, "application/json", "{\"error\":\"acc\"}");
         return;
     }
-    if (p_index + p_len != p_total) return;
 
     JsonDocument v_doc;
-    if (!CL_W10_WebAPI::parseJsonBody(p_request, p_data, p_len, v_doc)) {
+    if (!CL_W10_WebAPI::parseJsonBody(p_request, v_bodyBuf, v_bodyLen, v_doc)) {
+        CL_W10_WebAPI::freeBody(p_request);
         p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
         return;
     }
+    CL_W10_WebAPI::freeBody(p_request);
+
+    ST_A20_ConfigRoot_t v_snap;
+    CL_C10_ConfigManager::getRootSnapshot(v_snap);
 
     bool v_changed = false;
-    if (g_A20_config_root.system) {
-        v_changed = CL_C10_ConfigManager::patchSystemFromJson(*g_A20_config_root.system, v_doc);
+    if (v_snap.system) {
+        v_changed = CL_C10_ConfigManager::patchSystemFromJson(*v_snap.system, v_doc);
         if (v_changed) {
-            CL_W10_WebAPI::applySystemRuntimeFromConfig(*g_A20_config_root.system);
+            CL_W10_WebAPI::applySystemRuntimeFromConfig(*v_snap.system);
         }
     }
 
     // ======================================================
     // [N-2] timeCfg 변경 시 TM10 재적용 (재부팅 없이 반영)
     // ======================================================
-    if (v_changed && !v_doc["timeCfg"].isNull() && g_A20_config_root.system) {
-        TM10_applyTimeConfigFromSystem(*g_A20_config_root.system);
+    if (v_changed && !v_doc["timeCfg"].isNull() && v_snap.system) {
+        TM10_applyTimeConfigFromSystem(*v_snap.system);
         TM10_requestTimeSync();
         CL_D10_Logger::log(EN_L10_LOG_INFO,
                            "[W10] timeCfg changed → TM10 reapplied (NTP sync requested)");
@@ -72,10 +96,7 @@ static void _routeSystemPatchBody(AsyncWebServerRequest* p_request,
 // --------------------------------------------------
 void CL_W10_WebAPI::routeVersion() {
     s_server->on(W10_Const::HTTP_API_VERSION, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         JsonDocument v_doc;
         v_doc["module"] = "SmartNatureWind";
         v_doc["fw"]     = A20_Const::FW_VERSION;
@@ -94,10 +115,7 @@ void CL_W10_WebAPI::routeVersion() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeState() {
     s_server->on(W10_Const::HTTP_API_STATE, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         if (!s_control) {
             p_request->send(500, "application/json", "{\"error\":\"control not ready\"}");
             return;
@@ -115,10 +133,7 @@ void CL_W10_WebAPI::routeState() {
 void CL_W10_WebAPI::routeSystem() {
     // GET
     s_server->on(W10_Const::HTTP_API_SYSTEM, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
         JsonDocument v_doc;
         ST_A20_ConfigRoot_t v_snap;
@@ -130,10 +145,16 @@ void CL_W10_WebAPI::routeSystem() {
     });
 
     // [F-2] POST + PATCH 공통 헬퍼
+    auto v_emptyBodyCheck = [](AsyncWebServerRequest* p_request) {
+        if (!requireApiKey(p_request)) return;
+        if (p_request->contentLength() == 0) {
+            p_request->send(400, "application/json", "{\"error\":\"empty body\"}");
+        }
+    };
     s_server->on(W10_Const::HTTP_API_SYSTEM, HTTP_POST,
-                 [](AsyncWebServerRequest*) {}, nullptr, _routeSystemPatchBody);
+                 v_emptyBodyCheck, nullptr, _routeSystemPatchBody);
     s_server->on(W10_Const::HTTP_API_SYSTEM, HTTP_PATCH,
-                 [](AsyncWebServerRequest*) {}, nullptr, _routeSystemPatchBody);
+                 v_emptyBodyCheck, nullptr, _routeSystemPatchBody);
 }
 
 // ======================================================
@@ -142,17 +163,38 @@ void CL_W10_WebAPI::routeSystem() {
 static void _routeMotionPatchBody(AsyncWebServerRequest* p_request,
                                   uint8_t* p_data, size_t p_len,
                                   size_t p_index, size_t p_total) {
-    if (!CL_W10_WebAPI::checkApiKey(p_request)) {
-        p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+    if (p_index == 0) {
+        if (!CL_W10_WebAPI::requireApiKey(p_request)) return;
+        if (p_total == 0) {
+            p_request->send(400, "application/json", "{\"error\":\"empty body\"}");
+            return;
+        }
+        if (p_total > (1024 * 1024)) {
+            p_request->send(413, "application/json", "{\"error\":\"payload too large\"}");
+            return;
+        }
+        if (!CL_W10_WebAPI::beginBody(p_request, p_total)) {
+            p_request->send(500, "application/json", "{\"error\":\"oom\"}");
+            return;
+        }
+    }
+    if (!CL_W10_WebAPI::appendBody(p_request, p_data, p_len, p_index, p_total)) return;
+
+    size_t   v_bodyLen = 0;
+    uint8_t* v_bodyBuf = CL_W10_WebAPI::takeBodyBuf(p_request, v_bodyLen);
+    if (!v_bodyBuf) {
+        CL_W10_WebAPI::freeBody(p_request);
+        p_request->send(500, "application/json", "{\"error\":\"acc\"}");
         return;
     }
-    if (p_index + p_len != p_total) return;
 
     JsonDocument v_doc;
-    if (!CL_W10_WebAPI::parseJsonBody(p_request, p_data, p_len, v_doc)) {
+    if (!CL_W10_WebAPI::parseJsonBody(p_request, v_bodyBuf, v_bodyLen, v_doc)) {
+        CL_W10_WebAPI::freeBody(p_request);
         p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
         return;
     }
+    CL_W10_WebAPI::freeBody(p_request);
 
     // [B-2] async_tcp → 스냅샷 필수
     ST_A20_ConfigRoot_t v_snap;
@@ -177,10 +219,7 @@ static void _routeMotionPatchBody(AsyncWebServerRequest* p_request,
 void CL_W10_WebAPI::routeMotion() {
     // GET
     s_server->on(W10_Const::HTTP_API_MOTION, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
         JsonDocument v_doc;
         ST_A20_ConfigRoot_t v_snap;
@@ -192,10 +231,16 @@ void CL_W10_WebAPI::routeMotion() {
     });
 
     // [B-6] POST + PATCH 공통 헬퍼 (60→1)
+    auto v_emptyBodyCheck = [](AsyncWebServerRequest* p_request) {
+        if (!requireApiKey(p_request)) return;
+        if (p_request->contentLength() == 0) {
+            p_request->send(400, "application/json", "{\"error\":\"empty body\"}");
+        }
+    };
     s_server->on(W10_Const::HTTP_API_MOTION, HTTP_POST,
-                 [](AsyncWebServerRequest*) {}, nullptr, _routeMotionPatchBody);
+                 v_emptyBodyCheck, nullptr, _routeMotionPatchBody);
     s_server->on(W10_Const::HTTP_API_MOTION, HTTP_PATCH,
-                 [](AsyncWebServerRequest*) {}, nullptr, _routeMotionPatchBody);
+                 v_emptyBodyCheck, nullptr, _routeMotionPatchBody);
 }
 
 
@@ -204,10 +249,7 @@ void CL_W10_WebAPI::routeMotion() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeDiag() {
     s_server->on(W10_Const::HTTP_API_DIAG, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         JsonDocument v_doc;
         v_doc["heap"]     = ESP.getFreeHeap();
         v_doc["fs_used"]  = LittleFS.usedBytes();
@@ -221,10 +263,7 @@ void CL_W10_WebAPI::routeDiag() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeMetrics() {
     s_server->on(W10_Const::HTTP_API_METRICS, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
         if (s_control) {
             JsonDocument v_doc;
@@ -239,10 +278,7 @@ void CL_W10_WebAPI::routeMetrics() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeLogs() {
     s_server->on(W10_Const::HTTP_API_LOGS, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         JsonDocument v_doc;
         CL_D10_Logger::getLogsAsJson(v_doc);
         sendJson(p_request, v_doc);
@@ -254,10 +290,7 @@ void CL_W10_WebAPI::routeLogs() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeAuthTest() {
     s_server->on(W10_Const::HTTP_API_AUTH_TEST, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"result\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         p_request->send(200, "application/json", "{\"result\":\"authorized\"}");
     });
 }
@@ -267,10 +300,7 @@ void CL_W10_WebAPI::routeAuthTest() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeScan() {
     s_server->on(W10_Const::HTTP_API_WIFI_SCAN, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         JsonDocument v_doc;
         CL_WF10_WiFiManager::scanNetworksToJson(v_doc);
         sendJson(p_request, v_doc);
@@ -282,10 +312,7 @@ void CL_W10_WebAPI::routeScan() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeWifiState() {
     s_server->on(W10_Const::HTTP_API_WIFI_STATE, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         JsonDocument v_doc;
         CL_WF10_WiFiManager::getWifiStateJson(v_doc);
         sendJson(p_request, v_doc);

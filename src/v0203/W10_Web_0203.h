@@ -228,9 +228,18 @@ class CL_W10_WebAPI {
                                 const String&          p_msg,
                                 int                    p_code = 200,
                                 const char*            p_mime = "text/plain; charset=utf-8");
-    // API Key 검사
+    // API Key 검사 (bool only, 응답 없음)
     static bool checkApiKey(AsyncWebServerRequest* p_request);
+
+    // [신규 P0] API Key 검사 + 실패 시 401 즉시 응답 (hang 방지)
+    static bool requireApiKey(AsyncWebServerRequest* p_request);
 
     // JSON Body 파싱
     static bool parseJsonBody(AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, JsonDocument& p_doc);
+
+    // [신규 P0] 단편화 body 누적 헬퍼
+    static bool     beginBody(AsyncWebServerRequest* r, size_t total);
+    static bool     appendBody(AsyncWebServerRequest* r, uint8_t* data, size_t len, size_t index, size_t total);
+    static uint8_t* takeBodyBuf(AsyncWebServerRequest* r, size_t& r_len);
+    static void     freeBody(AsyncWebServerRequest* r);
 };

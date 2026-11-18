@@ -20,6 +20,52 @@
 
 #include "W10_Web_0203.h"
 
+// ======================================================
+// [Stage 13 P0] Session 공통 빈 body(onRequest) + 단편화 JSON 누적(onBody) 헬퍼
+// ======================================================
+static void _sessOnReqEmptyCheck(AsyncWebServerRequest* p_request) {
+    if (!CL_W10_WebAPI::requireApiKey(p_request)) return;
+    if (p_request->contentLength() == 0) {
+        p_request->send(400, "application/json", "{\"error\":\"empty body\"}");
+    }
+}
+
+static bool _sessAccumJson(
+    AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total, JsonDocument& r_doc) {
+    if (p_index == 0) {
+        if (!CL_W10_WebAPI::requireApiKey(p_request)) return false;
+        if (p_total == 0) {
+            p_request->send(400, "application/json", "{\"error\":\"empty body\"}");
+            return false;
+        }
+        if (p_total > (1024 * 1024)) {
+            p_request->send(413, "application/json", "{\"error\":\"payload too large\"}");
+            return false;
+        }
+        if (!CL_W10_WebAPI::beginBody(p_request, p_total)) {
+            p_request->send(500, "application/json", "{\"error\":\"oom\"}");
+            return false;
+        }
+    }
+    if (!CL_W10_WebAPI::appendBody(p_request, p_data, p_len, p_index, p_total)) return false;
+
+    size_t   v_bodyLen = 0;
+    uint8_t* v_bodyBuf = CL_W10_WebAPI::takeBodyBuf(p_request, v_bodyLen);
+    if (!v_bodyBuf) {
+        CL_W10_WebAPI::freeBody(p_request);
+        p_request->send(500, "application/json", "{\"error\":\"acc\"}");
+        return false;
+    }
+
+    if (!CL_W10_WebAPI::parseJsonBody(p_request, v_bodyBuf, v_bodyLen, r_doc)) {
+        CL_W10_WebAPI::freeBody(p_request);
+        p_request->send(400, "application/json", "{\"error\":\"json parse error\"}");
+        return false;
+    }
+    CL_W10_WebAPI::freeBody(p_request);
+    return true;
+}
+
 // ═══════════════════════════════════════════════════════════
 // [Phase 2] Session Type / Trigger 파서
 // ═══════════════════════════════════════════════════════════
@@ -50,77 +96,67 @@ void CL_W10_WebAPI::routeSession() {
     // 1. POST /api/v001/session/start
     // Body: { "type": "PLAYLIST"|"PRESET"|"FIXED"|"AUTO_FULL"|"AUTO_SELECT", "trigger": "MANUAL", "payload": {...} }
     // ======================================================
-    s_server->on(
-        W10_Const::HTTP_API_SESSION_START,
-        HTTP_POST,
-        [](AsyncWebServerRequest* p_request) {},
-        nullptr,
-        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                return;
-            }
-            if (p_index + p_len != p_total) return;
+    s_server->on(W10_Const::HTTP_API_SESSION_START,
+                 HTTP_POST,
+                 _sessOnReqEmptyCheck,
+                 nullptr,
+                 [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+                     JsonDocument v_doc;
+                     if (!_sessAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
 
-            JsonDocument v_doc;
-            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-                p_request->send(400, "application/json", "{\"error\":\"json parse error\"}");
-                return;
-            }
+                     const char*            v_typeStr = v_doc["type"] | "PRESET";
+                     EN_CT10_session_type_t v_type    = W10_parseSessionType(v_typeStr);
 
-            const char*            v_typeStr = v_doc["type"] | "PRESET";
-            EN_CT10_session_type_t v_type    = W10_parseSessionType(v_typeStr);
+                     if (v_type == EN_CT10_SESSION_NONE) {
+                         JsonDocument v_err;
+                         v_err["error"] = "invalid_session_type";
+                         sendJson(p_request, v_err, 400);
+                         return;
+                     }
 
-            if (v_type == EN_CT10_SESSION_NONE) {
-                JsonDocument v_err;
-                v_err["error"] = "invalid_session_type";
-                sendJson(p_request, v_err, 400);
-                return;
-            }
+                     EN_CT10_trigger_t v_trigger;
+                     switch (v_type) {
+                         case EN_CT10_SESSION_AUTO_FULL:
+                             v_trigger = EN_CT10_TRIGGER_MANUAL_AUTO_FULL;
+                             break;
+                         case EN_CT10_SESSION_AUTO_SELECT:
+                             v_trigger = EN_CT10_TRIGGER_MANUAL_AUTO_SELECT;
+                             break;
+                         default:
+                             v_trigger = W10_parseTrigger(v_doc["trigger"] | "MANUAL");
+                             break;
+                     }
 
-            EN_CT10_trigger_t v_trigger;
-            switch (v_type) {
-                case EN_CT10_SESSION_AUTO_FULL:
-                    v_trigger = EN_CT10_TRIGGER_MANUAL_AUTO_FULL;
-                    break;
-                case EN_CT10_SESSION_AUTO_SELECT:
-                    v_trigger = EN_CT10_TRIGGER_MANUAL_AUTO_SELECT;
-                    break;
-                default:
-                    v_trigger = W10_parseTrigger(v_doc["trigger"] | "MANUAL");
-                    break;
-            }
+                     JsonObjectConst v_payload = v_doc["payload"].as<JsonObjectConst>();
+                     JsonDocument    v_payloadDoc;
+                     if (!v_payload.isNull()) {
+                         v_payloadDoc.set(v_payload);
+                     }
 
-            JsonObjectConst v_payload = v_doc["payload"].as<JsonObjectConst>();
-            JsonDocument    v_payloadDoc;
-            if (!v_payload.isNull()) {
-                v_payloadDoc.set(v_payload);
-            }
+                     bool v_ok = CL_CT10_ControlManager::startSession(v_type, v_trigger, v_payloadDoc);
 
-            bool v_ok = CL_CT10_ControlManager::startSession(v_type, v_trigger, v_payloadDoc);
-
-            JsonDocument v_res;
-            v_res["ok"] = v_ok;
-            if (v_ok) {
-                v_res["result"] = "session_started";
-                v_res["type"]   = v_typeStr;
-                sendJson(p_request, v_res, 200);
-                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Session started: type=%s, trigger=%u", v_typeStr, (unsigned)v_trigger);
-            } else {
-                v_res["error"] = "start_failed";
-                sendJson(p_request, v_res, 400);
-                CL_D10_Logger::log(EN_L10_LOG_WARN, "[W10] Session start failed for type=%s", v_typeStr);
-            }
-        });
+                     JsonDocument v_res;
+                     v_res["ok"] = v_ok;
+                     if (v_ok) {
+                         v_res["result"] = "session_started";
+                         v_res["type"]   = v_typeStr;
+                         sendJson(p_request, v_res, 200);
+                         CL_D10_Logger::log(EN_L10_LOG_INFO,
+                                            "[W10] Session started: type=%s, trigger=%u",
+                                            v_typeStr,
+                                            (unsigned)v_trigger);
+                     } else {
+                         v_res["error"] = "start_failed";
+                         sendJson(p_request, v_res, 400);
+                         CL_D10_Logger::log(EN_L10_LOG_WARN, "[W10] Session start failed for type=%s", v_typeStr);
+                     }
+                 });
 
     // ======================================================
     // 2. POST /api/v001/session/pause
     // ======================================================
     s_server->on(W10_Const::HTTP_API_SESSION_PAUSE, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
         bool         v_ok = CL_CT10_ControlManager::pauseSession();
         JsonDocument v_res;
@@ -139,10 +175,7 @@ void CL_W10_WebAPI::routeSession() {
     // 3. POST /api/v001/session/resume
     // ======================================================
     s_server->on(W10_Const::HTTP_API_SESSION_RESUME, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
         bool         v_ok = CL_CT10_ControlManager::resumeSession();
         JsonDocument v_res;
@@ -161,10 +194,7 @@ void CL_W10_WebAPI::routeSession() {
     // 4. POST /api/v001/session/stop
     // ======================================================
     s_server->on(W10_Const::HTTP_API_SESSION_STOP, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
         bool         v_ok = CL_CT10_ControlManager::stopSession();
         JsonDocument v_res;
@@ -177,45 +207,32 @@ void CL_W10_WebAPI::routeSession() {
     // ======================================================
     // 4-1. PATCH /api/v001/session/rule [Stage 2 신규]
     // ======================================================
-    s_server->on(
-        W10_Const::HTTP_API_SESSION_RULE,
-        HTTP_PATCH,
-        [](AsyncWebServerRequest* p_request) {},
-        nullptr,
-        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                return;
-            }
-            if (p_index + p_len != p_total) return;
+    s_server->on(W10_Const::HTTP_API_SESSION_RULE,
+                 HTTP_PATCH,
+                 _sessOnReqEmptyCheck,
+                 nullptr,
+                 [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+                     JsonDocument v_doc;
+                     if (!_sessAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
 
-            JsonDocument v_doc;
-            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-                p_request->send(400, "application/json", "{\"error\":\"json parse error\"}");
-                return;
-            }
-
-            bool         v_ok = CL_CT10_ControlManager::updateActiveSessionRule(v_doc);
-            JsonDocument v_res;
-            v_res["ok"] = v_ok;
-            if (v_ok) {
-                v_res["result"] = "session_rule_updated";
-                sendJson(p_request, v_res, 200);
-                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Session rule updated");
-            } else {
-                v_res["error"] = "session_not_active_or_invalid_rule";
-                sendJson(p_request, v_res, 400);
-            }
-        });
+                     bool         v_ok = CL_CT10_ControlManager::updateActiveSessionRule(v_doc);
+                     JsonDocument v_res;
+                     v_res["ok"] = v_ok;
+                     if (v_ok) {
+                         v_res["result"] = "session_rule_updated";
+                         sendJson(p_request, v_res, 200);
+                         CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Session rule updated");
+                     } else {
+                         v_res["error"] = "session_not_active_or_invalid_rule";
+                         sendJson(p_request, v_res, 400);
+                     }
+                 });
 
     // ======================================================
     // 5. GET /api/v001/session/current
     // ======================================================
     s_server->on(W10_Const::HTTP_API_SESSION_CURRENT, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
         auto         s = CL_CT10_ControlManager::getSessionSnapshot();
         JsonDocument v_res;
@@ -252,33 +269,23 @@ void CL_W10_WebAPI::routeSession() {
     // ======================================================
     // 6. POST /api/v001/session/schedule-override [Stage 5 신규]
     // ======================================================
-    s_server->on(
-        W10_Const::HTTP_API_SESSION_SCH_OVERRIDE,
-        HTTP_POST,
-        [](AsyncWebServerRequest* p_request) {},
-        nullptr,
-        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                return;
-            }
-            if (p_index + p_len != p_total) return;
+    s_server->on(W10_Const::HTTP_API_SESSION_SCH_OVERRIDE,
+                 HTTP_POST,
+                 _sessOnReqEmptyCheck,
+                 nullptr,
+                 [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+                     JsonDocument v_in;
+                     if (!_sessAccumJson(p_request, p_data, p_len, p_index, p_total, v_in)) return;
 
-            JsonDocument v_in;
-            if (!parseJsonBody(p_request, p_data, p_len, v_in)) {
-                p_request->send(400, "application/json", "{\"error\":\"json parse error\"}");
-                return;
-            }
+                     bool v_override = v_in["override"] | false;
+                     CL_N10_NvsManager::setManualOvrSchedule(v_override);
 
-            bool v_override = v_in["override"] | false;
-            CL_N10_NvsManager::setManualOvrSchedule(v_override);
-
-            JsonDocument v_out;
-            v_out["ok"]       = true;
-            v_out["override"] = v_override;
-            sendJson(p_request, v_out, 200);
-            CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Schedule override set: %d", v_override);
-        });
+                     JsonDocument v_out;
+                     v_out["ok"]       = true;
+                     v_out["override"] = v_override;
+                     sendJson(p_request, v_out, 200);
+                     CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Schedule override set: %d", v_override);
+                 });
 
     CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Session routes registered");
 }

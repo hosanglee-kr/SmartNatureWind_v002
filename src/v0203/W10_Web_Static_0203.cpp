@@ -39,19 +39,31 @@ CL_W10_WebAPI::ST_W10_MenuState_t CL_W10_WebAPI::s_menu_state;
 // ------------------------------------------------------
 // 헬퍼
 // ------------------------------------------------------
-const char* CL_W10_WebAPI::W10_guessMime(const char* p_path) {
-    if (!p_path) return "application/octet-stream";
+// [신규 P0] 접미사 정확 매칭 (strstr 오탐지 방지: "/config.json" → ".js" 매치 버그)
+static bool W10_pathEndsWith(const char* p_path, const char* p_suffix) {
+    if (!p_path || !p_suffix) return false;
+    const size_t v_ls = strlen(p_path);
+    const size_t v_lf = strlen(p_suffix);
+    if (v_lf == 0 || v_lf > v_ls) return false;
+    return strcmp(p_path + (v_ls - v_lf), p_suffix) == 0;
+}
 
-    if (strstr(p_path, ".html")) return "text/html; charset=utf-8";
-    if (strstr(p_path, ".css")) return "text/css; charset=utf-8";
-    if (strstr(p_path, ".js")) return "application/javascript; charset=utf-8";
-    if (strstr(p_path, ".json")) return "application/json; charset=utf-8";
-    if (strstr(p_path, ".svg")) return "image/svg+xml";
-    if (strstr(p_path, ".png")) return "image/png";
-    if (strstr(p_path, ".jpg") || strstr(p_path, ".jpeg")) return "image/jpeg";
-    if (strstr(p_path, ".ico")) return "image/x-icon";
-    if (strstr(p_path, ".woff2")) return "font/woff2";
-    if (strstr(p_path, ".txt")) return "text/plain; charset=utf-8";
+const char* CL_W10_WebAPI::W10_guessMime(const char* p_path) {
+    if (!p_path || p_path[0] == '\0') return "application/octet-stream";
+
+    if (W10_pathEndsWith(p_path, ".html")) return "text/html; charset=utf-8";
+    if (W10_pathEndsWith(p_path, ".css")) return "text/css; charset=utf-8";
+    if (W10_pathEndsWith(p_path, ".json")) return "application/json; charset=utf-8";
+    if (W10_pathEndsWith(p_path, ".js")) return "application/javascript; charset=utf-8";
+    if (W10_pathEndsWith(p_path, ".svg")) return "image/svg+xml";
+    if (W10_pathEndsWith(p_path, ".png")) return "image/png";
+    if (W10_pathEndsWith(p_path, ".jpg") || W10_pathEndsWith(p_path, ".jpeg")) return "image/jpeg";
+    if (W10_pathEndsWith(p_path, ".ico")) return "image/x-icon";
+    if (W10_pathEndsWith(p_path, ".woff2")) return "font/woff2";
+    if (W10_pathEndsWith(p_path, ".woff")) return "font/woff";
+    if (W10_pathEndsWith(p_path, ".ttf")) return "font/ttf";
+    if (W10_pathEndsWith(p_path, ".txt")) return "text/plain; charset=utf-8";
+    if (W10_pathEndsWith(p_path, ".map")) return "application/json; charset=utf-8";
 
     return "application/octet-stream";
 }
@@ -126,9 +138,9 @@ static bool W10_acceptsGzip(AsyncWebServerRequest* r) {
         if (v_coding == "gzip" || v_coding == "*") {
             // q 값 확인
             int v_qpos = v_token.indexOf("q=");
-            if (v_qpos < 0) return true;   // q 없으면 기본 1.0 → 허용
+            if (v_qpos < 0) return true; // q 없으면 기본 1.0 → 허용
             float v_qval = v_token.substring(v_qpos + 2).toFloat();
-            return v_qval > 0.0f;          // q=0 → 거부
+            return v_qval > 0.0f; // q=0 → 거부
         }
 
         v_start = v_end + 1;
@@ -155,12 +167,17 @@ void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_fil
         return;
     }
 
-    s_server->on(v_uri.get(), HTTP_GET, [v_file, v_gz_file, v_mime](AsyncWebServerRequest* r) {
+    // [신규] 자산별 Cache-Control 정책 (HTML은 no-cache, 나머지는 1시간)
+    const bool  v_is_html    = W10_pathEndsWith(p_file, ".html");
+    const char* v_cache_ctrl = v_is_html ? "no-cache, must-revalidate" : "public, max-age=3600";
+
+    s_server->on(v_uri.get(), HTTP_GET, [v_file, v_gz_file, v_mime, v_cache_ctrl](AsyncWebServerRequest* r) {
         // [B-5] RFC 7231 준수 gzip 판정
         if (W10_acceptsGzip(r) && LittleFS.exists(v_gz_file.get())) {
             auto* v_resp = r->beginResponse(LittleFS, v_gz_file.get(), v_mime.get());
             v_resp->addHeader("Content-Encoding", "gzip");
             v_resp->addHeader("Vary", "Accept-Encoding");
+            v_resp->addHeader("Cache-Control", v_cache_ctrl);
             CL_W10_WebAPI::_applyHeaders(v_resp, false);
             r->send(v_resp);
             return;
@@ -169,15 +186,14 @@ void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_fil
         if (LittleFS.exists(v_file.get())) {
             auto* v_resp = r->beginResponse(LittleFS, v_file.get(), v_mime.get());
             v_resp->addHeader("Vary", "Accept-Encoding");
+            v_resp->addHeader("Cache-Control", v_cache_ctrl);
             CL_W10_WebAPI::_applyHeaders(v_resp, false);
             r->send(v_resp);
             return;
         }
 
-        String v_msg  = "/* missing:" + String(v_file.get()) + " */";
-        auto*  v_resp = r->beginResponse(200, v_mime.get(), v_msg);
-        CL_W10_WebAPI::_applyHeaders(v_resp, true);
-        r->send(v_resp);
+        // [신규 P0] missing → 404 (200은 fetch().ok 신뢰를 깨뜨려 오프라인 로더 조용히 실패)
+        CL_W10_WebAPI::sendText(r, String("/* missing:") + v_file.get() + " */", 404, "text/plain; charset=utf-8");
     });
 }
 
@@ -200,11 +216,16 @@ void CL_W10_WebAPI::W10_registerGzipServe() {
         }
         const char* v_mime = W10_guessMime(v_url.c_str());
 
+        // [신규] 캐시 정책
+        const char* v_cache_ctrl = W10_pathEndsWith(v_url.c_str(), ".html") ? "no-cache, must-revalidate"
+                                                                            : "public, max-age=3600";
+
         // [B-5] RFC 7231 준수
         if (W10_acceptsGzip(r) && LittleFS.exists(v_gzPath)) {
             auto* v_resp = r->beginResponse(LittleFS, v_gzPath, v_mime);
             v_resp->addHeader("Content-Encoding", "gzip");
             v_resp->addHeader("Vary", "Accept-Encoding");
+            v_resp->addHeader("Cache-Control", v_cache_ctrl);
             _applyHeaders(v_resp, false);
             r->send(v_resp);
             return;
@@ -212,6 +233,7 @@ void CL_W10_WebAPI::W10_registerGzipServe() {
         if (LittleFS.exists(v_url)) {
             auto* v_resp = r->beginResponse(LittleFS, v_url, v_mime);
             v_resp->addHeader("Vary", "Accept-Encoding");
+            v_resp->addHeader("Cache-Control", v_cache_ctrl);
             _applyHeaders(v_resp, false);
             r->send(v_resp);
             return;
@@ -219,9 +241,7 @@ void CL_W10_WebAPI::W10_registerGzipServe() {
         r->send(404, "text/plain; charset=utf-8", "not found: " + v_url);
     });
 
-    CL_D10_Logger::log(EN_L10_LOG_INFO,
-                       "[W10] Gzip static serve registered (%s/*)",
-                       W10_Const::PATH_STATIC_HTML);
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Gzip static serve registered (%s/*)", W10_Const::PATH_STATIC_HTML);
 }
 
 // ------------------------------------------------------
@@ -379,8 +399,8 @@ void CL_W10_WebAPI::routeStaticAssets() {
             if (LittleFS.exists(v_default_html) || LittleFS.exists(v_default_html + ".gz")) {
                 r->redirect(v_default_html);
             } else {
-                String v_msg = "main page not found: " + v_default_html + "\nCheck cfg_pages JSON and "
-                             + String(W10_Const::PATH_STATIC_HTML) + " files.";
+                String v_msg = "main page not found: " + v_default_html + "\nCheck cfg_pages JSON and " +
+                               String(W10_Const::PATH_STATIC_HTML) + " files.";
                 r->send(404, "text/plain; charset=utf-8", v_msg);
             }
         });

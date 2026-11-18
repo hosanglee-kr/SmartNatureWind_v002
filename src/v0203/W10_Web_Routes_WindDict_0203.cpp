@@ -23,10 +23,7 @@ void CL_W10_WebAPI::routeWindDict() {
     // GET /api/v001/windDict
     // ======================================================
     s_server->on(W10_Const::HTTP_API_WIND_DICT, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
         // 1) 메모리 캐시 스냅샷 확인
         ST_A20_ConfigRoot_t v_snap;

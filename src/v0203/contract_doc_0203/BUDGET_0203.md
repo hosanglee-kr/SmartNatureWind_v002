@@ -480,12 +480,21 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 
 **누적 판정**: Flash +2 KB, RAM +32 B, LittleFS 총 점유 203.9 KB (1MB 대비 19.9%). 모두 기존 예산 여유 이내.
 
+### 10.10 Stage 12~13 웹 API 보안·안정화 누적 예산 영향 (0203_014_19)
+
+| 항목 | 실측치 / 영향 | 예산 평가 |
+|---|---|---|
+| **펌웨어 빌드 실측 (`esp32-s3-zero`, C7 기준)** | RAM: **30.8%** (`100,992 / 327,680 B`), Flash: **43.7%** (`1,373,457 / 3,145,728 B`) | ✅ 여유 |
+| **동적 Body 누적 버퍼 상한** | 일반 POST/PUT/PATCH 최대 **1MB** (`W10_MAX_ACCUM_BODY`), AI 최대 `G_MAX_REQUEST_BODY` | ✅ `p_total` 선검사 및 단일 블록 해제로 누수/DoS 차단 |
+| **정적 자산 `Cache-Control` 대역폭 절감** | HTML `no-cache, must-revalidate` / JS·CSS·자산 `public, max-age=3600` | ✅ 재접속 시 불필요 재전송 감소 |
+
 ---
 
 ## 11. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-18** | **v3.10** | **Stage 12~13 웹 API 보안·안정화 예산 반영 (§10.10, 0203_014_19)**: `esp32-s3-zero` RAM 30.8%/Flash 43.7% 실측, `W10_MAX_ACCUM_BODY`(1MB) 상한 및 `Cache-Control`(3600s) 대역폭 절감 반영 | Antigravity AI |
 | **2026-11-17** | **v3.9** | **FE Core·Offline 정비 및 20종 CSS 분리 실측치 반영 (§10.9)**: JS 3청크(156.4KB gz) + CSS 2청크(19.2KB gz) + HTML(2.5KB gz) + JSON 9종(25.8KB) = LittleFS 총 점유 203.9KB (1MB 대비 19.9%) | Antigravity AI |
 | **2026-11-16** | **v3.8** | **Batch 1~4 최종 프론트엔드 5청크 실측치 반영 (§10.9)**: JS 3청크(154.0KB gz) + CSS 2청크(19.4KB gz) + HTML(2.4KB gz) + JSON 9종(25.8KB) = LittleFS 총 점유 201.6KB (1MB 대비 19.7%) | Antigravity AI |
 | **2026-11-14** | **v3.7** | **Phase 2 — TriggerRule & AUTO 예산 영향**: §2 `checkTriggers` WCET < 100 μs / `initRuleFromPayload` < 50 μs / `tickAutoComfort` AUTO 재평가 < 200 μs, §10.9 Phase 2 누적 영향 (Flash +2KB / RAM +32B / FE gz +2KB) | Antigravity AI |

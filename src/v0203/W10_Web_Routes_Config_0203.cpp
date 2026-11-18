@@ -23,10 +23,7 @@
 void CL_W10_WebAPI::routeConfigDirtySave() {
     // GET /api/v001/config (전체 설정 조회)
     s_server->on(W10_Const::HTTP_API_CONFIG, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         
         // [B-2] async_tcp → getRootSnapshot 필수 (CONTRACT §3.1)
         //  - 이전: reloadAll swap 중 torn read (system=old, wifi=new) 위험
@@ -41,10 +38,7 @@ void CL_W10_WebAPI::routeConfigDirtySave() {
 
     // POST /api/v001/config/save
     s_server->on(W10_Const::HTTP_API_CONFIG_SAVE, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
         bool v_ok = CL_C10_ConfigManager::saveDirtyConfigs();
 
@@ -56,10 +50,7 @@ void CL_W10_WebAPI::routeConfigDirtySave() {
 
     // GET /api/v001/config/dirty
     s_server->on(W10_Const::HTTP_API_CONFIG_DIRTY, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         JsonDocument v_doc;
         CL_C10_ConfigManager::getDirtyStatus(v_doc);
         sendJson(p_request, v_doc);
@@ -71,10 +62,7 @@ void CL_W10_WebAPI::routeConfigDirtySave() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeConfigInit() {
     s_server->on(W10_Const::HTTP_API_CONFIG_INIT, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         CL_D10_Logger::log(EN_L10_LOG_WARN, "[W10] Config Init requested via %s", W10_Const::HTTP_API_CONFIG_INIT);
         bool v_ok = CL_C10_ConfigManager::factoryResetFromDefault();
 
@@ -94,10 +82,7 @@ void CL_W10_WebAPI::routeConfigInit() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeReload() {
     s_server->on(W10_Const::HTTP_API_RELOAD, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
         // [F-05] Deferred reload: async_tcp → loopTask 위임
         if (!CL_CT10_ControlManager::requestReload()) {

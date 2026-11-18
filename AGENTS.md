@@ -13,7 +13,7 @@
 | MCU | ESP32-S3 Zero (기본, 4MB Flash / 2MB PSRAM), ESP32-C3 Zero (4MB, No PSRAM), ESP32-S3-N16R8 |
 | 빌드 | PlatformIO + Arduino-ESP32 (`-std=gnu++17`), default env: `esp32-s3-zero`, **`-j 12` 필수** |
 | 파일시스템 | LittleFS (`./src/v0203/data_v0203`) |
-| 에셋 파이프라인 | `pio_gzip_0203.py` (54 JS + 18 CSS 번들 + Gzip L9) |
+| 에셋 파이프라인 | `pio_gzip_0203.py` (54 JS + 20 CSS 번들 + Gzip L9) |
 | 활성 버전 | **v0203** (FW_Ver_2.0.3) / C++·에셋 모두 `_0203` 접미사 |
 
 ---
@@ -36,7 +36,7 @@
 | **AUDIT_LOG_0203.md** | **감사 이력** | §1~§11 | [AUDIT_LOG](src/v0203/contract_doc_0203/AUDIT_LOG_0203.md) |
 | **AGENT_OPERATIONS_0203.md** | **운영 표준** | §1~§5 | [OPS](src/v0203/contract_doc_0203/AGENT_OPERATIONS_0203.md) |
 | README_0203.md | CBD 워크플로/커밋 도구 | §4, §5 | [README §4](src/v0203/contract_doc_0203/README_0203.md) |
-| **UserManual_0203_004.md** | **개발 시 참조하지 않음** (사용자 문서) | — | — |
+| **UserManual_0203_*.md** | **개발 시 참조하지 않음** (사용자 문서) | — | — |
 
 ---
 

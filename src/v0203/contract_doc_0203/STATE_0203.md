@@ -477,6 +477,7 @@ pauseMask == 0 일 때만 ENV_PAUSED 해소 (완전 재개)
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-20** | **v3.11** | **시간·네트워크 상수 SSOT 및 하위 호환 정리 확인**: `TM10` 기본 서버 `kr.pool.ntp.org`·TZ `Asia/Seoul` `A20_Const` 상수 일원화 및 `TM10_*` 전역 호환 함수 제거 확인 (FSM 상태/전이 변경 없음) | Antigravity AI |
 | **2026-11-18** | **v3.10** | **FE/오프라인 AI·NowPlaying·AUTO_SELECT 상태 규약 현행화 (0203_014_20/21)**: `AUTO_SELECT` `PLAYLIST` 실행 시 프로필 고유 `rule` 보존(`hasExplicitRule` 없을 때 덮어쓰기 방지), `#/ai` 뷰 상태 `body.is-ai-page` 추가, `998.offline_0203.js` `AUTO_SELECT` 센서 기반 스타일 상태 전이 반영 | Antigravity AI |
 | **2026-11-18** | **v3.9** | **Stage 12~13 웹 API 상태 소유권 현행화 (0203_014_19)**: §1 `s_uploadOwner` 단일 업로드/OTA 점유 상태(`onDisconnect` 자동 해제) 추가, `/ai/execute-action` 응답 `session.type`(숫자)+`typeName`(문자열) 계약 통일 | Antigravity AI |
 | **2026-11-17** | **v3.8** | **FE Core·Offline 클라이언트 상태 정합성 반영 (0203_014_18_02)**: `SNW.Offline.active`/`setActive()` 단일 진실 소스, `runtime.control.profileMode` 통합, `runtime.timer` 만료 시 `AUTOOFF_STOPPED(5)`/`AUTOOFF_TIMER(9)` 전이, `snw:levelchange` 상태 동기화 | Antigravity AI |

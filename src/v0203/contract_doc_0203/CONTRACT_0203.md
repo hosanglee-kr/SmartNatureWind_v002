@@ -293,7 +293,7 @@ startSession(type, trigger, payload) [T-async]
 - **[AI-6] 프롬프트 캐싱 (30초 만료)을 통한 자원 보호**: 시스템 프롬프트 생성(`buildAIPromptStrict`)은 30초 파일 스코프 캐시를 유지하여 빈번한 AI 요청 중에도 I2C 센서 블로킹 및 힙 파편화를 0으로 억제한다.
 
 ### 7.16 v0203 통합 감사 28대 이슈 해결 및 계약 규약 (AUDIT-1~AUDIT-6) (0203_012 신규)
-- **[AUDIT-1] FactoryReset SPA 단일 스키마 (BE-P0-1)**: `A20_resetWebPageDefault`는 구버전 `/html_v3/` 및 복수 HTML 페이지를 전면 배제하고, 단일 `/html_v0203/index.html`과 `P010_bundle_0203.js`, `P000_common_0203.css` SPA 스키마만 초기화하여 리셋 후 웹 서빙 불능을 차단한다.
+- **[AUDIT-1] FactoryReset SPA 단일 스키마 (BE-P0-1)**: `A20_resetWebPageDefault`는 구버전 `/html_v3/` 및 레거시 `P000_common_0203.css`·`P010_bundle_0203.js` 등록을 전면 배제하고, 단일 `/html_v0203/index.html`(`A20_Const::G_PATH_WEB_INDEX`) SPA 스키마만 초기화하여 리셋 후 웹 서빙 불능을 차단한다.
 - **[AUDIT-2] AI Action의 CRUD 헬퍼 필수 경유 (BE-P0-2, BE-P1-6)**: `executeAddProfile`과 `add_schedule`은 C10 설정을 직접 조작하지 않고 `addUserProfilesFromJson` 등 표준 CRUD 헬퍼에 위임하여 ID 자동 발급, 중복 검증, profileId 유효성 검증을 100% 강제한다.
 - **[AUDIT-3] T-async 컨텍스트 getRootSnapshot 원자 캡처 (BE-P0-3)**: `startOverridePreset` 등 비동기 요청 핸들러에서 `g_A20_config_root` 접근 시 직접 참조를 금지하고 `getRootSnapshot()`을 통해 포인터 원자 스냅샷을 획득하여 Torn read 및 UAF를 방지한다.
 - **[AUDIT-4] T-loop WS 브로드캐스트 가드 (BE-P1-5)**: `D10_Logger::broadcastLog`는 WS 활성 클라이언트가 0일 경우 JSON 직렬화 및 `textAll` 호출을 즉시 스킵하여 `loopTask` 지연을 방지한다.
@@ -367,6 +367,7 @@ startSession(type, trigger, payload) [T-async]
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-20** | **v3.13** | **하위 호환 제거 및 상수 SSOT 일원화 계약 반영**: `A20_resetWebPageDefault` 구버전 `P000_`/`P010_` 에셋 등록 제거, `P10_*`/`TM10_*` 호환 래퍼·`A20_Const_Sch` 미러 별칭·`autoOff/motion` deprecated 경고 제거, `A20_Const` 상수 일원화(NTP/TZ/Gemini/SoftAP/경로) | Antigravity AI |
 | **2026-11-18** | **v3.12** | **FE/오프라인 AI·NowPlaying·AUTO_SELECT 계약 현행화 (0203_014_20/21)**: `CT10_Ctl_Ctl_0203.cpp` `AUTO_SELECT` `PLAYLIST` `hasExplicitRule` 조건부 `initRuleFromPayload` 계약, `040.api.js` `OFFLINE_ROUTES` AI 명시적 오류(`ok: false`), `999a.nowplaying.js` 멱등 초기화·표시명 일원화 계약 반영 | Antigravity AI |
 | **2026-11-18** | **v3.11** | **Stage 12~13 웹 API 보안·안정화 계약 반영 (§7.25, 0203_014_19)**: `§3.1` 위반 4건 교정(`System`/`Network`/`WF10`), 단편화 body 단일 블록 누적(`WEB-BODY-1`), 이중 `send`/빈 body hang 방지(`WEB-BODY-2`), 단일 업로드/OTA 소유권 `s_uploadOwner`+`onDisconnect`(`WEB-UP-1`), `CRUD`·`Monitor` 정적 경로 상수화(`WEB-STR-1`) | Antigravity AI |
 | **2026-11-17** | **v3.10** | **FE Core·Offline 정합성 및 20종 CSS 분리 계약 현행화 (0203_014_18_02)**: `040.api.js` `OFFLINE_ROUTES`·`998.offline_0203.js` `setActive()`/타이머 만료 동기화 및 Now Playing Bar 데스크톱 사이드바/Footer 여백 규약 확인 | Antigravity AI |

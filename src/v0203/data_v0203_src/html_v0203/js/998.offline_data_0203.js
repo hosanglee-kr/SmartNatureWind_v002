@@ -86,7 +86,12 @@ window.SNW = window.SNW || {};
                         "geminiApiKey": ""
                 },
                 "timeCfg": {
-                        "ntpServer": "pool.ntp.org",
+                        "ntpServer": "kr.pool.ntp.org",
+                        "ntpFallbackServers": [
+                                "time.google.com",
+                                "pool.ntp.org",
+                                "time.cloudflare.com"
+                        ],
                         "timezone": "Asia/Seoul",
                         "syncIntervalMin": 60
                 }

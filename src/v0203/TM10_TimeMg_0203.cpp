@@ -22,8 +22,8 @@
 void CL_TM10_TimeManager::_setDefaults() {
     memset(s_tz, 0, sizeof(s_tz));
     memset(s_primary, 0, sizeof(s_primary));
-    strlcpy(s_tz, "Asia/Seoul", sizeof(s_tz));
-    strlcpy(s_primary, "pool.ntp.org", sizeof(s_primary));
+    strlcpy(s_tz, A20_Const::G_TIME_DEFAULT_TZ, sizeof(s_tz));
+    strlcpy(s_primary, A20_Const::G_TIME_DEFAULT_NTP_PRIMARY, sizeof(s_primary));
     s_syncIntervalMs = (6UL * 60UL * 60UL * 1000UL);
 
     for (uint8_t i = 0; i < 4; i++) {
@@ -65,7 +65,10 @@ void CL_TM10_TimeManager::_copySysTime(const ST_A20_SystemConfig_t& p_sys) {
     }
     strlcpy(s_serverList[0], s_primary, sizeof(s_serverList[0]));
     for (uint8_t i = 0; i < 3; i++) {
-        strlcpy(s_serverList[i + 1], s_fallbackServers[i], sizeof(s_serverList[i + 1]));
+        const char* v_fb = (p_sys.timeCfg.ntpFallbackServers[i][0])
+                               ? p_sys.timeCfg.ntpFallbackServers[i]
+                               : s_fallbackServers[i];
+        strlcpy(s_serverList[i + 1], v_fb, sizeof(s_serverList[i + 1]));
     }
 }
 

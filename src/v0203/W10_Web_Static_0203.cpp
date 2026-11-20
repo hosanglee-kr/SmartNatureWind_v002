@@ -201,7 +201,6 @@ void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_fil
 // [D-3] W10_registerGzipServe: String 할당 최소화
 // ======================================================
 void CL_W10_WebAPI::W10_registerGzipServe() {
-    // v0201 대응
     s_server->onNotFound([](AsyncWebServerRequest* r) {
         String v_url = r->url();
         if (r->method() != HTTP_GET || !v_url.startsWith(W10_Const::PATH_STATIC_HTML)) {
@@ -218,7 +217,7 @@ void CL_W10_WebAPI::W10_registerGzipServe() {
 
         // [신규] 캐시 정책
         const char* v_cache_ctrl = W10_pathEndsWith(v_url.c_str(), ".html") ? "no-cache, must-revalidate"
-                                                                            : "public, max-age=3600";
+                                                                            : "public, max-age=86400";
 
         // [B-5] RFC 7231 준수
         if (W10_acceptsGzip(r) && LittleFS.exists(v_gzPath)) {

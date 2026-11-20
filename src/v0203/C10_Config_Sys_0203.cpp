@@ -256,6 +256,19 @@ bool CL_C10_ConfigManager::loadSystemConfig(ST_A20_SystemConfig_t& p_cfg) {
         const char* v_ntp = A40_ComFunc::Json_getStr(j_time, "ntpServer", nullptr);
         if (v_ntp && v_ntp[0]) strlcpy(p_cfg.timeCfg.ntpServer, v_ntp, sizeof(p_cfg.timeCfg.ntpServer));
 
+        if (j_time["ntpFallbackServers"].is<JsonArrayConst>()) {
+            JsonArrayConst v_fbArr = j_time["ntpFallbackServers"].as<JsonArrayConst>();
+            uint8_t v_idx = 0;
+            for (JsonVariantConst v_item : v_fbArr) {
+                if (v_idx >= 3) break;
+                const char* v_s = v_item.as<const char*>();
+                if (v_s && v_s[0]) {
+                    strlcpy(p_cfg.timeCfg.ntpFallbackServers[v_idx], v_s, sizeof(p_cfg.timeCfg.ntpFallbackServers[v_idx]));
+                    v_idx++;
+                }
+            }
+        }
+
         const char* v_tz = A40_ComFunc::Json_getStr(j_time, "timezone", nullptr);
         if (v_tz && v_tz[0]) strlcpy(p_cfg.timeCfg.timezone, v_tz, sizeof(p_cfg.timeCfg.timezone));
 
@@ -465,6 +478,14 @@ bool CL_C10_ConfigManager::saveSystemConfig(const ST_A20_SystemConfig_t& p_cfg) 
 
 
     v["timeCfg"]["ntpServer"]       = p_cfg.timeCfg.ntpServer;
+    {
+        JsonArray v_fbArr = v["timeCfg"]["ntpFallbackServers"].to<JsonArray>();
+        for (uint8_t i = 0; i < 3; i++) {
+            if (p_cfg.timeCfg.ntpFallbackServers[i][0]) {
+                v_fbArr.add(p_cfg.timeCfg.ntpFallbackServers[i]);
+            }
+        }
+    }
     v["timeCfg"]["timezone"]        = p_cfg.timeCfg.timezone;
     v["timeCfg"]["syncIntervalMin"] = p_cfg.timeCfg.syncIntervalMin;
 
@@ -837,6 +858,24 @@ bool CL_C10_ConfigManager::patchSystemFromJson(ST_A20_SystemConfig_t& p_config, 
             v_changed = true;
         }
 
+        if (j_time["ntpFallbackServers"].is<JsonArrayConst>()) {
+            JsonArrayConst v_fbArr = j_time["ntpFallbackServers"].as<JsonArrayConst>();
+            char v_newFb[3][64] = {{0}};
+            uint8_t v_idx = 0;
+            for (JsonVariantConst v_item : v_fbArr) {
+                if (v_idx >= 3) break;
+                const char* v_s = v_item.as<const char*>();
+                if (v_s && v_s[0]) {
+                    strlcpy(v_newFb[v_idx], v_s, sizeof(v_newFb[v_idx]));
+                    v_idx++;
+                }
+            }
+            if (v_idx > 0 && memcmp(v_newFb, p_config.timeCfg.ntpFallbackServers, sizeof(v_newFb)) != 0) {
+                memcpy(p_config.timeCfg.ntpFallbackServers, v_newFb, sizeof(v_newFb));
+                v_changed = true;
+            }
+        }
+
         const char* v_tz = A40_ComFunc::Json_getStr(j_time, "timezone", "");
         if (v_tz && v_tz[0] && strcmp(v_tz, p_config.timeCfg.timezone) != 0) {
             strlcpy(p_config.timeCfg.timezone, v_tz, sizeof(p_config.timeCfg.timezone));
@@ -1090,6 +1129,14 @@ void CL_C10_ConfigManager::toJson_System(const ST_A20_SystemConfig_t& p, JsonDoc
     d["security"]["geminiApiKey"] = p.security.geminiApiKey;
 
     d["timeCfg"]["ntpServer"]       = p.timeCfg.ntpServer;
+    {
+        JsonArray v_fbArr = d["timeCfg"]["ntpFallbackServers"].to<JsonArray>();
+        for (uint8_t i = 0; i < 3; i++) {
+            if (p.timeCfg.ntpFallbackServers[i][0]) {
+                v_fbArr.add(p.timeCfg.ntpFallbackServers[i]);
+            }
+        }
+    }
     d["timeCfg"]["timezone"]        = p.timeCfg.timezone;
     d["timeCfg"]["syncIntervalMin"] = p.timeCfg.syncIntervalMin;
 }

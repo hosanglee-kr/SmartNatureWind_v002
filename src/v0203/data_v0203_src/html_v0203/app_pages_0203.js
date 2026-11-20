@@ -1,5 +1,5 @@
 
-/* ---- 200.page.dashboard.js (73198 bytes) ---- */
+/* ---- 200.page.dashboard.js (73241 bytes) ---- */
 // =========================================================
 // 200.page.dashboard.js — 홈 (Stage 5 UX 완성형)
 // Layer 4 (페이지 로직)
@@ -31,8 +31,10 @@ SNW.Page = SNW.Page || {};
             this.el.innerHTML = '';
             this._render();
             this._bindStore();
-            await this._loadProfiles();
-            await this._refreshContext(true);
+            await Promise.all([
+                this._loadProfiles(),
+                this._refreshContext(true)
+            ]);
         }
 
         unmount() {
@@ -3656,7 +3658,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 270.page.network.js (20507 bytes) ---- */
+/* ---- 270.page.network.js (21548 bytes) ---- */
 // =========================================================
 // 270.page.network.js — SNW.Page.Network
 // Layer 4 (페이지 로직)
@@ -3839,10 +3841,19 @@ SNW.Page = SNW.Page || {};
                 const sys = (data && data.system && data.system.timeCfg) || {};
                 const slot = this.el.querySelector('[data-slot="time-config"]');
                 if (!slot) return;
+                const fbList = (Array.isArray(sys.ntpFallbackServers) && sys.ntpFallbackServers.length)
+                    ? sys.ntpFallbackServers
+                    : ['time.google.com', 'pool.ntp.org', 'time.cloudflare.com'];
                 slot.innerHTML = `
                     <div class="snw-form-row">
                         <label>NTP Server</label>
-                        <input type="text" id="ntp-server" value="${SNW.DomUtil.escape(sys.ntpServer || 'pool.ntp.org')}"
+                        <input type="text" id="ntp-server" value="${SNW.DomUtil.escape(sys.ntpServer || 'kr.pool.ntp.org')}"
+                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                    </div>
+                    <div class="snw-form-row">
+                        <label>NTP Fallback Servers (comma-separated, max 3)</label>
+                        <input type="text" id="ntp-fallback-servers" value="${SNW.DomUtil.escape(fbList.join(', '))}"
+                               placeholder="time.google.com, pool.ntp.org, time.cloudflare.com"
                                style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                     </div>
                     <div class="snw-form-row">
@@ -3926,9 +3937,11 @@ SNW.Page = SNW.Page || {};
         }
 
         async _onSaveTime() {
-            const ntp  = this.el.querySelector('#ntp-server').value.trim();
-            const tz   = this.el.querySelector('#timezone').value.trim();
-            const sync = Number(this.el.querySelector('#sync-interval').value);
+            const ntp    = this.el.querySelector('#ntp-server').value.trim();
+            const fbRaw  = (this.el.querySelector('#ntp-fallback-servers')?.value || '');
+            const fbList = fbRaw.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3);
+            const tz     = this.el.querySelector('#timezone').value.trim();
+            const sync   = Number(this.el.querySelector('#sync-interval').value);
 
             if (!ntp) {
                 SNW.ToastUtil.error(SNW.I18n.t('validate.required', { field: 'NTP Server' }));
@@ -3940,7 +3953,9 @@ SNW.Page = SNW.Page || {};
             }
 
             try {
-                await SNW.Api.patchSystem({ timeCfg: { ntpServer: ntp, timezone: tz, syncIntervalMin: sync } });
+                const timeCfg = { ntpServer: ntp, timezone: tz, syncIntervalMin: sync };
+                if (fbList.length) timeCfg.ntpFallbackServers = fbList;
+                await SNW.Api.patchSystem({ timeCfg });
                 await SNW.Api.saveConfig();
                 SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
             } catch (e) {

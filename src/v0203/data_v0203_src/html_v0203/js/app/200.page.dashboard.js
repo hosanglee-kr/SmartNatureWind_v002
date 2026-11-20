@@ -29,8 +29,10 @@ SNW.Page = SNW.Page || {};
             this.el.innerHTML = '';
             this._render();
             this._bindStore();
-            await this._loadProfiles();
-            await this._refreshContext(true);
+            await Promise.all([
+                this._loadProfiles(),
+                this._refreshContext(true)
+            ]);
         }
 
         unmount() {

@@ -3,7 +3,7 @@
  * ------------------------------------------------------
  * 소스명 : D10_Logger_0203.h
  * 모듈약어 : D10
- * 모듈명 : Smart Nature Wind Logger (v0201, WebSocket + RingBuffer)
+ * 모듈명 : Smart Nature Wind Logger (v0203, WebSocket + RingBuffer)
  * ------------------------------------------------------
  * 기능 요약
  *  - 전역 통합 로깅 시스템 (Serial + WebSocket 실시간 브로드캐스트)
@@ -168,7 +168,7 @@ class CL_D10_Logger {
 			return;
 		_serial->println();
 		_serial->println(F("------------------------------------------------------"));
-		_serial->println(F(" Smart Nature Wind Logger (v0201, WebSocket + RingBuffer)"));
+		_serial->println(F(" Smart Nature Wind Logger (v0203, WebSocket + RingBuffer)"));
 		_serial->println(F("------------------------------------------------------"));
 	}
 

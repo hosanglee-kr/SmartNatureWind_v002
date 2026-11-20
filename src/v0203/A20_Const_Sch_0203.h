@@ -349,13 +349,6 @@ typedef struct {
 } ST_A20_UserProfilesRoot_t;
 
 /* ======================================================
- * [Stage 1 점진적 빌드 호환 브릿지 별칭]
- * ====================================================== */
-typedef ST_A20_Step_t            ST_A20_ScheduleSegment_t_alias;
-typedef ST_A20_UserProfileItem_t ST_A20_Profile_t;
-typedef ST_A20_ScheduleItem_t    ST_A20_Schedule_t;
-
-/* ======================================================
  * 시뮬레이션에 전달할 해석된 파라미터
  * ====================================================== */
 typedef struct {

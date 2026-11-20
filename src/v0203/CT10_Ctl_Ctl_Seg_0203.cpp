@@ -45,7 +45,7 @@ bool CL_CT10_ControlManager::tickOverride() {
     if (overrideState.useFixed) {
         sim.stop();
         if (pwm) {
-            pwm->P10_setDutyPercent(overrideState.fixedPercent);
+            pwm->setDutyPercent(overrideState.fixedPercent);
         }
         return true;
     }
@@ -316,7 +316,7 @@ void CL_CT10_ControlManager::applySegmentOn(const ST_A20_ScheduleSegment_t& p_se
     if (p_seg.mode == EN_A20_SEG_MODE_FIXED) {
         sim.stop();
         if (pwm) {
-            pwm->P10_setDutyPercent(p_seg.fixedSpeed);
+            pwm->setDutyPercent(p_seg.fixedSpeed);
         }
         markDirty("state");
         markDirty("chart");
@@ -373,7 +373,7 @@ void CL_CT10_ControlManager::applySegmentOn(const ST_A20_UserProfileSegment_t& p
     if (p_seg.mode == EN_A20_SEG_MODE_FIXED) {
         sim.stop();
         if (pwm) {
-            pwm->P10_setDutyPercent(p_seg.fixedSpeed);
+            pwm->setDutyPercent(p_seg.fixedSpeed);
         }
         markDirty("state");
         markDirty("chart");

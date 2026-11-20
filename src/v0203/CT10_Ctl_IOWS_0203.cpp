@@ -753,7 +753,7 @@ void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnl
     JsonObject v_sim  = A40_ComFunc::Json_ensureObject(p_doc["sim"]);
     JsonObject v_meta = A40_ComFunc::Json_ensureObject(v_sim["meta"]);
 
-    v_meta["pwmDuty"]   = pwm ? pwm->P10_getDutyPercent() : 0.0f;
+    v_meta["pwmDuty"]   = pwm ? pwm->getDutyPercent() : 0.0f;
     v_meta["active"]    = active;
     v_meta["runSource"] = (int)runSource;
     v_meta["override"]  = overrideState.active ? (overrideState.useFixed ? "fixed" : "resolved") : "none";
@@ -799,7 +799,7 @@ void CL_CT10_ControlManager::exportSummaryJson(JsonDocument& p_doc) {
     v_sum["phase"]      = G_A20_WindPhase_Arr[v_phaseIdx].code;
     v_sum["wind"]       = sim.currentWindSpeed;
     v_sum["target"]     = sim.targetWindSpeed;
-    v_sum["pwmDuty"]    = pwm ? pwm->P10_getDutyPercent() : 0.0f;
+    v_sum["pwmDuty"]    = pwm ? pwm->getDutyPercent() : 0.0f;
     v_sum["override"]   = overrideState.active;
     v_sum["useProfile"] = useProfileMode;
     v_sum["mode"]       = useProfileMode ? "PROFILE" : "SCHEDULE";
@@ -831,7 +831,7 @@ void CL_CT10_ControlManager::exportMetricsJson(JsonDocument& p_doc) {
     v_m["overrideFixed"]  = overrideState.useFixed;
     v_m["overrideRemain"] = calcOverrideRemainSec();
 
-    v_m["pwmDuty"] = pwm ? pwm->P10_getDutyPercent() : 0.0f;
+    v_m["pwmDuty"] = pwm ? pwm->getDutyPercent() : 0.0f;
 
     uint8_t v_phaseIdx = static_cast<uint8_t>(sim.phase);
     if (v_phaseIdx >= EN_A20_WIND_PHASE_COUNT) {
@@ -890,7 +890,7 @@ ST_MON_Snapshot_t CL_CT10_ControlManager::getMonitorSnapshot() {
 
         s.windSpeed           = sim.currentWindSpeed;
         s.targetWind          = sim.targetWindSpeed;
-        s.pwmDuty             = pwm ? pwm->P10_getDutyPercent() : 0.0f;
+        s.pwmDuty             = pwm ? pwm->getDutyPercent() : 0.0f;
         s.intensity           = sim.userIntensity;
         s.variability         = sim.userVariability;
         s.gustFreq            = sim.userGustFreq;

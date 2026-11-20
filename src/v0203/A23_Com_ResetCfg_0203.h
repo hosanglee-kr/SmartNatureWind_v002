@@ -323,8 +323,11 @@ static inline void A20_resetTriggerRuleDefault(ST_A20_TriggerRule_t& p_rule) {
         A40_ComFunc::copyStr2Buffer_safe(p_cfg.security.apiKey, "", sizeof(p_cfg.security.apiKey));
         A40_ComFunc::copyStr2Buffer_safe(p_cfg.security.geminiApiKey, "", sizeof(p_cfg.security.geminiApiKey));
 
-        A40_ComFunc::copyStr2Buffer_safe(p_cfg.timeCfg.ntpServer, "pool.ntp.org", sizeof(p_cfg.timeCfg.ntpServer));
-        A40_ComFunc::copyStr2Buffer_safe(p_cfg.timeCfg.timezone, "Asia/Seoul", sizeof(p_cfg.timeCfg.timezone));
+        A40_ComFunc::copyStr2Buffer_safe(p_cfg.timeCfg.ntpServer, A20_Const::G_TIME_DEFAULT_NTP_PRIMARY, sizeof(p_cfg.timeCfg.ntpServer));
+        for (uint8_t i = 0; i < 3; i++) {
+            A40_ComFunc::copyStr2Buffer_safe(p_cfg.timeCfg.ntpFallbackServers[i], A20_Const::G_TIME_NTP_FALLBACK_SERVERS[i], sizeof(p_cfg.timeCfg.ntpFallbackServers[i]));
+        }
+        A40_ComFunc::copyStr2Buffer_safe(p_cfg.timeCfg.timezone, A20_Const::G_TIME_DEFAULT_TZ, sizeof(p_cfg.timeCfg.timezone));
         p_cfg.timeCfg.syncIntervalMin = 60;
     }
 
@@ -518,21 +521,13 @@ static inline void A20_resetTriggerRuleDefault(ST_A20_TriggerRule_t& p_rule) {
 
             ST_A20_PageItem_t& v_p = p_cfg.pages[0];
             A40_ComFunc::copyStr2Buffer_safe(v_p.uri, "/index.html", sizeof(v_p.uri));
-            A40_ComFunc::copyStr2Buffer_safe(v_p.path, "/html_v0203/index.html", sizeof(v_p.path));
+            A40_ComFunc::copyStr2Buffer_safe(v_p.path, A20_Const::G_PATH_WEB_INDEX, sizeof(v_p.path));
             A40_ComFunc::copyStr2Buffer_safe(v_p.label, "Smart Nature Wind", sizeof(v_p.label));
             v_p.enable = true;
             v_p.isMain = true;
             v_p.order  = 10;
 
             v_p.pageAssetCount  = 0;
-            auto v_addPageAsset = [&](const char* p_uri, const char* p_path) {
-                if (v_p.pageAssetCount >= A20_Const::MAX_PAGE_ASSETS) return;
-                ST_A20_PageAsset_t& v_a = v_p.pageAssets[v_p.pageAssetCount++];
-                A40_ComFunc::copyStr2Buffer_safe(v_a.uri, p_uri, sizeof(v_a.uri));
-                A40_ComFunc::copyStr2Buffer_safe(v_a.path, p_path, sizeof(v_a.path));
-            };
-            v_addPageAsset("/P000_common_0203.css", "/html_v0203/P000_common_0203.css");
-            v_addPageAsset("/P010_bundle_0203.js", "/html_v0203/P010_bundle_0203.js");
         }
 
         auto v_addRedirect = [&](const char* p_from, const char* p_to) {

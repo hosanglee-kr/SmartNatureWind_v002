@@ -28,8 +28,8 @@
 // ------------------------------------------------------
 // Gemini API 상수
 // ------------------------------------------------------
-#define G_W10_GEMINI_HOST          "generativelanguage.googleapis.com"
-#define G_W10_GEMINI_PORT          443
+#define G_W10_GEMINI_HOST          A20_Const::G_GEMINI_HOST
+#define G_W10_GEMINI_PORT          A20_Const::G_GEMINI_PORT
 #define G_W10_GEMINI_TIMEOUT       W10_AI_Limits::G_GEMINI_TIMEOUT_MS
 #define G_W10_GEMINI_RATE_LIMIT_MS W10_AI_Limits::G_RATE_LIMIT_MS
 #define G_W10_GEMINI_MAX_RESP      W10_AI_Limits::G_MAX_RESPONSE_BYTES
@@ -89,7 +89,7 @@ static String W10_callGeminiApi(const char* p_body, size_t p_len, int& r_httpCod
     v_http.setTimeout(G_W10_GEMINI_TIMEOUT);
 
     // [신규 P0] API Key를 URL이 아닌 헤더로 (로그 노출 + MITM 위험 제거)
-    String v_url = "https://" G_W10_GEMINI_HOST "/v1beta/models/gemini-2.5-flash:generateContent";
+    String v_url = A20_Const::G_GEMINI_REST_URL;
 
     if (!v_http.begin(v_client, v_url)) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10][Gemini] HTTPClient begin failed");

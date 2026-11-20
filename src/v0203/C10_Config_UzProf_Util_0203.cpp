@@ -251,11 +251,6 @@ bool C10_fromJson_UserProfileItem(const JsonObjectConst&    p_jp,
         A20_resetTriggerRuleDefault(p_up.rule);
     }
 
-    // [deprecated] 레거시 autoOff/motion 감지 경고 (파싱은 무시)
-    if (p_jp["autoOff"].is<JsonObjectConst>() || p_jp["motion"].is<JsonObjectConst>()) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN, "[C10][%s] legacy autoOff/motion detected (ignored, use 'rule')", v_caller);
-    }
-
     return true;
 }
 

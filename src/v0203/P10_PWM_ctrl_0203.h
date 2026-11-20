@@ -193,15 +193,6 @@ class CL_P10_PWM {
 	uint32_t getRawDuty() const { return (_state.initialized) ? ledcRead(_state.channel) : 0; }
 #endif
 
-	// 호환용 래퍼
-	void P10_begin(const ST_A20_SystemConfig_t& p_cfg) { begin(p_cfg); }
-	void P10_setEnabled(bool p_enabled) { setEnabled(p_enabled); }
-	bool P10_isEnabled() const { return isEnabled(); }
-	bool P10_isInitialized() const { return isInitialized(); }
-	void P10_setDutyPercent(float p_percent) { setDutyPercent(p_percent); }
-	float P10_getDutyPercent() const { return getDutyPercent(); }
-	uint32_t P10_getRawDuty() const { return getRawDuty(); }
-
   private:
 	ST_P10_PWMState_t _state;
 

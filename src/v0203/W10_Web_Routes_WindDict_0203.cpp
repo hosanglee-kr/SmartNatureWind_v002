@@ -37,8 +37,8 @@ void CL_W10_WebAPI::routeWindDict() {
         }
 
         // 2) Fallback: LittleFS 직접 파일 서빙
-        if (LittleFS.exists("/json/cfg_windDict_0203.json")) {
-            File f = LittleFS.open("/json/cfg_windDict_0203.json", "r");
+        if (LittleFS.exists(A20_Const::G_PATH_CFG_WIND_DICT)) {
+            File f = LittleFS.open(A20_Const::G_PATH_CFG_WIND_DICT, "r");
             if (f) {
                 String content = f.readString();
                 f.close();

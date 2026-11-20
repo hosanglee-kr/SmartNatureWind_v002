@@ -99,21 +99,17 @@ class CL_TM10_TimeManager {
 #endif
 
     // 내부 상태 (inline static)
-    inline static bool s_timeSyncedRecently = false;
-    inline static SemaphoreHandle_t s_mutex = nullptr;
+    inline static bool              s_timeSyncedRecently = false;
+    inline static SemaphoreHandle_t s_mutex              = nullptr;
 
     // 설정 캐시 (inline static)
     inline static char     s_tz[64]         = {0};
     inline static char     s_primary[64]    = {0};
     inline static uint32_t s_syncIntervalMs = (6UL * 60UL * 60UL * 1000UL);
 
-    // fallback 서버 풀 (inline static)
-    inline static const char* s_fallbackServers[3] = {
-        "time.google.com",
-        "time.cloudflare.com",
-        "pool.ntp.org",
-    };
-    inline static char s_serverList[4][64] = {{0}};
+    // fallback 서버 풀 (inline static, A20_Const SSOT 참조)
+    inline static const char* const (&s_fallbackServers)[3] = A20_Const::G_TIME_NTP_FALLBACK_SERVERS;
+    inline static char s_serverList[4][64]                  = {{0}};
 
     // 내부 상태 (inline static)
     inline static bool     s_running         = false;
@@ -134,14 +130,3 @@ class CL_TM10_TimeManager {
     static void _switchToNextServer();
     static void _updateSyncedRecently(uint32_t p_nowMs);
 };
-
-// ------------------------------------------------------
-// 호환 전역 함수 (inline 유지, 각 TU 내부 링크)
-// ------------------------------------------------------
-static inline void TM10_applyTimeConfigFromSystem(const ST_A20_SystemConfig_t& p_sys) {
-    CL_TM10_TimeManager::applyTimeConfig(p_sys);
-}
-
-static inline void TM10_requestTimeSync(bool p_force = false) {
-    CL_TM10_TimeManager::requestTimeSync(p_force);
-}

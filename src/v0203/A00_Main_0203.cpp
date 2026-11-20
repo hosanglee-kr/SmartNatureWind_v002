@@ -24,7 +24,7 @@
  * [Batch E] Dead Code 정리
  *  - <WiFiMulti.h> include 제거 (WF10 경유 transitive 포함)
  *  - commented factory reset 블록 제거
- *  - "=== Boot (v002) ===" → v0201 표기
+ *  - "=== Boot (v002) ===" → v0203 표기
  * ------------------------------------------------------
  */
 
@@ -129,7 +129,7 @@ void A00_init() {
             CL_D10_Logger::log(EN_L10_LOG_ERROR,
                                "[A00] Recovery defaults allocation failed. Booting recovery AP only.");
             WiFi.mode(WIFI_AP);
-            WiFi.softAP("NatureWind_Recovery", "2540");
+            WiFi.softAP(A20_Const::G_WIFI_RECOVERY_AP_SSID, A20_Const::G_WIFI_RECOVERY_AP_PASS);
             return;
         }
 
@@ -187,7 +187,7 @@ void A00_init() {
     // ------------------------------------------------------
     // 6. PWM + Control + Simulation
     // ------------------------------------------------------
-    g_P10_pwm.P10_begin(*g_A20_config_root.system);
+    g_P10_pwm.begin(*g_A20_config_root.system);
 
     CL_CT10_ControlManager::begin();
 

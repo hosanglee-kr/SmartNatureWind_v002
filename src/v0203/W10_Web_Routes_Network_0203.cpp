@@ -48,12 +48,8 @@ static void _netOnReqEmptyCheck(AsyncWebServerRequest* p_request) {
     }
 }
 
-static bool _netAccumJson(AsyncWebServerRequest* p_request,
-                          uint8_t*               p_data,
-                          size_t                 p_len,
-                          size_t                 p_index,
-                          size_t                 p_total,
-                          JsonDocument&          r_doc) {
+static bool _netAccumJson(
+    AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total, JsonDocument& r_doc) {
     if (p_index == 0) {
         if (!CL_W10_WebAPI::requireApiKey(p_request)) return false;
         if (p_total == 0) {
@@ -88,9 +84,8 @@ static bool _netAccumJson(AsyncWebServerRequest* p_request,
     return true;
 }
 
-static void _routeWifiConfigPatchBody(AsyncWebServerRequest* p_request,
-                                      uint8_t* p_data, size_t p_len,
-                                      size_t p_index, size_t p_total) {
+static void _routeWifiConfigPatchBody(
+    AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
     JsonDocument v_doc;
     if (!_netAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
 
@@ -140,7 +135,7 @@ void CL_W10_WebAPI::routeWifiConfig() {
     s_server->on(W10_Const::HTTP_API_WIFI_CONFIG, HTTP_GET, [](AsyncWebServerRequest* p_request) {
         if (!requireApiKey(p_request)) return;
 
-        JsonDocument v_doc;
+        JsonDocument        v_doc;
         ST_A20_ConfigRoot_t v_snap;
         CL_C10_ConfigManager::getRootSnapshot(v_snap);
         if (v_snap.wifi) {
@@ -150,53 +145,50 @@ void CL_W10_WebAPI::routeWifiConfig() {
     });
 
     // [F-3] POST + PATCH 공통 헬퍼
-    s_server->on(W10_Const::HTTP_API_WIFI_CONFIG, HTTP_POST,
-                 _netOnReqEmptyCheck, nullptr, _routeWifiConfigPatchBody);
-    s_server->on(W10_Const::HTTP_API_WIFI_CONFIG, HTTP_PATCH,
-                 _netOnReqEmptyCheck, nullptr, _routeWifiConfigPatchBody);
+    s_server->on(W10_Const::HTTP_API_WIFI_CONFIG, HTTP_POST, _netOnReqEmptyCheck, nullptr, _routeWifiConfigPatchBody);
+    s_server->on(W10_Const::HTTP_API_WIFI_CONFIG, HTTP_PATCH, _netOnReqEmptyCheck, nullptr, _routeWifiConfigPatchBody);
 }
 
 // --------------------------------------------------
 // 2. /api/system/time/set
 // --------------------------------------------------
 void CL_W10_WebAPI::routeTimeSet() {
-    s_server->on(
-        W10_Const::HTTP_API_TIME_SET,
-        HTTP_POST,
-        _netOnReqEmptyCheck,
-        nullptr,
-        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            JsonDocument v_doc;
-            if (!_netAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
+    s_server->on(W10_Const::HTTP_API_TIME_SET,
+                 HTTP_POST,
+                 _netOnReqEmptyCheck,
+                 nullptr,
+                 [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+                     JsonDocument v_doc;
+                     if (!_netAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
 
-            ST_A20_ConfigRoot_t v_snap;
-            CL_C10_ConfigManager::getRootSnapshot(v_snap);
+                     ST_A20_ConfigRoot_t v_snap;
+                     CL_C10_ConfigManager::getRootSnapshot(v_snap);
 
-            bool v_changed = false;
-            if (v_snap.system) {
-                v_changed = CL_C10_ConfigManager::patchSystemFromJson(*v_snap.system, v_doc);
-                if (v_changed) {
-                    CL_W10_WebAPI::applySystemRuntimeFromConfig(*v_snap.system);
-                }
-            }
+                     bool v_changed = false;
+                     if (v_snap.system) {
+                         v_changed = CL_C10_ConfigManager::patchSystemFromJson(*v_snap.system, v_doc);
+                         if (v_changed) {
+                             CL_W10_WebAPI::applySystemRuntimeFromConfig(*v_snap.system);
+                         }
+                     }
 
-            JsonDocument v_res;
-            v_res["updated"] = v_changed;
+                     JsonDocument v_res;
+                     v_res["updated"] = v_changed;
 
-            if (v_changed && v_snap.system) {
-                CL_C10_ConfigManager::saveDirtyConfigs();
+                     if (v_changed && v_snap.system) {
+                         CL_C10_ConfigManager::saveDirtyConfigs();
 
-                TM10_applyTimeConfigFromSystem(*v_snap.system);
-                TM10_requestTimeSync();
+                         CL_TM10_TimeManager::applyTimeConfig(*v_snap.system);
+                         CL_TM10_TimeManager::requestTimeSync();
 
-                v_res["status"] = "applied";
-                CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Time config updated and applied (TM10).");
-            } else {
-                v_res["status"] = "no_change";
-            }
+                         v_res["status"] = "applied";
+                         CL_D10_Logger::log(EN_L10_LOG_INFO, "[W10] Time config updated and applied (TM10).");
+                     } else {
+                         v_res["status"] = "no_change";
+                     }
 
-            sendJson(p_request, v_res);
-        });
+                     sendJson(p_request, v_res);
+                 });
 }
 
 // --------------------------------------------------
@@ -212,8 +204,8 @@ void CL_W10_WebAPI::routeFirmwareCheck() {
         const char* v_current_semver  = A20_Const::FW_VERSION_SEMVER;
 
         // TODO: 실제 OTA 서버 연동 시 서버 응답으로 대체
-        const char* v_latest_semver   = "2.0.3";
-        const char* v_latest_version  = "FW_Ver_2.0.3";
+        const char* v_latest_semver  = "2.0.3";
+        const char* v_latest_version = "FW_Ver_2.0.3";
 
         v_doc["current_version"] = v_current_version;
 

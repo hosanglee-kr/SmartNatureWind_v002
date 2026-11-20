@@ -29,9 +29,7 @@
 using namespace W10_Const;
 
 // Live WS 기본 엔드포인트
-static const char* G_W10_LIVE_WS_URL =
-    "wss://generativelanguage.googleapis.com/ws/"
-    "google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent";
+static const char*        G_W10_LIVE_WS_URL        = A20_Const::G_GEMINI_LIVE_WS_URL;
 static const char*        G_W10_LIVE_DEFAULT_VOICE = "Aoede";
 static constexpr uint32_t G_W10_LIVE_DAILY_CAP_SEC = 1800; // 30분
 static constexpr uint32_t G_W10_LIVE_WARN_SEC      = 1500; // 25분 경고

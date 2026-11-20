@@ -118,7 +118,7 @@ void CL_S10_Simulation::stop() {
     thermalContribution = 0.0f;
 
     if (_pwm) {
-        _pwm->P10_setDutyPercent(0.0f);
+        _pwm->setDutyPercent(0.0f);
     }
 }
 
@@ -280,7 +280,7 @@ void CL_S10_Simulation::tick() {
             v_e.timestamp        = v_epochMs;
             v_e.wind_speed       = currentWindSpeed;
             v_e.target_wind      = targetWindSpeed;
-            v_e.pwm_duty         = _pwm ? _pwm->P10_getDutyPercent() : 0.0f;
+            v_e.pwm_duty         = _pwm ? _pwm->getDutyPercent() : 0.0f;
             v_e.intensity        = userIntensity;
             v_e.variability      = userVariability;
             v_e.turbulence_sigma = turbSigma;
@@ -380,7 +380,7 @@ void CL_S10_Simulation::applyFan(float p_pct) {
 
     // [F-8] 0% 임계 상수화
     if (!fanPowerEnabled || v_intPct <= G_S10_FAN_ZERO_THRESHOLD) {
-        _pwm->P10_setDutyPercent(0.0f);
+        _pwm->setDutyPercent(0.0f);
         return;
     }
 
@@ -401,5 +401,5 @@ void CL_S10_Simulation::applyFan(float p_pct) {
         v_maxPct / 100.0f
     );
 
-    _pwm->P10_setDutyPercent(v_phy01 * 100.0f);
+    _pwm->setDutyPercent(v_phy01 * 100.0f);
 }

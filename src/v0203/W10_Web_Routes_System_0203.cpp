@@ -80,8 +80,8 @@ static void _routeSystemPatchBody(AsyncWebServerRequest* p_request,
     // [N-2] timeCfg 변경 시 TM10 재적용 (재부팅 없이 반영)
     // ======================================================
     if (v_changed && !v_doc["timeCfg"].isNull() && v_snap.system) {
-        TM10_applyTimeConfigFromSystem(*v_snap.system);
-        TM10_requestTimeSync();
+        CL_TM10_TimeManager::applyTimeConfig(*v_snap.system);
+        CL_TM10_TimeManager::requestTimeSync();
         CL_D10_Logger::log(EN_L10_LOG_INFO,
                            "[W10] timeCfg changed → TM10 reapplied (NTP sync requested)");
     }

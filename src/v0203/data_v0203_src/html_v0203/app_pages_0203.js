@@ -1914,7 +1914,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 240.page.settings.js (46359 bytes) ---- */
+/* ---- 240.page.settings.js (46703 bytes) ---- */
 // =========================================================
 // 240.page.settings.js — SNW.Page.Settings
 // Layer 4 (페이지 로직)
@@ -2549,13 +2549,19 @@ SNW.Page = SNW.Page || {};
                     }
                 }
 
+                if (this._saving) return;
+                this._saving = true;
                 try {
                     await SNW.Api.patchSystem(patch);
                     await SNW.Api.saveConfig();
 
                     const autoReload = q('#save-and-reload') ? q('#save-and-reload').checked : false;
                     if (autoReload && !window.SNW_OFFLINE) {
-                        await SNW.Api.reload();
+                        try {
+                            await SNW.Api.reload();
+                        } catch (reloadErr) {
+                            if (!reloadErr || reloadErr.status !== 409) throw reloadErr;
+                        }
                         SNW.ToastUtil.success(SNW.I18n.t('msg.saveAndReloadSuccess'));
                     } else {
                         SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
@@ -2564,6 +2570,8 @@ SNW.Page = SNW.Page || {};
                     await this._loadSystem();
                 } catch (e) {
                     SNW.ErrorHandler.handle(e, 'settings.save');
+                } finally {
+                    this._saving = false;
                 }
             }
 
@@ -4167,7 +4175,7 @@ SNW.Page = SNW.Page || {};
 	};
 })(window.SNW);
 
-/* ---- 290.page.ai.js (16972 bytes) ---- */
+/* ---- 290.page.ai.js (17016 bytes) ---- */
 // =========================================================
 // 290.page.ai.js — SNW.Page.AI
 // Layer 4 (페이지 로직: AI 스튜디오, 2-turn REST 제어 & Gemini Live Voice)
@@ -4536,6 +4544,7 @@ SNW.Page = SNW.Page || {};
 			if (!msg) return;
 			inp.value = '';
 
+			const prevHistory = this._history.slice();
 			this._appendMessage('user', msg, true);
 			this._appendMessage('assistant', SNW.I18n.t('ai.thinking'), false);
 
@@ -4545,7 +4554,7 @@ SNW.Page = SNW.Page || {};
 				let actions = [];
 
 				if (SNW.AIClient) {
-					const res = await SNW.AIClient.send(msg, this._history, {
+					const res = await SNW.AIClient.send(msg, prevHistory, {
 						lang: (SNW.I18n && SNW.I18n.getLang ? SNW.I18n.getLang() : 'ko'),
 						voiceMode: isVoiceMode
 					});

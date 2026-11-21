@@ -309,7 +309,7 @@ window.SNW = window.SNW || {};
         // =====================================================
         TIMEOUT_MS: {
             DEFAULT: 8000,
-            GEMINI: 20000,
+            GEMINI: 45000,
             UPLOAD: 60000,
             SCAN: 15000
         },

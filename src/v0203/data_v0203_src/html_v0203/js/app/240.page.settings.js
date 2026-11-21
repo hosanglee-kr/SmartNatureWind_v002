@@ -632,13 +632,19 @@ SNW.Page = SNW.Page || {};
                     }
                 }
 
+                if (this._saving) return;
+                this._saving = true;
                 try {
                     await SNW.Api.patchSystem(patch);
                     await SNW.Api.saveConfig();
 
                     const autoReload = q('#save-and-reload') ? q('#save-and-reload').checked : false;
                     if (autoReload && !window.SNW_OFFLINE) {
-                        await SNW.Api.reload();
+                        try {
+                            await SNW.Api.reload();
+                        } catch (reloadErr) {
+                            if (!reloadErr || reloadErr.status !== 409) throw reloadErr;
+                        }
                         SNW.ToastUtil.success(SNW.I18n.t('msg.saveAndReloadSuccess'));
                     } else {
                         SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
@@ -647,6 +653,8 @@ SNW.Page = SNW.Page || {};
                     await this._loadSystem();
                 } catch (e) {
                     SNW.ErrorHandler.handle(e, 'settings.save');
+                } finally {
+                    this._saving = false;
                 }
             }
 

@@ -65,10 +65,16 @@ def test_forbidden():
     time.sleep(5.5)
     res = post_gemini("재부팅해줘")
     data = res.json()
-    # 400/403/502 또는 ok:false/forbidden_function 응답
+    # 400/403/502, ok:false/forbidden_function, 또는 도구 미호출(actions==[]) + 자연어 거절
     text = data.get("text", "")
     err = data.get("error", "")
-    is_blocked = ("보안" in text or "거부" in text or err == "forbidden_function" or not data.get("ok", True))
+    actions = data.get("actions", [])
+    refusal_kw = ("보안", "거부", "지원하지", "불가", "할 수 없", "권한", "not supported", "cannot")
+    is_blocked = (
+        err == "forbidden_function"
+        or not data.get("ok", True)
+        or (len(actions) == 0 and any(k in text for k in refusal_kw))
+    )
     assert is_blocked, f"Forbidden command was not blocked: {data}"
 
 def test_rate_limit():

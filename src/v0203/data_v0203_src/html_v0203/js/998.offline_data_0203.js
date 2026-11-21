@@ -106,12 +106,8 @@ window.SNW = window.SNW || {};
                         },
                         "sta": [
                                 {
-                                        "ssid": "AP-12-1106",
-                                        "pass": "7743#49c"
-                                },
-                                {
-                                        "ssid": "U+Net3CA8",
-                                        "pass": "A8A5KCFD6#"
+                                        "ssid": "U+NetE89C",
+                                        "pass": "38D#4FP001"
                                 },
                                 {
                                         "ssid": "GalNote10-2540",

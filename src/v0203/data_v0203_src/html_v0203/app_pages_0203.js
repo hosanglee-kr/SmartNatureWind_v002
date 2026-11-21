@@ -3658,7 +3658,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 270.page.network.js (21548 bytes) ---- */
+/* ---- 270.page.network.js (21514 bytes) ---- */
 // =========================================================
 // 270.page.network.js — SNW.Page.Network
 // Layer 4 (페이지 로직)
@@ -3681,15 +3681,15 @@ SNW.Page = SNW.Page || {};
             this.el.appendChild(SNW.Tpl.network());
             SNW.I18n.applyTo(this.el);
 
-            try { await this._loadWifiState(); }   catch (e) {}
-            try { await this._loadWifiConfig(); } catch (e) {}
-            try { await this._loadSystemTime(); } catch (e) {}
+            try { await this._loadWifiState(); } catch (e) { }
+            try { await this._loadWifiConfig(); } catch (e) { }
+            try { await this._loadSystemTime(); } catch (e) { }
 
-            SNW.DomUtil.delegate(this.el, '[data-action="scan"]',       'click', () => this._onScan());
-            SNW.DomUtil.delegate(this.el, '[data-action="time-save"]',  'click', () => this._onSaveTime());
-            SNW.DomUtil.delegate(this.el, '[data-action="wifi-save"]',  'click', () => this._onSaveWifi());
-            SNW.DomUtil.delegate(this.el, '[data-action="add-sta"]',    'click', () => this._onAddSta());
-            SNW.DomUtil.delegate(this.el, '[data-action="del-sta"]',    'click', (e, el) => this._onDeleteSta(Number(el.getAttribute('data-idx'))));
+            SNW.DomUtil.delegate(this.el, '[data-action="scan"]', 'click', () => this._onScan());
+            SNW.DomUtil.delegate(this.el, '[data-action="time-save"]', 'click', () => this._onSaveTime());
+            SNW.DomUtil.delegate(this.el, '[data-action="wifi-save"]', 'click', () => this._onSaveWifi());
+            SNW.DomUtil.delegate(this.el, '[data-action="add-sta"]', 'click', () => this._onAddSta());
+            SNW.DomUtil.delegate(this.el, '[data-action="del-sta"]', 'click', (e, el) => this._onDeleteSta(Number(el.getAttribute('data-idx'))));
         }
 
         unmount() { this._active = false; }
@@ -3699,7 +3699,7 @@ SNW.Page = SNW.Page || {};
             try {
                 const data = await SNW.Api.getWifiState();
                 state = (data && data.wifi && data.wifi.state) || {};
-            } catch {}
+            } catch { }
 
             const slot = this.el.querySelector('[data-slot="wifi-state"]');
             if (!slot) return;
@@ -3726,7 +3726,7 @@ SNW.Page = SNW.Page || {};
                 const data = await SNW.Api.getWifiConfig();
                 this._wifiConfig = (data && data.wifi) ? data.wifi : { wifiMode: 2, ap: { ssid: '', pass: '' }, sta: [] };
                 if (!this._wifiConfig.sta) this._wifiConfig.sta = [];
-                if (!this._wifiConfig.ap)  this._wifiConfig.ap  = { ssid: '', pass: '' };
+                if (!this._wifiConfig.ap) this._wifiConfig.ap = { ssid: '', pass: '' };
                 this._renderWifiConfigForm();
             } catch (e) {
                 SNW.ErrorHandler.handle(e, 'network.loadWifi');
@@ -3738,8 +3738,8 @@ SNW.Page = SNW.Page || {};
             if (!slot || !this._wifiConfig) return;
 
             const mode = this._wifiConfig.wifiMode;
-            const ap   = this._wifiConfig.ap;
-            const sta  = this._wifiConfig.sta;
+            const ap = this._wifiConfig.ap;
+            const sta = this._wifiConfig.sta;
 
             let html = `
                 <div class="snw-form-row">
@@ -3812,13 +3812,13 @@ SNW.Page = SNW.Page || {};
         }
 
         async _onSaveWifi() {
-            const mode   = Number(this.el.querySelector('#wifi-mode').value);
+            const mode = Number(this.el.querySelector('#wifi-mode').value);
             const apSsid = this.el.querySelector('#ap-ssid').value;
             const apPass = this.el.querySelector('#ap-pass').value;
 
             const newSta = [];
             this.el.querySelectorAll('[data-sta-ssid]').forEach(el => {
-                const idx  = el.getAttribute('data-sta-ssid');
+                const idx = el.getAttribute('data-sta-ssid');
                 const ssid = el.value.trim();
                 const passEl = this.el.querySelector(`[data-sta-pass="${idx}"]`);
                 const pass = passEl ? passEl.value : '';
@@ -3875,9 +3875,9 @@ SNW.Page = SNW.Page || {};
                 try {
                     const wsConf = data?.system?.webSocket || {};
                     const wsChArr = wsConf.wsChConfig || [
-                        { chIdx: 0, chName: 'state',   chIntervalMs: 800,  priority: 0 },
+                        { chIdx: 0, chName: 'state', chIntervalMs: 800, priority: 0 },
                         { chIdx: 1, chName: 'metrics', chIntervalMs: 1500, priority: 1 },
-                        { chIdx: 2, chName: 'chart',   chIntervalMs: 1200, priority: 2 },
+                        { chIdx: 2, chName: 'chart', chIntervalMs: 1200, priority: 2 },
                         { chIdx: 3, chName: 'summary', chIntervalMs: 1500, priority: 3 },
                     ];
                     const wsEtc = wsConf.wsEtcConfig || {};
@@ -3930,18 +3930,18 @@ SNW.Page = SNW.Page || {};
                             }
                         };
                     }
-                } catch (e) {}
+                } catch (e) { }
             } catch (e) {
                 SNW.LogUtil.warn('[Network] time config load 실패', e);
             }
         }
 
         async _onSaveTime() {
-            const ntp    = this.el.querySelector('#ntp-server').value.trim();
-            const fbRaw  = (this.el.querySelector('#ntp-fallback-servers')?.value || '');
+            const ntp = this.el.querySelector('#ntp-server').value.trim();
+            const fbRaw = (this.el.querySelector('#ntp-fallback-servers')?.value || '');
             const fbList = fbRaw.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3);
-            const tz     = this.el.querySelector('#timezone').value.trim();
-            const sync   = Number(this.el.querySelector('#sync-interval').value);
+            const tz = this.el.querySelector('#timezone').value.trim();
+            const sync = Number(this.el.querySelector('#sync-interval').value);
 
             if (!ntp) {
                 SNW.ToastUtil.error(SNW.I18n.t('validate.required', { field: 'NTP Server' }));

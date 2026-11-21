@@ -2,28 +2,39 @@
 // 998.overlay.onboarding.js — 첫 방문 온보딩 (4단계)
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     const LS_KEY = 'snw.onboarded';
+    let _onboardingRunning = false;
 
     SNW.Onboarding = {
         async start() {
-            // 이미 완료
-            if (localStorage.getItem(LS_KEY) === '1') return;
+            // 이미 완료 또는 중복 실행 방지
+            if (localStorage.getItem(LS_KEY) === '1' || _onboardingRunning) return;
+            _onboardingRunning = true;
+            try {
 
             // =========================================================
             // 1) 언어
             // =========================================================
             const lang = await this._stepLang();
-            if (lang && SNW.I18n && typeof SNW.I18n.setLang === 'function') {
+            if (!lang) {
+                localStorage.setItem(LS_KEY, '1');
+                return;
+            }
+            if (SNW.I18n && typeof SNW.I18n.setLang === 'function') {
                 SNW.I18n.setLang(lang);
             }
 
             // =========================================================
             // 2) WiFi 안내 (이미 연결됨 가정)
             // =========================================================
-            await this._stepWifi();
+            const wifiOk = await this._stepWifi();
+            if (!wifiOk) {
+                localStorage.setItem(LS_KEY, '1');
+                return;
+            }
             await new Promise(r => setTimeout(r, 300));
 
             // =========================================================
@@ -40,8 +51,8 @@ window.SNW = window.SNW || {};
                     try {
                         if (typeof SNW.Api.startPreset === 'function') {
                             await SNW.Api.startPreset(choice.presetCode, choice.styleCode);
-                        
-                        // [998.onboarding.js] _stepStartNow 이후 startSession 폴백 수정 (라인 45~49 부근)
+
+                            // [998.onboarding.js] _stepStartNow 이후 startSession 폴백 수정 (라인 45~49 부근)
                         } else if (typeof SNW.Api.startSession === 'function') {
                             await SNW.Api.startSession({
                                 type: 'PRESET',
@@ -62,6 +73,9 @@ window.SNW = window.SNW || {};
 
             // 완료
             localStorage.setItem(LS_KEY, '1');
+            } finally {
+                _onboardingRunning = false;
+            }
         },
 
         // =========================================================
@@ -90,16 +104,22 @@ window.SNW = window.SNW || {};
             `;
 
             return new Promise(resolve => {
+                let settled = false;
                 let modalRef = null;
+                const finish = (val) => {
+                    if (settled) return;
+                    settled = true;
+                    resolve(val);
+                };
                 content.querySelectorAll('[data-lang]').forEach(btn => {
                     btn.onclick = () => {
-                        resolve(btn.getAttribute('data-lang'));
+                        finish(btn.getAttribute('data-lang'));
                         if (modalRef && typeof modalRef.close === 'function') {
                             modalRef.close();
                         }
                     };
                 });
-                modalRef = SNW.UI.modal('환영합니다 / Welcome', content, null, null,
+                modalRef = SNW.UI.modal('환영합니다 / Welcome', content, null, () => finish(null),
                     { hideOk: true, hideCancel: true, width: '440px' });
             });
         },
@@ -125,11 +145,17 @@ window.SNW = window.SNW || {};
             `;
 
             return new Promise(resolve => {
+                let settled = false;
+                const finish = (val) => {
+                    if (settled) return;
+                    settled = true;
+                    resolve(val);
+                };
                 SNW.UI.modal(
                     t('onboarding.step2', '단계 2: 네트워크 안내'),
                     content,
-                    () => { resolve(); return true; },
-                    null,
+                    () => { finish(true); return true; },
+                    () => { finish(false); },
                     { okLabel: t('onboarding.connected', '확인 완료'), hideCancel: true, width: '440px' }
                 );
             });
@@ -179,11 +205,17 @@ window.SNW = window.SNW || {};
             `;
 
             return new Promise(resolve => {
+                let settled = false;
                 let modalRef = null;
+                const finish = (val) => {
+                    if (settled) return;
+                    settled = true;
+                    resolve(val);
+                };
                 content.querySelectorAll('[data-idx]').forEach(btn => {
                     btn.onclick = () => {
                         const idx = Number(btn.getAttribute('data-idx'));
-                        resolve(choices[idx]);
+                        finish(choices[idx]);
                         if (modalRef && typeof modalRef.close === 'function') {
                             modalRef.close();
                         }
@@ -191,7 +223,7 @@ window.SNW = window.SNW || {};
                 });
                 modalRef = SNW.UI.modal(
                     t('onboarding.step3', '단계 3: 첫 바람 선택'),
-                    content, null, null,
+                    content, null, () => finish(null),
                     { hideOk: true, hideCancel: true, width: '480px' }
                 );
             });

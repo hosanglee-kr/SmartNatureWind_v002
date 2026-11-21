@@ -106,7 +106,9 @@ window.SNW = window.SNW || {};
             card.className = 'snw-schedule-item' + (sch.enabled ? '' : ' is-disabled');
 
             const profile = this._profiles.find(p => p.profileId === sch.profileId);
-            const profileName = profile ? profile.name : '(삭제된 프로필)';
+            const profileName = profile
+                ? ((SNW.I18n && SNW.I18n.profileName) ? SNW.I18n.profileName(profile) : profile.name)
+                : '(삭제된 프로필)';
             const profileMissing = !profile;
 
             const days = (sch.period && sch.period.days) || [0, 0, 0, 0, 0, 0, 0];
@@ -232,13 +234,13 @@ window.SNW = window.SNW || {};
                         <div class="snw-form-row" style="margin-bottom:10px;">
                             <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;">바람 프리셋 선택</label>
                             <select id="simple-preset-select" style="width:100%;padding:8px;background:var(--snw-surface-1,#1f242c);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
-                                ${PRESETS.map(p => `<option value="${p.code}">${p.name}</option>`).join('')}
+                                ${PRESETS.map(p => `<option value="${p.code}">${(SNW.I18n && SNW.I18n.presetName) ? SNW.I18n.presetName(p.code, p) : p.name}</option>`).join('')}
                             </select>
                         </div>
                         <div class="snw-form-row">
                             <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;">바람 스타일 선택</label>
                             <select id="simple-style-select" style="width:100%;padding:8px;background:var(--snw-surface-1,#1f242c);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
-                                ${STYLES.map(s => `<option value="${s.code}">${s.name}</option>`).join('')}
+                                ${STYLES.map(s => `<option value="${s.code}">${(SNW.I18n && SNW.I18n.styleName) ? SNW.I18n.styleName(s.code, s) : s.name}</option>`).join('')}
                             </select>
                         </div>
                     </div>
@@ -252,7 +254,7 @@ window.SNW = window.SNW || {};
                                     <input type="radio" name="profile" value="${p.profileId}"
                                            ${isEdit && sch.profileId === p.profileId ? 'checked' : ''}>
                                     <div class="snw-profile-radio__content">
-                                        <div class="snw-profile-radio__name">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(p.name) : p.name}</div>
+                                        <div class="snw-profile-radio__name">📋 ${SNW.DomUtil ? SNW.DomUtil.escape((SNW.I18n && SNW.I18n.profileName) ? SNW.I18n.profileName(p) : p.name) : p.name}</div>
                                         <div class="snw-profile-radio__meta">
                                             ${p.stepCount || (p.steps ? p.steps.length : 0)}개 Step · ${this._fmtTotal(p)}
                                         </div>

@@ -1554,6 +1554,31 @@ window.SNW = window.SNW || {};
 
     const ALL_KEYS = new Set([...Object.keys(DICT.ko), ...Object.keys(DICT.en)]);
 
+    const SCENARIO_BY_PROFILE_NO = {
+        10: 'sleep',
+        20: 'office',
+        30: 'study',
+        40: 'rest',
+        50: 'exercise',
+        70: 'pet',
+        80: 'baby'
+    };
+    const DEFAULT_PROFILE_NAMES = new Set([
+        '수면모드', '집중모드', '휴식모드', '환기모드', '활동모드', '반려동물 케어', '아기/유아 케어'
+    ]);
+
+    function _pickLocalizedField(itemOrFallback) {
+        if (!itemOrFallback) return '';
+        if (typeof itemOrFallback === 'string') return itemOrFallback;
+        if (typeof itemOrFallback === 'object') {
+            if (currentLang === 'en') {
+                return itemOrFallback.nameEn || itemOrFallback.name || itemOrFallback.nameKo || '';
+            }
+            return itemOrFallback.nameKo || itemOrFallback.name || itemOrFallback.nameEn || '';
+        }
+        return '';
+    }
+
     SNW.I18n = {
         getLang() { return currentLang; },
 
@@ -1577,6 +1602,46 @@ window.SNW = window.SNW || {};
 
         hasKey(key) {
             return ALL_KEYS.has(key);
+        },
+
+        presetName(code, itemOrFallback) {
+            const c = code || '';
+            const k = c ? 'preset.' + c : '';
+            if (k && this.hasKey(k)) return this.t(k);
+            return _pickLocalizedField(itemOrFallback) || c;
+        },
+
+        styleName(code, itemOrFallback) {
+            const c = code || '';
+            const k = c ? 'style.' + c : '';
+            if (k && this.hasKey(k)) return this.t(k);
+            return _pickLocalizedField(itemOrFallback) || c;
+        },
+
+        presetStyleName(presetCode, styleCode, presetObj, styleObj) {
+            const pFb = presetObj || (currentLang === 'en' ? 'Natural Wind' : '자연풍');
+            const sFb = styleObj || (currentLang === 'en' ? 'Standard' : '표준');
+            return `${this.presetName(presetCode, pFb)} · ${this.styleName(styleCode, sFb)}`;
+        },
+
+        profileName(profileOrSession) {
+            if (!profileOrSession) return '';
+            const pNo = Number(profileOrSession.profileNo || 0);
+            const rawName = _pickLocalizedField({
+                name: profileOrSession.profileName || profileOrSession.name || '',
+                nameKo: profileOrSession.nameKo || '',
+                nameEn: profileOrSession.nameEn || ''
+            });
+            const scenarioKey = SCENARIO_BY_PROFILE_NO[pNo];
+            if (scenarioKey && (!rawName || DEFAULT_PROFILE_NAMES.has(rawName))) {
+                const full = this.t('home.scenario.' + scenarioKey);
+                const parts = full.split(' ');
+                const base = (parts.length > 1 ? parts.slice(1).join(' ') : full).trim();
+                return currentLang === 'ko' ? `${base}모드` : `${base} Mode`;
+            }
+            if (rawName) return rawName;
+            if (pNo) return currentLang === 'ko' ? `프로필 #${pNo}` : `Profile #${pNo}`;
+            return '';
         },
 
         applyTo(root) {

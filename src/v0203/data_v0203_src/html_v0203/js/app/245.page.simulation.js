@@ -63,7 +63,7 @@ SNW.Page = SNW.Page || {};
                         btn.type = 'button';
                         btn.className = 'snw-preset-card' + (p.code === (sim.presetCode || 'OCEAN') ? ' is-selected' : '');
                         btn.dataset.code = p.code;
-                        btn.innerHTML = `<span class="snw-preset-card__name">${SNW.I18n.t('preset.' + p.code) || p.name}</span>`;
+                        btn.innerHTML = `<span class="snw-preset-card__name">${SNW.I18n.presetName(p.code, p)}</span>`;
                         btn.onclick = () => {
                             presetGrid.querySelectorAll('.snw-preset-card').forEach(c => c.classList.remove('is-selected'));
                             btn.classList.add('is-selected');
@@ -78,7 +78,7 @@ SNW.Page = SNW.Page || {};
                         btn.type = 'button';
                         btn.className = 'snw-style-btn' + (s.code === (sim.styleCode || 'BALANCE') ? ' is-active' : '');
                         btn.dataset.style = s.code;
-                        btn.textContent = SNW.I18n.t('style.' + s.code) || s.code;
+                        btn.textContent = SNW.I18n.styleName(s.code, s);
                         btn.onclick = () => {
                             styleTabs.querySelectorAll('.snw-style-btn').forEach(b => b.classList.remove('is-active'));
                             btn.classList.add('is-active');

@@ -7,8 +7,13 @@ window.SNW = window.SNW || {};
 
     // [P0-5] 모달
     SNW.UI = SNW.UI || {};
+    let _modalCloseTimer = null;
     SNW.UI.modal = function (title, contentEl, onConfirm, onCancel, opts) {
         opts = opts || {};
+        if (_modalCloseTimer) {
+            clearTimeout(_modalCloseTimer);
+            _modalCloseTimer = null;
+        }
         let overlay = document.getElementById('snw-modal-overlay');
         if (!overlay) {
             overlay = document.createElement('div');
@@ -51,7 +56,8 @@ window.SNW = window.SNW || {};
             _onOverlayClick = null;
 
             overlay.classList.remove('is-open');
-            setTimeout(() => {
+            _modalCloseTimer = setTimeout(() => {
+                _modalCloseTimer = null;
                 overlay.innerHTML = '';
                 overlay.style.display = 'none';
                 if (!confirmed && typeof onCancel === 'function') {

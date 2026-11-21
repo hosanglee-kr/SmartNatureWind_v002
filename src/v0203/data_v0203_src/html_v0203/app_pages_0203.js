@@ -1,5 +1,5 @@
 
-/* ---- 200.page.dashboard.js (73241 bytes) ---- */
+/* ---- 200.page.dashboard.js (76236 bytes) ---- */
 // =========================================================
 // 200.page.dashboard.js — 홈 (Stage 5 UX 완성형)
 // Layer 4 (페이지 로직)
@@ -305,6 +305,8 @@ SNW.Page = SNW.Page || {};
                     }
                 }, { passive: true });
             }
+
+            this._renderNowPlaying();
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -388,6 +390,7 @@ SNW.Page = SNW.Page || {};
             if (targetBtn && targetBtn.classList.contains('is-running')) {
                 try {
                     await SNW.Api.stopSession();
+                    if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                     if (SNW.Haptic) SNW.Haptic.stop();
                     if (SNW.ToastUtil) SNW.ToastUtil.info(SNW.I18n.t('common.stopSession') || '세션 정지');
                 } catch (e) {
@@ -408,6 +411,7 @@ SNW.Page = SNW.Page || {};
                     const req = { type: 'AUTO_FULL', payload: {} };
                     this._lastSessionReq = req;
                     await SNW.Api.startSession(req);
+                    if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                     if (SNW.Haptic) SNW.Haptic.stepChange();
                     if (SNW.ToastUtil) SNW.ToastUtil.success(SNW.I18n.t('session.autoFull'));
                 } catch (e) {
@@ -440,6 +444,7 @@ SNW.Page = SNW.Page || {};
                     const req = { type: 'AUTO_SELECT', payload: base };
                     this._lastSessionReq = req;
                     await SNW.Api.startSession(req);
+                    if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                     if (SNW.Haptic) SNW.Haptic.stepChange();
                     const title = (key === 'sleep') ? SNW.I18n.t('home.scenario.sleep') : SNW.I18n.t('session.autoSelect');
                     if (SNW.ToastUtil) SNW.ToastUtil.success(title);
@@ -474,6 +479,7 @@ SNW.Page = SNW.Page || {};
                         await SNW.Api.startPreset(presetCode, 'BALANCE');
                     }
                 }
+                if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                 if (SNW.Haptic) SNW.Haptic.stepChange();
                 if (SNW.ToastUtil) SNW.ToastUtil.success(SNW.I18n.t('msg.playSuccess') || '재생 시작');
             } catch (e) {
@@ -498,7 +504,7 @@ SNW.Page = SNW.Page || {};
                     <p style="font-weight:600;margin-bottom:8px;">${t('home.scenario.' + key)} 모드로 시작할까요?</p>
                     <div style="font-size:12px;color:var(--snw-text-dim);padding:10px;background:var(--snw-surface-2);border-radius:6px;line-height:1.6;">
                         · 요약: ${t('home.scenario.' + key + 'Meta')}<br>
-                        ${targetProf ? `· 연결 프로필: ${SNW.DomUtil.escape(targetProf.name)}` : ''}
+                        ${targetProf ? `· ${SNW.I18n.getLang && SNW.I18n.getLang() === 'en' ? 'Profile' : '연결 프로필'}: ${SNW.DomUtil.escape(SNW.I18n.profileName ? SNW.I18n.profileName(targetProf) : targetProf.name)}` : ''}
                     </div>
                     <div style="margin-top:10px;">
                         <button type="button" class="snw-btn snw-btn--sm" data-action="edit-scenario-rule">⚙ 규칙 편집</button>
@@ -613,7 +619,10 @@ SNW.Page = SNW.Page || {};
                             <span>${t('session.autoSelectPlaylist')}</span>
                             <select data-profile-select ${hasProfiles ? '' : 'disabled'} style="margin-left:auto;padding:4px 8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
                                 ${hasProfiles
-                        ? profiles.map(p => `<option value="${p.profileId}" ${(initProfileId && Number(p.profileId) === initProfileId) ? 'selected' : ''}>${SNW.DomUtil ? SNW.DomUtil.escape(p.name) : p.name}</option>`).join('')
+                        ? profiles.map(p => {
+                            const pDisp = (SNW.I18n && SNW.I18n.profileName) ? SNW.I18n.profileName(p) : p.name;
+                            return `<option value="${p.profileId}" ${(initProfileId && Number(p.profileId) === initProfileId) ? 'selected' : ''}>${SNW.DomUtil ? SNW.DomUtil.escape(pDisp) : pDisp}</option>`;
+                        }).join('')
                         : '<option value="">프로파일 없음</option>'}
                             </select>
                         </label>
@@ -817,8 +826,10 @@ SNW.Page = SNW.Page || {};
                 if (pauseReason === 1) reasonText = SNW.I18n.t('fsm.pauseReasonMotion');
                 else if (pauseReason === 3) reasonText = SNW.I18n.t('fsm.pauseReasonDiLow');
 
+                const pausedProf = (s && SNW.I18n && SNW.I18n.profileName) ? SNW.I18n.profileName(s) : '';
+                const waitLbl = (SNW.I18n && SNW.I18n.getLang && SNW.I18n.getLang() === 'en') ? 'Waiting' : '대기 중';
                 titleEl.textContent = `⏸ ${SNW.I18n.t('fsm.envPaused')}`;
-                subEl.textContent = `${reasonText} · 대기 중`;
+                subEl.textContent = pausedProf ? `${pausedProf} · ${reasonText} · ${waitLbl}` : `${reasonText} · ${waitLbl}`;
 
                 if (btnPause) {
                     btnPause.hidden = false;
@@ -833,8 +844,9 @@ SNW.Page = SNW.Page || {};
             }
 
             if (!isActive) {
-                titleEl.textContent = '꺼짐';
-                subEl.textContent = '세션 없음';
+                const isEn = SNW.I18n && SNW.I18n.getLang && SNW.I18n.getLang() === 'en';
+                titleEl.textContent = isEn ? 'Off' : '꺼짐';
+                subEl.textContent = isEn ? 'No active session' : '세션 없음';
                 if (btnPause) btnPause.hidden = true;
                 if (btnStop) btnStop.hidden = true;
                 if (btnTimerQuick) btnTimerQuick.hidden = true;
@@ -865,12 +877,15 @@ SNW.Page = SNW.Page || {};
                 const remain = this._fmtRemain(s.stepRemainSec || s.remainSec || 0);
                 sub = `Step ${s.currentStep || s.stepNo || 1}/${s.totalSteps || 1} · ${remain}`;
             } else if (typeName === 'PRESET') {
-                title = `${s.presetCode || ''} · ${s.styleCode || ''}`;
+                title = (SNW.NowPlaying && SNW.NowPlaying.getPresetStyleDisplayName)
+                    ? SNW.NowPlaying.getPresetStyleDisplayName(s.presetCode, s.styleCode)
+                    : `${s.presetCode || ''} · ${s.styleCode || ''}`;
                 sub = isPaused ? '일시정지' : '재생 중';
             } else if (typeName === 'FIXED') {
                 const spd = s.percent ?? s.fixedPercent ?? s.fixedSpeed ?? (ctl.override && ctl.override.fixedPercent) ?? 0;
-                title = `일반 선풍기 ${Math.round(spd)}%`;
-                sub = isPaused ? '일시정지' : '재생 중';
+                const isEn = SNW.I18n && SNW.I18n.getLang && SNW.I18n.getLang() === 'en';
+                title = `${isEn ? 'Fixed Fan' : '일반 선풍기'} ${Math.round(spd)}%`;
+                sub = isPaused ? (isEn ? 'Paused' : '일시정지') : (isEn ? 'Playing' : '재생 중');
                 if (this._slider) this._slider.set(spd);
             }
 
@@ -980,7 +995,10 @@ SNW.Page = SNW.Page || {};
                 recEl.innerHTML = `💡 현재 날씨엔 "<b>프로필 #${esc(String(rec.profileId))}</b>"이 가장 쾌적합니다`;
                 if (playBtn) playBtn.disabled = false;
             } else if (rec.presetCode) {
-                recEl.innerHTML = `💡 현재 날씨엔 "<b>${esc(String(rec.presetCode))} · ${esc(String(rec.styleCode || ''))}</b>" 바람을 추천합니다`;
+                const recLabel = (SNW.I18n && SNW.I18n.presetStyleName)
+                    ? SNW.I18n.presetStyleName(rec.presetCode, rec.styleCode)
+                    : `${rec.presetCode} · ${rec.styleCode || ''}`;
+                recEl.innerHTML = `💡 현재 날씨엔 "<b>${esc(recLabel)}</b>" 바람을 추천합니다`;
                 if (playBtn) playBtn.disabled = false;
             } else {
                 recEl.textContent = '현재 추천 바람 정보를 준비 중입니다';
@@ -1019,6 +1037,7 @@ SNW.Page = SNW.Page || {};
                         try {
                             this._lastSessionReq = { type: 'PLAYLIST', payload: { profileId: p.profileId } };
                             await SNW.Api.startPlaylist(p.profileId);
+                            if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                             if (SNW.Haptic) SNW.Haptic.stepChange();
                         } catch (e) {
                             if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '재생 실패');
@@ -1041,6 +1060,7 @@ SNW.Page = SNW.Page || {};
                 } else {
                     await SNW.Api.startFixed(percent);
                 }
+                if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
             } catch (e) {
                 if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '실패');
             }
@@ -1069,6 +1089,7 @@ SNW.Page = SNW.Page || {};
                     await SNW.Api.pauseSession();
                     if (SNW.Haptic) SNW.Haptic.snap();
                 }
+                if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
             } catch (e) {
                 if (SNW.ToastUtil) SNW.ToastUtil.error(e.message);
             }
@@ -1077,6 +1098,7 @@ SNW.Page = SNW.Page || {};
         async _onStop() {
             try {
                 await SNW.Api.stopSession();
+                if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                 if (SNW.Haptic) SNW.Haptic.stop();
             } catch (e) {
                 if (SNW.ToastUtil) SNW.ToastUtil.error(e.message);
@@ -1175,30 +1197,37 @@ SNW.Page = SNW.Page || {};
             const wrap = this.el.querySelector('#style-selector');
             if (!wrap) return;
             const STYLES = [
-                { code: 'BALANCE', icon: '⚖️', label: '균형' },
-                { code: 'ACTIVE', icon: '⚡', label: '활력' },
-                { code: 'FOCUS', icon: '🎯', label: '집중' },
-                { code: 'RELAX', icon: '🍃', label: '휴식' },
-                { code: 'SLEEP', icon: '🌙', label: '수면' },
+                { code: 'BALANCE', icon: '⚖️', fallback: '균형' },
+                { code: 'ACTIVE', icon: '⚡', fallback: '활동' },
+                { code: 'FOCUS', icon: '🎯', fallback: '집중' },
+                { code: 'RELAX', icon: '🍃', fallback: '휴식' },
+                { code: 'SLEEP', icon: '🌙', fallback: '수면' },
             ];
             const sim = (SNW.Store && SNW.Store.get) ? (SNW.Store.get().sim || {}) : {};
             const cur = sim.styleCode || 'BALANCE';
 
-            wrap.innerHTML = STYLES.map(s => `
-                <button type="button" class="snw-btn snw-btn--sm ${s.code === cur ? 'snw-btn-primary' : ''}" data-style="${s.code}">
-                    ${s.icon} ${s.label}
-                </button>
-            `).join('');
+            wrap.innerHTML = STYLES.map(s => {
+                const label = (SNW.I18n && SNW.I18n.styleName) ? SNW.I18n.styleName(s.code, s.fallback) : s.fallback;
+                return `<button type="button" class="snw-btn snw-btn--sm ${s.code === cur ? 'snw-btn-primary' : ''}" data-style="${s.code}">
+                    ${s.icon} ${label}
+                </button>`;
+            }).join('');
 
             wrap.querySelectorAll('[data-style]').forEach(btn => {
                 btn.onclick = async () => {
                     const styleCode = btn.getAttribute('data-style');
                     wrap.querySelectorAll('[data-style]').forEach(b => b.classList.toggle('snw-btn-primary', b === btn));
                     try {
-                        if (SNW.Api && typeof SNW.Api.patchSim === 'function') {
+                        const st = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+                        const sess = st.session;
+                        const sType = sess ? (sess.typeName || (['NONE', 'PLAYLIST', 'PRESET', 'FIXED', 'AUTO_FULL', 'AUTO_SELECT'][Number(sess.type)] || 'NONE')) : 'NONE';
+                        if (sType === 'PRESET' && sess && sess.state !== 'COMPLETED' && SNW.Api && typeof SNW.Api.startPreset === 'function') {
+                            await SNW.Api.startPreset(sess.presetCode || (st.sim && st.sim.presetCode) || 'OCEAN', styleCode);
+                        } else if (SNW.Api && typeof SNW.Api.patchSim === 'function') {
                             await SNW.Api.patchSim({ styleCode });
-                            if (SNW.Haptic) SNW.Haptic.snap();
                         }
+                        if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
+                        if (SNW.Haptic) SNW.Haptic.snap();
                     } catch (e) {
                         if (SNW.ToastUtil) SNW.ToastUtil.error(e.message);
                     }
@@ -1214,16 +1243,16 @@ SNW.Page = SNW.Page || {};
             if (!wrap) return;
 
             const PRESETS = [
-                { code: 'OCEAN', icon: '🌊', name: '바다 바람' },
-                { code: 'COUNTRY_BREEZE', icon: '🏡', name: '산들바람' },
-                { code: 'MEDITERRANEAN', icon: '🏖️', name: '지중해' },
-                { code: 'MOUNTAIN', icon: '🏔️', name: '고산 계곡' },
-                { code: 'PLAINS', icon: '🌾', name: '들판 바람' },
-                { code: 'HARBOR_BREEZE', icon: '⚓', name: '항구 바람' },
-                { code: 'FOREST_CANOPY', icon: '🌲', name: '숲속 그늘' },
-                { code: 'URBAN_SUNSET', icon: '🌆', name: '도시 노을' },
-                { code: 'TROPICAL_RAIN', icon: '🌴', name: '열대 우림' },
-                { code: 'DESERT_NIGHT', icon: '🌙', name: '사막 밤' },
+                { code: 'OCEAN', icon: '🌊' },
+                { code: 'COUNTRY_BREEZE', icon: '🏡' },
+                { code: 'MEDITERRANEAN', icon: '🏖️' },
+                { code: 'MOUNTAIN', icon: '🏔️' },
+                { code: 'PLAINS', icon: '🌾' },
+                { code: 'HARBOR_BREEZE', icon: '⚓' },
+                { code: 'FOREST_CANOPY', icon: '🌲' },
+                { code: 'URBAN_SUNSET', icon: '🌆' },
+                { code: 'TROPICAL_RAIN', icon: '🌴' },
+                { code: 'DESERT_NIGHT', icon: '🌙' },
             ];
 
             const sim = (SNW.Store && SNW.Store.get) ? (SNW.Store.get().sim || {}) : {};
@@ -1231,12 +1260,13 @@ SNW.Page = SNW.Page || {};
 
             wrap.innerHTML = `
                 <div class="snw-preset-grid" style="display:grid;">
-                    ${PRESETS.map(p => `
-                        <button type="button" class="snw-btn ${p.code === cur ? 'snw-btn-primary' : ''}" data-preset="${p.code}" style="text-align:left;padding:10px;">
+                    ${PRESETS.map(p => {
+                const pName = (SNW.I18n && SNW.I18n.presetName) ? SNW.I18n.presetName(p.code) : p.code;
+                return `<button type="button" class="snw-btn ${p.code === cur ? 'snw-btn-primary' : ''}" data-preset="${p.code}" style="text-align:left;padding:10px;">
                             <span style="font-size:18px;margin-right:6px;">${p.icon}</span>
-                            <strong>${p.name}</strong>
-                        </button>
-                    `).join('')}
+                            <strong>${pName}</strong>
+                        </button>`;
+            }).join('')}
                 </div>`;
 
             wrap.querySelectorAll('[data-preset]').forEach(btn => {
@@ -1247,8 +1277,10 @@ SNW.Page = SNW.Page || {};
                         const curStyle = (SNW.Store && SNW.Store.get && SNW.Store.get().sim && SNW.Store.get().sim.styleCode) || 'BALANCE';
                         if (SNW.Api && typeof SNW.Api.startPreset === 'function') {
                             await SNW.Api.startPreset(presetCode, curStyle);
+                            if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                             if (SNW.Haptic) SNW.Haptic.stepChange();
-                            if (SNW.ToastUtil) SNW.ToastUtil.success(`${presetCode} 재생 시작`);
+                            const pLabel = (SNW.I18n && SNW.I18n.presetName) ? SNW.I18n.presetName(presetCode) : presetCode;
+                            if (SNW.ToastUtil) SNW.ToastUtil.success(`${pLabel} 재생 시작`);
                         }
                     } catch (e) {
                         if (SNW.ToastUtil) SNW.ToastUtil.error(e.message);
@@ -2685,7 +2717,7 @@ SNW.Page = SNW.Page || {};
     }) (window.SNW);
 
 
-/* ---- 245.page.simulation.js (12340 bytes) ---- */
+/* ---- 245.page.simulation.js (12320 bytes) ---- */
 // =========================================================
 // 245.page.simulation.js — SNW.Page.Simulation (SIM-6 재설계)
 // 파라미터 덤프 → 바람 체험실
@@ -2751,7 +2783,7 @@ SNW.Page = SNW.Page || {};
                         btn.type = 'button';
                         btn.className = 'snw-preset-card' + (p.code === (sim.presetCode || 'OCEAN') ? ' is-selected' : '');
                         btn.dataset.code = p.code;
-                        btn.innerHTML = `<span class="snw-preset-card__name">${SNW.I18n.t('preset.' + p.code) || p.name}</span>`;
+                        btn.innerHTML = `<span class="snw-preset-card__name">${SNW.I18n.presetName(p.code, p)}</span>`;
                         btn.onclick = () => {
                             presetGrid.querySelectorAll('.snw-preset-card').forEach(c => c.classList.remove('is-selected'));
                             btn.classList.add('is-selected');
@@ -2766,7 +2798,7 @@ SNW.Page = SNW.Page || {};
                         btn.type = 'button';
                         btn.className = 'snw-style-btn' + (s.code === (sim.styleCode || 'BALANCE') ? ' is-active' : '');
                         btn.dataset.style = s.code;
-                        btn.textContent = SNW.I18n.t('style.' + s.code) || s.code;
+                        btn.textContent = SNW.I18n.styleName(s.code, s);
                         btn.onclick = () => {
                             styleTabs.querySelectorAll('.snw-style-btn').forEach(b => b.classList.remove('is-active'));
                             btn.classList.add('is-active');
@@ -5440,7 +5472,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 292.playlist.js (11185 bytes) ---- */
+/* ---- 292.playlist.js (11387 bytes) ---- */
 // =========================================================
 // 292.playlist.js — Wind Playlist (재생 목록)
 // Layer 3 (Playlist 패널 컴포넌트)
@@ -5523,6 +5555,7 @@ window.SNW = window.SNW || {};
         async _renderCard(profile) {
             const pId = profile.profileId || profile.profileNo;
             const refCount = this._schedules.filter(s => s.profileId === pId).length;
+            const pDispName = (SNW.I18n && SNW.I18n.profileName) ? SNW.I18n.profileName(profile) : profile.name;
 
             const card = document.createElement('div');
             card.className = 'snw-playlist-item';
@@ -5530,7 +5563,7 @@ window.SNW = window.SNW || {};
             card.innerHTML = `
                 <div class="snw-playlist-item__main" style="display:flex;flex-direction:column;gap:6px;">
                     <div class="snw-playlist-item__head" style="display:flex;justify-content:space-between;align-items:center;">
-                        <span class="snw-playlist-item__name" style="font-weight:600;font-size:15px;color:var(--snw-text,#e6edf3);">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(profile.name) : profile.name}</span>
+                        <span class="snw-playlist-item__name" style="font-weight:600;font-size:15px;color:var(--snw-text,#e6edf3);">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(pDispName) : pDispName}</span>
                         <span class="snw-playlist-item__meta" style="font-size:12px;color:var(--snw-text-dim,#8b949e);">${profile.stepCount || (profile.steps ? profile.steps.length : 0)} Step · ${this._fmtTotal(profile)}</span>
                     </div>
                     
@@ -5567,7 +5600,8 @@ window.SNW = window.SNW || {};
             card.querySelector('[data-action="play"]').onclick = async () => {
                 try {
                     await SNW.Api.startPlaylist(pId);
-                    if (SNW.ToastUtil) SNW.ToastUtil.success(`▶ ${profile.name} 재생 시작`);
+                    if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
+                    if (SNW.ToastUtil) SNW.ToastUtil.success(`▶ ${pDispName} 재생 시작`);
                     if (navigator.vibrate) navigator.vibrate([10, 20, 10]);
                 } catch (e) {
                     if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '재생 실패');
@@ -5579,7 +5613,7 @@ window.SNW = window.SNW || {};
                 ruleBtn.onclick = async () => {
                     if (!SNW.UI || !SNW.UI.ruleEditor) return;
                     const updated = await SNW.UI.ruleEditor.showModal(profile.rule || {}, {
-                        title: `${profile.name || '바람'} 규칙`,
+                        title: `${pDispName || '바람'} 규칙`,
                     });
                     if (updated) {
                         try {
@@ -5647,7 +5681,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 293.schedule_panel.js (26458 bytes) ---- */
+/* ---- 293.schedule_panel.js (26760 bytes) ---- */
 // =========================================================
 // 293.schedule_panel.js — Schedule 편집 (Profile 참조만)
 // Layer 3 (Schedule 패널 컴포넌트)
@@ -5756,7 +5790,9 @@ window.SNW = window.SNW || {};
             card.className = 'snw-schedule-item' + (sch.enabled ? '' : ' is-disabled');
 
             const profile = this._profiles.find(p => p.profileId === sch.profileId);
-            const profileName = profile ? profile.name : '(삭제된 프로필)';
+            const profileName = profile
+                ? ((SNW.I18n && SNW.I18n.profileName) ? SNW.I18n.profileName(profile) : profile.name)
+                : '(삭제된 프로필)';
             const profileMissing = !profile;
 
             const days = (sch.period && sch.period.days) || [0, 0, 0, 0, 0, 0, 0];
@@ -5882,13 +5918,13 @@ window.SNW = window.SNW || {};
                         <div class="snw-form-row" style="margin-bottom:10px;">
                             <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;">바람 프리셋 선택</label>
                             <select id="simple-preset-select" style="width:100%;padding:8px;background:var(--snw-surface-1,#1f242c);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
-                                ${PRESETS.map(p => `<option value="${p.code}">${p.name}</option>`).join('')}
+                                ${PRESETS.map(p => `<option value="${p.code}">${(SNW.I18n && SNW.I18n.presetName) ? SNW.I18n.presetName(p.code, p) : p.name}</option>`).join('')}
                             </select>
                         </div>
                         <div class="snw-form-row">
                             <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;">바람 스타일 선택</label>
                             <select id="simple-style-select" style="width:100%;padding:8px;background:var(--snw-surface-1,#1f242c);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
-                                ${STYLES.map(s => `<option value="${s.code}">${s.name}</option>`).join('')}
+                                ${STYLES.map(s => `<option value="${s.code}">${(SNW.I18n && SNW.I18n.styleName) ? SNW.I18n.styleName(s.code, s) : s.name}</option>`).join('')}
                             </select>
                         </div>
                     </div>
@@ -5902,7 +5938,7 @@ window.SNW = window.SNW || {};
                                     <input type="radio" name="profile" value="${p.profileId}"
                                            ${isEdit && sch.profileId === p.profileId ? 'checked' : ''}>
                                     <div class="snw-profile-radio__content">
-                                        <div class="snw-profile-radio__name">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(p.name) : p.name}</div>
+                                        <div class="snw-profile-radio__name">📋 ${SNW.DomUtil ? SNW.DomUtil.escape((SNW.I18n && SNW.I18n.profileName) ? SNW.I18n.profileName(p) : p.name) : p.name}</div>
                                         <div class="snw-profile-radio__meta">
                                             ${p.stepCount || (p.steps ? p.steps.length : 0)}개 Step · ${this._fmtTotal(p)}
                                         </div>
@@ -6940,33 +6976,44 @@ SNW.Page = SNW.Page || {};
 
 
 
-/* ---- 998.overlay.onboarding.js (10806 bytes) ---- */
+/* ---- 998.overlay.onboarding.js (11925 bytes) ---- */
 // =========================================================
 // 998.overlay.onboarding.js — 첫 방문 온보딩 (4단계)
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     const LS_KEY = 'snw.onboarded';
+    let _onboardingRunning = false;
 
     SNW.Onboarding = {
         async start() {
-            // 이미 완료
-            if (localStorage.getItem(LS_KEY) === '1') return;
+            // 이미 완료 또는 중복 실행 방지
+            if (localStorage.getItem(LS_KEY) === '1' || _onboardingRunning) return;
+            _onboardingRunning = true;
+            try {
 
             // =========================================================
             // 1) 언어
             // =========================================================
             const lang = await this._stepLang();
-            if (lang && SNW.I18n && typeof SNW.I18n.setLang === 'function') {
+            if (!lang) {
+                localStorage.setItem(LS_KEY, '1');
+                return;
+            }
+            if (SNW.I18n && typeof SNW.I18n.setLang === 'function') {
                 SNW.I18n.setLang(lang);
             }
 
             // =========================================================
             // 2) WiFi 안내 (이미 연결됨 가정)
             // =========================================================
-            await this._stepWifi();
+            const wifiOk = await this._stepWifi();
+            if (!wifiOk) {
+                localStorage.setItem(LS_KEY, '1');
+                return;
+            }
             await new Promise(r => setTimeout(r, 300));
 
             // =========================================================
@@ -6983,8 +7030,8 @@ window.SNW = window.SNW || {};
                     try {
                         if (typeof SNW.Api.startPreset === 'function') {
                             await SNW.Api.startPreset(choice.presetCode, choice.styleCode);
-                        
-                        // [998.onboarding.js] _stepStartNow 이후 startSession 폴백 수정 (라인 45~49 부근)
+
+                            // [998.onboarding.js] _stepStartNow 이후 startSession 폴백 수정 (라인 45~49 부근)
                         } else if (typeof SNW.Api.startSession === 'function') {
                             await SNW.Api.startSession({
                                 type: 'PRESET',
@@ -7005,6 +7052,9 @@ window.SNW = window.SNW || {};
 
             // 완료
             localStorage.setItem(LS_KEY, '1');
+            } finally {
+                _onboardingRunning = false;
+            }
         },
 
         // =========================================================
@@ -7033,16 +7083,22 @@ window.SNW = window.SNW || {};
             `;
 
             return new Promise(resolve => {
+                let settled = false;
                 let modalRef = null;
+                const finish = (val) => {
+                    if (settled) return;
+                    settled = true;
+                    resolve(val);
+                };
                 content.querySelectorAll('[data-lang]').forEach(btn => {
                     btn.onclick = () => {
-                        resolve(btn.getAttribute('data-lang'));
+                        finish(btn.getAttribute('data-lang'));
                         if (modalRef && typeof modalRef.close === 'function') {
                             modalRef.close();
                         }
                     };
                 });
-                modalRef = SNW.UI.modal('환영합니다 / Welcome', content, null, null,
+                modalRef = SNW.UI.modal('환영합니다 / Welcome', content, null, () => finish(null),
                     { hideOk: true, hideCancel: true, width: '440px' });
             });
         },
@@ -7068,11 +7124,17 @@ window.SNW = window.SNW || {};
             `;
 
             return new Promise(resolve => {
+                let settled = false;
+                const finish = (val) => {
+                    if (settled) return;
+                    settled = true;
+                    resolve(val);
+                };
                 SNW.UI.modal(
                     t('onboarding.step2', '단계 2: 네트워크 안내'),
                     content,
-                    () => { resolve(); return true; },
-                    null,
+                    () => { finish(true); return true; },
+                    () => { finish(false); },
                     { okLabel: t('onboarding.connected', '확인 완료'), hideCancel: true, width: '440px' }
                 );
             });
@@ -7122,11 +7184,17 @@ window.SNW = window.SNW || {};
             `;
 
             return new Promise(resolve => {
+                let settled = false;
                 let modalRef = null;
+                const finish = (val) => {
+                    if (settled) return;
+                    settled = true;
+                    resolve(val);
+                };
                 content.querySelectorAll('[data-idx]').forEach(btn => {
                     btn.onclick = () => {
                         const idx = Number(btn.getAttribute('data-idx'));
-                        resolve(choices[idx]);
+                        finish(choices[idx]);
                         if (modalRef && typeof modalRef.close === 'function') {
                             modalRef.close();
                         }
@@ -7134,7 +7202,7 @@ window.SNW = window.SNW || {};
                 });
                 modalRef = SNW.UI.modal(
                     t('onboarding.step3', '단계 3: 첫 바람 선택'),
-                    content, null, null,
+                    content, null, () => finish(null),
                     { hideOk: true, hideCancel: true, width: '480px' }
                 );
             });
@@ -7179,7 +7247,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 999.app.js (15928 bytes) ---- */
+/* ---- 999.app.js (16144 bytes) ---- */
 // =========================================================
 // 999.app.js — 부트스트랩 (최종 로드)
 // =========================================================
@@ -7189,8 +7257,13 @@ window.SNW = window.SNW || {};
 
     // [P0-5] 모달
     SNW.UI = SNW.UI || {};
+    let _modalCloseTimer = null;
     SNW.UI.modal = function (title, contentEl, onConfirm, onCancel, opts) {
         opts = opts || {};
+        if (_modalCloseTimer) {
+            clearTimeout(_modalCloseTimer);
+            _modalCloseTimer = null;
+        }
         let overlay = document.getElementById('snw-modal-overlay');
         if (!overlay) {
             overlay = document.createElement('div');
@@ -7233,7 +7306,8 @@ window.SNW = window.SNW || {};
             _onOverlayClick = null;
 
             overlay.classList.remove('is-open');
-            setTimeout(() => {
+            _modalCloseTimer = setTimeout(() => {
+                _modalCloseTimer = null;
                 overlay.innerHTML = '';
                 overlay.style.display = 'none';
                 if (!confirmed && typeof onCancel === 'function') {
@@ -7562,7 +7636,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 999a.nowplaying.js (34921 bytes) ---- */
+/* ---- 999a.nowplaying.js (34960 bytes) ---- */
 // =========================================================
 // 999a.nowplaying.js — 전역 Now Playing Bar (Stage 5 UX 완성형)
 // Layer 3 (애플리케이션 전역 컴포넌트)
@@ -7599,32 +7673,18 @@ window.SNW = window.SNW || {};
 
     function $(sel, root) { return (root || document).querySelector(sel); }
 
-    const SCENARIO_BY_PROFILE_NO = {
-        10: 'sleep',
-        20: 'office',
-        30: 'study',
-        40: 'rest',
-        50: 'exercise',
-        70: 'pet',
-        80: 'baby'
-    };
-    const DEFAULT_PROFILE_NAMES = new Set([
-        '수면모드', '집중모드', '휴식모드', '환기모드', '활동모드', '반려동물 케어', '아기/유아 케어'
-    ]);
-
     function getProfileDisplayName(s) {
-        if (!s) return '';
-        const pNo = Number(s.profileNo || 0);
-        const rawName = s.profileName || s.name || '';
-        const scenarioKey = SCENARIO_BY_PROFILE_NO[pNo];
-        if (scenarioKey && (!rawName || DEFAULT_PROFILE_NAMES.has(rawName))) {
-            const full = SNW.I18n.t('home.scenario.' + scenarioKey);
-            const parts = full.split(' ');
-            const base = (parts.length > 1 ? parts.slice(1).join(' ') : full).trim();
-            const lang = (SNW.I18n.getLang && SNW.I18n.getLang()) || 'ko';
-            return lang === 'ko' ? `${base}모드` : `${base} Mode`;
+        if (SNW.I18n && typeof SNW.I18n.profileName === 'function') {
+            return SNW.I18n.profileName(s);
         }
-        return rawName || (pNo ? `프로필 #${pNo}` : '');
+        return (s && (s.profileName || s.name)) || '';
+    }
+
+    function getPresetStyleDisplayName(presetCode, styleCode) {
+        if (SNW.I18n && typeof SNW.I18n.presetStyleName === 'function') {
+            return SNW.I18n.presetStyleName(presetCode, styleCode);
+        }
+        return `${presetCode || '자연풍'} · ${styleCode || '표준'}`;
     }
 
     function getSession() {
@@ -7701,6 +7761,7 @@ window.SNW = window.SNW || {};
 
         if (!isSessionVisible()) {
             barEl.root.hidden = true;
+            barEl.root.setAttribute('hidden', '');
             document.body.classList.remove('has-nowplaying');
             stopEq();
             stopPauseBreathing();
@@ -7708,6 +7769,7 @@ window.SNW = window.SNW || {};
         }
 
         barEl.root.hidden = false;
+        barEl.root.removeAttribute('hidden');
         document.body.classList.add('has-nowplaying');
 
         // ─── [Stage 5] 1. ENV_PAUSED 상태 처리 ───
@@ -7785,10 +7847,11 @@ window.SNW = window.SNW || {};
             const pTitle = getProfileDisplayName(s) || '플레이리스트';
             title = `${triggerIcon} ${pTitle}`;
         } else if (type === 2) {
-            title = `${triggerIcon} ${s.presetCode || '자연풍'} · ${s.styleCode || '표준'}`;
+            title = `${triggerIcon} ${getPresetStyleDisplayName(s.presetCode, s.styleCode)}`;
         } else if (type === 3) {
             const fixedPct = s.percent ?? s.fixedPercent ?? s.fixedSpeed ?? (ctl && ctl.override && ctl.override.fixedPercent) ?? 0;
-            title = `${triggerIcon} 일반 선풍기 (${Math.round(fixedPct)}%)`;
+            const isEn = SNW.I18n && SNW.I18n.getLang && SNW.I18n.getLang() === 'en';
+            title = `${triggerIcon} ${isEn ? 'Fixed Fan' : '일반 선풍기'} (${Math.round(fixedPct)}%)`;
         } else {
             title = '재생 중';
         }
@@ -7974,6 +8037,7 @@ window.SNW = window.SNW || {};
         if (ctl && ctl.stateCode === 7) {
             try {
                 await SNW.Api.resumeSession();
+                if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                 if (SNW.ToastUtil) SNW.ToastUtil.success('바람이 재개되었습니다.');
             } catch (err) {
                 if (SNW.ToastUtil) SNW.ToastUtil.error(err.message || '재개 실패');
@@ -7992,6 +8056,7 @@ window.SNW = window.SNW || {};
                 await SNW.Api.pauseSession();
                 if (SNW.ToastUtil) SNW.ToastUtil.info('바람이 일시정지되었습니다.');
             }
+            if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
         } catch (err) {
             if (SNW.ToastUtil) SNW.ToastUtil.error(err.message || '세션 제어 실패');
         }
@@ -8001,6 +8066,7 @@ window.SNW = window.SNW || {};
         if (e) e.stopPropagation();
         try {
             await SNW.Api.stopSession();
+            if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
             if (SNW.ToastUtil) SNW.ToastUtil.info('바람이 정지되었습니다.');
         } catch (err) {
             if (SNW.ToastUtil) SNW.ToastUtil.error(err.message || '세션 정지 실패');
@@ -8058,10 +8124,12 @@ window.SNW = window.SNW || {};
             }
         }, { passive: true });
 
-        // Store 구독
+        // Store & 언어 변경 구독
         if (SNW.Store && typeof SNW.Store.subscribe === 'function') {
             SNW.Store.subscribe(() => render());
         }
+        document.addEventListener('snw:langchange', () => render());
+        render();
         document.addEventListener('snw:timerchange', () => render());
         render();
         SNW.LogUtil.info('[NowPlaying] Bar initialized');
@@ -8094,7 +8162,7 @@ window.SNW = window.SNW || {};
             title = s.profileName || (s.profileNo ? `프로필 #${s.profileNo}` : '플레이리스트');
             typeBadge = '🎵 맞춤 바람 (플레이리스트)';
         } else if (type === 2) {
-            title = `${s.presetCode || '자연풍'} · ${s.styleCode || '표준'}`;
+            title = getPresetStyleDisplayName(s.presetCode, s.styleCode);
             typeBadge = '🌿 자연풍 프리셋';
         } else if (type === 3) {
             const fixedPct = s.percent ?? s.fixedPercent ?? s.fixedSpeed ?? (ctl && ctl.override && ctl.override.fixedPercent) ?? 0;
@@ -8323,7 +8391,8 @@ window.SNW = window.SNW || {};
         init,
         render,
         getSession,
-        getProfileDisplayName
+        getProfileDisplayName,
+        getPresetStyleDisplayName
     };
 
     // 번들(999.app.js 이후 알파벳 순 실행) 포함 환경에서 초기화 누락 방지
@@ -8337,7 +8406,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 999b.ai-sheet.js (12619 bytes) ---- */
+/* ---- 999b.ai-sheet.js (12696 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명 : 999b.ai-sheet.js
@@ -8540,76 +8609,76 @@ window.SNW = window.SNW || {};
 		},
 
 		async open() {
-				if (_visible) return;
-				_visible = true;
-				_sheetEl.style.display = 'flex';
-				requestAnimationFrame(() => {
-					_sheetEl.style.opacity = '1';
-					const inner = _sheetEl.querySelector('.snw-ai-sheet');
-					if (inner) inner.style.transform = 'translateY(0)';
-				});
+			if (_visible) return;
+			_visible = true;
+			_sheetEl.style.display = 'flex';
+			requestAnimationFrame(() => {
+				_sheetEl.style.opacity = '1';
+				const inner = _sheetEl.querySelector('.snw-ai-sheet');
+				if (inner) inner.style.transform = 'translateY(0)';
+			});
 
-				if (SNW.AIClient) {
-					_history = SNW.AIClient.loadHistory();
-					this._renderMessages();
-				}
+			if (SNW.AIClient) {
+				_history = SNW.AIClient.loadHistory();
+				this._renderMessages();
+			}
 
-				// 비용 상태 배지 갱신 (T-124 연동)
-				this._loadCostBadge();
+			// 비용 상태 배지 갱신 (T-124 연동)
+			this._loadCostBadge();
 
-				const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
-				if (inputEl) setTimeout(() => inputEl.focus(), 300);
-			},
+			const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
+			if (inputEl) setTimeout(() => inputEl.focus(), 300);
+		},
 
 		async _loadCostBadge() {
-				const costEl = _sheetEl ? _sheetEl.querySelector('[data-slot="sheet-cost"]') : null;
-				if (!costEl || !SNW.Api || typeof SNW.Api.getAiCostStatus !== 'function') return;
-				try {
-					const status = await SNW.Api.getAiCostStatus();
-					if (status) {
-						const usedUsd = ((status.estCostUsdX1000 || 0) / 1000).toFixed(2);
-						costEl.textContent = `$${usedUsd} / $0.50`;
-						costEl.style.display = 'inline-block';
-					}
-				} catch (e) {
-					costEl.style.display = 'none';
+			const costEl = _sheetEl ? _sheetEl.querySelector('[data-slot="sheet-cost"]') : null;
+			if (!costEl || !SNW.Api || typeof SNW.Api.getAiCostStatus !== 'function') return;
+			try {
+				const status = await SNW.Api.getAiCostStatus();
+				if (status) {
+					const usedUsd = ((status.estCostUsdX1000 || 0) / 1000).toFixed(2);
+					costEl.textContent = `$${usedUsd} / $0.50`;
+					costEl.style.display = 'inline-block';
 				}
-			},
+			} catch (e) {
+				costEl.style.display = 'none';
+			}
+		},
 
-			close() {
-				if (!_visible) return;
-				_visible = false;
-				_sheetEl.style.opacity = '0';
-				const inner = _sheetEl.querySelector('.snw-ai-sheet');
-				if (inner) inner.style.transform = 'translateY(100%)';
-				setTimeout(() => {
-					if (!_visible) _sheetEl.style.display = 'none';
-				}, 300);
-			},
+		close() {
+			if (!_visible) return;
+			_visible = false;
+			_sheetEl.style.opacity = '0';
+			const inner = _sheetEl.querySelector('.snw-ai-sheet');
+			if (inner) inner.style.transform = 'translateY(100%)';
+			setTimeout(() => {
+				if (!_visible) _sheetEl.style.display = 'none';
+			}, 300);
+		},
 
-			toggle() {
-				if (_visible) this.close();
-				else this.open();
-			},
+		toggle() {
+			if (_visible) this.close();
+			else this.open();
+		},
 
-			_renderMessages() {
-				const box = _sheetEl.querySelector('[data-slot="sheet-messages"]');
-				if (!box) return;
-				box.innerHTML = '';
-				const recent = _history.slice(-10);
-				for (const m of recent) {
-					this._appendBubble(m.role, m.text);
-				}
-				box.scrollTop = box.scrollHeight;
-			},
+		_renderMessages() {
+			const box = _sheetEl.querySelector('[data-slot="sheet-messages"]');
+			if (!box) return;
+			box.innerHTML = '';
+			const recent = _history.slice(-10);
+			for (const m of recent) {
+				this._appendBubble(m.role, m.text);
+			}
+			box.scrollTop = box.scrollHeight;
+		},
 
-			_appendBubble(role, text) {
-				const box = _sheetEl.querySelector('[data-slot="sheet-messages"]');
-				if (!box) return;
+		_appendBubble(role, text) {
+			const box = _sheetEl.querySelector('[data-slot="sheet-messages"]');
+			if (!box) return;
 
-				const bubble = document.createElement('div');
-				const isUser = (role === 'user');
-				bubble.style.cssText = `
+			const bubble = document.createElement('div');
+			const isUser = (role === 'user');
+			bubble.style.cssText = `
 				align-self: ${isUser ? 'flex-end' : 'flex-start'};
 				max-width: 82%;
 				padding: 8px 12px;
@@ -8620,106 +8689,111 @@ window.SNW = window.SNW || {};
 				color: #fff;
 				word-break: break-word;
 			`;
-				bubble.textContent = text;
-				box.appendChild(bubble);
-				box.scrollTop = box.scrollHeight;
-			},
+			bubble.textContent = text;
+			box.appendChild(bubble);
+			box.scrollTop = box.scrollHeight;
+		},
 
 		async _onSend() {
-				const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
-				const msg = (inputEl && inputEl.value || '').trim();
-				if (!msg) return;
-				inputEl.value = '';
+			const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
+			const msg = (inputEl && inputEl.value || '').trim();
+			if (!msg) return;
+			inputEl.value = '';
 
-				this._appendBubble('user', msg);
-				_history.push({ role: 'user', text: msg });
+			this._appendBubble('user', msg);
+			_history.push({ role: 'user', text: msg });
+			if (SNW.AIClient) SNW.AIClient.saveHistory(_history);
+
+			this._appendBubble('assistant', '🤔 ...');
+
+			try {
+				let reply = '';
+				let hint = '';
+				let actions = [];
+
+				if (SNW.AIClient) {
+					const res = await SNW.AIClient.send(msg, _history, {
+						lang: (SNW.I18n && SNW.I18n.getLang ? SNW.I18n.getLang() : 'ko'),
+						voiceMode: false
+					});
+					reply = (res && res.text) || '(no response)';
+					hint = (res && res._speechHint) || reply;
+					actions = (res && res.actions) || [];
+				} else if (SNW.Api && SNW.Api.gemini) {
+					const res = await SNW.Api.gemini({ message: msg });
+					reply = (res && res.text) || '(no response)';
+				}
+
+				this._updateLastBubble(reply, actions);
+				_history.push({ role: 'assistant', text: reply });
 				if (SNW.AIClient) SNW.AIClient.saveHistory(_history);
 
-				this._appendBubble('assistant', '🤔 ...');
-
-				try {
-					let reply = '';
-					let hint = '';
-					let actions = [];
-
-					if (SNW.AIClient) {
-						const res = await SNW.AIClient.send(msg, _history, {
-							lang: (SNW.I18n && SNW.I18n.getLang ? SNW.I18n.getLang() : 'ko'),
-							voiceMode: false
-						});
-						reply = (res && res.text) || '(no response)';
-						hint = (res && res._speechHint) || reply;
-						actions = (res && res.actions) || [];
-					} else if (SNW.Api && SNW.Api.gemini) {
-						const res = await SNW.Api.gemini({ message: msg });
-						reply = (res && res.text) || '(no response)';
-					}
-
-					this._updateLastBubble(reply, actions);
-					_history.push({ role: 'assistant', text: reply });
-					if (SNW.AIClient) SNW.AIClient.saveHistory(_history);
-
-					// 비용 배지 최신화
-					this._loadCostBadge();
-
-					// TTS 발화
-					if (hint && SNW.AIVoice && SNW.AIVoice.isTTSSupported()) {
-						SNW.AIVoice.speak(hint);
-					}
-				} catch (e) {
-					this._updateLastBubble('❌ ' + (e.message || 'Error'));
+				// AI 도구 실행 시 홈/NowPlaying 즉시 동기화
+				if (actions && actions.length > 0 && SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') {
+					SNW.StoreBridge.refreshNow();
 				}
-			},
 
-			_updateLastBubble(text, actions = []) {
-				const box = _sheetEl.querySelector('[data-slot="sheet-messages"]');
-				if (!box) return;
-				const bubbles = box.querySelectorAll('div');
-				const last = bubbles[bubbles.length - 1];
-				if (last) {
-					let actionStr = '';
-					if (actions && actions.length > 0) {
-						actionStr = '\n' + actions.map(a => `✓ ${a.name}: ${a.result}`).join('\n');
-					}
-					last.textContent = text + actionStr;
+				// 비용 배지 최신화
+				this._loadCostBadge();
+
+				// TTS 발화
+				if (hint && SNW.AIVoice && SNW.AIVoice.isTTSSupported()) {
+					SNW.AIVoice.speak(hint);
 				}
-				box.scrollTop = box.scrollHeight;
-			},
+			} catch (e) {
+				this._updateLastBubble('❌ ' + (e.message || 'Error'));
+			}
+		},
+
+		_updateLastBubble(text, actions = []) {
+			const box = _sheetEl.querySelector('[data-slot="sheet-messages"]');
+			if (!box) return;
+			const bubbles = box.querySelectorAll('div');
+			const last = bubbles[bubbles.length - 1];
+			if (last) {
+				let actionStr = '';
+				if (actions && actions.length > 0) {
+					actionStr = '\n' + actions.map(a => `✓ ${a.name}: ${a.result}`).join('\n');
+				}
+				last.textContent = text + actionStr;
+			}
+			box.scrollTop = box.scrollHeight;
+		},
 
 		async _onVoiceInput() {
-				if (!SNW.AIVoice || !SNW.AIVoice.isSTTSupported()) {
-					if (SNW.ToastUtil) SNW.ToastUtil.warn('Voice input not supported');
-					return;
-				}
-
-				const micBtn = _sheetEl.querySelector('[data-action="sheet-mic"]');
-				if (micBtn) micBtn.style.background = '#ef4444';
-
-				try {
-					const res = await SNW.AIVoice.startListening();
-					if (micBtn) micBtn.style.background = '';
-					if (res && res.transcript) {
-						const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
-						if (inputEl) {
-							inputEl.value = res.transcript;
-							this._onSend();
-						}
-					}
-				} catch (e) {
-					if (micBtn) micBtn.style.background = '';
-				}
+			if (!SNW.AIVoice || !SNW.AIVoice.isSTTSupported()) {
+				if (SNW.ToastUtil) SNW.ToastUtil.warn('Voice input not supported');
+				return;
 			}
-		};
 
-		SNW.AISheet = AISheet;
+			const micBtn = _sheetEl.querySelector('[data-action="sheet-mic"]');
+			if (micBtn) micBtn.style.background = '#ef4444';
 
-		// 앱 부팅 시 자동 초기화
-		if(document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', () => AISheet.init());
-} else {
-	AISheet.init();
-}
+			try {
+				const res = await SNW.AIVoice.startListening();
+				if (micBtn) micBtn.style.background = '';
+				if (res && res.transcript) {
+					const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
+					if (inputEl) {
+						inputEl.value = res.transcript;
+						this._onSend();
+					}
+				}
+			} catch (e) {
+				if (micBtn) micBtn.style.background = '';
+			}
+		}
+	};
 
-}) (window, window.SNW);
+	SNW.AISheet = AISheet;
+
+	// 앱 부팅 시 자동 초기화
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', () => AISheet.init());
+	} else {
+		AISheet.init();
+	}
+
+})(window, window.SNW);
 
 

@@ -200,76 +200,76 @@
 		},
 
 		async open() {
-				if (_visible) return;
-				_visible = true;
-				_sheetEl.style.display = 'flex';
-				requestAnimationFrame(() => {
-					_sheetEl.style.opacity = '1';
-					const inner = _sheetEl.querySelector('.snw-ai-sheet');
-					if (inner) inner.style.transform = 'translateY(0)';
-				});
+			if (_visible) return;
+			_visible = true;
+			_sheetEl.style.display = 'flex';
+			requestAnimationFrame(() => {
+				_sheetEl.style.opacity = '1';
+				const inner = _sheetEl.querySelector('.snw-ai-sheet');
+				if (inner) inner.style.transform = 'translateY(0)';
+			});
 
-				if (SNW.AIClient) {
-					_history = SNW.AIClient.loadHistory();
-					this._renderMessages();
-				}
+			if (SNW.AIClient) {
+				_history = SNW.AIClient.loadHistory();
+				this._renderMessages();
+			}
 
-				// 비용 상태 배지 갱신 (T-124 연동)
-				this._loadCostBadge();
+			// 비용 상태 배지 갱신 (T-124 연동)
+			this._loadCostBadge();
 
-				const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
-				if (inputEl) setTimeout(() => inputEl.focus(), 300);
-			},
+			const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
+			if (inputEl) setTimeout(() => inputEl.focus(), 300);
+		},
 
 		async _loadCostBadge() {
-				const costEl = _sheetEl ? _sheetEl.querySelector('[data-slot="sheet-cost"]') : null;
-				if (!costEl || !SNW.Api || typeof SNW.Api.getAiCostStatus !== 'function') return;
-				try {
-					const status = await SNW.Api.getAiCostStatus();
-					if (status) {
-						const usedUsd = ((status.estCostUsdX1000 || 0) / 1000).toFixed(2);
-						costEl.textContent = `$${usedUsd} / $0.50`;
-						costEl.style.display = 'inline-block';
-					}
-				} catch (e) {
-					costEl.style.display = 'none';
+			const costEl = _sheetEl ? _sheetEl.querySelector('[data-slot="sheet-cost"]') : null;
+			if (!costEl || !SNW.Api || typeof SNW.Api.getAiCostStatus !== 'function') return;
+			try {
+				const status = await SNW.Api.getAiCostStatus();
+				if (status) {
+					const usedUsd = ((status.estCostUsdX1000 || 0) / 1000).toFixed(2);
+					costEl.textContent = `$${usedUsd} / $0.50`;
+					costEl.style.display = 'inline-block';
 				}
-			},
+			} catch (e) {
+				costEl.style.display = 'none';
+			}
+		},
 
-			close() {
-				if (!_visible) return;
-				_visible = false;
-				_sheetEl.style.opacity = '0';
-				const inner = _sheetEl.querySelector('.snw-ai-sheet');
-				if (inner) inner.style.transform = 'translateY(100%)';
-				setTimeout(() => {
-					if (!_visible) _sheetEl.style.display = 'none';
-				}, 300);
-			},
+		close() {
+			if (!_visible) return;
+			_visible = false;
+			_sheetEl.style.opacity = '0';
+			const inner = _sheetEl.querySelector('.snw-ai-sheet');
+			if (inner) inner.style.transform = 'translateY(100%)';
+			setTimeout(() => {
+				if (!_visible) _sheetEl.style.display = 'none';
+			}, 300);
+		},
 
-			toggle() {
-				if (_visible) this.close();
-				else this.open();
-			},
+		toggle() {
+			if (_visible) this.close();
+			else this.open();
+		},
 
-			_renderMessages() {
-				const box = _sheetEl.querySelector('[data-slot="sheet-messages"]');
-				if (!box) return;
-				box.innerHTML = '';
-				const recent = _history.slice(-10);
-				for (const m of recent) {
-					this._appendBubble(m.role, m.text);
-				}
-				box.scrollTop = box.scrollHeight;
-			},
+		_renderMessages() {
+			const box = _sheetEl.querySelector('[data-slot="sheet-messages"]');
+			if (!box) return;
+			box.innerHTML = '';
+			const recent = _history.slice(-10);
+			for (const m of recent) {
+				this._appendBubble(m.role, m.text);
+			}
+			box.scrollTop = box.scrollHeight;
+		},
 
-			_appendBubble(role, text) {
-				const box = _sheetEl.querySelector('[data-slot="sheet-messages"]');
-				if (!box) return;
+		_appendBubble(role, text) {
+			const box = _sheetEl.querySelector('[data-slot="sheet-messages"]');
+			if (!box) return;
 
-				const bubble = document.createElement('div');
-				const isUser = (role === 'user');
-				bubble.style.cssText = `
+			const bubble = document.createElement('div');
+			const isUser = (role === 'user');
+			bubble.style.cssText = `
 				align-self: ${isUser ? 'flex-end' : 'flex-start'};
 				max-width: 82%;
 				padding: 8px 12px;
@@ -280,105 +280,110 @@
 				color: #fff;
 				word-break: break-word;
 			`;
-				bubble.textContent = text;
-				box.appendChild(bubble);
-				box.scrollTop = box.scrollHeight;
-			},
+			bubble.textContent = text;
+			box.appendChild(bubble);
+			box.scrollTop = box.scrollHeight;
+		},
 
 		async _onSend() {
-				const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
-				const msg = (inputEl && inputEl.value || '').trim();
-				if (!msg) return;
-				inputEl.value = '';
+			const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
+			const msg = (inputEl && inputEl.value || '').trim();
+			if (!msg) return;
+			inputEl.value = '';
 
-				this._appendBubble('user', msg);
-				_history.push({ role: 'user', text: msg });
+			this._appendBubble('user', msg);
+			_history.push({ role: 'user', text: msg });
+			if (SNW.AIClient) SNW.AIClient.saveHistory(_history);
+
+			this._appendBubble('assistant', '🤔 ...');
+
+			try {
+				let reply = '';
+				let hint = '';
+				let actions = [];
+
+				if (SNW.AIClient) {
+					const res = await SNW.AIClient.send(msg, _history, {
+						lang: (SNW.I18n && SNW.I18n.getLang ? SNW.I18n.getLang() : 'ko'),
+						voiceMode: false
+					});
+					reply = (res && res.text) || '(no response)';
+					hint = (res && res._speechHint) || reply;
+					actions = (res && res.actions) || [];
+				} else if (SNW.Api && SNW.Api.gemini) {
+					const res = await SNW.Api.gemini({ message: msg });
+					reply = (res && res.text) || '(no response)';
+				}
+
+				this._updateLastBubble(reply, actions);
+				_history.push({ role: 'assistant', text: reply });
 				if (SNW.AIClient) SNW.AIClient.saveHistory(_history);
 
-				this._appendBubble('assistant', '🤔 ...');
-
-				try {
-					let reply = '';
-					let hint = '';
-					let actions = [];
-
-					if (SNW.AIClient) {
-						const res = await SNW.AIClient.send(msg, _history, {
-							lang: (SNW.I18n && SNW.I18n.getLang ? SNW.I18n.getLang() : 'ko'),
-							voiceMode: false
-						});
-						reply = (res && res.text) || '(no response)';
-						hint = (res && res._speechHint) || reply;
-						actions = (res && res.actions) || [];
-					} else if (SNW.Api && SNW.Api.gemini) {
-						const res = await SNW.Api.gemini({ message: msg });
-						reply = (res && res.text) || '(no response)';
-					}
-
-					this._updateLastBubble(reply, actions);
-					_history.push({ role: 'assistant', text: reply });
-					if (SNW.AIClient) SNW.AIClient.saveHistory(_history);
-
-					// 비용 배지 최신화
-					this._loadCostBadge();
-
-					// TTS 발화
-					if (hint && SNW.AIVoice && SNW.AIVoice.isTTSSupported()) {
-						SNW.AIVoice.speak(hint);
-					}
-				} catch (e) {
-					this._updateLastBubble('❌ ' + (e.message || 'Error'));
+				// AI 도구 실행 시 홈/NowPlaying 즉시 동기화
+				if (actions && actions.length > 0 && SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') {
+					SNW.StoreBridge.refreshNow();
 				}
-			},
 
-			_updateLastBubble(text, actions = []) {
-				const box = _sheetEl.querySelector('[data-slot="sheet-messages"]');
-				if (!box) return;
-				const bubbles = box.querySelectorAll('div');
-				const last = bubbles[bubbles.length - 1];
-				if (last) {
-					let actionStr = '';
-					if (actions && actions.length > 0) {
-						actionStr = '\n' + actions.map(a => `✓ ${a.name}: ${a.result}`).join('\n');
-					}
-					last.textContent = text + actionStr;
+				// 비용 배지 최신화
+				this._loadCostBadge();
+
+				// TTS 발화
+				if (hint && SNW.AIVoice && SNW.AIVoice.isTTSSupported()) {
+					SNW.AIVoice.speak(hint);
 				}
-				box.scrollTop = box.scrollHeight;
-			},
+			} catch (e) {
+				this._updateLastBubble('❌ ' + (e.message || 'Error'));
+			}
+		},
+
+		_updateLastBubble(text, actions = []) {
+			const box = _sheetEl.querySelector('[data-slot="sheet-messages"]');
+			if (!box) return;
+			const bubbles = box.querySelectorAll('div');
+			const last = bubbles[bubbles.length - 1];
+			if (last) {
+				let actionStr = '';
+				if (actions && actions.length > 0) {
+					actionStr = '\n' + actions.map(a => `✓ ${a.name}: ${a.result}`).join('\n');
+				}
+				last.textContent = text + actionStr;
+			}
+			box.scrollTop = box.scrollHeight;
+		},
 
 		async _onVoiceInput() {
-				if (!SNW.AIVoice || !SNW.AIVoice.isSTTSupported()) {
-					if (SNW.ToastUtil) SNW.ToastUtil.warn('Voice input not supported');
-					return;
-				}
-
-				const micBtn = _sheetEl.querySelector('[data-action="sheet-mic"]');
-				if (micBtn) micBtn.style.background = '#ef4444';
-
-				try {
-					const res = await SNW.AIVoice.startListening();
-					if (micBtn) micBtn.style.background = '';
-					if (res && res.transcript) {
-						const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
-						if (inputEl) {
-							inputEl.value = res.transcript;
-							this._onSend();
-						}
-					}
-				} catch (e) {
-					if (micBtn) micBtn.style.background = '';
-				}
+			if (!SNW.AIVoice || !SNW.AIVoice.isSTTSupported()) {
+				if (SNW.ToastUtil) SNW.ToastUtil.warn('Voice input not supported');
+				return;
 			}
-		};
 
-		SNW.AISheet = AISheet;
+			const micBtn = _sheetEl.querySelector('[data-action="sheet-mic"]');
+			if (micBtn) micBtn.style.background = '#ef4444';
 
-		// 앱 부팅 시 자동 초기화
-		if(document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', () => AISheet.init());
-} else {
-	AISheet.init();
-}
+			try {
+				const res = await SNW.AIVoice.startListening();
+				if (micBtn) micBtn.style.background = '';
+				if (res && res.transcript) {
+					const inputEl = _sheetEl.querySelector('[data-slot="sheet-input"]');
+					if (inputEl) {
+						inputEl.value = res.transcript;
+						this._onSend();
+					}
+				}
+			} catch (e) {
+				if (micBtn) micBtn.style.background = '';
+			}
+		}
+	};
 
-}) (window, window.SNW);
+	SNW.AISheet = AISheet;
+
+	// 앱 부팅 시 자동 초기화
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', () => AISheet.init());
+	} else {
+		AISheet.init();
+	}
+
+})(window, window.SNW);
 

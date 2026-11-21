@@ -134,7 +134,8 @@ window.SNW = window.SNW || {};
 			stateStr = (s.state === 1) ? 'PAUSED' : ((s.state === 2) ? 'COMPLETED' : 'ACTIVE');
 		}
 
-		const activeBool = Boolean(s.active && typeName !== 'NONE' && stateStr !== 'COMPLETED');
+		const rawActive = (s.active !== undefined) ? Boolean(s.active) : true;
+		const activeBool = Boolean(rawActive && typeName !== 'NONE' && stateStr !== 'COMPLETED');
 
 		return Object.assign({}, s, {
 			type: typeNum,
@@ -153,6 +154,29 @@ window.SNW = window.SNW || {};
 		_started: false,
 		_unsubs: [],
 		normalizeSession: normalizeSession,
+
+		async refreshNow() {
+			if (!SNW.Api || typeof SNW.Api.getState !== 'function') return null;
+			try {
+				const st = await SNW.Api.getState();
+				if (st && st.control) {
+					SNW.Store.set({
+						lastUpdateMs: Date.now(),
+						connection: 'online',
+						control: st.control,
+						time: st.control.time || null,
+						system: st.control.system || null,
+						fsmState: (st.control.stateCode != null) ? st.control.stateCode : 0,
+						fsmReason: (st.control.reasonCode != null) ? st.control.reasonCode : 0,
+						session: normalizeSession(st.control.session),
+						...(st.sim ? { sim: st.sim } : {})
+					});
+				}
+				return st;
+			} catch {
+				return null;
+			}
+		},
 
 		start() {
 			if (this._started) return;
@@ -197,6 +221,7 @@ window.SNW = window.SNW || {};
 			});
 
 			this._unsubs.push(unsubMsg);
+			this.refreshNow();
 		},
 
 		stop() {

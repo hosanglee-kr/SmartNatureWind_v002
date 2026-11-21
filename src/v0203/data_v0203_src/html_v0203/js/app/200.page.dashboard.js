@@ -303,6 +303,8 @@ SNW.Page = SNW.Page || {};
                     }
                 }, { passive: true });
             }
+
+            this._renderNowPlaying();
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -386,6 +388,7 @@ SNW.Page = SNW.Page || {};
             if (targetBtn && targetBtn.classList.contains('is-running')) {
                 try {
                     await SNW.Api.stopSession();
+                    if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                     if (SNW.Haptic) SNW.Haptic.stop();
                     if (SNW.ToastUtil) SNW.ToastUtil.info(SNW.I18n.t('common.stopSession') || '세션 정지');
                 } catch (e) {
@@ -406,6 +409,7 @@ SNW.Page = SNW.Page || {};
                     const req = { type: 'AUTO_FULL', payload: {} };
                     this._lastSessionReq = req;
                     await SNW.Api.startSession(req);
+                    if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                     if (SNW.Haptic) SNW.Haptic.stepChange();
                     if (SNW.ToastUtil) SNW.ToastUtil.success(SNW.I18n.t('session.autoFull'));
                 } catch (e) {
@@ -438,6 +442,7 @@ SNW.Page = SNW.Page || {};
                     const req = { type: 'AUTO_SELECT', payload: base };
                     this._lastSessionReq = req;
                     await SNW.Api.startSession(req);
+                    if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                     if (SNW.Haptic) SNW.Haptic.stepChange();
                     const title = (key === 'sleep') ? SNW.I18n.t('home.scenario.sleep') : SNW.I18n.t('session.autoSelect');
                     if (SNW.ToastUtil) SNW.ToastUtil.success(title);
@@ -472,6 +477,7 @@ SNW.Page = SNW.Page || {};
                         await SNW.Api.startPreset(presetCode, 'BALANCE');
                     }
                 }
+                if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                 if (SNW.Haptic) SNW.Haptic.stepChange();
                 if (SNW.ToastUtil) SNW.ToastUtil.success(SNW.I18n.t('msg.playSuccess') || '재생 시작');
             } catch (e) {
@@ -496,7 +502,7 @@ SNW.Page = SNW.Page || {};
                     <p style="font-weight:600;margin-bottom:8px;">${t('home.scenario.' + key)} 모드로 시작할까요?</p>
                     <div style="font-size:12px;color:var(--snw-text-dim);padding:10px;background:var(--snw-surface-2);border-radius:6px;line-height:1.6;">
                         · 요약: ${t('home.scenario.' + key + 'Meta')}<br>
-                        ${targetProf ? `· 연결 프로필: ${SNW.DomUtil.escape(targetProf.name)}` : ''}
+                        ${targetProf ? `· ${SNW.I18n.getLang && SNW.I18n.getLang() === 'en' ? 'Profile' : '연결 프로필'}: ${SNW.DomUtil.escape(SNW.I18n.profileName ? SNW.I18n.profileName(targetProf) : targetProf.name)}` : ''}
                     </div>
                     <div style="margin-top:10px;">
                         <button type="button" class="snw-btn snw-btn--sm" data-action="edit-scenario-rule">⚙ 규칙 편집</button>
@@ -611,7 +617,10 @@ SNW.Page = SNW.Page || {};
                             <span>${t('session.autoSelectPlaylist')}</span>
                             <select data-profile-select ${hasProfiles ? '' : 'disabled'} style="margin-left:auto;padding:4px 8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
                                 ${hasProfiles
-                        ? profiles.map(p => `<option value="${p.profileId}" ${(initProfileId && Number(p.profileId) === initProfileId) ? 'selected' : ''}>${SNW.DomUtil ? SNW.DomUtil.escape(p.name) : p.name}</option>`).join('')
+                        ? profiles.map(p => {
+                            const pDisp = (SNW.I18n && SNW.I18n.profileName) ? SNW.I18n.profileName(p) : p.name;
+                            return `<option value="${p.profileId}" ${(initProfileId && Number(p.profileId) === initProfileId) ? 'selected' : ''}>${SNW.DomUtil ? SNW.DomUtil.escape(pDisp) : pDisp}</option>`;
+                        }).join('')
                         : '<option value="">프로파일 없음</option>'}
                             </select>
                         </label>
@@ -815,8 +824,10 @@ SNW.Page = SNW.Page || {};
                 if (pauseReason === 1) reasonText = SNW.I18n.t('fsm.pauseReasonMotion');
                 else if (pauseReason === 3) reasonText = SNW.I18n.t('fsm.pauseReasonDiLow');
 
+                const pausedProf = (s && SNW.I18n && SNW.I18n.profileName) ? SNW.I18n.profileName(s) : '';
+                const waitLbl = (SNW.I18n && SNW.I18n.getLang && SNW.I18n.getLang() === 'en') ? 'Waiting' : '대기 중';
                 titleEl.textContent = `⏸ ${SNW.I18n.t('fsm.envPaused')}`;
-                subEl.textContent = `${reasonText} · 대기 중`;
+                subEl.textContent = pausedProf ? `${pausedProf} · ${reasonText} · ${waitLbl}` : `${reasonText} · ${waitLbl}`;
 
                 if (btnPause) {
                     btnPause.hidden = false;
@@ -831,8 +842,9 @@ SNW.Page = SNW.Page || {};
             }
 
             if (!isActive) {
-                titleEl.textContent = '꺼짐';
-                subEl.textContent = '세션 없음';
+                const isEn = SNW.I18n && SNW.I18n.getLang && SNW.I18n.getLang() === 'en';
+                titleEl.textContent = isEn ? 'Off' : '꺼짐';
+                subEl.textContent = isEn ? 'No active session' : '세션 없음';
                 if (btnPause) btnPause.hidden = true;
                 if (btnStop) btnStop.hidden = true;
                 if (btnTimerQuick) btnTimerQuick.hidden = true;
@@ -863,12 +875,15 @@ SNW.Page = SNW.Page || {};
                 const remain = this._fmtRemain(s.stepRemainSec || s.remainSec || 0);
                 sub = `Step ${s.currentStep || s.stepNo || 1}/${s.totalSteps || 1} · ${remain}`;
             } else if (typeName === 'PRESET') {
-                title = `${s.presetCode || ''} · ${s.styleCode || ''}`;
+                title = (SNW.NowPlaying && SNW.NowPlaying.getPresetStyleDisplayName)
+                    ? SNW.NowPlaying.getPresetStyleDisplayName(s.presetCode, s.styleCode)
+                    : `${s.presetCode || ''} · ${s.styleCode || ''}`;
                 sub = isPaused ? '일시정지' : '재생 중';
             } else if (typeName === 'FIXED') {
                 const spd = s.percent ?? s.fixedPercent ?? s.fixedSpeed ?? (ctl.override && ctl.override.fixedPercent) ?? 0;
-                title = `일반 선풍기 ${Math.round(spd)}%`;
-                sub = isPaused ? '일시정지' : '재생 중';
+                const isEn = SNW.I18n && SNW.I18n.getLang && SNW.I18n.getLang() === 'en';
+                title = `${isEn ? 'Fixed Fan' : '일반 선풍기'} ${Math.round(spd)}%`;
+                sub = isPaused ? (isEn ? 'Paused' : '일시정지') : (isEn ? 'Playing' : '재생 중');
                 if (this._slider) this._slider.set(spd);
             }
 
@@ -978,7 +993,10 @@ SNW.Page = SNW.Page || {};
                 recEl.innerHTML = `💡 현재 날씨엔 "<b>프로필 #${esc(String(rec.profileId))}</b>"이 가장 쾌적합니다`;
                 if (playBtn) playBtn.disabled = false;
             } else if (rec.presetCode) {
-                recEl.innerHTML = `💡 현재 날씨엔 "<b>${esc(String(rec.presetCode))} · ${esc(String(rec.styleCode || ''))}</b>" 바람을 추천합니다`;
+                const recLabel = (SNW.I18n && SNW.I18n.presetStyleName)
+                    ? SNW.I18n.presetStyleName(rec.presetCode, rec.styleCode)
+                    : `${rec.presetCode} · ${rec.styleCode || ''}`;
+                recEl.innerHTML = `💡 현재 날씨엔 "<b>${esc(recLabel)}</b>" 바람을 추천합니다`;
                 if (playBtn) playBtn.disabled = false;
             } else {
                 recEl.textContent = '현재 추천 바람 정보를 준비 중입니다';
@@ -1017,6 +1035,7 @@ SNW.Page = SNW.Page || {};
                         try {
                             this._lastSessionReq = { type: 'PLAYLIST', payload: { profileId: p.profileId } };
                             await SNW.Api.startPlaylist(p.profileId);
+                            if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                             if (SNW.Haptic) SNW.Haptic.stepChange();
                         } catch (e) {
                             if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '재생 실패');
@@ -1039,6 +1058,7 @@ SNW.Page = SNW.Page || {};
                 } else {
                     await SNW.Api.startFixed(percent);
                 }
+                if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
             } catch (e) {
                 if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '실패');
             }
@@ -1067,6 +1087,7 @@ SNW.Page = SNW.Page || {};
                     await SNW.Api.pauseSession();
                     if (SNW.Haptic) SNW.Haptic.snap();
                 }
+                if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
             } catch (e) {
                 if (SNW.ToastUtil) SNW.ToastUtil.error(e.message);
             }
@@ -1075,6 +1096,7 @@ SNW.Page = SNW.Page || {};
         async _onStop() {
             try {
                 await SNW.Api.stopSession();
+                if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                 if (SNW.Haptic) SNW.Haptic.stop();
             } catch (e) {
                 if (SNW.ToastUtil) SNW.ToastUtil.error(e.message);
@@ -1173,30 +1195,37 @@ SNW.Page = SNW.Page || {};
             const wrap = this.el.querySelector('#style-selector');
             if (!wrap) return;
             const STYLES = [
-                { code: 'BALANCE', icon: '⚖️', label: '균형' },
-                { code: 'ACTIVE', icon: '⚡', label: '활력' },
-                { code: 'FOCUS', icon: '🎯', label: '집중' },
-                { code: 'RELAX', icon: '🍃', label: '휴식' },
-                { code: 'SLEEP', icon: '🌙', label: '수면' },
+                { code: 'BALANCE', icon: '⚖️', fallback: '균형' },
+                { code: 'ACTIVE', icon: '⚡', fallback: '활동' },
+                { code: 'FOCUS', icon: '🎯', fallback: '집중' },
+                { code: 'RELAX', icon: '🍃', fallback: '휴식' },
+                { code: 'SLEEP', icon: '🌙', fallback: '수면' },
             ];
             const sim = (SNW.Store && SNW.Store.get) ? (SNW.Store.get().sim || {}) : {};
             const cur = sim.styleCode || 'BALANCE';
 
-            wrap.innerHTML = STYLES.map(s => `
-                <button type="button" class="snw-btn snw-btn--sm ${s.code === cur ? 'snw-btn-primary' : ''}" data-style="${s.code}">
-                    ${s.icon} ${s.label}
-                </button>
-            `).join('');
+            wrap.innerHTML = STYLES.map(s => {
+                const label = (SNW.I18n && SNW.I18n.styleName) ? SNW.I18n.styleName(s.code, s.fallback) : s.fallback;
+                return `<button type="button" class="snw-btn snw-btn--sm ${s.code === cur ? 'snw-btn-primary' : ''}" data-style="${s.code}">
+                    ${s.icon} ${label}
+                </button>`;
+            }).join('');
 
             wrap.querySelectorAll('[data-style]').forEach(btn => {
                 btn.onclick = async () => {
                     const styleCode = btn.getAttribute('data-style');
                     wrap.querySelectorAll('[data-style]').forEach(b => b.classList.toggle('snw-btn-primary', b === btn));
                     try {
-                        if (SNW.Api && typeof SNW.Api.patchSim === 'function') {
+                        const st = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+                        const sess = st.session;
+                        const sType = sess ? (sess.typeName || (['NONE', 'PLAYLIST', 'PRESET', 'FIXED', 'AUTO_FULL', 'AUTO_SELECT'][Number(sess.type)] || 'NONE')) : 'NONE';
+                        if (sType === 'PRESET' && sess && sess.state !== 'COMPLETED' && SNW.Api && typeof SNW.Api.startPreset === 'function') {
+                            await SNW.Api.startPreset(sess.presetCode || (st.sim && st.sim.presetCode) || 'OCEAN', styleCode);
+                        } else if (SNW.Api && typeof SNW.Api.patchSim === 'function') {
                             await SNW.Api.patchSim({ styleCode });
-                            if (SNW.Haptic) SNW.Haptic.snap();
                         }
+                        if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
+                        if (SNW.Haptic) SNW.Haptic.snap();
                     } catch (e) {
                         if (SNW.ToastUtil) SNW.ToastUtil.error(e.message);
                     }
@@ -1212,16 +1241,16 @@ SNW.Page = SNW.Page || {};
             if (!wrap) return;
 
             const PRESETS = [
-                { code: 'OCEAN', icon: '🌊', name: '바다 바람' },
-                { code: 'COUNTRY_BREEZE', icon: '🏡', name: '산들바람' },
-                { code: 'MEDITERRANEAN', icon: '🏖️', name: '지중해' },
-                { code: 'MOUNTAIN', icon: '🏔️', name: '고산 계곡' },
-                { code: 'PLAINS', icon: '🌾', name: '들판 바람' },
-                { code: 'HARBOR_BREEZE', icon: '⚓', name: '항구 바람' },
-                { code: 'FOREST_CANOPY', icon: '🌲', name: '숲속 그늘' },
-                { code: 'URBAN_SUNSET', icon: '🌆', name: '도시 노을' },
-                { code: 'TROPICAL_RAIN', icon: '🌴', name: '열대 우림' },
-                { code: 'DESERT_NIGHT', icon: '🌙', name: '사막 밤' },
+                { code: 'OCEAN', icon: '🌊' },
+                { code: 'COUNTRY_BREEZE', icon: '🏡' },
+                { code: 'MEDITERRANEAN', icon: '🏖️' },
+                { code: 'MOUNTAIN', icon: '🏔️' },
+                { code: 'PLAINS', icon: '🌾' },
+                { code: 'HARBOR_BREEZE', icon: '⚓' },
+                { code: 'FOREST_CANOPY', icon: '🌲' },
+                { code: 'URBAN_SUNSET', icon: '🌆' },
+                { code: 'TROPICAL_RAIN', icon: '🌴' },
+                { code: 'DESERT_NIGHT', icon: '🌙' },
             ];
 
             const sim = (SNW.Store && SNW.Store.get) ? (SNW.Store.get().sim || {}) : {};
@@ -1229,12 +1258,13 @@ SNW.Page = SNW.Page || {};
 
             wrap.innerHTML = `
                 <div class="snw-preset-grid" style="display:grid;">
-                    ${PRESETS.map(p => `
-                        <button type="button" class="snw-btn ${p.code === cur ? 'snw-btn-primary' : ''}" data-preset="${p.code}" style="text-align:left;padding:10px;">
+                    ${PRESETS.map(p => {
+                const pName = (SNW.I18n && SNW.I18n.presetName) ? SNW.I18n.presetName(p.code) : p.code;
+                return `<button type="button" class="snw-btn ${p.code === cur ? 'snw-btn-primary' : ''}" data-preset="${p.code}" style="text-align:left;padding:10px;">
                             <span style="font-size:18px;margin-right:6px;">${p.icon}</span>
-                            <strong>${p.name}</strong>
-                        </button>
-                    `).join('')}
+                            <strong>${pName}</strong>
+                        </button>`;
+            }).join('')}
                 </div>`;
 
             wrap.querySelectorAll('[data-preset]').forEach(btn => {
@@ -1245,8 +1275,10 @@ SNW.Page = SNW.Page || {};
                         const curStyle = (SNW.Store && SNW.Store.get && SNW.Store.get().sim && SNW.Store.get().sim.styleCode) || 'BALANCE';
                         if (SNW.Api && typeof SNW.Api.startPreset === 'function') {
                             await SNW.Api.startPreset(presetCode, curStyle);
+                            if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                             if (SNW.Haptic) SNW.Haptic.stepChange();
-                            if (SNW.ToastUtil) SNW.ToastUtil.success(`${presetCode} 재생 시작`);
+                            const pLabel = (SNW.I18n && SNW.I18n.presetName) ? SNW.I18n.presetName(presetCode) : presetCode;
+                            if (SNW.ToastUtil) SNW.ToastUtil.success(`${pLabel} 재생 시작`);
                         }
                     } catch (e) {
                         if (SNW.ToastUtil) SNW.ToastUtil.error(e.message);

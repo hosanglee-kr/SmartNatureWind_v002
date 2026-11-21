@@ -34,32 +34,18 @@ window.SNW = window.SNW || {};
 
     function $(sel, root) { return (root || document).querySelector(sel); }
 
-    const SCENARIO_BY_PROFILE_NO = {
-        10: 'sleep',
-        20: 'office',
-        30: 'study',
-        40: 'rest',
-        50: 'exercise',
-        70: 'pet',
-        80: 'baby'
-    };
-    const DEFAULT_PROFILE_NAMES = new Set([
-        '수면모드', '집중모드', '휴식모드', '환기모드', '활동모드', '반려동물 케어', '아기/유아 케어'
-    ]);
-
     function getProfileDisplayName(s) {
-        if (!s) return '';
-        const pNo = Number(s.profileNo || 0);
-        const rawName = s.profileName || s.name || '';
-        const scenarioKey = SCENARIO_BY_PROFILE_NO[pNo];
-        if (scenarioKey && (!rawName || DEFAULT_PROFILE_NAMES.has(rawName))) {
-            const full = SNW.I18n.t('home.scenario.' + scenarioKey);
-            const parts = full.split(' ');
-            const base = (parts.length > 1 ? parts.slice(1).join(' ') : full).trim();
-            const lang = (SNW.I18n.getLang && SNW.I18n.getLang()) || 'ko';
-            return lang === 'ko' ? `${base}모드` : `${base} Mode`;
+        if (SNW.I18n && typeof SNW.I18n.profileName === 'function') {
+            return SNW.I18n.profileName(s);
         }
-        return rawName || (pNo ? `프로필 #${pNo}` : '');
+        return (s && (s.profileName || s.name)) || '';
+    }
+
+    function getPresetStyleDisplayName(presetCode, styleCode) {
+        if (SNW.I18n && typeof SNW.I18n.presetStyleName === 'function') {
+            return SNW.I18n.presetStyleName(presetCode, styleCode);
+        }
+        return `${presetCode || '자연풍'} · ${styleCode || '표준'}`;
     }
 
     function getSession() {
@@ -136,6 +122,7 @@ window.SNW = window.SNW || {};
 
         if (!isSessionVisible()) {
             barEl.root.hidden = true;
+            barEl.root.setAttribute('hidden', '');
             document.body.classList.remove('has-nowplaying');
             stopEq();
             stopPauseBreathing();
@@ -143,6 +130,7 @@ window.SNW = window.SNW || {};
         }
 
         barEl.root.hidden = false;
+        barEl.root.removeAttribute('hidden');
         document.body.classList.add('has-nowplaying');
 
         // ─── [Stage 5] 1. ENV_PAUSED 상태 처리 ───
@@ -220,10 +208,11 @@ window.SNW = window.SNW || {};
             const pTitle = getProfileDisplayName(s) || '플레이리스트';
             title = `${triggerIcon} ${pTitle}`;
         } else if (type === 2) {
-            title = `${triggerIcon} ${s.presetCode || '자연풍'} · ${s.styleCode || '표준'}`;
+            title = `${triggerIcon} ${getPresetStyleDisplayName(s.presetCode, s.styleCode)}`;
         } else if (type === 3) {
             const fixedPct = s.percent ?? s.fixedPercent ?? s.fixedSpeed ?? (ctl && ctl.override && ctl.override.fixedPercent) ?? 0;
-            title = `${triggerIcon} 일반 선풍기 (${Math.round(fixedPct)}%)`;
+            const isEn = SNW.I18n && SNW.I18n.getLang && SNW.I18n.getLang() === 'en';
+            title = `${triggerIcon} ${isEn ? 'Fixed Fan' : '일반 선풍기'} (${Math.round(fixedPct)}%)`;
         } else {
             title = '재생 중';
         }
@@ -409,6 +398,7 @@ window.SNW = window.SNW || {};
         if (ctl && ctl.stateCode === 7) {
             try {
                 await SNW.Api.resumeSession();
+                if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
                 if (SNW.ToastUtil) SNW.ToastUtil.success('바람이 재개되었습니다.');
             } catch (err) {
                 if (SNW.ToastUtil) SNW.ToastUtil.error(err.message || '재개 실패');
@@ -427,6 +417,7 @@ window.SNW = window.SNW || {};
                 await SNW.Api.pauseSession();
                 if (SNW.ToastUtil) SNW.ToastUtil.info('바람이 일시정지되었습니다.');
             }
+            if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
         } catch (err) {
             if (SNW.ToastUtil) SNW.ToastUtil.error(err.message || '세션 제어 실패');
         }
@@ -436,6 +427,7 @@ window.SNW = window.SNW || {};
         if (e) e.stopPropagation();
         try {
             await SNW.Api.stopSession();
+            if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
             if (SNW.ToastUtil) SNW.ToastUtil.info('바람이 정지되었습니다.');
         } catch (err) {
             if (SNW.ToastUtil) SNW.ToastUtil.error(err.message || '세션 정지 실패');
@@ -493,10 +485,12 @@ window.SNW = window.SNW || {};
             }
         }, { passive: true });
 
-        // Store 구독
+        // Store & 언어 변경 구독
         if (SNW.Store && typeof SNW.Store.subscribe === 'function') {
             SNW.Store.subscribe(() => render());
         }
+        document.addEventListener('snw:langchange', () => render());
+        render();
         document.addEventListener('snw:timerchange', () => render());
         render();
         SNW.LogUtil.info('[NowPlaying] Bar initialized');
@@ -529,7 +523,7 @@ window.SNW = window.SNW || {};
             title = s.profileName || (s.profileNo ? `프로필 #${s.profileNo}` : '플레이리스트');
             typeBadge = '🎵 맞춤 바람 (플레이리스트)';
         } else if (type === 2) {
-            title = `${s.presetCode || '자연풍'} · ${s.styleCode || '표준'}`;
+            title = getPresetStyleDisplayName(s.presetCode, s.styleCode);
             typeBadge = '🌿 자연풍 프리셋';
         } else if (type === 3) {
             const fixedPct = s.percent ?? s.fixedPercent ?? s.fixedSpeed ?? (ctl && ctl.override && ctl.override.fixedPercent) ?? 0;
@@ -758,7 +752,8 @@ window.SNW = window.SNW || {};
         init,
         render,
         getSession,
-        getProfileDisplayName
+        getProfileDisplayName,
+        getPresetStyleDisplayName
     };
 
     // 번들(999.app.js 이후 알파벳 순 실행) 포함 환경에서 초기화 누락 방지

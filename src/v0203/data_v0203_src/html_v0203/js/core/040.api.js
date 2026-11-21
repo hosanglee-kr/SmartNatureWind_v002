@@ -317,6 +317,9 @@ window.SNW = window.SNW || {};
 			return _fetch(SNW.CFG.API.sessionStart, {
 				method: 'POST',
 				body: { type, payload, trigger: finalTrigger }
+			}).then(res => {
+				if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') SNW.StoreBridge.refreshNow();
+				return res;
 			});
 		},
 		startPlaylist(profileId) {
@@ -332,16 +335,28 @@ window.SNW = window.SNW || {};
 			return _fetch(SNW.CFG.API.sessionRule, {
 				method: 'PATCH',
 				body: { rule }
+			}).then(res => {
+				if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') SNW.StoreBridge.refreshNow();
+				return res;
 			});
 		},
 		pauseSession() {
-			return _fetch(SNW.CFG.API.sessionPause, { method: 'POST' });
+			return _fetch(SNW.CFG.API.sessionPause, { method: 'POST' }).then(res => {
+				if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') SNW.StoreBridge.refreshNow();
+				return res;
+			});
 		},
 		resumeSession() {
-			return _fetch(SNW.CFG.API.sessionResume, { method: 'POST' });
+			return _fetch(SNW.CFG.API.sessionResume, { method: 'POST' }).then(res => {
+				if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') SNW.StoreBridge.refreshNow();
+				return res;
+			});
 		},
 		stopSession() {
-			return _fetch(SNW.CFG.API.sessionStop, { method: 'POST' });
+			return _fetch(SNW.CFG.API.sessionStop, { method: 'POST' }).then(res => {
+				if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') SNW.StoreBridge.refreshNow();
+				return res;
+			});
 		},
 		getCurrentSession() {
 			return _fetch(SNW.CFG.API.sessionCurrent);

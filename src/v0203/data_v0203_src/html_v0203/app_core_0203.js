@@ -412,7 +412,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 020.i18n.js (82155 bytes) ---- */
+/* ---- 020.i18n.js (84904 bytes) ---- */
 // =========================================================
 // 020.i18n.js — 다국어 완전판 (ko/en)
 // =========================================================
@@ -1969,6 +1969,31 @@ window.SNW = window.SNW || {};
 
     const ALL_KEYS = new Set([...Object.keys(DICT.ko), ...Object.keys(DICT.en)]);
 
+    const SCENARIO_BY_PROFILE_NO = {
+        10: 'sleep',
+        20: 'office',
+        30: 'study',
+        40: 'rest',
+        50: 'exercise',
+        70: 'pet',
+        80: 'baby'
+    };
+    const DEFAULT_PROFILE_NAMES = new Set([
+        '수면모드', '집중모드', '휴식모드', '환기모드', '활동모드', '반려동물 케어', '아기/유아 케어'
+    ]);
+
+    function _pickLocalizedField(itemOrFallback) {
+        if (!itemOrFallback) return '';
+        if (typeof itemOrFallback === 'string') return itemOrFallback;
+        if (typeof itemOrFallback === 'object') {
+            if (currentLang === 'en') {
+                return itemOrFallback.nameEn || itemOrFallback.name || itemOrFallback.nameKo || '';
+            }
+            return itemOrFallback.nameKo || itemOrFallback.name || itemOrFallback.nameEn || '';
+        }
+        return '';
+    }
+
     SNW.I18n = {
         getLang() { return currentLang; },
 
@@ -1992,6 +2017,46 @@ window.SNW = window.SNW || {};
 
         hasKey(key) {
             return ALL_KEYS.has(key);
+        },
+
+        presetName(code, itemOrFallback) {
+            const c = code || '';
+            const k = c ? 'preset.' + c : '';
+            if (k && this.hasKey(k)) return this.t(k);
+            return _pickLocalizedField(itemOrFallback) || c;
+        },
+
+        styleName(code, itemOrFallback) {
+            const c = code || '';
+            const k = c ? 'style.' + c : '';
+            if (k && this.hasKey(k)) return this.t(k);
+            return _pickLocalizedField(itemOrFallback) || c;
+        },
+
+        presetStyleName(presetCode, styleCode, presetObj, styleObj) {
+            const pFb = presetObj || (currentLang === 'en' ? 'Natural Wind' : '자연풍');
+            const sFb = styleObj || (currentLang === 'en' ? 'Standard' : '표준');
+            return `${this.presetName(presetCode, pFb)} · ${this.styleName(styleCode, sFb)}`;
+        },
+
+        profileName(profileOrSession) {
+            if (!profileOrSession) return '';
+            const pNo = Number(profileOrSession.profileNo || 0);
+            const rawName = _pickLocalizedField({
+                name: profileOrSession.profileName || profileOrSession.name || '',
+                nameKo: profileOrSession.nameKo || '',
+                nameEn: profileOrSession.nameEn || ''
+            });
+            const scenarioKey = SCENARIO_BY_PROFILE_NO[pNo];
+            if (scenarioKey && (!rawName || DEFAULT_PROFILE_NAMES.has(rawName))) {
+                const full = this.t('home.scenario.' + scenarioKey);
+                const parts = full.split(' ');
+                const base = (parts.length > 1 ? parts.slice(1).join(' ') : full).trim();
+                return currentLang === 'ko' ? `${base}모드` : `${base} Mode`;
+            }
+            if (rawName) return rawName;
+            if (pNo) return currentLang === 'ko' ? `프로필 #${pNo}` : `Profile #${pNo}`;
+            return '';
         },
 
         applyTo(root) {
@@ -2667,7 +2732,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 040.api.js (19874 bytes) ---- */
+/* ---- 040.api.js (20589 bytes) ---- */
 // =========================================================
 // 040.api.js — SNW.Api (REST 클라이언트)
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -2987,6 +3052,9 @@ window.SNW = window.SNW || {};
 			return _fetch(SNW.CFG.API.sessionStart, {
 				method: 'POST',
 				body: { type, payload, trigger: finalTrigger }
+			}).then(res => {
+				if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') SNW.StoreBridge.refreshNow();
+				return res;
 			});
 		},
 		startPlaylist(profileId) {
@@ -3002,16 +3070,28 @@ window.SNW = window.SNW || {};
 			return _fetch(SNW.CFG.API.sessionRule, {
 				method: 'PATCH',
 				body: { rule }
+			}).then(res => {
+				if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') SNW.StoreBridge.refreshNow();
+				return res;
 			});
 		},
 		pauseSession() {
-			return _fetch(SNW.CFG.API.sessionPause, { method: 'POST' });
+			return _fetch(SNW.CFG.API.sessionPause, { method: 'POST' }).then(res => {
+				if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') SNW.StoreBridge.refreshNow();
+				return res;
+			});
 		},
 		resumeSession() {
-			return _fetch(SNW.CFG.API.sessionResume, { method: 'POST' });
+			return _fetch(SNW.CFG.API.sessionResume, { method: 'POST' }).then(res => {
+				if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') SNW.StoreBridge.refreshNow();
+				return res;
+			});
 		},
 		stopSession() {
-			return _fetch(SNW.CFG.API.sessionStop, { method: 'POST' });
+			return _fetch(SNW.CFG.API.sessionStop, { method: 'POST' }).then(res => {
+				if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') SNW.StoreBridge.refreshNow();
+				return res;
+			});
 		},
 		getCurrentSession() {
 			return _fetch(SNW.CFG.API.sessionCurrent);
@@ -3283,7 +3363,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 060.store.js (5620 bytes) ---- */
+/* ---- 060.store.js (6393 bytes) ---- */
 // =========================================================
 // 060.store.js — SNW.Store + SNW.StoreBridge
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -3420,7 +3500,8 @@ window.SNW = window.SNW || {};
 			stateStr = (s.state === 1) ? 'PAUSED' : ((s.state === 2) ? 'COMPLETED' : 'ACTIVE');
 		}
 
-		const activeBool = Boolean(s.active && typeName !== 'NONE' && stateStr !== 'COMPLETED');
+		const rawActive = (s.active !== undefined) ? Boolean(s.active) : true;
+		const activeBool = Boolean(rawActive && typeName !== 'NONE' && stateStr !== 'COMPLETED');
 
 		return Object.assign({}, s, {
 			type: typeNum,
@@ -3439,6 +3520,29 @@ window.SNW = window.SNW || {};
 		_started: false,
 		_unsubs: [],
 		normalizeSession: normalizeSession,
+
+		async refreshNow() {
+			if (!SNW.Api || typeof SNW.Api.getState !== 'function') return null;
+			try {
+				const st = await SNW.Api.getState();
+				if (st && st.control) {
+					SNW.Store.set({
+						lastUpdateMs: Date.now(),
+						connection: 'online',
+						control: st.control,
+						time: st.control.time || null,
+						system: st.control.system || null,
+						fsmState: (st.control.stateCode != null) ? st.control.stateCode : 0,
+						fsmReason: (st.control.reasonCode != null) ? st.control.reasonCode : 0,
+						session: normalizeSession(st.control.session),
+						...(st.sim ? { sim: st.sim } : {})
+					});
+				}
+				return st;
+			} catch {
+				return null;
+			}
+		},
 
 		start() {
 			if (this._started) return;
@@ -3483,6 +3587,7 @@ window.SNW = window.SNW || {};
 			});
 
 			this._unsubs.push(unsubMsg);
+			this.refreshNow();
 		},
 
 		stop() {

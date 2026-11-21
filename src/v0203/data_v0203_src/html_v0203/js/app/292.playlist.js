@@ -80,6 +80,7 @@ window.SNW = window.SNW || {};
         async _renderCard(profile) {
             const pId = profile.profileId || profile.profileNo;
             const refCount = this._schedules.filter(s => s.profileId === pId).length;
+            const pDispName = (SNW.I18n && SNW.I18n.profileName) ? SNW.I18n.profileName(profile) : profile.name;
 
             const card = document.createElement('div');
             card.className = 'snw-playlist-item';
@@ -87,7 +88,7 @@ window.SNW = window.SNW || {};
             card.innerHTML = `
                 <div class="snw-playlist-item__main" style="display:flex;flex-direction:column;gap:6px;">
                     <div class="snw-playlist-item__head" style="display:flex;justify-content:space-between;align-items:center;">
-                        <span class="snw-playlist-item__name" style="font-weight:600;font-size:15px;color:var(--snw-text,#e6edf3);">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(profile.name) : profile.name}</span>
+                        <span class="snw-playlist-item__name" style="font-weight:600;font-size:15px;color:var(--snw-text,#e6edf3);">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(pDispName) : pDispName}</span>
                         <span class="snw-playlist-item__meta" style="font-size:12px;color:var(--snw-text-dim,#8b949e);">${profile.stepCount || (profile.steps ? profile.steps.length : 0)} Step · ${this._fmtTotal(profile)}</span>
                     </div>
                     
@@ -124,7 +125,8 @@ window.SNW = window.SNW || {};
             card.querySelector('[data-action="play"]').onclick = async () => {
                 try {
                     await SNW.Api.startPlaylist(pId);
-                    if (SNW.ToastUtil) SNW.ToastUtil.success(`▶ ${profile.name} 재생 시작`);
+                    if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
+                    if (SNW.ToastUtil) SNW.ToastUtil.success(`▶ ${pDispName} 재생 시작`);
                     if (navigator.vibrate) navigator.vibrate([10, 20, 10]);
                 } catch (e) {
                     if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '재생 실패');
@@ -136,7 +138,7 @@ window.SNW = window.SNW || {};
                 ruleBtn.onclick = async () => {
                     if (!SNW.UI || !SNW.UI.ruleEditor) return;
                     const updated = await SNW.UI.ruleEditor.showModal(profile.rule || {}, {
-                        title: `${profile.name || '바람'} 규칙`,
+                        title: `${pDispName || '바람'} 규칙`,
                     });
                     if (updated) {
                         try {

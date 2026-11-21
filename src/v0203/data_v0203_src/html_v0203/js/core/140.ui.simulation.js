@@ -64,7 +64,7 @@ SNW.UI = SNW.UI || {};
             <div class="snw-sim__wave-section" data-slot="wave-a">
                 <div class="snw-sim__wave-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px;font-weight:600;">
                     <span class="snw-sim__badge" style="padding:2px 8px;border-radius:4px;background:rgba(74,158,255,0.15);color:var(--snw-primary,#4a9eff);">${config.mode === 'ab' ? 'A' : '설정'}</span>
-                    <span>${SNW.DomUtil ? SNW.DomUtil.escape(config.a.presetCode + ' · ' + config.a.styleCode) : ''}</span>
+                    <span>${SNW.DomUtil ? SNW.DomUtil.escape(SNW.I18n ? SNW.I18n.presetStyleName(config.a.presetCode, config.a.styleCode) : (config.a.presetCode + ' · ' + config.a.styleCode)) : ''}</span>
                 </div>
                 <canvas class="snw-sim__canvas" data-slot="canvas-a" width="600" height="160" style="width:100%;height:160px;background:var(--snw-surface-2,#12161c);border-radius:var(--snw-radius,8px);display:block;"></canvas>
                 <div class="snw-sim__meta" data-slot="meta-a" style="display:flex;justify-content:space-around;font-size:12px;color:var(--snw-text-dim,#8b949e);margin-top:6px;"></div>
@@ -73,7 +73,7 @@ SNW.UI = SNW.UI || {};
             <div class="snw-sim__wave-section" data-slot="wave-b" ${config.mode !== 'ab' ? 'style="display:none;margin-top:12px;"' : 'style="margin-top:12px;"'}>
                 <div class="snw-sim__wave-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:13px;font-weight:600;">
                     <span class="snw-sim__badge snw-sim__badge--b" style="padding:2px 8px;border-radius:4px;background:rgba(240,136,62,0.15);color:#f0883e;">B</span>
-                    <span>${config.b ? (SNW.DomUtil ? SNW.DomUtil.escape(config.b.presetCode + ' · ' + config.b.styleCode) : '') : '-'}</span>
+                    <span>${config.b ? (SNW.DomUtil ? SNW.DomUtil.escape(SNW.I18n ? SNW.I18n.presetStyleName(config.b.presetCode, config.b.styleCode) : (config.b.presetCode + ' · ' + config.b.styleCode)) : '') : '-'}</span>
                 </div>
                 <canvas class="snw-sim__canvas" data-slot="canvas-b" width="600" height="160" style="width:100%;height:160px;background:var(--snw-surface-2,#12161c);border-radius:var(--snw-radius,8px);display:block;"></canvas>
                 <div class="snw-sim__meta" data-slot="meta-b" style="display:flex;justify-content:space-around;font-size:12px;color:var(--snw-text-dim,#8b949e);margin-top:6px;"></div>

@@ -43,3 +43,6 @@ tools/__pycache__/
 test/reports_ui/*.png
 !test/reports_ui/.gitkeep
 
+
+# Local secrets (never commit or expose to AI agent)
+src/v0203/.env/.gemini_key

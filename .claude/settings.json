@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(src/v0203/.env/.gemini_key)",
+      "Edit(src/v0203/.env/.gemini_key)",
+      "Grep(src/v0203/.env/.gemini_key)",
+      "Bash(*src/v0203/.env/.gemini_key*)",
+      "Read(.pio/**)"
+    ]
+  }
+}

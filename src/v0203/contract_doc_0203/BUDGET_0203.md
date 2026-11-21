@@ -95,6 +95,7 @@
 - **평상시 총**: 15~25 ms / 10ms 주기 → 오버런 평균화
 - **차트 브로드캐스트**: +10ms
 - **Reload**: +100~500ms 단일 스파이크
+- **실측 기록 (`release -Os`, ESP32-S3 Zero)**: 평상시 `ctl`/`ws`/`mot`/`tm`/`nvs`/`led` 합산 `8 ~ 55 μs`, `MON::tick(getMonitorSnapshot())` 내 DHT22 읽기 시 `~56.7 ms` 단일 스파이크 (`conf.intervalSec` 주기, 최소 5초 폴백)
 
 ---
 

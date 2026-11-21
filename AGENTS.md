@@ -49,7 +49,7 @@ C++ 소스(`.h`, `.cpp`) 수정이 필요하면 **목적·기능변화를 먼저
 ### 원칙 2 — Graph-First
 1. `graphify query "<질문>"` / `path` / `explain`으로 **파일:라인 확정**
 2. 확정된 최소 라인 범위만 `Read`
-3. 작업 후 `graphify update .`
+3. 작업 후 `graphify update . ; python tools/graphify_sync_docs.py` (또는 `cmd /c update_graph.bat`)
 
 무차별 `grep_search`/`view_file` 금지.
 
@@ -88,7 +88,7 @@ python src/v0203/tools_0203/commit_contracts_0203.py --dry-run --strict
 | UI E2E 점검 | `node test/e2e_ui_browser_check_0203.cjs` | `regression-run` |
 | 프론트 번들 | `pio_gzip_0203.py` (+ `check_i18n.py --strict`) | `bundle-frontend` |
 | 그래프 질의 | `graphify query "<q>"` | `graphify` |
-| 그래프 갱신 | `graphify update .` | `graphify` |
+| 그래프 갱신 | `graphify update . ; python tools/graphify_sync_docs.py` | `graphify` |
 | 그래프 탐색 | `graphify explain "<concept>"` / `graphify path "<A>" "<B>"` | `graphify` |
 | 동기화 | `python tools/sync-agent-configs.py [--check]` | — |
 

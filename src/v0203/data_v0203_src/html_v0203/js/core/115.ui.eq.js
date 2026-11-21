@@ -3,7 +3,7 @@
 // Layer 1 (UI 컴포넌트)
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     SNW.UI = SNW.UI || {};
@@ -14,16 +14,16 @@ window.SNW = window.SNW || {};
      * @param {Object} opts { bars, fps, maxWind, bufferSize }
      * @returns {{ push(windSpeed), start(), stop(), clear(), renderStatic() }}
      */
-    SNW.UI.equalizer = function(container, opts = {}) {
+    SNW.UI.equalizer = function (container, opts = {}) {
         const {
-            bars       = 20,
-            fps        = 60,
-            maxWind    = 11.0,       // 최대 풍속 (m/s)
+            bars = 20,
+            fps = 60,
+            maxWind = 11.0,       // 최대 풍속 (m/s)
             bufferSize = 30,         // 로컬 버퍼 (WS 간격 × 30 ≈ 24초)
         } = opts;
 
         if (!container) {
-            return { push: () => {}, start: () => {}, stop: () => {}, clear: () => {}, renderStatic: () => {} };
+            return { push: () => { }, start: () => { }, stop: () => { }, clear: () => { }, renderStatic: () => { } };
         }
 
         // 캔버스 초기화
@@ -59,9 +59,9 @@ window.SNW = window.SNW || {};
             cw = Math.max(60, Math.floor(rect.width || container.clientWidth || 300));
             ch = Math.max(40, Math.floor(rect.height || container.clientHeight || 60));
 
-            canvas.width  = Math.floor(cw * dpr);
+            canvas.width = Math.floor(cw * dpr);
             canvas.height = Math.floor(ch * dpr);
-            canvas.style.width  = cw + 'px';
+            canvas.style.width = cw + 'px';
             canvas.style.height = ch + 'px';
 
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -78,10 +78,11 @@ window.SNW = window.SNW || {};
             const gap = Math.max(1, barW * 0.15);
             const actualW = barW - gap;
 
-            // 최근 bufferSize 값을 bars 개수로 다운샘플
-            const step = Math.max(1, Math.floor(bufferSize / bars));
+            // 최근 bufferSize 값을 bars 개수로 균등 매핑 (우측 끝 막대 = 최신 풍속)
             for (let i = 0; i < bars; i++) {
-                const srcIdx = Math.min(bufferSize - 1, i * step + Math.floor(step / 2));
+                const srcIdx = (bars <= 1)
+                    ? (bufferSize - 1)
+                    : Math.min(bufferSize - 1, Math.round((i * (bufferSize - 1)) / (bars - 1)));
                 const v = buffer[srcIdx] || 0;
 
                 // 정규화
@@ -90,9 +91,9 @@ window.SNW = window.SNW || {};
 
                 // 색상 매핑
                 let color;
-                if (v > 6)      color = '#f0883e';   // 강함 (주황)
+                if (v > 6) color = '#f0883e';   // 강함 (주황)
                 else if (v > 3) color = '#3fb950';   // 보통 (초록)
-                else            color = '#4a9eff';   // 잔잔 (파랑)
+                else color = '#4a9eff';   // 잔잔 (파랑)
 
                 ctx.fillStyle = color;
                 const x = i * barW + gap / 2;
@@ -144,7 +145,7 @@ window.SNW = window.SNW || {};
             push(windSpeed) {
                 buffer.shift();
                 buffer.push(Math.max(0, Number(windSpeed) || 0));
-                if (!running) render();   // 정지 시 즉시 렌더
+                if (!running || reduceMotion) render();   // 정지/reduced-motion 시 즉시 렌더
             },
 
             start() {

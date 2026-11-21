@@ -31,8 +31,22 @@ SNW.Page = SNW.Page || {};
             this._bindStore();
             await Promise.all([
                 this._loadProfiles(),
-                this._refreshContext(true)
+                this._refreshContext(true),
+                this._prefillEqHistory()
             ]);
+        }
+
+        async _prefillEqHistory() {
+            if (!this._eq || !SNW.Api || typeof SNW.Api.getChartHistory !== 'function') return;
+            try {
+                const hist = await SNW.Api.getChartHistory();
+                if (!this._active || !this._eq || !hist || !Array.isArray(hist.chart)) return;
+                const st = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+                if (!st.sim || !st.sim.active) return;
+                hist.chart.slice(-30).forEach(pt => {
+                    this._eq.push(pt.wind != null ? pt.wind : 0);
+                });
+            } catch { /* ignore */ }
         }
 
         unmount() {
@@ -714,6 +728,7 @@ SNW.Page = SNW.Page || {};
             );
             // 초기 렌더
             this._renderNowPlaying();
+            this._onSimUpdate();
             this._renderAutoOffReport();
             this._updateScenarioRunning();
             this._renderSensorsSummary();

@@ -1687,7 +1687,7 @@ body.snw-sidebar-open .snw-sidebar {
 }
 
 
-/* ---- _comp_form.css (15841 bytes) ---- */
+/* ---- _comp_form.css (15847 bytes) ---- */
 /* =====================================================
  * 모달 레이아웃 고도화 (Header/Footer 고정, Body 단독 스크롤)
  * ===================================================== */
@@ -2267,11 +2267,7 @@ body.snw-sidebar-open .snw-sidebar {
     border-top: 1px solid var(--snw-border);
 }
 
-/* [U-B8] 야간 감광 모드 */
-body.snw-night-mode {
-    filter: brightness(0.75);
-    transition: filter 0.3s ease;
-}
+/* [U-B8] 야간 감광 모드 — body filter는 position:fixed z-order 깨짐 및 전체 회색 딤 유발로 비활성화 */
 
 /* =========================================================
    [Stage 7] TimerPanel 전용 컴포넌트 스타일

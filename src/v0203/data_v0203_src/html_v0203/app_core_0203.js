@@ -412,7 +412,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 020.i18n.js (84904 bytes) ---- */
+/* ---- 020.i18n.js (84988 bytes) ---- */
 // =========================================================
 // 020.i18n.js — 다국어 완전판 (ko/en)
 // =========================================================
@@ -673,6 +673,7 @@ window.SNW = window.SNW || {};
             // 'nav.wind': '바람',
             'nav.automation': '자동화',
             'nav.monitor': '모니터',
+            'nav.chart': '실시간 차트',
             'nav.settings': '설정',
             'nav.simulation': '시뮬레이션',
             'nav.logs': '시스템 로그',
@@ -1461,6 +1462,7 @@ window.SNW = window.SNW || {};
             //'nav.wind': 'Wind',
             'nav.automation': 'Auto',
             'nav.monitor': 'Monitor',
+            'nav.chart': 'Live Chart',
             'nav.settings': 'Settings',
             'nav.simulation': 'Simulation',
             'nav.logs': 'System Logs',
@@ -3600,7 +3602,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 070.router.js (10794 bytes) ---- */
+/* ---- 070.router.js (10886 bytes) ---- */
 // =========================================================
 // core/070.router.js — Fresh Start 라우터
 // Layer 2 (Service) — Alias/리다이렉트 완전 배제
@@ -3670,6 +3672,7 @@ window.SNW = window.SNW || {};
                 { path: '/automation', key: 'nav.automation', icon: '⚙️', minLevel: 'L2' },
                 { path: '/ai', key: 'nav.ai', icon: '✨', minLevel: 'L2' },
                 { path: '/monitor', key: 'nav.monitor', icon: '📊', minLevel: 'L2' },
+                { path: '/monitor/chart', key: 'nav.chart', icon: '📈', minLevel: 'L2' },
                 { path: '/monitor/logs', key: 'nav.logs', icon: '📜', minLevel: 'L3' }, // 추가됨
             ]
         },

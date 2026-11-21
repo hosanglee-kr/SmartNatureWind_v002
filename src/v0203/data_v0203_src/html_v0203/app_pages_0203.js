@@ -1,5 +1,5 @@
 
-/* ---- 200.page.dashboard.js (76236 bytes) ---- */
+/* ---- 200.page.dashboard.js (76941 bytes) ---- */
 // =========================================================
 // 200.page.dashboard.js — 홈 (Stage 5 UX 완성형)
 // Layer 4 (페이지 로직)
@@ -33,8 +33,22 @@ SNW.Page = SNW.Page || {};
             this._bindStore();
             await Promise.all([
                 this._loadProfiles(),
-                this._refreshContext(true)
+                this._refreshContext(true),
+                this._prefillEqHistory()
             ]);
+        }
+
+        async _prefillEqHistory() {
+            if (!this._eq || !SNW.Api || typeof SNW.Api.getChartHistory !== 'function') return;
+            try {
+                const hist = await SNW.Api.getChartHistory();
+                if (!this._active || !this._eq || !hist || !Array.isArray(hist.chart)) return;
+                const st = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+                if (!st.sim || !st.sim.active) return;
+                hist.chart.slice(-30).forEach(pt => {
+                    this._eq.push(pt.wind != null ? pt.wind : 0);
+                });
+            } catch { /* ignore */ }
         }
 
         unmount() {
@@ -716,6 +730,7 @@ SNW.Page = SNW.Page || {};
             );
             // 초기 렌더
             this._renderNowPlaying();
+            this._onSimUpdate();
             this._renderAutoOffReport();
             this._updateScenarioRunning();
             this._renderSensorsSummary();
@@ -1435,7 +1450,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 210.page.chart.js (13308 bytes) ---- */
+/* ---- 210.page.chart.js (13678 bytes) ---- */
 /*
  * ------------------------------------------------------
  * 소스명   : 210.page.chart.js
@@ -1490,10 +1505,13 @@ SNW.Page = SNW.Page || {};
 			const updateBanner = () => {
 				if (!banner) return;
 				if (this._activeTab === 'live') {
-					const hint = (SNW.I18n && SNW.I18n.t) ? SNW.I18n.t('chart.yAxis.fixedHint') : 'Y축 0.0~8.0 m/s 고정';
+					const simActive = Boolean(SNW.Store && SNW.Store.get().sim && SNW.Store.get().sim.active);
+					const hint = 'Y축 0.0~8.0 (돌풍 시 12.0) m/s';
 					banner.style.display = 'block';
-					banner.innerHTML = `🔴 <b>실선풍기 가동 중</b> · WS 라이브 데이터 <span style="float:right;opacity:0.85;">${hint}</span>`;
-					banner.style.background = 'rgba(74,158,255,0.1)';
+					banner.innerHTML = simActive
+						? `🔴 <b>실선풍기 가동 중</b> · WS 라이브 데이터 <span style="float:right;opacity:0.85;">${hint}</span>`
+						: `⏸ <b>대기 중 (가동 중인 세션 없음)</b> · WS 대기 <span style="float:right;opacity:0.85;">${hint}</span>`;
+					banner.style.background = simActive ? 'rgba(74,158,255,0.1)' : 'rgba(139,148,158,0.12)';
 				} else {
 					banner.style.display = 'block';
 					banner.innerHTML = '🎬 <b>예상 파형 (±10% 오차)</b> · 실선풍기는 가동되지 않습니다';
@@ -1501,6 +1519,9 @@ SNW.Page = SNW.Page || {};
 				}
 			};
 			updateBanner();
+			if (SNW.Store && typeof SNW.Store.watch === 'function') {
+				this._unsubs.push(SNW.Store.watch('sim', updateBanner));
+			}
 
 			this.el.querySelectorAll('[data-chart-tab]').forEach(btn => {
 				btn.addEventListener('click', () => {
@@ -1819,9 +1840,9 @@ SNW.Page = SNW.Page || {};
 				const yRange = Math.max(1, windMax - windMin);
 
 				const ctx = ovl.getContext('2d');
-				const padL = 32, padR = 36, padY = 10;
+				const padL = 34, padR = 38, padT = 16, padB = 24;
 				const innerW = Math.max(40, ovl.width - padL - padR);
-				const innerH = Math.max(40, ovl.height - padY * 2);
+				const innerH = Math.max(40, ovl.height - padT - padB);
 				const n = this._previewBuffer.length;
 				if (n < 2) return;
 
@@ -1834,7 +1855,7 @@ SNW.Page = SNW.Page || {};
 					const val = Number(this._previewBuffer[i].wind);
 					const ratio = Math.max(0, Math.min(1, ((Number.isFinite(val) ? val : 0) - windMin) / yRange));
 					const x = padL + (i / (n - 1)) * innerW;
-					const y = padY + innerH - ratio * innerH;
+					const y = padT + innerH - ratio * innerH;
 					if (i === 0) ctx.moveTo(x, y);
 					else ctx.lineTo(x, y);
 				}
@@ -3191,7 +3212,7 @@ SNW.Page = SNW.Page || {};
 })(window.SNW);
 
 
-/* ---- 260.page.monitor.js (23186 bytes) ---- */
+/* ---- 260.page.monitor.js (25530 bytes) ---- */
 // =========================================================
 // 260.page.monitor.js — SNW.Page.Monitor (Stage 7 히스토리 + 실시간 EQ)
 // =========================================================
@@ -3207,6 +3228,7 @@ SNW.Page = SNW.Page || {};
             this._currentTab = 'live';
             this._unsubs = [];
             this._liveEq = null;
+            this._chartPage = null;
             this._retroRange = '24h';
         }
 
@@ -3227,6 +3249,10 @@ SNW.Page = SNW.Page || {};
             if (this._liveEq && typeof this._liveEq.stop === 'function') {
                 this._liveEq.stop();
             }
+            if (this._chartPage && typeof this._chartPage.unmount === 'function') {
+                this._chartPage.unmount();
+                this._chartPage = null;
+            }
         }
 
         _render() {
@@ -3234,9 +3260,11 @@ SNW.Page = SNW.Page || {};
                 <div class="snw-monitor">
                     <div class="snw-tabs">
                         <button type="button" class="snw-tab-btn is-active" data-tab="live">📊 실시간</button>
+                        <button type="button" class="snw-tab-btn" data-tab="chart">📈 물리 차트</button>
                         <button type="button" class="snw-tab-btn" data-tab="retro">🎬 히스토리</button>
                     </div>
                     <div data-tab-content="live"></div>
+                    <div data-tab-content="chart" style="display:none;"></div>
                     <div data-tab-content="retro" style="display:none;"></div>
                 </div>`;
 
@@ -3253,8 +3281,26 @@ SNW.Page = SNW.Page || {};
                 c.style.display = (c.getAttribute('data-tab-content') === tab) ? 'block' : 'none';
             });
 
+            if (tab !== 'chart' && this._chartPage && typeof this._chartPage.unmount === 'function') {
+                this._chartPage.unmount();
+                this._chartPage = null;
+            }
             if (tab === 'live') this._renderLive();
+            if (tab === 'chart') this._renderChartTab();
             if (tab === 'retro') this._renderRetro();
+        }
+
+        async _renderChartTab() {
+            const slot = this.el.querySelector('[data-tab-content="chart"]');
+            if (!slot) return;
+            if (this._chartPage && typeof this._chartPage.unmount === 'function') {
+                this._chartPage.unmount();
+                this._chartPage = null;
+            }
+            if (SNW.Page && typeof SNW.Page.Chart === 'function') {
+                this._chartPage = new SNW.Page.Chart(slot);
+                await this._chartPage.mount();
+            }
         }
 
         // =========================================================
@@ -3280,19 +3326,29 @@ SNW.Page = SNW.Page || {};
             }
             const eqSlot = slot.querySelector('[data-slot="live-eq"]');
             if (eqSlot && SNW.UI && typeof SNW.UI.equalizer === 'function') {
-                this._liveEq = SNW.UI.equalizer(eqSlot, { bars: 40, fps: 30, maxWind: 11 });
+                this._liveEq = SNW.UI.equalizer(eqSlot, { bars: 40, bufferSize: 40, fps: 30, maxWind: 11 });
                 this._liveEq.start();
+                if (SNW.Api && typeof SNW.Api.getChartHistory === 'function') {
+                    SNW.Api.getChartHistory().then(hist => {
+                        if (!this._active || !this._liveEq || !hist || !Array.isArray(hist.chart)) return;
+                        const st = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+                        if (!st.sim || !st.sim.active) return;
+                        hist.chart.slice(-40).forEach(pt => {
+                            this._liveEq.push(pt.wind != null ? pt.wind : 0);
+                        });
+                    }).catch(() => {});
+                }
             }
             this._onLiveUpdate();
         }
 
-        _onLiveUpdate() {
+        _onLiveUpdate(pushEq = true) {
             const storeData = (SNW.Store && typeof SNW.Store.get === 'function') ? SNW.Store.get() : {};
             const ctl = storeData.control;
             const sim = storeData.sim;
             const session = storeData.session;
 
-            if (this._liveEq && sim) {
+            if (pushEq && this._liveEq && sim) {
                 this._liveEq.push(sim.windSpeed || 0);
             }
 
@@ -3302,9 +3358,15 @@ SNW.Page = SNW.Page || {};
 
             if (infoEl && isActive) {
                 let title = '';
-                if (typeName === 'PLAYLIST') title = session.profileName || session.name || `프로필 #${session.profileNo || session.profileId || ''}`;
-                else if (typeName === 'PRESET') title = `${session.presetCode || ''} · ${session.styleCode || ''}`;
-                else {
+                if (typeName === 'PLAYLIST') {
+                    title = (SNW.I18n && SNW.I18n.profileName)
+                        ? SNW.I18n.profileName(session)
+                        : (session.profileName || session.name || `프로필 #${session.profileNo || session.profileId || ''}`);
+                } else if (typeName === 'PRESET') {
+                    title = (SNW.I18n && SNW.I18n.presetStyleName)
+                        ? SNW.I18n.presetStyleName(session.presetCode, session.styleCode)
+                        : `${session.presetCode || ''} · ${session.styleCode || ''}`;
+                } else {
                     const spd = (session.percent != null) ? session.percent : (session.fixedSpeed != null ? session.fixedSpeed : (session.speed || 0));
                     title = `일반 선풍기 ${Math.round(spd)}%`;
                 }
@@ -3637,11 +3699,21 @@ SNW.Page = SNW.Page || {};
         // 유틸리티
         // =========================================================
         _bindStore() {
-            if (SNW.Store && typeof SNW.Store.subscribe === 'function') {
+            if (SNW.Store && typeof SNW.Store.watch === 'function') {
                 this._unsubs.push(
-                    SNW.Store.subscribe(() => {
+                    SNW.Store.watch('sim', () => {
                         if (this._active && this._currentTab === 'live') {
-                            this._onLiveUpdate();
+                            this._onLiveUpdate(true);
+                        }
+                    }),
+                    SNW.Store.watch('session', () => {
+                        if (this._active && this._currentTab === 'live') {
+                            this._onLiveUpdate(false);
+                        }
+                    }),
+                    SNW.Store.watch('control', () => {
+                        if (this._active && this._currentTab === 'live') {
+                            this._onLiveUpdate(false);
                         }
                     })
                 );
@@ -3678,15 +3750,8 @@ SNW.Page = SNW.Page || {};
 
         async _loadLiveData() {
             try {
-                if (SNW.Api && typeof SNW.Api.getState === 'function') {
-                    const st = await SNW.Api.getState();
-                    if (st && SNW.Store && typeof SNW.Store.set === 'function') {
-                        SNW.Store.set({
-                            control: st.control,
-                            sim: st.sim,
-                            session: st.control?.session,
-                        });
-                    }
+                if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') {
+                    await SNW.StoreBridge.refreshNow();
                 }
             } catch (e) {
                 if (SNW.LogUtil && typeof SNW.LogUtil.warn === 'function') {
@@ -7247,7 +7312,7 @@ window.SNW = window.SNW || {};
 
 
 
-/* ---- 999.app.js (16144 bytes) ---- */
+/* ---- 999.app.js (16380 bytes) ---- */
 // =========================================================
 // 999.app.js — 부트스트랩 (최종 로드)
 // =========================================================
@@ -7258,11 +7323,16 @@ window.SNW = window.SNW || {};
     // [P0-5] 모달
     SNW.UI = SNW.UI || {};
     let _modalCloseTimer = null;
+    let _modalOpenRaf = null;
     SNW.UI.modal = function (title, contentEl, onConfirm, onCancel, opts) {
         opts = opts || {};
         if (_modalCloseTimer) {
             clearTimeout(_modalCloseTimer);
             _modalCloseTimer = null;
+        }
+        if (_modalOpenRaf) {
+            cancelAnimationFrame(_modalOpenRaf);
+            _modalOpenRaf = null;
         }
         let overlay = document.getElementById('snw-modal-overlay');
         if (!overlay) {
@@ -7300,6 +7370,10 @@ window.SNW = window.SNW || {};
             if (closed) return;
             closed = true;
 
+            if (_modalOpenRaf) {
+                cancelAnimationFrame(_modalOpenRaf);
+                _modalOpenRaf = null;
+            }
             if (_onEsc) document.removeEventListener('keydown', _onEsc);
             if (_onOverlayClick) overlay.removeEventListener('click', _onOverlayClick);
             _onEsc = null;
@@ -7349,7 +7423,10 @@ window.SNW = window.SNW || {};
         }
         box.appendChild(actions);
         overlay.appendChild(box);
-        requestAnimationFrame(() => overlay.classList.add('is-open'));
+        _modalOpenRaf = requestAnimationFrame(() => {
+            _modalOpenRaf = null;
+            if (!closed) overlay.classList.add('is-open');
+        });
         return { close: () => close(false) };
     };
 
@@ -7597,13 +7674,13 @@ window.SNW = window.SNW || {};
             if (SNW.NowPlaying && typeof SNW.NowPlaying.init === 'function') {
                 SNW.NowPlaying.init();
             }
-            
+
             // [수정 2] SNW_BOOT() 내부 (SNW.Router.init() 직전, 라인 305 부근)
             const clockEl = document.getElementById('header-clock');
             if (clockEl && SNW.TimeUtil && typeof SNW.TimeUtil.startClock === 'function') {
                 SNW.TimeUtil.startClock(clockEl, () => (SNW.Store && SNW.Store.get().time) || { hour: -1, min: -1 });
             }
-            
+
             SNW.Router.init();
             SNW.LogUtil.info('App bootstrap complete');
 
@@ -7624,14 +7701,8 @@ window.SNW = window.SNW || {};
         window.SNW_BOOT();
     }
 
-    // [U-B8] 야간 자동 감광
-    function _applyNightMode() {
-        const h = new Date().getHours();
-        const isNight = (h >= 22 || h < 6);
-        document.body.classList.toggle('snw-night-mode', isNight);
-    }
-    _applyNightMode();
-    setInterval(_applyNightMode, 60000);
+    // [U-B8] 야간 자동 감광 비활성화 (body filter로 인한 색상 왜곡 및 fixed z-order 깨짐 방지)
+    document.body.classList.remove('snw-night-mode');
 
 })(window.SNW);
 

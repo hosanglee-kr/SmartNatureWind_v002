@@ -8,11 +8,16 @@ window.SNW = window.SNW || {};
     // [P0-5] 모달
     SNW.UI = SNW.UI || {};
     let _modalCloseTimer = null;
+    let _modalOpenRaf = null;
     SNW.UI.modal = function (title, contentEl, onConfirm, onCancel, opts) {
         opts = opts || {};
         if (_modalCloseTimer) {
             clearTimeout(_modalCloseTimer);
             _modalCloseTimer = null;
+        }
+        if (_modalOpenRaf) {
+            cancelAnimationFrame(_modalOpenRaf);
+            _modalOpenRaf = null;
         }
         let overlay = document.getElementById('snw-modal-overlay');
         if (!overlay) {
@@ -50,6 +55,10 @@ window.SNW = window.SNW || {};
             if (closed) return;
             closed = true;
 
+            if (_modalOpenRaf) {
+                cancelAnimationFrame(_modalOpenRaf);
+                _modalOpenRaf = null;
+            }
             if (_onEsc) document.removeEventListener('keydown', _onEsc);
             if (_onOverlayClick) overlay.removeEventListener('click', _onOverlayClick);
             _onEsc = null;
@@ -99,7 +108,10 @@ window.SNW = window.SNW || {};
         }
         box.appendChild(actions);
         overlay.appendChild(box);
-        requestAnimationFrame(() => overlay.classList.add('is-open'));
+        _modalOpenRaf = requestAnimationFrame(() => {
+            _modalOpenRaf = null;
+            if (!closed) overlay.classList.add('is-open');
+        });
         return { close: () => close(false) };
     };
 
@@ -347,13 +359,13 @@ window.SNW = window.SNW || {};
             if (SNW.NowPlaying && typeof SNW.NowPlaying.init === 'function') {
                 SNW.NowPlaying.init();
             }
-            
+
             // [수정 2] SNW_BOOT() 내부 (SNW.Router.init() 직전, 라인 305 부근)
             const clockEl = document.getElementById('header-clock');
             if (clockEl && SNW.TimeUtil && typeof SNW.TimeUtil.startClock === 'function') {
                 SNW.TimeUtil.startClock(clockEl, () => (SNW.Store && SNW.Store.get().time) || { hour: -1, min: -1 });
             }
-            
+
             SNW.Router.init();
             SNW.LogUtil.info('App bootstrap complete');
 
@@ -374,13 +386,7 @@ window.SNW = window.SNW || {};
         window.SNW_BOOT();
     }
 
-    // [U-B8] 야간 자동 감광
-    function _applyNightMode() {
-        const h = new Date().getHours();
-        const isNight = (h >= 22 || h < 6);
-        document.body.classList.toggle('snw-night-mode', isNight);
-    }
-    _applyNightMode();
-    setInterval(_applyNightMode, 60000);
+    // [U-B8] 야간 자동 감광 비활성화 (body filter로 인한 색상 왜곡 및 fixed z-order 깨짐 방지)
+    document.body.classList.remove('snw-night-mode');
 
 })(window.SNW);

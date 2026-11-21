@@ -67,6 +67,7 @@ window.SNW = window.SNW || {};
                 { path: '/automation', key: 'nav.automation', icon: '⚙️', minLevel: 'L2' },
                 { path: '/ai', key: 'nav.ai', icon: '✨', minLevel: 'L2' },
                 { path: '/monitor', key: 'nav.monitor', icon: '📊', minLevel: 'L2' },
+                { path: '/monitor/chart', key: 'nav.chart', icon: '📈', minLevel: 'L2' },
                 { path: '/monitor/logs', key: 'nav.logs', icon: '📜', minLevel: 'L3' }, // 추가됨
             ]
         },

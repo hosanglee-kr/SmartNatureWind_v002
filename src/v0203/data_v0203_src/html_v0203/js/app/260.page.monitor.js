@@ -13,6 +13,7 @@ SNW.Page = SNW.Page || {};
             this._currentTab = 'live';
             this._unsubs = [];
             this._liveEq = null;
+            this._chartPage = null;
             this._retroRange = '24h';
         }
 
@@ -33,6 +34,10 @@ SNW.Page = SNW.Page || {};
             if (this._liveEq && typeof this._liveEq.stop === 'function') {
                 this._liveEq.stop();
             }
+            if (this._chartPage && typeof this._chartPage.unmount === 'function') {
+                this._chartPage.unmount();
+                this._chartPage = null;
+            }
         }
 
         _render() {
@@ -40,9 +45,11 @@ SNW.Page = SNW.Page || {};
                 <div class="snw-monitor">
                     <div class="snw-tabs">
                         <button type="button" class="snw-tab-btn is-active" data-tab="live">📊 실시간</button>
+                        <button type="button" class="snw-tab-btn" data-tab="chart">📈 물리 차트</button>
                         <button type="button" class="snw-tab-btn" data-tab="retro">🎬 히스토리</button>
                     </div>
                     <div data-tab-content="live"></div>
+                    <div data-tab-content="chart" style="display:none;"></div>
                     <div data-tab-content="retro" style="display:none;"></div>
                 </div>`;
 
@@ -59,8 +66,26 @@ SNW.Page = SNW.Page || {};
                 c.style.display = (c.getAttribute('data-tab-content') === tab) ? 'block' : 'none';
             });
 
+            if (tab !== 'chart' && this._chartPage && typeof this._chartPage.unmount === 'function') {
+                this._chartPage.unmount();
+                this._chartPage = null;
+            }
             if (tab === 'live') this._renderLive();
+            if (tab === 'chart') this._renderChartTab();
             if (tab === 'retro') this._renderRetro();
+        }
+
+        async _renderChartTab() {
+            const slot = this.el.querySelector('[data-tab-content="chart"]');
+            if (!slot) return;
+            if (this._chartPage && typeof this._chartPage.unmount === 'function') {
+                this._chartPage.unmount();
+                this._chartPage = null;
+            }
+            if (SNW.Page && typeof SNW.Page.Chart === 'function') {
+                this._chartPage = new SNW.Page.Chart(slot);
+                await this._chartPage.mount();
+            }
         }
 
         // =========================================================
@@ -86,19 +111,29 @@ SNW.Page = SNW.Page || {};
             }
             const eqSlot = slot.querySelector('[data-slot="live-eq"]');
             if (eqSlot && SNW.UI && typeof SNW.UI.equalizer === 'function') {
-                this._liveEq = SNW.UI.equalizer(eqSlot, { bars: 40, fps: 30, maxWind: 11 });
+                this._liveEq = SNW.UI.equalizer(eqSlot, { bars: 40, bufferSize: 40, fps: 30, maxWind: 11 });
                 this._liveEq.start();
+                if (SNW.Api && typeof SNW.Api.getChartHistory === 'function') {
+                    SNW.Api.getChartHistory().then(hist => {
+                        if (!this._active || !this._liveEq || !hist || !Array.isArray(hist.chart)) return;
+                        const st = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+                        if (!st.sim || !st.sim.active) return;
+                        hist.chart.slice(-40).forEach(pt => {
+                            this._liveEq.push(pt.wind != null ? pt.wind : 0);
+                        });
+                    }).catch(() => {});
+                }
             }
             this._onLiveUpdate();
         }
 
-        _onLiveUpdate() {
+        _onLiveUpdate(pushEq = true) {
             const storeData = (SNW.Store && typeof SNW.Store.get === 'function') ? SNW.Store.get() : {};
             const ctl = storeData.control;
             const sim = storeData.sim;
             const session = storeData.session;
 
-            if (this._liveEq && sim) {
+            if (pushEq && this._liveEq && sim) {
                 this._liveEq.push(sim.windSpeed || 0);
             }
 
@@ -108,9 +143,15 @@ SNW.Page = SNW.Page || {};
 
             if (infoEl && isActive) {
                 let title = '';
-                if (typeName === 'PLAYLIST') title = session.profileName || session.name || `프로필 #${session.profileNo || session.profileId || ''}`;
-                else if (typeName === 'PRESET') title = `${session.presetCode || ''} · ${session.styleCode || ''}`;
-                else {
+                if (typeName === 'PLAYLIST') {
+                    title = (SNW.I18n && SNW.I18n.profileName)
+                        ? SNW.I18n.profileName(session)
+                        : (session.profileName || session.name || `프로필 #${session.profileNo || session.profileId || ''}`);
+                } else if (typeName === 'PRESET') {
+                    title = (SNW.I18n && SNW.I18n.presetStyleName)
+                        ? SNW.I18n.presetStyleName(session.presetCode, session.styleCode)
+                        : `${session.presetCode || ''} · ${session.styleCode || ''}`;
+                } else {
                     const spd = (session.percent != null) ? session.percent : (session.fixedSpeed != null ? session.fixedSpeed : (session.speed || 0));
                     title = `일반 선풍기 ${Math.round(spd)}%`;
                 }
@@ -443,11 +484,21 @@ SNW.Page = SNW.Page || {};
         // 유틸리티
         // =========================================================
         _bindStore() {
-            if (SNW.Store && typeof SNW.Store.subscribe === 'function') {
+            if (SNW.Store && typeof SNW.Store.watch === 'function') {
                 this._unsubs.push(
-                    SNW.Store.subscribe(() => {
+                    SNW.Store.watch('sim', () => {
                         if (this._active && this._currentTab === 'live') {
-                            this._onLiveUpdate();
+                            this._onLiveUpdate(true);
+                        }
+                    }),
+                    SNW.Store.watch('session', () => {
+                        if (this._active && this._currentTab === 'live') {
+                            this._onLiveUpdate(false);
+                        }
+                    }),
+                    SNW.Store.watch('control', () => {
+                        if (this._active && this._currentTab === 'live') {
+                            this._onLiveUpdate(false);
                         }
                     })
                 );
@@ -484,15 +535,8 @@ SNW.Page = SNW.Page || {};
 
         async _loadLiveData() {
             try {
-                if (SNW.Api && typeof SNW.Api.getState === 'function') {
-                    const st = await SNW.Api.getState();
-                    if (st && SNW.Store && typeof SNW.Store.set === 'function') {
-                        SNW.Store.set({
-                            control: st.control,
-                            sim: st.sim,
-                            session: st.control?.session,
-                        });
-                    }
+                if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') {
+                    await SNW.StoreBridge.refreshNow();
                 }
             } catch (e) {
                 if (SNW.LogUtil && typeof SNW.LogUtil.warn === 'function') {

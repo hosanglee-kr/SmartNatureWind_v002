@@ -71,6 +71,7 @@ window.SNW = window.SNW || {};
 
         function clear() {
             series.forEach(s => { buffers[s.key] = []; });
+            gustExpanded = false;
             draw();
         }
 
@@ -118,9 +119,9 @@ window.SNW = window.SNW || {};
             const windMin = (yMin != null) ? yMin : 0.0;
             const windMax = (yMax != null) ? yMax : (gustExpanded ? 12.0 : 8.0);
 
-            const padL = 32, padR = 36, padY = 10;
+            const padL = 34, padR = 38, padT = 16, padB = 24;
             const innerW = Math.max(40, cw - padL - padR);
-            const innerH = Math.max(40, ch - padY * 2);
+            const innerH = Math.max(40, ch - padT - padB);
             const yRange = Math.max(1, windMax - windMin);
 
             // 좌측 Y축 정량 눈금(2.0 m/s 단위) & 우측 PWM(0~100%) 라벨
@@ -129,7 +130,7 @@ window.SNW = window.SNW || {};
             const stepUnit = 2.0;
             for (let v = windMin; v <= windMax + 0.01; v += stepUnit) {
                 const ratio = (v - windMin) / yRange;
-                const y = padY + innerH - ratio * innerH;
+                const y = padT + innerH - ratio * innerH;
                 ctx.strokeStyle = 'rgba(139,148,158,0.14)';
                 ctx.lineWidth = 1;
                 ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + innerW, y); ctx.stroke();
@@ -148,7 +149,7 @@ window.SNW = window.SNW || {};
                 { v: 7.0, color: 'rgba(240,136,62,0.55)' }
             ].forEach(ref => {
                 if (ref.v > windMax) return;
-                const y = padY + innerH - ((ref.v - windMin) / yRange) * innerH;
+                const y = padT + innerH - ((ref.v - windMin) / yRange) * innerH;
                 ctx.save();
                 ctx.strokeStyle = ref.color;
                 ctx.setLineDash([4, 4]);
@@ -169,20 +170,49 @@ window.SNW = window.SNW || {};
                     const val = Number.isFinite(p.y) ? p.y : 0;
                     const ratio = isPwm ? (val / 100) : ((val - windMin) / yRange);
                     const x = padL + (i / (curMaxPoints - 1)) * innerW;
-                    const y = padY + innerH - Math.max(0, Math.min(1, ratio)) * innerH;
+                    const y = padT + innerH - Math.max(0, Math.min(1, ratio)) * innerH;
                     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
                 });
                 ctx.stroke();
             });
 
-            // 모바일/데스크톱 터치 십자선 (Crosshair Tooltip)
+            // 하단 X축 시간 라벨 (좌/중/우)
             const wArr = buffers.windSpeed || [];
+            if (wArr.length >= 2) {
+                const fmtTime = (ts) => {
+                    if (!Number.isFinite(ts) || ts < 1e11) return '';
+                    const d = new Date(ts);
+                    return d.toTimeString().slice(0, 8);
+                };
+                ctx.fillStyle = '#8b949e';
+                ctx.font = '10px monospace';
+                const yLbl = padT + innerH + 15;
+                const tStart = fmtTime(wArr[0].x);
+                const tMid = fmtTime(wArr[Math.floor(wArr.length / 2)].x);
+                const tEnd = fmtTime(wArr[wArr.length - 1].x);
+                if (tStart) {
+                    ctx.textAlign = 'left';
+                    ctx.fillText(tStart, padL, yLbl);
+                }
+                if (tMid && wArr.length >= 10) {
+                    const midX = padL + (Math.floor(wArr.length / 2) / (curMaxPoints - 1)) * innerW;
+                    ctx.textAlign = 'center';
+                    ctx.fillText(tMid, midX, yLbl);
+                }
+                if (tEnd) {
+                    const endX = padL + ((wArr.length - 1) / (curMaxPoints - 1)) * innerW;
+                    ctx.textAlign = 'right';
+                    ctx.fillText(tEnd, Math.max(padL + 50, endX), yLbl);
+                }
+            }
+
+            // 모바일/데스크톱 터치 십자선 (Crosshair Tooltip)
             if (hoverIdx >= 0 && hoverIdx < wArr.length) {
                 const x = padL + (hoverIdx / (curMaxPoints - 1)) * innerW;
                 ctx.save();
                 ctx.strokeStyle = 'rgba(255,255,255,0.4)';
                 ctx.setLineDash([2, 2]);
-                ctx.beginPath(); ctx.moveTo(x, padY); ctx.lineTo(x, padY + innerH); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT + innerH); ctx.stroke();
                 ctx.restore();
 
                 const wVal = (wArr[hoverIdx]?.y ?? 0).toFixed(2);
@@ -191,12 +221,12 @@ window.SNW = window.SNW || {};
                 const boxW = 132, boxH = 22;
                 const bx = Math.min(padL + innerW - boxW, Math.max(padL, x - boxW / 2));
                 ctx.fillStyle = 'rgba(15,20,25,0.9)';
-                ctx.fillRect(bx, padY, boxW, boxH);
+                ctx.fillRect(bx, padT, boxW, boxH);
                 ctx.strokeStyle = '#4a9eff';
-                ctx.strokeRect(bx, padY, boxW, boxH);
+                ctx.strokeRect(bx, padT, boxW, boxH);
                 ctx.fillStyle = '#e6edf3';
                 ctx.textAlign = 'center';
-                ctx.fillText(label, bx + boxW / 2, padY + 14);
+                ctx.fillText(label, bx + boxW / 2, padT + 14);
             }
         }
 

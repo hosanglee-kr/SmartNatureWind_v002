@@ -201,17 +201,19 @@ static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocu
     JsonObject v_content   = v_candidate["content"].as<JsonObject>();
     JsonArray  v_parts     = v_content["parts"].as<JsonArray>();
 
-    bool         v_hasFnCall = false;
-    String       v_fnName;
-    JsonDocument v_fnArgsDoc;
-    String       v_textResponse;
+    struct ST_FnCallItem {
+        String       name;
+        JsonDocument argsDoc;
+    };
+    std::vector<ST_FnCallItem> v_fnCalls;
+    String                     v_textResponse;
 
     for (JsonObject p : v_parts) {
         if (p["functionCall"].is<JsonObject>()) {
-            v_hasFnCall = true;
-            v_fnName    = p["functionCall"]["name"].as<String>();
-            v_fnArgsDoc.set(p["functionCall"]["args"]);
-            break;
+            v_fnCalls.emplace_back();
+            ST_FnCallItem& item = v_fnCalls.back();
+            item.name           = p["functionCall"]["name"].as<String>();
+            item.argsDoc.set(p["functionCall"]["args"]);
         } else if (p["text"].is<const char*>()) {
             v_textResponse += p["text"].as<const char*>();
         }
@@ -221,7 +223,7 @@ static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocu
     v_finalDoc["_lang"] = v_lang;
 
     // 도구 호출이 없는 일반 대화인 경우
-    if (!v_hasFnCall) {
+    if (v_fnCalls.empty()) {
         v_finalDoc["ok"]          = true;
         v_finalDoc["text"]        = v_textResponse.length() > 0 ? v_textResponse : "명령을 이해했습니다.";
         v_finalDoc["_speechHint"] = v_finalDoc["text"];
@@ -230,20 +232,12 @@ static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocu
         return;
     }
 
-    // ─── 도구 실행 (Turn 1 Function Call) ───
-    JsonObjectConst v_argsConst    = v_fnArgsDoc.as<JsonObjectConst>();
-    String          v_actionResult = CT10_AI::executeAIAction(v_fnName.c_str(), v_argsConst);
-    bool            v_actionOk     = (v_actionResult == "ok" || v_actionResult.startsWith("{"));
+    // ─── 도구 실행 (Turn 1 Function Calls — 다중 호출 순차 실행) ───
+    JsonArray v_actionsArr = v_finalDoc["actions"].to<JsonArray>();
+    bool      v_anyOk      = false;
+    String    v_speechHint;
 
-    JsonObject v_actObj = v_finalDoc["actions"].to<JsonArray>().add<JsonObject>();
-    v_actObj["name"]    = v_fnName;
-    v_actObj["args"]    = v_argsConst;
-    v_actObj["result"]  = v_actionResult;
-
-    String v_speechHint       = CT10_AI::buildSpeechHint(v_fnName.c_str(), v_argsConst, v_actionOk);
-    v_finalDoc["_speechHint"] = v_speechHint;
-
-    // ─── Turn 2 자연어 요약 호출 (FunctionResponse 전달) ───
+    // ─── Turn 2 자연어 요약 호출 준비 ───
     JsonDocument v_turn2Req;
     JsonObject   v_t2Sys                                       = v_turn2Req["system_instruction"].to<JsonObject>();
     v_t2Sys["parts"].to<JsonArray>().add<JsonObject>()["text"] = CT10_AI::buildAIPromptStrict(v_lang, v_voice);
@@ -255,26 +249,51 @@ static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocu
     // model의 functionCall part 추가
     v_t2Contents.add(v_content);
 
-    // user의 functionResponse part 추가
-    JsonObject v_fnRespObj     = v_t2Contents.add<JsonObject>();
-    v_fnRespObj["role"]        = "user";
-    JsonObject v_fnPart        = v_fnRespObj["parts"].to<JsonArray>().add<JsonObject>();
-    JsonObject v_fr            = v_fnPart["functionResponse"].to<JsonObject>();
-    v_fr["name"]               = v_fnName;
-    v_fr["response"]["result"] = v_actionResult;
+    // user의 functionResponse parts 추가
+    JsonObject v_fnRespObj  = v_t2Contents.add<JsonObject>();
+    v_fnRespObj["role"]     = "user";
+    JsonArray v_fnRespParts = v_fnRespObj["parts"].to<JsonArray>();
 
-    String v_t2Body;
-    serializeJson(v_turn2Req, v_t2Body);
+    bool v_needTurn2 = false;
+    for (auto& item : v_fnCalls) {
+        JsonObjectConst v_argsConst    = item.argsDoc.as<JsonObjectConst>();
+        String          v_actionResult = CT10_AI::executeAIAction(item.name.c_str(), v_argsConst);
+        bool v_ok = (v_actionResult == "ok" || v_actionResult.startsWith("{") || v_actionResult.startsWith("["));
+        if (v_ok) v_anyOk = true;
+        if (!v_ok || v_actionResult.startsWith("{") || v_actionResult.startsWith("[")) v_needTurn2 = true;
 
-    int    v_t2Code = 0;
-    String v_t2Resp = W10_callGeminiApi(v_t2Body.c_str(), v_t2Body.length(), v_t2Code);
+        JsonObject v_actObj = v_actionsArr.add<JsonObject>();
+        v_actObj["name"]    = item.name;
+        v_actObj["args"]    = v_argsConst;
+        v_actObj["result"]  = v_actionResult;
+
+        if (v_speechHint.length() == 0) {
+            v_speechHint = CT10_AI::buildSpeechHint(item.name.c_str(), v_argsConst, v_ok);
+        }
+
+        JsonObject v_fnPart        = v_fnRespParts.add<JsonObject>();
+        JsonObject v_fr            = v_fnPart["functionResponse"].to<JsonObject>();
+        v_fr["name"]               = item.name;
+        v_fr["response"]["result"] = v_actionResult;
+    }
+
+    bool v_actionOk           = v_anyOk;
+    v_finalDoc["_speechHint"] = v_speechHint;
 
     String v_naturalText;
-    if (v_t2Code == 200 && v_t2Resp.length() > 0) {
-        JsonDocument v_t2Doc;
-        if (!deserializeJson(v_t2Doc, v_t2Resp)) {
-            const char* v_txt = v_t2Doc["candidates"][0]["content"]["parts"][0]["text"] | "";
-            if (v_txt[0]) v_naturalText = v_txt;
+    if (v_needTurn2) {
+        String v_t2Body;
+        serializeJson(v_turn2Req, v_t2Body);
+
+        int    v_t2Code = 0;
+        String v_t2Resp = W10_callGeminiApi(v_t2Body.c_str(), v_t2Body.length(), v_t2Code);
+
+        if (v_t2Code == 200 && v_t2Resp.length() > 0) {
+            JsonDocument v_t2Doc;
+            if (!deserializeJson(v_t2Doc, v_t2Resp)) {
+                const char* v_txt = v_t2Doc["candidates"][0]["content"]["parts"][0]["text"] | "";
+                if (v_txt[0]) v_naturalText = v_txt;
+            }
         }
     }
 

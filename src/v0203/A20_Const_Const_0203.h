@@ -71,8 +71,8 @@ constexpr const char* G_TIME_NTP_FALLBACK_SERVERS[3] = {
 // ======================================================
 constexpr const char* G_GEMINI_HOST        = "generativelanguage.googleapis.com";
 constexpr uint16_t    G_GEMINI_PORT        = 443;
-constexpr const char* G_GEMINI_MODEL       = "gemini-2.5-flash";
-constexpr const char* G_GEMINI_REST_URL    = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+constexpr const char* G_GEMINI_MODEL       = "gemini-3.5-flash-lite";
+constexpr const char* G_GEMINI_REST_URL    = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent";
 constexpr const char* G_GEMINI_LIVE_WS_URL = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent";
 
 // ======================================================

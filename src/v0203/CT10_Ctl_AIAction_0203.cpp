@@ -22,6 +22,7 @@
 #include "C10_Config_0203.h"
 #include "N10_NvsManager_0203.h"
 #include "D10_Logger_0203.h"
+#include "S20_WindSolver_0203.h"
 
 namespace {
 
@@ -70,72 +71,72 @@ String executeAddProfile(JsonObjectConst p_args) {
         step["override"]["enabled"] = false;
     }
 
-        // ======================================================
-        // CRUD 헬퍼 위임 (ID 자동 발급, 중복 검증, 스텝 검증)
-        // ======================================================
-        int v_idx = CL_C10_ConfigManager::addUserProfilesFromJson(v_body);
-        if (v_idx < 0) {
-            CL_D10_Logger::log(EN_L10_LOG_WARN, "[AI] add_profile rejected by CRUD (code=%d)", v_idx);
-            return "error:validation_failed";
-        }
-
-        // dirty 플래그 반영 저장
-        if (!CL_C10_ConfigManager::saveDirtyConfigs()) {
-            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[AI] add_profile save failed");
-            return "error:save_failed";
-        }
-
-        CL_D10_Logger::log(EN_L10_LOG_INFO, "[AI] Created profile '%s' via CRUD (idx=%d)", v_name, v_idx);
-        return "ok";
+    // ======================================================
+    // CRUD 헬퍼 위임 (ID 자동 발급, 중복 검증, 스텝 검증)
+    // ======================================================
+    int v_idx = CL_C10_ConfigManager::addUserProfilesFromJson(v_body);
+    if (v_idx < 0) {
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[AI] add_profile rejected by CRUD (code=%d)", v_idx);
+        return "error:validation_failed";
     }
 
-    // 상태 JSON 생성 헬퍼
-    String sessionStatusJson() {
-        ST_CT10_SessionContext_t v_s = CL_CT10_ControlManager::getSessionSnapshot();
-        JsonDocument             v_doc;
-        v_doc["state"] = (v_s.state == EN_SESSION_ACTIVE)   ? "ACTIVE"
-                         : (v_s.state == EN_SESSION_PAUSED) ? "PAUSED"
-                                                            : "COMPLETED";
-        v_doc["type"]  = (v_s.type == EN_CT10_SESSION_FIXED)      ? "FIXED"
-                         : (v_s.type == EN_CT10_SESSION_PRESET)   ? "PRESET"
-                         : (v_s.type == EN_CT10_SESSION_PLAYLIST) ? "PLAYLIST"
-                                                                  : "NONE";
-        if (v_s.type == EN_CT10_SESSION_FIXED) {
-            v_doc["percent"] = (int)v_s.payload.fixed.percent;
-        } else if (v_s.type == EN_CT10_SESSION_PRESET) {
-            v_doc["preset"] = v_s.payload.preset.presetCode;
-            v_doc["style"]  = v_s.payload.preset.styleCode;
-        } else if (v_s.type == EN_CT10_SESSION_PLAYLIST) {
-            v_doc["profile"] = v_s.payload.playlist.profileName;
-            v_doc["step"]    = v_s.payload.playlist.currentStepIdx + 1;
-            v_doc["total"]   = v_s.payload.playlist.totalSteps;
-        }
-        if (v_s.runtimeAutoOffMin > 0) {
-            v_doc["timerRemainSec"] = CL_CT10_ControlManager::getSessionAutoOffRemainSec();
-        }
-        String v_out;
-        serializeJson(v_doc, v_out);
-        return v_out;
+    // dirty 플래그 반영 저장
+    if (!CL_C10_ConfigManager::saveDirtyConfigs()) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[AI] add_profile save failed");
+        return "error:save_failed";
     }
 
-    // 프로필 목록 JSON 생성 헬퍼
-    String listProfilesJson() {
-        ST_A20_ConfigRoot_t v_snap;
-        CL_C10_ConfigManager::getRootSnapshot(v_snap);
-        if (!v_snap.userProfiles) return "[]";
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[AI] Created profile '%s' via CRUD (idx=%d)", v_name, v_idx);
+    return "ok";
+}
 
-        JsonDocument v_doc;
-        JsonArray    v_arr = v_doc.to<JsonArray>();
-        for (uint8_t i = 0; i < v_snap.userProfiles->count; ++i) {
-            JsonObject v_p = v_arr.add<JsonObject>();
-            v_p["no"]      = v_snap.userProfiles->items[i].profileNo;
-            v_p["name"]    = v_snap.userProfiles->items[i].name;
-            v_p["step"]    = v_snap.userProfiles->items[i].segCount;
-        }
-        String v_out;
-        serializeJson(v_doc, v_out);
-        return v_out;
+// 상태 JSON 생성 헬퍼
+String sessionStatusJson() {
+    ST_CT10_SessionContext_t v_s = CL_CT10_ControlManager::getSessionSnapshot();
+    JsonDocument             v_doc;
+    v_doc["state"] = (v_s.state == EN_SESSION_ACTIVE)   ? "ACTIVE"
+                     : (v_s.state == EN_SESSION_PAUSED) ? "PAUSED"
+                                                        : "COMPLETED";
+    v_doc["type"]  = (v_s.type == EN_CT10_SESSION_FIXED)      ? "FIXED"
+                     : (v_s.type == EN_CT10_SESSION_PRESET)   ? "PRESET"
+                     : (v_s.type == EN_CT10_SESSION_PLAYLIST) ? "PLAYLIST"
+                                                              : "NONE";
+    if (v_s.type == EN_CT10_SESSION_FIXED) {
+        v_doc["percent"] = (int)v_s.payload.fixed.percent;
+    } else if (v_s.type == EN_CT10_SESSION_PRESET) {
+        v_doc["preset"] = v_s.payload.preset.presetCode;
+        v_doc["style"]  = v_s.payload.preset.styleCode;
+    } else if (v_s.type == EN_CT10_SESSION_PLAYLIST) {
+        v_doc["profile"] = v_s.payload.playlist.profileName;
+        v_doc["step"]    = v_s.payload.playlist.currentStepIdx + 1;
+        v_doc["total"]   = v_s.payload.playlist.totalSteps;
     }
+    if (v_s.runtimeAutoOffMin > 0) {
+        v_doc["timerRemainSec"] = CL_CT10_ControlManager::getSessionAutoOffRemainSec();
+    }
+    String v_out;
+    serializeJson(v_doc, v_out);
+    return v_out;
+}
+
+// 프로필 목록 JSON 생성 헬퍼
+String listProfilesJson() {
+    ST_A20_ConfigRoot_t v_snap;
+    CL_C10_ConfigManager::getRootSnapshot(v_snap);
+    if (!v_snap.userProfiles) return "[]";
+
+    JsonDocument v_doc;
+    JsonArray    v_arr = v_doc.to<JsonArray>();
+    for (uint8_t i = 0; i < v_snap.userProfiles->count; ++i) {
+        JsonObject v_p = v_arr.add<JsonObject>();
+        v_p["no"]      = v_snap.userProfiles->items[i].profileNo;
+        v_p["name"]    = v_snap.userProfiles->items[i].name;
+        v_p["step"]    = v_snap.userProfiles->items[i].segCount;
+    }
+    String v_out;
+    serializeJson(v_doc, v_out);
+    return v_out;
+}
 } // namespace
 
 namespace CT10_AI {
@@ -177,31 +178,44 @@ String executeAIAction(const char* p_fn, JsonObjectConst p_args) {
 
     // 1. 프로필(플레이리스트) 재생
     if (strcmp(p_fn, "start_playlist") == 0) {
-        uint16_t v_no = p_args["profileNo"] | 0;
-        if (v_no == 0) {
-            // profileId 또는 이름으로 번호 탐색
-            uint8_t             v_id   = p_args["profileId"] | 0;
-            const char*         v_name = p_args["profileName"] | "";
-            ST_A20_ConfigRoot_t v_snap;
-            CL_C10_ConfigManager::getRootSnapshot(v_snap);
-            if (v_snap.userProfiles) {
-                for (uint8_t i = 0; i < v_snap.userProfiles->count; ++i) {
-                    if ((v_id > 0 && v_snap.userProfiles->items[i].profileId == v_id) ||
-                        (v_name[0] && strcasecmp(v_snap.userProfiles->items[i].name, v_name) == 0)) {
-                        v_no = v_snap.userProfiles->items[i].profileNo;
-                        break;
-                    }
+        uint16_t            v_no   = p_args["profileNo"] | 0;
+        uint8_t             v_id   = p_args["profileId"] | 0;
+        const char*         v_name = p_args["profileName"] | "";
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        if (v_snap.userProfiles) {
+            for (uint8_t i = 0; i < v_snap.userProfiles->count; ++i) {
+                const auto& item = v_snap.userProfiles->items[i];
+                if ((v_id > 0 && item.profileId == v_id) || (v_no > 0 && item.profileNo == v_no) ||
+                    (v_name[0] && strcasecmp(item.name, v_name) == 0)) {
+                    v_id = item.profileId;
+                    break;
                 }
             }
         }
-        if (v_no == 0) return "error:profile_not_found";
-        return CL_CT10_ControlManager::setActiveUserProfile(v_no) ? "ok" : "error:start_failed";
+        if (v_id == 0) return "error:profile_not_found";
+        JsonDocument v_doc;
+        v_doc["profileId"] = v_id;
+        return CL_CT10_ControlManager::startSession(EN_CT10_SESSION_PLAYLIST, EN_CT10_TRIGGER_MANUAL, v_doc)
+                   ? "ok"
+                   : "error:start_failed";
     }
 
     // 2. 프리셋 바람 재생
     if (strcmp(p_fn, "start_preset") == 0) {
         const char* v_code  = p_args["presetCode"] | "OCEAN";
         const char* v_style = p_args["styleCode"] | "BALANCE";
+
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        if (!v_snap.windDict) return "error:winddict_unavailable";
+
+        ST_A20_ResolvedWind_t v_resolved;
+        memset(&v_resolved, 0, sizeof(v_resolved));
+        if (!S20_resolveWindParams(*v_snap.windDict, v_code, v_style, nullptr, v_resolved) || !v_resolved.valid) {
+            return "error:invalid_preset";
+        }
+
         CL_CT10_ControlManager::instance().startOverridePreset(v_code, v_style, nullptr, 0, true);
         return "ok";
     }
@@ -281,8 +295,7 @@ String executeAIAction(const char* p_fn, JsonObjectConst p_args) {
         if (!v_snap.userProfiles) return "error:profiles_unavailable";
         bool v_profFound = false;
         for (uint8_t i = 0; i < v_snap.userProfiles->count; ++i) {
-            if (v_snap.userProfiles->items[i].profileId == v_profId ||
-                v_snap.userProfiles->items[i].profileNo == v_profId) {
+            if (v_snap.userProfiles->items[i].profileId == v_profId || v_snap.userProfiles->items[i].profileNo == v_profId) {
                 v_profFound = true;
                 break;
             }
@@ -291,10 +304,10 @@ String executeAIAction(const char* p_fn, JsonObjectConst p_args) {
             CL_D10_Logger::log(EN_L10_LOG_WARN, "[AI] add_schedule: invalid profileId=%u", v_profId);
             return "error:invalid_profile";
         }
-        
+
         ST_A20_ScheduleItem_t& v_item = v_sch.items[v_sch.count];
         memset(&v_item, 0, sizeof(v_item));
-        
+
         // [AI-보완] 기존 스케줄의 max(schId)/max(schNo) + 1 → 삭제 후 재추가 시 ID 충돌 원천 차단
         uint8_t  v_maxSchId = 0;
         uint16_t v_maxSchNo = 0;
@@ -326,6 +339,35 @@ String executeAIAction(const char* p_fn, JsonObjectConst p_args) {
         return CL_C10_ConfigManager::saveSchedules(v_sch) ? "ok" : "error:save_failed";
     }
 
+    // 13. 스케줄 목록 조회
+    if (strcmp(p_fn, "list_schedules") == 0) {
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        if (!v_snap.schedules) return "{\"schedules\":[]}";
+        JsonDocument v_doc;
+        JsonArray    v_arr = v_doc["schedules"].to<JsonArray>();
+        for (uint8_t i = 0; i < v_snap.schedules->count; ++i) {
+            const auto& it = v_snap.schedules->items[i];
+            JsonObject  o  = v_arr.add<JsonObject>();
+            o["schId"]     = it.schId;
+            o["name"]      = it.name;
+            o["profileId"] = it.profileId;
+            o["enabled"]   = it.enabled;
+            o["start"]     = it.period.startTime;
+            o["end"]       = it.period.endTime;
+        }
+        String v_out;
+        serializeJson(v_doc, v_out);
+        return v_out;
+    }
+
+    // 14. 스마트 쾌적(자동 모드) 제어
+    if (strcmp(p_fn, "control_auto_comfort") == 0) {
+        bool v_en = p_args["enabled"] | true;
+        CL_CT10_ControlManager::setAutoComfort(v_en);
+        return "ok";
+    }
+
     return "error:unknown_function";
 }
 
@@ -344,9 +386,11 @@ void appendAIFunctionDeclarations(JsonArray& r_decls) {
     }
     // 2. start_preset
     {
-        JsonObject d                = r_decls.add<JsonObject>();
-        d["name"]                   = "start_preset";
-        d["description"]            = "Start a nature wind preset like OCEAN, VALLEY_BREEZE, FOREST_RUSTLE, etc.";
+        JsonObject d = r_decls.add<JsonObject>();
+        d["name"]    = "start_preset";
+        d["description"] =
+            "Start a nature wind preset. Valid presetCode values: OCEAN, COUNTRY_BREEZE, MEDITERRANEAN, MOUNTAIN, "
+            "PLAINS, HARBOR_BREEZE, FOREST_CANOPY, URBAN_SUNSET, TROPICAL_RAIN, DESERT_NIGHT.";
         JsonObject p                = d["parameters"].to<JsonObject>();
         p["type"]                   = "OBJECT";
         JsonObject props            = p["properties"].to<JsonObject>();
@@ -450,6 +494,22 @@ void appendAIFunctionDeclarations(JsonArray& r_decls) {
         props["profileId"]["type"]   = "NUMBER";
         props["startMinute"]["type"] = "NUMBER";
         props["endMinute"]["type"]   = "NUMBER";
+    }
+    // 13. list_schedules
+    {
+        JsonObject d     = r_decls.add<JsonObject>();
+        d["name"]        = "list_schedules";
+        d["description"] = "List all registered automatic schedules.";
+    }
+    // 14. control_auto_comfort
+    {
+        JsonObject d             = r_decls.add<JsonObject>();
+        d["name"]                = "control_auto_comfort";
+        d["description"]         = "Enable or disable AI Smart Comfort (auto mode).";
+        JsonObject p             = d["parameters"].to<JsonObject>();
+        p["type"]                = "OBJECT";
+        JsonObject props         = p["properties"].to<JsonObject>();
+        props["enabled"]["type"] = "BOOLEAN";
     }
 }
 } // namespace CT10_AI

@@ -507,6 +507,32 @@ def copy_json_assets(project_root: Path) -> int:
         count += 1
 
     _log(f"  JSON 총 {count} 파일, {total:,} B 복사 완료", tag="json")
+
+    # [5.5] 로컬 src/v0203/.env/.gemini_key에서 Gemini API Key 읽어 스테이징 cfg_system_0203.json의 키 값만 교체
+    src_key    = project_root / "src" / "v0203" / ".env" / ".gemini_key"
+    staged_sys = dst_dir / "cfg_system_0203.json"
+    if "SCons" in sys.modules and src_key.is_file() and staged_sys.is_file():
+        api_key = ""
+        for raw in src_key.read_text(encoding="utf-8", errors="ignore").splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "=" in line:
+                k, v = line.split("=", 1)
+                if k.strip().upper() == "GEMINI_API_KEY":
+                    api_key = v.strip().strip('"').strip("'")
+                    break
+            elif line.startswith("AIza"):
+                api_key = line
+                break
+        if api_key:
+            sys_data = json.loads(staged_sys.read_text(encoding="utf-8"))
+            target_root = sys_data.get("system") if isinstance(sys_data.get("system"), dict) else sys_data
+            sec = target_root.setdefault("security", {})
+            sec["geminiApiKey"] = api_key
+            staged_sys.write_text(json.dumps(sys_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            _log("  [ENV] Gemini API key injected into staged cfg_system_0203.json for LittleFS", tag="json")
+
     return 0
 
 
@@ -666,6 +692,16 @@ if is_scons:
         if _rc != 0:
             print(f"[pio_gzip_0203] staging 실패 (exit={_rc})", file=sys.stderr)
             sys.exit(_rc)
+
+        def _restore_staged_sys(source, target, env):  # type: ignore
+            src_sys = _proj / "src" / "v0203" / "data_v0203_src" / JSON_SRC_SUBDIR / "cfg_system_0203.json"
+            dst_sys = _proj / "src" / "v0203" / "data_v0203" / JSON_DST_SUBDIR / "cfg_system_0203.json"
+            if src_sys.is_file() and dst_sys.is_file():
+                shutil.copy2(src_sys, dst_sys)
+                _log("  [ENV] Restored staged cfg_system_0203.json to clean state", tag="json")
+
+        env.AddPostAction("buildfs", _restore_staged_sys)   # type: ignore
+        env.AddPostAction("uploadfs", _restore_staged_sys)  # type: ignore
 
 
 elif __name__ == "__main__":

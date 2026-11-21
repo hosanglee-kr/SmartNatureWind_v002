@@ -1,0 +1,3 @@
+# 이 파일을 복사해 같은 폴더에 .gemini_key 파일을 만들고 실제 Gemini API Key를 입력하세요.
+# (.gemini_key 파일은 .gitignore 및 .geminiignore에 의해 GitHub과 AI 에이전트에게 노출되지 않습니다.)
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE

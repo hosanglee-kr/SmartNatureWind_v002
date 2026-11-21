@@ -1,17 +1,17 @@
 # Graph Report - SmartNatureWind_v002  (2026-11-21)
 
 ## Corpus Check
-- 273 files · ~799,765 words
+- 274 files · ~799,951 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 35 file(s) not represented in the graph (top: .css 22, (none) 8, .bat 2)
+- Unclassified: 39 file(s) not represented in the graph (top: .css 22, (none) 11, .bat 2)
 
 ## Summary
-- 6307 nodes · 9488 edges · 537 communities (391 shown, 146 thin omitted)
+- 6308 nodes · 9492 edges · 536 communities (393 shown, 143 thin omitted)
 - Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 803 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `c079baf0`
+- Built from commit: `5b2815f8`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -37,7 +37,7 @@
 - C10_Config_Sch_Util_0203.cpp
 - A40_Com_Utils_0203.h
 - pio_gzip_0203.py
-- strlcpy
+- A23_Com_ResetCfg_0203.h
 - ──────────────────────────────────────────────────────────────
 - CL_N10_NvsManager
 - N10_NvsManager_0203.cpp
@@ -51,22 +51,22 @@
 - ──────────────────────────────────────────────────────────────
 - 2. Phase A: 프론트엔드 긴급 패치 (P0/P1)
 - 📋 [0203_013] Stage 10 상세 구현 설계서 — 대시보드 3탭, 스케줄 간단모드, AI 코어 통합 및 Comfort 자동 모드 (FE/BE)
-- .checkApiKey
+- W10_Web_Static_0203.cpp
 - ST_COLD_Aggregator
 - CL_A40_MutexGuard_Semaphore
 - 5.4 프론트엔드 자산 규격 (v2.4 신규)
 - millis
 - 3.4 Phase 1~6 통합 회귀 (v0203_011, T-90 ~ T-112)
 - SmartNatureWind v0203 — 2차 감사 19건 및 구조적 리팩토링 단계별 구현 및 검증 가이드 (`0203_012_31구현`)
-- A00_run
+- CT10_Ctl_IOWS_0203.cpp
 - A20_resetWebPageDefault
 - AGENT_OPERATIONS_0203.md — 에이전트 운영 가이드 (v1.0)
 - 4. 태스크 경계별 함수 호출 매트릭스
 - --- ---
-- _routeSystemPatchBody
-- .log
+- W10_Web_0203.h
+- CT10_Ctl_Basic_0203.cpp
 - AsyncWebServerRequest
-- executeAIAction
+- 7.3 Batch A~F 신규
 - FLOW_0203.md — 데이터 흐름 및 시퀀스 명세 (v3.7)
 - 5. 통신 및 API 사양
 - 📊 Part D. Stage 12 최종 요약
@@ -83,7 +83,7 @@
 - C10_Config_WindDc_CRUD_0203.cpp
 - 270.page.network.js
 - 999.app.js
-- 5.4 프론트엔드 자산 규격 (v2.4 신규)
+- .tickLoop
 - 🎨 Smart Nature Wind v0203 — 웹 화면 UI/UX 종합 재점검 및 개선 방안 검토 계획서
 - 6. 구현 순서
 - CL_WF10_WiFiManager
@@ -109,7 +109,7 @@
 - src_v0203_ct10_ctl_0203
 - ST_A20_SchedulesRoot_t
 - _onSend
-- CT10_Ctl_Basic_0203.cpp
+- buildAIPromptStrict
 - 999a.nowplaying.js
 - Module: 규칙 준수 여부 점검 (Audit)
 - CT10_Monitor_0203.cpp
@@ -166,7 +166,7 @@
 - TEST_PLAN_0203.md — 회귀 테스트 인덱스 (v4.2)
 - src_v0203_ct10_monitor_0203
 - A22_Com_Lookup_0203.h
-- 3.7 Stage 9 — 웹 UI/UX 레이아웃 표준화 및 인터랙션 회귀 (T-149 ~ T-152)
+- 3.5 Stage 8 AI 제어 및 Gemini Live 실시간 음성 회귀 (T-114 ~ T-120)
 - Part 3. 보완 설계안
 - 300.page.info.js
 - setActive
@@ -193,14 +193,14 @@
 - 998.offline_data_0203.js
 - 292.playlist.js
 - 000.const.js
-- A40_Com_Utils_IO_0203.cpp
+- A00_Main_0203.cpp
 - 4. 프론트엔드 v0203 SPA
 - 3.4 [F-AI-SAFETY] 안전 및 보안
 - AGENTS.md
 - TEST_PLAN_0203.md — 회귀 테스트 인덱스 (v4.0)
 - 스마트 네이처 윈드 (Smart Nature Wind v0203) — 제품 소개서
 - 15. 시스템 및 네트워크 고급 설정 (`#/settings` / `#/network`)
-- 2. 재설계 철학 (50년차 원칙)
+- 2. 백엔드 기존 회귀
 - 290.page.automation.js
 - 140.ui.simulation.js
 - CL_A30_LED
@@ -218,7 +218,7 @@
 - 11. Session FSM & Wind Studio (v0203 신규)
 - 14. 시스템 및 네트워크 고급 설정 (`#/settings` / `#/network`)
 - A23_Com_ResetCfg_0203.h
-- U2. 화면별 상세 설계
+- 4. 태스크 경계별 함수 호출 매트릭스
 - UserManual_0203_003.md
 - 13. 실시간 물리 시뮬레이션 차트 (`#/chart`)
 - 🚀 프론트엔드/브라우저 UI 검증 실행 방법
@@ -266,7 +266,7 @@
 - startSession
 - 10. 맞춤 프로파일 및 주간 스케줄러 (`#/automation`)
 - overrideFixed
-- Part 1. Step 개념 도입 — Profile/Schedule 관계 명확화
+- 3.7 Stage 9 — 웹 UI/UX 레이아웃 표준화 및 인터랙션 회귀 (T-149 ~ T-152)
 - Stage 12 최종 확정 — 5개 커밋 순차 완성본
 - 0203_010_3_설계계획.md
 - 6. Heap 안정성 5분 샘플링
@@ -351,7 +351,7 @@
 - 12. Gemini AI 대화형 비서 & Live 실시간 음성
 - Part A. 데이터 구조 설계
 - 3.5 [F-AI-TTS] 음성 합성
-- .getRootSnapshot
+- Smart Nature Wind v0203 — Stage별 상세 구현 명세서
 - enqueueArrayBuffer
 - Part 4. 공통 컴포넌트
 - --- ---
@@ -362,10 +362,10 @@
 - 3.3 ⚙️ 자동화 (#/automation) — 3탭
 - --- ---
 - 3. 기기 연결 및 웹 대시보드 접속
-- Part 3. Chart 부활 — "실행 후 회고"
+- 3.6.1 P0 회귀 (5건) — 릴리스 차단 필수
 - Part 5. 상태 배지 매트릭스
 - 310.page.rules.js
-- F4. Simulation (바람 스튜디오) ★부활
+- 5.3 C++ 백엔드 코드 수정 명세
 - 9. Wind Studio — 8스텝 바람 작곡기 (`#/automation/studio`)
 - 12. Gemini AI 대화형 비서 & Live 실시간 음성
 - _rebind
@@ -374,9 +374,9 @@
 - 4. 메인 대시보드 인터페이스 조작 가이드 (`#/home`)
 - 기대: {trigger:1 (MANUAL), type:3 (FIXED)}
 - 2. 세부 보완 설계
-- U5. 인터랙션 원칙
+- CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.9)
 - 3.5 📊 모니터 (#/monitor) — 4탭
-- Stage 10. 세부 구현 설계서 (파일:라인 기준)
+- 6. 위임 플래그 라이프사이클 (F-05, F-06)
 - Store
 - _rebind
 - 15. 시스템 및 네트워크 고급 설정 (`#/settings/general` / `#/settings/network`)
@@ -407,7 +407,7 @@
 - 2. src/v0203/data_v0203_src/html_v0203/js/app/200.page.dashboard.js (5곳 수정)
 - Part 4. UI 영향 (앞선 메뉴 통폐합 안과 정합)
 - A20_Const_Sys_0203.h
-- 7.10 v0203_011 — Phase 1~6 감사 이력 (46건)
+- 4. 프론트엔드 v0203 SPA
 - Part 8. 우선순위 및 로드맵
 - ST_A20_WebPageConfig_t
 - 9. Wind Studio — 8스텝 바람 작곡기 (`#/wind/studio`)
@@ -416,33 +416,32 @@
 - Part 1. 사용자 정의 요약표
 - 변경사항
 - Part 2. 현재 구현 대비 Gap 분석
-- startSimulator
+- 3.2 수정 대상 1 — `998.offline_0203.js`
 - 1.3 🟡 MINOR 보완 (5건)
-- 11. 웹 에셋 빌드/서빙 파이프라인
+- CL_WF10_WiFiManager::applyConfig
 - 3.4 상태 전이 상세
 - Part 7. 상세 시나리오 재정리
 - 1.3 🎵 Wind Playlist — 바람을 재생하다
 - Part 6. 리스크 관리, 품질 게이트 및 커밋 전략
 - Part 2. 백엔드 데드코드 및 영향 분석
-- 3. 데이터 모델 — 최소 변경
+- Smart Nature Wind v0203+ 요구사항 최종 정리서
 - buildQuery
 - escape
-- 6. 수동 재생 라이프사이클
+- 2. 현행 UI/UX 주요 취약점 분석 (4대 핵심 이슈)
 - debug
-- 7. AutoOff 래치 및 이벤트 상태
+- STATE_0203.md — 상태 소유권 및 FSM 명세 (v3.7)
 - 12. Gemini AI 대화형 비서 & Live 실시간 음성
 - A-5. W10_Web_Gemini_0203.cpp
-- F6. AI 승격
+- 3.2 S10-P3-1: Schedule 간단 모드 — **선택적 승인**
 - Part 2. 메뉴·내비게이션 구조
 - 16. 자가 진단, 시스템 로그 및 무선 펌웨어 업데이트 (OTA)
 - 17. 자주 묻는 질문 (FAQ) 및 단계별 문제 해결 가이드
 - 9. Wind Studio — 8스텝 바람 작곡기 (`#/wind/studio`)
 - Part 8. 신규·변경 파일 목록
 - 2. 스타일 — "그날의 기분" (5종 전체)
-- CL_WF10_WiFiManager::getWifiStateJson
-- CL_WF10_WiFiManager::requestReconnect
+- Stage 2. `010.config.js` · `040.api.js` API 매핑 감사 및 1차 정비
+- Stage 5. 최종 통합 검증 (스모크 테스트 & 후속 절차)
 - CL_WF10_WiFiManager::attachWiFiEvents
-- CL_WF10_WiFiManager::_encTypeToString
 - 5. 단계별 실행 로드맵 (Phased Execution Plan)
 
 ## God Nodes (most connected - your core abstractions)
@@ -454,8 +453,8 @@
 6. `CL_S10_Simulation` - 87 edges
 7. `CL_MON_Monitor` - 80 edges
 8. `CL_C10_ConfigManager` - 77 edges
-9. `_fetch()` - 73 edges
-10. `` - 73 edges
+9. `` - 73 edges
+10. `_fetch()` - 73 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `5.3.2 절대 시각 변환 규칙 (v0203 필드 활용)` --references--> `millis()`  [INFERRED]
@@ -466,13 +465,13 @@
   src/v0203/contract_doc_0203/SPEC_0203.md → test/mocks/Arduino.h
 - `11.4 ESP32 독립 하드웨어 타이머 동작 및 Comfort 모드 연계` --references--> `millis()`  [INFERRED]
   src/v0203/User_Manual_0203/UserManual_0203_003.md → test/mocks/Arduino.h
-- `5.1.4.4 안전 가드레일 및 NVS 누적` --references--> `buildAIPromptStrict()`  [INFERRED]
-  src/v0203/contract_doc_0203/SPEC_0203.md → src/v0203/CT10_Ctl_AIPrompt_0203.cpp
+- `7.10.2 Phase 2 — API Contract (4건)` --references--> `strlcpy()`  [INFERRED]
+  src/v0203/contract_doc_0203/AUDIT_LOG_0203.md → test/mocks/Arduino.h
 
 ## Import Cycles
 - None detected.
 
-## Communities (537 total, 146 thin omitted)
+## Communities (536 total, 143 thin omitted)
 
 ### Community 0 - "CL_S10_Simulation"
 Cohesion: 0.02
@@ -492,23 +491,23 @@ Nodes (60): CL_S10_Simulation, active, avgWindCached, baseMaxWind, baseMinWind, 
 
 ### Community 4 - "CL_CT10_ControlManager"
 Cohesion: 0.03
-Nodes (57): ST_A20_UserProfileSegment_t, 7.10.3 Phase 3 — Session Engine (ADR-1, ADR-3) (6건), CL_CT10_ControlManager, active, AUTO_COMFORT_INTERVAL_MS, _autoOffLatched, curProfileIndex, curScheduleIndex (+49 more)
+Nodes (50): ST_A20_UserProfileItem_t, ST_A20_UserProfileSegment_t, CL_CT10_ControlManager, active, AUTO_COMFORT_INTERVAL_MS, _autoOffLatched, curProfileIndex, curScheduleIndex (+42 more)
 
 ### Community 5 - "src_v0203_ct10_ctl_0203"
-Cohesion: 0.07
-Nodes (16): loop(), CL_M10_MotionLogic, , EN_A20_WIFI_MODE_AP, EN_A20_WIFI_MODE_AP_STA, EN_A20_WIFI_MODE_STA, , EN_C10_OVL_FAIL_ON_OVERLAP (+8 more)
+Cohesion: 0.09
+Nodes (14): CL_M10_MotionLogic, , EN_C10_OVL_FAIL_ON_OVERLAP, EN_C10_OVL_SKIP_DISABLED, EN_C10_OVL_WARN_ONLY, , EN_L10_LOG_DEBUG, EN_L10_LOG_ERROR (+6 more)
 
 ### Community 6 - "P010_bundle_0203.js"
 Cohesion: 0.04
 Nodes (46): CL_MON_Monitor, COLD_CONFIG_CAP, COLD_SENSOR_CAP, COLD_STATE_CAP, COLD_SYSTEM_CAP, COLD_WIND_CAP, PATH_CONFIG, PATH_SENSOR (+38 more)
 
 ### Community 7 - "CL_W10_WebAPI"
-Cohesion: 0.06
-Nodes (28): CL_W10_WebAPI, G_W10_MAX_UPLOAD_SIZE, G_W10_PAGES_JSON, s_control, s_menu_state, s_server, s_upFile, s_uploadError (+20 more)
+Cohesion: 0.09
+Nodes (20): CL_W10_WebAPI, G_W10_MAX_UPLOAD_SIZE, G_W10_PAGES_JSON, s_control, s_menu_state, s_server, s_upFile, s_uploadError (+12 more)
 
 ### Community 8 - "CT10_Ctl_Ctl_0203.cpp"
 Cohesion: 0.08
-Nodes (21): C10_fromJson_TriggerRule(), EN_CT10_session_type_t, EN_CT10_trigger_t, CL_CT10_ControlManager::applyManual(), CL_CT10_ControlManager::exportSimJson(), CL_CT10_ControlManager::patchSimFromJson(), CL_CT10_ControlManager::setActiveUserProfile(), CL_CT10_ControlManager::setMode() (+13 more)
+Nodes (24): ST_A20_TriggerRule_t, A20_resetTriggerRuleDefault(), C10_fromJson_TriggerRule(), EN_CT10_session_type_t, EN_CT10_trigger_t, executeAddProfile(), executeAIAction(), listProfilesJson() (+16 more)
 
 ### Community 9 - ".render"
 Cohesion: 0.05
@@ -535,8 +534,8 @@ Cohesion: 0.06
 Nodes (48): _applyInitial(), _drawOverlay(), _ensurePreviewBuffer(), _exportCsv(), _exportJson(), _fmtTotal(), _load(), _loadCostStatus() (+40 more)
 
 ### Community 15 - ".tickAutoComfort"
-Cohesion: 0.09
-Nodes (17): 10.9 Phase 2 (Stage 1~6) 예산 영향, 7.23 Pause/Stop 이원화 결정 규칙 (Stage 6 신규), EN_CT10_pause_t, ST_CT10_Decision_t, CL_CT10_ControlManager::checkTriggers(), _ct10_readDhtIfNeeded(), CL_CT10_ControlManager::setAutoComfort(), B8. `CT10_Ctl_StMG_0203.cpp` (FSM 리팩토링) (+9 more)
+Cohesion: 0.10
+Nodes (19): 10.9 Phase 2 (Stage 1~6) 예산 영향, 7.23 Pause/Stop 이원화 결정 규칙 (Stage 6 신규), 7.24 AUTO_FULL / AUTO_SELECT 위임 계약 (Stage 6 신규), 3.1 C++ 백엔드 수정 대상 요약표, 3. C++ 백엔드 수정 승인 요청서 (AGENTS.md 원칙 1 준수), 4.7 [FE-P1-NEW-1 ~ FE-P1-NEW-6 & BE-P1-NEW-1] P1 결함 8건 핵심 패치 명세, B8. `CT10_Ctl_StMG_0203.cpp` (FSM 리팩토링), 1.4 검토 항목 반영 요약표 (+11 more)
 
 ### Community 16 - "app_ui_0203.js"
 Cohesion: 0.07
@@ -558,9 +557,9 @@ Nodes (23): _A40__callerOrUnknown(), CL_A40_MuxGuard_Critical, CL_A40_muxGuard_C
 Cohesion: 0.05
 Nodes (36): 10. 상품화 결정 (Stage 10), 11. 결론, 12. 개정 이력, 1.1 전체 구조, 1.2 핵심 결정, 1.3 제약 기반 설계 원칙, 1. 아키텍처 개요, 2.1 필수 부품 (+28 more)
 
-### Community 22 - "strlcpy"
-Cohesion: 0.16
-Nodes (18): A20_resetWifiDefault(), C10_wsChannelFromName(), CL_C10_ConfigManager::loadMotionConfig(), CL_C10_ConfigManager::loadSystemConfig(), CL_C10_ConfigManager::loadWifiConfig(), CL_C10_ConfigManager::patchMotionFromJson(), CL_C10_ConfigManager::patchSystemFromJson(), CL_C10_ConfigManager::patchWifiFromJson() (+10 more)
+### Community 22 - "A23_Com_ResetCfg_0203.h"
+Cohesion: 0.09
+Nodes (29): ST_A20_ScheduleItem_t, ST_A20_SchedulePeriod_t, ST_A20_ScheduleSegment_t, A20_resetCommonAssetDefault(), A20_resetMotionDefault(), A20_resetPageAssetDefault(), A20_resetPageItemDefault(), A20_resetPresetEntryDefault() (+21 more)
 
 ### Community 23 - "──────────────────────────────────────────────────────────────"
 Cohesion: 0.01
@@ -587,16 +586,16 @@ Cohesion: 0.08
 Nodes (24): --- ---, 1. 계약 및 런타임 동작 불일치 (4건), 1. 런타임 상태 동기화 및 UI 누락 (4건), 1. 번들 환경 및 빌드 파이프라인 불일치 (2건), 1. 상태 동기화 및 UI 에지 케이스 (3건), 1. 전체 실행 전략 및 배치(Batch) 구성, 1. 즉시 보완이 필요한 5건의 불일치 및 결함, 1. 즉시 수정이 필요한 기능·계약 불일치 (6건) (+16 more)
 
 ### Community 30 - "CL_W10_WebAPI::begin"
-Cohesion: 0.16
+Cohesion: 0.17
 Nodes (3): 7.1 기존 (F-01~I-6), CL_W10_WebAPI::begin(), _crudAccumJson()
 
 ### Community 31 - "C10_Config_UzProf_Util_0203.cpp"
-Cohesion: 0.13
-Nodes (23): EN_A20_ruleMode_t, ST_A20_UserProfilesRoot_t, A20_stepTypeFromString(), A20_stepTypeToString(), A20_resetUserProfilesDefault(), CL_C10_ConfigManager::addUserProfilesFromJson(), CL_C10_ConfigManager::updateUserProfilesFromJson(), CL_C10_ConfigManager::patchUserProfilesFromJson() (+15 more)
+Cohesion: 0.12
+Nodes (24): EN_A20_ruleMode_t, ST_A20_UserProfilesRoot_t, A20_stepTypeFromString(), A20_stepTypeToString(), A20_resetUserProfilesDefault(), CL_C10_ConfigManager::addUserProfilesFromJson(), CL_C10_ConfigManager::updateUserProfilesFromJson(), C10_toJson_TriggerRule() (+16 more)
 
 ### Community 32 - "src_v0203_a20_const_sch_0203"
-Cohesion: 0.03
-Nodes (83): , EN_A20_CONTROL_RUN_CONTINUE, EN_A20_CONTROL_RUN_SCHEDULE, EN_A20_control_runMode_t, EN_A20_RULE_MODE_PAUSE, EN_A20_RULE_MODE_STOP, EN_A20_SEG_MODE_COUNT, EN_A20_SEG_MODE_FIXED (+75 more)
+Cohesion: 0.04
+Nodes (56): , EN_A20_CONTROL_RUN_CONTINUE, EN_A20_CONTROL_RUN_SCHEDULE, EN_A20_control_runMode_t, EN_A20_RULE_MODE_PAUSE, EN_A20_RULE_MODE_STOP, EN_A20_SEG_MODE_COUNT, EN_A20_SEG_MODE_FIXED (+48 more)
 
 ### Community 33 - "──────────────────────────────────────────────────────────────"
 Cohesion: 0.02
@@ -607,8 +606,12 @@ Cohesion: 0.15
 Nodes (13): 2.1 [FE-P0-NEW-1] `147.ai.live.js` — `SNW.API` 네임스페이스 오타 치환, 2.2 [FE-P0-NEW-2] `294.timer_panel.js` — 타이머 만료 시 정지 API 수정, 2.3.1 `060.store.js` 세션 정규화 헬퍼 추가, 2.3.2 `200.page.dashboard.js` 수정, 2.3.3 `260.page.monitor.js` 수정, 2.3 [R-1 / FE-P0-NEW-3] `060.store.js` 세션 정규화 및 대시보드/모니터/NowPlaying 통합, 2.4 [FE-P1-NEW-4] `999a.nowplaying.js` — 금지된 `'RUNNING'` 제거 및 세션 표시 가드, 2.5 [FE-P1-NEW-2] `210.page.chart.js` — 기대 파형 오버레이 버퍼 생성 및 토글 (+5 more)
 
 ### Community 35 - "📋 [0203_013] Stage 10 상세 구현 설계서 — 대시보드 3탭, 스케줄 간단모드, AI 코어 통합 및 Comfort 자동 모드 (FE/BE)"
-Cohesion: 0.06
-Nodes (32): 📋 [0203_013] Stage 10 상세 구현 설계서 — 대시보드 3탭, 스케줄 간단모드, AI 코어 통합 및 Comfort 자동 모드 (FE/BE), 10. 개정 이력, 1.1 배경 및 목적, 1.2 4대 불변 개발 원칙 준수성, 1.3 Stage 10 구현 과제 인벤토리, 1) `src/v0203/W10_Web_Const_0203.h`, 1. 개요 및 아키텍처 원칙 준수, 2.1 마스터 와이어프레임 (모바일 375×667 & 데스크톱 반응형) (+24 more)
+Cohesion: 0.11
+Nodes (19): 📋 [0203_013] Stage 10 상세 구현 설계서 — 대시보드 3탭, 스케줄 간단모드, AI 코어 통합 및 Comfort 자동 모드 (FE/BE), 10. 개정 이력, 2.1 마스터 와이어프레임 (모바일 375×667 & 데스크톱 반응형), 2.2 탭별 콘텐츠 스택 명세, 2.3 대시보드 3탭 핵심 자바스크립트 코드 (`200.page.dashboard.js`), 2. [S10-P2] Dashboard 3탭 세부 구조 및 인터랙션 설계, 3.1 목적 및 접근 전략 (옵션 A 채택), 3.2 컴포넌트 수정 명세 (`293.schedule_panel.js`) (+11 more)
+
+### Community 36 - "W10_Web_Static_0203.cpp"
+Cohesion: 0.13
+Nodes (10): 10. 예외/폴백 경로, 5. 장애 진단 및 트러블슈팅, CL_W10_WebAPI::W10_getMenuJson(), CL_W10_WebAPI::W10_guessMime(), CL_W10_WebAPI::W10_loadPagesJson(), CL_W10_WebAPI::W10_registerStaticRoute(), W10_acceptsGzip(), W10_pathEndsWith() (+2 more)
 
 ### Community 37 - "ST_COLD_Aggregator"
 Cohesion: 0.12
@@ -623,8 +626,8 @@ Cohesion: 0.16
 Nodes (12): _defaultStep(), _loadProfile(), mount(), _onAddStep(), _onCancel(), _onDeleteStep(), _onMoveStep(), _onSave() (+4 more)
 
 ### Community 40 - "millis"
-Cohesion: 0.05
-Nodes (43): ST_A20_SystemConfig_t, 2.1 상태 정의, 2.2 상태 전이 우선순위 (`decideRunSource`), 2.3 상태 전이표, 2.4 Batch F-5: profile fall-through 차단, 2.5.1 이중 상태의 명확한 분리, 2.5.2 핵심 계약, 2.5.3 세션 전이 매트릭스 (+35 more)
+Cohesion: 0.06
+Nodes (42): setup(), ST_A20_ResolvedWind_t, ST_A20_SystemConfig_t, C10_wsChannelFromName(), CL_C10_ConfigManager::loadMotionConfig(), CL_C10_ConfigManager::loadSystemConfig(), CL_C10_ConfigManager::loadWifiConfig(), CL_C10_ConfigManager::patchMotionFromJson() (+34 more)
 
 ### Community 41 - "3.4 Phase 1~6 통합 회귀 (v0203_011, T-90 ~ T-112)"
 Cohesion: 0.08
@@ -634,9 +637,9 @@ Nodes (25): 3.4 Phase 1~6 통합 회귀 (v0203_011, T-90 ~ T-112), T-100. [Phase
 Cohesion: 0.12
 Nodes (16): 1.1 Phase별 구성 및 게이트웨이, 1. 구현 로드맵 및 Phase 개요, 3.1 [BE-P0-NEW-1] `W10_Web_Gemini_0203.cpp` — Gemini REST API JSON 스키마 규격 준수, 3.2 [BE-P0-NEW-2 & BE-P0-NEW-3] `W10_Web_Routes_AILive_0203.cpp` — 도구 선언 단일화 및 보안/단편화 방어, 3.3 [BE-P1-NEW-1] `CT10_Ctl_IOWS_0203.cpp` — `exportStateJson_v02` 동시성 스냅샷 보호, 3. Phase B: C++ 백엔드 결함 해소 (P0/P1), 4.1 [FE-P2-NEW-1] DOM XSS 방어 탈출 처리 적용, 4.2 [R-2 / FE-P2-NEW-2] `999b.ai-sheet.js` CSS 분리 및 비용 배지 연동 (+8 more)
 
-### Community 43 - "A00_run"
-Cohesion: 0.05
-Nodes (38): A00_getControl(), A00_run(), 2. loopTask WCET 예산 (`A00_run()`), 1. 실행 컨텍스트 (FreeRTOS Task), 2.1 Batch D-4: `s_staConnected` lock-free, 2. 뮤텍스/스핀락/세마포어 인벤토리, 3.1 `g_A20_config_root` 생명주기 (핵심 CBD 계약), 3. 공유 전역 자원 접근 규약 (+30 more)
+### Community 43 - "CT10_Ctl_IOWS_0203.cpp"
+Cohesion: 0.11
+Nodes (17): A00_getControl(), A00_init(), A00_run(), 2. loopTask WCET 예산 (`A00_run()`), 3.1 `g_A20_config_root` 생명주기 (핵심 CBD 계약), 3. 공유 전역 자원 접근 규약, 6. 비동기 위임/지연 패턴, 📋 목차 (Table of Contents) (+9 more)
 
 ### Community 44 - "A20_resetWebPageDefault"
 Cohesion: 0.08
@@ -647,36 +650,36 @@ Cohesion: 0.09
 Nodes (21): 1. 세션 시작 체크리스트, 2. 시나리오별 참조 매트릭스, 4.1 Claude Code — Auto memory (자동), 4.2 Antigravity — `/learn` (수동), 4.3 병행 사용 원칙, 4. Auto memory / `/learn` 병행 가이드, 5. 세션 종료 체크리스트, 6. 트러블슈팅 (+13 more)
 
 ### Community 46 - "4. 태스크 경계별 함수 호출 매트릭스"
-Cohesion: 0.28
-Nodes (17): 3.3 Commit 7 + Monitor/Comfort/WindDict + Session/Network 반영 내역 (완료), _ctlAccumJson(), _ctlOnReqEmptyCheck(), _crudOnReqEmptyCheck(), _netAccumJson(), _netOnReqEmptyCheck(), _sessAccumJson(), _sessOnReqEmptyCheck() (+9 more)
+Cohesion: 0.14
+Nodes (33): 7.4 Batch G — 코드 재검토 (C, NEW, B), 4.3 POST/PATCH 공통 헬퍼 계약 (F-2, F-3), 7.25 Stage 12~13 웹 API 보안·안정화 계약 (0203_014_19 신규), 5.1 API 응답 필드 (Batch N-1, F-2, F-3), 3.1 우선순위별 핵심 이슈, 3.2 Commit 6 반영 내역 (완료), 3.3 Commit 7 + Monitor/Comfort/WindDict + Session/Network 반영 내역 (완료), 3.4 Commit 8 반영 내역 (완료) (+25 more)
 
 ### Community 47 - "--- ---"
 Cohesion: 0.03
 Nodes (64): --- ---, --- ---, 1. AUTO_FULL 시작, 1. AUTO_FULL 시작, 1. AUTO_SELECT (PLAYLIST=수면모드), 1. AUTO_SELECT (PRESET=OCEAN), 1. 세션 시작, --- --- (+56 more)
 
-### Community 48 - "_routeSystemPatchBody"
+### Community 48 - "W10_Web_0203.h"
 Cohesion: 0.15
-Nodes (14): 7.3 Batch A~F 신규, 3. async_tcp WCET (F-05/F-06/D-1 반영 후), 4.3 POST/PATCH 공통 헬퍼 계약 (F-2, F-3), 7.25 Stage 12~13 웹 API 보안·안정화 계약 (0203_014_19 신규), 5.1 API 응답 필드 (Batch N-1, F-2, F-3), 5. 장애 진단 및 트러블슈팅, CL_W10_WebAPI::applySystemRuntimeFromConfig(), _routeWifiConfigPatchBody() (+6 more)
+Nodes (5): CL_W10_WebAPI::applySystemRuntimeFromConfig(), W10_getGeminiApiKeySnapshot(), _w10_compareSemVer(), CL_W10_WebAPI::getUploadPath(), extractSafeFileName()
 
-### Community 49 - ".log"
-Cohesion: 0.10
-Nodes (27): setup(), A00_init(), ST_A20_ResolvedWind_t, EN_CT10_reason_t, CL_CT10_ControlManager::onTriggerPause(), CL_CT10_ControlManager::onTriggerStop(), CL_CT10_ControlManager::begin(), CL_CT10_ControlManager::setProfileMode() (+19 more)
+### Community 49 - "CT10_Ctl_Basic_0203.cpp"
+Cohesion: 0.07
+Nodes (30): ST_A20_ThresholdRule_t, A40_parseHHMMtoMin_24h(), EN_CT10_pause_t, EN_CT10_reason_t, EN_CT10_state_t, ST_CT10_Decision_t, CL_CT10_ControlManager::applyRuleToTriggerRt(), CL_CT10_ControlManager::checkTriggers() (+22 more)
 
 ### Community 50 - "AsyncWebServerRequest"
-Cohesion: 0.24
-Nodes (15): 🟢 P0-1 (C1) — pio_gzip_0203.py::build_js_bundle() 3JS/2CSS 청크 기준 경로 확정 (해소됨), build_css_bundle(), build_js_bundle(), build_offline_zip(), _cleanup_legacy_bundles(), copy_json_assets(), find_project_root(), inject_json_to_offline_adapter() (+7 more)
+Cohesion: 0.23
+Nodes (16): 🟢 P0-1 (C1) — pio_gzip_0203.py::build_js_bundle() 3JS/2CSS 청크 기준 경로 확정 (해소됨), build_css_bundle(), build_js_bundle(), build_offline_zip(), _cleanup_legacy_bundles(), copy_json_assets(), find_project_root(), inject_json_to_offline_adapter() (+8 more)
 
-### Community 51 - "executeAIAction"
-Cohesion: 0.09
-Nodes (25): 7.0 이력 참조 인덱스, 7.11 모니터링 저장·조회 계약 (MON-1~MON-3), 7.12 모니터링 Cold 저장·CSV 계약 (MON-4~MON-5), 7.13 UX 재설계·온보딩·야간 감광 계약 (UX-1~UX-3), 7.15 AI 제어 및 실시간 음성 안전 계약 (AI-1~AI-6) (Stage 8 신규), 7.16 v0203 통합 감사 28대 이슈 해결 및 계약 규약 (AUDIT-1~AUDIT-6) (0203_012 신규), 7.17 웹 UI/UX 레이아웃 및 인터랙션 계약 (UI-5~UI-8) (Stage 9 / 0203_012 신규), 7.18 2차 통합 감사 이슈 해결 및 계약 규약 (AUDIT2-1~AUDIT2-5) (Stage 9.1 / 0203_012 신규) (+17 more)
+### Community 51 - "7.3 Batch A~F 신규"
+Cohesion: 0.07
+Nodes (27): 7.10.2 Phase 2 — API Contract (4건), 7.10.4 Phase 4 — Schema Alignment (ADR-2) (4건), 7.10.5 Phase 5 — Preview/i18n/Router/Monitor (ADR-5) (5건), 7.10.7 Phase 1~6 수용 이슈 (3건), 7.10 v0203_011 — Phase 1~6 감사 이력 (46건), 7.10 대시보드·세그먼트·스타일 통합 물리 파이프라인 (PHY-1~PHY-4), 7.2 N/G (N-1~N-4, G-1~G-3), 7.3 Batch A~F 신규 (+19 more)
 
 ### Community 52 - "FLOW_0203.md — 데이터 흐름 및 시퀀스 명세 (v3.7)"
-Cohesion: 0.10
-Nodes (20): 10. 예외/폴백 경로, 12. 바람 물리 파라미터 해석 및 Override 파이프라인 (`S20_resolveWindParams`), 13.1 Gemini REST 2-turn 프록시 시퀀스, 13.2 Gemini Live 실시간 양방향 음성 & 도구 위임 시퀀스 (AudioWorklet), 13. Stage 8 AI 제어 및 Gemini Live 실시간 음성 시퀀스, 1. 부팅 시퀀스 (`A00_init()`), 2. 메인 루프 파이프라인 (`A00_run()`), 3. 설정 재로드(Reload) 위임 시퀀스 (F-05) (+12 more)
+Cohesion: 0.09
+Nodes (23): 11.1 빌드 전처리 및 자동 동기화 (`pio_gzip_0203.py`), 11.2 오프라인 2분할 어댑터 부트스트랩 시퀀스, 11.3 런타임 정적 서빙 (`W10_Web_Static_0203.cpp`), 11. 웹 에셋 빌드/서빙 파이프라인, 12. 바람 물리 파라미터 해석 및 Override 파이프라인 (`S20_resolveWindParams`), 13.1 Gemini REST 2-turn 프록시 시퀀스, 13.2 Gemini Live 실시간 양방향 음성 & 도구 위임 시퀀스 (AudioWorklet), 13. Stage 8 AI 제어 및 Gemini Live 실시간 음성 시퀀스 (+15 more)
 
 ### Community 53 - "5. 통신 및 API 사양"
-Cohesion: 0.08
-Nodes (24): 5.1.1.1 Session Type 확장 (v2.22, Phase 2), 5.1.1.2 Session Trigger 확장, 5.1.1.3 AUTO_FULL / AUTO_SELECT payload, 5.1.1.4 `/state` 응답 확장 및 `PATCH /session/rule` (v2.22), 5.1.1.5 신규 Stop Reason (v2.22), 5.1.1 Session 응답 확장 (Phase 3, v0203_011), 5.1.2 Runtime (NVS) 응답 확장 (Phase 2, v0203_011), 5.1.3 /control/override 엔드포인트 폐지 (Phase 2, v0203_011) (+16 more)
+Cohesion: 0.06
+Nodes (36): 5.1.1.1 Session Type 확장 (v2.22, Phase 2), 5.1.1.2 Session Trigger 확장, 5.1.1.3 AUTO_FULL / AUTO_SELECT payload, 5.1.1.4 `/state` 응답 확장 및 `PATCH /session/rule` (v2.22), 5.1.1.5 신규 Stop Reason (v2.22), 5.1.1 Session 응답 확장 (Phase 3, v0203_011), 5.1.2 Runtime (NVS) 응답 확장 (Phase 2, v0203_011), 5.1.3 /control/override 엔드포인트 폐지 (Phase 2, v0203_011) (+28 more)
 
 ### Community 54 - "📊 Part D. Stage 12 최종 요약"
 Cohesion: 0.17
@@ -687,8 +690,8 @@ Cohesion: 0.13
 Nodes (8): C10_allocSection(), CL_C10_ConfigManager::factoryResetFromDefault(), CL_C10_ConfigManager::freeAll(), CL_C10_ConfigManager::freeLazySection(), CL_C10_ConfigManager::getRootSnapshot(), CL_C10_ConfigManager::loadAll(), CL_C10_ConfigManager::processPendingFree(), CL_C10_ConfigManager::queuePendingFree()
 
 ### Community 56 - "0203_013_11보완_02.md"
-Cohesion: 0.08
-Nodes (24): 1. 자동 모드 OFF 확인, 2. 자동 모드 ON, 3.1 승인 대상 인벤토리, 3.2.1 목적 및 기능 변화, 3.2.2 옵션 A: FE 우회 (권장, **승인 불필요**), 3.2 S10-P3-1: Schedule 간단 모드 — **선택적 승인**, 3. 5분 대기 → 세션 자동 시작 확인, 4. AutoOff 우선순위: AutoOff 래치 강제 후 5분 대기 → 세션 미시작 확인 (+16 more)
+Cohesion: 0.10
+Nodes (19): 1. 자동 모드 OFF 확인, 2. 자동 모드 ON, 3. 5분 대기 → 세션 자동 시작 확인, 4. AutoOff 우선순위: AutoOff 래치 강제 후 5분 대기 → 세션 미시작 확인, 5. NVS 영구 저장 확인, D.2.2 `FLOW_0203.md` §7.1 (신규), D.2.3 `CONTRACT_0203.md` §7.20 (신규), E.4 `STATE_0203.md` §1 (FE 상태 추가 — 선택적) (+11 more)
 
 ### Community 57 - "130.ui.form.js"
 Cohesion: 0.13
@@ -711,16 +714,16 @@ Cohesion: 0.11
 Nodes (18): 3.2 Batch G — P1 회귀 (T-51 ~ T-67), T-51. [NEW-C1] 0값 보존 — pin/brightness/holdSec, T-52. [NEW-C2] XSS — dht.type 이스케이프, T-53. [NEW-U1] API Key DOM 노출 방지, T-54. [NEW-U2] + [B-4] API Key 삭제 — clearApiKey, T-55. [NEW-U3] wsChConfig 손상 복구, T-56. [NEW-U4] 문자열 "false" 방어, T-57. [B-1] + [B-7] NVS flush — 단일 커밋 + 반환값 검사 (+10 more)
 
 ### Community 63 - "WF10_WiFiMgr_0203.cpp"
-Cohesion: 0.15
-Nodes (10): CL_WF10_WiFiManager::applyConfig(), CL_WF10_WiFiManager::_ensureWifiTask(), CL_WF10_WiFiManager::init(), CL_WF10_WiFiManager::isStaConnected(), CL_WF10_WiFiManager::startAP(), CL_WF10_WiFiManager::startSTA(), CL_WF10_WiFiManager::_wifiTask(), EN_WF10_REQ_COALESCED (+2 more)
+Cohesion: 0.12
+Nodes (11): CL_WF10_WiFiManager::_encTypeToString(), CL_WF10_WiFiManager::_ensureWifiTask(), CL_WF10_WiFiManager::getStaStatusString(), CL_WF10_WiFiManager::getWifiStateJson(), CL_WF10_WiFiManager::isStaConnected(), CL_WF10_WiFiManager::requestReconnect(), CL_WF10_WiFiManager::scanNetworksToJson(), CL_WF10_WiFiManager::_wifiTask() (+3 more)
 
 ### Community 64 - "CL_CT10_ControlManager::exportStateJson_v02"
 Cohesion: 0.16
 Nodes (9): CL_A40_MutexGuard_Semaphore, _acquired, _caller, _mutexPtr, CL_C10_ConfigManager::begin(), 7.10.1 Phase 1 — Foundation (4건), xSemaphoreCreateRecursiveMutex(), xSemaphoreGiveRecursive() (+1 more)
 
 ### Community 65 - "C10_Config_WindDc_CRUD_0203.cpp"
-Cohesion: 0.14
-Nodes (11): CL_C10_ConfigManager::addWindProfileFromJson(), CL_C10_ConfigManager::updateWindProfileFromJson(), C10_hasDupCode(), CL_C10_ConfigManager::patchWindDictFromJson(), CL_C10_ConfigManager::toJson_WindDict(), CL_C10_ConfigManager::loadWindDict(), CL_C10_ConfigManager::saveWindDict(), C10_fromJson_WindPreset() (+3 more)
+Cohesion: 0.17
+Nodes (9): CL_C10_ConfigManager::addWindProfileFromJson(), CL_C10_ConfigManager::updateWindProfileFromJson(), C10_hasDupCode(), CL_C10_ConfigManager::loadWindDict(), CL_C10_ConfigManager::saveWindDict(), C10_fromJson_WindPreset(), C10_fromJson_WindStyle(), C10_loadWindDictFromJsonChecked() (+1 more)
 
 ### Community 66 - "270.page.network.js"
 Cohesion: 0.11
@@ -730,13 +733,13 @@ Nodes (19): ST_COLD_Aggregator, bucketStart, gustCnt, humSum, lastConfigEpochFlu
 Cohesion: 0.20
 Nodes (18): _bindStore(), _eventMarker(), _fmtAxisTime(), _fmtDuration(), _fmtTime(), _loadLiveData(), _loadRetro(), mount() (+10 more)
 
-### Community 68 - "5.4 프론트엔드 자산 규격 (v2.4 신규)"
-Cohesion: 0.17
-Nodes (12): 5.4.1 배포 자산 (총 3파일 + JSON 10개), 5.4.2.1 모바일 하단 뷰포트 레이아웃 스택 표준화 (0203_012), 5.4.2.2 Dashboard 3탭 및 Comfort 카드 UI 스키마 (Stage 10 신규), 5.4.2 소스 디렉토리 구조, 5.4.3 정적 라우팅 규약 (W10), 5.4.4 `cfg_pages_0203.json` 스키마 (v0203 SPA), 5.4.5 시간 필드 규격 (`§5.3` 연계), 5.4.6 프론트엔드 예산 (v0203 확정) (+4 more)
+### Community 68 - ".tickLoop"
+Cohesion: 0.10
+Nodes (14): 7.10.3 Phase 3 — Session Engine (ADR-1, ADR-3) (6건), T-5. F-06 (Motion Sim 위임) — 비동기 패치 + S10 반영, ST_CT10_RunContext_t, CL_CT10_ControlManager::applyPresetToSession(), CL_CT10_ControlManager::tickSegmentSequence(), CT10_resetActiveSegSnapshot(), _onSimUpdate(), 3.3 실행 엔진 통합 (+6 more)
 
 ### Community 69 - "🎨 Smart Nature Wind v0203 — 웹 화면 UI/UX 종합 재점검 및 개선 방안 검토 계획서"
-Cohesion: 0.14
-Nodes (14): 1. 개요 및 점검 배경, 2. 현행 UI/UX 주요 취약점 분석 (4대 핵심 이슈), 3. 12대 웹 UI 화면 정밀 점검 매트릭스, 4.1 모바일 하단 뷰포트 레이아웃 규격 표준화 (Layout Stacking Architecture), 4.2 인라인 스타일 제거 및 시멘틱 CSS 변수 일원화, 4.3 대시보드 조작성 및 시각적 피드백 강화, 4.4 정보 구조(IA) 및 온보딩 연계 보강, 4. 핵심 개선 방안 (Actionable Solutions) (+6 more)
+Cohesion: 0.18
+Nodes (9): 1. 개요 및 점검 배경, 3. 12대 웹 UI 화면 정밀 점검 매트릭스, 4.1 모바일 하단 뷰포트 레이아웃 규격 표준화 (Layout Stacking Architecture), 4.2 인라인 스타일 제거 및 시멘틱 CSS 변수 일원화, 4.3 대시보드 조작성 및 시각적 피드백 강화, 4.4 정보 구조(IA) 및 온보딩 연계 보강, 4. 핵심 개선 방안 (Actionable Solutions), 6. 기대 효과 및 검증 기준 (+1 more)
 
 ### Community 70 - "6. 구현 순서"
 Cohesion: 0.24
@@ -744,7 +747,7 @@ Nodes (8): check_ai_limits(), check_api_paths(), check_fsm_names(), check_spa_sc
 
 ### Community 71 - "CL_WF10_WiFiManager"
 Cohesion: 0.11
-Nodes (14): CL_WF10_WiFiManager, G_WF10_BACKOFF_INIT_MS, G_WF10_BACKOFF_MAX_MS, G_WF10_BACKOFF_MUL, G_WF10_MULTI_RUN_TIMEOUT_MS, G_WF10_RECONNECT_MAX, CL_WF10_WiFiManager::getStaStatusString(), s_lastStaStatus (+6 more)
+Nodes (13): CL_WF10_WiFiManager, G_WF10_BACKOFF_INIT_MS, G_WF10_BACKOFF_MAX_MS, G_WF10_BACKOFF_MUL, G_WF10_MULTI_RUN_TIMEOUT_MS, G_WF10_RECONNECT_MAX, s_lastStaStatus, s_reconnectAttempts (+5 more)
 
 ### Community 72 - "C10_Config_Extras_0203.cpp"
 Cohesion: 0.24
@@ -779,8 +782,8 @@ Cohesion: 0.08
 Nodes (22): ADR-0010, captureAll(), { execSync }, fs, HTML_DIR, http, IMG_DIR, JSON_DIR (+14 more)
 
 ### Community 80 - "Gemini API 기반 추가 가능 기능 검토"
-Cohesion: 0.09
-Nodes (20): 10. 안전/가드레일 (필수), 11. 멀티 디바이스 & 통합, 12. 멀티모달 (선택적), 13. 우선순위 로드맵 제안, 15. 최종 제안, 2. 컨텍스트 인지 자동화, 3. 스케줄/프로필 AI 생성 (⭐ 가장 임팩트 큼), 4. 대화형 세션 (멀티턴) (+12 more)
+Cohesion: 0.08
+Nodes (21): 10. 안전/가드레일 (필수), 11. 멀티 디바이스 & 통합, 12. 멀티모달 (선택적), 13. 우선순위 로드맵 제안, 14. 구현 시 반드시 고려할 기술 제약, 15. 최종 제안, 2. 컨텍스트 인지 자동화, 3. 스케줄/프로필 AI 생성 (⭐ 가장 임팩트 큼) (+13 more)
 
 ### Community 81 - "[L1] 시작/운전/중단·재실행/종료 Trigger 요구사항 및 아키텍처 확정서 (v2)"
 Cohesion: 0.05
@@ -819,24 +822,24 @@ Cohesion: 0.12
 Nodes (16): 1️⃣ 프리셋 (Preset) — "환경의 근본 성격", 2️⃣ 스타일 (Style) — "같은 환경, 다른 기분", 3️⃣ 강도 (Intensity) — "**볼륨 노브**", 4️⃣ 돌풍 빈도 (Gust Freq) — "**돌풍이 얼마나 자주 오는가**", 5️⃣ 변동성 (Variability) — "**얼마나 급하게 바뀌는가**", (a) 수렴 속도 (windChangeRate), (b) 목표 재생성 (generateTarget), 시나리오 A: "잠들기 직전" (+8 more)
 
 ### Community 90 - "Part 2. Manual + Override 통폐합 → Session 모델 ★핵심"
-Cohesion: 0.25
+Cohesion: 0.23
 Nodes (6): _err(), find_repo_root(), _info(), main(), _run(), verify_required_files()
 
 ### Community 91 - "src_v0203_ct10_ctl_0203"
 Cohesion: 0.04
-Nodes (56): , EN_CT10_PAUSE_DI_LOW, EN_CT10_PAUSE_MOTION, EN_CT10_PAUSE_NONE, EN_CT10_PAUSE_TEMP_LOW, EN_CT10_REASON_AUTOOFF_TIME, EN_CT10_REASON_AUTOOFF_TIMER, EN_CT10_REASON_DI_LOW_STOP (+48 more)
+Nodes (55): , EN_CT10_PAUSE_DI_LOW, EN_CT10_PAUSE_MOTION, EN_CT10_PAUSE_NONE, EN_CT10_PAUSE_TEMP_LOW, EN_CT10_REASON_AUTOOFF_TIME, EN_CT10_REASON_AUTOOFF_TIMER, EN_CT10_REASON_DI_LOW_STOP (+47 more)
 
 ### Community 92 - "ST_A20_SchedulesRoot_t"
-Cohesion: 0.10
-Nodes (22): ST_A20_SchedulesRoot_t, A20_findPresetByCode(), A20_findSegModeByCode(), A20_findStyleByCode(), A20_getPresetNameByCode(), A20_getStaticPresetIndexByCode(), A20_resetSchedulesDefault(), CL_C10_ConfigManager::addScheduleFromJson() (+14 more)
+Cohesion: 0.18
+Nodes (16): ST_A20_SchedulesRoot_t, A20_resetSchedulesDefault(), CL_C10_ConfigManager::addScheduleFromJson(), CL_C10_ConfigManager::updateScheduleFromJson(), CL_C10_ConfigManager::patchSchedulesFromJson(), CL_C10_ConfigManager::toJson_Schedules(), CL_C10_ConfigManager::loadSchedules(), CL_C10_ConfigManager::saveSchedules() (+8 more)
 
 ### Community 93 - "_onSend"
 Cohesion: 0.13
 Nodes (17): _appendBubble(), _appendMessage(), _bindEvents(), close(), _loadCostBadge(), _onApply(), _onSaveAdv(), _onSend() (+9 more)
 
-### Community 94 - "CT10_Ctl_Basic_0203.cpp"
-Cohesion: 0.09
-Nodes (22): ST_A20_ThresholdRule_t, ST_A20_TriggerRule_t, A20_resetTriggerRuleDefault(), A40_parseHHMMtoMin_24h(), 7.24 AUTO_FULL / AUTO_SELECT 위임 계약 (Stage 6 신규), CL_CT10_ControlManager::applyRuleToTriggerRt(), CL_CT10_ControlManager::evalLowPauseHysteresis(), CL_CT10_ControlManager::findActiveScheduleIndex() (+14 more)
+### Community 94 - "buildAIPromptStrict"
+Cohesion: 0.21
+Nodes (10): 7.15 AI 제어 및 실시간 음성 안전 계약 (AI-1~AI-6) (Stage 8 신규), 1. 상태 변수 소유권 및 접근 매트릭스, isForbiddenAIFunction(), buildAIPromptStrict(), buildSpeechHint(), computeSessionHash(), presetCodeToKorean(), 4.1 백엔드 C++ (src/v0203/) (+2 more)
 
 ### Community 95 - "999a.nowplaying.js"
 Cohesion: 0.06
@@ -851,7 +854,7 @@ Cohesion: 0.19
 Nodes (8): append(), _drawSpark(), _levelClass(), refresh(), render(), setItems(), setSelected(), _trim()
 
 ### Community 98 - "210.page.chart.js"
-Cohesion: 0.26
+Cohesion: 0.28
 Nodes (10): convert_rule(), convert_workflow(), extract_globs(), main(), split_frontmatter(), sync_rules(), sync_skills(), sync_workflows() (+2 more)
 
 ### Community 99 - "e2e_phase2.py"
@@ -915,12 +918,12 @@ Cohesion: 0.18
 Nodes (11): A-1. W10_Web_Const_0203.h, A-2. W10_Web_0203.h, A-4. W10_Web_Static_0203.cpp, A-7. W10_Web_Routes_0203.cpp, 📦 Part A. 파일별 최종 변경 전/후, 변경 1: begin() — nullptr 방어, 변경 1: requireApiKey 선언 추가, 변경 1: W10_guessMime — strstr → endsWith 정확 매칭 (+3 more)
 
 ### Community 114 - "030.util.time.js"
-Cohesion: 0.15
-Nodes (13): 10. 마이그레이션 (기존 사용자 데이터 보호), 1. 핵심 개념 확정 — "재생 가능한 플레이리스트", 2. 두 트리거 방식 — 명확한 구분, 4.1 현재 (7-state, 중복 존재), 4.2 재설계 (6-state, 트리거는 별도 필드), 4.3 runSource enum 폐기 → trigger로 대체, 4. FSM 통합 — 7-state → 6-state, 5.1 재설계 후 우선순위 (+5 more)
+Cohesion: 0.10
+Nodes (21): 10. 마이그레이션 (기존 사용자 데이터 보호), 1. 핵심 개념 확정 — "재생 가능한 플레이리스트", 2. 두 트리거 방식 — 명확한 구분, 3.1 Profile은 그대로 (변경 없음), 3.2 Schedule은 profileId 참조만 (재설계), 3.3 N10 런타임 — 수동 선택 영속화, 3. 데이터 모델 — 최소 변경, 4.1 현재 (7-state, 중복 존재) (+13 more)
 
 ### Community 115 - "Part 2. UI 관점 (UI Requirements)"
-Cohesion: 0.15
-Nodes (13): Part 2. UI 관점 (UI Requirements), Part 3. 구현 우선순위, Part 4. 성공 지표 (KPI), Part 5. 핵심 원칙 재확인, Smart Nature Wind v0203+ 요구사항 최종 정리서, U1.1 최종 네비게이션 (5 페이지), U1.2 페이지 매핑 (14 → 5), U1.3 삭제되는 개념 (+5 more)
+Cohesion: 0.10
+Nodes (20): Part 2. UI 관점 (UI Requirements), U1.1 최종 네비게이션 (5 페이지), U1.2 페이지 매핑 (14 → 5), U1.3 삭제되는 개념, U1. 정보구조 (IA) 재편, U2.1 🏠 홈 화면, U2.2 🌬️ 바람 화면, U2.3 ⏰ 자동화 화면 (+12 more)
 
 ### Community 116 - "135.util.preview.js"
 Cohesion: 0.06
@@ -995,8 +998,8 @@ Cohesion: 0.17
 Nodes (12): 2.1 문제 인식, 2.2 통합 모델 — **Playback Session**, 2.3 Session Type 3종, 2.4 Session Trigger 2종, 2.5 Session Lifecycle, 2.6 기존 API → Session API 매핑, 2.7 사용자 액션 매트릭스, Part 2. Manual + Override 통폐합 → Session 모델 ★핵심 (+4 more)
 
 ### Community 135 - "0203_012_10이슈.md"
-Cohesion: 0.29
-Nodes (4): 이슈 파일 작업, 이슈 파일 작업, 이슈 파일 작업, 테스트 등급
+Cohesion: 0.22
+Nodes (7): 이슈 파일 작업, 이슈 파일 작업, 이슈 파일 작업, 작업 파일 커밋, 테스트 등급, 🚀 Phase 1 실행 — P0 안전성 5건 단계별 진행, 🚀 v0203 감사 28건 단계별 구현 및 검증 가이드 (Phase 1 ~ Phase 5)
 
 ### Community 136 - "D. 프리셋 관리 (고급 — 관리자 페이지)"
 Cohesion: 0.18
@@ -1015,8 +1018,8 @@ Cohesion: 0.04
 Nodes (44): ① 시작 Trigger (4종), 2.1 시작 Trigger Gap, 2.2 운전 Mode Gap, 2.3 중단/재실행 Gap, 2.4 종료 Trigger Gap, ② 운전 Mode (5종), 3.1 Trigger enum 확장, 3.2 Session Type enum 확장 (+36 more)
 
 ### Community 140 - ".routeComfort"
-Cohesion: 0.17
-Nodes (11): 5.4.10 웹 API 보안·안정화 사양 (Stage 12~13, 0203_014_19), 14. 구현 시 반드시 고려할 기술 제약, 2.1 확정 아키텍처/보안 결정 사항, 2.2 파일별 반영 내역 (6개 파일), 2.3 코드 검토 중 추가 반영된 안전성 보완 (4건), 2.4 반영 누락 및 정합성 점검 결과, 2. Stage 12 확정 결정 사항 및 반영 내역 (완료), handleNaturalLanguageTurn() (+3 more)
+Cohesion: 0.11
+Nodes (16): 5.4.10 웹 API 보안·안정화 사양 (Stage 12~13, 0203_014_19), 1.1 배경 및 목적, 1.2 4대 불변 개발 원칙 준수성, 1.3 Stage 10 구현 과제 인벤토리, 1. 개요 및 아키텍처 원칙 준수, 1. 전체 진행 현황 요약, 2.1 확정 아키텍처/보안 결정 사항, 2.2 파일별 반영 내역 (6개 파일) (+8 more)
 
 ### Community 141 - "030.util.level.js"
 Cohesion: 0.24
@@ -1035,8 +1038,8 @@ Cohesion: 0.20
 Nodes (10): 4.1 최종 정보구조 (IA) — 5 페이지 유지, 내부 재편, 4.2 🏠 홈 — Playlist 재생 + Normal Fan, 4.3 🌬️ 바람 — Studio의 악기 선택 도구, 4.4 ⏰ 자동화 — Studio + Playlist + 스케줄 + 타이머, 4.5 📊 모니터 — Session 회고, Part 4. UI 재편 (3개념 + Session 반영), 🎵 Playlist 탭 (재생 목록), 🎨 Studio 탭 (작곡 도구) (+2 more)
 
 ### Community 145 - "FRS_AI_0203.md — AI 제어 기능 요구사항 정의서"
-Cohesion: 0.20
-Nodes (10): 10. 결론 요약, 1.1 정량적 복잡도 측정, 1.2 사용자 관점 시나리오 실패 지점, 1. 진단 — 왜 어수선한가, 3. 새로운 정보구조 (IA), 5. 구매 → 첫 사용 여정 (재설계 후), 7. 구현 우선순위 (Roadmap), 8. 성공 지표 (KPI) (+2 more)
+Cohesion: 0.12
+Nodes (16): 10. 결론 요약, 1.1 정량적 복잡도 측정, 1.2 사용자 관점 시나리오 실패 지점, 1. 진단 — 왜 어수선한가, 2. 재설계 철학 (50년차 원칙), 3. 새로운 정보구조 (IA), 5. 구매 → 첫 사용 여정 (재설계 후), 7. 구현 우선순위 (Roadmap) (+8 more)
 
 ### Community 147 - "TEST_PLAN_L6_L8_0203.md — Batch/Phase 회귀 (L6~L8)"
 Cohesion: 0.25
@@ -1058,9 +1061,9 @@ Nodes (20): , EN_MON_EVENT_AUTOOFF, EN_MON_EVENT_MANUAL_OVERRIDE, EN_MON_EVENT_P
 Cohesion: 0.36
 Nodes (6): clear(), push(), render(), resize(), start(), tick()
 
-### Community 152 - "3.7 Stage 9 — 웹 UI/UX 레이아웃 표준화 및 인터랙션 회귀 (T-149 ~ T-152)"
-Cohesion: 0.06
-Nodes (32): 3.5 Stage 8 AI 제어 및 Gemini Live 실시간 음성 회귀 (T-114 ~ T-120), 3.6.1 P0 회귀 (5건) — 릴리스 차단 필수, 3.6.2 P1 회귀 (10건) — 릴리스 전 필수, 3.6.3 P2 회귀 (13건) — 후속 정리, 3.6.4 L10 회귀 매트릭스, 3.6 통합 감사 회귀 (T-121 ~ T-148), 3.7 Stage 9 — 웹 UI/UX 레이아웃 표준화 및 인터랙션 회귀 (T-149 ~ T-152), 3.8 Phase 2 — Pause/Stop 이원화 + AUTO 모드 회귀 (T-158 ~ T-168) (+24 more)
+### Community 152 - "3.5 Stage 8 AI 제어 및 Gemini Live 실시간 음성 회귀 (T-114 ~ T-120)"
+Cohesion: 0.18
+Nodes (11): 3.5 Stage 8 AI 제어 및 Gemini Live 실시간 음성 회귀 (T-114 ~ T-120), 🔍 AI 빠른 참조 (이 파일), T-114. REST 2-turn 대화 및 프록시 스트리밍 (`/api/v001/ai/gemini`), T-115. 15종 위험 시스템 제어 명령 원천 차단, T-116. Live 임시 토큰 발급 및 30분 상한(403) 가드레일, T-117. 12대 안전 Tool Calling 위임 브리지 및 FSM 반영, T-118. NVS 4키 일일 사용량 누적 및 자정 자동 리셋, T-119. AudioWorklet 16k 송신 / 24k PCM16 저지연 재생 및 Barge-in Flush (+3 more)
 
 ### Community 153 - "Part 3. 보완 설계안"
 Cohesion: 0.25
@@ -1099,12 +1102,12 @@ Cohesion: 0.25
 Nodes (8): 7.1 3대 개념 → Session 모델 매핑, 7.2 최종 원칙 10개, 7.3 다음 단계 (구현 준비), FSM, Part 7. 최종 확정 요약, Persistence, Session, 개념
 
 ### Community 162 - "Profile - Schedule - Step 재설계 + Simulation·Chart 부활"
-Cohesion: 0.25
-Nodes (7): 4.1 최종 네비게이션 (5페이지 유지, 내부 재편), 4.2 페이지별 기능 매트릭스 (Step·Simulation·Chart 반영), 4.3 데이터 흐름 (개념도), Part 4. 전체 IA 재정리, Part 5. 구현 우선순위 (재조정), Part 6. 결론 — 왜 이 재설계가 구매자에게 이득인가, Profile - Schedule - Step 재설계 + Simulation·Chart 부활
+Cohesion: 0.12
+Nodes (17): 1.1 현재 구조의 문제 (코드 진단), 1.2 재설계 — 3계층 모델 (Step → Profile → Schedule), 1.3 코드 재설계 (핵심 스니펫), 1.4 UI 재설계 — Step이 보이는 화면, 3.1 재정의 — Chart의 진짜 목적, 3.2 Chart = "세션 회고" (모니터 페이지 내 탭), 3.3 재설계의 5가지 개선, 3.4 실시간 탭도 강화 — "지금 무엇이 작동 중" (+9 more)
 
 ### Community 163 - "Part 1. 기능 관점 (Functional Requirements)"
-Cohesion: 0.25
-Nodes (8): F3.1 상태 통합 (7-state → 6-state), F3.2 실행 컨텍스트 확장, F3. FSM 재설계, F7.1 자동 변환 원칙, F7.2 변환 규칙, F7.3 안전장치, F7. 초기 스키마 유효성 검증 및 기본값 주입 (마이그레이션 없음), Part 1. 기능 관점 (Functional Requirements)
+Cohesion: 0.12
+Nodes (17): F3.1 상태 통합 (7-state → 6-state), F3.2 실행 컨텍스트 확장, F3. FSM 재설계, F4.1 재정의, F4.2 진입 경로, F4.3 필수 기능, F4.4 (선택) Web Audio, F4. Simulation (바람 스튜디오) ★부활 (+9 more)
 
 ### Community 164 - "3.2 [F-AI-LIVE] 실시간 음성 (Live API)"
 Cohesion: 0.25
@@ -1166,13 +1169,13 @@ Nodes (7): F2.1 트리거 종류, F2.2 우선순위 규칙, F2.3 실행 결과 �
 Cohesion: 0.29
 Nodes (7): F5.1 재정의, F5.2 통합 (Chart + Sensors + Monitor), F5.3 3탭 구성, F5.4 회고 탭 필수 기능, F5.5 실시간 탭 강화, F5.6 백엔드 요구사항, F5. Chart (세션 회고) ★부활
 
-### Community 180 - "A40_Com_Utils_IO_0203.cpp"
-Cohesion: 0.71
-Nodes (5): _buildPathWithSuffix(), _io_callerOrUnknown(), Load_File2JsonDoc_V21(), _parseJsonFileToDoc(), Save_JsonDoc2File_V21()
+### Community 180 - "A00_Main_0203.cpp"
+Cohesion: 0.16
+Nodes (10): loop(), , EN_A20_WIFI_MODE_AP, EN_A20_WIFI_MODE_AP_STA, EN_A20_WIFI_MODE_STA, _buildPathWithSuffix(), _io_callerOrUnknown(), Load_File2JsonDoc_V21() (+2 more)
 
 ### Community 181 - "4. 프론트엔드 v0203 SPA"
-Cohesion: 0.12
-Nodes (17): 4. 프론트엔드 v0203 SPA, 5. 정적 감사, 🔍 AI 빠른 참조 (이 파일), T-29. 초기 로드 — SPA Shell 3자산, T-30. 해시 라우팅 — 12페이지 마운트, T-31. 레벨 접근 제어 — L1~L4, T-32. 언어 토글 — ko/en, T-33. 대시보드 핵심 동작 (+9 more)
+Cohesion: 0.22
+Nodes (9): 5. 정적 감사, 🔍 AI 빠른 참조 (이 파일), T-36. 계약 문서 gate (CI), T-37. 잔존 참조 grep, T-38. F-10 매크로 승격, T-39. F-4 Logger 초기 INFO, T-40. 프론트엔드 하드코딩 감사, TEST_PLAN_L1_L5_0203.md — 기본 회귀 (L1~L5) (+1 more)
 
 ### Community 182 - "3.4 [F-AI-SAFETY] 안전 및 보안"
 Cohesion: 0.29
@@ -1190,9 +1193,9 @@ Nodes (18): 1. 선풍기를 틀 때마다 피곤했던 진짜 이유, 1. 제품 
 Cohesion: 0.20
 Nodes (10): 15.1 시스템 하드웨어 및 안전 듀티 설정, 15.2 보안 API 키 및 비밀번호 관리, 15.3 골든 룰: 설정 저장(Save)과 무중단 재적용(Reload), 15.4 네트워크 및 시간(NTP) 설정, 15.5 오프라인 로컬 가상 환경 아키텍처, 15. 시스템 및 네트워크 고급 설정 (`#/settings` / `#/network`), 18.1 제품 하드웨어 및 소프트웨어 제원표, 18.2 핵심 조작 치트시트 (+2 more)
 
-### Community 187 - "2. 재설계 철학 (50년차 원칙)"
-Cohesion: 0.33
-Nodes (6): 2. 재설계 철학 (50년차 원칙), 원칙 A: "선풍기 하나로 30초 안에 시원함", 원칙 B: 점진적 공개 (Progressive Disclosure) 3단, 원칙 C: "자동화"는 별도 세계, 원칙 D: 기술 용어 → 감성 용어, 원칙 E: "설정"과 "조작"의 분리
+### Community 187 - "2. 백엔드 기존 회귀"
+Cohesion: 0.15
+Nodes (13): 2. 백엔드 기존 회귀, T-10. N-1 (`lastReloadOk`) — 상태 노출, T-11. G-1 (Accept-Encoding) — gzip/raw 분기, T-12. G-2/G-4 (Long Path) — regex gzip, T-13. N-3 (Root Fallback) — 무한 루프 차단, T-1. F-03 (M10 tick) — PIR holdSec 정상 만료, T-2. F-04 (N10 tick) — NVS 런타임 저장/복구, T-3. F-05 (Reload 위임) — 비동기 202 + pendingReload 폴링 (+5 more)
 
 ### Community 188 - "290.page.automation.js"
 Cohesion: 0.47
@@ -1235,8 +1238,8 @@ Cohesion: 0.11
 Nodes (4): ESPClass, HardwareSerial, Print, Stream
 
 ### Community 200 - "S20_resolveWindParams"
-Cohesion: 0.07
-Nodes (14): A20_findPresetIndexByCode(), A20_findStyleIndexByCode(), CL_S10_Simulation::patchFromJson(), CL_S10_Simulation::toJson(), CL_S10_Simulation::applyPresetCore(), CL_S10_Simulation::updateGust(), CL_S10_Simulation::updateThermal(), S10_probFromRatePerSec() (+6 more)
+Cohesion: 0.08
+Nodes (14): A20_findPresetByCode(), A20_findPresetIndexByCode(), A20_findSegModeByCode(), A20_findStyleByCode(), A20_findStyleIndexByCode(), A20_getPresetNameByCode(), A20_getStaticPresetIndexByCode(), CL_S10_Simulation::applyPresetCore() (+6 more)
 
 ### Community 201 - "3. 백엔드 Batch A~F 신규"
 Cohesion: 0.12
@@ -1254,9 +1257,9 @@ Nodes (6): 11. 기본 최소/최대 풍속 (baseMinWind / baseMaxWind), 12. 돌�
 Cohesion: 0.33
 Nodes (6): 6. 실제 조합 시나리오, 🌙 시나리오 A — 잠들기 직전 (조용하고 부드럽게), ☀️ 시나리오 B — 거실 일상 (자연스럽게), 🔥 시나리오 C — 더위 식히기 (강하게), 🌊 시나리오 D — 사막의 밤 (고요함), 🎯 시나리오 E — 같은 조건, 강도만 다르게
 
-### Community 205 - "U2. 화면별 상세 설계"
-Cohesion: 0.33
-Nodes (6): U2.1 🏠 홈 화면, U2.2 🌬️ 바람 화면, U2.3 ⏰ 자동화 화면, U2.4 📊 모니터 화면, U2.5 ⚙️ 설정 화면, U2. 화면별 상세 설계
+### Community 205 - "4. 태스크 경계별 함수 호출 매트릭스"
+Cohesion: 0.26
+Nodes (6): 3. async_tcp WCET (F-05/F-06/D-1 반영 후), 4.1 W10 정적 웹 에셋 서빙 계약, 4.2 CT10 캡슐화 위임 계약 (A-2), 4.4 E-2 분할 시 심볼 공유 계약, 4. 태스크 경계별 함수 호출 매트릭스, _wsHandshakeAuth()
 
 ### Community 206 - "UserManual_0203_003.md"
 Cohesion: 0.22
@@ -1359,8 +1362,8 @@ Cohesion: 0.73
 Nodes (5): _clamp(), getGustGuide(), getIntensityGuide(), getVariabilityGuide(), _tr()
 
 ### Community 237 - "ensureApi"
-Cohesion: 0.14
-Nodes (16): 15. 개정 이력, ensureApi(), _offlineKeywordFallback(), ① `_offlineKeywordFallback(msg)` 신설, 1. 문제 요약 및 실행 흐름, ② `A.gemini(body)` 재구조화 (L609~), 2. 원인 분석 (실제 코드 기준), 3.1 설계 원칙 및 영향도 (+8 more)
+Cohesion: 0.22
+Nodes (8): 15. 개정 이력, _offlineKeywordFallback(), 1. 문제 요약 및 실행 흐름, 2. 원인 분석 (실제 코드 기준), 4.1 기능 테스트 매트릭스, 4.2 빌드 및 게이트 검증, 4. 검증 계획, 🎯 오프라인 AI 어시스턴트 원인 분석 및 구현 설계
 
 ### Community 239 - "🔍 AI 빠른 참조 (이 파일)"
 Cohesion: 0.33
@@ -1430,9 +1433,9 @@ Nodes (14): 10.1 재생 목록 (Playlist) 관리 (`#/automation/playlist`), 10.2
 Cohesion: 0.67
 Nodes (3): buildQuery(), getMonitor(), overrideFixed()
 
-### Community 259 - "Part 1. Step 개념 도입 — Profile/Schedule 관계 명확화"
-Cohesion: 0.40
-Nodes (5): 1.1 현재 구조의 문제 (코드 진단), 1.2 재설계 — 3계층 모델 (Step → Profile → Schedule), 1.3 코드 재설계 (핵심 스니펫), 1.4 UI 재설계 — Step이 보이는 화면, Part 1. Step 개념 도입 — Profile/Schedule 관계 명확화
+### Community 259 - "3.7 Stage 9 — 웹 UI/UX 레이아웃 표준화 및 인터랙션 회귀 (T-149 ~ T-152)"
+Cohesion: 0.18
+Nodes (11): 3.7 Stage 9 — 웹 UI/UX 레이아웃 표준화 및 인터랙션 회귀 (T-149 ~ T-152), 3.8 Phase 2 — Pause/Stop 이원화 + AUTO 모드 회귀 (T-158 ~ T-168), T-149. [UI-5/ADR-9] 모바일 하단 뷰포트 레이아웃 스택 및 FAB/Toast 동적 부상 검증, T-150. [UI-6] 메인 콘텐츠 스크롤 하단 여백 연동 및 UI 가림 해소 검증, T-151. [UI-7] 바람 스타일 5종 탭 44px 모바일 터치 접근성 및 래핑 검증, T-152. [UI-8] Now Playing Bar 상세 확장 모달 및 Studio Override 원복 액션 검증, T-153. [Stage 10] Dashboard 3탭 전환 및 퀵 타이머 검증, T-154-FE. [Stage 10 / Stage 10.1] Comfort 자동 모드 UI 5상태 매트릭스 및 Now Playing 배지 표출 검증 (+3 more)
 
 ### Community 260 - "Stage 12 최종 확정 — 5개 커밋 순차 완성본"
 Cohesion: 0.20
@@ -1483,8 +1486,8 @@ Cohesion: 0.18
 Nodes (11): 4.1 대시보드 화면 구성도, 4.2.1 추천 카드의 5가지 표시 상태, 4.2 실내 쾌적도 (Comfort DI) 실시간 추천 및 5상태 카드, 4.3 바람 스타일 5종 탭 (터치 최적화), 4.4 10대 자연풍 프리셋 그리드 (4x2 배열), 4.5 3대 물리 슬라이더 및 수동 조작 (맞춤 미세 조절), 4.6 플로팅 Now Playing Bar 및 세션 상세 확장 창, 4.7 PC/모바일 오프라인 시연 데모 툴바 (+3 more)
 
 ### Community 285 - "0203_014 Frontend Core · Offline · Bundle 최종 정비 명세서 (0203_014_18_02)"
-Cohesion: 0.11
-Nodes (17): 0203_014 Frontend Core · Offline · Bundle 최종 정비 명세서 (0203_014_18_02), 1.1 프로덕션 번들 Truncation 진단, 1.2 CSS 레이아웃·토큰 및 `index.html` 점검 항목 (해결 방안 보유), 2.1 `CFG.API` ↔ `SNW.Api.*` 매핑 감사 결과, 2.2 `010.config.js` — `get()` 경로 검증 및 프로토타입 오염 방어 (`P1-5`), 2.3 `040.api.js` — `OFFLINE_ROUTES` 테이블 확정, `getMenu()` 활성화 및 코드 품질 이슈 (`P0-1` 최종안, `P2`, `Q-1~Q-5`), 5.1 DevTools Console 통합 스모크 테스트, 5.2 호출부 영향 주의사항 및 후속 검증 대상 (+9 more)
+Cohesion: 0.10
+Nodes (19): 0203_014 Frontend Core · Offline · Bundle 최종 정비 명세서 (0203_014_18_02), 10.1 `070.router.js` — `snw:levelchange` 연동 및 `<title>` 동기화 (`추가-11`, `B-8`), 10.2 `034.util.toast.js` (`SNW.ErrorHandler`) — `status === 0` 네트워크 번역 & 401 처리 (`Q-2`, `Q-5`), 10.3 `040.api.js` — `buildQuery()` 헬퍼 및 `reload()` 책임 명시 (`Q-3`, `Q-4`), 10.4 `_player_bar.css` — 데스크톱 Footer 위 배치 + 사이드바 오프셋 병행 (`B-2` 안 A), 10.5 `index.html` — `?prod` 로컬 번들 테스트 예외 (`B-7` 확정 안 A), 10.6 `998.offline_0203.js` & `031.util.dom.js` & `pio_gzip_0203.py` 확인 결과, 1.1 프로덕션 번들 Truncation 진단 (+11 more)
 
 ### Community 286 - "v0203 graphify 질의 예시"
 Cohesion: 0.50
@@ -1523,8 +1526,8 @@ Cohesion: 0.29
 Nodes (7): 4.1 Now Playing Bar (전역 하단, 모든 화면), 4.2 Now Playing 확장 모달, 4.3 규칙 편집기 모달 (Pause/Stop 이원화) — **모든 진입점 공통**, 4.4 스케줄 충돌 모달, 4.5 시나리오 원터치 확인 모달 (Fast Path 지원), 4.6 야간 침실 특화 UX (Night Bedroom UX), Part 4. 공통 컴포넌트
 
 ### Community 295 - "executeAIAction"
-Cohesion: 0.15
-Nodes (11): 3.4.2 신규 절 추가 — §3.6 통합 감사 회귀 (T-121~T-148), §7 개정 이력에 항목 추가, Flash: [====      ]  20.3% (used 1,331,469 bytes from 6,553,600 bytes), 🚀 Phase 1 실행 — P0 안전성 5건 단계별 진행, RAM:   [==        ]  31.2% (used 102,236 bytes from 327,680 bytes), 🚀 v0203 감사 28건 단계별 구현 및 검증 가이드 (Phase 1 ~ Phase 5), 예시 출력:, 이슈 상태 검증 (+3 more)
+Cohesion: 0.20
+Nodes (9): 3.4.2 신규 절 추가 — §3.6 통합 감사 회귀 (T-121~T-148), §7 개정 이력에 항목 추가, Flash: [====      ]  20.3% (used 1,331,469 bytes from 6,553,600 bytes), RAM:   [==        ]  31.2% (used 102,236 bytes from 327,680 bytes), 예시 출력:, 이슈 상태 검증, 항목 결과, 항목 상태 확인 (+1 more)
 
 ### Community 296 - "Part 8. P0 / P1 긴급·주요 수정 패치 (8건)"
 Cohesion: 0.22
@@ -1559,8 +1562,8 @@ Cohesion: 0.33
 Nodes (6): 3.2.1 탭 헤더, 3.2.2 작곡 탭 (studio), 3.2.3 🎮 체험실 탭 (simulation) — **기존 #/simulation 보존 편입**, 3.2.4 플레이리스트 탭 (playlist), 3.2.5 프리셋 관리 탭 (presets), 3.2 🌬️ 바람 만들기 (#/wind) — 4탭
 
 ### Community 314 - "998.offline_0203.js"
-Cohesion: 0.23
-Nodes (11): 7.10.6 Phase 6 — Offline Adapter (N-11~N-14, N-28) (5건), 10.3 Phase 1~6 (v0203_011) 예산 영향, applyScenario(), exportBackup(), importBackup(), ADR-0002, persistCache(), renderOfflineToolbar() (+3 more)
+Cohesion: 0.26
+Nodes (11): 7.10.6 Phase 6 — Offline Adapter (N-11~N-14, N-28) (5건), 10.3 Phase 1~6 (v0203_011) 예산 영향, applyScenario(), ensureApi(), exportBackup(), importBackup(), ADR-0002, persistCache() (+3 more)
 
 ### Community 317 - "3.3 ⚙️ 자동화 (#/automation) — 3탭"
 Cohesion: 0.40
@@ -1651,8 +1654,8 @@ Cohesion: 0.11
 Nodes (18): --- ---, ---, 1. 기존 3가지 자동화 기능 차이 비교 및 통폐합 방향, 1. 바람 제어 및 쾌적 모드 개념 통폐합 (멘탈 모델 단순화), 1. 현재 v0203 코드베이스 기준 3가지 자동화 모드 정밀 비교, 2. 'AI 맞춤 케어(AI Care)' 통폐합 아키텍처 및 동작 설계, 2. 유사 기능 화면 통폐합 및 오퍼레이션 동선 최적화, 2. 통합 자동화 모드(스마트 오토) 세부 기능 설계 (+10 more)
 
 ### Community 340 - "Stage 9. 단계별 구현 계획 및 단계별 검증 체크리스트"
-Cohesion: 0.20
-Nodes (10): Phase 1 검증 체크리스트 (Exit Criteria), Phase 1. 기반 상수 · i18n · CSS 레이아웃 정비, Phase 2. Core 유틸리티 계층 & 라우터 연동, Phase 2 검증 체크리스트 (Exit Criteria), Phase 4 검증 체크리스트 (Exit Criteria), Phase 4. 번들링 · 전체 E2E 회귀 및 배포 검증, Stage 9. 단계별 구현 계획 및 단계별 검증 체크리스트, 구현 체크리스트 (+2 more)
+Cohesion: 0.15
+Nodes (13): Phase 1 검증 체크리스트 (Exit Criteria), Phase 1. 기반 상수 · i18n · CSS 레이아웃 정비, Phase 2. Core 유틸리티 계층 & 라우터 연동, Phase 2 검증 체크리스트 (Exit Criteria), Phase 3. API · 오프라인 정합성 & 로더 정비, Phase 3 검증 체크리스트 (Exit Criteria), Phase 4 검증 체크리스트 (Exit Criteria), Phase 4. 번들링 · 전체 E2E 회귀 및 배포 검증 (+5 more)
 
 ### Community 341 - "dispatch"
 Cohesion: 0.25
@@ -1710,10 +1713,6 @@ Nodes (8): A1. 신규 enum — `A20_Const_Sch_0203.h`, A2. `ST_A20_UserProfileIt
 Cohesion: 0.40
 Nodes (5): 3.5 [F-AI-TTS] 음성 합성, F-AI-TTS-01: 브라우저 TTS (REST 모드), F-AI-TTS-02: 로컬 폴백 (`_speechHint`), F-AI-TTS-03: 언어 자동 감지, F-AI-TTS-04: 에러 응답 TTS
 
-### Community 355 - ".getRootSnapshot"
-Cohesion: 0.10
-Nodes (18): 7.10 대시보드·세그먼트·스타일 통합 물리 파이프라인 (PHY-1~PHY-4), 7.2 N/G (N-1~N-4, G-1~G-3), 7.4 Batch G — 코드 재검토 (C, NEW, B), 7.5 B-2 위반 → 수정 후 화이트리스트 최신화, 7.6 Batch H 프론트엔드 오프라인 로딩 계약 (LOAD-1~LOAD-2), 7.7 Batch I 바람 물리 파라미터 직접 지정 (Override) 계약 (OVR-1~OVR-4), 7.9 프론트엔드-백엔드 데이터 동기화 및 오프라인 모듈 분리 계약 (SYNC-1~SYNC-3), 📋 목차 (+10 more)
-
 ### Community 356 - "enqueueArrayBuffer"
 Cohesion: 0.29
 Nodes (8): base64ToArrayBuffer(), close(), enqueueArrayBuffer(), enqueueBase64Pcm(), _ensureAudioContext(), flush(), pcm16ToFloat32(), _setPlaying()
@@ -1754,9 +1753,9 @@ Nodes (11): --- ---, --- ---, --- ---, --- ---, --- ---, --- ---, --- ---, 우�
 Cohesion: 0.40
 Nodes (5): 3.1 기기 직접 연결 모드 (SoftAP, 기본 방식), 3.2 가정/사무실 Wi-Fi 공유기 연동 모드, 3.3 스마트폰 홈 화면에 바로가기 추가 (앱처럼 쓰기), 3.4 하드웨어 배선 및 안전 설치 가이드 (DIY / 제작 가이드), 3. 기기 연결 및 웹 대시보드 접속
 
-### Community 366 - "Part 3. Chart 부활 — "실행 후 회고""
-Cohesion: 0.40
-Nodes (5): 3.1 재정의 — Chart의 진짜 목적, 3.2 Chart = "세션 회고" (모니터 페이지 내 탭), 3.3 재설계의 5가지 개선, 3.4 실시간 탭도 강화 — "지금 무엇이 작동 중", Part 3. Chart 부활 — "실행 후 회고"
+### Community 366 - "3.6.1 P0 회귀 (5건) — 릴리스 차단 필수"
+Cohesion: 0.20
+Nodes (10): 3.6.1 P0 회귀 (5건) — 릴리스 차단 필수, 3.6.2 P1 회귀 (10건) — 릴리스 전 필수, 3.6.3 P2 회귀 (13건) — 후속 정리, 3.6.4 L10 회귀 매트릭스, 3.6 통합 감사 회귀 (T-121 ~ T-148), T-121. [BE-P0-1] factoryReset 후 SPA 자산 서빙 정상화, T-122. [BE-P0-2] AI `add_profile` CRUD 검증 우회 차단, T-123. [BE-P0-3] T-async `startOverridePreset` mutex 보호 (+2 more)
 
 ### Community 367 - "Part 5. 상태 배지 매트릭스"
 Cohesion: 0.50
@@ -1766,9 +1765,9 @@ Nodes (4): 5.1 상태별 화면 표현, 5.2 ENV_PAUSED 세부 표시 (`pauseReas
 Cohesion: 0.46
 Nodes (5): _load(), mount(), _onEditRule(), _render(), _ruleSummary()
 
-### Community 369 - "F4. Simulation (바람 스튜디오) ★부활"
-Cohesion: 0.40
-Nodes (5): F4.1 재정의, F4.2 진입 경로, F4.3 필수 기능, F4.4 (선택) Web Audio, F4. Simulation (바람 스튜디오) ★부활
+### Community 369 - "5.3 C++ 백엔드 코드 수정 명세"
+Cohesion: 0.22
+Nodes (9): 1) `src/v0203/W10_Web_Const_0203.h`, 2) `src/v0203/CT10_Ctl_0203.h`, 3) `src/v0203/CT10_Ctl_Comfort_0203.cpp`, 4) `src/v0203/CT10_Ctl_Ctl_0203.cpp`, 5.1 기능 개요 및 동작 원칙, 5.2 백엔드 영향도 분석 및 승인 체크리스트 (원칙 1 준수), 5.3 C++ 백엔드 코드 수정 명세, 5. [S10-P3-3] Comfort "자동 모드" 백엔드 C++ 상세 구현 설계 (+1 more)
 
 ### Community 370 - "9. Wind Studio — 8스텝 바람 작곡기 (`#/automation/studio`)"
 Cohesion: 0.50
@@ -1794,17 +1793,17 @@ Nodes (11): 4.1 대시보드 화면 구성도 및 원터치 시나리오 9종, 4
 Cohesion: 0.22
 Nodes (8): 1. 현황 및 차이점 요약, 2.1 [FE] base 선택 모달 노출 정책 개선 (`200.page.dashboard.js`), 2.2 [FE] Now Playing 제목 표기 통일 (`999a.nowplaying.js`, `200.page.dashboard.js`), 2.3 [BE] `PLAYLIST` base 실행 시 프로필 기본 규칙 보존 (`CT10_Ctl_Ctl_0203.cpp`), 2.4 [Offline] 오프라인 어댑터 `AUTO_SELECT` 스타일 시뮬레이션 보완 (`998.offline_0203.js`), 2. 세부 보완 설계, 3. 구현 우선순위 및 검증 계획, 🎯 취향 맞춤 Auto (`AUTO_SELECT`, M5) 차이점 보완 설계
 
-### Community 378 - "U5. 인터랙션 원칙"
-Cohesion: 0.40
-Nodes (5): U5.1 점진적 공개 (3단), U5.2 원터치 액션, U5.3 배너 vs 모달, U5.4 AI 진입, U5. 인터랙션 원칙
+### Community 378 - "CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.9)"
+Cohesion: 0.25
+Nodes (8): 1. 실행 컨텍스트 (FreeRTOS Task), 2.1 Batch D-4: `s_staConnected` lock-free, 2. 뮤텍스/스핀락/세마포어 인벤토리, 5.1 Session 위임 락 순서 (Phase 3, ADR-1), 5. 락 획득 순서 및 데드락 방지, 🔍 AI 빠른 참조 (섹션 트리거), CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.9), 📋 목차 (Table of Contents)
 
 ### Community 386 - "3.5 📊 모니터 (#/monitor) — 4탭"
 Cohesion: 0.40
 Nodes (5): 3.5.1 차트 탭, 3.5.2 센서 탭, 3.5.3 히스토리 탭, 3.5.4 로그 탭, 3.5 📊 모니터 (#/monitor) — 4탭
 
-### Community 394 - "Stage 10. 세부 구현 설계서 (파일:라인 기준)"
-Cohesion: 0.33
-Nodes (6): 10.1 `070.router.js` — `snw:levelchange` 연동 및 `<title>` 동기화 (`추가-11`, `B-8`), 10.2 `034.util.toast.js` (`SNW.ErrorHandler`) — `status === 0` 네트워크 번역 & 401 처리 (`Q-2`, `Q-5`), 10.3 `040.api.js` — `buildQuery()` 헬퍼 및 `reload()` 책임 명시 (`Q-3`, `Q-4`), 10.4 `_player_bar.css` — 데스크톱 Footer 위 배치 + 사이드바 오프셋 병행 (`B-2` 안 A), 10.5 `index.html` — `?prod` 로컬 번들 테스트 예외 (`B-7` 확정 안 A), Stage 10. 세부 구현 설계서 (파일:라인 기준)
+### Community 394 - "6. 위임 플래그 라이프사이클 (F-05, F-06)"
+Cohesion: 0.25
+Nodes (8): 6.1 F-05 Pending Reload, 6.2 F-06 Pending Motion.Sim Apply, 6.3 Batch D-1 Dirty 배치 소비, 6.4.1 Pause (T-async, `s_stateMutex` 보유), 6.4.2 Resume (T-async, `s_stateMutex` 보유), 6.4.3 Stop (T-async, `s_stateMutex` 보유), 6.4 Session Pause/Resume/Stop 위임 라이프사이클, 6. 위임 플래그 라이프사이클 (F-05, F-06)
 
 ### Community 456 - "_rebind"
 Cohesion: 0.38
@@ -1910,9 +1909,9 @@ Nodes (6): 4.1 홈 원터치 시나리오 확장, 4.2 Now Playing Bar — AUTO �
 Cohesion: 0.20
 Nodes (9): ST_A20_FanConfig_t, ST_A20_ReDirectItem_t, uriFrom, uriTo, ST_A20_SysDhtHWCfg_t, ST_A20_SysFanPwmHWCfg_t, ST_A20_SysLedHWCfg_t, ST_A20_SysPirHWCfg_t (+1 more)
 
-### Community 492 - "7.10 v0203_011 — Phase 1~6 감사 이력 (46건)"
-Cohesion: 0.50
-Nodes (4): 7.10.4 Phase 4 — Schema Alignment (ADR-2) (4건), 7.10.5 Phase 5 — Preview/i18n/Router/Monitor (ADR-5) (5건), 7.10.7 Phase 1~6 수용 이슈 (3건), 7.10 v0203_011 — Phase 1~6 감사 이력 (46건)
+### Community 492 - "4. 프론트엔드 v0203 SPA"
+Cohesion: 0.25
+Nodes (8): 4. 프론트엔드 v0203 SPA, T-29. 초기 로드 — SPA Shell 3자산, T-30. 해시 라우팅 — 12페이지 마운트, T-31. 레벨 접근 제어 — L1~L4, T-32. 언어 토글 — ko/en, T-33. 대시보드 핵심 동작, T-34. 설정 Save→Reload 순서, T-35. WS 5채널 + 자동 재연결
 
 ### Community 493 - "Part 8. 우선순위 및 로드맵"
 Cohesion: 0.33
@@ -1946,17 +1945,17 @@ Nodes (5): 1. 온도/습도 Stop 사유 제거 및 Pause(일시정지/재개) �
 Cohesion: 0.40
 Nodes (5): 2.1 시작 Trigger Gap, 2.2 운전 Mode Gap, 2.3 중단/재실행 Gap, 2.4 종료 Trigger Gap, Part 2. 현재 구현 대비 Gap 분석
 
-### Community 502 - "startSimulator"
-Cohesion: 0.25
-Nodes (8): 7.8 웹 오프라인 어댑터 및 다국어 지원 규약 (OFFLINE-1~OFFLINE-3), startSimulator(), Part A — `040.api.js` (4건), Part B — `998.offline_0203.js` (3건), Phase 3. API · 오프라인 정합성 & 로더 정비, Phase 3 검증 체크리스트 (Exit Criteria), Stage 3. `040.api.js` + `998.offline_0203.js` 오프라인 정합성 2차 통합 패치, 구현 체크리스트
+### Community 502 - "3.2 수정 대상 1 — `998.offline_0203.js`"
+Cohesion: 0.29
+Nodes (7): ① `_offlineKeywordFallback(msg)` 신설, ② `A.gemini(body)` 재구조화 (L609~), 3.1 설계 원칙 및 영향도, 3.2 수정 대상 1 — `998.offline_0203.js`, 3.3 수정 대상 2 — `040.api.js` (`OFFLINE_ROUTES` 방어), ③ `A.executeAiAction(name, args)` 보완 (L704~717), 3. 구현 설계 (옵션 2 + 옵션 3)
 
 ### Community 503 - "1.3 🟡 MINOR 보완 (5건)"
 Cohesion: 0.14
 Nodes (14): 1.1 🔴 CRITICAL 수정 (3건), 1.2 🟠 MAJOR 보완 (3건), 1.3 🟡 MINOR 보완 (5건), C2. `initRuleFromPayload()` 구현 추가 및 `startSession(AUTO_*)` 연동, C3. `tickAutoComfort()` static 컨텍스트 인스턴스 접근 수정, M1. AUTO trigger 매핑 구현 (`W10_Web_Routes_Session_0203.cpp`), m1. 파일 변경 목록 개수 정정, m2. i18n 신규 키 60개 전체 목록 확정 (`core/020.i18n.js`, ko/en 대칭 필수) (+6 more)
 
-### Community 506 - "11. 웹 에셋 빌드/서빙 파이프라인"
-Cohesion: 0.50
-Nodes (4): 11.1 빌드 전처리 및 자동 동기화 (`pio_gzip_0203.py`), 11.2 오프라인 2분할 어댑터 부트스트랩 시퀀스, 11.3 런타임 정적 서빙 (`W10_Web_Static_0203.cpp`), 11. 웹 에셋 빌드/서빙 파이프라인
+### Community 506 - "CL_WF10_WiFiManager::applyConfig"
+Cohesion: 0.33
+Nodes (4): CL_WF10_WiFiManager::applyConfig(), CL_WF10_WiFiManager::init(), CL_WF10_WiFiManager::startAP(), CL_WF10_WiFiManager::startSTA()
 
 ### Community 507 - "3.4 상태 전이 상세"
 Cohesion: 0.50
@@ -1978,9 +1977,9 @@ Nodes (5): 6.1 리스크 매트릭스 (10건), 6.2 `AGENTS.md` 4대 불변 원�
 Cohesion: 0.22
 Nodes (8): A20_modeFromString(), A20_modeToString(), 4.2 백엔드 참조 수정 대상 (12건), 2.1 삭제 대상 C++ 코드 (12건), 2.2 백엔드 참조 정리 (수정 대상), 2.3 잠재적 컴파일 오류 지점, 2.4 예상 컴파일 오류 수 (정적 추정), Part 2. 백엔드 데드코드 및 영향 분석
 
-### Community 512 - "3. 데이터 모델 — 최소 변경"
-Cohesion: 0.50
-Nodes (4): 3.1 Profile은 그대로 (변경 없음), 3.2 Schedule은 profileId 참조만 (재설계), 3.3 N10 런타임 — 수동 선택 영속화, 3. 데이터 모델 — 최소 변경
+### Community 512 - "Smart Nature Wind v0203+ 요구사항 최종 정리서"
+Cohesion: 0.40
+Nodes (4): Part 3. 구현 우선순위, Part 4. 성공 지표 (KPI), Part 5. 핵심 원칙 재확인, Smart Nature Wind v0203+ 요구사항 최종 정리서
 
 ### Community 513 - "buildQuery"
 Cohesion: 0.67
@@ -1990,13 +1989,13 @@ Nodes (3): buildQuery(), getMonitor(), overrideFixed()
 Cohesion: 0.67
 Nodes (3): escape(), html(), tooltip()
 
-### Community 515 - "6. 수동 재생 라이프사이클"
-Cohesion: 0.50
-Nodes (4): 6.1 시작 (▶ 지금 실행 탭), 6.2 종료 조건 (4가지), 6.3 스케줄 재생과의 상호작용, 6. 수동 재생 라이프사이클
+### Community 515 - "2. 현행 UI/UX 주요 취약점 분석 (4대 핵심 이슈)"
+Cohesion: 0.40
+Nodes (5): 2. 현행 UI/UX 주요 취약점 분석 (4대 핵심 이슈), 🚨 이슈 1: 모바일 하단 뷰포트 다중 레이어 겹침 (Bottom Congestion), 🚨 이슈 2: 스타일 및 디자인 시스템 일관성 (CSS Tokens & Inlines), 🚨 이슈 3: 조작성 및 마이크로 인터랙션 (Interaction & Feedback), 🚨 이슈 4: 정보 구조(IA) 및 서브 네비게이션 가독성
 
-### Community 517 - "7. AutoOff 래치 및 이벤트 상태"
-Cohesion: 0.17
-Nodes (9): 7.1 래치 해제 경로, 7.2 AutoOff offTime 재트리거 방지, 7.3 이벤트 상태 hold/ACK, 7.4.1 Pause Reason (`EN_CT10_pause_t`, `runCtx.pauseReason`), 7.4.2 Stop Reason (`EN_CT10_reason_t`, `runCtx.reason`), 7.4.3 `autoOffRt` → `triggerRt` 이관, 7.4 Pause Reason 및 Stop Reason (v3.7 Phase 2), 7. AutoOff 래치 및 이벤트 상태 (+1 more)
+### Community 517 - "STATE_0203.md — 상태 소유권 및 FSM 명세 (v3.7)"
+Cohesion: 0.07
+Nodes (25): 2.1 상태 정의, 2.2 상태 전이 우선순위 (`decideRunSource`), 2.3 상태 전이표, 2.4 Batch F-5: profile fall-through 차단, 2.5.1 이중 상태의 명확한 분리, 2.5.2 핵심 계약, 2.5.3 세션 전이 매트릭스, 2.5.4 타임라인 예시 (PLAYLIST) (+17 more)
 
 ### Community 518 - "12. Gemini AI 대화형 비서 & Live 실시간 음성"
 Cohesion: 0.29
@@ -2006,9 +2005,9 @@ Nodes (7): 12.1 2가지 진입 경로 (AI Studio & 플로팅 마이크 버튼), 
 Cohesion: 0.50
 Nodes (4): A-5. W10_Web_Gemini_0203.cpp, 변경 1: W10_callGeminiApi — API Key를 헤더로 이동, 변경 2: routeGeminiProxy onBody — 누적 버퍼 + requireApiKey, 변경 3: routeAIExecuteAction onBody — 누적 버퍼 + 크기 검사 + 계약 통일
 
-### Community 520 - "F6. AI 승격"
-Cohesion: 0.50
-Nodes (4): F6.1 L4 잠금 해제, F6.2 FAB (Floating Action Button), F6.3 빠른 질문 칩, F6. AI 승격
+### Community 520 - "3.2 S10-P3-1: Schedule 간단 모드 — **선택적 승인**"
+Cohesion: 0.40
+Nodes (5): 3.1 승인 대상 인벤토리, 3.2.1 목적 및 기능 변화, 3.2.2 옵션 A: FE 우회 (권장, **승인 불필요**), 3.2 S10-P3-1: Schedule 간단 모드 — **선택적 승인**, 🔐 Part 3 — Phase 3 백엔드 승인 절차
 
 ### Community 521 - "Part 2. 메뉴·내비게이션 구조"
 Cohesion: 0.50
@@ -2034,28 +2033,36 @@ Nodes (4): 8.1 신규 파일 (3개), 8.2 변경 파일 (11개), 8.3 신규 i18n 
 Cohesion: 0.50
 Nodes (4): 2.1 전체 스타일 계수표, 2.2 스타일별 체감 상세, 2.3 실제 숫자 예시 — 같은 해변 프리셋, 스타일만 바꿈, 2. 스타일 — "그날의 기분" (5종 전체)
 
+### Community 528 - "Stage 2. `010.config.js` · `040.api.js` API 매핑 감사 및 1차 정비"
+Cohesion: 0.50
+Nodes (4): 2.1 `CFG.API` ↔ `SNW.Api.*` 매핑 감사 결과, 2.2 `010.config.js` — `get()` 경로 검증 및 프로토타입 오염 방어 (`P1-5`), 2.3 `040.api.js` — `OFFLINE_ROUTES` 테이블 확정, `getMenu()` 활성화 및 코드 품질 이슈 (`P0-1` 최종안, `P2`, `Q-1~Q-5`), Stage 2. `010.config.js` · `040.api.js` API 매핑 감사 및 1차 정비
+
+### Community 529 - "Stage 5. 최종 통합 검증 (스모크 테스트 & 후속 절차)"
+Cohesion: 0.50
+Nodes (4): 5.1 DevTools Console 통합 스모크 테스트, 5.2 호출부 영향 주의사항 및 후속 검증 대상, 5.3 배포 전 필수 파이프라인 및 번들 검증, Stage 5. 최종 통합 검증 (스모크 테스트 & 후속 절차)
+
 ### Community 539 - "5. 단계별 실행 로드맵 (Phased Execution Plan)"
 Cohesion: 0.40
 Nodes (5): 5. 단계별 실행 로드맵 (Phased Execution Plan), Phase 1: 하단 뷰포트 레이아웃 정돈 & 겹침 방지 (완료), Phase 2: 디자인 시스템 정돈 & 인라인 스타일 분리 (완료), Phase 3: 핵심 인터랙션 및 터치 사용성 개선 (완료), Phase 4: 정보 구조(IA), 접근성(A11y) 및 무결성 검증 (완료)
 
 ## Knowledge Gaps
-- **496 isolated node(s):** `ADR-0005`, `ADR-0002`, `ADR-0005`, `s_server`, `s_control` (+491 more)
+- **496 isolated node(s):** `ADR-0005`, `ADR-0002`, `ADR-0005`, `ADR-0005`, `ADR-0005` (+491 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 3599 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **146 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **143 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `CL_CT10_ControlManager` connect `CL_CT10_ControlManager` to `ST_CT10_SessionContext_t`, `src_v0203_a20_const_sch_0203`, `W10_Web_Upload_0203.cpp`, `7. AutoOff 래치 및 이벤트 상태`, `CL_A40_MutexGuard_Semaphore`, `CL_W10_WebAPI`, `millis`, `CT10_Ctl_Ctl_0203.cpp`, `A00_run`, `.tickAutoComfort`, `.log`, `executeAIAction`, `CL_W10_WebAPI::begin`, `130.ui.form.js`, `src_v0203_ct10_ctl_0203`, `CT10_Ctl_Basic_0203.cpp`?**
-  _High betweenness centrality (0.076) - this node is a cross-community bridge._
+- **Why does `CL_CT10_ControlManager` connect `CL_CT10_ControlManager` to `ST_CT10_SessionContext_t`, `W10_Web_Upload_0203.cpp`, `.tickLoop`, `STATE_0203.md — 상태 소유권 및 FSM 명세 (v3.7)`, `CL_A40_MutexGuard_Semaphore`, `CL_W10_WebAPI`, `millis`, `CT10_Ctl_Ctl_0203.cpp`, `CT10_Ctl_IOWS_0203.cpp`, `.routeComfort`, `4. 태스크 경계별 함수 호출 매트릭스`, `.tickAutoComfort`, `CT10_Ctl_Basic_0203.cpp`, `A23_Com_ResetCfg_0203.h`, `130.ui.form.js`, `src_v0203_ct10_ctl_0203`, `CL_W10_WebAPI::begin`?**
+  _High betweenness centrality (0.083) - this node is a cross-community bridge._
 - **Are the 9 inferred relationships involving `CL_CT10_ControlManager` (e.g. with `.routeChartHistory()` and `.routeControl()`) actually correct?**
   _`CL_CT10_ControlManager` has 9 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `ADR-0005`, `ADR-0002`, `ADR-0005` to the rest of the system?**
   _496 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `CL_S10_Simulation` be split into smaller, more focused modules?**
   _Cohesion score 0.016 - nodes in this community are weakly interconnected._
-- **Why does `Part 1. 기능 관점 (Functional Requirements)` connect `Part 1. 기능 관점 (Functional Requirements)` to `0203_010_1_요건검토2.md`, `F6. AI 승격`, `F4. Simulation (바람 스튜디오) ★부활`, `292.playlist.js`, `000.const.js`, `Part 2. UI 관점 (UI Requirements)`?**
-  _High betweenness centrality (0.045) - this node is a cross-community bridge._
+- **Why does `millis()` connect `millis` to `CL_CT10_ControlManager`, `.tickLoop`, `CL_S10_Simulation::begin`, `Arduino.h`, `CT10_Ctl_Ctl_0203.cpp`, `CT10_Ctl_IOWS_0203.cpp`, `.routeComfort`, `.tickAutoComfort`, `CT10_Ctl_Basic_0203.cpp`, `N10_NvsManager_0203.cpp`, `5. 통신 및 API 사양`, `Part 1. 기능 관점 (Functional Requirements)`, `C10_Config_Core_0203.cpp`, `buildAIPromptStrict`, `CT10_Monitor_0203.cpp`, `10. 맞춤 프로파일 및 주간 스케줄러 (`#/automation`)`, `CL_A30_LED`, `130.ui.form.js`?**
+  _High betweenness centrality (0.037) - this node is a cross-community bridge._
 - **Are the 3 inferred relationships involving `CL_W10_WebAPI` (e.g. with `5.4.10 웹 API 보안·안정화 사양 (Stage 12~13, 0203_014_19)` and `10. 개정 이력`) actually correct?**
   _`CL_W10_WebAPI` has 3 INFERRED edges - model-reasoned connections that need verification._
 - **Should `app_core_0203.js` be split into smaller, more focused modules?**

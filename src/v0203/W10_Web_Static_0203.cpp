@@ -195,6 +195,26 @@ void CL_W10_WebAPI::W10_registerStaticRoute(const char* p_uri, const char* p_fil
         // [신규 P0] missing → 404 (200은 fetch().ok 신뢰를 깨뜨려 오프라인 로더 조용히 실패)
         CL_W10_WebAPI::sendText(r, String("/* missing:") + v_file.get() + " */", 404, "text/plain; charset=utf-8");
     });
+
+    // .gz 접미사 URI 직접 요청(.css.gz, .js.gz 등)도 함께 매핑
+    if (!v_is_html && !W10_pathEndsWith(p_uri, ".gz")) {
+        String v_gzUriString = String(p_uri) + ".gz";
+        auto   v_gz_uri      = A40_ComFunc::cloneStr2SharedStr_safe(v_gzUriString.c_str());
+        if (v_gz_uri) {
+            s_server->on(v_gz_uri.get(), HTTP_GET, [v_gz_file, v_mime, v_cache_ctrl](AsyncWebServerRequest* r) {
+                if (LittleFS.exists(v_gz_file.get())) {
+                    auto* v_resp = r->beginResponse(LittleFS, v_gz_file.get(), v_mime.get());
+                    v_resp->addHeader("Content-Encoding", "gzip");
+                    v_resp->addHeader("Vary", "Accept-Encoding");
+                    v_resp->addHeader("Cache-Control", v_cache_ctrl);
+                    CL_W10_WebAPI::_applyHeaders(v_resp, false);
+                    r->send(v_resp);
+                    return;
+                }
+                CL_W10_WebAPI::sendText(r, String("/* missing:") + v_gz_file.get() + " */", 404, "text/plain; charset=utf-8");
+            });
+        }
+    }
 }
 
 // ======================================================

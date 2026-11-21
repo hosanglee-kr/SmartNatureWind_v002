@@ -33,7 +33,6 @@
 #include <Arduino.h>
 #include <LittleFS.h>
 
-
 #include "v0203/A00_Main_0203.h"
 #include "v0203/A20_Const_Const_0203.h"
 

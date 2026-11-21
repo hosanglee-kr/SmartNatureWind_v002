@@ -416,6 +416,16 @@ def process_html_shell(src_dir: Path, dst_dir: Path) -> int:
         return 0
 
     content = src_html.read_text(encoding="utf-8")
+
+    # [캐시 버스팅] .css.gz / .js.gz 참조에 빌드 타임스탬프 ?v=... 자동 부여 (원본 미수정)
+    import re as _re
+    _ver = datetime.now().strftime("%Y%m%d%H%M%S")
+    content = _re.sub(
+        r'((?:common_base_0203|common_pages_0203|app_core_0203|app_ui_0203|app_pages_0203)\.(?:css|js)\.gz)(?:\?v=[^"\'\s>]*)?',
+        rf'\1?v={_ver}',
+        content,
+    )
+
     raw_size = len(content.encode("utf-8"))
 
     # [ESP32 LittleFS 배포용] 배포 폴더(dst_dir)에는 .gz 압축 파일만 배포
@@ -527,8 +537,7 @@ def copy_json_assets(project_root: Path) -> int:
                 break
         if api_key:
             sys_data = json.loads(staged_sys.read_text(encoding="utf-8"))
-            target_root = sys_data.get("system") if isinstance(sys_data.get("system"), dict) else sys_data
-            sec = target_root.setdefault("security", {})
+            sec = sys_data.setdefault("security", {})
             sec["geminiApiKey"] = api_key
             staged_sys.write_text(json.dumps(sys_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             _log("  [ENV] Gemini API key injected into staged cfg_system_0203.json for LittleFS", tag="json")

@@ -116,8 +116,8 @@
 | **`POST /api/v001/control/ack`** | `ackEventState()` | **< 1 ms** | AUTOOFF 래치 해제 |
 | **`GET /api/v001/wifi/state`** | WiFi 상태 JSON 반환 | **< 1 ms** | atomic load 기반 |
 | `GET /api/v001/wifi/scan` | `WiFi.scanNetworks()` | 1 ~ 2 초 | 의도된 블로킹 |
-| `POST /api/v001/ai/gemini` | SSL 스트리밍 프록시 | ≤ 15 초 | Rate limit 10회/분, 2-turn |
-| `POST /api/v001/ai/execute-action` | `executeAIAction()` 12도구 | **< 10 ms** | 안전 도구 직접 실행 |
+| `POST /api/v001/ai/gemini` | SSL 스트리밍 프록시 (`gemini-3.5-flash-lite`) | ≤ 15 초 | Rate limit 10회/분, 2-turn (제어 성공 시 1-turn 즉시 응답) |
+| `POST /api/v001/ai/execute-action` | `executeAIAction()` 14도구 | **< 10 ms** | 안전 도구 직접 실행 |
 | `POST /api/v001/ai/live-token` | `routeAILiveToken()` 검증 | **< 5 ms** | 30분 상한 판정 (초과 시 403) |
 | `POST /api/v001/ai/live-func` | Live 툴 위임 프록시 | **< 10 ms** | Gemini Live ➔ CT10 위임 |
 | `GET /api/v001/ai/live-config` | `routeAILiveConfig()` | **< 5 ms** | Aoede 보이스 / 30s 프롬프트 캐시 |

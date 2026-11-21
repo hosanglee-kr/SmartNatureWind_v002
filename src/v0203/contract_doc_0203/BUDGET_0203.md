@@ -496,6 +496,7 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-21** | **v3.14** | **FE 다국어 단일화·상태 동기화 반영 후 5청크 실측치 현행화**: JS 3청크(`app_core` 42,800B + `app_ui` 30,856B + `app_pages` 85,704B = 159,360B gz) + CSS 2청크(19,361B gz) + HTML(2,495B gz) = 웹 자산 181,216B gz | Antigravity AI |
 | **2026-11-21** | **v3.13** | **AI 프록시 비동기 워커 예산 반영 (0203_015)**: §3 `POST /ai/gemini` `< 5 ms` (`202`) 및 `GET` 폴링 `< 2 ms`, `T-ai` 내부 SRAM 스택 `10,240 B` + PSRAM Job 버퍼(`~20 KB`) 반영 | Antigravity AI |
 | **2026-11-20** | **v3.12** | **정적 자산 캐시 연장 및 대시보드 병렬 로딩 반영**: `Cache-Control` `public, max-age=86400`(24h) 연장 반영 및 `Dashboard.mount()` `Promise.all` 병렬 API 호출 반영 | Antigravity AI |
 | **2026-11-18** | **v3.11** | **FE/오프라인 AI·NowPlaying·AUTO_SELECT 보완 후 정적 자산 실측 반영 (0203_014_20/21)**: JS 3청크(`app_core` 41.7KB + `app_ui` 31.0KB + `app_pages` 84.9KB = 157.6KB gz) + CSS 2청크(`common_base` 11.1KB + `common_pages` 8.3KB = 19.4KB gz) + HTML(2.5KB gz) + JSON 9종(25.8KB) = LittleFS 총 점유 205.3KB (1MB 대비 20.0%) | Antigravity AI |

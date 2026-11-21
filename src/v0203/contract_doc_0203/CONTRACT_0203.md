@@ -371,6 +371,7 @@ startSession(type, trigger, payload) [T-async]
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-21** | **v3.15** | **FE 다국어 단일화·모달 타이머·온보딩 안전 계약 반영**: 프리셋/스타일/기본 프로필 7종 `SNW.I18n` 단일 헬퍼 경유 계약(하드코딩 금지), `999.app.js` `_modalCloseTimer` 취소 및 `998.overlay.onboarding.js` 중복/중간 취소 가드 계약 반영 | Antigravity AI |
 | **2026-11-21** | **v3.14** | **AI 프록시 비동기 워커 계약 반영 (0203_015)**: §1 `T-ai` (`gemini_worker`, 10,240 B) 및 §2 `W10::s_aiJobMutex` 추가, `async_tcp` 내 동기 HTTPS 호출 금지 및 `s_keyBuf` 워커 전용화 계약 명시 | Antigravity AI |
 | **2026-11-20** | **v3.13** | **하위 호환 제거 및 상수 SSOT 일원화 계약 반영**: `A20_resetWebPageDefault` 구버전 `P000_`/`P010_` 에셋 등록 제거, `P10_*`/`TM10_*` 호환 래퍼·`A20_Const_Sch` 미러 별칭·`autoOff/motion` deprecated 경고 제거, `A20_Const` 상수 일원화(NTP/TZ/Gemini/SoftAP/경로) | Antigravity AI |
 | **2026-11-18** | **v3.12** | **FE/오프라인 AI·NowPlaying·AUTO_SELECT 계약 현행화 (0203_014_20/21)**: `CT10_Ctl_Ctl_0203.cpp` `AUTO_SELECT` `PLAYLIST` `hasExplicitRule` 조건부 `initRuleFromPayload` 계약, `040.api.js` `OFFLINE_ROUTES` AI 명시적 오류(`ok: false`), `999a.nowplaying.js` 멱등 초기화·표시명 일원화 계약 반영 | Antigravity AI |

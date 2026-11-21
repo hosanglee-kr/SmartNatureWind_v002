@@ -429,6 +429,7 @@ if (intensitySlider) {
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-21** | **v1.6** | **FE 다국어·온보딩·Now Playing 즉시 동기화 실기 검증 기준 반영**: 온보딩 4단계 완주·중간 취소, 한/영 전환 시 프리셋/스타일/플레이리스트/Now Playing Bar/환경 추천 표시, 플레이리스트(`#/wind/playlist`) 재생 직후 Now Playing Bar 즉시 노출 검증 반영 | Antigravity AI |
 | **2026-11-21** | **v1.5** | **AI 프록시 비동기 워커 검증 기준 반영 (0203_015)**: T-114 `POST 202` + `GET ?jobId=` 폴링, `429 ai_busy`, `async_tcp` 무블로킹(`/state < 50ms`) 판정 기준 반영 | Antigravity AI |
 | **2026-11-14** | **v1.4** | **Phase 2 — L12 회귀 (T-158~T-168) 추가**: `ENV_PAUSED`, TempLow/DiLow PAUSE/STOP 이원화, `AUTO_FULL`/`AUTO_SELECT`, 사용자 개입, PIR 시작 유예(T-167), `PATCH /session/rule`(T-168) 반영 | Antigravity AI |
 | **2026-11-10** | **v1.3** | **웹 UI/UX 인터랙션 고도화 검증 절차 신설 (T-156, b3d06c2)**: 모니터 히스토리 지그재그 타임라인/시간축, Wind Studio 하단 분리 액션바 및 AI FAB 자동 은닉, AI 어시스턴트 세그먼트/스마트 입력창 검증 절차 반영 | Antigravity AI |

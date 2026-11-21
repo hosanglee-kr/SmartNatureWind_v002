@@ -54,7 +54,9 @@ C++ 소스(`.h`, `.cpp`) 수정이 필요하면 **목적·기능변화를 먼저
 무차별 `grep_search`/`view_file` 금지.
 
 ### 원칙 3 — 정적 에셋 파이프라인
-FE 소스(`data_v0203_src/html_v0203/`) 수정 시 **반드시**:
+FE 소스(`data_v0203_src/html_v0203/`) 수정 시:
+- **번들 산출물(`app_core_0203.js`, `app_ui_0203.js`, `app_pages_0203.js`, `common_base_0203.css`, `common_pages_0203.css`) 직접 편집 금지** → 반드시 `js/*.js` · `css/*.css` 원본 수정
+- 수정 후 **반드시** 실행:
 ```
 
 python src/v0203/tools_0203/pio_gzip_0203.py

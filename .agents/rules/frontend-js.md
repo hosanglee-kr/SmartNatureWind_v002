@@ -6,6 +6,10 @@ description: "v0203 웹 프론트엔드 JS 규칙"
 
 # 프론트엔드 JS 규칙 (v0203)
 
+## ⚠️ 번들 산출물 직접 편집 금지 (필수)
+- `app_core_0203.js`, `app_ui_0203.js`, `app_pages_0203.js`는 `pio_gzip_0203.py`가 생성하는 **번들 결과물**이므로 **절대 직접 수정하지 않는다.**
+- 반드시 `src/v0203/data_v0203_src/html_v0203/js/*.js` 원본 모듈 파일을 수정한 뒤 `pio_gzip_0203.py`(또는 `uploadfs`)로 번들링한다.
+
 ## Nullish 폴백 (NEW-C1)
 - 폼 필드 렌더링 시 `||` 금지 → `nz(v, fallback)` 사용
 - 이유: `0`, `''`, `false` 유효값 보존

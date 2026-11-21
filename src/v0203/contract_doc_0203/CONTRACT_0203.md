@@ -57,6 +57,7 @@
 | **T-loop** | `loopTask` | Arduino Core | 1 | 8,192 B | `A00_run()` 메인 주기 루프 |
 | **T-async** | `async_tcp` | ESPAsyncWebServer / AsyncTCP | 1 | 4,096 B | HTTP/WebSocket 이벤트 |
 | **T-wf** | `WF10_Reconnect` | `_ensureWifiTask` | 1 | 8,192 B | Wi-Fi 재연결 전담 (WDT 미등록) |
+| **T-dht** | `dht_task` | `_ct10_ensureDhtTask` | 1 | 3,072 B | DHT22 온·습도 주기 폴링 (Core 1 전용) |
 | **T-sys_evt** | `esp_event_loop` | ESP-IDF | 시스템 | 3,584 B | Wi-Fi/IP 이벤트 콜백 |
 | **T-IDLE** | `IDLE0/1` | FreeRTOS | 0 | - | 백그라운드 정리/전력 |
 | **T-timer** | `esp_timer` | ESP-IDF | 22 | - | SNTP 콜백 |
@@ -78,6 +79,7 @@
 | `TM10::s_mutex` | Recursive Mutex | Lazy-init | 100 ms | SNTP 상태, fallback 인덱스 |
 | `S10::_recursiveMutex` | Recursive Mutex | `S10::begin()` | 100 ms | 시뮬 파라미터, 120-샘플 링버퍼 |
 | `WF10::s_wifiRequestSem` | Binary Sem | `_ensureWifiTask` | Blocking | 재연결 요청 (T-async give → T-wf take) |
+| `CT10::s_dhtMux` | portMUX | 정적 | Critical | `s_dhtCache` (`temp`, `hum`) Core 1 워커 ↔ Reader 보호 |
 
 ### 2.1 Batch D-4: `s_staConnected` lock-free
 

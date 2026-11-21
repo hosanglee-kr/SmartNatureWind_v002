@@ -5,6 +5,8 @@ description: "v0203 펌웨어 및 LittleFS 파일시스템 빌드/플래시. Pla
 
 # 빌드 + 플래시
 
+> ⚠️ **실행 환경**: `pio`가 PATH에 없으면 `C:\Users\A003comlhsd\.platformio\penv\Scripts\pio.exe`를 사용하며, `.platformio` 접근을 위해 `BypassSandbox: true`로 실행해야 합니다. (상세: `.agents/rules/platformio.md`)
+
 ## 펌웨어 빌드 및 업로드
 
 ```bash

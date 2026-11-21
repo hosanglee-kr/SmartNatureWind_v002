@@ -58,6 +58,7 @@
 | **T-async** | `async_tcp` | ESPAsyncWebServer / AsyncTCP | 1 | 4,096 B | HTTP/WebSocket 이벤트 |
 | **T-wf** | `WF10_Reconnect` | `_ensureWifiTask` | 1 | 8,192 B | Wi-Fi 재연결 전담 (WDT 미등록) |
 | **T-dht** | `dht_task` | `_ct10_ensureDhtTask` | 1 | 3,072 B | DHT22 온·습도 주기 폴링 (Core 1 전용) |
+| **T-ai** | `gemini_worker` | `_w10_ensureAiWorker` | 1 | 10,240 B | Gemini REST 비동기 프록시 전담 (PSRAM Job 버퍼) |
 | **T-sys_evt** | `esp_event_loop` | ESP-IDF | 시스템 | 3,584 B | Wi-Fi/IP 이벤트 콜백 |
 | **T-IDLE** | `IDLE0/1` | FreeRTOS | 0 | - | 백그라운드 정리/전력 |
 | **T-timer** | `esp_timer` | ESP-IDF | 22 | - | SNTP 콜백 |
@@ -80,6 +81,7 @@
 | `S10::_recursiveMutex` | Recursive Mutex | `S10::begin()` | 100 ms | 시뮬 파라미터, 120-샘플 링버퍼 |
 | `WF10::s_wifiRequestSem` | Binary Sem | `_ensureWifiTask` | Blocking | 재연결 요청 (T-async give → T-wf take) |
 | `CT10::s_dhtMux` | portMUX | 정적 | Critical | `s_dhtCache` (`temp`, `hum`) Core 1 워커 ↔ Reader 보호 |
+| `W10::s_aiJobMutex` | Mutex | Lazy-init | 100 ms | `ST_W10_AiJobSlot_t` (`state`, `jobId`, `finishedMs`, 버퍼 메타) 보호 |
 
 ### 2.1 Batch D-4: `s_staConnected` lock-free
 
@@ -369,6 +371,7 @@ startSession(type, trigger, payload) [T-async]
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-21** | **v3.14** | **AI 프록시 비동기 워커 계약 반영 (0203_015)**: §1 `T-ai` (`gemini_worker`, 10,240 B) 및 §2 `W10::s_aiJobMutex` 추가, `async_tcp` 내 동기 HTTPS 호출 금지 및 `s_keyBuf` 워커 전용화 계약 명시 | Antigravity AI |
 | **2026-11-20** | **v3.13** | **하위 호환 제거 및 상수 SSOT 일원화 계약 반영**: `A20_resetWebPageDefault` 구버전 `P000_`/`P010_` 에셋 등록 제거, `P10_*`/`TM10_*` 호환 래퍼·`A20_Const_Sch` 미러 별칭·`autoOff/motion` deprecated 경고 제거, `A20_Const` 상수 일원화(NTP/TZ/Gemini/SoftAP/경로) | Antigravity AI |
 | **2026-11-18** | **v3.12** | **FE/오프라인 AI·NowPlaying·AUTO_SELECT 계약 현행화 (0203_014_20/21)**: `CT10_Ctl_Ctl_0203.cpp` `AUTO_SELECT` `PLAYLIST` `hasExplicitRule` 조건부 `initRuleFromPayload` 계약, `040.api.js` `OFFLINE_ROUTES` AI 명시적 오류(`ok: false`), `999a.nowplaying.js` 멱등 초기화·표시명 일원화 계약 반영 | Antigravity AI |
 | **2026-11-18** | **v3.11** | **Stage 12~13 웹 API 보안·안정화 계약 반영 (§7.25, 0203_014_19)**: `§3.1` 위반 4건 교정(`System`/`Network`/`WF10`), 단편화 body 단일 블록 누적(`WEB-BODY-1`), 이중 `send`/빈 body hang 방지(`WEB-BODY-2`), 단일 업로드/OTA 소유권 `s_uploadOwner`+`onDisconnect`(`WEB-UP-1`), `CRUD`·`Monitor` 정적 경로 상수화(`WEB-STR-1`) | Antigravity AI |

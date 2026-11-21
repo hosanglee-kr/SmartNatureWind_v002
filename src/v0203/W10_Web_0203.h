@@ -49,6 +49,9 @@
 namespace W10_AI_Limits {
     constexpr size_t   G_MAX_REQUEST_BODY      = 12288; // 12KB
     constexpr size_t   G_MAX_RESPONSE_BYTES    = 8192;  // 8KB
+    constexpr size_t   G_MAX_JOB_RESP_BYTES    = 16384; // 16KB (PSRAM 비동기 Job 결과 버퍼)
+    constexpr size_t   G_AI_WORKER_STACK_BYTES = 10240; // 10KB (gemini_worker 내부 SRAM 스택)
+    constexpr uint32_t G_AI_JOB_TTL_MS         = 30000; // 30초 (완료 결과 보존 TTL)
     constexpr uint32_t G_RATE_LIMIT_MS         = 5000;  // 5초
     constexpr uint32_t G_GEMINI_TIMEOUT_MS     = 20000; // 20초
     constexpr uint32_t G_LIVE_TOKEN_TIMEOUT_MS = 10000; // 10초

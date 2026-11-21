@@ -29,6 +29,15 @@ def post_gemini(message, **kwargs):
         "voiceMode": kwargs.get("voiceMode", False)
     }
     resp = requests.post(f"{API_BASE}/ai/gemini", json=payload, timeout=30)
+    if resp.status_code == 202:
+        job_id = resp.json().get("jobId")
+        deadline = time.time() + 30.0
+        time.sleep(0.7)
+        while time.time() < deadline:
+            poll = requests.get(f"{API_BASE}/ai/gemini", params={"jobId": job_id}, timeout=10)
+            if poll.status_code != 202:
+                return poll
+            time.sleep(0.35)
     return resp
 
 def test_add_profile():

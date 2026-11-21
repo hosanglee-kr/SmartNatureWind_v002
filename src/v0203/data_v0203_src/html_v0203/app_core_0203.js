@@ -2667,7 +2667,7 @@ window.SNW = window.SNW || {};
 })(window.SNW);
 
 
-/* ---- 040.api.js (19305 bytes) ---- */
+/* ---- 040.api.js (19874 bytes) ---- */
 // =========================================================
 // 040.api.js — SNW.Api (REST 클라이언트)
 // Layer 2 (서비스) — Layer 0~1 참조
@@ -3064,8 +3064,20 @@ window.SNW = window.SNW || {};
 		},
 
 		// --- AI ---
-		gemini(body) {
-			return _fetch(SNW.CFG.API.gemini, { method: 'POST', body, timeoutMs: SNW.CFG.TIMEOUT_MS.GEMINI });
+		async gemini(body) {
+			const first = await _fetch(SNW.CFG.API.gemini, { method: 'POST', body, timeoutMs: SNW.CFG.TIMEOUT_MS.GEMINI });
+			if (!first || first.status !== 'pending' || !first.jobId) return first;
+			const deadline = Date.now() + SNW.CFG.TIMEOUT_MS.GEMINI;
+			await new Promise(r => setTimeout(r, 700));
+			while (Date.now() < deadline) {
+				const res = await _fetch(`${SNW.CFG.API.gemini}?jobId=${encodeURIComponent(first.jobId)}`, {
+					method: 'GET',
+					timeoutMs: SNW.CFG.TIMEOUT_MS.DEFAULT
+				});
+				if (!res || res.status !== 'pending') return res;
+				await new Promise(r => setTimeout(r, 350));
+			}
+			throw new ApiError(504, { error: 'ai_poll_timeout' });
 		},
 		executeAiAction(name, args) {
 			return _fetch(SNW.CFG.API.aiExecute, { method: 'POST', body: { name, args } });

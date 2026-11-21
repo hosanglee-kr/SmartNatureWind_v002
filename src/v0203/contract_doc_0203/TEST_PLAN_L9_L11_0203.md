@@ -22,12 +22,13 @@
 
 > **자동화 E2E 스크립트 제공**: `python test/e2e_stage8_4.py <DEVICE_IP>`를 실행하면 T-114 ~ T-120 7대 시나리오가 일괄 자동 검증됩니다.
 
-#### T-114. REST 2-turn 대화 및 프록시 스트리밍 (`/api/v001/ai/gemini`)
-**목적**: Google Gemini REST API 2-turn 프록시 호출, Strict 시스템 프롬프트(캐시 30s) 주입 및 답변 생성 검증.
+#### T-114. REST 비동기 워커 대화 및 폴링 (`/api/v001/ai/gemini`)
+**목적**: `gemini_worker` (`T-ai`) 비동기 분리 후 `POST 202 {jobId}` + `GET ?jobId=` 폴링, `async_tcp` 무블로킹, 1-turn/2-turn 응답 검증.
 **합격 판정**:
-- [ ] 자연어 입력 ("선풍기 켜줘") 시 200 OK 응답 및 텍스트 반환
-- [ ] 요청 크기 8KB 초과 시 413 Payload Too Large 차단
-- [ ] 분당 10회 초과 시 429 Too Many Requests 제한
+- [ ] 자연어 입력 ("선풍기 켜줘") 시 `POST 202 Accepted` (< 50ms) 후 폴링으로 `200 OK` 및 텍스트 반환
+- [ ] AI 처리 중 동시 호출한 `GET /api/v001/state` 응답 `< 50ms` (`async_tcp` 무블로킹)
+- [ ] `RUNNING` 중 중복 `POST` 시 `429 ai_busy`, 요청 크기 12KB 초과 시 `413 Payload Too Large` 차단
+- [ ] 분당 10회 초과(5초 간격 미만) 시 `429 Too Many Requests` 제한
 
 #### T-115. 15종 위험 시스템 제어 명령 원천 차단
 **목적**: 재부팅, 와이파이 재설정, 공장 초기화, 파일시스템 포맷 등 15종 파괴 명령 차단 검증.
@@ -428,6 +429,7 @@ if (intensitySlider) {
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-21** | **v1.5** | **AI 프록시 비동기 워커 검증 기준 반영 (0203_015)**: T-114 `POST 202` + `GET ?jobId=` 폴링, `429 ai_busy`, `async_tcp` 무블로킹(`/state < 50ms`) 판정 기준 반영 | Antigravity AI |
 | **2026-11-14** | **v1.4** | **Phase 2 — L12 회귀 (T-158~T-168) 추가**: `ENV_PAUSED`, TempLow/DiLow PAUSE/STOP 이원화, `AUTO_FULL`/`AUTO_SELECT`, 사용자 개입, PIR 시작 유예(T-167), `PATCH /session/rule`(T-168) 반영 | Antigravity AI |
 | **2026-11-10** | **v1.3** | **웹 UI/UX 인터랙션 고도화 검증 절차 신설 (T-156, b3d06c2)**: 모니터 히스토리 지그재그 타임라인/시간축, Wind Studio 하단 분리 액션바 및 AI FAB 자동 은닉, AI 어시스턴트 세그먼트/스마트 입력창 검증 절차 반영 | Antigravity AI |
 | **2026-11-09** | **v1.2** | **Stage 10.1 하드웨어 백엔드 타이머 및 Comfort 5상태 검증 항목 추가**: T-154-FE 5상태 매트릭스/스위치 렌더링 강화, T-155(하드웨어 타이머 브라우저 종료 후 단독 만료 및 Comfort 재기동 차단 E2E) 신설 | Antigravity AI |

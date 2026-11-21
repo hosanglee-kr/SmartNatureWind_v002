@@ -468,6 +468,7 @@ pauseMask == 0 일 때만 ENV_PAUSED 해소 (완전 재개)
 | `CT10_Ctl_AIPrompt_0203.cpp` | `s_promptCache`, `s_promptCacheValidUntil` (30초 캐시) | - |
 | `CT10_Ctl_AIAction_0203.cpp` | 13개 안전 도구 디스패처 (set_timer 포함, CT10 공개 함수 위임) | - |
 | `W10_Web_Routes_AILive_0203.cpp` | Live 토큰 / 30분 상한 판정 및 일일 비용 라우팅 핸들러 | - |
+| `W10_Web_Gemini_0203.cpp` | AI 프록시 비동기 Job 슬롯 (`IDLE/RUNNING/DONE/ERROR`, 30s TTL) | `s_aiJobMutex` |
 
 > **F-10 계약**: 분할 .cpp 간 공유 매크로는 `*_Internal_0203.h` 승격 필수. 파일 스코프 정의 금지.
 
@@ -477,6 +478,7 @@ pauseMask == 0 일 때만 ENV_PAUSED 해소 (완전 재개)
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-21** | **v3.12** | **AI 프록시 비동기 Job 상태 소유권 반영 (0203_015)**: §8 `W10_Web_Gemini_0203.cpp` Job 슬롯(`IDLE`/`RUNNING`/`DONE`/`ERROR`, 30s TTL) 및 `s_aiJobMutex` 소유권 추가 | Antigravity AI |
 | **2026-11-20** | **v3.11** | **시간·네트워크 상수 SSOT 및 하위 호환 정리 확인**: `TM10` 기본 서버 `kr.pool.ntp.org`·TZ `Asia/Seoul` `A20_Const` 상수 일원화 및 `TM10_*` 전역 호환 함수 제거 확인 (FSM 상태/전이 변경 없음) | Antigravity AI |
 | **2026-11-18** | **v3.10** | **FE/오프라인 AI·NowPlaying·AUTO_SELECT 상태 규약 현행화 (0203_014_20/21)**: `AUTO_SELECT` `PLAYLIST` 실행 시 프로필 고유 `rule` 보존(`hasExplicitRule` 없을 때 덮어쓰기 방지), `#/ai` 뷰 상태 `body.is-ai-page` 추가, `998.offline_0203.js` `AUTO_SELECT` 센서 기반 스타일 상태 전이 반영 | Antigravity AI |
 | **2026-11-18** | **v3.9** | **Stage 12~13 웹 API 상태 소유권 현행화 (0203_014_19)**: §1 `s_uploadOwner` 단일 업로드/OTA 점유 상태(`onDisconnect` 자동 해제) 추가, `/ai/execute-action` 응답 `session.type`(숫자)+`typeName`(문자열) 계약 통일 | Antigravity AI |

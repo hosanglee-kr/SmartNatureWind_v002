@@ -358,6 +358,7 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-21** | **v4.9** | **AI 프록시 비동기 워커 검증 기준 반영 (0203_015)**: `TEST_PLAN_L9_L11_0203.md` T-114 `POST 202` + `GET ?jobId=` 폴링 및 `async_tcp` 무블로킹(`/state < 50ms`) 기준 반영 | Antigravity AI |
 | **2026-11-20** | **v4.8** | **NTP 기본 서버(`kr.pool.ntp.org`)·정적 캐시(`86400s`) 검증 기준 현행화**: `TEST_PLAN_L6_L8_0203.md` T-94 기대값 `"kr.pool.ntp.org"` 갱신 및 `max-age=86400` 기준 반영 | Antigravity AI |
 | **2026-11-18** | **v4.7** | **FE/오프라인 AI·NowPlaying·AUTO_SELECT 보완 검증 기준 반영 (0203_014_20/21)**: Now Playing Bar 자동 초기화 및 시나리오/모드명 일치, `#/ai` 모바일 레이아웃·`.snw-ai-fab` 비노출, 오프라인 AI 키워드 폴백(타이머 우선), `AUTO_SELECT` 매회 base 모달·`PLAYLIST` 규칙 보존, `check_i18n.py --strict` (`ko=601/en=601`) 검증 반영 | Antigravity AI |
 | **2026-11-18** | **v4.6** | **Stage 12~13 웹 API 보안·안정화 검증 기준 반영 (0203_014_19)**: 정적 MIME(`nosniff`+`endsWith`)·missing `404`·`Cache-Control`, `requireApiKey` 401/`W10_USE_API_KEY`·WS 핸드셰이크, 4KB+ TCP 단편화 JSON POST, 빈 body `400`(`cost-reset` `200`/`control/mode` form), `1MB` 초과 `413`, 동시 업로드/OTA `429` 검증 항목 현행화 | Antigravity AI |

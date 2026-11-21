@@ -116,7 +116,8 @@
 | **`POST /api/v001/control/ack`** | `ackEventState()` | **< 1 ms** | AUTOOFF 래치 해제 |
 | **`GET /api/v001/wifi/state`** | WiFi 상태 JSON 반환 | **< 1 ms** | atomic load 기반 |
 | `GET /api/v001/wifi/scan` | `WiFi.scanNetworks()` | 1 ~ 2 초 | 의도된 블로킹 |
-| `POST /api/v001/ai/gemini` | SSL 스트리밍 프록시 (`gemini-3.5-flash-lite`) | ≤ 15 초 | Rate limit 10회/분, 2-turn (제어 성공 시 1-turn 즉시 응답) |
+| `POST /api/v001/ai/gemini` | PSRAM 버퍼 복사 + `T-ai` 워커 위임 (`202 Accepted`) | **< 5 ms** | `async_tcp` 블로킹 0, `T-ai` 스택 10,240B + PSRAM 버퍼 ~20KB |
+| `GET /api/v001/ai/gemini?jobId=` | 비동기 AI Job 상태/결과 조회 | **< 2 ms** | `040.api.js` 적응형 폴링(700ms 후 350ms), TTL 30s |
 | `POST /api/v001/ai/execute-action` | `executeAIAction()` 14도구 | **< 10 ms** | 안전 도구 직접 실행 |
 | `POST /api/v001/ai/live-token` | `routeAILiveToken()` 검증 | **< 5 ms** | 30분 상한 판정 (초과 시 403) |
 | `POST /api/v001/ai/live-func` | Live 툴 위임 프록시 | **< 10 ms** | Gemini Live ➔ CT10 위임 |
@@ -495,6 +496,7 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-21** | **v3.13** | **AI 프록시 비동기 워커 예산 반영 (0203_015)**: §3 `POST /ai/gemini` `< 5 ms` (`202`) 및 `GET` 폴링 `< 2 ms`, `T-ai` 내부 SRAM 스택 `10,240 B` + PSRAM Job 버퍼(`~20 KB`) 반영 | Antigravity AI |
 | **2026-11-20** | **v3.12** | **정적 자산 캐시 연장 및 대시보드 병렬 로딩 반영**: `Cache-Control` `public, max-age=86400`(24h) 연장 반영 및 `Dashboard.mount()` `Promise.all` 병렬 API 호출 반영 | Antigravity AI |
 | **2026-11-18** | **v3.11** | **FE/오프라인 AI·NowPlaying·AUTO_SELECT 보완 후 정적 자산 실측 반영 (0203_014_20/21)**: JS 3청크(`app_core` 41.7KB + `app_ui` 31.0KB + `app_pages` 84.9KB = 157.6KB gz) + CSS 2청크(`common_base` 11.1KB + `common_pages` 8.3KB = 19.4KB gz) + HTML(2.5KB gz) + JSON 9종(25.8KB) = LittleFS 총 점유 205.3KB (1MB 대비 20.0%) | Antigravity AI |
 | **2026-11-18** | **v3.10** | **Stage 12~13 웹 API 보안·안정화 예산 반영 (§10.10, 0203_014_19)**: `esp32-s3-zero` RAM 30.8%/Flash 43.7% 실측, `W10_MAX_ACCUM_BODY`(1MB) 상한 및 `Cache-Control`(3600s) 대역폭 절감 반영 | Antigravity AI |

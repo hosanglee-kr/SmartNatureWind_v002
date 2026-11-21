@@ -24,6 +24,7 @@
 #include "C10_Config_0203.h"
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
+#include <esp_heap_caps.h>
 
 // ------------------------------------------------------
 // Gemini API 상수
@@ -36,11 +37,37 @@
 
 static unsigned long s_lastGeminiCallMs = 0;
 
+// ------------------------------------------------------
+// [0203_015] 비동기 AI 워커 (gemini_worker) 및 단일 Job 슬롯
+// ------------------------------------------------------
+enum EN_W10_AiJobState_t : uint8_t {
+    EN_W10_AI_JOB_IDLE = 0,
+    EN_W10_AI_JOB_RUNNING,
+    EN_W10_AI_JOB_DONE,
+    EN_W10_AI_JOB_ERROR
+};
+
+struct ST_W10_AiJobSlot_t {
+    EN_W10_AiJobState_t state;
+    char                jobId[32];
+    unsigned long       enqueuedMs;
+    unsigned long       finishedMs;
+    int                 httpStatus;
+    char*               reqBuf;
+    size_t              reqLen;
+    char*               respBuf;
+    size_t              respLen;
+};
+
+static ST_W10_AiJobSlot_t s_aiJob        = {};
+static SemaphoreHandle_t  s_aiJobMutex   = nullptr;
+static TaskHandle_t       s_aiWorkerTask = nullptr;
+static uint32_t           s_aiJobSeq     = 0;
+
 /**
- * [스레드 안전성] static buffer 반환 — async_tcp 단일 태스크 컨텍스트 전용.
+ * [스레드 안전성] static buffer 반환 — gemini_worker(T-ai) 단일 태스크 컨텍스트 전용.
  *  - 호출자는 반환 포인터를 "즉시 사용 후 폐기"해야 함
- *  - 다른 태스크(loop 등)에서 동시 호출 시 덮어쓰기 위험
- *  - 현재 모든 호출부는 async_tcp 컨텍스트에서 즉시 사용 (v_http.addHeader 등)
+ *  - async_tcp 등 타 태스크에서 직접 호출 금지 (W10_callGeminiApi 내부 전용)
  */
 static const char* W10_getGeminiApiKey() {
     ST_A20_ConfigRoot_t v_snap;
@@ -127,31 +154,9 @@ static String W10_callGeminiApi(const char* p_body, size_t p_len, int& r_httpCod
 }
 
 // ------------------------------------------------------
-// 2-turn Function Calling 자연어 제어 파이프라인
+// 2-turn Function Calling 자연어 제어 파이프라인 (gemini_worker 전용)
 // ------------------------------------------------------
-static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocument& p_inDoc) {
-    const char* v_message = p_inDoc["message"] | "";
-    const char* v_lang    = p_inDoc["lang"] | "ko";
-    bool        v_voice   = p_inDoc["voiceMode"] | false;
-
-    if (!v_message[0]) {
-        p_request->send(400, "application/json", "{\"error\":\"empty message\"}");
-        return;
-    }
-
-    // ─── Turn 1 요청 조립 ───
-    JsonDocument v_turn1Req;
-    JsonObject   v_sys                                       = v_turn1Req["system_instruction"].to<JsonObject>();
-    v_sys["parts"].to<JsonArray>().add<JsonObject>()["text"] = CT10_AI::buildAIPromptStrict(v_lang, v_voice);
-
-    JsonArray  v_tools   = v_turn1Req["tools"].to<JsonArray>();
-    JsonObject v_toolObj = v_tools.add<JsonObject>();
-    JsonArray  v_decls   = v_toolObj["function_declarations"].to<JsonArray>();
-    CT10_AI::appendAIFunctionDeclarations(v_decls);
-
-    JsonArray v_contents = v_turn1Req["contents"].to<JsonArray>();
-
-    // 대화 이력 주입 (최근 6턴)
+static void W10_appendHistoryAndMessage(JsonArray& p_contents, const JsonDocument& p_inDoc, const char* p_message) {
     if (p_inDoc["history"].is<JsonArray>()) {
         JsonArrayConst v_hist     = p_inDoc["history"].as<JsonArrayConst>();
         size_t         v_startIdx = (v_hist.size() > 6) ? (v_hist.size() - 6) : 0;
@@ -160,23 +165,56 @@ static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocu
             const char*     v_role = h["role"] | "user";
             const char*     v_text = h["text"] | "";
             if (v_text[0]) {
-                JsonObject c = v_contents.add<JsonObject>();
+                JsonObject c = p_contents.add<JsonObject>();
                 c["role"]    = (strcmp(v_role, "assistant") == 0) ? "model" : "user";
                 c["parts"].to<JsonArray>().add<JsonObject>()["text"] = v_text;
             }
         }
     }
-
-    // 현재 사용자 메시지 추가
-    JsonObject v_userCur                                         = v_contents.add<JsonObject>();
+    JsonObject v_userCur                                         = p_contents.add<JsonObject>();
     v_userCur["role"]                                            = "user";
-    v_userCur["parts"].to<JsonArray>().add<JsonObject>()["text"] = v_message;
+    v_userCur["parts"].to<JsonArray>().add<JsonObject>()["text"] = p_message;
+}
 
+static void handleNaturalLanguageTurnWorker(const JsonDocument& p_inDoc,
+                                          String&             r_outJson,
+                                          int&                r_outHttp,
+                                          uint32_t&           r_turn1Ms,
+                                          uint32_t&           r_actionMs,
+                                          uint32_t&           r_turn2Ms) {
+    const char* v_message = p_inDoc["message"] | "";
+    const char* v_lang    = p_inDoc["lang"] | "ko";
+    bool        v_voice   = p_inDoc["voiceMode"] | false;
+
+    if (!v_message[0]) {
+        r_outHttp = 400;
+        r_outJson = "{\"error\":\"empty message\"}";
+        return;
+    }
+
+    // ─── Turn 1 요청 조립 (직렬화 후 v_turn1Req 조기 해제로 TLS 힙 피크 최소화) ───
     String v_t1Body;
-    serializeJson(v_turn1Req, v_t1Body);
+    {
+        JsonDocument v_turn1Req;
+        JsonObject   v_sys                                       = v_turn1Req["system_instruction"].to<JsonObject>();
+        v_sys["parts"].to<JsonArray>().add<JsonObject>()["text"] = CT10_AI::buildAIPromptStrict(v_lang, v_voice);
 
-    int    v_httpCode = 0;
-    String v_t1Resp   = W10_callGeminiApi(v_t1Body.c_str(), v_t1Body.length(), v_httpCode);
+        JsonArray  v_tools   = v_turn1Req["tools"].to<JsonArray>();
+        JsonObject v_toolObj = v_tools.add<JsonObject>();
+        JsonArray  v_decls   = v_toolObj["function_declarations"].to<JsonArray>();
+        CT10_AI::appendAIFunctionDeclarations(v_decls);
+
+        JsonArray v_contents = v_turn1Req["contents"].to<JsonArray>();
+        W10_appendHistoryAndMessage(v_contents, p_inDoc, v_message);
+
+        serializeJson(v_turn1Req, v_t1Body);
+    }
+
+    uint32_t v_t1Start  = millis();
+    int      v_httpCode = 0;
+    String   v_t1Resp   = W10_callGeminiApi(v_t1Body.c_str(), v_t1Body.length(), v_httpCode);
+    v_t1Body            = String(); // 요청 바디 즉시 해제
+    r_turn1Ms           = millis() - v_t1Start;
 
     if (v_httpCode != 200 || v_t1Resp.length() == 0) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10][AI] Turn1 Gemini call failed (HTTP %d)", v_httpCode);
@@ -186,16 +224,19 @@ static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocu
         v_err["_speechHint"] = (strcmp(v_lang, "en") == 0) ? "AI service is currently unavailable."
                                                            : "AI 서비스 응답이 지연되고 있습니다.";
         v_err["_lang"]       = v_lang;
-        CL_W10_WebAPI::sendJson(p_request, v_err, 502);
+        r_outHttp            = 502;
+        serializeJson(v_err, r_outJson);
         return;
     }
 
     // ─── Turn 1 응답 파싱 ───
     JsonDocument v_t1Doc;
     if (deserializeJson(v_t1Doc, v_t1Resp)) {
-        p_request->send(502, "application/json", "{\"error\":\"invalid upstream json\"}");
+        r_outHttp = 502;
+        r_outJson = "{\"error\":\"invalid upstream json\"}";
         return;
     }
+    v_t1Resp = String(); // 원본 응답 문자열 조기 해제
 
     JsonObject v_candidate = v_t1Doc["candidates"][0].as<JsonObject>();
     JsonObject v_content   = v_candidate["content"].as<JsonObject>();
@@ -204,6 +245,7 @@ static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocu
     struct ST_FnCallItem {
         String       name;
         JsonDocument argsDoc;
+        String       result;
     };
     std::vector<ST_FnCallItem> v_fnCalls;
     String                     v_textResponse;
@@ -228,65 +270,68 @@ static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocu
         v_finalDoc["text"]        = v_textResponse.length() > 0 ? v_textResponse : "명령을 이해했습니다.";
         v_finalDoc["_speechHint"] = v_finalDoc["text"];
         v_finalDoc["actions"].to<JsonArray>();
-        CL_W10_WebAPI::sendJson(p_request, v_finalDoc, 200);
+        r_outHttp = 200;
+        serializeJson(v_finalDoc, r_outJson);
         return;
     }
 
     // ─── 도구 실행 (Turn 1 Function Calls — 다중 호출 순차 실행) ───
+    uint32_t  v_actStart   = millis();
     JsonArray v_actionsArr = v_finalDoc["actions"].to<JsonArray>();
     bool      v_anyOk      = false;
+    bool      v_needTurn2  = false;
     String    v_speechHint;
 
-    // ─── Turn 2 자연어 요약 호출 준비 ───
-    JsonDocument v_turn2Req;
-    JsonObject   v_t2Sys                                       = v_turn2Req["system_instruction"].to<JsonObject>();
-    v_t2Sys["parts"].to<JsonArray>().add<JsonObject>()["text"] = CT10_AI::buildAIPromptStrict(v_lang, v_voice);
-
-    JsonArray v_t2Contents = v_turn2Req["contents"].to<JsonArray>();
-    for (JsonObject c : v_contents) {
-        v_t2Contents.add(c);
-    }
-    // model의 functionCall part 추가
-    v_t2Contents.add(v_content);
-
-    // user의 functionResponse parts 추가
-    JsonObject v_fnRespObj  = v_t2Contents.add<JsonObject>();
-    v_fnRespObj["role"]     = "user";
-    JsonArray v_fnRespParts = v_fnRespObj["parts"].to<JsonArray>();
-
-    bool v_needTurn2 = false;
     for (auto& item : v_fnCalls) {
-        JsonObjectConst v_argsConst    = item.argsDoc.as<JsonObjectConst>();
-        String          v_actionResult = CT10_AI::executeAIAction(item.name.c_str(), v_argsConst);
-        bool v_ok = (v_actionResult == "ok" || v_actionResult.startsWith("{") || v_actionResult.startsWith("["));
+        JsonObjectConst v_argsConst = item.argsDoc.as<JsonObjectConst>();
+        item.result                 = CT10_AI::executeAIAction(item.name.c_str(), v_argsConst);
+        bool v_ok = (item.result == "ok" || item.result.startsWith("{") || item.result.startsWith("["));
         if (v_ok) v_anyOk = true;
-        if (!v_ok || v_actionResult.startsWith("{") || v_actionResult.startsWith("[")) v_needTurn2 = true;
+        if (!v_ok || item.result.startsWith("{") || item.result.startsWith("[")) v_needTurn2 = true;
 
         JsonObject v_actObj = v_actionsArr.add<JsonObject>();
         v_actObj["name"]    = item.name;
         v_actObj["args"]    = v_argsConst;
-        v_actObj["result"]  = v_actionResult;
+        v_actObj["result"]  = item.result;
 
         if (v_speechHint.length() == 0) {
             v_speechHint = CT10_AI::buildSpeechHint(item.name.c_str(), v_argsConst, v_ok);
         }
-
-        JsonObject v_fnPart        = v_fnRespParts.add<JsonObject>();
-        JsonObject v_fr            = v_fnPart["functionResponse"].to<JsonObject>();
-        v_fr["name"]               = item.name;
-        v_fr["response"]["result"] = v_actionResult;
     }
+    r_actionMs = millis() - v_actStart;
 
     bool v_actionOk           = v_anyOk;
     v_finalDoc["_speechHint"] = v_speechHint;
 
+    // ─── Turn 2 지연 생성 (Lazy Init: 조회/실패 시에만 조립 및 호출) ───
     String v_naturalText;
     if (v_needTurn2) {
-        String v_t2Body;
-        serializeJson(v_turn2Req, v_t2Body);
+        uint32_t v_t2Start = millis();
+        String   v_t2Body;
+        {
+            JsonDocument v_turn2Req;
+            JsonObject   v_t2Sys                                       = v_turn2Req["system_instruction"].to<JsonObject>();
+            v_t2Sys["parts"].to<JsonArray>().add<JsonObject>()["text"] = CT10_AI::buildAIPromptStrict(v_lang, v_voice);
+
+            JsonArray v_t2Contents = v_turn2Req["contents"].to<JsonArray>();
+            W10_appendHistoryAndMessage(v_t2Contents, p_inDoc, v_message);
+            v_t2Contents.add(v_content);
+
+            JsonObject v_fnRespObj   = v_t2Contents.add<JsonObject>();
+            v_fnRespObj["role"]      = "user";
+            JsonArray v_fnRespParts  = v_fnRespObj["parts"].to<JsonArray>();
+            for (const auto& item : v_fnCalls) {
+                JsonObject v_fnPart        = v_fnRespParts.add<JsonObject>();
+                JsonObject v_fr            = v_fnPart["functionResponse"].to<JsonObject>();
+                v_fr["name"]               = item.name;
+                v_fr["response"]["result"] = item.result;
+            }
+            serializeJson(v_turn2Req, v_t2Body);
+        }
 
         int    v_t2Code = 0;
         String v_t2Resp = W10_callGeminiApi(v_t2Body.c_str(), v_t2Body.length(), v_t2Code);
+        v_t2Body        = String();
 
         if (v_t2Code == 200 && v_t2Resp.length() > 0) {
             JsonDocument v_t2Doc;
@@ -295,6 +340,7 @@ static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocu
                 if (v_txt[0]) v_naturalText = v_txt;
             }
         }
+        r_turn2Ms = millis() - v_t2Start;
     }
 
     v_finalDoc["ok"]   = v_actionOk;
@@ -312,13 +358,170 @@ static void handleNaturalLanguageTurn(AsyncWebServerRequest* p_request, JsonDocu
                                             : (v_curSession.state == EN_SESSION_PAUSED) ? "PAUSED"
                                                                                         : "COMPLETED";
 
-    CL_W10_WebAPI::sendJson(p_request, v_finalDoc, 200);
+    r_outHttp = 200;
+    serializeJson(v_finalDoc, r_outJson);
+}
+
+static void W10_processSingleAiJob() {
+    uint32_t v_startMs    = millis();
+    uint32_t v_queueWait  = v_startMs - s_aiJob.enqueuedMs;
+    uint32_t v_turn1Ms    = 0;
+    uint32_t v_actionMs   = 0;
+    uint32_t v_turn2Ms    = 0;
+    int      v_outHttp    = 500;
+    String   v_outJson;
+
+    JsonDocument v_inDoc;
+    auto         v_err = deserializeJson(v_inDoc, (const char*)s_aiJob.reqBuf, s_aiJob.reqLen);
+    if (v_err) {
+        v_outHttp = 400;
+        v_outJson = "{\"error\":\"invalid JSON\"}";
+    } else if (v_inDoc["message"].is<const char*>()) {
+        handleNaturalLanguageTurnWorker(v_inDoc, v_outJson, v_outHttp, v_turn1Ms, v_actionMs, v_turn2Ms);
+    } else {
+        // 레거시 프록시 모드 (contents 직접 전달)
+        uint32_t v_t1Start = millis();
+        int      v_httpCode = 0;
+        String   v_resp     = W10_callGeminiApi((const char*)s_aiJob.reqBuf, s_aiJob.reqLen, v_httpCode);
+        v_turn1Ms           = millis() - v_t1Start;
+
+        if (v_httpCode == 200) {
+            v_outHttp = 200;
+            v_outJson = v_resp;
+        } else {
+            JsonDocument v_errDoc;
+            v_errDoc["error"]         = "upstream failed";
+            v_errDoc["upstream_http"] = v_httpCode;
+            if (v_resp.length() > 0) {
+                v_errDoc["upstream_body"] = v_resp.substring(0, 200);
+            }
+            v_outHttp = 502;
+            serializeJson(v_errDoc, v_outJson);
+        }
+    }
+
+    if (s_aiJobMutex && xSemaphoreTake(s_aiJobMutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+        if (v_outJson.length() > W10_AI_Limits::G_MAX_JOB_RESP_BYTES) {
+            CL_D10_Logger::log(EN_L10_LOG_WARN, "[W10][AI] Response truncated (%u > %u)",
+                               (unsigned)v_outJson.length(), (unsigned)W10_AI_Limits::G_MAX_JOB_RESP_BYTES);
+            v_outHttp = 502;
+            v_outJson = "{\"error\":\"response too large\"}";
+        }
+        strlcpy(s_aiJob.respBuf, v_outJson.c_str(), W10_AI_Limits::G_MAX_JOB_RESP_BYTES + 1);
+        s_aiJob.respLen    = strlen(s_aiJob.respBuf);
+        s_aiJob.httpStatus = v_outHttp;
+        s_aiJob.finishedMs = millis();
+        s_aiJob.state      = (v_outHttp == 200) ? EN_W10_AI_JOB_DONE : EN_W10_AI_JOB_ERROR;
+        xSemaphoreGive(s_aiJobMutex);
+    }
+
+    uint32_t v_totalMs = millis() - v_startMs;
+    UBaseType_t v_hwm  = uxTaskGetStackHighWaterMark(nullptr);
+    CL_D10_Logger::log(EN_L10_LOG_INFO,
+                       "[AI_PROF] bodyLen=%u http=%d queueWaitMs=%lu turn1Ms=%lu actionMs=%lu turn2Ms=%lu totalMs=%lu stackHwm=%u",
+                       (unsigned)s_aiJob.reqLen,
+                       v_outHttp,
+                       (unsigned long)v_queueWait,
+                       (unsigned long)v_turn1Ms,
+                       (unsigned long)v_actionMs,
+                       (unsigned long)v_turn2Ms,
+                       (unsigned long)v_totalMs,
+                       (unsigned)v_hwm);
+}
+
+static void W10_aiWorkerTask(void* p_arg) {
+    (void)p_arg;
+    for (;;) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        W10_processSingleAiJob();
+    }
+}
+
+static bool W10_ensureAiWorker() {
+    if (!s_aiJobMutex) {
+        s_aiJobMutex = xSemaphoreCreateMutex();
+        if (!s_aiJobMutex) return false;
+    }
+    if (!s_aiJob.reqBuf) {
+        s_aiJob.reqBuf = (char*)heap_caps_malloc(W10_AI_Limits::G_MAX_REQUEST_BODY + 1, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+        if (!s_aiJob.reqBuf) {
+            s_aiJob.reqBuf = (char*)malloc(W10_AI_Limits::G_MAX_REQUEST_BODY + 1);
+        }
+        if (!s_aiJob.reqBuf) return false;
+        s_aiJob.reqBuf[0] = '\0';
+    }
+    if (!s_aiJob.respBuf) {
+        s_aiJob.respBuf = (char*)heap_caps_malloc(W10_AI_Limits::G_MAX_JOB_RESP_BYTES + 1, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+        if (!s_aiJob.respBuf) {
+            s_aiJob.respBuf = (char*)malloc(W10_AI_Limits::G_MAX_JOB_RESP_BYTES + 1);
+        }
+        if (!s_aiJob.respBuf) return false;
+        s_aiJob.respBuf[0] = '\0';
+    }
+    if (!s_aiWorkerTask) {
+        BaseType_t v_rc = xTaskCreatePinnedToCore(
+            W10_aiWorkerTask,
+            "gemini_worker",
+            W10_AI_Limits::G_AI_WORKER_STACK_BYTES,
+            nullptr,
+            1,
+            &s_aiWorkerTask,
+            1);
+        if (v_rc != pdPASS) {
+            s_aiWorkerTask = nullptr;
+            return false;
+        }
+    }
+    return true;
 }
 
 // ------------------------------------------------------
-// POST /api/v001/ai/gemini
+// POST /api/v001/ai/gemini (202 비동기 접수) & GET ?jobId= (폴링)
 // ------------------------------------------------------
 void CL_W10_WebAPI::routeGeminiProxy() {
+    W10_ensureAiWorker();
+
+    s_server->on(
+        W10_Const::HTTP_API_GEMINI_PROXY,
+        HTTP_GET,
+        [](AsyncWebServerRequest* p_request) {
+            if (!requireApiKey(p_request)) return;
+            if (!p_request->hasParam("jobId")) {
+                p_request->send(400, "application/json", "{\"error\":\"missing jobId\"}");
+                return;
+            }
+            String v_jobId = p_request->getParam("jobId")->value();
+            if (!s_aiJobMutex || xSemaphoreTake(s_aiJobMutex, pdMS_TO_TICKS(100)) != pdTRUE) {
+                p_request->send(503, "application/json", "{\"error\":\"busy\"}");
+                return;
+            }
+
+            if (s_aiJob.state == EN_W10_AI_JOB_IDLE || strcmp(s_aiJob.jobId, v_jobId.c_str()) != 0) {
+                xSemaphoreGive(s_aiJobMutex);
+                p_request->send(404, "application/json", "{\"error\":\"job_not_found\"}");
+                return;
+            }
+            if (s_aiJob.state == EN_W10_AI_JOB_RUNNING) {
+                char v_pending[96];
+                snprintf(v_pending, sizeof(v_pending), "{\"ok\":true,\"jobId\":\"%s\",\"status\":\"pending\"}", s_aiJob.jobId);
+                xSemaphoreGive(s_aiJobMutex);
+                p_request->send(202, "application/json", v_pending);
+                return;
+            }
+            if (millis() - s_aiJob.finishedMs > W10_AI_Limits::G_AI_JOB_TTL_MS) {
+                s_aiJob.state    = EN_W10_AI_JOB_IDLE;
+                s_aiJob.jobId[0] = '\0';
+                xSemaphoreGive(s_aiJobMutex);
+                p_request->send(404, "application/json", "{\"error\":\"job_expired\"}");
+                return;
+            }
+
+            int    v_httpStatus = s_aiJob.httpStatus;
+            String v_respStr(s_aiJob.respBuf ? s_aiJob.respBuf : "{}");
+            xSemaphoreGive(s_aiJobMutex);
+            sendText(p_request, v_respStr, v_httpStatus, "application/json; charset=utf-8");
+        });
+
     s_server->on(
         W10_Const::HTTP_API_GEMINI_PROXY,
         HTTP_POST,
@@ -363,39 +566,45 @@ void CL_W10_WebAPI::routeGeminiProxy() {
                 p_request->send(429, "application/json", "{\"error\":\"rate limited, please wait a few seconds\"}");
                 return;
             }
+
+            if (!W10_ensureAiWorker()) {
+                freeBody(p_request);
+                p_request->send(503, "application/json", "{\"error\":\"ai_worker_unavailable\"}");
+                return;
+            }
+
+            if (xSemaphoreTake(s_aiJobMutex, pdMS_TO_TICKS(100)) != pdTRUE) {
+                freeBody(p_request);
+                p_request->send(503, "application/json", "{\"error\":\"busy\"}");
+                return;
+            }
+
+            if (s_aiJob.state == EN_W10_AI_JOB_RUNNING) {
+                xSemaphoreGive(s_aiJobMutex);
+                freeBody(p_request);
+                p_request->send(429, "application/json", "{\"error\":\"ai_busy\"}");
+                return;
+            }
+
+            memcpy(s_aiJob.reqBuf, v_bodyBuf, v_bodyLen);
+            s_aiJob.reqBuf[v_bodyLen] = '\0';
+            s_aiJob.reqLen            = v_bodyLen;
+            s_aiJob.respBuf[0]        = '\0';
+            s_aiJob.respLen           = 0;
+            s_aiJob.enqueuedMs        = v_now;
+            s_aiJob.finishedMs        = 0;
+            s_aiJob.httpStatus        = 202;
+            s_aiJob.state             = EN_W10_AI_JOB_RUNNING;
+            snprintf(s_aiJob.jobId, sizeof(s_aiJob.jobId), "ai_%lu_%lu", v_now, (unsigned long)(++s_aiJobSeq));
             s_lastGeminiCallMs = v_now;
 
-            JsonDocument v_doc;
-            auto         v_err = deserializeJson(v_doc, (const char*)v_bodyBuf, v_bodyLen);
-            if (v_err) {
-                freeBody(p_request);
-                p_request->send(400, "application/json", "{\"error\":\"invalid JSON\"}");
-                return;
-            }
+            char v_accepted[96];
+            snprintf(v_accepted, sizeof(v_accepted), "{\"ok\":true,\"jobId\":\"%s\",\"status\":\"pending\"}", s_aiJob.jobId);
+            xSemaphoreGive(s_aiJobMutex);
 
-            // 분기 1: 자연어 제어 모드 (message 필드 존재 시)
-            if (v_doc["message"].is<const char*>()) {
-                handleNaturalLanguageTurn(p_request, v_doc);
-                freeBody(p_request);
-                return;
-            }
-
-            // 분기 2: 레거시 프록시 모드 (누적 버퍼 재사용)
-            int    v_httpCode = 0;
-            String v_resp     = W10_callGeminiApi((const char*)v_bodyBuf, v_bodyLen, v_httpCode);
             freeBody(p_request);
-
-            if (v_httpCode == 200) {
-                sendText(p_request, v_resp, 200, "application/json; charset=utf-8");
-            } else {
-                JsonDocument v_errDoc;
-                v_errDoc["error"]         = "upstream failed";
-                v_errDoc["upstream_http"] = v_httpCode;
-                if (v_resp.length() > 0) {
-                    v_errDoc["upstream_body"] = v_resp.substring(0, 200);
-                }
-                CL_W10_WebAPI::sendJson(p_request, v_errDoc, 502);
-            }
+            xTaskNotifyGive(s_aiWorkerTask);
+            p_request->send(202, "application/json", v_accepted);
         });
 }
 

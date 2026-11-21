@@ -319,52 +319,33 @@ void CT10_WS_tick() {
 void CL_CT10_ControlManager::markDirty(const char* p_key) {
     if (!p_key || p_key[0] == '\0') return;
 
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return;
-
     if (strcmp(p_key, "state") == 0) {
-        _dirtyState = true;
+        _dirtyState.store(true, std::memory_order_release);
     } else if (strcmp(p_key, "chart") == 0) {
-        _dirtyChart = true;
+        _dirtyChart.store(true, std::memory_order_release);
     } else if (strcmp(p_key, "metrics") == 0) {
-        _dirtyMetrics = true;
+        _dirtyMetrics.store(true, std::memory_order_release);
     } else if (strcmp(p_key, "summary") == 0) {
-        _dirtySummary = true;
+        _dirtySummary.store(true, std::memory_order_release);
     } else {
         CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] markDirty: unknown key=%s", p_key);
     }
 }
 
 bool CL_CT10_ControlManager::consumeDirtyState() {
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return false;
-    bool v_ret  = _dirtyState;
-    _dirtyState = false;
-    return v_ret;
+    return _dirtyState.exchange(false, std::memory_order_acq_rel);
 }
 
 bool CL_CT10_ControlManager::consumeDirtyMetrics() {
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return false;
-    bool v_ret    = _dirtyMetrics;
-    _dirtyMetrics = false;
-    return v_ret;
+    return _dirtyMetrics.exchange(false, std::memory_order_acq_rel);
 }
 
 bool CL_CT10_ControlManager::consumeDirtyChart() {
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return false;
-    bool v_ret  = _dirtyChart;
-    _dirtyChart = false;
-    return v_ret;
+    return _dirtyChart.exchange(false, std::memory_order_acq_rel);
 }
 
 bool CL_CT10_ControlManager::consumeDirtySummary() {
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return false;
-    bool v_ret    = _dirtySummary;
-    _dirtySummary = false;
-    return v_ret;
+    return _dirtySummary.exchange(false, std::memory_order_acq_rel);
 }
 
 // ======================================================
@@ -372,25 +353,18 @@ bool CL_CT10_ControlManager::consumeDirtySummary() {
 //  - bit0=state, bit1=metrics, bit2=chart, bit3=summary
 // ======================================================
 uint8_t CL_CT10_ControlManager::consumeAllDirty() {
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return 0;
-
     uint8_t v_ret = 0;
-    if (_dirtyState) {
-        v_ret       |= 0x01;
-        _dirtyState  = false;
+    if (_dirtyState.exchange(false, std::memory_order_acq_rel)) {
+        v_ret |= 0x01;
     }
-    if (_dirtyMetrics) {
-        v_ret         |= 0x02;
-        _dirtyMetrics  = false;
+    if (_dirtyMetrics.exchange(false, std::memory_order_acq_rel)) {
+        v_ret |= 0x02;
     }
-    if (_dirtyChart) {
-        v_ret       |= 0x04;
-        _dirtyChart  = false;
+    if (_dirtyChart.exchange(false, std::memory_order_acq_rel)) {
+        v_ret |= 0x04;
     }
-    if (_dirtySummary) {
-        v_ret         |= 0x08;
-        _dirtySummary  = false;
+    if (_dirtySummary.exchange(false, std::memory_order_acq_rel)) {
+        v_ret |= 0x08;
     }
     return v_ret;
 }
@@ -598,10 +572,10 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     // 9) Dirty flags
     {
         JsonObject v_dirty = A40_ComFunc::Json_ensureObject(v_ctl["dirty"]);
-        v_dirty["state"]   = _dirtyState;
-        v_dirty["metrics"] = _dirtyMetrics;
-        v_dirty["chart"]   = _dirtyChart;
-        v_dirty["summary"] = _dirtySummary;
+        v_dirty["state"]   = _dirtyState.load(std::memory_order_acquire);
+        v_dirty["metrics"] = _dirtyMetrics.load(std::memory_order_acquire);
+        v_dirty["chart"]   = _dirtyChart.load(std::memory_order_acquire);
+        v_dirty["summary"] = _dirtySummary.load(std::memory_order_acquire);
     }
 
     // ======================================================

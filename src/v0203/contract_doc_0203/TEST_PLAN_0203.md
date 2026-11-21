@@ -358,6 +358,7 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-22** | **v4.11** | **실시간 WS 풍속/차트 스트리밍·`reduced-motion` EQ·모니터 3탭 실기기 검증 반영**: `/ws/state`(4.5s 7프레임)·`/ws/chart`(4.5s 4프레임) 송신, `prefers-reduced-motion: reduce` EQ 누적 렌더, `body.snw-night-mode` 해제, `#/monitor` `📈 물리 차트` 탭 및 `check_i18n.py --strict` (`ko=602/en=602`) 실기기 검증 완료 반영 | Antigravity AI |
 | **2026-11-21** | **v4.10** | **FE 다국어·온보딩·Now Playing 즉시 동기화 실기 검증 반영**: 온보딩 4단계 완주/취소, 한/영 전환 시 프리셋·스타일·플레이리스트·Now Playing Bar·환경 추천 표시, 플레이리스트 재생 직후 즉시 동기화 검증 완료 반영 | Antigravity AI |
 | **2026-11-21** | **v4.9** | **AI 프록시 비동기 워커 검증 기준 반영 (0203_015)**: `TEST_PLAN_L9_L11_0203.md` T-114 `POST 202` + `GET ?jobId=` 폴링 및 `async_tcp` 무블로킹(`/state < 50ms`) 기준 반영 | Antigravity AI |
 | **2026-11-20** | **v4.8** | **NTP 기본 서버(`kr.pool.ntp.org`)·정적 캐시(`86400s`) 검증 기준 현행화**: `TEST_PLAN_L6_L8_0203.md` T-94 기대값 `"kr.pool.ntp.org"` 갱신 및 `max-age=86400` 기준 반영 | Antigravity AI |

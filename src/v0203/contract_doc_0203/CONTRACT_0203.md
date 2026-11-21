@@ -126,7 +126,7 @@
 | `CT10::feedPIR()` | ❌ | ✅ | ❌ | ❌ | **A-2** s_stateMutex 경유 |
 | `CT10::patchSimFromJson()` | ❌ | ✅ | ❌ | ❌ | **A-2** s_stateMutex 경유 |
 | `CT10::exportSimJson()` | ❌ | ✅ | ❌ | ❌ | **A-2** s_stateMutex 경유 |
-| `CT10::consumeAllDirty()` | ✅ | ❌ | ❌ | ❌ | **D-1** WS 배치 |
+| `CT10::consumeAllDirty()` | ✅ | ❌ | ❌ | ❌ | **D-1** WS 배치 (`std::atomic<bool>` lock-free) |
 | `CT10_WS_tick()` | ✅ | ❌ | ❌ | ❌ | T-loop 전용 |
 | `S10::tick()` | 간접 | ❌ | ❌ | ❌ | `CT10::tickLoop` 내부만 |
 | `S10::patchFromJson()` | ❌ | ✅ | ❌ | ❌ | HTTP, `_recursiveMutex` |
@@ -249,7 +249,7 @@ startSession(type, trigger, payload) [T-async]
 | **Pending Free (E-1)** | `reloadAll` 완료 | T-loop `processPendingFree()` | 3초 grace + 2슬롯 spinlock |
 | **Dirty Save** | REST 설정 변경 | T-async `saveDirtyConfigs()` | `s_dirtyflagSpinlock` |
 | **WS Broadcast** | `markDirty()` | T-loop `CT10_WS_tick()` | 채널별 file-static doc |
-| **WS Batch (D-1)** | 4채널 dirty | T-loop `consumeAllDirty()` | mutex 1회, 4플래그 |
+| **WS Batch (D-1)** | 4채널 dirty | T-loop `consumeAllDirty()` | `std::atomic<bool>` lock-free (mutex 0회, 4플래그) |
 | **Wi-Fi Reconnect** | T-async 요청 | T-wf 전담 | `s_wifiRequestSem` |
 | **NVS Flush (F-04)** | 런타임 변경 | T-loop `N10::tick()` | 10초 게이트 |
 
@@ -281,7 +281,7 @@ startSession(type, trigger, payload) [T-async]
 ### 7.13 UX 재설계·온보딩·야간 감광 계약 (UX-1~UX-3)
 - **[UX-1] 시뮬레이션 페이지 정체성**: 파라미터 덤프에서 직관적인 '바람 체험실'로 재설계.
 - **[UX-2] 첫 방문 온보딩**: `localStorage['snw.onboarded']` 기반 1회 온보딩 팝업 제공.
-- **[UX-3] 야간 감광**: 22:00~06:00 야간 시간대 `.snw-night-mode` 밝기 75% 감광 및 소음 사전 경고.
+- **[UX-3] 야간 감광 비활성화**: 기존 22:00~06:00 `body.snw-night-mode` `filter: brightness(0.75)` 규칙은 전체 화면 회색 딤 및 `position: fixed` 스태킹 컨텍스트 왜곡을 유발하여 비활성화한다.
 
 ### 7.14 W10 웹 라우팅 및 역직렬화 안전 계약 (ROUTE-1~ROUTE-3)
 - **[ROUTE-1] REST API ID 매핑**: 정규식 라우트 대신 `/:id` 라우트 패턴을 사용하며, `p_request->hasParam("id")` 유효성 검사 후 `p_request->getParam("id")->value().toInt()`로 안전하게 ID를 추출한다.
@@ -371,6 +371,7 @@ startSession(type, trigger, payload) [T-async]
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-22** | **v3.16** | **WS Dirty Lock-Free 전환 & UX-3 야간 감광 비활성화 계약 반영**: `_dirty*` 4플래그 `s_stateMutex` → `std::atomic<bool>` lock-free(§4.1/§6 `consumeAllDirty` mutex 0회, `tickLoop` 재귀 데드락 방지), §7.13 `[UX-3]` `body.snw-night-mode` `filter: brightness(0.75)` 비활성화, `#/monitor` 3탭(`물리 차트`)·`/monitor/chart` 메뉴 연계 반영 | Antigravity AI |
 | **2026-11-21** | **v3.15** | **FE 다국어 단일화·모달 타이머·온보딩 안전 계약 반영**: 프리셋/스타일/기본 프로필 7종 `SNW.I18n` 단일 헬퍼 경유 계약(하드코딩 금지), `999.app.js` `_modalCloseTimer` 취소 및 `998.overlay.onboarding.js` 중복/중간 취소 가드 계약 반영 | Antigravity AI |
 | **2026-11-21** | **v3.14** | **AI 프록시 비동기 워커 계약 반영 (0203_015)**: §1 `T-ai` (`gemini_worker`, 10,240 B) 및 §2 `W10::s_aiJobMutex` 추가, `async_tcp` 내 동기 HTTPS 호출 금지 및 `s_keyBuf` 워커 전용화 계약 명시 | Antigravity AI |
 | **2026-11-20** | **v3.13** | **하위 호환 제거 및 상수 SSOT 일원화 계약 반영**: `A20_resetWebPageDefault` 구버전 `P000_`/`P010_` 에셋 등록 제거, `P10_*`/`TM10_*` 호환 래퍼·`A20_Const_Sch` 미러 별칭·`autoOff/motion` deprecated 경고 제거, `A20_Const` 상수 일원화(NTP/TZ/Gemini/SoftAP/경로) | Antigravity AI |

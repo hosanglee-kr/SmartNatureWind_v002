@@ -452,10 +452,10 @@ class CL_CT10_ControlManager {
     static constexpr uint32_t AUTO_COMFORT_INTERVAL_MS = 300000; // 5분 (300,000 ms)
 
   private:
-    bool _dirtyState   = false;
-    bool _dirtyMetrics = false;
-    bool _dirtyChart   = false;
-    bool _dirtySummary = false;
+    std::atomic<bool> _dirtyState{false};
+    std::atomic<bool> _dirtyMetrics{false};
+    std::atomic<bool> _dirtyChart{false};
+    std::atomic<bool> _dirtySummary{false};
 
     // ======================================================
     // [Phase3 N-1] Session pause 시 실행 컨텍스트 백업

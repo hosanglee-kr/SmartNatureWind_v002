@@ -78,7 +78,7 @@
 | `CT10::tick()` | 1 ~ 5 ms | 40ms 스로틀, FSM + 물리 |
 | **[Stage 10] `tickAutoComfort()`** | **< 0.1 μs** (게이트 미도달) / **< 150 μs** (기동 시) | 5분 게이트, 평상 조기 반환, 만료 시 추천 산출 및 프리셋 세션 시작 |
 | **[F-06] `_pendingMotionSimApply` 소비** | **< 100 μs** | atomic exchange + 파라미터 복사 |
-| `CT10_WS_tick()` | 1 ~ 10 ms | **[D-1]** consumeAllDirty 1회 (기존 4회 → mutex -75%) |
+| `CT10_WS_tick()` | 1 ~ 10 ms | **[D-1]** `consumeAllDirty` `std::atomic<bool>` lock-free (mutex 0회) |
 | **[F-03] `g_M10_motionLogic->tick()`** | **< 100 μs** | PIR holdSec 감쇠 |
 | `TM10::tick()` | < 100 μs | 1초 게이트, 평상 조기 반환 |
 | `C10::processPendingFree()` | < 100 μs | 3초 grace 미도달 즉시 반환 |
@@ -168,7 +168,7 @@
 | `pendingReload_latency` | `requestReload`→소비 | < 50 ms | loopTask 지연 분석 |
 | `stack_hwm` | 각 태스크 종료/주기 | 잔여 > 20% | 스택 증설 |
 | `heap_free` | `/api/v001/diag` | > 100 KB | 메모리 누수/OTA 보류 |
-| **`ws_mutex_count`** (**D-1**) | WS tick 로그 카운터 | 채널당 1회/interval | `consumeAllDirty` 지속 확인 |
+| **`ws_mutex_count`** (**D-1**) | WS tick 로그 카운터 | 0회/tick (`std::atomic<bool>`) | lock-free 전환 유지 확인 |
 | **`sta_connected_read`** (**D-4**) | `isStaConnected` atomic | 0ms 대기 | WiFi.status() 지연 확인 |
 
 ---
@@ -496,6 +496,7 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-22** | **v3.15** | **WS Dirty Lock-Free 전환 & 모니터 차트 통합 후 5청크 실측치 현행화**: `CT10_WS_tick()` `consumeAllDirty` mutex 1회 → 0회(`std::atomic<bool>`), JS 3청크(`app_core` 42,837B + `app_ui` 31,227B + `app_pages` 86,395B = 160,459B gz) + CSS 2청크(19,392B gz) + HTML(2,496B gz) = 웹 자산 182,347B gz | Antigravity AI |
 | **2026-11-21** | **v3.14** | **FE 다국어 단일화·상태 동기화 반영 후 5청크 실측치 현행화**: JS 3청크(`app_core` 42,800B + `app_ui` 30,856B + `app_pages` 85,704B = 159,360B gz) + CSS 2청크(19,361B gz) + HTML(2,495B gz) = 웹 자산 181,216B gz | Antigravity AI |
 | **2026-11-21** | **v3.13** | **AI 프록시 비동기 워커 예산 반영 (0203_015)**: §3 `POST /ai/gemini` `< 5 ms` (`202`) 및 `GET` 폴링 `< 2 ms`, `T-ai` 내부 SRAM 스택 `10,240 B` + PSRAM Job 버퍼(`~20 KB`) 반영 | Antigravity AI |
 | **2026-11-20** | **v3.12** | **정적 자산 캐시 연장 및 대시보드 병렬 로딩 반영**: `Cache-Control` `public, max-age=86400`(24h) 연장 반영 및 `Dashboard.mount()` `Promise.all` 병렬 API 호출 반영 | Antigravity AI |

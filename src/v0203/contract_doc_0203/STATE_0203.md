@@ -76,7 +76,7 @@
 | `s_staConnected` (WF10) | T-sys_evt (이벤트), T-wf (`startSTA`) | T-loop (LED), T-async | `std::atomic<bool>` (**D-4**) | Wi-Fi 연결 |
 | `s_timeValid`, `s_wifiUp` (TM10) | T-sys_evt, T-wf, T-loop (`tick`) | 모든 태스크 | `TM10::s_mutex` | **F-01** NTP |
 | `g_A20_config_root` | T-loop (`reloadAll` 스왑) | 모든 태스크 (`getRootSnapshot`) | `s_rootSwapMux` | LittleFS 루트 |
-| `_dirtyState/Metrics/Chart/Summary` (CT10) | T-loop (`markDirty`), T-loop (`consumeAllDirty` 소비) | T-loop (`CT10_WS_tick`) | `CT10::s_stateMutex` (**D-1** 배치) | WS 채널 dirty |
+| `_dirtyState/Metrics/Chart/Summary` (CT10) | T-loop/T-async (`markDirty`), T-loop (`consumeAllDirty` 소비) | T-loop (`CT10_WS_tick`) | `std::atomic<bool>` (lock-free, `tickLoop` 재귀 데드락 방지) | WS 채널 dirty |
 | `_session` | T-async (start/pause/resume/stop) | T-async (`exportStateJson_v02`), T-loop | `CT10::s_stateMutex` | **mirror 전용** — FSM 결정 미참여 (ADR-1) |
 | `_pausedExec` | T-async (`pauseSession`) | T-async (`resumeSession`) | `CT10::s_stateMutex` | Pause 시 실행 컨텍스트 백업 |
 | `_session.payload.playlist.profileName` | T-async (`startSession` PLAYLIST) | T-async (`exportStateJson_v02`) | `CT10::s_stateMutex` | NowPlaying Bar 제목 (Phase 3) |
@@ -326,7 +326,7 @@ markDirty("chart")   ──┤       ↓
 markDirty("summary") ──┘  [D-1] 개선
 
 CT10_WS_tick (T-loop)
-  consumeAllDirty() 1회 = mutex 1회
+  consumeAllDirty() 1회 = std::atomic<bool> exchange (mutex 0회)
     bit0=state, bit1=metrics, bit2=chart, bit3=summary
     각 pending 채널 true로 적립
 ```
@@ -478,6 +478,7 @@ pauseMask == 0 일 때만 ENV_PAUSED 해소 (완전 재개)
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-22** | **v3.14** | **`_dirty*` 4플래그 Lock-Free(`std::atomic<bool>`) 전환 반영**: §1/§6.3 `markDirty()`·`consumeAllDirty()`의 `s_stateMutex` 의존 제거(`acquire`/`release`/`acq_rel`, `tickLoop` 내 재귀 데드락 해소) | Antigravity AI |
 | **2026-11-21** | **v3.13** | **FE 세션 정규화·초기 상태 동기화 규약 반영**: `060.store.js` `normalizeSession()` `active` 추론 규약(`s.active !== undefined ? Boolean(s.active) : true`), `StoreBridge.start()` 초기 `refreshNow()`, `999a.nowplaying.js` 초기 `render()` 보장 명시 | Antigravity AI |
 | **2026-11-21** | **v3.12** | **AI 프록시 비동기 Job 상태 소유권 반영 (0203_015)**: §8 `W10_Web_Gemini_0203.cpp` Job 슬롯(`IDLE`/`RUNNING`/`DONE`/`ERROR`, 30s TTL) 및 `s_aiJobMutex` 소유권 추가 | Antigravity AI |
 | **2026-11-20** | **v3.11** | **시간·네트워크 상수 SSOT 및 하위 호환 정리 확인**: `TM10` 기본 서버 `kr.pool.ntp.org`·TZ `Asia/Seoul` `A20_Const` 상수 일원화 및 `TM10_*` 전역 호환 함수 제거 확인 (FSM 상태/전이 변경 없음) | Antigravity AI |

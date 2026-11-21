@@ -271,6 +271,7 @@ void CL_S10_Simulation::tick() {
 
     if (_tickNowMs - s_lastChartLogMs > (unsigned long)v_chartIntervalMs) {
         s_lastChartLogMs = _tickNowMs;
+        v_needBroadcast  = true;
 
         bool     v_epochOk = false;
         uint64_t v_epochMs = S10_millis2EpochMs(_tickNowMs, &v_epochOk);
@@ -296,6 +297,7 @@ void CL_S10_Simulation::tick() {
     
     if (v_needBroadcast) {
         // 실제 브로드캐스트는 CT10_WS_tick이 dirty 소비 후 담당
+        CT10_markDirtyFromSim("state");
         CT10_markDirtyFromSim("chart");
         CT10_markDirtyFromSim("metrics");
     }

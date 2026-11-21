@@ -165,9 +165,10 @@ static inline JsonObjectConst Json_pickRootObject(const JsonDocument& p_doc, con
     return v.isNull() ? p_doc.as<JsonObjectConst>() : v;
 }
 
-static inline JsonObject Json_ensureObject(JsonVariant p_v) {
-    if (p_v.is<JsonObject>()) return p_v.as<JsonObject>();
-    return p_v.to<JsonObject>();
+template <typename T>
+static inline JsonObject Json_ensureObject(T&& p_v) {
+    if (p_v.template is<JsonObject>()) return p_v.template as<JsonObject>();
+    return p_v.template to<JsonObject>();
 }
 
 static inline bool Json_copyStr(JsonObjectConst p_obj,

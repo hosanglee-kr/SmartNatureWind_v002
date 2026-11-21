@@ -30,11 +30,15 @@ struct ST_CT10_DhtCache {
     float    hum        = 55.0f;
 };
 ST_CT10_DhtCache s_dhtCache;
+portMUX_TYPE     s_dhtMux         = portMUX_INITIALIZER_UNLOCKED;
+TaskHandle_t     s_dhtTaskHandle  = nullptr;
 
-void _ct10_readDhtIfNeeded() {
-    if (!g_A20_config_root.system) return;
+void _ct10_readDhtOnce() {
+    ST_A20_ConfigRoot_t v_snap;
+    CL_C10_ConfigManager::getRootSnapshot(v_snap);
+    if (!v_snap.system) return;
 
-    const auto& conf = g_A20_config_root.system->hw.tempHum;
+    const auto& conf = v_snap.system->hw.tempHum;
     if (!conf.enabled) return;
 
     int16_t v_pin = (conf.pin > 0) ? (int16_t)conf.pin : 4;
@@ -43,7 +47,7 @@ void _ct10_readDhtIfNeeded() {
         s_dhtCache.pin = v_pin;
         s_dhtCache.dht = new DHT(s_dhtCache.pin, DHT22);
         s_dhtCache.dht->begin();
-        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] DHT22 init on pin %d", s_dhtCache.pin);
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] DHT22 init on pin %d (dht_task)", s_dhtCache.pin);
     } else if (s_dhtCache.pin != v_pin) {
         CL_D10_Logger::log(EN_L10_LOG_WARN,
                            "[CT10] DHT pin changed (%d->%d). Recommend reboot to apply safely.",
@@ -51,24 +55,39 @@ void _ct10_readDhtIfNeeded() {
                            v_pin);
     }
 
-    uint32_t v_now        = millis();
-    uint32_t v_intervalMs = (conf.intervalSec >= 2) ? ((uint32_t)conf.intervalSec * 1000UL) : 5000UL;
-    if (v_now - s_dhtCache.lastReadMs < v_intervalMs) return;
-    s_dhtCache.lastReadMs = v_now;
-
     float v_t = s_dhtCache.dht ? s_dhtCache.dht->readTemperature() : NAN;
     float v_h = s_dhtCache.dht ? s_dhtCache.dht->readHumidity() : NAN;
 
     if (isnan(v_t)) {
         CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] DHT temperature read failed");
-    } else {
-        s_dhtCache.temp = v_t;
     }
     if (isnan(v_h)) {
         CL_D10_Logger::log(EN_L10_LOG_WARN, "[CT10] DHT humidity read failed");
-    } else {
-        s_dhtCache.hum = v_h;
     }
+
+    portENTER_CRITICAL(&s_dhtMux);
+    if (!isnan(v_t)) s_dhtCache.temp = v_t;
+    if (!isnan(v_h)) s_dhtCache.hum  = v_h;
+    portEXIT_CRITICAL(&s_dhtMux);
+}
+
+void _ct10_dhtTask(void* /*p_arg*/) {
+    for (;;) {
+        _ct10_readDhtOnce();
+
+        uint32_t            v_intervalMs = 5000UL;
+        ST_A20_ConfigRoot_t v_snap;
+        CL_C10_ConfigManager::getRootSnapshot(v_snap);
+        if (v_snap.system && v_snap.system->hw.tempHum.intervalSec >= 2) {
+            v_intervalMs = (uint32_t)v_snap.system->hw.tempHum.intervalSec * 1000UL;
+        }
+        vTaskDelay(pdMS_TO_TICKS(v_intervalMs));
+    }
+}
+
+void _ct10_ensureDhtTask() {
+    if (s_dhtTaskHandle) return;
+    xTaskCreatePinnedToCore(_ct10_dhtTask, "dht_task", 3072, nullptr, 1, &s_dhtTaskHandle, 1);
 }
 } // namespace
 
@@ -366,13 +385,19 @@ bool CL_CT10_ControlManager::shouldHoldEventState() const {
 // 온습도 (DHT 캐시)
 // --------------------------------------------------
 float CL_CT10_ControlManager::getCurrentTemperatureMock() {
-    _ct10_readDhtIfNeeded();
-    return s_dhtCache.temp;
+    _ct10_ensureDhtTask();
+    portENTER_CRITICAL(&s_dhtMux);
+    float v_t = s_dhtCache.temp;
+    portEXIT_CRITICAL(&s_dhtMux);
+    return v_t;
 }
 
 float CL_CT10_ControlManager::getCurrentHumidityMock() {
-    _ct10_readDhtIfNeeded();
-    return s_dhtCache.hum;
+    _ct10_ensureDhtTask();
+    portENTER_CRITICAL(&s_dhtMux);
+    float v_h = s_dhtCache.hum;
+    portEXIT_CRITICAL(&s_dhtMux);
+    return v_h;
 }
 
 // --------------------------------------------------

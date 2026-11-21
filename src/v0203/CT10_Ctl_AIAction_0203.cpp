@@ -216,8 +216,12 @@ String executeAIAction(const char* p_fn, JsonObjectConst p_args) {
             return "error:invalid_preset";
         }
 
-        CL_CT10_ControlManager::instance().startOverridePreset(v_code, v_style, nullptr, 0, true);
-        return "ok";
+        JsonDocument v_doc;
+        v_doc["presetCode"] = v_code;
+        v_doc["styleCode"]  = v_style;
+        return CL_CT10_ControlManager::startSession(EN_CT10_SESSION_PRESET, EN_CT10_TRIGGER_MANUAL, v_doc)
+                   ? "ok"
+                   : "error:start_failed";
     }
 
     // 3. 고정 PWM 바람 재생
@@ -225,8 +229,11 @@ String executeAIAction(const char* p_fn, JsonObjectConst p_args) {
         float v_pct = p_args["percent"] | 50.0f;
         if (v_pct < 0.0f) v_pct = 0.0f;
         if (v_pct > 100.0f) v_pct = 100.0f;
-        CL_CT10_ControlManager::instance().startOverrideFixed(v_pct, 0, true);
-        return "ok";
+        JsonDocument v_doc;
+        v_doc["percent"] = v_pct;
+        return CL_CT10_ControlManager::startSession(EN_CT10_SESSION_FIXED, EN_CT10_TRIGGER_MANUAL, v_doc)
+                   ? "ok"
+                   : "error:start_failed";
     }
 
     // 4. 일시 정지

@@ -41,6 +41,9 @@ src/v0203/**/Ref/        # 구버전 참조 문서/스크립트
 src/v0203/data_v0203/html_v0203/ # LittleFS 배포용 웹 스테이징 디렉토리
 **/*.gz                  # LittleFS 업로드용 Gzip 압축 바이너리 (.css.gz, .js.gz 등)
 
+/src/v0203/User_Manual_0203_backup/
+/src/v0203/User_Introduce/etc/
+
 # ------------------------------------------------------------------------------
 # 5. CI/CD, IDE 및 AI 에이전트 설정 (CI/CD, IDE & Agent Configurations)
 #    - 빌드 파이프라인 YAML, 에디터 설정 및 에이전트 내부 스킬 문서 제외

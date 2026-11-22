@@ -284,7 +284,7 @@ startSession(type, trigger, payload) [T-async]
 - **[UX-3] 야간 감광 비활성화**: 기존 22:00~06:00 `body.snw-night-mode` `filter: brightness(0.75)` 규칙은 전체 화면 회색 딤 및 `position: fixed` 스태킹 컨텍스트 왜곡을 유발하여 비활성화한다.
 
 ### 7.14 W10 웹 라우팅 및 역직렬화 안전 계약 (ROUTE-1~ROUTE-3)
-- **[ROUTE-1] REST API ID 매핑**: 정규식 라우트 대신 `/:id` 라우트 패턴을 사용하며, `p_request->hasParam("id")` 유효성 검사 후 `p_request->getParam("id")->value().toInt()`로 안전하게 ID를 추출한다.
+- **[ROUTE-1] REST API ID 매핑**: `ESPAsyncWebServer`(`BackwardCompatible` 매처)는 `/:id` 경로 파라미터를 지원하지 않으므로, CRUD 단건 엔드포인트(`wind_profile`, `schedules`, `user_profiles`)는 기본 경로(`W10_Const::HTTP_API_*`)로 등록하고 `_crudExtractTailId()`로 URL 테일 ID를 안전하게 추출한다.
 - **[ROUTE-2] 정적 Gzip 호스팅**: 정규식 라우트 대신 `s_server->onNotFound` 핸들러에서 URL의 `PATH_STATIC_HTML` 접두사 일치 여부를 검사하고 `.gz` 우선 서빙을 수행하여 `ASYNCWEBSERVER_REGEX` 매크로 비활성화 환경에서도 안전하게 정적 자산을 제공한다.
 - **[ROUTE-3] ArduinoJson v7 역직렬화 타입 안전성**: `containsKey` 비권장 API를 배제하고, `obj["field"].is<T>()`를 통한 타입 검사 및 `obj["field"].as<T>()` / `A40_ComFunc::Json_getNum` 헬퍼를 통해 누락 필드 및 타입 불일치 크래시를 원천 방지한다.
 

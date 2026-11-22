@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "lm-studio": {
+      "command": "C:\\Users\\A003comlhsd\\.local\\bin\\uv.exe",
+      "args": [
+        "run",
+        "--with",
+        "mcp",
+        "--with",
+        "openai",
+        "d:\\95.2540_PJT\\SmartNatureWind_v002\\.agents\\lm_studio_mcp.py"
+      ],
+      "env": {
+        "OPENAI_BASE_URL": "http://192.168.123.108:1234/v1",
+        "OPENAI_API_KEY": "lm-studio",
+        "OPENAI_MODEL": "qwen/qwen3.5-9b"
+      }
+    }
+  }
+}

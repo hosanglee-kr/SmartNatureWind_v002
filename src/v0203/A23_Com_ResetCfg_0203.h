@@ -296,7 +296,7 @@ static inline void A20_resetTriggerRuleDefault(ST_A20_TriggerRule_t& p_rule) {
 
         A20_resetWebSocketDefault(p_cfg.system.webSocket);
 
-        p_cfg.hw.fanPwm.pin     = 6;
+        p_cfg.hw.fanPwm.pin     = 1;
         p_cfg.hw.fanPwm.channel = 0;
         p_cfg.hw.fanPwm.freq    = 25000;
         p_cfg.hw.fanPwm.res     = 10;

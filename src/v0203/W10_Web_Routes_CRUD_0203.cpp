@@ -20,11 +20,27 @@
 #include "W10_Web_0203.h"
 
 // ======================================================
-// [Stage 13 P0] 정적 경로 상수 — 임시 String 수명 문제 해결
+// [Stage 13 P0] CRUD URL 끝 /{id} 파싱 헬퍼
+//  - ESPAsyncWebServer 기본 매처(BackwardCompatible)는 /:id 미지원
+//  - 베이스 경로(/api/v001/{resource}) prefix 매칭 + URL tail 숫자 ID 추출
 // ======================================================
-static constexpr const char* G_W10_PATH_WIND_PROFILE_ID  = "/api/v001/windProfile/:id";
-static constexpr const char* G_W10_PATH_SCHEDULES_ID     = "/api/v001/schedules/:id";
-static constexpr const char* G_W10_PATH_USER_PROFILES_ID = "/api/v001/user_profiles/:id";
+static bool _crudExtractTailId(AsyncWebServerRequest* p_request, const char* p_prefix, int& r_id) {
+    if (!p_request || !p_prefix) return false;
+    if (p_request->hasParam("id")) {
+        r_id = p_request->getParam("id")->value().toInt();
+        return r_id > 0;
+    }
+    const String& v_url  = p_request->url();
+    const size_t  v_plen = strlen(p_prefix);
+    if (v_url.length() <= v_plen + 1 || v_url.charAt(v_plen) != '/') return false;
+    String v_tail = v_url.substring(v_plen + 1);
+    if (v_tail.length() == 0 || v_tail.indexOf('/') >= 0) return false;
+    for (size_t i = 0; i < v_tail.length(); i++) {
+        if (!isDigit((unsigned char)v_tail.charAt(i))) return false;
+    }
+    r_id = v_tail.toInt();
+    return r_id > 0;
+}
 
 // ======================================================
 // [Stage 13 P0] CRUD 공통 빈 body(onRequest) + 단편화 JSON 누적(onBody) 헬퍼
@@ -124,7 +140,7 @@ void CL_W10_WebAPI::routeWindProfile() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeWindProfileID() {
     // PUT
-    s_server->on(G_W10_PATH_WIND_PROFILE_ID,
+    s_server->on(W10_Const::HTTP_API_WIND_PROFILE,
                  HTTP_PUT,
                  _crudOnReqEmptyCheck,
                  nullptr,
@@ -132,11 +148,11 @@ void CL_W10_WebAPI::routeWindProfileID() {
                      JsonDocument v_doc;
                      if (!_crudAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
 
-                     if (!p_request->hasParam("id")) {
+                     int v_id = 0;
+                     if (!_crudExtractTailId(p_request, W10_Const::HTTP_API_WIND_PROFILE, v_id)) {
                          p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
                          return;
                      }
-                     int v_id = p_request->getParam("id")->value().toInt();
 
                      bool v_updated = CL_C10_ConfigManager::updateWindProfileFromJson((uint16_t)v_id, v_doc);
 
@@ -149,13 +165,13 @@ void CL_W10_WebAPI::routeWindProfileID() {
                  });
 
     // DELETE
-    s_server->on(G_W10_PATH_WIND_PROFILE_ID, HTTP_DELETE, [](AsyncWebServerRequest* p_request) {
+    s_server->on(W10_Const::HTTP_API_WIND_PROFILE, HTTP_DELETE, [](AsyncWebServerRequest* p_request) {
         if (!requireApiKey(p_request)) return;
-        if (!p_request->hasParam("id")) {
+        int v_id = 0;
+        if (!_crudExtractTailId(p_request, W10_Const::HTTP_API_WIND_PROFILE, v_id)) {
             p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
             return;
         }
-        int  v_id      = p_request->getParam("id")->value().toInt();
         bool v_deleted = CL_C10_ConfigManager::deleteWindProfile((uint16_t)v_id);
 
         JsonDocument v_res;
@@ -213,7 +229,7 @@ void CL_W10_WebAPI::routeSchedules() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeSchedulesID() {
     // PUT
-    s_server->on(G_W10_PATH_SCHEDULES_ID,
+    s_server->on(W10_Const::HTTP_API_SCHEDULES,
                  HTTP_PUT,
                  _crudOnReqEmptyCheck,
                  nullptr,
@@ -221,11 +237,11 @@ void CL_W10_WebAPI::routeSchedulesID() {
                      JsonDocument v_doc;
                      if (!_crudAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
 
-                     if (!p_request->hasParam("id")) {
+                     int v_id = 0;
+                     if (!_crudExtractTailId(p_request, W10_Const::HTTP_API_SCHEDULES, v_id)) {
                          p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
                          return;
                      }
-                     int v_id = p_request->getParam("id")->value().toInt();
 
                      bool v_updated = CL_C10_ConfigManager::updateScheduleFromJson((uint16_t)v_id, v_doc);
 
@@ -238,13 +254,13 @@ void CL_W10_WebAPI::routeSchedulesID() {
                  });
 
     // DELETE
-    s_server->on(G_W10_PATH_SCHEDULES_ID, HTTP_DELETE, [](AsyncWebServerRequest* p_request) {
+    s_server->on(W10_Const::HTTP_API_SCHEDULES, HTTP_DELETE, [](AsyncWebServerRequest* p_request) {
         if (!requireApiKey(p_request)) return;
-        if (!p_request->hasParam("id")) {
+        int v_id = 0;
+        if (!_crudExtractTailId(p_request, W10_Const::HTTP_API_SCHEDULES, v_id)) {
             p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
             return;
         }
-        int  v_id      = p_request->getParam("id")->value().toInt();
         bool v_deleted = CL_C10_ConfigManager::deleteSchedule((uint16_t)v_id);
 
         JsonDocument v_res;
@@ -302,7 +318,7 @@ void CL_W10_WebAPI::routeUserProfiles() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeUserProfilesID() {
     // PUT
-    s_server->on(G_W10_PATH_USER_PROFILES_ID,
+    s_server->on(W10_Const::HTTP_API_USER_PROFILES,
                  HTTP_PUT,
                  _crudOnReqEmptyCheck,
                  nullptr,
@@ -310,11 +326,11 @@ void CL_W10_WebAPI::routeUserProfilesID() {
                      JsonDocument v_doc;
                      if (!_crudAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
 
-                     if (!p_request->hasParam("id")) {
+                     int v_id = 0;
+                     if (!_crudExtractTailId(p_request, W10_Const::HTTP_API_USER_PROFILES, v_id)) {
                          p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
                          return;
                      }
-                     int v_id = p_request->getParam("id")->value().toInt();
 
                      bool v_updated = CL_C10_ConfigManager::updateUserProfilesFromJson((uint16_t)v_id, v_doc);
 
@@ -327,13 +343,13 @@ void CL_W10_WebAPI::routeUserProfilesID() {
                  });
 
     // DELETE
-    s_server->on(G_W10_PATH_USER_PROFILES_ID, HTTP_DELETE, [](AsyncWebServerRequest* p_request) {
+    s_server->on(W10_Const::HTTP_API_USER_PROFILES, HTTP_DELETE, [](AsyncWebServerRequest* p_request) {
         if (!requireApiKey(p_request)) return;
-        if (!p_request->hasParam("id")) {
+        int v_id = 0;
+        if (!_crudExtractTailId(p_request, W10_Const::HTTP_API_USER_PROFILES, v_id)) {
             p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
             return;
         }
-        int  v_id      = p_request->getParam("id")->value().toInt();
         bool v_deleted = CL_C10_ConfigManager::deleteUserProfiles((uint16_t)v_id);
 
         JsonDocument v_res;

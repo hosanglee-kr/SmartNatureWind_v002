@@ -69,10 +69,10 @@
     /* [FE-P2-4] 모바일 네비게이션 실측 60px 통일 */
     --snw-np-h: 48px;
 
-    /* [v0203-UI] 하단 뷰포트 레이아웃 스택 (기본: Now Playing 숨김) */
+    /* [v0203-UI] 하단 뷰포트 레이아웃 스택 (기본: Now Playing 숨김, 모바일 AI FAB 76+56=132px 여유 확보) */
     --snw-fab-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
     --snw-toast-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-    --snw-content-pb: calc(80px + env(safe-area-inset-bottom, 0px));
+    --snw-content-pb: calc(144px + env(safe-area-inset-bottom, 0px));
 
     /* 그림자 */
     --snw-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
@@ -101,12 +101,12 @@
     /* [N-6] 1000 → 1200 */
 }
 
-/* [v0203-UI] Now Playing Bar 활성화 시 동적 부상 레이아웃 */
+/* [v0203-UI] Now Playing Bar 활성화 시 동적 부상 레이아웃 (FAB 124+56=180px 여유 확보) */
 body.has-nowplaying {
     --snw-fab-bottom: calc(124px + env(safe-area-inset-bottom, 0px));
     /* 60px(BottomNav) + 48px(NP) + 16px */
     --snw-toast-bottom: calc(124px + env(safe-area-inset-bottom, 0px));
-    --snw-content-pb: calc(128px + env(safe-area-inset-bottom, 0px));
+    --snw-content-pb: calc(192px + env(safe-area-inset-bottom, 0px));
 }
 
 /* [v0203-UI] 데스크톱 (Bottom Nav 없음) 레이아웃 스택 */
@@ -114,19 +114,21 @@ body.has-nowplaying {
     :root {
         --snw-fab-bottom: 24px;
         --snw-toast-bottom: 24px;
-        --snw-content-pb: 24px;
+        --snw-content-pb: 96px;
     }
 
     body.has-nowplaying {
         --snw-fab-bottom: 72px;
         /* 48px(NP) + 24px */
         --snw-toast-bottom: 72px;
-        --snw-content-pb: 72px;
+        --snw-content-pb: 140px;
     }
 }
 
 /* [P0-3] 레벨 필터 클래스 (원본 flex/grid display 보존) */
-.snw-hidden-by-level { display: none !important; }
+.snw-hidden-by-level {
+    display: none !important;
+}
 
 /* 라이트 모드 자동 전환 */
 @media (prefers-color-scheme: light) {

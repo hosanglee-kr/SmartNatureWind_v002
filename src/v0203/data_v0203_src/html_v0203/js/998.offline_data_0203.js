@@ -52,7 +52,7 @@ window.SNW = window.SNW || {};
                 },
                 "hw": {
                         "fanPwm": {
-                                "pin": 6,
+                                "pin": 1,
                                 "channel": 0,
                                 "freq": 25000,
                                 "res": 10

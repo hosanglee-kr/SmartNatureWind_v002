@@ -736,6 +736,24 @@ bool CL_CT10_ControlManager::resumeSession() {
     if (!v_guard.isAcquired()) return false;
 
     if (self._session.type == EN_CT10_SESSION_NONE) return false;
+
+    // [Stage 5 / PAUSE-STOP-9] ENV_PAUSED 상태에서 수동 재개 시 1시간 유예 후 applyDecision()이 원 상태 복귀
+    if (self.runCtx.state == EN_CT10_STATE_ENV_PAUSED && self._session.state == EN_SESSION_ACTIVE) {
+        self.triggerRt.pauseBypassUntilMs = millis() + 3600000UL;
+        self.triggerRt.pauseMask          = 0;
+        self.markDirty("state");
+        CL_MON_Monitor::pushSessionEvent(EN_MON_EVENT_RESUME,
+                                         "환경 일시정지 해제",
+                                         (uint8_t)self._session.type,
+                                         (uint8_t)self._session.trigger,
+                                         self._session.payload.playlist.currentStepIdx,
+                                         self._session.payload.playlist.totalSteps,
+                                         0,
+                                         0);
+        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] resumeSession(): ENV_PAUSED bypass 1h");
+        return true;
+    }
+
     if (self._session.state != EN_SESSION_PAUSED) return false;
     if (!self._pausedExec.valid) return false;
 

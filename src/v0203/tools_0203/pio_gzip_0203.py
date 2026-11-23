@@ -79,10 +79,6 @@ CSS_CHUNKS = {
     "common_base_0203.css":  ["_reset.css", "_variables.css", "_layout.css", "_responsive.css", "_comp_ui.css", "_comp_form.css"],
     "common_pages_0203.css": ["_dashboard.css", "_comfort.css", "_eq.css", "_player.css", "_nowplaying.css", "_studio.css", "_profiles.css", "_schedule.css", "_monitor.css", "_chart.css", "_simulation.css", "_settings.css", "_onboarding.css", "_rules.css"],
 }
-LEGACY_BUNDLES = [
-    "P010_bundle_0203.js", "P010_bundle_0203.js.gz",
-    "P000_common_0203.css", "P000_common_0203.css.gz",
-]
 
 HTML_SHELL_INPUT   = "index.html"
 HTML_SHELL_OUTPUT  = "index.html"  # 배포 시에도 index.html 유지
@@ -91,7 +87,6 @@ HTML_SHELL_OUTPUT  = "index.html"  # 배포 시에도 index.html 유지
 JS_BUNDLE_EXCLUDES: Set[str] = {
     "998.offline_0203.js",      # 오프라인 어댑터 로직 (로컬 검증용, ESP32 배포 제외)
     "998.offline_data_0203.js", # 오프라인 JSON 캐시 데이터 (로컬 검증용, ESP32 배포 제외)
-    "P010_bundle_0203_old.js",  # 백업 파일
 }
 
 # Gzip 압축 대상 확장자
@@ -309,17 +304,8 @@ def inject_json_to_offline_adapter(project_root: Path) -> int:
 # ============================================================
 # [1/6] JS 번들링
 # ============================================================
-def _cleanup_legacy_bundles(src_dir: Path, dst_dir: Path) -> None:
-    for name in LEGACY_BUNDLES:
-        for d in (src_dir, dst_dir):
-            p = d / name
-            if p.is_file():
-                p.unlink()
-                _log(f"  [CLEAN] 구 번들 삭제: {p}", tag="clean")
-
 
 def build_js_bundle(src_dir: Path, dst_dir: Path) -> int:
-    _cleanup_legacy_bundles(src_dir, dst_dir)
     all_files = sorted(
         [f for f in src_dir.glob("**/*.js")
          if f.name not in JS_CHUNKS and f.name not in JS_BUNDLE_EXCLUDES],
@@ -328,7 +314,11 @@ def build_js_bundle(src_dir: Path, dst_dir: Path) -> int:
     if not all_files:
         print(f"[ERROR] JS 소스 없음: {src_dir}", file=sys.stderr)
         return 1
-
+    
+    for f in all_files:
+        if not any(pred(f) for pred in JS_CHUNKS.values()):
+            _log(f"[WARN] JS 청크 매칭 실패(누락): {f.relative_to(src_dir)}", tag="js")
+        
     for chunk_name, pred in JS_CHUNKS.items():
         files = [f for f in all_files if pred(f)]
         if not files:
@@ -418,9 +408,9 @@ def process_html_shell(src_dir: Path, dst_dir: Path) -> int:
     content = src_html.read_text(encoding="utf-8")
 
     # [캐시 버스팅] .css.gz / .js.gz 참조에 빌드 타임스탬프 ?v=... 자동 부여 (원본 미수정)
-    import re as _re
+    # import re as _re
     _ver = datetime.now().strftime("%Y%m%d%H%M%S")
-    content = _re.sub(
+    content = re.sub(
         r'((?:common_base_0203|common_pages_0203|app_core_0203|app_ui_0203|app_pages_0203)\.(?:css|js)\.gz)(?:\?v=[^"\'\s>]*)?',
         rf'\1?v={_ver}',
         content,

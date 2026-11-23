@@ -1,8 +1,9 @@
 # `A20_Const_Wifi_0203.h` 상세 Spec
 
-# A20_Const_Wifi_0203.h Spec
+## ⚙️ 시스템 스펙 요약: A20_Const_Wifi_0203.h
 
-## 1. 파일 설명
+
+
 이 파일은 ESP32-S3 C++17 임베디드 시스템에서 사용되는 WiFi 설정 상수를 정의하는 헤더 파일입니다.
 
 ## 2. 주요 클래스/구조체/열거형
@@ -38,7 +39,9 @@ typedef enum {
 } ST_A20_WIFI_MODE_t;
 ```
 
-## 3. 주요 함수/메서드 및 동작
+
+### 🛠️ 함수 정의 및 시그니처 (Functions & Signatures)
+
 
 ### A20_Const_Wifi_0203.h
 - `A20_WifiConfig_t` 구조체를 정의하여 WiFi 설정을 저장합니다.

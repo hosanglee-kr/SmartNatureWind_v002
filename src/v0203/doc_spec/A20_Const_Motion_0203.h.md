@@ -6,7 +6,7 @@
 
 MOTION 설정 구조체 정의 및 시뮬레이션 파라미터 (cfg_motion_xxx.json) 를 camelCase 정합하여 영구 저장/복원용 데이터 모델링을 수행합니다.
 
-## 2. 주요 클래스/구조체/열거형
+### 💾 구조체 및 타입 정의 (Structs & Types)
 *   **ST_A20_MotPirCfg_t**: MOTION 활성화 (`enabled`) 및 홀드 시간 (`holdSec`) 설정.
 *   **ST_A20_MotTiming_t**: 시뮬레이션 (`simIntervalMs`), 돌풍 (`gustIntervalMs`), 열 (`thermalIntervalMs`) 간격 정의.
 *   **ST_A20_MotSimCfg_t**: [NEW] 시뮬레이션 파라미터 (presetCode, styleCode, fanPowerEnabled 등 13 개 변수) 로 재부팅 시 소실 방지 및 부팅 복원용 데이터.

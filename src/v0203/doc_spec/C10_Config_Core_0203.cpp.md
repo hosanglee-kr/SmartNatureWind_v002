@@ -1,7 +1,5 @@
 # `C10_Config_Core_0203.cpp` 상세 Spec
 
-## 파트 1/12
-
 ## C10_Config_Core_0203.cpp 분석 Spec Sheet (파트 1/12)
 
 본 파일은 Smart Nature Wind Configuration Manager의 핵심 설정 관리 로직을 담당하며, 전역 상태 및 동기화 메커니즘을 정의합니다.
@@ -33,10 +31,6 @@
 | `_dirty_motion` | `bool` | 모션 감지(Motion) 관련 설정 변경 여부 플래그입니다. |
 | `_dirty_schedules
 
----
-
-## 파트 2/12
-
 ## C10\_Config\_Core\_0203.cpp 분석 Spec Sheet
 
 본 파일은 `CL_C10_ConfigManager` 클래스의 핵심 로직을 담당하며, 설정(Configuration) 데이터의 안전한 초기화 및 로딩을 관리합니다.
@@ -60,10 +54,6 @@
 *   **목적:** 특정 메모리 섹션에 객체를 할당하는 헬퍼 함수입니다. C++의 `new` 연산자를 사용하여 메모리를 확보하고, 포인터(`p_ptr`)를 안전하게 초기화합니다.
 *   **매개변수:**
     *   `T*& p_ptr`: 참조로 전달되어
-
----
-
-## 파트 3/12
 
 ## 🛠️ 시스템 아키텍처 Spec 분석 보고서 (C10_Config_Core_0203.cpp)
 
@@ -92,10 +82,6 @@
 #### `CL_C10_ConfigManager` 멤버 함수
 *   **`loadAll(ST_A20_ConfigRoot_t& p_root)`**:
     *   **역할:** 시스템
-
----
-
-## 파트 4/12
 
 ## 📝 코드 분석 Spec (C10_Config_Core_0203.cpp - 파트 4/12)
 
@@ -128,10 +114,6 @@
 | :--- | :--- | :--- |
 | `s_recursiveMutex` | Static Member Variable | `CL_C10_ConfigManager` 클래스의 정적 멤버 변수로, 다중 스레드 환경에서 설정 해제(`freeLazySection`) 작업의 원자성(Atomicity)을
 
----
-
-## 파트 5/12
-
 ## ⚙️ 코드 분석 명세서 (C10\_Config\_Core\_0203.cpp)
 
 **아키텍트:** ESP32-S3 C++17 임베디드 시스템 아키텍트
@@ -157,10 +139,6 @@
 
 #### 2
 
----
-
-## 파트 6/12
-
 ## 💻 C10_Config_Core_0203.cpp 분석 결과 (파트 6/12)
 
 본 코드는 `CL_C10_ConfigManager` 클래스 내에서 시스템의 설정(Configuration) 상태를 관리하고, 주기적으로 만료되거나 변경된 설정을 저장 및 처리하는 로직을 담당합니다. 임베디드 환경에 최적화된 동기화 메커니즘과 원자적 연산이 다수 사용되었습니다.
@@ -185,10 +163,6 @@
 | `s_pendingFreeMs[]` | Array (`s_pendingFreeMs[i]`) | 각 대기 Free 항목이 등록된 시간(밀리초)을 저장하는 배열입니다. |
 | `s_recursiveMutex` | Mutex/Lock | 재귀적 잠금 메커니즘을 사용하는
 
----
-
-## 파트 7/12
-
 ## 🛠️ C++17 임베디드 시스템 아키텍처 분석 Spec
 
 ### 📂 클래스 및 구조체 (Classes & Structs)
@@ -203,10 +177,6 @@
 | `ST_A20_UserProfilesRoot_t` | Struct/Type | 사용자 프로필(User Profiles) 관련 루트 설정 데이터를 담는 구조체입니다. |
 | `ST_A20_WindDict_t` | Struct/Type | 풍향 사전(Wind Dictionary) 설정을 담는 구조체입니다. |
 | `ST_A20_WebPageConfig_
-
----
-
-## 파트 8/12
 
 ## ⚙️ 시스템 아키텍처 명세서 (C10_Config_Core_0203.cpp - 파트 8/12)
 
@@ -236,10 +206,6 @@
 | :--- | :--- | :--- | :--- |
 | `s_recursiveMutex` | Recursive Mutex | **재귀 뮤텍스** | 전체 설정 저장 과정(`saveAll`)을 보호하는 데 사용됩니다. 재진입이 가능하여 안전성을 높입니다. |
 | `CL_A40_MutexGuard_Semaphore v_MutxGuard` | RAII Guard | **뮤텍스 획득 관리자** | `s_recursiveMutex`를 RAII(Resource Acquisition Is Initialization) 방식으로 획득하고, 스코프를 벗어날 때 자동으로 해제합니다.
-
----
-
-## 파트 9/12
 
 ## ⚙️ 코드 분석 Spec: `C10_Config_Core_0203.cpp` (파트 9/12)
 
@@ -273,10 +239,6 @@
 *   **`toJson_UserProfiles`**: 사용자 프로필 관련 설정을 JSON으로 변환합니다.
 *   **`toJson_WindDict`**: 풍향
 
----
-
-## 파트 10/12
-
 ## 🛠️ 코드 분석 Spec: `CL_C10_ConfigManager::factoryResetFromDefault()`
 
 본 코드는 설정 파일(Configuration)을 기본값으로 초기화하고 저장하는 핵심 로직을 담고 있습니다. 임베디드 시스템의 안정적인 리소스 접근과 데이터 직렬화/역직렬화를 다루는 부분이 많으므로, 각 요소의 역할 정의가 중요합니다.
@@ -297,10 +259,6 @@
 | 이름 | 유형 | 호출 주체 | 설명 | 비고 |
 | :--- | :--- | :--- | :--- | :--- |
 | `CL_C10_ConfigManager::factoryResetFromDefault()` | Member Function | `CL_C10_ConfigManager` | 시스템 설정을 기본값으로 초기화하고, 이를 파일에 저장하는 메인 진입점 함수입니다. 뮤
-
----
-
-## 파트 11/12
 
 ## ⚙️ C10_Config_Core_0203.cpp 파트 11/12 분석 Spec
 
@@ -324,10 +282,6 @@
 | `A40_IO::Save_JsonDoc2File_V21` | `A40_IO` | `bool` | 주어진 JSON 문서(`v_doc`)를 지정된 파일 경로에 저장합니다. 성공 여부를 반환하며, 설정값 저장의 핵심 로직입니다. |
 | `C10_allocSection` | (Scope) | `bool` | 전역 설정 루트 객체 내부에 특정 이름과 목적을 가진 설정을 위한 섹션(Section)을 할당하고 초기화합니다. 성공 시 `true`, 실패 시 `false`를 반환합니다. |
 | `CL_D10_Logger::log` | `CL_D10_Logger` | (void) | 지정된 로그 레벨과 메시지 포맷에 따라 시스템 로그를 기록합니다. 오류, 경고 등 상황별로
-
----
-
-## 파트 12/12
 
 ## ⚙️ 코드 분석 명세서 (C10\_Config\_Core\_0203.cpp - Part 12/12)
 

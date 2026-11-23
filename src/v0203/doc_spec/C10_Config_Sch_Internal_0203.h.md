@@ -1,7 +1,5 @@
 # `C10_Config_Sch_Internal_0203.h` 상세 Spec
 
-## 파트 1/2
-
 ## 🛠️ C10\_Config\_Sch\_Internal\_0203.h 분석 Spec
 
 본 헤더 파일은 스케줄(Schedule) 관련 내부 유틸리티 함수들의 선언을 포함하며, 주로 데이터 구조체(`ST_A20_SchedulesRoot_t`, `ST_A20_ScheduleItem_t`)를 기반으로 ID 및 번호의 중복 검사, 재발급, 그리고 JSON 파싱 기능을 제공합니다.
@@ -26,10 +24,6 @@
 | 이름 | 반환 타입 | 매개변수 | 설명 |
 | :--- | :--- | :--- | :--- |
 | `C10_nextScheduleId_u8` | `uint8_t` | `const ST_A20_SchedulesRoot_t& p_root` | 주어진 스케줄 루트 구조체(`p_root`)를 기반으로 다음 사용 가능한 스케줄 ID를
-
----
-
-## 파트 2/2
 
 ## 📚 C10_Config_Sch_Internal_0203.h 분석 Spec
 
@@ -66,4 +60,3 @@
 #### 4. `C10_sortSchedulesBySchNoDesc`
 *   **반환형:** `void`
 *   **매개변수:**
-

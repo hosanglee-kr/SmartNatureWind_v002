@@ -1,7 +1,5 @@
 # `C10_Config_Sch_Util_0203.cpp` 상세 Spec
 
-## 파트 1/6
-
 ## ⚙️ 시스템 스펙 요약: C10_Config_Sch_Util_0203.cpp
 
 ### 💾 구조체 및 타입 정의 (Structs & Types)
@@ -15,14 +13,6 @@
 *   **`JsonObjectConst`**
     *   **설명:** 상수 JSON 객체를 참조하는 타입입니다. (Constant reference to a JSON Object)
     *   **사용처:** `C10_fromJson_ScheduleItem` 함수의 입력 매개변수(`p_js`)로 사용됩니다.
-
-### 🛠️ 함수 정의 및 시그니처 (Functions & Signatures)
-
-| 함수명 | 반환 타입 | 주요 기능 | 핵심 로직/특징 |
-| :--- | :--- | :--- | :--- |
-| **`C10_nextScheduleId_u8`** | `uint8_t` | 다음 사용 가능한 스케줄 ID를 계산합니다. | 1. 입력된 루트(`p_root`)에서 최대 `schId`를 찾습니다. <br>2. 이 값에 전역 증가분 (`G_C10_SCH_ID_STEP`)을 더하여 다음 값을 결정합니다. <br>3. 오버플로우/언더플로우 및 경계 조건(`A20_Const::MAX_SCHEDULES`, `G_C10_SCH_ID_START`) 검증 로직이 포함되어 있습니다. |
-| **`C10_isSchIdDuplicated`** | `bool` | 주어진 스케줄 ID가 루트 내에 중복되는지 확인합니다. | 1. 입력된 ID(`p_schId`)가 0일 경우 즉시 `true`를 반환합니다. <br>2. 제외할 인덱스(`p_excludeIndex`)를 고려하여 순회하며 일치 여부를 검사합니다. |
-| **`C10_isSchNoDuplicated`** | `bool` | 주어진 스케줄 번호## ⚙️ 시스템 스펙 요약: C10_Config_Sch_Util_0203.cpp (계속)
 
 ### 🛠️ 함수 정의 및 시그니처 (Functions & Signatures)
 
@@ -52,10 +42,6 @@
 *   **ID/번호 할당 전략:** 다음 ID 계산(`C10_nextScheduleId_u8`)은 단순 증가가 아닌, **최대값 기반 + 고정 스텝 값 (`G_C10_SCH_ID_STEP`)**을 사용하는 방식을 채택하여 충돌을 최소화합니다.
 *   **안전성:** 모든 유틸리티 함수는 경계 조건(Boundary Conditions) 및 널/제로 입력(`p_schId == 0`, `v_next > 255u` 등)에 대한 엄격한 검증 로직을 포함하고 있습니다.
 *   **동시성 제어:** 외부 모듈 의존성을 통해 뮤텍스 가드 (`CL_A40_MutexGuard_Semaphore`)를 사용하여 공유 자원 접근 시 스레드 안전성을 보장합니다.
-
----
-
-## 파트 2/6
 
 ### ⚙️ 함수 및 파라미터 스펙
 
@@ -114,10 +100,6 @@
     *   시작 시간(`startTime`)과 종료 시간(`endTime`) 문자열을 안전하게 버퍼에 복사.
 4.  **규칙 파싱:** `ruleOverride`와 일반 규칙 목록을 파싱하여 스케줄의 세부 동작 로직을 구조체에 저장 (가장 복잡한 데이터 매핑 단계).
 
----
-
-## 파트 3/6
-
 ### 🛠️ 구조체 및 타입 정의 (Structs & Types)
 
 | 이름 | 유형 | 설명 |
@@ -171,10 +153,6 @@
 *   **JSON 파싱**: JSON 관련 함수 호출 시, 안전한 값 추출(`Json_getBool`) 및 타입 캐스팅(`as<JsonObjectConst>()`)을 통해 런타임 오류를 방지하고 있습니다.
 *   **로깅**: 모든 유효성 검증 실패 지점에서는 `CL_D10_Logger::log`를 사용하여 에러 레벨의 로그를 기록하며, 호출자 정보(`v_caller`)와 발생 위치(Index)를 함께 남깁니다.
 *   **데이터 무결성**: 스케줄 ID (`schId`) 및 번호 (`schNo`)는 0이 아니어야 하며, 전체 목록에서 중복되지 않아야 한다는 강력한 제약 조건이 존재합니다.
-
----
-
-## 파트 4/6
 
 ## ⚙️ 시스템 아키텍처 명세서 (C10_Config_Sch_Util_0203.cpp - Part 4/6)
 
@@ -266,10 +244,6 @@
 
 *
 
----
-
-## 파트 5/6
-
 ## 🛠️ 시스템 아키텍처 명세 (C10_Config_Sch_Util_0203.cpp)
 
 ### 📚 사용된 자료 구조체 및 타입 정의 (Structs & Types)
@@ -324,10 +298,6 @@
 
 ---
 ***요약:*** *이 코드는 스케줄 데이터의 유효성 검사 (Overlap Detection)와 정렬 (`C10_sortSchedulesBySchNoDesc`)이라는 두 가지 주요 기능을 수행하며, `CL_D10_Logger`를 통해 시스템 상태 변화 및 오류를 기록합니다.*
-
----
-
-## 파트 6/6
 
 ### 💾 데이터 구조체 및 타입 정의 (Structs & Types)
 

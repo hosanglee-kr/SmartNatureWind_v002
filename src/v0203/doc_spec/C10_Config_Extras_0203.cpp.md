@@ -1,7 +1,5 @@
 # `C10_Config_Extras_0203.cpp` 상세 Spec
 
-## 파트 1/11
-
 ## ⚙️ C10_Config_Extras_0203.cpp 분석 Spec
 
 본 파일은 NvsSpec 및 WebPage 설정의 로드/저장 기능을 담당하는 핵심 구성 관리자 모듈입니다. 주요 클래스, 구조체, 함수 및 동기화 특이사항을 다음과 같이 정리합니다.
@@ -29,10 +27,6 @@
 | :--- | :--- | :--- | :--- | :--- |
 | `loadNvsSpecConfig` | `CL_C10_ConfigManager` | `bool` | `ST_A20_NvsSpecConfig_t& p_cfg` (참조) | NVS에 저장된 스펙 설정을 로드하여 주어진 구조체(`p_cfg`)에 채워 넣는 핵심 함수입니다. 뮤텍스 보호가 필수적
 
----
-
-## 파트 2/11
-
 ## 🛠️ 코드 분석 Spec 요약 (C10_Config_Extras_0203.cpp)
 
 본 코드는 NVS(Non-Volatile Storage) 스펙을 JSON 파일에서 로드하고 애플리케이션 설정 구조체(`p_cfg`)에 반영하는 핵심 초기화 로직입니다. 명시적인 락 메커니즘은 사용되지 않았으며, 주로 데이터 구조체와 공통 유틸리티 함수를 활용합니다.
@@ -47,16 +41,6 @@
 | `ST_A20_NvsEntry_t` | 구조체 | NVS의 개별 항목(Key-Value 쌍)을 정의하는 구조체입니다. |
 | `s_cfgJsonFileMap` | 구조체/클래스 | JSON 파일 경로 정보를 담는 설정 맵 구조체입니다. (`nvsSpec` 멤버를 통해 실제 파일 경로 문자열에 접근). |
 | `JsonObjectConst` | 타입 (JSON) | JSON 객체를 상수 형태로 참조하는 타입
-
----
-
-## 파트 3/11
-
-
-
----
-
-## 파트 4/11
 
 ## 🛠️ 임베디드 시스템 아키텍처 분석 보고서 (C10_Config_Extras_0203.cpp)
 
@@ -85,16 +69,6 @@
 ### 🔒 상태 및 동기화 특이사항 (State & Synchronization)
 
 *   **락(Locking):** 본 코드 스니펫 내에서는 명시적인 뮤텍스(Mutex)나 임계 영역(Critical Section) 관리가 없습니다. JSON 파싱과 구조체 초기화는 단일 쓰
-
----
-
-## 파트 5/11
-
-
-
----
-
-## 파트 6/11
 
 ## ⚙️ 코드 분석 Spec: C10_Config_Extras_0203.cpp (파트 6/11)
 
@@ -133,10 +107,6 @@
 | :--- | :--- | :--- |
 | `s_cfgJsonFileMap`
 
----
-
-## 파트 7/11
-
 ## ⚙️ 시스템 아키텍처 명세서: `C10_Config_Extras_0203.cpp` 파트 7/11 분석
 
 본 코드는 JSON Patch 형식의 데이터를 사용하여 NVS(Non-Volatile Storage) 스펙 설정을 업데이트하는 기능을 구현합니다. 다중 스레드 환경에서 데이터 무결성을 보장하기 위해 뮤텍스 보호가 필수적으로 적용되었습니다.
@@ -167,10 +137,6 @@
 | `A40_ComFunc::Json_copyStrReq` | Static Method | JSON 객체에서 특정 키의 문자열 값을 읽어와, 대상 구조체의 버퍼에 **필수적으로** 복사합니다. (복사 성공 여부 및 유효성 검사가 포함됨) |
 | `A4
 
----
-
-## 파트 8/11
-
 ## 💻 코드 분석 Spec Sheet (C10_Config_Extras_0203.cpp - Part 8/11)
 
 본 코드는 JSON 패치 데이터를 사용하여 웹 페이지 설정(`WebPageConfig`)을 업데이트하는 로직을 포함하고 있습니다. 다수의 유틸리티 함수와 임베디드 환경의 동기화 메커니즘이 사용되었습니다.
@@ -195,10 +161,6 @@
 | `CL_A40_MutexGuard_Semaphore` | RAII Guard | 뮤텍스(`s_recursiveMutex`)를 안전하게 획득하고, 스코프를 벗어날 때 자동으로 해제(Release)하는 RAII 패턴의 가드 객체입니다. | **안전성:** 예외 발생 시에도 잠금 해제를 보장합니다. |
 | `Dirty_set
 
----
-
-## 파트 9/11
-
 ## 🛠️ 시스템 아키텍처 명세서: C10\_Config\_Extras\_0203.cpp 파트 9/11 분석
 
 본 코드는 JSON 구조체에서 웹 페이지 설정(WebPage) 데이터를 읽어와 내부 구성체(`p_cfg`)에 매핑하고, 변경 사항을 감지하여 시스템 상태를 업데이트하는 로직을 담당합니다.
@@ -220,10 +182,6 @@
 | `c::Json_copyStrReq` | 정적 메서드 | JSON 객체에서 문자열 값을 읽어 지정된 버퍼로 복사하는 유틸리티 함수입니다. 성공 여부와 메모리 복사 과정을 처리합니다. | **인자:** JSON 노드, 키 이름, 대상 버퍼 포인터, 버퍼 크기, 기본값, 호출자 함수명(`__func__`). |
 | `A40_ComFunc::Json_getBool` | 정적 메서드 | JSON 객체에서 부울(Boolean) 값을 안전하게 읽어오는 유틸리티 함수입니다. 값이 없을 경우 지정된 기본값을 반환합니다. | **특징:** 데이터 타입 변환 및 기본값 처리를 담당합니다. |
 | `CL_D10_Logger::log` | 정적 메서드 | 시스템 로그를 기록하는 로깅 함수입니다. 디버그 레벨의 메시지를 출력하여 현재 처리 단계를 추적할 수 있게 합니다. | **
-
----
-
-## 파트 10/11
 
 ## ⚙️ 코드 분석 Spec Sheet (C10_Config_Extras_0203.cpp)
 
@@ -258,10 +216,6 @@
 
 #### 3. `CL_C10_ConfigManager::toJson_WebPage`
 *   **시그니처:** `void toJson_WebPage(const ST_A20_WebPage
-
----
-
-## 파트 11/11
 
 ## ⚙️ 코드 분석 Spec: `C10_Config_Extras_0203.cpp` (Part 11/11)
 

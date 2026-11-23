@@ -1,7 +1,5 @@
 # `C10_Config_Sch_CRUD_0203.cpp` 상세 Spec
 
-## 파트 1/3
-
 ## ⚙️ 시스템 아키텍처 스펙 분석 (C10_Config_Sch_CRUD_0203.cpp)
 
 본 소스 파일은 스마트 네이처 풍력 설비의 설정 관리 모듈 중 '일정(Schedule)' 데이터를 CRUD(Create, Read, Update, Delete) 방식으로 처리하는 로직을 담당합니다. 특히 JSON 형태의 외부 입력 데이터를 내부 구조체로 변환하고 전역 상태를 안전하게 업데이트하는 것이 핵심입니다.
@@ -23,10 +21,6 @@
 | 이름 | 타입 | 설명 | 특이사항 |
 | :--- | :--- | :--- | :--- |
 | `s_recursiveMutex` | Mutex Object | 전역 스케줄 데이터(`g_A20_config
-
----
-
-## 파트 2/3
 
 ## ⚙️ 시스템 아키텍처 명세서: `C10_Config_Sch_CRUD_0203.cpp` (파트 2/3)
 
@@ -50,10 +44,6 @@
 | **`v_dirty_schedules`** | State Flag | Local/Member | 현재 설정 상태 중 변경된(Dirty) 스케줄 플래그를 저장하는 변수. `Dirty_setAtomic`을 통해 원자적으로 업데이트됨. |
 
 ### 🚀 함수 및 메서
-
----
-
-## 파트 3/3
 
 ## 🛠️ C10_Config_Sch_CRUD_0203.cpp 파트 3/3 분석 Spec
 

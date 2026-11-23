@@ -1,7 +1,5 @@
 # `C10_Config_Sch_JSON_0203.cpp` 상세 Spec
 
-## 파트 1/2
-
 ## 🛠️ C10_Config_Sch_JSON_0203.cpp 분석 Spec Sheet
 
 본 파일은 스마트 네이처(Smart Nature)의 스케줄 설정 데이터를 JSON 형식으로 직렬화하거나 패치하는 기능을 담당합니다. 임베디드 시스템 아키텍트 관점에서 핵심 구성 요소들을 정리했습니다.
@@ -25,10 +23,6 @@
 | 이름 | 반환형 | 매개변수 | 설명 |
 | :--- | :--- | :--- | :--- |
 | `toJson_Schedules` | `void` | `const ST_A20_SchedulesRoot_t& p_cfg`, `JsonDocument& d` | **[JSON Export]** 스케줄 설정 구조체(`p_cfg`)의 데이터를 JSON 문서(`d`)
-
----
-
-## 파트 2/2
 
 ## 🛠️ 코드 분석 Spec Sheet (C10_Config_Sch_JSON_0203.cpp - Part 2/2)
 

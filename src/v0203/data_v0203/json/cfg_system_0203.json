@@ -45,7 +45,7 @@
 	},
 	"hw": {
 		"fanPwm": {
-			"pin": 6,
+			"pin": 1,
 			"channel": 0,
 			"freq": 25000,
 			"res": 10
@@ -79,7 +79,12 @@
 		"geminiApiKey": ""
 	},
 	"timeCfg": {
-		"ntpServer": "pool.ntp.org",
+		"ntpServer": "kr.pool.ntp.org",
+		"ntpFallbackServers": [
+			"time.google.com",
+			"pool.ntp.org",
+			"time.cloudflare.com"
+		],
 		"timezone": "Asia/Seoul",
 		"syncIntervalMin": 60
 	}

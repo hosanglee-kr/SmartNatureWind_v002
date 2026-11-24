@@ -3,7 +3,7 @@
 // Layer 3 (Schedule 패널 컴포넌트)
 // =========================================================
 window.SNW = window.SNW || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     SNW.SchedulePanel = class SchedulePanel {
@@ -62,7 +62,7 @@ window.SNW = window.SNW || {};
                 const btn = this.el.querySelector('[data-action="to-studio"]');
                 if (btn) {
                     btn.onclick = () => {
-                        SNW.Router.navigate('/automation/studio');
+                        SNW.Router.navigate('/wind/studio');
                     };
                 }
                 return;
@@ -106,15 +106,17 @@ window.SNW = window.SNW || {};
             card.className = 'snw-schedule-item' + (sch.enabled ? '' : ' is-disabled');
 
             const profile = this._profiles.find(p => p.profileId === sch.profileId);
-            const profileName = profile ? profile.name : '(삭제된 프로필)';
+            const profileName = profile
+                ? ((SNW.I18n && SNW.I18n.profileName) ? SNW.I18n.profileName(profile) : profile.name)
+                : '(삭제된 프로필)';
             const profileMissing = !profile;
 
-            const days = (sch.period && sch.period.days) || [0,0,0,0,0,0,0];
+            const days = (sch.period && sch.period.days) || [0, 0, 0, 0, 0, 0, 0];
             const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
             const daysStr = days.map((d, i) => d ? dayNames[i] : '·').join(' ');
 
             const startTime = (sch.period && sch.period.startTime) || '00:00';
-            const endTime   = (sch.period && sch.period.endTime)   || '23:59';
+            const endTime = (sch.period && sch.period.endTime) || '23:59';
 
             card.innerHTML = `
                 <div class="snw-schedule-item__head">
@@ -132,6 +134,9 @@ window.SNW = window.SNW || {};
                 <div class="snw-schedule-item__days">${daysStr}</div>
                 <div class="snw-schedule-item__ref ${profileMissing ? 'is-missing' : ''}">
                     🎵 ${SNW.DomUtil ? SNW.DomUtil.escape(profileName) : profileName}
+                </div>
+                <div style="font-size:11px;color:var(--snw-text-dim);margin-top:4px;">
+                    ${sch.ruleOverride ? '⚙ 직접 설정 (커스텀 규칙)' : '⚙ 프로필 규칙 상속'}
                 </div>`;
 
             // 액션 바인딩
@@ -154,7 +159,9 @@ window.SNW = window.SNW || {};
         _openEditor(sch) {
             const isEdit = !!sch;
             let isSimpleMode = isEdit ? (sch.name && sch.name.startsWith('[간단]')) : true;
-            const days = sch ? ((sch.period && sch.period.days) || [0,0,0,0,0,0,0]) : [0,1,1,1,1,1,0];
+            let editedRule = (isEdit && sch.rule) ? JSON.parse(JSON.stringify(sch.rule)) : null;
+            const isCustom = isEdit && sch.ruleOverride === true;
+            const days = sch ? ((sch.period && sch.period.days) || [0, 0, 0, 0, 0, 0, 0]) : [0, 1, 1, 1, 1, 1, 0];
             const dayNames = ['월', '화', '수', '목', '금', '토', '일'];
 
             const PRESETS = [
@@ -172,10 +179,10 @@ window.SNW = window.SNW || {};
 
             const STYLES = [
                 { code: 'BALANCE', name: '⚖️ 균형 (BALANCE)' },
-                { code: 'ACTIVE',  name: '⚡ 활력 (ACTIVE)' },
-                { code: 'FOCUS',   name: '🎯 집중 (FOCUS)' },
-                { code: 'RELAX',   name: '🍃 휴식 (RELAX)' },
-                { code: 'SLEEP',   name: '🌙 수면 (SLEEP)' },
+                { code: 'ACTIVE', name: '⚡ 활력 (ACTIVE)' },
+                { code: 'FOCUS', name: '🎯 집중 (FOCUS)' },
+                { code: 'RELAX', name: '🍃 휴식 (RELAX)' },
+                { code: 'SLEEP', name: '🌙 수면 (SLEEP)' },
             ];
 
             const content = document.createElement('div');
@@ -203,11 +210,11 @@ window.SNW = window.SNW || {};
                         <label style="display:block;margin-bottom:6px;font-weight:600;font-size:13px;">요일</label>
                         <div class="snw-day-picker">
                             ${dayNames.map((d, i) =>
-                                `<label class="snw-day-chip ${days[i] ? 'is-active' : ''}">
+                `<label class="snw-day-chip ${days[i] ? 'is-active' : ''}">
                                     <input type="checkbox" data-day="${i}" ${days[i] ? 'checked' : ''}>
                                     <span>${d}</span>
                                 </label>`
-                            ).join('')}
+            ).join('')}
                         </div>
                     </div>
 
@@ -227,13 +234,13 @@ window.SNW = window.SNW || {};
                         <div class="snw-form-row" style="margin-bottom:10px;">
                             <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;">바람 프리셋 선택</label>
                             <select id="simple-preset-select" style="width:100%;padding:8px;background:var(--snw-surface-1,#1f242c);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
-                                ${PRESETS.map(p => `<option value="${p.code}">${p.name}</option>`).join('')}
+                                ${PRESETS.map(p => `<option value="${p.code}">${(SNW.I18n && SNW.I18n.presetName) ? SNW.I18n.presetName(p.code, p) : p.name}</option>`).join('')}
                             </select>
                         </div>
                         <div class="snw-form-row">
                             <label style="display:block;margin-bottom:4px;font-weight:600;font-size:13px;">바람 스타일 선택</label>
                             <select id="simple-style-select" style="width:100%;padding:8px;background:var(--snw-surface-1,#1f242c);border:1px solid var(--snw-border);color:var(--snw-text);border-radius:4px;">
-                                ${STYLES.map(s => `<option value="${s.code}">${s.name}</option>`).join('')}
+                                ${STYLES.map(s => `<option value="${s.code}">${(SNW.I18n && SNW.I18n.styleName) ? SNW.I18n.styleName(s.code, s) : s.name}</option>`).join('')}
                             </select>
                         </div>
                     </div>
@@ -247,7 +254,7 @@ window.SNW = window.SNW || {};
                                     <input type="radio" name="profile" value="${p.profileId}"
                                            ${isEdit && sch.profileId === p.profileId ? 'checked' : ''}>
                                     <div class="snw-profile-radio__content">
-                                        <div class="snw-profile-radio__name">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(p.name) : p.name}</div>
+                                        <div class="snw-profile-radio__name">📋 ${SNW.DomUtil ? SNW.DomUtil.escape((SNW.I18n && SNW.I18n.profileName) ? SNW.I18n.profileName(p) : p.name) : p.name}</div>
                                         <div class="snw-profile-radio__meta">
                                             ${p.stepCount || (p.steps ? p.steps.length : 0)}개 Step · ${this._fmtTotal(p)}
                                         </div>
@@ -258,6 +265,24 @@ window.SNW = window.SNW || {};
 
                         <div class="snw-schedule-editor__hint" style="margin-top:12px;">
                             💡 새 프로필은 <b>Studio 탭</b>에서 작곡 후 선택할 수 있습니다.
+                        </div>
+                    </div>
+
+                    <!-- [Stage 5] 규칙 상속/커스텀 -->
+                    <div style="margin-top:16px;padding:12px;background:var(--snw-surface-2,#12161c);border-radius:6px;">
+                        <div style="font-weight:600;font-size:13px;margin-bottom:8px;">⚙ 자동 정지 규칙</div>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                            <input type="radio" name="ruleMode" value="inherit" ${!isCustom ? 'checked' : ''}>
+                            <span>${SNW.I18n.t('auto.rules.inheritHint')} (프로파일 규칙 사용)</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-top:6px;cursor:pointer;">
+                            <input type="radio" name="ruleMode" value="custom" ${isCustom ? 'checked' : ''}>
+                            <span>${SNW.I18n.t('auto.rules.customHint')} (스케줄 자체 규칙)</span>
+                        </label>
+                        <div id="custom-rule-action" style="margin-top:8px;display:${isCustom ? 'block' : 'none'};">
+                            <button type="button" class="snw-btn snw-btn--sm" data-action="edit-rule" style="padding:4px 10px;background:var(--snw-surface-3,#2f3844);color:var(--snw-text,#e6edf3);border:none;border-radius:4px;cursor:pointer;font-size:12px;">
+                                ⚙ 커스텀 규칙 편집
+                            </button>
                         </div>
                     </div>
                 </div>`;
@@ -304,13 +329,38 @@ window.SNW = window.SNW || {};
                 });
             });
 
+            // 규칙 상속/커스텀 라디오 및 편집기 바인딩
+            const ruleRadios = content.querySelectorAll('input[name="ruleMode"]');
+            const customRuleAction = content.querySelector('#custom-rule-action');
+            const btnEditRule = content.querySelector('[data-action="edit-rule"]');
+
+            ruleRadios.forEach(r => {
+                r.addEventListener('change', () => {
+                    const custom = content.querySelector('input[name="ruleMode"]:checked')?.value === 'custom';
+                    if (customRuleAction) customRuleAction.style.display = custom ? 'block' : 'none';
+                });
+            });
+
+            if (btnEditRule) {
+                btnEditRule.onclick = async () => {
+                    if (!SNW.UI || !SNW.UI.ruleEditor) return;
+                    const res = await SNW.UI.ruleEditor.showModal(editedRule || {}, {
+                        title: '스케줄 커스텀 규칙',
+                    });
+                    if (res) {
+                        editedRule = res;
+                        if (SNW.ToastUtil) SNW.ToastUtil.info('커스텀 규칙이 설정되었습니다 (스케줄 저장 시 반영)');
+                    }
+                };
+            }
+
             SNW.UI.modal(
                 isEdit ? '스케줄 편집' : '새 스케줄',
                 content,
                 async () => {
-                    const nameEl  = content.querySelector('[data-field="name"]');
+                    const nameEl = content.querySelector('[data-field="name"]');
                     const startEl = content.querySelector('[data-field="startTime"]');
-                    const endEl   = content.querySelector('[data-field="endTime"]');
+                    const endEl = content.querySelector('[data-field="endTime"]');
 
                     if (!nameEl.value.trim()) {
                         if (SNW.ToastUtil) SNW.ToastUtil.error('이름을 입력하세요');
@@ -325,7 +375,7 @@ window.SNW = window.SNW || {};
                     if (isSimpleMode) {
                         const selPreset = content.querySelector('#simple-preset-select').value;
                         const selStyle = content.querySelector('#simple-style-select').value;
-                        
+
                         // [Stage 10] 간단 모드 단일 Step 프로필 자동 생성
                         const autoProfile = {
                             profileNo: (Date.now() % 65530) + 1,
@@ -341,8 +391,9 @@ window.SNW = window.SNW || {};
                                 styleCode: selStyle,
                                 override: { enabled: false }
                             }],
-                            autoOff: { timer: { enabled: false }, offTime: { enabled: false }, offTemp: { enabled: false } },
-                            motion: { pir: { enabled: false } }
+                            rule: (SNW.UI && SNW.UI.ruleEditor)
+                                ? JSON.parse(JSON.stringify(SNW.UI.ruleEditor.DEFAULT_RULE))
+                                : {}
                         };
                         try {
                             if (SNW.Api && typeof SNW.Api.addProfile === 'function') {
@@ -363,6 +414,7 @@ window.SNW = window.SNW || {};
                     }
 
                     const schNo = isEdit ? sch.schNo : (Date.now() % 65535) + 1;
+                    const ruleOverride = content.querySelector('input[name="ruleMode"]:checked')?.value === 'custom';
                     const schedule = {
                         schNo,
                         name: nameEl.value.trim(),
@@ -373,6 +425,8 @@ window.SNW = window.SNW || {};
                             endTime: endEl.value,
                         },
                         profileId,
+                        ruleOverride,
+                        rule: editedRule || (isEdit && sch.rule ? sch.rule : {}),
                     };
 
                     try {

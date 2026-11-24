@@ -76,11 +76,12 @@ window.SNW = window.SNW || {};
 		level: (SNW.LevelUtil && SNW.LevelUtil.current) ? SNW.LevelUtil.current() : 'L1'
 	});
 
+
 	// =====================================================
-	// 세션 정규화 헬퍼 (R-1)
+	// 세션 정규화 헬퍼 (R-1 + Phase 2 AUTO 확장)
 	// =====================================================
-	const SESSION_TYPE_NAMES = ['NONE', 'PLAYLIST', 'PRESET', 'FIXED'];
-	const SESSION_TRIGGER_NAMES = ['NONE', 'MANUAL', 'SCHEDULE', 'AUTO_COMFORT'];
+	const SESSION_TYPE_NAMES = ['NONE', 'PLAYLIST', 'PRESET', 'FIXED', 'AUTO_FULL', 'AUTO_SELECT'];
+	const SESSION_TRIGGER_NAMES = ['NONE', 'MANUAL', 'SCHEDULE', 'AUTO_COMFORT', 'MANUAL_AUTO_FULL', 'MANUAL_AUTO_SELECT'];
 
 	function normalizeSession(s) {
 		if (!s || typeof s !== 'object') {
@@ -133,7 +134,8 @@ window.SNW = window.SNW || {};
 			stateStr = (s.state === 1) ? 'PAUSED' : ((s.state === 2) ? 'COMPLETED' : 'ACTIVE');
 		}
 
-		const activeBool = Boolean(s.active && typeName !== 'NONE' && stateStr !== 'COMPLETED');
+		const rawActive = (s.active !== undefined) ? Boolean(s.active) : true;
+		const activeBool = Boolean(rawActive && typeName !== 'NONE' && stateStr !== 'COMPLETED');
 
 		return Object.assign({}, s, {
 			type: typeNum,
@@ -152,6 +154,29 @@ window.SNW = window.SNW || {};
 		_started: false,
 		_unsubs: [],
 		normalizeSession: normalizeSession,
+
+		async refreshNow() {
+			if (!SNW.Api || typeof SNW.Api.getState !== 'function') return null;
+			try {
+				const st = await SNW.Api.getState();
+				if (st && st.control) {
+					SNW.Store.set({
+						lastUpdateMs: Date.now(),
+						connection: 'online',
+						control: st.control,
+						time: st.control.time || null,
+						system: st.control.system || null,
+						fsmState: (st.control.stateCode != null) ? st.control.stateCode : 0,
+						fsmReason: (st.control.reasonCode != null) ? st.control.reasonCode : 0,
+						session: normalizeSession(st.control.session),
+						...(st.sim ? { sim: st.sim } : {})
+					});
+				}
+				return st;
+			} catch {
+				return null;
+			}
+		},
 
 		start() {
 			if (this._started) return;
@@ -196,6 +221,7 @@ window.SNW = window.SNW || {};
 			});
 
 			this._unsubs.push(unsubMsg);
+			this.refreshNow();
 		},
 
 		stop() {

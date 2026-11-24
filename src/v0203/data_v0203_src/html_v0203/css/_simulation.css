@@ -1,3 +1,4 @@
+/* === _simulation.css === */
 .snw-sim {
     display: flex;
     flex-direction: column;
@@ -106,4 +107,3 @@
     border-top: 1px solid var(--snw-border);
     flex-wrap: wrap;
 }
-

@@ -46,6 +46,11 @@
 static bool _wsHandshakeAuth(AsyncWebServerRequest* p_request) {
     if (!p_request) return false;
 
+    // [Stage 13] W10_USE_API_KEY=0 → 컴파일 타임 개방 모드
+#if defined(W10_USE_API_KEY) && (W10_USE_API_KEY == 0)
+    return true;
+#endif
+
     // [B-2] async_tcp → getRootSnapshot 필수 (CONTRACT §3.1)
     //  - 이전: reloadAll 중 system 포인터 swap 시 dangling 참조 위험
     //  - 이후: 원자 스냅샷 + 즉시 키 문자열 로컬 복사
@@ -96,18 +101,9 @@ void CL_W10_WebAPI::_broadcast(AsyncWebSocket* p_ws, JsonDocument& p_doc, bool p
 
     if (p_diffOnly && v_json.length() <= 5) return;
 
-    //  textAll() 대신 client별 전송 (queue 폭주 방지)
-    // 포인터를 직접 다루는 가장 안전한 방법
-    for (uint32_t i = 0; i < v_cnt; i++) {
-        AsyncWebSocketClient* c = p_ws->client(i);
-        if (!c) continue;
-
-        if (c->status() == WS_CONNECTED) {
-            if (c->canSend()) {
-                c->text(v_json);
-            }
-        }
-    }
+    // ESPAsyncWebServer 3.12.1: client(id)는 인덱스가 아닌 1부터 증가하는 ID 조회이므로
+    // textAll()로 공유 버퍼 기반 전체 전송 (내부적으로 client별 canSend() 검사 수행)
+    p_ws->textAll(v_json);
 }
 
 // --------------------------------------------------

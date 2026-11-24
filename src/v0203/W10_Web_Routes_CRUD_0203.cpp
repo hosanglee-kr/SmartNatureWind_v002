@@ -19,16 +19,82 @@
 
 #include "W10_Web_0203.h"
 
+// ======================================================
+// [Stage 13 P0] CRUD URL 끝 /{id} 파싱 헬퍼
+//  - ESPAsyncWebServer 기본 매처(BackwardCompatible)는 /:id 미지원
+//  - 베이스 경로(/api/v001/{resource}) prefix 매칭 + URL tail 숫자 ID 추출
+// ======================================================
+static bool _crudExtractTailId(AsyncWebServerRequest* p_request, const char* p_prefix, int& r_id) {
+    if (!p_request || !p_prefix) return false;
+    if (p_request->hasParam("id")) {
+        r_id = p_request->getParam("id")->value().toInt();
+        return r_id > 0;
+    }
+    const String& v_url  = p_request->url();
+    const size_t  v_plen = strlen(p_prefix);
+    if (v_url.length() <= v_plen + 1 || v_url.charAt(v_plen) != '/') return false;
+    String v_tail = v_url.substring(v_plen + 1);
+    if (v_tail.length() == 0 || v_tail.indexOf('/') >= 0) return false;
+    for (size_t i = 0; i < v_tail.length(); i++) {
+        if (!isDigit((unsigned char)v_tail.charAt(i))) return false;
+    }
+    r_id = v_tail.toInt();
+    return r_id > 0;
+}
+
+// ======================================================
+// [Stage 13 P0] CRUD 공통 빈 body(onRequest) + 단편화 JSON 누적(onBody) 헬퍼
+// ======================================================
+static void _crudOnReqEmptyCheck(AsyncWebServerRequest* p_request) {
+    if (!CL_W10_WebAPI::requireApiKey(p_request)) return;
+    if (p_request->contentLength() == 0) {
+        p_request->send(400, "application/json", "{\"error\":\"empty body\"}");
+    }
+}
+
+static bool _crudAccumJson(
+    AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total, JsonDocument& r_doc) {
+    if (p_index == 0) {
+        if (!CL_W10_WebAPI::requireApiKey(p_request)) return false;
+        if (p_total == 0) {
+            p_request->send(400, "application/json", "{\"error\":\"empty body\"}");
+            return false;
+        }
+        if (p_total > (1024 * 1024)) {
+            p_request->send(413, "application/json", "{\"error\":\"payload too large\"}");
+            return false;
+        }
+        if (!CL_W10_WebAPI::beginBody(p_request, p_total)) {
+            p_request->send(500, "application/json", "{\"error\":\"oom\"}");
+            return false;
+        }
+    }
+    if (!CL_W10_WebAPI::appendBody(p_request, p_data, p_len, p_index, p_total)) return false;
+
+    size_t   v_bodyLen = 0;
+    uint8_t* v_bodyBuf = CL_W10_WebAPI::takeBodyBuf(p_request, v_bodyLen);
+    if (!v_bodyBuf) {
+        CL_W10_WebAPI::freeBody(p_request);
+        p_request->send(500, "application/json", "{\"error\":\"acc\"}");
+        return false;
+    }
+
+    if (!CL_W10_WebAPI::parseJsonBody(p_request, v_bodyBuf, v_bodyLen, r_doc)) {
+        CL_W10_WebAPI::freeBody(p_request);
+        p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
+        return false;
+    }
+    CL_W10_WebAPI::freeBody(p_request);
+    return true;
+}
+
 // --------------------------------------------------
 // 1. /api/windProfile (GET/POST)
 // --------------------------------------------------
 void CL_W10_WebAPI::routeWindProfile() {
     // GET: 전체 목록
     s_server->on(W10_Const::HTTP_API_WIND_PROFILE, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
         // [B-9] FS 재로드 → getRootSnapshot (메모리 캐시) 사용
         //  - 이전: static 공유 버퍼 + 매 요청 LittleFS read(~50-100ms)
@@ -45,38 +111,28 @@ void CL_W10_WebAPI::routeWindProfile() {
     });
 
     // POST: 신규 생성
-    s_server->on(
-        W10_Const::HTTP_API_WIND_PROFILE,
-        HTTP_POST,
-        [](AsyncWebServerRequest* p_request) {},
-        nullptr,
-        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                return;
-            }
-            if (p_index + p_len != p_total) return;
+    s_server->on(W10_Const::HTTP_API_WIND_PROFILE,
+                 HTTP_POST,
+                 _crudOnReqEmptyCheck,
+                 nullptr,
+                 [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+                     JsonDocument v_doc;
+                     if (!_crudAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
 
-            JsonDocument v_doc;
-            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-                p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
-                return;
-            }
+                     int v_new_id = CL_C10_ConfigManager::addWindProfileFromJson(v_doc);
 
-            int v_new_id = CL_C10_ConfigManager::addWindProfileFromJson(v_doc);
+                     JsonDocument v_res;
+                     if (v_new_id > 0) {
+                         v_res["result"] = "created";
+                         v_res["id"]     = v_new_id;
 
-            JsonDocument v_res;
-            if (v_new_id > 0) {
-                v_res["result"] = "created";
-                v_res["id"]     = v_new_id;
-
-                CL_C10_ConfigManager::saveDirtyConfigs();
-                sendJson(p_request, v_res, 201);
-            } else {
-                v_res["error"] = "creation failed or validation error";
-                sendJson(p_request, v_res, 400);
-            }
-        });
+                         CL_C10_ConfigManager::saveDirtyConfigs();
+                         sendJson(p_request, v_res, 201);
+                     } else {
+                         v_res["error"] = "creation failed or validation error";
+                         sendJson(p_request, v_res, 400);
+                     }
+                 });
 }
 
 // --------------------------------------------------
@@ -84,26 +140,17 @@ void CL_W10_WebAPI::routeWindProfile() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeWindProfileID() {
     // PUT
-    s_server->on((String(W10_Const::HTTP_API_WIND_PROFILE) + "/:id").c_str(),
+    s_server->on(W10_Const::HTTP_API_WIND_PROFILE,
                  HTTP_PUT,
-                 [](AsyncWebServerRequest* p_request) {},
+                 _crudOnReqEmptyCheck,
                  nullptr,
                  [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-                     if (!checkApiKey(p_request)) {
-                         p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                         return;
-                     }
-                     if (p_index + p_len != p_total) return;
-
-                     if (!p_request->hasParam("id")) {
-                         p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
-                         return;
-                     }
-                     int v_id = p_request->getParam("id")->value().toInt();
-
                      JsonDocument v_doc;
-                     if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-                         p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
+                     if (!_crudAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
+
+                     int v_id = 0;
+                     if (!_crudExtractTailId(p_request, W10_Const::HTTP_API_WIND_PROFILE, v_id)) {
+                         p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
                          return;
                      }
 
@@ -118,27 +165,22 @@ void CL_W10_WebAPI::routeWindProfileID() {
                  });
 
     // DELETE
-    s_server->on((String(W10_Const::HTTP_API_WIND_PROFILE) + "/:id").c_str(),
-                 HTTP_DELETE,
-                 [](AsyncWebServerRequest* p_request) {
-                     if (!checkApiKey(p_request)) {
-                         p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                         return;
-                     }
-                     if (!p_request->hasParam("id")) {
-                         p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
-                         return;
-                     }
-                     int  v_id      = p_request->getParam("id")->value().toInt();
-                     bool v_deleted = CL_C10_ConfigManager::deleteWindProfile((uint16_t)v_id);
+    s_server->on(W10_Const::HTTP_API_WIND_PROFILE, HTTP_DELETE, [](AsyncWebServerRequest* p_request) {
+        if (!requireApiKey(p_request)) return;
+        int v_id = 0;
+        if (!_crudExtractTailId(p_request, W10_Const::HTTP_API_WIND_PROFILE, v_id)) {
+            p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
+            return;
+        }
+        bool v_deleted = CL_C10_ConfigManager::deleteWindProfile((uint16_t)v_id);
 
-                     JsonDocument v_res;
-                     v_res["deleted"] = v_deleted;
-                     if (v_deleted) {
-                         CL_C10_ConfigManager::saveDirtyConfigs();
-                     }
-                     sendJson(p_request, v_res, v_deleted ? 200 : 404);
-                 });
+        JsonDocument v_res;
+        v_res["deleted"] = v_deleted;
+        if (v_deleted) {
+            CL_C10_ConfigManager::saveDirtyConfigs();
+        }
+        sendJson(p_request, v_res, v_deleted ? 200 : 404);
+    });
 }
 
 // --------------------------------------------------
@@ -147,12 +189,9 @@ void CL_W10_WebAPI::routeWindProfileID() {
 void CL_W10_WebAPI::routeSchedules() {
     // GET
     s_server->on(W10_Const::HTTP_API_SCHEDULES, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
-        JsonDocument v_doc;
+        JsonDocument        v_doc;
         ST_A20_ConfigRoot_t v_snap;
         CL_C10_ConfigManager::getRootSnapshot(v_snap);
         if (v_snap.schedules) {
@@ -162,37 +201,27 @@ void CL_W10_WebAPI::routeSchedules() {
     });
 
     // POST: 신규 생성
-    s_server->on(
-        W10_Const::HTTP_API_SCHEDULES,
-        HTTP_POST,
-        [](AsyncWebServerRequest* p_request) {},
-        nullptr,
-        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                return;
-            }
-            if (p_index + p_len != p_total) return;
+    s_server->on(W10_Const::HTTP_API_SCHEDULES,
+                 HTTP_POST,
+                 _crudOnReqEmptyCheck,
+                 nullptr,
+                 [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+                     JsonDocument v_doc;
+                     if (!_crudAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
 
-            JsonDocument v_doc;
-            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-                p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
-                return;
-            }
+                     int v_new_id = CL_C10_ConfigManager::addScheduleFromJson(v_doc);
 
-            int v_new_id = CL_C10_ConfigManager::addScheduleFromJson(v_doc);
-
-            JsonDocument v_res;
-            if (v_new_id > 0) {
-                v_res["result"] = "created";
-                v_res["id"]     = v_new_id;
-                CL_C10_ConfigManager::saveDirtyConfigs();
-                sendJson(p_request, v_res, 201);
-            } else {
-                v_res["error"] = "creation failed or validation error";
-                sendJson(p_request, v_res, 400);
-            }
-        });
+                     JsonDocument v_res;
+                     if (v_new_id > 0) {
+                         v_res["result"] = "created";
+                         v_res["id"]     = v_new_id;
+                         CL_C10_ConfigManager::saveDirtyConfigs();
+                         sendJson(p_request, v_res, 201);
+                     } else {
+                         v_res["error"] = "creation failed or validation error";
+                         sendJson(p_request, v_res, 400);
+                     }
+                 });
 }
 
 // --------------------------------------------------
@@ -200,26 +229,17 @@ void CL_W10_WebAPI::routeSchedules() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeSchedulesID() {
     // PUT
-    s_server->on((String(W10_Const::HTTP_API_SCHEDULES) + "/:id").c_str(),
+    s_server->on(W10_Const::HTTP_API_SCHEDULES,
                  HTTP_PUT,
-                 [](AsyncWebServerRequest* p_request) {},
+                 _crudOnReqEmptyCheck,
                  nullptr,
                  [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-                     if (!checkApiKey(p_request)) {
-                         p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                         return;
-                     }
-                     if (p_index + p_len != p_total) return;
-
-                     if (!p_request->hasParam("id")) {
-                         p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
-                         return;
-                     }
-                     int v_id = p_request->getParam("id")->value().toInt();
-
                      JsonDocument v_doc;
-                     if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-                         p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
+                     if (!_crudAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
+
+                     int v_id = 0;
+                     if (!_crudExtractTailId(p_request, W10_Const::HTTP_API_SCHEDULES, v_id)) {
+                         p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
                          return;
                      }
 
@@ -234,27 +254,22 @@ void CL_W10_WebAPI::routeSchedulesID() {
                  });
 
     // DELETE
-    s_server->on((String(W10_Const::HTTP_API_SCHEDULES) + "/:id").c_str(),
-                 HTTP_DELETE,
-                 [](AsyncWebServerRequest* p_request) {
-                     if (!checkApiKey(p_request)) {
-                         p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                         return;
-                     }
-                     if (!p_request->hasParam("id")) {
-                         p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
-                         return;
-                     }
-                     int  v_id      = p_request->getParam("id")->value().toInt();
-                     bool v_deleted = CL_C10_ConfigManager::deleteSchedule((uint16_t)v_id);
+    s_server->on(W10_Const::HTTP_API_SCHEDULES, HTTP_DELETE, [](AsyncWebServerRequest* p_request) {
+        if (!requireApiKey(p_request)) return;
+        int v_id = 0;
+        if (!_crudExtractTailId(p_request, W10_Const::HTTP_API_SCHEDULES, v_id)) {
+            p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
+            return;
+        }
+        bool v_deleted = CL_C10_ConfigManager::deleteSchedule((uint16_t)v_id);
 
-                     JsonDocument v_res;
-                     v_res["deleted"] = v_deleted;
-                     if (v_deleted) {
-                         CL_C10_ConfigManager::saveDirtyConfigs();
-                     }
-                     sendJson(p_request, v_res, v_deleted ? 200 : 404);
-                 });
+        JsonDocument v_res;
+        v_res["deleted"] = v_deleted;
+        if (v_deleted) {
+            CL_C10_ConfigManager::saveDirtyConfigs();
+        }
+        sendJson(p_request, v_res, v_deleted ? 200 : 404);
+    });
 }
 
 // --------------------------------------------------
@@ -263,12 +278,9 @@ void CL_W10_WebAPI::routeSchedulesID() {
 void CL_W10_WebAPI::routeUserProfiles() {
     // GET
     s_server->on(W10_Const::HTTP_API_USER_PROFILES, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
-        JsonDocument v_doc;
+        JsonDocument        v_doc;
         ST_A20_ConfigRoot_t v_snap;
         CL_C10_ConfigManager::getRootSnapshot(v_snap);
         if (v_snap.userProfiles) {
@@ -278,37 +290,27 @@ void CL_W10_WebAPI::routeUserProfiles() {
     });
 
     // POST: 신규 생성
-    s_server->on(
-        W10_Const::HTTP_API_USER_PROFILES,
-        HTTP_POST,
-        [](AsyncWebServerRequest* p_request) {},
-        nullptr,
-        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                return;
-            }
-            if (p_index + p_len != p_total) return;
+    s_server->on(W10_Const::HTTP_API_USER_PROFILES,
+                 HTTP_POST,
+                 _crudOnReqEmptyCheck,
+                 nullptr,
+                 [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+                     JsonDocument v_doc;
+                     if (!_crudAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
 
-            JsonDocument v_doc;
-            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-                p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
-                return;
-            }
+                     int v_new_id = CL_C10_ConfigManager::addUserProfilesFromJson(v_doc);
 
-            int v_new_id = CL_C10_ConfigManager::addUserProfilesFromJson(v_doc);
-
-            JsonDocument v_res;
-            if (v_new_id > 0) {
-                v_res["result"] = "created";
-                v_res["id"]     = v_new_id;
-                CL_C10_ConfigManager::saveDirtyConfigs();
-                sendJson(p_request, v_res, 201);
-            } else {
-                v_res["error"] = "creation failed or validation error";
-                sendJson(p_request, v_res, 400);
-            }
-        });
+                     JsonDocument v_res;
+                     if (v_new_id > 0) {
+                         v_res["result"] = "created";
+                         v_res["id"]     = v_new_id;
+                         CL_C10_ConfigManager::saveDirtyConfigs();
+                         sendJson(p_request, v_res, 201);
+                     } else {
+                         v_res["error"] = "creation failed or validation error";
+                         sendJson(p_request, v_res, 400);
+                     }
+                 });
 }
 
 // --------------------------------------------------
@@ -316,26 +318,17 @@ void CL_W10_WebAPI::routeUserProfiles() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeUserProfilesID() {
     // PUT
-    s_server->on((String(W10_Const::HTTP_API_USER_PROFILES) + "/:id").c_str(),
+    s_server->on(W10_Const::HTTP_API_USER_PROFILES,
                  HTTP_PUT,
-                 [](AsyncWebServerRequest* p_request) {},
+                 _crudOnReqEmptyCheck,
                  nullptr,
                  [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-                     if (!checkApiKey(p_request)) {
-                         p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                         return;
-                     }
-                     if (p_index + p_len != p_total) return;
-
-                     if (!p_request->hasParam("id")) {
-                         p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
-                         return;
-                     }
-                     int v_id = p_request->getParam("id")->value().toInt();
-
                      JsonDocument v_doc;
-                     if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-                         p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
+                     if (!_crudAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
+
+                     int v_id = 0;
+                     if (!_crudExtractTailId(p_request, W10_Const::HTTP_API_USER_PROFILES, v_id)) {
+                         p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
                          return;
                      }
 
@@ -350,66 +343,51 @@ void CL_W10_WebAPI::routeUserProfilesID() {
                  });
 
     // DELETE
-    s_server->on((String(W10_Const::HTTP_API_USER_PROFILES) + "/:id").c_str(),
-                 HTTP_DELETE,
-                 [](AsyncWebServerRequest* p_request) {
-                     if (!checkApiKey(p_request)) {
-                         p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                         return;
-                     }
-                     if (!p_request->hasParam("id")) {
-                         p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
-                         return;
-                     }
-                     int  v_id      = p_request->getParam("id")->value().toInt();
-                     bool v_deleted = CL_C10_ConfigManager::deleteUserProfiles((uint16_t)v_id);
+    s_server->on(W10_Const::HTTP_API_USER_PROFILES, HTTP_DELETE, [](AsyncWebServerRequest* p_request) {
+        if (!requireApiKey(p_request)) return;
+        int v_id = 0;
+        if (!_crudExtractTailId(p_request, W10_Const::HTTP_API_USER_PROFILES, v_id)) {
+            p_request->send(400, "application/json", "{\"error\":\"missing id\"}");
+            return;
+        }
+        bool v_deleted = CL_C10_ConfigManager::deleteUserProfiles((uint16_t)v_id);
 
-                     JsonDocument v_res;
-                     v_res["deleted"] = v_deleted;
-                     if (v_deleted) {
-                         CL_C10_ConfigManager::saveDirtyConfigs();
-                     }
-                     sendJson(p_request, v_res, v_deleted ? 200 : 404);
-                 });
+        JsonDocument v_res;
+        v_res["deleted"] = v_deleted;
+        if (v_deleted) {
+            CL_C10_ConfigManager::saveDirtyConfigs();
+        }
+        sendJson(p_request, v_res, v_deleted ? 200 : 404);
+    });
 }
 
 // --------------------------------------------------
 // 7. /api/user_profiles/patch (배치 패치)
 // --------------------------------------------------
 void CL_W10_WebAPI::routeUserProfilesPatch() {
-    s_server->on(
-        W10_Const::HTTP_API_USER_PROFILES_PATCH,
-        HTTP_POST,
-        [](AsyncWebServerRequest* p_request) {},
-        nullptr,
-        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                return;
-            }
-            if (p_index + p_len != p_total) return;
+    s_server->on(W10_Const::HTTP_API_USER_PROFILES_PATCH,
+                 HTTP_POST,
+                 _crudOnReqEmptyCheck,
+                 nullptr,
+                 [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+                     JsonDocument v_doc;
+                     if (!_crudAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
 
-            JsonDocument v_doc;
-            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-                p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
-                return;
-            }
+                     // [B-2] async_tcp → getRootSnapshot 필수 (CONTRACT §3.1)
+                     ST_A20_ConfigRoot_t v_snap;
+                     CL_C10_ConfigManager::getRootSnapshot(v_snap);
 
-            // [B-2] async_tcp → getRootSnapshot 필수 (CONTRACT §3.1)
-            ST_A20_ConfigRoot_t v_snap;
-            CL_C10_ConfigManager::getRootSnapshot(v_snap);
-            
-            bool v_changed = false;
-            if (v_snap.userProfiles) {
-                v_changed = CL_C10_ConfigManager::patchUserProfilesFromJson(*v_snap.userProfiles, v_doc);
-            }
+                     bool v_changed = false;
+                     if (v_snap.userProfiles) {
+                         v_changed = CL_C10_ConfigManager::patchUserProfilesFromJson(*v_snap.userProfiles, v_doc);
+                     }
 
-            if (v_changed) {
-                CL_C10_ConfigManager::saveDirtyConfigs();
-            }
+                     if (v_changed) {
+                         CL_C10_ConfigManager::saveDirtyConfigs();
+                     }
 
-            JsonDocument v_res;
-            v_res["updated"] = v_changed;
-            sendJson(p_request, v_res);
-        });
+                     JsonDocument v_res;
+                     v_res["updated"] = v_changed;
+                     sendJson(p_request, v_res);
+                 });
 }

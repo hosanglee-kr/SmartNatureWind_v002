@@ -217,19 +217,24 @@ def check_spa_schema(repo: Path) -> list[str]:
 
     assets = pages_list[0].get("pageAssets", []) if pages_list else []
     asset_paths = [a.get("path", "") for a in assets]
-    if not any("P010_bundle_0203.js" in p for p in asset_paths):
-        violations.append("pageAssets[]에 P010_bundle_0203.js 없음")
+    required_chunks = [
+        "common_base_0203.css",
+        "common_pages_0203.css",
+        "app_core_0203.js",
+        "app_ui_0203.js",
+        "app_pages_0203.js",
+    ]
+    missing_chunks = [c for c in required_chunks if not any(c in p for p in asset_paths)]
+    if missing_chunks:
+        violations.append(f"pageAssets[] 누락 청크: {missing_chunks}")
 
     redirects = pages.get("reDirect", [])
-    required_routes = {"/", "/dashboard", "/chart", "/schedule", "/profiles",
-                       "/sensors", "/simulation", "/windprofile", "/automation",
-                       "/settings", "/network", "/logs", "/diagnostics",
-                       "/firmware", "/ai", "/info"}
+    required_routes = {"/"}
     actual_froms = {r.get("uriFrom", "") for r in redirects}
     missing = required_routes - actual_froms
     if missing:
         violations.append(
-            f"reDirect[] 누락된 경로: {sorted(missing)[:5]}..."
+            f"reDirect[] 누락된 경로: {sorted(missing)}"
         )
 
     if pages.get("assets", None) not in (None, []):

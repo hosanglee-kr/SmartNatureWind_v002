@@ -1,3 +1,4 @@
+/* === _dashboard.css === */
 /*
  * ------------------------------------------------------
  * 소스명   : _dashboard.css
@@ -55,57 +56,32 @@
     }
 }
 
-/* Dashboard 카드별 최소 높이 */
-.snw-card--state { min-height: 220px; }
-
-.snw-card--power { 
+/* [Phase C] 제어 탭 적응형 레이아웃: 가동 중일 때 Now Playing 최상단 배치 */
+[data-dash-content="control"] {
     display: flex;
-    flex-direction: column; 
+    flex-direction: column;
 }
 
-.snw-card--power .snw-power-slot { 
-    flex: 1;
-    display: flex; 
+.snw-card--nowplaying.is-running {
+    order: -1;
 }
 
-.snw-card--sensor .snw-sensor-cards {
-    grid-template-columns: repeat(3, 1fr);
-}
-
-/* 큰 숫자 강조 (풍속) */
-.snw-card--state .snw-kv b[data-slot="cur-wind"] {
-    font-size: 24px;
-    color: var(--snw-primary, #4a9eff);
-}
-
-.snw-card--state .snw-kv b[data-slot="target-wind"] {
-    font-size: 16px;
-}
-
-/* Phase 표시 (컬러) */
-.snw-card--state .snw-kv b[data-slot="phase"] {
-    font-size: 14px;
-}
-
-/* 프리셋 그리드: 8개 프리셋 4x2 대칭 배치 */
+/* 프리셋 그리드: 10개 프리셋 대칭 배치 (데스크톱 5×2, 모바일/태블릿 2×5) */
 @media (min-width: 1024px) {
-    .snw-card--preset .snw-preset-grid {
-        grid-template-columns: repeat(4, 1fr);
+
+    .snw-card--preset .snw-preset-grid,
+    .snw-preset-grid {
+        grid-template-columns: repeat(5, 1fr);
         gap: 10px;
     }
 }
 
-@media (min-width: 768px) and (max-width: 1023px) {
-    .snw-card--preset .snw-preset-grid {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
-    }
-}
+@media (max-width: 1023px) {
 
-@media (max-width: 767px) {
-    .snw-card--preset .snw-preset-grid {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
+    .snw-card--preset .snw-preset-grid,
+    .snw-preset-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
     }
 }
 
@@ -117,11 +93,13 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
 }
+
 @media (min-width: 768px) {
     .snw-playlist-grid {
         grid-template-columns: repeat(4, 1fr);
     }
 }
+
 .snw-playlist-card {
     display: flex;
     flex-direction: column;
@@ -135,16 +113,20 @@
     transition: all 0.15s;
     text-align: center;
 }
+
 .snw-playlist-card:hover {
     border-color: var(--snw-primary, #4a9eff);
     transform: translateY(-2px);
 }
+
 .snw-playlist-card:active {
     transform: scale(0.96);
 }
+
 .snw-playlist-card__icon {
     font-size: 24px;
 }
+
 .snw-playlist-card__name {
     font-size: 13px;
     font-weight: 600;
@@ -154,6 +136,7 @@
     text-overflow: ellipsis;
     max-width: 100%;
 }
+
 .snw-playlist-card__meta {
     font-size: 11px;
     color: var(--snw-text-dim, #8b949e);
@@ -174,9 +157,11 @@
     align-items: baseline;
     font-size: 13px;
 }
+
 .snw-snapslider__label {
     color: var(--snw-text-dim, #8b949e);
 }
+
 .snw-snapslider__value {
     font-size: 20px;
     font-weight: 700;
@@ -214,6 +199,7 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
     transition: transform 0.1s;
 }
+
 .snw-snapslider__input::-webkit-slider-thumb:active {
     cursor: grabbing;
     transform: scale(1.15);
@@ -237,6 +223,7 @@
     pointer-events: none;
     z-index: 1;
 }
+
 .snw-snapslider__tick {
     position: absolute;
     top: 0;
@@ -253,6 +240,7 @@
     gap: 4px;
     justify-content: space-between;
 }
+
 .snw-snapslider__stop {
     flex: 1;
     min-height: 40px;
@@ -266,14 +254,17 @@
     cursor: pointer;
     transition: all 0.15s;
 }
+
 .snw-snapslider__stop:hover {
     border-color: var(--snw-border-hi, #4f5b66);
 }
+
 .snw-snapslider__stop.is-active {
     background: var(--snw-primary, #4a9eff);
     border-color: var(--snw-primary, #4a9eff);
     color: white;
 }
+
 .snw-snapslider__stop:active {
     transform: scale(0.94);
 }

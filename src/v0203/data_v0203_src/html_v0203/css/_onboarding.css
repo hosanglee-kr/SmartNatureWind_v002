@@ -1,3 +1,4 @@
+/* === _onboarding.css === */
 .snw-onboarding-step {
     display: flex;
     flex-direction: column;
@@ -108,4 +109,3 @@
     color: var(--snw-text-dim);
     margin-top: 2px;
 }
-

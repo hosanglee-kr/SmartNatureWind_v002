@@ -34,6 +34,14 @@
 #include "W10_Web_0203.h"
 #include "W10_Web_Const_0203.h"
 
+// ======================================================
+// [Stage 13 Commit 8] 업로드/OTA 단일 세션 소유권 관리
+//  - async_tcp 컨텍스트에서 동시 업로드로 인한 s_upFile / Update 손상 방지
+//  - 연결 끊김 시 onDisconnect로 자동 해제 (데드락 방지)
+// ======================================================
+static AsyncWebServerRequest* s_uploadOwner         = nullptr;
+static void* const            G_W10_UPLOAD_BUSY_TAG = (void*)0x1;
+
 // ------------------------------------------------------
 // 안전한 파일명 추출 (경로 탐색 차단)
 // ------------------------------------------------------
@@ -75,8 +83,8 @@ String CL_W10_WebAPI::getUploadPath(const String& p_filename) {
 
         if (v_ext == "json") {
             v_folderPath = W10_Const::PATH_STATIC_JSON; // "/json"
-        } else if (v_ext == "html" || v_ext == "js" || v_ext == "css" ||
-                   v_ext == "svg"  || v_ext == "png" || v_ext == "ico" || v_ext == "woff2") {
+        } else if (v_ext == "html" || v_ext == "js" || v_ext == "css" || v_ext == "svg" || v_ext == "png" ||
+                   v_ext == "ico" || v_ext == "woff2") {
             v_folderPath = W10_Const::PATH_STATIC_HTML; // "/html_v0203"
         } else {
             v_folderPath = ""; // 기타 확장자는 루트
@@ -96,13 +104,20 @@ void CL_W10_WebAPI::routeUpload() {
         HTTP_POST,
         // ─── 완료 핸들러 ───
         [](AsyncWebServerRequest* p_request) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+            if (!requireApiKey(p_request)) return;
+
+            if (p_request->_tempObject == G_W10_UPLOAD_BUSY_TAG) {
+                p_request->_tempObject = nullptr;
+                p_request->send(429, "application/json", "{\"error\":\"upload busy\"}");
                 return;
             }
 
             JsonDocument v_resp;
             if (s_uploadError || !s_upFile) {
+                if (s_upFile) {
+                    s_upFile.close();
+                    s_upFile = File();
+                }
                 v_resp["done"] = false;
 
                 if (s_uploadError) {
@@ -114,24 +129,39 @@ void CL_W10_WebAPI::routeUpload() {
                 sendJson(p_request, v_resp, 500);
             } else {
                 s_upFile.close();
+                s_upFile       = File();
                 v_resp["done"] = true;
                 v_resp["size"] = s_uploadTotal;
                 sendJson(p_request, v_resp, 200);
             }
 
-            // 상태 초기화
+            // 소유자 상태 초기화
+            if (s_uploadOwner == p_request) {
+                s_uploadOwner = nullptr;
+            }
             s_uploadError = false;
             s_uploadTotal = 0;
         },
 
         // ─── 청크 핸들러 ───
         [](AsyncWebServerRequest* p_request, const String& p_filename, size_t p_index, uint8_t* p_data, size_t p_len, bool p_final) {
-            if (!checkApiKey(p_request)) return;
+            if (!checkApiKey(p_request)) {
+                // [Commit 8] 인증 실패 시 조기 abort (완료 핸들러가 401 응답)
+                if (s_uploadOwner == p_request) {
+                    if (s_upFile) {
+                        s_upFile.close();
+                        s_upFile = File();
+                    }
+                    s_uploadError = true;
+                    s_uploadOwner = nullptr;
+                }
+                return;
+            }
+
+            if (p_request->_tempObject == G_W10_UPLOAD_BUSY_TAG) return;
 
             // ==================================================
             // [B-N-4] 실패 분기에서 반드시 s_upFile.close() 호출
-            //  - 미close 시 다음 업로드가 이전 핸들 재사용
-            //  - 파일 손상/오염 가능성 방지
             // ==================================================
             auto safeAbort = [](const char* reason) {
                 CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] upload abort: %s", reason);
@@ -141,18 +171,33 @@ void CL_W10_WebAPI::routeUpload() {
                 }
                 s_uploadError = true;
             };
-            
-            // ─── 첫 청크: 파일 열기 ───
+
+            // ─── 첫 청크: 단일 세션 점유 + 파일 열기 ───
             if (p_index == 0) {
+                if (s_uploadOwner != nullptr && s_uploadOwner != p_request) {
+                    p_request->_tempObject = G_W10_UPLOAD_BUSY_TAG;
+                    return;
+                }
+                s_uploadOwner = p_request;
+                p_request->onDisconnect([p_request]() {
+                    if (s_uploadOwner == p_request) {
+                        if (s_upFile) {
+                            s_upFile.close();
+                            s_upFile = File();
+                        }
+                        s_uploadError = false;
+                        s_uploadTotal = 0;
+                        s_uploadOwner = nullptr;
+                    }
+                });
+
                 // [C-4] 이전 세션 잔여 핸들 정리
-                //  - 이전: write-mode 파일은 available()==0이라 유출 핸들 감지 불가
-                //  - 이후: 핸들이 열려있으면 무조건 close → 새 파일 open
                 if (s_upFile) {
                     CL_D10_Logger::log(EN_L10_LOG_WARN, "[W10] stale upload handle closed before new upload");
                     s_upFile.close();
                     s_upFile = File();
                 }
-            
+
                 // 크기 제한 확인
                 if (p_request->contentLength() > G_W10_MAX_UPLOAD_SIZE) {
                     safeAbort("size exceeds limit");
@@ -220,11 +265,21 @@ void CL_W10_WebAPI::routeUpdate() {
         HTTP_POST,
         // ─── 완료 핸들러 ───
         [](AsyncWebServerRequest* p_request) {
-            if (!checkApiKey(p_request)) {
+            if (!requireApiKey(p_request)) {
                 // [B-12] 인증 실패 → 잔존 세션 abort
-                if (Update.isRunning()) Update.abort();
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+                if (s_uploadOwner == p_request) {
+                    if (Update.isRunning()) Update.abort();
+                    s_uploadOwner = nullptr;
+                }
                 return;
+            }
+            if (p_request->_tempObject == G_W10_UPLOAD_BUSY_TAG) {
+                p_request->_tempObject = nullptr;
+                p_request->send(429, "application/json", "{\"error\":\"ota busy\"}");
+                return;
+            }
+            if (s_uploadOwner == p_request) {
+                s_uploadOwner = nullptr;
             }
             if (Update.hasError()) {
                 // [B-12] 실패한 세션 정리
@@ -241,14 +296,30 @@ void CL_W10_WebAPI::routeUpdate() {
         [](AsyncWebServerRequest* p_request, const String&, size_t p_index, uint8_t* p_data, size_t p_len, bool p_final) {
             if (!checkApiKey(p_request)) {
                 // [B-12] 인증 실패 → 세션 abort
-                if (Update.isRunning()) Update.abort();
+                if (s_uploadOwner == p_request) {
+                    if (Update.isRunning()) Update.abort();
+                    s_uploadOwner = nullptr;
+                }
                 return;
             }
 
-            // ─── 첫 청크: 세션 시작 ───
+            if (p_request->_tempObject == G_W10_UPLOAD_BUSY_TAG) return;
+
+            // ─── 첫 청크: 단일 세션 점유 + 시작 ───
             if (p_index == 0) {
+                if (s_uploadOwner != nullptr && s_uploadOwner != p_request) {
+                    p_request->_tempObject = G_W10_UPLOAD_BUSY_TAG;
+                    return;
+                }
+                s_uploadOwner = p_request;
+                p_request->onDisconnect([p_request]() {
+                    if (s_uploadOwner == p_request) {
+                        if (Update.isRunning()) Update.abort();
+                        s_uploadOwner = nullptr;
+                    }
+                });
+
                 // [B-12] 이전 세션 잔존 시 abort 후 재시작
-                //  - 이전: Update.begin() 실패 시 이후 write 무시 → 반쪽 파티션 리스크
                 if (Update.isRunning()) {
                     CL_D10_Logger::log(EN_L10_LOG_WARN, "[W10] OTA: aborting stale session before new upload");
                     Update.abort();
@@ -272,7 +343,9 @@ void CL_W10_WebAPI::routeUpdate() {
                 if (v_written != p_len) {
                     CL_D10_Logger::log(EN_L10_LOG_ERROR,
                                        "[W10] OTA write failed (%u/%u): %s",
-                                       (unsigned)v_written, (unsigned)p_len, Update.errorString());
+                                       (unsigned)v_written,
+                                       (unsigned)p_len,
+                                       Update.errorString());
                     Update.abort();
                     return;
                 }

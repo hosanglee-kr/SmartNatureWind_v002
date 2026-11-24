@@ -47,7 +47,7 @@ src/v0203/
 ├── User_Manual_0203/              # 사용자 매뉴얼
 ├── tools_0203/                    # v0203 빌드/계약 도구 (pio_gzip_0203.py, commit_contracts_0203.py)
 │
-├── data_v0203_src/                # [웹 개발 원본] (54 번들 JS + 18 CSS + HTML Shell + 998.offline_data + 998.offline)
+├── data_v0203_src/                # [웹 개발 원본] (54 번들 JS + 20 CSS + HTML Shell + 998.offline_data + 998.offline)
 ├── data_v0203/                    # [배포 스테이징] LittleFS 이미지 대상 (json 9개 + html_v0203 3개 번들 자산)
 │
 └── [C++ 소스군, v0203 접미사]      # 상세 모듈 매핑 및 파일 목록은 SPEC_0203.md §3 참조
@@ -254,6 +254,7 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-17** | **v2.18** | **FE Core·Offline 정비 및 20종 CSS 모듈 분리 반영**: `data_v0203_src/html_v0203/css/` 20종 분할 및 5청크 번들·오프라인 정합성 현행화 | Antigravity AI |
 | **2026-11-09** | **v2.17** | **PlatformIO 환경 갱신**: esp32-s3-zero 기본 및 esp32-c3-zero 활성화 검증 게이트 반영 | Antigravity AI |
 | **2026-11-08** | **v2.16** | **Stage 9.1 2차 통합 감사 19대 이슈 해결 및 데스크톱 내비게이션 반영 (0203_012)**: Live 도구 선언 CT10_AI SSOT 단일 위임, 6대 AI 라우트 checkApiKey 보안 인가 및 요청 버퍼 단편화/빈본문 가드, Gemini REST parts object 스키마 준수, Session Snapshot Lock 순서 정합, TimerPanel stopSession 위임 및 set_timer 백엔드 동기화, Store 세션 정규화 `normalizeSession`, 모니터/나우플레잉/차트/스튜디오/스케줄러 결함 해소, 데스크톱 영구 사이드바 2열 그리드 레이아웃 `ADR-10` 반영 | Antigravity AI |
 | **2026-11-08** | **v2.15** | **Stage 9 웹 UI/UX 레이아웃 표준화 및 인터랙션 고도화 반영 (0203_012)**: 하단 뷰포트 레이아웃 스택 표준화(`--snw-fab-bottom: 76px➔124px`, `--snw-content-pb: 80px➔128px`), Z-index 계층 재정립(fab: 990, modal: 1100), 바람 스타일 5종 탭 44px 모바일 터치 접근성 규격화, Now Playing Bar 상세 확장 모달, Studio 3대 물리 슬라이더 Override `[수동 튜닝됨]` 뱃지 및 `[기본값 원복]` 리셋 액션, 54개 JS 번들(119.3 KB Gzip) 실측치 유지 | Antigravity AI |

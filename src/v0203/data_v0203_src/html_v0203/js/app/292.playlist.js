@@ -50,7 +50,7 @@ window.SNW = window.SNW || {};
                         </div>
                     </div>`;
                 this.el.querySelector('[data-action="new"]').onclick = () => {
-                    SNW.Router.navigate('/automation/studio');
+                    SNW.Router.navigate('/wind/studio');
                 };
                 return;
             }
@@ -67,7 +67,7 @@ window.SNW = window.SNW || {};
                 </div>`;
 
             this.el.querySelector('[data-action="new"]').onclick = () => {
-                SNW.Router.navigate('/automation/studio');
+                SNW.Router.navigate('/wind/studio');
             };
 
             const listSlot = this.el.querySelector('[data-slot="list"]');
@@ -80,6 +80,7 @@ window.SNW = window.SNW || {};
         async _renderCard(profile) {
             const pId = profile.profileId || profile.profileNo;
             const refCount = this._schedules.filter(s => s.profileId === pId).length;
+            const pDispName = (SNW.I18n && SNW.I18n.profileName) ? SNW.I18n.profileName(profile) : profile.name;
 
             const card = document.createElement('div');
             card.className = 'snw-playlist-item';
@@ -87,7 +88,7 @@ window.SNW = window.SNW || {};
             card.innerHTML = `
                 <div class="snw-playlist-item__main" style="display:flex;flex-direction:column;gap:6px;">
                     <div class="snw-playlist-item__head" style="display:flex;justify-content:space-between;align-items:center;">
-                        <span class="snw-playlist-item__name" style="font-weight:600;font-size:15px;color:var(--snw-text,#e6edf3);">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(profile.name) : profile.name}</span>
+                        <span class="snw-playlist-item__name" style="font-weight:600;font-size:15px;color:var(--snw-text,#e6edf3);">📋 ${SNW.DomUtil ? SNW.DomUtil.escape(pDispName) : pDispName}</span>
                         <span class="snw-playlist-item__meta" style="font-size:12px;color:var(--snw-text-dim,#8b949e);">${profile.stepCount || (profile.steps ? profile.steps.length : 0)} Step · ${this._fmtTotal(profile)}</span>
                     </div>
                     
@@ -101,6 +102,7 @@ window.SNW = window.SNW || {};
                 </div>
                 <div class="snw-playlist-item__actions" style="display:flex;gap:8px;justify-content:flex-end;border-top:1px solid rgba(255,255,255,0.06);padding-top:10px;">
                     <button type="button" class="snw-btn snw-btn-primary snw-btn--sm" data-action="play" style="padding:6px 14px;background:var(--snw-primary,#4a9eff);color:#fff;border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-size:12px;font-weight:600;">▶ 재생</button>
+                    <button type="button" class="snw-btn snw-btn--sm" data-action="rule" style="padding:6px 12px;background:var(--snw-surface-3,#2f3844);color:var(--snw-text,#e6edf3);border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-size:12px;">⚙ 규칙</button>
                     <button type="button" class="snw-btn snw-btn--sm" data-action="edit" style="padding:6px 12px;background:var(--snw-surface-3,#2f3844);color:var(--snw-text,#e6edf3);border:none;border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-size:12px;">✏️ 편집</button>
                     <button type="button" class="snw-btn snw-btn--sm snw-btn--danger" data-action="delete" style="padding:6px 12px;background:rgba(248,81,73,0.15);color:var(--snw-error,#f85149);border:1px solid rgba(248,81,73,0.3);border-radius:var(--snw-radius-sm,4px);cursor:pointer;font-size:12px;">🗑</button>
                 </div>
@@ -123,15 +125,37 @@ window.SNW = window.SNW || {};
             card.querySelector('[data-action="play"]').onclick = async () => {
                 try {
                     await SNW.Api.startPlaylist(pId);
-                    if (SNW.ToastUtil) SNW.ToastUtil.success(`▶ ${profile.name} 재생 시작`);
+                    if (SNW.StoreBridge && SNW.StoreBridge.refreshNow) SNW.StoreBridge.refreshNow();
+                    if (SNW.ToastUtil) SNW.ToastUtil.success(`▶ ${pDispName} 재생 시작`);
                     if (navigator.vibrate) navigator.vibrate([10, 20, 10]);
                 } catch (e) {
                     if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '재생 실패');
                 }
             };
 
+            const ruleBtn = card.querySelector('[data-action="rule"]');
+            if (ruleBtn) {
+                ruleBtn.onclick = async () => {
+                    if (!SNW.UI || !SNW.UI.ruleEditor) return;
+                    const updated = await SNW.UI.ruleEditor.showModal(profile.rule || {}, {
+                        title: `${pDispName || '바람'} 규칙`,
+                    });
+                    if (updated) {
+                        try {
+                            profile.rule = updated;
+                            await SNW.Api.updateProfile(pId, profile);
+                            await SNW.Api.saveConfig();
+                            if (SNW.ToastUtil) SNW.ToastUtil.success('규칙 저장 완료');
+                            await this.mount();
+                        } catch (e) {
+                            if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '규칙 저장 실패');
+                        }
+                    }
+                };
+            }
+
             card.querySelector('[data-action="edit"]').onclick = () => {
-                SNW.Router.navigate(`/automation/studio?edit=${pId}`);
+                SNW.Router.navigate(`/wind/studio?edit=${pId}`);
             };
 
             card.querySelector('[data-action="delete"]').onclick = async () => {

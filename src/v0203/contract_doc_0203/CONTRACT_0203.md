@@ -1,4 +1,4 @@
-# CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.8)
+# CONTRACT_0203.md — 동시성 경계 및 API 계약 (v3.9)
 
 > **기준**: v0203 정적 감사 + 런타임 동시성 검증 완료 (F-01~F-10, I-1~I-6, N-1~N-4, G-1~G-3, A-1~A-3, B-1~B-6, C-1~C-8, D-1~D-5, E-1~E-10, E-2.1~E-2.7, F-1~F-10, Batch G 전면 반영).  
 > **목적**: 멀티태스킹 환경에서 태스크 경계, 뮤텍스 획득 순서, 공유 자원 접근 규약 및 위임 패턴을 정의하여 데이터 레이스, 교착 상태(Deadlock), UAF를 원천 차단.  
@@ -57,6 +57,8 @@
 | **T-loop** | `loopTask` | Arduino Core | 1 | 8,192 B | `A00_run()` 메인 주기 루프 |
 | **T-async** | `async_tcp` | ESPAsyncWebServer / AsyncTCP | 1 | 4,096 B | HTTP/WebSocket 이벤트 |
 | **T-wf** | `WF10_Reconnect` | `_ensureWifiTask` | 1 | 8,192 B | Wi-Fi 재연결 전담 (WDT 미등록) |
+| **T-dht** | `dht_task` | `_ct10_ensureDhtTask` | 1 | 3,072 B | DHT22 온·습도 주기 폴링 (Core 1 전용) |
+| **T-ai** | `gemini_worker` | `_w10_ensureAiWorker` | 1 | 10,240 B | Gemini REST 비동기 프록시 전담 (PSRAM Job 버퍼) |
 | **T-sys_evt** | `esp_event_loop` | ESP-IDF | 시스템 | 3,584 B | Wi-Fi/IP 이벤트 콜백 |
 | **T-IDLE** | `IDLE0/1` | FreeRTOS | 0 | - | 백그라운드 정리/전력 |
 | **T-timer** | `esp_timer` | ESP-IDF | 22 | - | SNTP 콜백 |
@@ -78,6 +80,8 @@
 | `TM10::s_mutex` | Recursive Mutex | Lazy-init | 100 ms | SNTP 상태, fallback 인덱스 |
 | `S10::_recursiveMutex` | Recursive Mutex | `S10::begin()` | 100 ms | 시뮬 파라미터, 120-샘플 링버퍼 |
 | `WF10::s_wifiRequestSem` | Binary Sem | `_ensureWifiTask` | Blocking | 재연결 요청 (T-async give → T-wf take) |
+| `CT10::s_dhtMux` | portMUX | 정적 | Critical | `s_dhtCache` (`temp`, `hum`) Core 1 워커 ↔ Reader 보호 |
+| `W10::s_aiJobMutex` | Mutex | Lazy-init | 100 ms | `ST_W10_AiJobSlot_t` (`state`, `jobId`, `finishedMs`, 버퍼 메타) 보호 |
 
 ### 2.1 Batch D-4: `s_staConnected` lock-free
 
@@ -104,6 +108,7 @@
 2. **쓰기**: 오직 `CT10::reloadAll()` 내부. `s_rootSwapMux` 스핀락 임계 구역에서 포인터 스왑.
 3. **지연 해제 (UAF)**: `v_old`는 `queuePendingFree(v_old)` 3초 grace 후 `processPendingFree()` 해제.
 4. **화이트리스트 (B-2)**: T-loop 컨텍스트 직접 접근 허용 위치 명시 (A00_run, CT10_Ctl_*, M10). T-async는 `getRootSnapshot()` 필수. 위반 시 코드 리뷰 리젝트.
+   - `CT10_Ctl_Ctl_0203.cpp::initRuleFromPayload` (세션 시작, T-async 경유)
 
 ---
 
@@ -121,7 +126,7 @@
 | `CT10::feedPIR()` | ❌ | ✅ | ❌ | ❌ | **A-2** s_stateMutex 경유 |
 | `CT10::patchSimFromJson()` | ❌ | ✅ | ❌ | ❌ | **A-2** s_stateMutex 경유 |
 | `CT10::exportSimJson()` | ❌ | ✅ | ❌ | ❌ | **A-2** s_stateMutex 경유 |
-| `CT10::consumeAllDirty()` | ✅ | ❌ | ❌ | ❌ | **D-1** WS 배치 |
+| `CT10::consumeAllDirty()` | ✅ | ❌ | ❌ | ❌ | **D-1** WS 배치 (`std::atomic<bool>` lock-free) |
 | `CT10_WS_tick()` | ✅ | ❌ | ❌ | ❌ | T-loop 전용 |
 | `S10::tick()` | 간접 | ❌ | ❌ | ❌ | `CT10::tickLoop` 내부만 |
 | `S10::patchFromJson()` | ❌ | ✅ | ❌ | ❌ | HTTP, `_recursiveMutex` |
@@ -244,7 +249,7 @@ startSession(type, trigger, payload) [T-async]
 | **Pending Free (E-1)** | `reloadAll` 완료 | T-loop `processPendingFree()` | 3초 grace + 2슬롯 spinlock |
 | **Dirty Save** | REST 설정 변경 | T-async `saveDirtyConfigs()` | `s_dirtyflagSpinlock` |
 | **WS Broadcast** | `markDirty()` | T-loop `CT10_WS_tick()` | 채널별 file-static doc |
-| **WS Batch (D-1)** | 4채널 dirty | T-loop `consumeAllDirty()` | mutex 1회, 4플래그 |
+| **WS Batch (D-1)** | 4채널 dirty | T-loop `consumeAllDirty()` | `std::atomic<bool>` lock-free (mutex 0회, 4플래그) |
 | **Wi-Fi Reconnect** | T-async 요청 | T-wf 전담 | `s_wifiRequestSem` |
 | **NVS Flush (F-04)** | 런타임 변경 | T-loop `N10::tick()` | 10초 게이트 |
 
@@ -276,10 +281,10 @@ startSession(type, trigger, payload) [T-async]
 ### 7.13 UX 재설계·온보딩·야간 감광 계약 (UX-1~UX-3)
 - **[UX-1] 시뮬레이션 페이지 정체성**: 파라미터 덤프에서 직관적인 '바람 체험실'로 재설계.
 - **[UX-2] 첫 방문 온보딩**: `localStorage['snw.onboarded']` 기반 1회 온보딩 팝업 제공.
-- **[UX-3] 야간 감광**: 22:00~06:00 야간 시간대 `.snw-night-mode` 밝기 75% 감광 및 소음 사전 경고.
+- **[UX-3] 야간 감광 비활성화**: 기존 22:00~06:00 `body.snw-night-mode` `filter: brightness(0.75)` 규칙은 전체 화면 회색 딤 및 `position: fixed` 스태킹 컨텍스트 왜곡을 유발하여 비활성화한다.
 
 ### 7.14 W10 웹 라우팅 및 역직렬화 안전 계약 (ROUTE-1~ROUTE-3)
-- **[ROUTE-1] REST API ID 매핑**: 정규식 라우트 대신 `/:id` 라우트 패턴을 사용하며, `p_request->hasParam("id")` 유효성 검사 후 `p_request->getParam("id")->value().toInt()`로 안전하게 ID를 추출한다.
+- **[ROUTE-1] REST API ID 매핑**: `ESPAsyncWebServer`(`BackwardCompatible` 매처)는 `/:id` 경로 파라미터를 지원하지 않으므로, CRUD 단건 엔드포인트(`wind_profile`, `schedules`, `user_profiles`)는 기본 경로(`W10_Const::HTTP_API_*`)로 등록하고 `_crudExtractTailId()`로 URL 테일 ID를 안전하게 추출한다.
 - **[ROUTE-2] 정적 Gzip 호스팅**: 정규식 라우트 대신 `s_server->onNotFound` 핸들러에서 URL의 `PATH_STATIC_HTML` 접두사 일치 여부를 검사하고 `.gz` 우선 서빙을 수행하여 `ASYNCWEBSERVER_REGEX` 매크로 비활성화 환경에서도 안전하게 정적 자산을 제공한다.
 - **[ROUTE-3] ArduinoJson v7 역직렬화 타입 안전성**: `containsKey` 비권장 API를 배제하고, `obj["field"].is<T>()`를 통한 타입 검사 및 `obj["field"].as<T>()` / `A40_ComFunc::Json_getNum` 헬퍼를 통해 누락 필드 및 타입 불일치 크래시를 원천 방지한다.
 
@@ -292,7 +297,7 @@ startSession(type, trigger, payload) [T-async]
 - **[AI-6] 프롬프트 캐싱 (30초 만료)을 통한 자원 보호**: 시스템 프롬프트 생성(`buildAIPromptStrict`)은 30초 파일 스코프 캐시를 유지하여 빈번한 AI 요청 중에도 I2C 센서 블로킹 및 힙 파편화를 0으로 억제한다.
 
 ### 7.16 v0203 통합 감사 28대 이슈 해결 및 계약 규약 (AUDIT-1~AUDIT-6) (0203_012 신규)
-- **[AUDIT-1] FactoryReset SPA 단일 스키마 (BE-P0-1)**: `A20_resetWebPageDefault`는 구버전 `/html_v3/` 및 복수 HTML 페이지를 전면 배제하고, 단일 `/html_v0203/index.html`과 `P010_bundle_0203.js`, `P000_common_0203.css` SPA 스키마만 초기화하여 리셋 후 웹 서빙 불능을 차단한다.
+- **[AUDIT-1] FactoryReset SPA 단일 스키마 (BE-P0-1)**: `A20_resetWebPageDefault`는 구버전 `/html_v3/` 및 레거시 `P000_common_0203.css`·`P010_bundle_0203.js` 등록을 전면 배제하고, 단일 `/html_v0203/index.html`(`A20_Const::G_PATH_WEB_INDEX`) SPA 스키마만 초기화하여 리셋 후 웹 서빙 불능을 차단한다.
 - **[AUDIT-2] AI Action의 CRUD 헬퍼 필수 경유 (BE-P0-2, BE-P1-6)**: `executeAddProfile`과 `add_schedule`은 C10 설정을 직접 조작하지 않고 `addUserProfilesFromJson` 등 표준 CRUD 헬퍼에 위임하여 ID 자동 발급, 중복 검증, profileId 유효성 검증을 100% 강제한다.
 - **[AUDIT-3] T-async 컨텍스트 getRootSnapshot 원자 캡처 (BE-P0-3)**: `startOverridePreset` 등 비동기 요청 핸들러에서 `g_A20_config_root` 접근 시 직접 참조를 금지하고 `getRootSnapshot()`을 통해 포인터 원자 스냅샷을 획득하여 Torn read 및 UAF를 방지한다.
 - **[AUDIT-4] T-loop WS 브로드캐스트 가드 (BE-P1-5)**: `D10_Logger::broadcastLog`는 WS 활성 클라이언트가 0일 경우 JSON 직렬화 및 `textAll` 호출을 즉시 스킵하여 `loopTask` 지연을 방지한다.
@@ -330,12 +335,50 @@ startSession(type, trigger, payload) [T-async]
 - **[UI-12] 스튜디오 액션바 분리 및 AI FAB 은닉 계약**: Wind Studio 화면 활성화 시 하단 액션바(`snw-studio__bar`)를 좌측(`🎬 미리보기`)과 우측(`취소` / `저장/업데이트`)으로 분리 정렬하고 z-index를 1000으로 격상한다. 편집 시야 가림을 방지하기 위해 Studio 화면 활성화 시 우하단 AI FAB 버튼을 CSS 상에서 강제 은닉(`body:has(.snw-studio__bar) .snw-ai-fab { display: none !important; }`)한다.
 - **[UI-13] AI 어시스턴트 세그먼트 컨트롤 및 스마트 입력창 계약**: REST/Live 모드 전환은 `.snw-btn-group` 세그먼트 컨트롤로 단일화하고 비용 배지는 말줄임(`white-space: nowrap`, `text-overflow: ellipsis`)으로 2줄 개행을 방지한다. 대화 입력창(textarea)은 초기 1줄에서 입력 길이에 맞춰 최대 120px까지 동적 확장되어 가독성과 입력 편의성을 보장한다.
 
+### 7.23 Pause/Stop 이원화 결정 규칙 (Stage 6 신규)
+
+- **[PAUSE-STOP-1] 온도·DI 이원화 계약**: `tempLow.mode` / `diLow.mode`가 `PAUSE`이면 `ENV_PAUSED(7)` + `pauseReason`으로 진입하며 히스테리시스 재개. `STOP`이면 `AUTOOFF_STOPPED(5)` + reason 12/13으로 래치 진입, 사용자 ACK까지 유지.
+- **[PAUSE-STOP-2] PIR 고정 PAUSE**: `pirPause`는 mode 없이 **항상 PAUSE**. `pauseMask` 비트 0.
+- **[PAUSE-STOP-3] 다중 Pause 래치**: `pauseMask`에 여러 비트 활성 시, **모두 해소되어야 재개** (`pauseMask == 0`). 대표 `pauseReason`은 우선순위 (PIR > TEMP > DI).
+- **[PAUSE-STOP-4] 환경 센서 1초 게이트**: 온도/DI 판정은 `lastEnvCheckMs` 기준 1초 주기 (WCET 예산 25ms 준수). PIR은 게이트 없이 매 tick 판정.
+- **[PAUSE-STOP-5] 세션 스냅샷 우선**: `_session.rule`에 세션 시작 시 복사된 규칙만 사용. 세션 중 `profile.rule` 수정은 다음 세션부터 반영 (정책 A 확정).
+- **[PAUSE-STOP-6] AUTO 중 사용자 개입**: `AUTO_FULL`/`AUTO_SELECT` 세션 중 사용자 슬라이더/프리셋 조작 시 `_session.trigger` → `MANUAL`로 **즉시 전환**. `tickAutoComfort`의 AUTO 재평가 중단 (정책 A 확정).
+- **[PAUSE-STOP-7] `nextPauseReason` 전달**: `ST_CT10_Decision_t`에 `nextPauseReason` 필드 필수. `applyDecision()`에서 `onTriggerPause(p_d.nextPauseReason)` 호출. **`runCtx.pauseReason`을 Decision에서 명시 전달** (이전 값 유지 금지).
+- **[PAUSE-STOP-8] PIR 시작 유예**: `_session.startedAt > 0 && (now - _session.startedAt) < holdMs` 구간에서는 `pirPause` 부재(`absent`) 판정을 유예한다.
+- **[PAUSE-STOP-9] ENV_PAUSED 수동 재개 1시간 유예**: `POST /api/v001/session/resume` 시 `triggerRt.pauseBypassUntilMs = millis() + 3600000UL`, `pauseMask = 0` 설정. 유예 중 PAUSE 갱신은 스킵하되 STOP 조건(타이머/예약시각/STOP 임계)은 정상 감시한다.
+- **[RULE-LIVE-1] 가동 중 규칙 실시간 갱신**: `PATCH /api/v001/session/rule` → `updateActiveSessionRule()` (`s_stateMutex` 보호 하에 `C10_fromJson_TriggerRule` + `applyRuleToTriggerRt()`, `timerStartMs`/`pausedAccumMs` 보존). `exportStateJson_v02()`에 `_session.autoSwitchReason[64]`/`autoSwitchAtMs` 직렬화.
+
+### 7.24 AUTO_FULL / AUTO_SELECT 위임 계약 (Stage 6 신규)
+
+- **[AUTO-1] trigger 강제 매핑**: `startSession(AUTO_FULL, ...)` 호출 시 `trigger`는 **반드시** `MANUAL_AUTO_FULL(4)`. 클라이언트가 임의 trigger 지정해도 W10 라우트에서 강제 덮어씀.
+- **[AUTO-2] AUTO_SELECT base 고정**: `autoSelect.baseType`(PRESET/PLAYLIST)과 `basePresetCode`/`baseProfileId`는 세션 시작 시 확정. 세션 중 변경 불가 (다음 세션에 반영).
+- **[AUTO-3] AUTO_FULL 재평가 주기**: `tickAutoComfort()` 5분 주기 (`AUTO_COMFORT_INTERVAL_MS = 300000`). 환경 변화 시 프리셋 자동 전환 (S10 crossfade).
+- **[AUTO-4] AUTO 중 Pause/Stop 우선**: `checkTriggers()`가 AUTO 세션에도 동일 적용. ENV_PAUSED 진입 시 `tickAutoComfort` 재평가 스킵, STOP 진입 시 세션 종료.
+- **[AUTO-5] AUTO 세션의 스냅샷 rule**: `_session.rule`은 세션 시작 시 확정. AUTO_FULL 재평가 시에도 rule은 변경 안 함 (재평가는 프리셋/스타일만).
+- **[AUTO-6] rule 전역 기본값**: `payload.rule` 부재 시 `A20_resetTriggerRuleDefault()` 결과 사용 (모든 트리거 disabled). **사용자 명시 rule 없으면 자동 정지 미작동**.
+
+### 7.25 Stage 12~13 웹 API 보안·안정화 계약 (0203_014_19 신규)
+
+- **[WEB-SEC-1] 비-`T-loop` 태스크 → `getRootSnapshot()` 규약 준수**: `_routeSystemPatchBody`, `_routeWifiConfigPatchBody`, `routeTimeSet` (`T-async`) 및 `WF10_WiFiMgr::attachWiFiEvents` (`T-sys_evt`) 내 `g_A20_config_root` 직접 접근 4건 제거, `getRootSnapshot()` 원자 스냅샷으로 일원화.
+- **[WEB-BODY-1] 단편화 Body 누적 및 누수 차단**: 전 POST/PUT/PATCH 라우트(20건)에 `beginBody`·`appendBody`·`takeBodyBuf`·`freeBody` 적용. `p_index == 0`에서 `requireApiKey` 1회 검사 + 크기 선검사(`1MB`/`G_MAX_REQUEST_BODY`), `ST_W10_BodyAccum` 단일 블록 할당으로 연결 끊김 시 `_tempObject` 자동 해제 보장.
+- **[WEB-BODY-2] 이중 `send()` 및 빈 Body Hang 방지**: `onRequest`는 `requireApiKey` + `contentLength() == 0` 분기만 처리(`/ai/cost-reset`은 기본 리셋 `200`, `/control/mode`는 form-urlencoded 지원, 기타 `400`).
+- **[WEB-UP-1] 단일 업로드/OTA 소유권 (`s_uploadOwner`)**: 동시 업로드/OTA 진입 시 `G_W10_UPLOAD_BUSY_TAG` 마킹 후 완료 핸들러에서 `429` 응답, `onDisconnect` 콜백으로 파일 핸들/`Update.abort()` 자동 정리.
+- **[WEB-STR-1] 정적 경로 상수 및 스레드 안전성**: `CRUD` ID 경로 3종 및 `Monitor` 경로 2종(`G_W10_PATH_MONITOR_EVENTS`/`EXPORT`) `constexpr const char*` 정적 상수화(임시 `String` dangling 방지), `W10_getGeminiApiKey()` `async_tcp` 단일 태스크 전용 문서화.
+
 ---
 
 ## 8. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-22** | **v3.16** | **WS Dirty Lock-Free 전환 & UX-3 야간 감광 비활성화 계약 반영**: `_dirty*` 4플래그 `s_stateMutex` → `std::atomic<bool>` lock-free(§4.1/§6 `consumeAllDirty` mutex 0회, `tickLoop` 재귀 데드락 방지), §7.13 `[UX-3]` `body.snw-night-mode` `filter: brightness(0.75)` 비활성화, `#/monitor` 3탭(`물리 차트`)·`/monitor/chart` 메뉴 연계 반영 | Antigravity AI |
+| **2026-11-21** | **v3.15** | **FE 다국어 단일화·모달 타이머·온보딩 안전 계약 반영**: 프리셋/스타일/기본 프로필 7종 `SNW.I18n` 단일 헬퍼 경유 계약(하드코딩 금지), `999.app.js` `_modalCloseTimer` 취소 및 `998.overlay.onboarding.js` 중복/중간 취소 가드 계약 반영 | Antigravity AI |
+| **2026-11-21** | **v3.14** | **AI 프록시 비동기 워커 계약 반영 (0203_015)**: §1 `T-ai` (`gemini_worker`, 10,240 B) 및 §2 `W10::s_aiJobMutex` 추가, `async_tcp` 내 동기 HTTPS 호출 금지 및 `s_keyBuf` 워커 전용화 계약 명시 | Antigravity AI |
+| **2026-11-20** | **v3.13** | **하위 호환 제거 및 상수 SSOT 일원화 계약 반영**: `A20_resetWebPageDefault` 구버전 `P000_`/`P010_` 에셋 등록 제거, `P10_*`/`TM10_*` 호환 래퍼·`A20_Const_Sch` 미러 별칭·`autoOff/motion` deprecated 경고 제거, `A20_Const` 상수 일원화(NTP/TZ/Gemini/SoftAP/경로) | Antigravity AI |
+| **2026-11-18** | **v3.12** | **FE/오프라인 AI·NowPlaying·AUTO_SELECT 계약 현행화 (0203_014_20/21)**: `CT10_Ctl_Ctl_0203.cpp` `AUTO_SELECT` `PLAYLIST` `hasExplicitRule` 조건부 `initRuleFromPayload` 계약, `040.api.js` `OFFLINE_ROUTES` AI 명시적 오류(`ok: false`), `999a.nowplaying.js` 멱등 초기화·표시명 일원화 계약 반영 | Antigravity AI |
+| **2026-11-18** | **v3.11** | **Stage 12~13 웹 API 보안·안정화 계약 반영 (§7.25, 0203_014_19)**: `§3.1` 위반 4건 교정(`System`/`Network`/`WF10`), 단편화 body 단일 블록 누적(`WEB-BODY-1`), 이중 `send`/빈 body hang 방지(`WEB-BODY-2`), 단일 업로드/OTA 소유권 `s_uploadOwner`+`onDisconnect`(`WEB-UP-1`), `CRUD`·`Monitor` 정적 경로 상수화(`WEB-STR-1`) | Antigravity AI |
+| **2026-11-17** | **v3.10** | **FE Core·Offline 정합성 및 20종 CSS 분리 계약 현행화 (0203_014_18_02)**: `040.api.js` `OFFLINE_ROUTES`·`998.offline_0203.js` `setActive()`/타이머 만료 동기화 및 Now Playing Bar 데스크톱 사이드바/Footer 여백 규약 확인 | Antigravity AI |
+| **2026-11-14** | **v3.9** | **Phase 2 — Pause/Stop 이원화 + AUTO 위임 계약**: §3.1 `initRuleFromPayload` 화이트리스트 추가, §7.23 `PAUSE-STOP-1~9` 및 `RULE-LIVE-1` 신규 (히스테리시스·`pauseMask`·세션 스냅샷·AUTO 개입·유예·실시간 규칙 갱신), §7.24 `AUTO-1~6` 신규 (trigger 강제·base 고정·재평가·rule 스냅샷) | Antigravity AI |
 | **2026-11-10** | **v3.8** | **웹 UI/UX 인터랙션 고도화 및 컴포넌트 격리 계약 (§7.22 UI-11~UI-13, b3d06c2)**: 모니터 히스토리 2단 지그재그 타임라인/시간축 규약(UI-11), 스튜디오 하단 분리 액션바 및 AI FAB 강제 은닉 규약(UI-12), AI 어시스턴트 세그먼트 컨트롤 및 자동 신축 입력창 규약(UI-13) 명시 | Antigravity AI |
 | **2026-11-09** | **v3.7** | **Stage 10.1 하드웨어 백엔드 타이머 신뢰성 및 안전 계약 (§7.21 TIMER-1~TIMER-3, UI-10 갱신, 0203_013_20_02)**: 하드웨어 백엔드 타이머 신뢰성 계약(TIMER-1), 만료 시 Comfort 재기동 억제(TIMER-2: setAutoComfort(false)), 브라우저 동기 실패 경고(TIMER-3), Comfort 5상태 매트릭스 UI-10 명시 | Antigravity AI |
 | **2026-11-09** | **v3.6** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: §7.20 COMFORT-1(AutoOff 래치 억제), COMFORT-2(락 획득 순서 준수), UI-10(Now Playing 자동 배지 표출) 동시성 및 안전 계약 추가 | Antigravity AI |

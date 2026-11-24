@@ -52,83 +52,57 @@ window.SNW = window.SNW || {};
 	}
 
 	// =====================================================
+	// =====================================================
+	// [P0-1 / Stage 3] 선언형 오프라인 라우트 테이블 (정규식 매칭 + method 분기)
+	// =====================================================
+	const _rt = () => (SNW.Offline && SNW.Offline._runtime) ? SNW.Offline._runtime : {};
+	const _cache = () => (SNW.Offline && SNW.Offline._cache) ? SNW.Offline._cache : {};
+
+	const OFFLINE_ROUTES = [
+		{ re: /\/wifi\/state$/i, method: 'GET', handle: () => ({ wifi: { state: { mode: 2, mode_name: 'AP+STA (Offline)', status: 'CONNECTED', ssid: '(offline)', ip: '192.168.4.1', mac: 'AA:BB:CC:DD:EE:FF', rssi: -50, hostname: 'naturewind-offline', connected: false, timeSynced: false, reconnectAttempts: 0 } } }) },
+		{ re: /\/wifi\/config$/i, method: 'GET', handle: () => _cache().wifi || { wifi: { wifiMode: 2, ap: { ssid: 'NatureWind', pass: '2540' }, sta: [{ ssid: 'HomeWiFi_5G', pass: '12345678' }, { ssid: 'Office_AP', pass: 'admin1234' }] } } },
+		{ re: /\/wifi\/config$/i, method: 'POST', handle: (body) => { const c = _cache(); if (body && body.wifi) { const prev = (c.wifi && c.wifi.wifi) ? c.wifi.wifi : {}; c.wifi = { wifi: { ...prev, ...body.wifi } }; } return { result: 'ok', offline: true, queued: true }; } },
+		{ re: /\/wifi\/scan$/i, method: 'GET', handle: () => ({ wifi: { scan: [{ ssid: 'TestWiFi1', rssi: -45, enc: 'WPA2' }, { ssid: 'TestWiFi2', rssi: -70, enc: 'OPEN' }] } }) },
+		{ re: /\/sim\/chart$/i, method: 'GET', handle: () => ({ chart: _rt().chart || [], series: _rt().chart || [], offline: true }) },
+		{ re: /\/sim\/state$/i, method: 'GET', handle: () => ({ sim: _rt().sim || {} }) },
+		{ re: /\/state$/i, method: 'GET', handle: () => { const r = _rt(); return { control: r.control || {}, sim: r.sim || {}, runtime: r.runtime || {} }; } },
+		{ re: /\/system$/i, method: 'GET', handle: () => _cache().system || {} },
+		{ re: /\/system$/i, method: 'POST', handle: (body) => { const c = _cache(); if (body && c.system) Object.assign(c.system, body); return { result: 'ok', offline: true }; } },
+		{ re: /\/motion$/i, method: 'GET', handle: () => _cache().motion || { motion: {} } },
+		{ re: /\/motion$/i, method: 'POST', handle: (body) => { const c = _cache(); if (body && c.motion) Object.assign(c.motion, body); return _cache().motion || { motion: {} }; } },
+		{ re: /\/schedules/i, method: 'GET', handle: () => _cache().schedules || { schedules: [] } },
+		{ re: /\/user_profiles\/patch$/i, method: 'POST', handle: (body) => { const c = _cache(); if (c.userProfiles?.userProfiles?.profiles && Array.isArray(body?.profiles)) { const list = c.userProfiles.userProfiles.profiles; for (const patch of body.profiles) { const idx = list.findIndex(p => String(p.profileId) === String(patch.profileId)); if (idx >= 0) Object.assign(list[idx], patch); } if (SNW.Offline && typeof SNW.Offline.persistCache === 'function') SNW.Offline.persistCache('userProfiles'); } return { result: 'ok', patched: body?.profiles?.length || 0, offline: true }; } },
+		{ re: /\/user_profiles/i, method: 'GET', handle: () => _cache().userProfiles || { userProfiles: { profiles: [] } } },
+		{ re: /\/(windDict|windProfile)/i, method: 'GET', handle: () => { const c = _cache(); return (c.windDict && c.windDict.windDict) ? c.windDict.windDict : (c.windDict || { presets: [], styles: [] }); } },
+		{ re: /\/control\/mode$/i, method: 'POST', handle: (body) => { const r = _rt(); if (!r.control) r.control = {}; r.control.profileMode = !!(body && body.profileMode); return { result: 'ok', offline: true }; } },
+		{ re: /\/control\/mode$/i, method: 'GET', handle: () => ({ profileMode: !!(_rt().control && _rt().control.profileMode) }) },
+		{ re: /\/control\/timer$/i, method: 'DELETE', handle: () => { const r = _rt(); if (r.timer) { r.timer.active = false; r.timer.remainSec = 0; } return { success: true, active: false }; } },
+		{ re: /\/control\/timer$/i, method: 'POST', handle: (body) => { const r = _rt(); const min = (body && body.minutes) || 30; r.timer = { active: true, remainSec: min * 60, durationMin: min }; return { success: true, active: true, remainSec: min * 60 }; } },
+		{ re: /\/control\/timer$/i, method: 'GET', handle: () => { const t = _rt().timer; return t ? { ...t } : { active: false, remainSec: 0, durationMin: 0 }; } },
+		{ re: /\/control\/override$/i, method: 'POST', handle: (body) => { const r = _rt(); if (body && r.sim) { if (body.windIntensity != null) r.sim.intensity = body.windIntensity; if (body.windVariability != null) r.sim.variability = body.windVariability; if (body.gustFrequency != null) r.sim.gustFreq = body.gustFrequency; } return { result: 'ok', updated: true, offline: true }; } },
+		{ re: /\/logs$/i, method: 'GET', handle: () => ({ logs: [{ ts: 0, lv: 3, msg: '[Offline]' }] }) },
+		{ re: /\/diag$/i, method: 'GET', handle: () => ({ heap: 120000, fs_used: 160000, fs_total: 1000000 }) },
+		{ re: /\/version$/i, method: 'GET', handle: () => ({ fw: 'FW_Ver_2.0.3' }) },
+		{ re: /\/metrics$/i, method: 'GET', handle: () => ({ metrics: {} }) },
+		{ re: /\/config$/i, method: 'GET', handle: () => _cache() },
+		{ re: /\/config$/i, method: 'POST', handle: (body) => { if (body) Object.assign(_cache(), body); return { result: 'ok', saved: true, offline: true }; } },
+		{ re: /\/ai\/gemini$/i, method: 'POST', handle: () => ({ ok: false, error: 'offline', text: '⚠️ AI 오프라인 핸들러가 초기화되지 않았습니다. 페이지를 새로고침하세요.', actions: [] }) },
+		{ re: /\/ai\/execute-action$/i, method: 'POST', handle: () => ({ ok: false, error: 'offline', actions: [] }) },
+	];
+
+	// =====================================================
 	// Core fetch (_fetch)
 	// =====================================================
 	async function _fetch(path, opts = {}) {
-		// ======================================================
-		// [OFFLINE 방어막] 오프라인일 때 정확한 데이터 반환
-		// ======================================================
-		if (window.SNW_OFFLINE) {
-			console.log('[Offline Fetch] 요청 가로채기:', path);
-			const rt = (SNW.Offline && SNW.Offline._runtime) ? SNW.Offline._runtime : {};
-			const cache = (SNW.Offline && SNW.Offline._cache) ? SNW.Offline._cache : {};
-
-			// Wi-Fi 상태
-			if (path.includes('/wifi/state')) {
-				return {
-					wifi: {
-						state: {
-							mode: 2, mode_name: 'AP+STA (Offline)', status: 'CONNECTED',
-							ssid: '(offline)', ip: '192.168.4.1', mac: 'AA:BB:CC:DD:EE:FF',
-							rssi: -50, hostname: 'naturewind-offline', connected: false,
-							timeSynced: false, reconnectAttempts: 0
-						}
-					}
-				};
-			}
-			// Wi-Fi 설정 (cache 우선)
-			if (path.includes('/wifi/config')) {
-				return cache.wifi || {
-					wifi: {
-						wifiMode: 2, ap: { ssid: "NatureWind", pass: "2540" },
-						sta: [{ ssid: "HomeWiFi_5G", pass: "12345678" }, { ssid: "Office_AP", pass: "admin1234" }]
-					}
-				};
-			}
-			if (path.includes('/wifi/scan')) {
-				return {
-					wifi: {
-						scan: [
-							{ ssid: "TestWiFi1", rssi: -45, enc: "WPA2" },
-							{ ssid: "TestWiFi2", rssi: -70, enc: "OPEN" }
-						]
-					}
-				};
-			}
-			// 시스템 (cache 우선)
-			if (path.includes('/system') && (opts.method || 'GET') === 'GET') {
-				return cache.system || {};
-			}
-			// 상태
-			if (path.includes('/state')) {
-				return { control: rt.control || {}, sim: rt.sim || {}, runtime: rt.runtime || {} };
-			}
-			if (path.includes('/motion')) {
-				return cache.motion || { motion: {} };
-			}
-			if (path.includes('/schedules')) return cache.schedules || { schedules: [] };
-			if (path.includes('/user_profiles')) return cache.userProfiles || { userProfiles: { profiles: [] } };
-			if (path.includes('/windDict') || path.includes('/windProfile')) return (cache.windDict && cache.windDict.windDict) ? cache.windDict.windDict : (cache.windDict || { presets: [], styles: [] });
-			if (path.includes('/logs')) return { logs: [{ ts: 0, lv: 3, msg: '[Offline]' }] };
-			if (path.includes('/diag')) return { heap: 120000, fs_used: 160000, fs_total: 1000000 };
-			if (path.includes('/version')) return { fw: 'FW_Ver_2.0.3' };
-			if (path.includes('/metrics')) return { metrics: {} };
-			if (path.includes('/control/timer')) {
-				if (opts.method === 'DELETE') return { success: true, active: false };
-				if (opts.method === 'POST') return { success: true, active: true, remainSec: ((opts.body && opts.body.minutes) || 30) * 60 };
-				return { active: false, remainSec: 0, durationMin: 0 };
-			}
-			if (path.includes('/control/override')) {
-				if (opts.body && rt.sim) {
-					if (opts.body.windIntensity != null) rt.sim.intensity = opts.body.windIntensity;
-					if (opts.body.windVariability != null) rt.sim.variability = opts.body.windVariability;
-					if (opts.body.gustFrequency != null) rt.sim.gustFreq = opts.body.gustFrequency;
-				}
-				return { result: 'ok', updated: true };
-			}
-			if (path.includes('/config')) return cache;
-
-			return { result: 'ok', updated: true };
+		const isOffline = (SNW.Offline && typeof SNW.Offline.active === 'boolean')
+			? SNW.Offline.active
+			: !!window.SNW_OFFLINE;
+		if (isOffline) {
+			const M = (opts.method || 'GET').toUpperCase();
+			const cleanPath = String(path).split('?')[0];
+			const route = OFFLINE_ROUTES.find(r => r.method === M && r.re.test(cleanPath));
+			if (route) return route.handle(opts.body);
+			return { result: 'ok', updated: true, offline: true };
 		}
 
 		// GET 요청에 대해서만 in-flight dedupe
@@ -254,20 +228,6 @@ window.SNW = window.SNW || {};
 		overrideClear() {
 			return _fetch(SNW.CFG.API.overrideClear, { method: 'POST' });
 		},
-		overrideParams(body) {
-			// ======================================================
-			// [N-3] Deprecated: /control/override 라우트 부재(404) 해소
-			//  - /simulation + override 객체로 변환하여 전송
-			// ======================================================
-			if (SNW.LogUtil) {
-				SNW.LogUtil.warn('[API] overrideParams is deprecated. Use patchSim({override}) instead.');
-			}
-			const ovr = { enabled: true };
-			if (body && body.windIntensity != null) ovr.windIntensity = body.windIntensity;
-			if (body && body.windVariability != null) ovr.windVariability = body.windVariability;
-			if (body && body.gustFrequency != null) ovr.gustFrequency = body.gustFrequency;
-			return _fetch(SNW.CFG.API.simulation, { method: 'POST', body: { sim: { override: ovr } } });
-		},
 		ackEvent() {
 			return _fetch(SNW.CFG.API.ack, { method: 'POST' });
 		},
@@ -275,7 +235,7 @@ window.SNW = window.SNW || {};
 			return _fetch(SNW.CFG.API.controlMode, { method: 'POST', body: { profileMode: !!isProfileMode } });
 		},
 		setControlMode(isProfileMode) {
-			return this.setMode(isProfileMode);
+			return SNW.Api.setMode(isProfileMode);
 		},
 		getMode() {
 			return _fetch(SNW.CFG.API.controlMode);
@@ -289,10 +249,7 @@ window.SNW = window.SNW || {};
 		getSimState() { return _fetch(SNW.CFG.API.simState); },
 		getChartHistory() { return _fetch(SNW.CFG.API.chartHistory); },
 		getMonitor(type, range) {
-			return _fetch(`${SNW.CFG.API.monitor}?type=${type}&range=${range}`);
-		},
-		getPastEvents(days) {
-			return _fetch(`${SNW.CFG.API.monitor}/events?days=${days || 7}`);
+			return _fetch(SNW.CFG.API.monitor + buildQuery({ type, range }));
 		},
 
 		// --- WindDict ---
@@ -323,7 +280,7 @@ window.SNW = window.SNW || {};
 			return _fetch(`${SNW.CFG.API.monitorTimeline}${q}`);
 		},
 		getTimeline(since = 0) {
-			return this.getMonitorTimeline(since);
+			return SNW.Api.getMonitorTimeline(since);
 		},
 		getSessionSummary(from = 0, to = 0) {
 			const params = [];
@@ -348,33 +305,58 @@ window.SNW = window.SNW || {};
 		updateProfile(id, b) { return _fetch(`${SNW.CFG.API.userProfiles}/${id}`, { method: 'PUT', body: b }); },
 		deleteProfile(id) { return _fetch(`${SNW.CFG.API.userProfiles}/${id}`, { method: 'DELETE' }); },
 		patchProfiles(body) { return _fetch(SNW.CFG.API.userProfilesPatch, { method: 'POST', body }); },
-		selectProfile(id) { return _fetch(SNW.CFG.API.profileSelect, { method: 'POST', body: { id } }); },
-		stopProfile() { return _fetch(SNW.CFG.API.profileStop, { method: 'POST' }); },
 
-		// --- Session (Stage 3 신규) ---
-		sessionStart(type, payload, trigger = 'MANUAL') {
+		// --- Session (Stage 5 신규: startSession 단일화) ---
+		startSession({ type, payload = {}, trigger } = {}) {
+			let finalTrigger = trigger;
+			if (!finalTrigger) {
+				if (type === 'AUTO_FULL') finalTrigger = 'MANUAL_AUTO_FULL';
+				else if (type === 'AUTO_SELECT') finalTrigger = 'MANUAL_AUTO_SELECT';
+				else finalTrigger = 'MANUAL';
+			}
 			return _fetch(SNW.CFG.API.sessionStart, {
 				method: 'POST',
-				body: { type, payload, trigger }
+				body: { type, payload, trigger: finalTrigger }
+			}).then(res => {
+				if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') SNW.StoreBridge.refreshNow();
+				return res;
 			});
 		},
 		startPlaylist(profileId) {
-			return this.sessionStart('PLAYLIST', { profileId });
+			return SNW.Api.startSession({ type: 'PLAYLIST', payload: { profileId } });
 		},
 		startPreset(presetCode, styleCode) {
-			return this.sessionStart('PRESET', { presetCode, styleCode });
+			return SNW.Api.startSession({ type: 'PRESET', payload: { presetCode, styleCode } });
 		},
 		startFixed(percent) {
-			return this.sessionStart('FIXED', { percent });
+			return SNW.Api.startSession({ type: 'FIXED', payload: { percent } });
+		},
+		patchSessionRule(rule) {
+			return _fetch(SNW.CFG.API.sessionRule, {
+				method: 'PATCH',
+				body: { rule }
+			}).then(res => {
+				if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') SNW.StoreBridge.refreshNow();
+				return res;
+			});
 		},
 		pauseSession() {
-			return _fetch(SNW.CFG.API.sessionPause, { method: 'POST' });
+			return _fetch(SNW.CFG.API.sessionPause, { method: 'POST' }).then(res => {
+				if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') SNW.StoreBridge.refreshNow();
+				return res;
+			});
 		},
 		resumeSession() {
-			return _fetch(SNW.CFG.API.sessionResume, { method: 'POST' });
+			return _fetch(SNW.CFG.API.sessionResume, { method: 'POST' }).then(res => {
+				if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') SNW.StoreBridge.refreshNow();
+				return res;
+			});
 		},
 		stopSession() {
-			return _fetch(SNW.CFG.API.sessionStop, { method: 'POST' });
+			return _fetch(SNW.CFG.API.sessionStop, { method: 'POST' }).then(res => {
+				if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') SNW.StoreBridge.refreshNow();
+				return res;
+			});
 		},
 		getCurrentSession() {
 			return _fetch(SNW.CFG.API.sessionCurrent);
@@ -397,6 +379,7 @@ window.SNW = window.SNW || {};
 		saveConfig() { return _fetch(SNW.CFG.API.configSave, { method: 'POST' }); },
 		getConfigDirty() { return _fetch(SNW.CFG.API.configDirty); },
 		getConfigAll() { return _fetch(SNW.CFG.API.config); },
+		// Zero-Reboot RAM 즉시 반영 구조이므로 단발 POST 유지 (Q-4 확정 안 A)
 		reload() { return _fetch(SNW.CFG.API.reload, { method: 'POST' }); },
 		factoryReset() { return _fetch(SNW.CFG.API.configInit, { method: 'POST' }); },
 
@@ -426,8 +409,20 @@ window.SNW = window.SNW || {};
 		},
 
 		// --- AI ---
-		gemini(body) {
-			return _fetch(SNW.CFG.API.gemini, { method: 'POST', body, timeoutMs: SNW.CFG.TIMEOUT_MS.GEMINI });
+		async gemini(body) {
+			const first = await _fetch(SNW.CFG.API.gemini, { method: 'POST', body, timeoutMs: SNW.CFG.TIMEOUT_MS.GEMINI });
+			if (!first || first.status !== 'pending' || !first.jobId) return first;
+			const deadline = Date.now() + SNW.CFG.TIMEOUT_MS.GEMINI;
+			await new Promise(r => setTimeout(r, 700));
+			while (Date.now() < deadline) {
+				const res = await _fetch(`${SNW.CFG.API.gemini}?jobId=${encodeURIComponent(first.jobId)}`, {
+					method: 'GET',
+					timeoutMs: SNW.CFG.TIMEOUT_MS.DEFAULT
+				});
+				if (!res || res.status !== 'pending') return res;
+				await new Promise(r => setTimeout(r, 350));
+			}
+			throw new ApiError(504, { error: 'ai_poll_timeout' });
 		},
 		executeAiAction(name, args) {
 			return _fetch(SNW.CFG.API.aiExecute, { method: 'POST', body: { name, args } });

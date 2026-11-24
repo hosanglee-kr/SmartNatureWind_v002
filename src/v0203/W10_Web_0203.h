@@ -49,6 +49,9 @@
 namespace W10_AI_Limits {
     constexpr size_t   G_MAX_REQUEST_BODY      = 12288; // 12KB
     constexpr size_t   G_MAX_RESPONSE_BYTES    = 8192;  // 8KB
+    constexpr size_t   G_MAX_JOB_RESP_BYTES    = 16384; // 16KB (PSRAM 비동기 Job 결과 버퍼)
+    constexpr size_t   G_AI_WORKER_STACK_BYTES = 10240; // 10KB (gemini_worker 내부 SRAM 스택)
+    constexpr uint32_t G_AI_JOB_TTL_MS         = 30000; // 30초 (완료 결과 보존 TTL)
     constexpr uint32_t G_RATE_LIMIT_MS         = 5000;  // 5초
     constexpr uint32_t G_GEMINI_TIMEOUT_MS     = 20000; // 20초
     constexpr uint32_t G_LIVE_TOKEN_TIMEOUT_MS = 10000; // 10초
@@ -228,9 +231,18 @@ class CL_W10_WebAPI {
                                 const String&          p_msg,
                                 int                    p_code = 200,
                                 const char*            p_mime = "text/plain; charset=utf-8");
-    // API Key 검사
+    // API Key 검사 (bool only, 응답 없음)
     static bool checkApiKey(AsyncWebServerRequest* p_request);
+
+    // [신규 P0] API Key 검사 + 실패 시 401 즉시 응답 (hang 방지)
+    static bool requireApiKey(AsyncWebServerRequest* p_request);
 
     // JSON Body 파싱
     static bool parseJsonBody(AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, JsonDocument& p_doc);
+
+    // [신규 P0] 단편화 body 누적 헬퍼
+    static bool     beginBody(AsyncWebServerRequest* r, size_t total);
+    static bool     appendBody(AsyncWebServerRequest* r, uint8_t* data, size_t len, size_t index, size_t total);
+    static uint8_t* takeBodyBuf(AsyncWebServerRequest* r, size_t& r_len);
+    static void     freeBody(AsyncWebServerRequest* r);
 };

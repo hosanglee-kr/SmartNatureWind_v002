@@ -1,3 +1,5 @@
+/* === _player.css === */
+/* .snw-playlist: Wind Studio 프로필 목록용 (.snw-playlist-grid는 홈 대시보드 빠른 재생 타일용) */
 /* ============================================================
  * 소스명   : _player.css
  * 모듈약어 : W10
@@ -93,4 +95,3 @@
     padding: 4px 10px;
     font-size: 12px;
 }
-

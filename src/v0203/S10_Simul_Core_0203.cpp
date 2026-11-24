@@ -118,7 +118,7 @@ void CL_S10_Simulation::stop() {
     thermalContribution = 0.0f;
 
     if (_pwm) {
-        _pwm->P10_setDutyPercent(0.0f);
+        _pwm->setDutyPercent(0.0f);
     }
 }
 
@@ -271,6 +271,7 @@ void CL_S10_Simulation::tick() {
 
     if (_tickNowMs - s_lastChartLogMs > (unsigned long)v_chartIntervalMs) {
         s_lastChartLogMs = _tickNowMs;
+        v_needBroadcast  = true;
 
         bool     v_epochOk = false;
         uint64_t v_epochMs = S10_millis2EpochMs(_tickNowMs, &v_epochOk);
@@ -280,7 +281,7 @@ void CL_S10_Simulation::tick() {
             v_e.timestamp        = v_epochMs;
             v_e.wind_speed       = currentWindSpeed;
             v_e.target_wind      = targetWindSpeed;
-            v_e.pwm_duty         = _pwm ? _pwm->P10_getDutyPercent() : 0.0f;
+            v_e.pwm_duty         = _pwm ? _pwm->getDutyPercent() : 0.0f;
             v_e.intensity        = userIntensity;
             v_e.variability      = userVariability;
             v_e.turbulence_sigma = turbSigma;
@@ -296,6 +297,7 @@ void CL_S10_Simulation::tick() {
     
     if (v_needBroadcast) {
         // 실제 브로드캐스트는 CT10_WS_tick이 dirty 소비 후 담당
+        CT10_markDirtyFromSim("state");
         CT10_markDirtyFromSim("chart");
         CT10_markDirtyFromSim("metrics");
     }
@@ -380,7 +382,7 @@ void CL_S10_Simulation::applyFan(float p_pct) {
 
     // [F-8] 0% 임계 상수화
     if (!fanPowerEnabled || v_intPct <= G_S10_FAN_ZERO_THRESHOLD) {
-        _pwm->P10_setDutyPercent(0.0f);
+        _pwm->setDutyPercent(0.0f);
         return;
     }
 
@@ -401,5 +403,5 @@ void CL_S10_Simulation::applyFan(float p_pct) {
         v_maxPct / 100.0f
     );
 
-    _pwm->P10_setDutyPercent(v_phy01 * 100.0f);
+    _pwm->setDutyPercent(v_phy01 * 100.0f);
 }

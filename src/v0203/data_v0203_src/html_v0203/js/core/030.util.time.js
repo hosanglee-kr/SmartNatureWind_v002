@@ -6,6 +6,8 @@ window.SNW = window.SNW || {};
 (function(SNW) {
 	'use strict';
 	
+	const _clockMap = new WeakMap();
+
 	SNW.TimeUtil = {
 		/**
 		 * uptimeMs → 절대 시각 (Date)
@@ -49,14 +51,28 @@ window.SNW = window.SNW || {};
 			return `${String(hour).padStart(2,'0')}:${String(min).padStart(2,'0')}`;
 		},
 		
-		/** 1초 주기 시계 (WS 무관 UI 시계) */
+		/** 1초 주기 시계 (WS 무관 UI 시계, 중복 방지) */
 		startClock(el, getHmFn) {
+			if (!el) return null;
+			SNW.TimeUtil.stopClock(el);
 			const tick = () => {
 				const hm = getHmFn();
 				el.textContent = SNW.TimeUtil.clockStr(hm.hour ?? -1, hm.min ?? -1);
 			};
 			tick();
-			return setInterval(tick, 1000);
+			const id = setInterval(tick, 1000);
+			_clockMap.set(el, id);
+			return id;
+		},
+
+		/** 시계 인터벌 정리 */
+		stopClock(el) {
+			if (!el) return;
+			const prev = _clockMap.get(el);
+			if (prev != null) {
+				clearInterval(prev);
+				_clockMap.delete(el);
+			}
 		}
 	};
 	

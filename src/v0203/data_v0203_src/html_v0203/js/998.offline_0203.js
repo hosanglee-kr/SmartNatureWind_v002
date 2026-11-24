@@ -30,6 +30,29 @@ window.SNW = window.SNW || {};
         cache[key] = defaultVal ? JSON.parse(JSON.stringify(defaultVal)) : null;
     }
 
+    // [Phase6 6.1 N-12] resolvePreset (outer IIFE scope — API Mock & applyScenario 공용)
+    function resolvePreset(presetCode, styleCode) {
+        const presets = (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.presets) || [];
+        const styles = (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.styles) || [];
+
+        const target = presets.find(p => p.code === presetCode);
+        const pf = target?.factors || {};
+
+        let intensity = pf.windIntensity ?? 50;
+        let variability = pf.windVariability ?? 40;
+        let gustFreq = pf.gustFrequency ?? 30;
+
+        // [S20 미러] 스타일 factor 적용 (곱연산)
+        const sf = (styles.find(s => s.code === styleCode)?.factors) || {
+            intensityFactor: 1, variabilityFactor: 1, gustFactor: 1,
+        };
+        intensity = Math.max(0, Math.min(100, Math.round(intensity * (sf.intensityFactor ?? 1))));
+        variability = Math.max(0, Math.min(100, Math.round(variability * (sf.variabilityFactor ?? 1))));
+        gustFreq = Math.max(0, Math.min(100, Math.round(gustFreq * (sf.gustFactor ?? 1))));
+
+        return { intensity, variability, gustFreq };
+    }
+
     const runtime = {
         control: {
             active: true,
@@ -39,13 +62,14 @@ window.SNW = window.SNW || {};
             reason: 'SCHEDULE_ACTIVE',
             reasonCode: 4,
             runSource: 1,
+            pauseReason: 0,
+            triggerRt: {},
             time: { valid: true, hour: 10, min: 30, wday: 2 },
             sensor: { tempC: 24.5, humidity: 55, motionActive: true },
             event: { ackRequired: false, holdUntilMs: 0, holdRemainMs: 0 },
             system: { uptimeMs: 1000, epochNowMs: 0 },
             schedule: { index: 0, schId: 1, schNo: 10, name: '아침 바람 (Morning Breeze)', fromRunSource: true },
             profile: { index: -1, profileNo: 0, name: '', fromRunSource: false },
-            autoOffRt: { timerArmed: true, timerStartMs: 0, timerMinutes: 180, offTimeEnabled: false, offTimeMinutes: 0, offTempEnabled: false, offTemp: 0 },
             segment: { segId: 0, segNo: 0, scheduleRt: { index: -1, onPhase: false, phaseStartMs: 0, loopCount: 0 }, profileRt: { index: -1, onPhase: false, phaseStartMs: 0, loopCount: 0 } },
             override: { active: false, useFixed: false, remainSec: 0, fixedPercent: 0, presetCode: '', styleCode: '' },
             dirty: { state: false, metrics: false, chart: false, summary: false },
@@ -90,6 +114,7 @@ window.SNW = window.SNW || {};
             thermalActive: false,
             fanPowerEnabled: true
         },
+        timer: { active: false, remainSec: 0, durationMin: 0 },
         runtime: { runMode: 1, runSource: 2, lastScheduleNo: 10, lastUserProfileNo: -1 },
         chart: Array.from({ length: 20 }).map((_, i) => ({
             t: Date.now() - (20 - i) * 1000,
@@ -150,6 +175,18 @@ window.SNW = window.SNW || {};
         A.getState = async () => ({ control: runtime.control, sim: runtime.sim, runtime: runtime.runtime });
         A.getSim = async () => ({ sim: runtime.sim });
         A.getSimState = async () => ({ sim: runtime.sim, control: runtime.control });
+        A.getMonitor = async (type, range) => {
+            const now = Math.floor(Date.now() / 1000);
+            return {
+                data: [
+                    { t: now - 7200, new: 0 },
+                    { t: now - 5400, new: 2 },
+                    { t: now - 3600, new: 7 },
+                    { t: now - 2400, new: 2 },
+                    { t: now - 600, new: 0 }
+                ]
+            };
+        };
         A.getSystem = async () => cache.system;
         A.getMotion = async () => cache.motion;
         A.listSchedules = async () => cache.schedules;
@@ -221,32 +258,7 @@ window.SNW = window.SNW || {};
             return { result: 'ok' };
         };
         // ======================================================
-        // [Phase6 6.1 N-12] resolvePreset 재작성
-        //  - 이전: target.params.* (C++/JSON 모두 factors 사용 → 항상 undefined)
-        //  - 이후: target.factors.* + 스타일 factors 곱연산 (S20 미러)
-        //  - REFRESH/WAVE는 실존하지 않는 스타일 → ACTIVE/RELAX로 매핑
-        // ======================================================
-        function resolvePreset(presetCode, styleCode) {
-            const presets = (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.presets) || [];
-            const styles = (cache.windDict && cache.windDict.windDict && cache.windDict.windDict.styles) || [];
-
-            const target = presets.find(p => p.code === presetCode);
-            const pf = target?.factors || {};
-
-            let intensity = pf.windIntensity ?? 50;
-            let variability = pf.windVariability ?? 40;
-            let gustFreq = pf.gustFrequency ?? 30;
-
-            // [S20 미러] 스타일 factor 적용 (곱연산)
-            const sf = (styles.find(s => s.code === styleCode)?.factors) || {
-                intensityFactor: 1, variabilityFactor: 1, gustFactor: 1,
-            };
-            intensity = Math.max(0, Math.min(100, Math.round(intensity * (sf.intensityFactor ?? 1))));
-            variability = Math.max(0, Math.min(100, Math.round(variability * (sf.variabilityFactor ?? 1))));
-            gustFreq = Math.max(0, Math.min(100, Math.round(gustFreq * (sf.gustFactor ?? 1))));
-
-            return { intensity, variability, gustFreq };
-        }
+        // resolvePreset은 outer IIFE 스코프에 정의됨
 
         A.overridePreset = async (b) => {
             runtime.sim.active = true;
@@ -265,14 +277,6 @@ window.SNW = window.SNW || {};
         // ======================================================
         // [N-3] Deprecated: 온라인 patchSim과 동일 시맨틱으로 통일
         // ======================================================
-        A.overrideParams = async (b) => {
-            const ovr = { enabled: true };
-            if (b && b.windIntensity != null) ovr.windIntensity = b.windIntensity;
-            if (b && b.windVariability != null) ovr.windVariability = b.windVariability;
-            if (b && b.gustFrequency != null) ovr.gustFrequency = b.gustFrequency;
-            return A.patchSim({ override: ovr });
-        };
-
         A.patchSim = async (p) => {
             if (p.presetCode || p.styleCode) {
                 const code = p.presetCode || runtime.sim.presetCode || 'FOREST';
@@ -295,6 +299,7 @@ window.SNW = window.SNW || {};
                 if (b.motion.timing) Object.assign(cache.motion.motion.timing, b.motion.timing);
                 if (b.motion.sim) Object.assign(cache.motion.motion.sim, b.motion.sim);
             }
+            persistCache('motion');
             return { updated: true };
         };
         A.patchSystem = async (b) => {
@@ -309,6 +314,7 @@ window.SNW = window.SNW || {};
             }
             if (b.security && cache.system) Object.assign(cache.system.security, b.security);
             if (b.timeCfg && cache.system) Object.assign(cache.system.timeCfg, b.timeCfg);
+            persistCache('system');
             return { updated: true };
         };
         A.patchWifi = async (b) => {
@@ -317,24 +323,13 @@ window.SNW = window.SNW || {};
                 if (b.wifi.ap) cache.wifi.wifi.ap = b.wifi.ap;
                 if (b.wifi.sta) cache.wifi.wifi.sta = b.wifi.sta;
             }
+            persistCache('wifi');
             return { updated: true };
         };
         A.saveConfig = async () => ({ result: 'saved' });
         A.reload = async () => ({ result: 'queued' });
         A.ackEvent = async () => { runtime.control.event.ackRequired = false; return { result: 'ok' }; };
         A.feedPir = async (fired) => { runtime.control.sensor.motionActive = !!fired; return { fed: true }; };
-        A.selectProfile = async (id) => {
-            runtime.control.profileMode = true;
-            runtime.control.state = 'PROFILE_RUN';
-            runtime.control.stateCode = 2;
-            runtime.control.profile.profileNo = id;
-            runtime.control.profile.name = (cache.userProfiles.userProfiles.profiles.find(p => p.profileNo === id) || {}).name || ''; return { result: 'ok' };
-        };
-        A.stopProfile = async () => {
-            runtime.control.state = 'IDLE';
-            runtime.control.stateCode = 0;
-            runtime.control.profile.profileNo = 0; return { result: 'ok' };
-        };
 
         // Session (Stage 3 신규)
         // ======================================================
@@ -346,10 +341,28 @@ window.SNW = window.SNW || {};
         //  - FIXED: percent → intensity 반영
         //  - sim.active = true (stopSession 이후 복귀 대응)
         // ======================================================
-        A.sessionStart = async (type, payload, trigger = 'MANUAL') => {
+        A.startSession = async (optsOrType, payloadArg, triggerArg) => {
+            let type, payload, trigger;
+            if (typeof optsOrType === 'object' && optsOrType !== null) {
+                type = optsOrType.type;
+                payload = optsOrType.payload || {};
+                trigger = optsOrType.trigger;
+            } else {
+                type = optsOrType;
+                payload = payloadArg || {};
+                trigger = triggerArg;
+            }
+            if (!trigger) {
+                if (type === 'AUTO_FULL') trigger = 'MANUAL_AUTO_FULL';
+                else if (type === 'AUTO_SELECT') trigger = 'MANUAL_AUTO_SELECT';
+                else trigger = 'MANUAL';
+            }
+
             const isPlaylist = (type === 'PLAYLIST' || type === 1);
             const isPreset = (type === 'PRESET' || type === 2);
             const isFixed = (type === 'FIXED' || type === 3);
+            const isAutoFull = (type === 'AUTO_FULL' || type === 4);
+            const isAutoSelect = (type === 'AUTO_SELECT' || type === 5);
             const now = Date.now();
 
             // ─────────── ① physics 반영 ───────────
@@ -370,6 +383,39 @@ window.SNW = window.SNW || {};
                 runtime.sim.intensity = Math.max(0, Math.min(100, pct));
                 runtime.sim.variability = 0;
                 runtime.sim.gustFreq = 0;
+            } else if (isAutoFull) {
+                runtime.sim.presetCode = 'FOREST_CANOPY';
+                runtime.sim.styleCode = 'BALANCE';
+                const r = resolvePreset('FOREST_CANOPY', 'BALANCE');
+                runtime.sim.intensity = r.intensity;
+                runtime.sim.variability = r.variability;
+                runtime.sim.gustFreq = r.gustFreq;
+            } else if (isAutoSelect) {
+                const sTemp = (runtime.sensor && runtime.sensor.tempC != null) ? Number(runtime.sensor.tempC) : 25.0;
+                const sDi = (runtime.sensor && runtime.sensor.di != null) ? Number(runtime.sensor.di) : 71.5;
+                const autoSc = (payload && payload.styleCode)
+                    ? payload.styleCode
+                    : (sTemp <= 23.0 ? 'SLEEP' : (sDi >= 75.0 ? 'VITAL' : 'BALANCE'));
+                if (payload.baseType === 'PRESET') {
+                    const pc = payload.presetCode || 'OCEAN';
+                    runtime.sim.presetCode = pc;
+                    runtime.sim.styleCode = autoSc;
+                    const r = resolvePreset(pc, autoSc);
+                    runtime.sim.intensity = r.intensity;
+                    runtime.sim.variability = r.variability;
+                    runtime.sim.gustFreq = r.gustFreq;
+                } else if (payload.baseType === 'PLAYLIST' && payload.profileId) {
+                    const profiles = (cache.userProfiles?.userProfiles?.profiles) || [];
+                    const prof = profiles.find(p => p.profileId === payload.profileId);
+                    const s0 = prof && prof.steps && prof.steps[0];
+                    const pc = (s0 && s0.presetCode) || 'OCEAN';
+                    runtime.sim.presetCode = pc;
+                    runtime.sim.styleCode = autoSc;
+                    const r = resolvePreset(pc, autoSc);
+                    runtime.sim.intensity = r.intensity;
+                    runtime.sim.variability = r.variability;
+                    runtime.sim.gustFreq = r.gustFreq;
+                }
             }
 
             // ─────────── ② 세션 컨텍스트 ───────────
@@ -379,7 +425,7 @@ window.SNW = window.SNW || {};
             let totalSteps = 1;
             let stepDurationMs = 20 * 60000;   // 기본 20분
 
-            if (isPlaylist && payload && payload.profileId) {
+            if ((isPlaylist || (isAutoSelect && payload.baseType === 'PLAYLIST')) && payload && payload.profileId) {
                 profileId = payload.profileId;
                 const profiles = (cache.userProfiles?.userProfiles?.profiles) || [];
                 const profile = profiles.find(p => p.profileId === profileId);
@@ -397,14 +443,22 @@ window.SNW = window.SNW || {};
                 }
             }
 
+            let sessionTypeNum = 1;
+            if (isPlaylist) sessionTypeNum = 1;
+            else if (isPreset) sessionTypeNum = 2;
+            else if (isFixed) sessionTypeNum = 3;
+            else if (isAutoFull) sessionTypeNum = 4;
+            else if (isAutoSelect) sessionTypeNum = 5;
+
             runtime.control.session = {
                 active: true,
-                type: isPlaylist ? 1 : (isPreset ? 2 : 3),
-                typeName: isPlaylist ? 'PLAYLIST' : (isPreset ? 'PRESET' : 'FIXED'),
-                trigger: trigger === 'SCHEDULE' ? 2 : 1,
+                type: sessionTypeNum,
+                typeName: isPlaylist ? 'PLAYLIST' : (isPreset ? 'PRESET' : (isFixed ? 'FIXED' : (isAutoFull ? 'AUTO_FULL' : 'AUTO_SELECT'))),
+                trigger: trigger.startsWith('SCHEDULE') ? 2 : 1,
+                triggerName: trigger,
                 state: 'ACTIVE',                                    // [6.3 N-13]
                 profileId, profileNo, profileName,
-                presetCode: (payload && payload.presetCode) || 'OCEAN',
+                presetCode: (payload && payload.presetCode) || (isAutoFull ? 'FOREST_CANOPY' : 'OCEAN'),
                 styleCode: (payload && payload.styleCode) || 'BALANCE',
                 percent: (payload && payload.percent) || 50,
                 currentStep: 1,
@@ -414,6 +468,7 @@ window.SNW = window.SNW || {};
                 currentStepDurationMs: stepDurationMs,                 // [6.3 신규]
                 loopCount: 0,
                 pausedAccumMs: 0,
+                rule: payload.rule || {},
             };
 
             if (SNW.Store) {
@@ -427,9 +482,15 @@ window.SNW = window.SNW || {};
 
             return { ok: true, result: 'session_started' };
         };
-        A.startPlaylist = async (profileId) => A.sessionStart('PLAYLIST', { profileId });
-        A.startPreset = async (p, s) => A.sessionStart('PRESET', { presetCode: p, styleCode: s });
-        A.startFixed = async (percent) => A.sessionStart('FIXED', { percent });
+        A.patchSessionRule = async (rule) => {
+            if (runtime.control.session) {
+                runtime.control.session.rule = rule;
+            }
+            return { ok: true, result: 'rule_patched' };
+        };
+        A.startPlaylist = async (profileId) => A.startSession({ type: 'PLAYLIST', payload: { profileId } });
+        A.startPreset = async (p, s) => A.startSession({ type: 'PRESET', payload: { presetCode: p, styleCode: s } });
+        A.startFixed = async (percent) => A.startSession({ type: 'FIXED', payload: { percent } });
 
         // ======================================================
         // [Phase6 6.3b] pause/resume/stop — sim.active 동기 + 상태값 정합
@@ -538,8 +599,177 @@ window.SNW = window.SNW || {};
         A.setTime = async () => ({ updated: true });
         A.factoryReset = async () => ({ factory: true });
 
+
         // ======================================================
-        // [Stage 8] AI Mock 핸들러 (오프라인 시뮬레이션)
+        // [Stage 8-1] AI 제미나이 실제 핸들러 
+        // ======================================================
+
+        // ======================================================
+        // [실제 연동] Gemini 3.1 Flash Lite REST API & 로컬 상태 제어 브리지
+        // ======================================================
+        let s_mockAudioSec = 45;
+        let s_mockTurns = 2;
+        let s_mockCostX1000 = 14;
+
+        async function _offlineKeywordFallback(msg) {
+            const actions = [];
+            let replyText = '';
+
+            if (msg.includes('바다') || msg.includes('오션')) {
+                await A.startSession({ type: 'PRESET', payload: { presetCode: 'OCEAN', styleCode: 'BALANCE' } });
+                actions.push({ name: 'start_preset', args: { presetCode: 'OCEAN' }, result: 'ok' });
+                replyText = '바다 바람을 틀어드렸습니다.';
+            } else if (msg.includes('숲') || msg.includes('산들')) {
+                await A.startSession({ type: 'PRESET', payload: { presetCode: 'FOREST_CANOPY', styleCode: 'BALANCE' } });
+                actions.push({ name: 'start_preset', args: { presetCode: 'FOREST_CANOPY' }, result: 'ok' });
+                replyText = '숲속 바람을 틀어드렸습니다.';
+            } else if (msg.includes('산') || msg.includes('계곡')) {
+                await A.startSession({ type: 'PRESET', payload: { presetCode: 'MOUNTAIN', styleCode: 'BALANCE' } });
+                actions.push({ name: 'start_preset', args: { presetCode: 'MOUNTAIN' }, result: 'ok' });
+                replyText = '산바람을 틀어드렸습니다.';
+            } else if (msg.includes('분') || msg.includes('타이머') || msg.includes('시간')) {
+                const m = parseInt((msg.match(/(\d+)\s*분/) || [])[1] || 30, 10);
+                if (SNW.Api && typeof SNW.Api.setControlTimer === 'function') {
+                    await SNW.Api.setControlTimer(m);
+                }
+                actions.push({ name: 'set_timer', args: { minutes: m }, result: 'ok' });
+                replyText = `${m}분 후 자동으로 꺼드릴게요.`;
+            } else if (msg.includes('꺼') || msg.includes('정지') || msg.includes('중지') || msg.toLowerCase().includes('off')) {
+                await A.stopSession();
+                actions.push({ name: 'stop_session', args: {}, result: 'ok' });
+                replyText = '바람을 껐습니다.';
+            } else if (msg.includes('스케줄') || msg.includes('자동')) {
+                runtime.control.manualOverrideSchedule = false;
+                actions.push({ name: 'release_manual_to_schedule', args: {}, result: 'ok' });
+                replyText = '스케줄 자동 실행 모드로 전환했습니다.';
+            } else {
+                replyText = `"${msg}" 요청을 이해했습니다. (오프라인 사용 가능: 바다/숲/산/끄기/N분 타이머/스케줄)`;
+            }
+
+            return {
+                ok: true,
+                text: replyText,
+                _speechHint: replyText,
+                actions,
+                session: runtime.control.session
+            };
+        }
+
+        A.gemini = async (body) => {
+            const msg = (body && body.message || '').trim();
+
+            // 1. 설정 또는 로컬스토리지에 저장된 Gemini API 키 확인
+            const systemCache = cache.system || {};
+            const apiKey = systemCache.security?.geminiApiKey || localStorage.getItem('snw.geminiKey') || '';
+
+            // 2. API 키가 없는 경우 키워드 폴백으로 즉시 실행
+            if (!apiKey) {
+                return _offlineKeywordFallback(msg);
+            }
+
+            // 3. 실제 gemini-3.1-flash-lite REST API 호출
+            try {
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
+
+                // AI에게 선풍기 제어 권한을 부여하는 시스템 인스트럭션 및 도구 명령 유도
+                const systemPrompt = `너는 스마트 자연풍 선풍기 'Smart Nature Wind'의 전용 AI 어시스턴트야. 
+사용자의 자연어 요청을 분석해서 선풍기를 제어하고, 답변은 친절한 한국어로 해줘.
+사용자가 바람을 켜거나, 속도를 바꾸거나, 끄거나, 타이머를 설정하면 응답 텍스트와 함께 아래 JSON 형식의 액션 명령을 응답 끝에 반드시 포함해줘.
+가능한 액션 이름(name):
+- "start_preset": args: {"presetCode": "OCEAN" | "COUNTRY_BREEZE" | "FOREST_CANOPY" | ...}
+- "set_fan_speed": args: {"speed": 0~100 숫자}
+- "stop_session": args: {}
+- "set_timer": args: {"minutes": 숫자}
+
+응답 예시:
+바다 바람을 켜드릴게요! [ACTION:{"name":"start_preset","args":{"presetCode":"OCEAN"}}]`;
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [
+                            {
+                                role: 'user',
+                                parts: [
+                                    { text: `${systemPrompt}\n\n사용자 요청: ${msg}` }
+                                ]
+                            }
+                        ]
+                    })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    throw new Error(errData.error?.message || `Gemini API 통신 실패 (HTTP ${response.status})`);
+                }
+
+                const data = await response.json();
+                const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '응답을 생성하지 못했습니다.';
+
+                // 4. 응답 텍스트에서 [ACTION: {...}] 파싱 및 로컬 런타임 즉시 실행
+                let replyText = rawText;
+                const actions = [];
+                const actionMatch = rawText.match(/\[ACTION:\s*({.*?})\]/);
+
+                if (actionMatch && actionMatch[1]) {
+                    try {
+                        const actionObj = JSON.parse(actionMatch[1]);
+                        actions.push(actionObj);
+                        replyText = rawText.replace(/\[ACTION:\s*({.*?})\]/, '').trim();
+
+                        // 💡 브라우저 오프라인 런타임 상태 실제 변경 수행
+                        await A.executeAiAction(actionObj.name, actionObj.args);
+                    } catch (e) {
+                        console.warn('[AI Action Parse Error]', e);
+                    }
+                } else {
+                    // 액션 블록이 없더라도 키워드 기반 자동 매핑 보완
+                    const fb = await _offlineKeywordFallback(msg);
+                    if (fb.actions.length > 0) {
+                        actions.push(...fb.actions);
+                        if (!replyText) replyText = fb.text;
+                    }
+                }
+
+                return {
+                    ok: true,
+                    text: replyText,
+                    _speechHint: replyText,
+                    actions: actions,
+                    session: runtime.control.session
+                };
+            } catch (e) {
+                console.error('[AI] Gemini 호출 실패 → 폴백:', e);
+                return _offlineKeywordFallback(msg);
+            }
+        };
+
+        A.executeAiAction = async (name, args) => {
+            if (name === 'stop_session') {
+                await A.stopSession();
+            } else if (name === 'start_preset') {
+                await A.startSession({ type: 'PRESET', payload: { presetCode: args?.presetCode || 'OCEAN', styleCode: args?.styleCode || 'BALANCE' } });
+            } else if (name === 'start_playlist') {
+                await A.startSession({ type: 'PLAYLIST', payload: { profileId: args?.profileId } });
+            } else if (name === 'set_fan_speed') {
+                await A.overrideFixed(args?.speed || 50);
+            } else if (name === 'set_timer') {
+                if (SNW.Api && typeof SNW.Api.setControlTimer === 'function') {
+                    await SNW.Api.setControlTimer(args?.minutes || 30);
+                }
+            } else if (name === 'release_manual_to_schedule') {
+                runtime.control.manualOverrideSchedule = false;
+            }
+            return { ok: true, name, result: 'ok', session: runtime.control.session };
+        };
+
+
+
+
+        /*
+        // ======================================================
+        // [Stage 8-2] AI Mock 핸들러 (오프라인 시뮬레이션)
         // ======================================================
         let s_mockAudioSec = 45;
         let s_mockTurns = 2;
@@ -552,7 +782,7 @@ window.SNW = window.SNW || {};
             let hint = '완료했습니다.';
 
             if (msg.includes('바다') || msg.includes('시원')) {
-                await A.sessionStart('PRESET', { presetCode: 'OCEAN', styleCode: 'BALANCE' });
+                await A.startSession({ type: 'PRESET', payload: { presetCode: 'OCEAN', styleCode: 'BALANCE' } });
                 actions.push({ name: 'start_preset', args: { presetCode: 'OCEAN' }, result: 'ok' });
                 text = '시원한 바다 바람을 틀어드렸습니다.';
                 hint = '바다 바람을 틀어드렸습니다.';
@@ -584,22 +814,10 @@ window.SNW = window.SNW || {};
                 session: runtime.control.session
             };
         };
+        
+        */
 
-        A.executeAiAction = async (name, args) => {
-            if (name === 'stop_session') {
-                await A.stopSession();
-                return { ok: true, name, result: 'ok' };
-            }
-            if (name === 'start_preset') {
-                await A.sessionStart('PRESET', { presetCode: args?.presetCode || 'OCEAN', styleCode: args?.styleCode || 'BALANCE' });
-                return { ok: true, name, result: 'ok' };
-            }
-            if (name === 'set_fan_speed') {
-                await A.overrideFixed(args?.speed || 50);
-                return { ok: true, name, result: 'ok' };
-            }
-            return { ok: true, name, result: 'ok', session: runtime.control.session };
-        };
+        /* 중복 executeAiAction 제거 (L703 통합본 사용) */
 
         A.getAiLiveToken = async () => ({
             token: 'mock-offline-token-12345',
@@ -804,6 +1022,26 @@ window.SNW = window.SNW || {};
     function startSimulator() {
         if (window._snw_sim_timer) return;
         window._snw_sim_timer = setInterval(() => {
+            // [B-2] 오프라인 세션 타이머 카운트다운 및 만료 자동 종료
+            if (runtime.timer && runtime.timer.active && runtime.timer.remainSec > 0) {
+                runtime.timer.remainSec = Math.max(0, runtime.timer.remainSec - 1);
+                if (runtime.timer.remainSec === 0) {
+                    runtime.timer.active = false;
+                    runtime.control.active = false;
+                    runtime.control.stateCode = 5;
+                    runtime.control.state = 'AUTOOFF_STOPPED';
+                    runtime.control.reasonCode = 9;
+                    runtime.control.reason = 'AUTOOFF_TIMER';
+                    runtime.sim.active = false;
+                    runtime.sim.windSpeed = 0;
+                    runtime.sim.targetWind = 0;
+                    runtime.sim.pwmDuty = 0;
+                    if (runtime.control.session) {
+                        runtime.control.session.active = false;
+                        runtime.control.session.state = 'COMPLETED';
+                    }
+                }
+            }
             if (!runtime.sim.active && !runtime.control.session?.active) return;
 
             // ─────────── ① 세션 step 진행 (N-28) ───────────
@@ -818,6 +1056,12 @@ window.SNW = window.SNW || {};
                 const elapsed = Date.now() - sess.currentStepStartMs;
                 const remainMs = Math.max(0, sess.currentStepDurationMs - elapsed);
                 sess.stepRemainSec = Math.floor(remainMs / 1000);
+                if ((sess.type === 4 || sess.type === 5) && !sess.autoSwitchReason) {
+                    const di = (runtime.control.sensor && runtime.control.sensor.di != null) ? runtime.control.sensor.di : 71.5;
+                    sess.autoSwitchReason = (sess.type === 4)
+                        ? `DI ${Number(di).toFixed(1)} · 자동 프리셋/스타일 최적화`
+                        : `DI ${Number(di).toFixed(1)} · 맞춤 세기 자동 조절`;
+                }
 
                 if (remainMs <= 0) {
                     // Step 전환
@@ -967,15 +1211,18 @@ window.SNW = window.SNW || {};
                 override: { intensity: 85, variability: 70, gustFreq: 75 },
             },
             PIR_BLOCK: {
-                state: 'MOTION_BLOCKED', stateCode: 4,
-                reason: 'MOTION_NO_PRESENCE', reasonCode: 8,
+                state: 'ENV_PAUSED', stateCode: 7,
+                reason: 'ENV_PAUSED', reasonCode: 12,
+                pauseReason: 3,
                 active: false, motionActive: false,
             },
             AUTOOFF: {
                 state: 'AUTOOFF_STOPPED', stateCode: 5,
-                reason: 'AUTOOFF_TIMER', reasonCode: 9,
+                reason: 'TEMP_LOW_STOP', reasonCode: 12,
+                stopReason: 12,
                 active: false,
             },
+
         };
 
         const cfg = scenarios[type] || scenarios.NATURAL;
@@ -996,6 +1243,7 @@ window.SNW = window.SNW || {};
         runtime.control.active = cfg.active;
         runtime.control.state = cfg.state;
         runtime.control.stateCode = cfg.stateCode;
+        runtime.control.stopReason = cfg.stopReason || 0;
         if (cfg.reason) {
             runtime.control.reason = cfg.reason;
             runtime.control.reasonCode = cfg.reasonCode;
@@ -1004,11 +1252,11 @@ window.SNW = window.SNW || {};
             runtime.control.sensor.motionActive = cfg.motionActive;
         }
 
-        // ③ Store 브로드캐스트
+        // ③ Store 브로드캐스트 (참조 변경으로 watch('control') 트리거 보장)
         if (SNW.Store) {
             SNW.Store.set({
-                control: runtime.control,
-                sim: runtime.sim,
+                control: { ...runtime.control },
+                sim: { ...runtime.sim },
                 fsmState: runtime.control.stateCode,
                 fsmReason: runtime.control.reasonCode,
                 lastUpdateMs: Date.now(),
@@ -1118,6 +1366,8 @@ window.SNW = window.SNW || {};
 
     SNW.Offline = Object.assign(SNW.Offline || {}, {
         ready: null,
+        active: !!window.SNW_OFFLINE,
+        setActive(flag) { SNW.Offline.active = !!flag; },
         _cache: cache,
         _runtime: runtime,
         isReady: () => true,
@@ -1149,7 +1399,7 @@ window.SNW = window.SNW || {};
 
     // 브라우저 DOM 준비 완료 시 번들 덮어쓰기 방어 및 L4 고정, 툴바 렌더링
     if (typeof window !== 'undefined') {
-        try { localStorage.setItem('snw.level', 'L4'); } catch (e) {}
+        try { localStorage.setItem('snw.level', 'L4'); } catch (e) { }
         window.addEventListener('DOMContentLoaded', () => {
             // ======================================================
             // [API 재정의 필수 시점 - 유일한 시점]

@@ -1,6 +1,9 @@
 // =========================================================
 // 033.util.template.js — SNW.Tpl (페이지 HTML 템플릿)
 // Layer 1 (유틸) — SNW.C, SNW.DomUtil 참조
+// [P2-8] 분리된 페이지별 템플릿 구현 위치:
+//  - Dashboard: 200.page.dashboard.js
+//  - Settings / Monitor / AI: 240/260/290.page.*.js
 // =========================================================
 window.SNW = window.SNW || {};
 (function(SNW) {
@@ -19,85 +22,6 @@ window.SNW = window.SNW || {};
         
         // =========================================================
         // 1. Dashboard (바람 스타일 선택 UI 추가됨)
-        // =========================================================
-        dashboard() {
-            return tpl`
-                <div class="snw-dashboard">
-                    <!-- 작동 모드 제어 카드 -->
-                    <section class="snw-card snw-card--mode" style="grid-column: 1 / -1; margin-bottom: 16px;">
-                        <h2 data-i18n="dashboard.modeTitle">작동 모드 설정</h2>
-                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
-                            <span style="font-size:15px; font-weight:bold; color:var(--snw-primary);" data-slot="current-mode-text">-</span>
-                            <label class="snw-switch" style="transform: scale(1.2);">
-                                <input type="checkbox" id="mode-switch">
-                                <span class="snw-switch__slider"></span>
-                            </label>
-                        </div>
-                        <div style="font-size:12px; color:var(--snw-text-dim);">
-                            <span style="margin-right:12px;" data-i18n="dashboard.modeSchedule">◻ 스케줄 자동 모드</span>
-                            <span data-i18n="dashboard.modeProfile">◼ 프로필 수동 모드</span>
-                        </div>
-                    </section>
-        
-                    <section class="snw-card snw-card--state">
-                        <h2 data-i18n="dashboard.realtimeState">실시간 상태</h2>
-                        <div data-slot="badge" class="snw-state-badge"></div>
-                        <div class="snw-kv"><span data-i18n="dashboard.currentWind">현재 풍속</span><b data-slot="cur-wind">-</b><span data-i18n="unit.windSpeed">m/s</span></div>
-                        <div class="snw-kv"><span data-i18n="dashboard.targetWind">목표 풍속</span><b data-slot="target-wind">-</b><span data-i18n="unit.windSpeed">m/s</span></div>
-                        <div class="snw-kv"><span data-i18n="dashboard.phase">Phase</span><b data-slot="phase">-</b></div>
-                        <div class="snw-kv"><span data-i18n="dashboard.pwm">PWM</span><span data-slot="gauge"></span></div>
-                        <div class="snw-kv"><span data-i18n="dashboard.sch">스케줄</span><b data-slot="sch-name">-</b></div>
-                        <div class="snw-kv"><span data-i18n="dashboard.prof">프로필</span><b data-slot="prof-name">-</b></div>
-                        <div class="snw-kv"><span>AutoOff</span><b data-slot="autooff">-</b></div>
-                    </section>
-                    
-                    <section class="snw-card snw-card--power">
-                        <h2 data-i18n="dashboard.powerTitle">전원 제어</h2>
-                        <div data-slot="power" class="snw-power-slot"></div>
-                    </section>
-                    
-                    <section class="snw-card snw-card--sensor">
-                        <h2 data-i18n="dashboard.sensorTitle">센서</h2>
-                        <div data-slot="sensors"></div>
-                    </section>
-                    
-                    <section class="snw-card snw-card--preset">
-                        <!-- 1. 바람 스타일 선택 (상단 세그먼트 탭) -->
-                        <div class="snw-style-section" style="margin-bottom: 20px;">
-                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
-                                <h2 style="margin:0; font-size:14px; font-weight:600;" data-i18n="dashboard.styleTitle">바람 스타일</h2>
-                                <span style="font-size:11px; color:var(--snw-text-dim);">스타일 보정</span>
-                            </div>
-                            <div class="snw-style-selector" id="style-selector">
-                                <button type="button" class="snw-style-btn" data-style="BALANCE" data-i18n="style.BALANCE">⚖ 균형</button>
-                                <button type="button" class="snw-style-btn" data-style="ACTIVE" data-i18n="style.ACTIVE">⚡ 활동</button>
-                                <button type="button" class="snw-style-btn" data-style="FOCUS" data-i18n="style.FOCUS">🎯 집중</button>
-                                <button type="button" class="snw-style-btn" data-style="RELAX" data-i18n="style.RELAX">🍃 휴식</button>
-                                <button type="button" class="snw-style-btn" data-style="SLEEP" data-i18n="style.SLEEP">🌙 수면</button>
-                            </div>
-                        </div>
-
-                        <!-- 2. 자연풍 프리셋 선택 (하단 4x2 그리드) -->
-                        <div class="snw-preset-section">
-                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px;">
-                                <h2 style="margin:0; font-size:14px; font-weight:600;" data-i18n="dashboard.presetTitle">자연풍 프리셋</h2>
-                                <span style="font-size:11px; color:var(--snw-text-dim);">8대 자연 환경</span>
-                            </div>
-                            <div data-slot="presets"></div>
-                        </div>
-                    </section>
-                    
-                    <section class="snw-card snw-card--slider" style="grid-column: 1 / -1;">
-                        <h2 data-i18n="dashboard.physicsTitle">바람 세부 조절 (3대 물리 제어)</h2>
-                        <div style="display:flex;flex-direction:column;gap:16px;">
-                            <div data-slot="intensity"></div>
-                            <div data-slot="variability"></div>
-                            <div data-slot="gust"></div>
-                        </div>
-                    </section>
-                </div>`;
-        },
-        
         // =========================================================
         // 2. Chart
         // =========================================================
@@ -157,26 +81,6 @@ window.SNW = window.SNW || {};
         
         // =========================================================
         // 5. Schedule
-        // =========================================================
-        schedule() {
-            return tpl`
-                <section class="snw-card">
-                    <h2 data-i18n="scheduler.title">스케줄 예약</h2>
-                    <div data-slot="list"></div>
-                </section>`;
-        },
-        
-        // =========================================================
-        // 6. Profiles
-        // =========================================================
-        profiles() {
-            return tpl`
-                <section class="snw-card">
-                    <h2 data-i18n="profile.title">사용자 프로필</h2>
-                    <div data-slot="list"></div>
-                </section>`;
-        },
-        
         // =========================================================
         // 7. Network
         // =========================================================
@@ -269,16 +173,6 @@ window.SNW = window.SNW || {};
         },
         
         // =========================================================
-        // 13. Info
-        // =========================================================
-        info() {
-            return tpl`
-                <section class="snw-card">
-                    <h2 data-i18n="nav.info">정보</h2>
-                    <div data-slot="panel"></div>
-                </section>`;
-        },
-        
         // =========================================================
         // 14. WindProfile
         // =========================================================

@@ -319,52 +319,33 @@ void CT10_WS_tick() {
 void CL_CT10_ControlManager::markDirty(const char* p_key) {
     if (!p_key || p_key[0] == '\0') return;
 
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return;
-
     if (strcmp(p_key, "state") == 0) {
-        _dirtyState = true;
+        _dirtyState.store(true, std::memory_order_release);
     } else if (strcmp(p_key, "chart") == 0) {
-        _dirtyChart = true;
+        _dirtyChart.store(true, std::memory_order_release);
     } else if (strcmp(p_key, "metrics") == 0) {
-        _dirtyMetrics = true;
+        _dirtyMetrics.store(true, std::memory_order_release);
     } else if (strcmp(p_key, "summary") == 0) {
-        _dirtySummary = true;
+        _dirtySummary.store(true, std::memory_order_release);
     } else {
         CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] markDirty: unknown key=%s", p_key);
     }
 }
 
 bool CL_CT10_ControlManager::consumeDirtyState() {
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return false;
-    bool v_ret  = _dirtyState;
-    _dirtyState = false;
-    return v_ret;
+    return _dirtyState.exchange(false, std::memory_order_acq_rel);
 }
 
 bool CL_CT10_ControlManager::consumeDirtyMetrics() {
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return false;
-    bool v_ret    = _dirtyMetrics;
-    _dirtyMetrics = false;
-    return v_ret;
+    return _dirtyMetrics.exchange(false, std::memory_order_acq_rel);
 }
 
 bool CL_CT10_ControlManager::consumeDirtyChart() {
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return false;
-    bool v_ret  = _dirtyChart;
-    _dirtyChart = false;
-    return v_ret;
+    return _dirtyChart.exchange(false, std::memory_order_acq_rel);
 }
 
 bool CL_CT10_ControlManager::consumeDirtySummary() {
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return false;
-    bool v_ret    = _dirtySummary;
-    _dirtySummary = false;
-    return v_ret;
+    return _dirtySummary.exchange(false, std::memory_order_acq_rel);
 }
 
 // ======================================================
@@ -372,25 +353,18 @@ bool CL_CT10_ControlManager::consumeDirtySummary() {
 //  - bit0=state, bit1=metrics, bit2=chart, bit3=summary
 // ======================================================
 uint8_t CL_CT10_ControlManager::consumeAllDirty() {
-    CL_A40_MutexGuard_Semaphore v_guard(s_stateMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
-    if (!v_guard.isAcquired()) return 0;
-
     uint8_t v_ret = 0;
-    if (_dirtyState) {
-        v_ret       |= 0x01;
-        _dirtyState  = false;
+    if (_dirtyState.exchange(false, std::memory_order_acq_rel)) {
+        v_ret |= 0x01;
     }
-    if (_dirtyMetrics) {
-        v_ret         |= 0x02;
-        _dirtyMetrics  = false;
+    if (_dirtyMetrics.exchange(false, std::memory_order_acq_rel)) {
+        v_ret |= 0x02;
     }
-    if (_dirtyChart) {
-        v_ret       |= 0x04;
-        _dirtyChart  = false;
+    if (_dirtyChart.exchange(false, std::memory_order_acq_rel)) {
+        v_ret |= 0x04;
     }
-    if (_dirtySummary) {
-        v_ret         |= 0x08;
-        _dirtySummary  = false;
+    if (_dirtySummary.exchange(false, std::memory_order_acq_rel)) {
+        v_ret |= 0x08;
     }
     return v_ret;
 }
@@ -568,19 +542,20 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
         }
     }
 
-    // 8) AutoOff runtime snapshot
+    // 8) Trigger runtime snapshot (Clean Break: autoOffRt 제거)
     {
-        JsonObject v_ao        = A40_ComFunc::Json_ensureObject(v_ctl["autoOffRt"]);
-        v_ao["timerArmed"]     = autoOffRt.timerArmed;
-        v_ao["timerStartMs"]   = (uint32_t)autoOffRt.timerStartMs;
-        v_ao["timerMinutes"]   = (uint32_t)autoOffRt.timerMinutes;
-        v_ao["offTimeEnabled"] = autoOffRt.offTimeEnabled;
-        v_ao["offTimeMinutes"] = (uint16_t)autoOffRt.offTimeMinutes;
-        v_ao["offTempEnabled"] = autoOffRt.offTempEnabled;
-        v_ao["offTemp"]        = autoOffRt.offTemp;
-
-        v_ao["offTimeLastYday"] = (int)autoOffRt.offTimeLastYday;
-        v_ao["offTimeLastMin"]  = (int)autoOffRt.offTimeLastMin;
+        JsonObject v_tr        = A40_ComFunc::Json_ensureObject(v_ctl["triggerRt"]);
+        v_tr["timerArmed"]     = triggerRt.timerArmed;
+        v_tr["timerStartMs"]   = (uint32_t)triggerRt.timerStartMs;
+        v_tr["timerMinutes"]   = (uint32_t)triggerRt.timerMinutes;
+        v_tr["pausedAccumMs"]  = (uint32_t)triggerRt.pausedAccumMs;
+        v_tr["offTimeEnabled"] = triggerRt.offTimeEnabled;
+        v_tr["offTimeMinutes"] = (uint16_t)triggerRt.offTimeMinutes;
+        v_tr["offTimeLastYday"] = (int)triggerRt.offTimeLastYday;
+        v_tr["offTimeLastMin"]  = (int)triggerRt.offTimeLastMin;
+        v_tr["pauseMask"]      = (uint8_t)triggerRt.pauseMask;
+        v_tr["lastCheckTempC"] = triggerRt.lastCheckTempC;
+        v_tr["lastCheckDI"]    = triggerRt.lastCheckDI;
     }
 
     // 8-1) Sensor snapshot
@@ -597,10 +572,10 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
     // 9) Dirty flags
     {
         JsonObject v_dirty = A40_ComFunc::Json_ensureObject(v_ctl["dirty"]);
-        v_dirty["state"]   = _dirtyState;
-        v_dirty["metrics"] = _dirtyMetrics;
-        v_dirty["chart"]   = _dirtyChart;
-        v_dirty["summary"] = _dirtySummary;
+        v_dirty["state"]   = _dirtyState.load(std::memory_order_acquire);
+        v_dirty["metrics"] = _dirtyMetrics.load(std::memory_order_acquire);
+        v_dirty["chart"]   = _dirtyChart.load(std::memory_order_acquire);
+        v_dirty["summary"] = _dirtySummary.load(std::memory_order_acquire);
     }
 
     // ======================================================
@@ -634,8 +609,6 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
         v_rt["runSource"]         = v_st.runSource;
         v_rt["lastScheduleNo"]    = v_st.lastScheduleNo;
         v_rt["lastUserProfileNo"] = v_st.lastUserProfileNo;
-        v_rt["autoOffEnabled"]    = v_st.autoOffEnabled;
-        v_rt["autoOffMinutes"]    = v_st.autoOffMinutes;
         v_rt["overrideEnabled"]   = v_st.overrideEnabled;
         v_rt["overrideMode"]      = v_st.overrideMode;
     }
@@ -686,6 +659,53 @@ void CL_CT10_ControlManager::exportStateJson_v02(JsonDocument& p_doc) {
         } else {
             v_sess["typeName"] = "NONE";
         }
+
+        // ─── [M1 수정] 세션 스냅샷 rule 노출 ───
+        {
+            JsonObject v_rule = A40_ComFunc::Json_ensureObject(v_sess["rule"]);
+
+            // timer
+            v_rule["timer"]["enabled"] = _session.rule.timer.enabled;
+            v_rule["timer"]["minutes"] = _session.rule.timer.minutes;
+
+            // offTime
+            v_rule["offTime"]["enabled"] = _session.rule.offTime.enabled;
+            v_rule["offTime"]["time"]    = _session.rule.offTime.time;
+
+            // tempLow
+            v_rule["tempLow"]["enabled"]    = _session.rule.tempLow.enabled;
+            v_rule["tempLow"]["mode"]       = (_session.rule.tempLow.mode == EN_A20_RULE_MODE_STOP)
+                                                ? "STOP" : "PAUSE";
+            v_rule["tempLow"]["threshold"]  = _session.rule.tempLow.threshold;
+            v_rule["tempLow"]["hysteresis"] = _session.rule.tempLow.hysteresis;
+
+            // diLow
+            v_rule["diLow"]["enabled"]    = _session.rule.diLow.enabled;
+            v_rule["diLow"]["mode"]       = (_session.rule.diLow.mode == EN_A20_RULE_MODE_STOP)
+                                                ? "STOP" : "PAUSE";
+            v_rule["diLow"]["threshold"]  = _session.rule.diLow.threshold;
+            v_rule["diLow"]["hysteresis"] = _session.rule.diLow.hysteresis;
+
+            // pirPause
+            v_rule["pirPause"]["enabled"] = _session.rule.pirPause.enabled;
+            v_rule["pirPause"]["holdSec"] = _session.rule.pirPause.holdSec;
+
+            // smartComfort
+            v_rule["smartComfort"]["enabled"]     = _session.rule.smartComfort.enabled;
+            v_rule["smartComfort"]["intervalMin"] = _session.rule.smartComfort.intervalMin;
+            v_rule["smartComfort"]["level"]       = _session.rule.smartComfort.level;
+        }
+
+        // [M1 수정] pauseReason / pauseSinceMs 노출 (ENV_PAUSED 시)
+        if (runCtx.state == EN_CT10_STATE_ENV_PAUSED) {
+            v_sess["pauseReason"]  = (uint8_t)runCtx.pauseReason;
+            v_sess["pauseSinceMs"] = runCtx.pauseSinceMs;
+        }
+
+        if (_session.autoSwitchReason[0] != '\0') {
+            v_sess["autoSwitchReason"] = _session.autoSwitchReason;
+            v_sess["autoSwitchAtMs"]   = _session.autoSwitchAtMs;
+        }
     }
 
     // 10) Simulation snapshot 병합
@@ -707,7 +727,7 @@ void CL_CT10_ControlManager::exportChartJson(JsonDocument& p_doc, bool p_diffOnl
     JsonObject v_sim  = A40_ComFunc::Json_ensureObject(p_doc["sim"]);
     JsonObject v_meta = A40_ComFunc::Json_ensureObject(v_sim["meta"]);
 
-    v_meta["pwmDuty"]   = pwm ? pwm->P10_getDutyPercent() : 0.0f;
+    v_meta["pwmDuty"]   = pwm ? pwm->getDutyPercent() : 0.0f;
     v_meta["active"]    = active;
     v_meta["runSource"] = (int)runSource;
     v_meta["override"]  = overrideState.active ? (overrideState.useFixed ? "fixed" : "resolved") : "none";
@@ -753,7 +773,7 @@ void CL_CT10_ControlManager::exportSummaryJson(JsonDocument& p_doc) {
     v_sum["phase"]      = G_A20_WindPhase_Arr[v_phaseIdx].code;
     v_sum["wind"]       = sim.currentWindSpeed;
     v_sum["target"]     = sim.targetWindSpeed;
-    v_sum["pwmDuty"]    = pwm ? pwm->P10_getDutyPercent() : 0.0f;
+    v_sum["pwmDuty"]    = pwm ? pwm->getDutyPercent() : 0.0f;
     v_sum["override"]   = overrideState.active;
     v_sum["useProfile"] = useProfileMode;
     v_sum["mode"]       = useProfileMode ? "PROFILE" : "SCHEDULE";
@@ -785,7 +805,7 @@ void CL_CT10_ControlManager::exportMetricsJson(JsonDocument& p_doc) {
     v_m["overrideFixed"]  = overrideState.useFixed;
     v_m["overrideRemain"] = calcOverrideRemainSec();
 
-    v_m["pwmDuty"] = pwm ? pwm->P10_getDutyPercent() : 0.0f;
+    v_m["pwmDuty"] = pwm ? pwm->getDutyPercent() : 0.0f;
 
     uint8_t v_phaseIdx = static_cast<uint8_t>(sim.phase);
     if (v_phaseIdx >= EN_A20_WIND_PHASE_COUNT) {
@@ -799,10 +819,10 @@ void CL_CT10_ControlManager::exportMetricsJson(JsonDocument& p_doc) {
     v_m["simGust"]    = sim.gustActive;
     v_m["simThermal"] = sim.thermalActive;
 
-    v_m["autoOffTimerArmed"]   = autoOffRt.timerArmed;
-    v_m["autoOffTimerMinutes"] = autoOffRt.timerMinutes;
-    v_m["autoOffOffTime"]      = autoOffRt.offTimeEnabled ? autoOffRt.offTimeMinutes : 0;
-    v_m["autoOffOffTemp"]      = autoOffRt.offTempEnabled ? autoOffRt.offTemp : 0.0f;
+    v_m["triggerTimerArmed"]   = triggerRt.timerArmed;
+    v_m["triggerTimerMinutes"] = triggerRt.timerMinutes;
+    v_m["triggerOffTime"]      = triggerRt.offTimeEnabled ? triggerRt.offTimeMinutes : 0;
+    v_m["pauseMask"]           = (uint8_t)triggerRt.pauseMask;
 
     v_m["stateCode"]  = (uint8_t)runCtx.state;
     v_m["reasonCode"] = (uint8_t)runCtx.reason;
@@ -844,7 +864,7 @@ ST_MON_Snapshot_t CL_CT10_ControlManager::getMonitorSnapshot() {
 
         s.windSpeed           = sim.currentWindSpeed;
         s.targetWind          = sim.targetWindSpeed;
-        s.pwmDuty             = pwm ? pwm->P10_getDutyPercent() : 0.0f;
+        s.pwmDuty             = pwm ? pwm->getDutyPercent() : 0.0f;
         s.intensity           = sim.userIntensity;
         s.variability         = sim.userVariability;
         s.gustFreq            = sim.userGustFreq;
@@ -853,8 +873,8 @@ ST_MON_Snapshot_t CL_CT10_ControlManager::getMonitorSnapshot() {
         s.gustActive          = sim.gustActive;
         s.thermalActive       = sim.thermalActive;
         s.overrideActive      = overrideState.active;
-        s.autoOffTimerArmed   = autoOffRt.timerArmed;
-        s.autoOffTimerMinutes = autoOffRt.timerMinutes;
+        s.triggerTimerArmed   = triggerRt.timerArmed;
+        s.triggerTimerMinutes = triggerRt.timerMinutes;
         s.tempC               = getCurrentTemperatureMock();
         s.humidity            = getCurrentHumidityMock();
         s.motionActive        = (motion != nullptr) ? motion->isActive() : false;

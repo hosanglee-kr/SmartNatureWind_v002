@@ -116,6 +116,7 @@ typedef struct {
 
 typedef struct {
     char     ntpServer[64];
+    char     ntpFallbackServers[3][64];
     char     timezone[64];
     uint16_t syncIntervalMin;
 } ST_A20_SysTimeConfig_t;

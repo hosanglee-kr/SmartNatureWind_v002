@@ -32,21 +32,33 @@
 # define G_C10_PROFILE_SEG_ID_STEP 1
 #endif
 
+// ═══════════════════════════════════════════════════════════
+// [Phase 2] TriggerRule JSON <-> struct 헬퍼 (extern 승격)
+//  - 파일 스코프 static → extern (C10_Config_UzProf_Util/JSON_0203.cpp 정의)
+//  - CT10_Ctl_Ctl_0203.cpp 등 외부에서 rule 파싱/직렬화 재사용
+// ═══════════════════════════════════════════════════════════
+void C10_fromJson_TriggerRule(const JsonObjectConst& p_js, ST_A20_TriggerRule_t& p_out, const char* p_caller);
+
+void C10_toJson_TriggerRule(JsonObject p_js, const ST_A20_TriggerRule_t& p_rule);
+
+EN_A20_ruleMode_t C10_parseRuleMode(const char* p_str);
+
+const char* C10_ruleModeToString(EN_A20_ruleMode_t p_mode);
 
 // ------------------------------------------------------
 // Helper declarations (C10_Config_UzProf_Util_0203.cpp 정의)
 // ------------------------------------------------------
-uint8_t  C10_nextProfileId_u8(const ST_A20_UserProfilesRoot_t& p_root);
+uint8_t C10_nextProfileId_u8(const ST_A20_UserProfilesRoot_t& p_root);
 
 bool C10_isProfileIdDuplicated(const ST_A20_UserProfilesRoot_t& p_root, uint8_t p_id, uint8_t p_excludeIndex);
 bool C10_isProfileNoDuplicated(const ST_A20_UserProfilesRoot_t& p_root, uint16_t p_no, uint8_t p_excludeIndex);
 
-bool C10_fromJson_UserProfileItem(const JsonObjectConst& p_jp,
+bool C10_fromJson_UserProfileItem(const JsonObjectConst&    p_jp,
                                   ST_A20_UserProfileItem_t& p_up,
-                                  bool p_allowIdRead,
-                                  bool p_forceProfileIdKeep,
-                                  bool p_forceReissueSegId,
-                                  const char* p_callerForLog);
+                                  bool                      p_allowIdRead,
+                                  bool                      p_forceProfileIdKeep,
+                                  bool                      p_forceReissueSegId,
+                                  const char*               p_callerForLog);
 
 bool C10_reissueProfileSegIdsAndValidateSegNos(ST_A20_UserProfileItem_t& p_up, const char* p_callerForLog);
 

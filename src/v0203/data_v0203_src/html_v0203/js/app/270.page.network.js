@@ -20,15 +20,15 @@ SNW.Page = SNW.Page || {};
             this.el.appendChild(SNW.Tpl.network());
             SNW.I18n.applyTo(this.el);
 
-            try { await this._loadWifiState(); }   catch (e) {}
-            try { await this._loadWifiConfig(); } catch (e) {}
-            try { await this._loadSystemTime(); } catch (e) {}
+            try { await this._loadWifiState(); } catch (e) { }
+            try { await this._loadWifiConfig(); } catch (e) { }
+            try { await this._loadSystemTime(); } catch (e) { }
 
-            SNW.DomUtil.delegate(this.el, '[data-action="scan"]',       'click', () => this._onScan());
-            SNW.DomUtil.delegate(this.el, '[data-action="time-save"]',  'click', () => this._onSaveTime());
-            SNW.DomUtil.delegate(this.el, '[data-action="wifi-save"]',  'click', () => this._onSaveWifi());
-            SNW.DomUtil.delegate(this.el, '[data-action="add-sta"]',    'click', () => this._onAddSta());
-            SNW.DomUtil.delegate(this.el, '[data-action="del-sta"]',    'click', (e, el) => this._onDeleteSta(Number(el.getAttribute('data-idx'))));
+            SNW.DomUtil.delegate(this.el, '[data-action="scan"]', 'click', () => this._onScan());
+            SNW.DomUtil.delegate(this.el, '[data-action="time-save"]', 'click', () => this._onSaveTime());
+            SNW.DomUtil.delegate(this.el, '[data-action="wifi-save"]', 'click', () => this._onSaveWifi());
+            SNW.DomUtil.delegate(this.el, '[data-action="add-sta"]', 'click', () => this._onAddSta());
+            SNW.DomUtil.delegate(this.el, '[data-action="del-sta"]', 'click', (e, el) => this._onDeleteSta(Number(el.getAttribute('data-idx'))));
         }
 
         unmount() { this._active = false; }
@@ -38,7 +38,7 @@ SNW.Page = SNW.Page || {};
             try {
                 const data = await SNW.Api.getWifiState();
                 state = (data && data.wifi && data.wifi.state) || {};
-            } catch {}
+            } catch { }
 
             const slot = this.el.querySelector('[data-slot="wifi-state"]');
             if (!slot) return;
@@ -65,7 +65,7 @@ SNW.Page = SNW.Page || {};
                 const data = await SNW.Api.getWifiConfig();
                 this._wifiConfig = (data && data.wifi) ? data.wifi : { wifiMode: 2, ap: { ssid: '', pass: '' }, sta: [] };
                 if (!this._wifiConfig.sta) this._wifiConfig.sta = [];
-                if (!this._wifiConfig.ap)  this._wifiConfig.ap  = { ssid: '', pass: '' };
+                if (!this._wifiConfig.ap) this._wifiConfig.ap = { ssid: '', pass: '' };
                 this._renderWifiConfigForm();
             } catch (e) {
                 SNW.ErrorHandler.handle(e, 'network.loadWifi');
@@ -77,8 +77,8 @@ SNW.Page = SNW.Page || {};
             if (!slot || !this._wifiConfig) return;
 
             const mode = this._wifiConfig.wifiMode;
-            const ap   = this._wifiConfig.ap;
-            const sta  = this._wifiConfig.sta;
+            const ap = this._wifiConfig.ap;
+            const sta = this._wifiConfig.sta;
 
             let html = `
                 <div class="snw-form-row">
@@ -151,13 +151,13 @@ SNW.Page = SNW.Page || {};
         }
 
         async _onSaveWifi() {
-            const mode   = Number(this.el.querySelector('#wifi-mode').value);
+            const mode = Number(this.el.querySelector('#wifi-mode').value);
             const apSsid = this.el.querySelector('#ap-ssid').value;
             const apPass = this.el.querySelector('#ap-pass').value;
 
             const newSta = [];
             this.el.querySelectorAll('[data-sta-ssid]').forEach(el => {
-                const idx  = el.getAttribute('data-sta-ssid');
+                const idx = el.getAttribute('data-sta-ssid');
                 const ssid = el.value.trim();
                 const passEl = this.el.querySelector(`[data-sta-pass="${idx}"]`);
                 const pass = passEl ? passEl.value : '';
@@ -180,10 +180,19 @@ SNW.Page = SNW.Page || {};
                 const sys = (data && data.system && data.system.timeCfg) || {};
                 const slot = this.el.querySelector('[data-slot="time-config"]');
                 if (!slot) return;
+                const fbList = (Array.isArray(sys.ntpFallbackServers) && sys.ntpFallbackServers.length)
+                    ? sys.ntpFallbackServers
+                    : ['time.google.com', 'pool.ntp.org', 'time.cloudflare.com'];
                 slot.innerHTML = `
                     <div class="snw-form-row">
                         <label>NTP Server</label>
-                        <input type="text" id="ntp-server" value="${SNW.DomUtil.escape(sys.ntpServer || 'pool.ntp.org')}"
+                        <input type="text" id="ntp-server" value="${SNW.DomUtil.escape(sys.ntpServer || 'kr.pool.ntp.org')}"
+                               style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
+                    </div>
+                    <div class="snw-form-row">
+                        <label>NTP Fallback Servers (comma-separated, max 3)</label>
+                        <input type="text" id="ntp-fallback-servers" value="${SNW.DomUtil.escape(fbList.join(', '))}"
+                               placeholder="time.google.com, pool.ntp.org, time.cloudflare.com"
                                style="padding:8px;background:var(--snw-surface-2);border:1px solid var(--snw-border);color:var(--snw-text);">
                     </div>
                     <div class="snw-form-row">
@@ -200,14 +209,77 @@ SNW.Page = SNW.Page || {};
                         <button type="button" class="snw-btn snw-btn-primary" data-action="time-save">${SNW.I18n.t('network.saveTime')}</button>
                     </div>
                 `;
+
+                // [Stage 5] WebSocket 통신 설정 흡수
+                try {
+                    const wsConf = data?.system?.webSocket || {};
+                    const wsChArr = wsConf.wsChConfig || [
+                        { chIdx: 0, chName: 'state', chIntervalMs: 800, priority: 0 },
+                        { chIdx: 1, chName: 'metrics', chIntervalMs: 1500, priority: 1 },
+                        { chIdx: 2, chName: 'chart', chIntervalMs: 1200, priority: 2 },
+                        { chIdx: 3, chName: 'summary', chIntervalMs: 1500, priority: 3 },
+                    ];
+                    const wsEtc = wsConf.wsEtcConfig || {};
+
+                    slot.innerHTML += `
+                        <details style="margin-top:16px;border:1px dashed var(--snw-border,#2f3844);border-radius:6px;padding:12px;">
+                            <summary style="cursor:pointer;font-weight:600;font-size:13px;">
+                                ⚙ 고급 WebSocket 통신 설정
+                            </summary>
+                            <div style="margin-top:12px;">
+                                ${wsChArr.map((ch, i) => `
+                                    <div style="display:grid;grid-template-columns:80px 1fr 1fr;gap:8px;margin-bottom:6px;font-size:12px;">
+                                        <span style="color:var(--snw-text-dim,#8b949e);">${ch.chName || 'ch' + i}</span>
+                                        <input type="number" data-ws-itv="${i}" value="${ch.chIntervalMs}" placeholder="interval(ms)"
+                                               style="padding:4px 8px;background:var(--snw-surface-2,#12161c);border:1px solid var(--snw-border,#2f3844);color:var(--snw-text,#e6edf3);border-radius:4px;">
+                                        <input type="number" data-ws-prio="${i}" value="${ch.priority}" placeholder="priority"
+                                               style="padding:4px 8px;background:var(--snw-surface-2,#12161c);border:1px solid var(--snw-border,#2f3844);color:var(--snw-text,#e6edf3);border-radius:4px;">
+                                    </div>
+                                `).join('')}
+                                <div class="snw-form-row" style="margin-top:8px;">
+                                    <label>Chart Large Bytes</label>
+                                    <input type="number" data-ws-chartlarge value="${wsEtc.chartLargeBytes || 3500}"
+                                           style="padding:4px 8px;background:var(--snw-surface-2,#12161c);border:1px solid var(--snw-border,#2f3844);color:var(--snw-text,#e6edf3);border-radius:4px;">
+                                </div>
+                                <button type="button" class="snw-btn snw-btn--sm" data-action="save-ws" style="margin-top:8px;">WebSocket 설정 저장</button>
+                            </div>
+                        </details>
+                    `;
+
+                    // 저장 버튼
+                    const btnSaveWs = slot.querySelector('[data-action="save-ws"]');
+                    if (btnSaveWs) {
+                        btnSaveWs.onclick = async () => {
+                            const newChArr = wsChArr.map((ch, i) => ({
+                                chIdx: ch.chIdx,
+                                chName: ch.chName,
+                                chIntervalMs: Number(slot.querySelector(`[data-ws-itv="${i}"]`).value),
+                                priority: Number(slot.querySelector(`[data-ws-prio="${i}"]`).value),
+                            }));
+                            const newEtc = {
+                                ...wsEtc,
+                                chartLargeBytes: Number(slot.querySelector('[data-ws-chartlarge]').value),
+                            };
+                            try {
+                                await SNW.Api.patchSystem({ system: { webSocket: { wsChConfig: newChArr, wsEtcConfig: newEtc } } });
+                                await SNW.Api.saveConfig();
+                                if (SNW.ToastUtil) SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
+                            } catch (e) {
+                                if (SNW.ToastUtil) SNW.ToastUtil.error(e.message || '저장 실패');
+                            }
+                        };
+                    }
+                } catch (e) { }
             } catch (e) {
                 SNW.LogUtil.warn('[Network] time config load 실패', e);
             }
         }
 
         async _onSaveTime() {
-            const ntp  = this.el.querySelector('#ntp-server').value.trim();
-            const tz   = this.el.querySelector('#timezone').value.trim();
+            const ntp = this.el.querySelector('#ntp-server').value.trim();
+            const fbRaw = (this.el.querySelector('#ntp-fallback-servers')?.value || '');
+            const fbList = fbRaw.split(',').map(s => s.trim()).filter(Boolean).slice(0, 3);
+            const tz = this.el.querySelector('#timezone').value.trim();
             const sync = Number(this.el.querySelector('#sync-interval').value);
 
             if (!ntp) {
@@ -220,7 +292,9 @@ SNW.Page = SNW.Page || {};
             }
 
             try {
-                await SNW.Api.patchSystem({ timeCfg: { ntpServer: ntp, timezone: tz, syncIntervalMin: sync } });
+                const timeCfg = { ntpServer: ntp, timezone: tz, syncIntervalMin: sync };
+                if (fbList.length) timeCfg.ntpFallbackServers = fbList;
+                await SNW.Api.patchSystem({ timeCfg });
                 await SNW.Api.saveConfig();
                 SNW.ToastUtil.success(SNW.I18n.t('msg.saveSuccess'));
             } catch (e) {

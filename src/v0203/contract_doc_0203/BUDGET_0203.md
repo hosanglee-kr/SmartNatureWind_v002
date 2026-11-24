@@ -1,4 +1,4 @@
-# BUDGET_0203.md — 시간 및 시스템 자원 예산 (v3.6)
+# BUDGET_0203.md — 시간 및 시스템 자원 예산 (v3.7)
 
 > **기준**: v0203 정적 감사 + 런타임 실측 반영 (Batch A~G 완료).  
 > **핵심 성과**: F-05(reload 위임)/F-06(motion sim 위임)으로 `async_tcp` 블로킹 제거, D-1(WS mutex 배치)/D-4(atomic)/D-5(고정 배열)로 loopTask 지터 감소, B-1(NVS 단일 commit 10ms)/B-9(스냅샷 캐시 2ms) 성능 최적화.  
@@ -78,7 +78,7 @@
 | `CT10::tick()` | 1 ~ 5 ms | 40ms 스로틀, FSM + 물리 |
 | **[Stage 10] `tickAutoComfort()`** | **< 0.1 μs** (게이트 미도달) / **< 150 μs** (기동 시) | 5분 게이트, 평상 조기 반환, 만료 시 추천 산출 및 프리셋 세션 시작 |
 | **[F-06] `_pendingMotionSimApply` 소비** | **< 100 μs** | atomic exchange + 파라미터 복사 |
-| `CT10_WS_tick()` | 1 ~ 10 ms | **[D-1]** consumeAllDirty 1회 (기존 4회 → mutex -75%) |
+| `CT10_WS_tick()` | 1 ~ 10 ms | **[D-1]** `consumeAllDirty` `std::atomic<bool>` lock-free (mutex 0회) |
 | **[F-03] `g_M10_motionLogic->tick()`** | **< 100 μs** | PIR holdSec 감쇠 |
 | `TM10::tick()` | < 100 μs | 1초 게이트, 평상 조기 반환 |
 | `C10::processPendingFree()` | < 100 μs | 3초 grace 미도달 즉시 반환 |
@@ -88,10 +88,14 @@
 | `delay(G_A00_LOOP_DELAY_MS=10)` | 10 ms | **[C-5]** 상수 참조 |
 | **`CT10::startSession/pause/resume/stop`** | **< 10 ms** | T-async, s_stateMutex 재귀 (Phase 3) |
 | **`CT10::tickSchedule` (profileId 탐색)** | **< 1 ms** | 프로필 탐색 O(6), ADR-3 단일 규격 |
+| **`checkTriggers()` (Stage 6)** | **< 100 μs** (게이트 내) / **< 5 μs** (게이트 밖) | **PIR 매 tick / 온도·DI 1초 게이트** |
+| **`initRuleFromPayload()` (세션 시작)** | **< 50 μs** | 세션 시작 1회 (AUTO 계열) |
+| **`tickAutoComfort()` AUTO 재평가** | **< 200 μs** | 5분 주기, `AUTO_FULL`/`AUTO_SELECT` 세션 한정 |
 
 - **평상시 총**: 15~25 ms / 10ms 주기 → 오버런 평균화
 - **차트 브로드캐스트**: +10ms
 - **Reload**: +100~500ms 단일 스파이크
+- **실측 기록 (`release -Os`, ESP32-S3 Zero)**: 평상시 `ctl`/`ws`/`mot`/`tm`/`nvs`/`led` 합산 `8 ~ 55 μs`, 기존 `MON::tick(getMonitorSnapshot())` 내 DHT22 동기 읽기 `~56.7 ms` 스파이크는 `dht_task` (Core 1, Stack `3,072 B`) 분리 및 `s_dhtMux` 캐시 반환(`< 1 μs`)으로 제거됨
 
 ---
 
@@ -112,8 +116,9 @@
 | **`POST /api/v001/control/ack`** | `ackEventState()` | **< 1 ms** | AUTOOFF 래치 해제 |
 | **`GET /api/v001/wifi/state`** | WiFi 상태 JSON 반환 | **< 1 ms** | atomic load 기반 |
 | `GET /api/v001/wifi/scan` | `WiFi.scanNetworks()` | 1 ~ 2 초 | 의도된 블로킹 |
-| `POST /api/v001/ai/gemini` | SSL 스트리밍 프록시 | ≤ 15 초 | Rate limit 10회/분, 2-turn |
-| `POST /api/v001/ai/execute-action` | `executeAIAction()` 12도구 | **< 10 ms** | 안전 도구 직접 실행 |
+| `POST /api/v001/ai/gemini` | PSRAM 버퍼 복사 + `T-ai` 워커 위임 (`202 Accepted`) | **< 5 ms** | `async_tcp` 블로킹 0, `T-ai` 스택 10,240B + PSRAM 버퍼 ~20KB |
+| `GET /api/v001/ai/gemini?jobId=` | 비동기 AI Job 상태/결과 조회 | **< 2 ms** | `040.api.js` 적응형 폴링(700ms 후 350ms), TTL 30s |
+| `POST /api/v001/ai/execute-action` | `executeAIAction()` 14도구 | **< 10 ms** | 안전 도구 직접 실행 |
 | `POST /api/v001/ai/live-token` | `routeAILiveToken()` 검증 | **< 5 ms** | 30분 상한 판정 (초과 시 403) |
 | `POST /api/v001/ai/live-func` | Live 툴 위임 프록시 | **< 10 ms** | Gemini Live ➔ CT10 위임 |
 | `GET /api/v001/ai/live-config` | `routeAILiveConfig()` | **< 5 ms** | Aoede 보이스 / 30s 프롬프트 캐시 |
@@ -163,7 +168,7 @@
 | `pendingReload_latency` | `requestReload`→소비 | < 50 ms | loopTask 지연 분석 |
 | `stack_hwm` | 각 태스크 종료/주기 | 잔여 > 20% | 스택 증설 |
 | `heap_free` | `/api/v001/diag` | > 100 KB | 메모리 누수/OTA 보류 |
-| **`ws_mutex_count`** (**D-1**) | WS tick 로그 카운터 | 채널당 1회/interval | `consumeAllDirty` 지속 확인 |
+| **`ws_mutex_count`** (**D-1**) | WS tick 로그 카운터 | 0회/tick (`std::atomic<bool>`) | lock-free 전환 유지 확인 |
 | **`sta_connected_read`** (**D-4**) | `isStaConnected` atomic | 0ms 대기 | WiFi.status() 지연 확인 |
 
 ---
@@ -461,12 +466,45 @@ Phase 5에서 `020.i18n.js`에 **~250키** (ko/en × 125) 대량 추가. 번들 
 | **프론트엔드 번들 실측치** | JS gz: **130.0 KB** (129,987 B), CSS gz: **16.4 KB** (16,436 B), HTML gz: **1.7 KB** (1,741 B) | gzip 합계 **148.1 KB** (< 160KB 목표 대비 안정적) ✅ |
 | **LittleFS 총 점유** | 정적 자산(148.1 KB) + JSON 9종(20.8 KB) = **169.0 KB** | LittleFS 1MB 예산 대비 **16.9%** (여유 831 KB 이상 확보) ✅ |
 
+### 10.9 Phase 2 (Stage 1~6) 예산 영향
+
+| 항목 | 측정/추정 | 판정 |
+|---|---|---|
+| **C++ Flash (TriggerRule)** | +1.2 KB (신규 헬퍼·enum) | ✅ 여유 |
+| **C++ RAM (triggerRt)** | +32 B (`pauseMask`, `lastCheck*`) | ✅ 여유 |
+| **`checkTriggers()` WCET** | PIR 판정 < 5 μs / 온도·DI < 100 μs (1초 게이트) | ✅ loopTask 20ms 예산 대비 < 0.5% |
+| **`initRuleFromPayload()` WCET** | < 50 μs | ✅ 세션 시작 1회 |
+| **`tickAutoComfort` 재평가** | < 200 μs | ✅ 5분 주기 |
+| **JSON 파일 크기** | `rule` 추가로 +30% (`cfg_userProfile`: ~4KB) | ✅ LittleFS 여유 |
+| **`rule` 5탭 UI (FE)** | `_rules.css` 3.5 KB raw | ✅ |
+| **i18n +60 키** | +3.2 KB raw (ko+en) | ✅ gz +1.5 KB |
+| **0203_014_18_02 최종 실측 (5청크, 20 CSS)** | JS 3청크 `156.4 KB gz` + CSS 2청크 `19.2 KB gz` + HTML `2.5 KB gz` + JSON 9종 `25.8 KB` = **총 203.9 KB** | ✅ LittleFS 1MB 대비 **19.9%** |
+
+**누적 판정**: Flash +2 KB, RAM +32 B, LittleFS 총 점유 203.9 KB (1MB 대비 19.9%). 모두 기존 예산 여유 이내.
+
+### 10.10 Stage 12~13 웹 API 보안·안정화 누적 예산 영향 (0203_014_19)
+
+| 항목 | 실측치 / 영향 | 예산 평가 |
+|---|---|---|
+| **펌웨어 빌드 실측 (`esp32-s3-zero`, C7 기준)** | RAM: **30.8%** (`100,992 / 327,680 B`), Flash: **43.7%** (`1,373,457 / 3,145,728 B`) | ✅ 여유 |
+| **동적 Body 누적 버퍼 상한** | 일반 POST/PUT/PATCH 최대 **1MB** (`W10_MAX_ACCUM_BODY`), AI 최대 `G_MAX_REQUEST_BODY` | ✅ `p_total` 선검사 및 단일 블록 해제로 누수/DoS 차단 |
+| **정적 자산 `Cache-Control` 대역폭 절감** | HTML `no-cache, must-revalidate` / JS·CSS·자산 `public, max-age=86400` | ✅ 재접속 시 불필요 재전송 감소 |
+
 ---
 
 ## 11. 개정 이력
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-22** | **v3.15** | **WS Dirty Lock-Free 전환 & 모니터 차트 통합 후 5청크 실측치 현행화**: `CT10_WS_tick()` `consumeAllDirty` mutex 1회 → 0회(`std::atomic<bool>`), JS 3청크(`app_core` 42,837B + `app_ui` 31,227B + `app_pages` 86,395B = 160,459B gz) + CSS 2청크(19,392B gz) + HTML(2,496B gz) = 웹 자산 182,347B gz | Antigravity AI |
+| **2026-11-21** | **v3.14** | **FE 다국어 단일화·상태 동기화 반영 후 5청크 실측치 현행화**: JS 3청크(`app_core` 42,800B + `app_ui` 30,856B + `app_pages` 85,704B = 159,360B gz) + CSS 2청크(19,361B gz) + HTML(2,495B gz) = 웹 자산 181,216B gz | Antigravity AI |
+| **2026-11-21** | **v3.13** | **AI 프록시 비동기 워커 예산 반영 (0203_015)**: §3 `POST /ai/gemini` `< 5 ms` (`202`) 및 `GET` 폴링 `< 2 ms`, `T-ai` 내부 SRAM 스택 `10,240 B` + PSRAM Job 버퍼(`~20 KB`) 반영 | Antigravity AI |
+| **2026-11-20** | **v3.12** | **정적 자산 캐시 연장 및 대시보드 병렬 로딩 반영**: `Cache-Control` `public, max-age=86400`(24h) 연장 반영 및 `Dashboard.mount()` `Promise.all` 병렬 API 호출 반영 | Antigravity AI |
+| **2026-11-18** | **v3.11** | **FE/오프라인 AI·NowPlaying·AUTO_SELECT 보완 후 정적 자산 실측 반영 (0203_014_20/21)**: JS 3청크(`app_core` 41.7KB + `app_ui` 31.0KB + `app_pages` 84.9KB = 157.6KB gz) + CSS 2청크(`common_base` 11.1KB + `common_pages` 8.3KB = 19.4KB gz) + HTML(2.5KB gz) + JSON 9종(25.8KB) = LittleFS 총 점유 205.3KB (1MB 대비 20.0%) | Antigravity AI |
+| **2026-11-18** | **v3.10** | **Stage 12~13 웹 API 보안·안정화 예산 반영 (§10.10, 0203_014_19)**: `esp32-s3-zero` RAM 30.8%/Flash 43.7% 실측, `W10_MAX_ACCUM_BODY`(1MB) 상한 및 `Cache-Control`(3600s) 대역폭 절감 반영 | Antigravity AI |
+| **2026-11-17** | **v3.9** | **FE Core·Offline 정비 및 20종 CSS 분리 실측치 반영 (§10.9)**: JS 3청크(156.4KB gz) + CSS 2청크(19.2KB gz) + HTML(2.5KB gz) + JSON 9종(25.8KB) = LittleFS 총 점유 203.9KB (1MB 대비 19.9%) | Antigravity AI |
+| **2026-11-16** | **v3.8** | **Batch 1~4 최종 프론트엔드 5청크 실측치 반영 (§10.9)**: JS 3청크(154.0KB gz) + CSS 2청크(19.4KB gz) + HTML(2.4KB gz) + JSON 9종(25.8KB) = LittleFS 총 점유 201.6KB (1MB 대비 19.7%) | Antigravity AI |
+| **2026-11-14** | **v3.7** | **Phase 2 — TriggerRule & AUTO 예산 영향**: §2 `checkTriggers` WCET < 100 μs / `initRuleFromPayload` < 50 μs / `tickAutoComfort` AUTO 재평가 < 200 μs, §10.9 Phase 2 누적 영향 (Flash +2KB / RAM +32B / FE gz +2KB) | Antigravity AI |
 | **2026-11-10** | **v3.6** | **Stage 10.1 UI/UX 고도화 프론트엔드 자산 실측치 반영 (§10.8, b3d06c2)**: 53개 JS 번들(130.0KB gz), 18개 CSS 번들(16.4KB gz), HTML(1.7KB gz), LittleFS 총 점유 169.0KB(1MB 예산 대비 16.9%) 실측치 현행화 | Antigravity AI |
 | **2026-11-09** | **v3.5** | **Stage 10.1 하드웨어 백엔드 타이머 및 5상태 매트릭스 누적 영향 (§10.7, 0203_013_20_02)**: `loopTask` WCET 만료 부하(<150μs), 53개 JS(129.5KB gz) 및 18개 CSS(15.3KB gz), LittleFS 총 점유 146.5KB(1MB 예산 대비 14.7%) 실측치 반영 | Antigravity AI |
 | **2026-11-09** | **v3.4** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: §2 `tickAutoComfort` loopTask WCET(<0.1μs), §10.6 번들 크기(127.3KB gz) 및 Flash(43.4%)/RAM(30.6%) 예산 영향 평가 반영 | Antigravity AI |

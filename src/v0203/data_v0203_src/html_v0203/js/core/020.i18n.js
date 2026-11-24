@@ -7,11 +7,15 @@ window.SNW = window.SNW || {};
 
     const DICT = {
         ko: {
+            'rule.title': '규칙 편집',
+            'rule.validate.hysteresisTemp': 'PAUSE 모드에서는 온도 히스테리시스(≥0.5°C)가 필요합니다',
+            'rule.validate.hysteresisDi': 'PAUSE 모드에서는 DI 히스테리시스(≥3.0)가 필요합니다',
             // =====================================================
             // 공통
             // =====================================================
             'app.title': 'Smart Nature Wind',
             'common.ok': '확인',
+            'common.auto': '자동',
             'common.cancel': '취소',
             'common.close': '닫기',
             'common.save': '저장',
@@ -246,14 +250,40 @@ window.SNW = window.SNW || {};
             'settings.deleteApiKey': 'API Key 삭제',
             'settings.deleteGeminiKey': 'Gemini Key 삭제',
 
+
             // =====================================================
-            // Header / Nav
+            // [Phase5 5.6] 네비게이션 완전판
             // =====================================================
             'nav.home': '홈',
-            'nav.wind': '바람',
+            // 'nav.wind': '바람',
             'nav.automation': '자동화',
             'nav.monitor': '모니터',
+            'nav.chart': '실시간 차트',
             'nav.settings': '설정',
+            'nav.simulation': '시뮬레이션',
+            'nav.logs': '시스템 로그',
+            'nav.ai': 'AI 어시스턴트',
+            // 'nav.groupControl': '제어',
+            // 'nav.groupSystem': '시스템',
+            'nav.network': 'Wifi 설정',
+            'nav.firmware': 'firmware',
+            'nav.diagnostics': 'diagnostics',
+            
+            'nav.wind': '바람 만들기',
+            'nav.wind.studio': '🎨 작곡',
+            'nav.wind.simulation': '🎮 체험실',
+            'nav.wind.playlist': '📋 플레이리스트',
+            'nav.wind.presets': '🌿 프리셋 관리',
+            'nav.groupDaily': '일상',
+            'nav.groupControl': '주요 제어',
+            'nav.groupSystem': '시스템',
+
+            
+
+
+            // =====================================================
+            // Header
+            // =====================================================
             'header.menu': '메뉴',
             'header.language': '언어',
             'header.online': '온라인',
@@ -277,26 +307,6 @@ window.SNW = window.SNW || {};
             'msg.selectProfile': '실행할 플레이리스트를 선택하세요',
             'msg.timeOrder': '종료 시각이 시작 시각보다 빨라야 합니다',
 
-            // =====================================================
-            // [Phase5 5.6] 네비게이션 완전판
-            // =====================================================
-            'nav.dashboard': '대시보드',
-            'nav.chart': '차트',
-            'nav.schedule': '스케줄',
-            'nav.profiles': '프로필',
-            'nav.sensors': '센서',
-            'nav.monitor': '모니터',
-            'nav.simulation': '시뮬레이션',
-            'nav.windprofile': '바람 프리셋',
-            'nav.network': '네트워크',
-            'nav.logs': '시스템 로그',
-            'nav.diagnostics': '진단',
-            'nav.firmware': '펌웨어',
-            'nav.ai': 'AI 어시스턴트',
-            'nav.info': '정보',
-            'nav.groupControl': '제어',
-            'nav.groupSettings': '설정',
-            'nav.groupSystem': '시스템',
 
             // =====================================================
             // [Phase5 5.6] 공통
@@ -316,21 +326,14 @@ window.SNW = window.SNW || {};
             // =====================================================
             // [Phase5 5.6] Dashboard
             // =====================================================
-            'dashboard.modeTitle': '작동 모드 설정',
-            'dashboard.modeSchedule': '◻ 스케줄 자동 모드',
-            'dashboard.modeProfile': '◼ 프로필 수동 모드',
-            'dashboard.realtimeState': '실시간 상태',
-            'dashboard.currentWind': '현재 풍속',
-            'dashboard.targetWind': '목표 풍속',
-            'dashboard.phase': 'Phase',
-            'dashboard.pwm': 'PWM',
-            'dashboard.sch': '스케줄',
-            'dashboard.prof': '프로필',
-            'dashboard.powerTitle': '전원 제어',
-            'dashboard.sensorTitle': '센서',
+            'dashboard.tabControl': '제어',
+            'dashboard.tabEnv': '스마트쾌적',
+            'dashboard.tabPreset': '프리셋',
+            'dashboard.sensorTitle': '센서 모니터링',
             'dashboard.styleTitle': '바람 스타일',
+            'dashboard.styleHint': '바람 변동 패턴 보정',
             'dashboard.presetTitle': '자연풍 프리셋',
-            'dashboard.physicsTitle': '바람 세부 조절 (3대 물리 제어)',
+            'dashboard.presetHint': '10대 시뮬레이션 환경 선택',
             'dashboard.powerOn': '전원 켜기',
             'dashboard.powerOff': '전원 끄기',
             'dashboard.temp': '온도',
@@ -338,9 +341,6 @@ window.SNW = window.SNW || {};
             'dashboard.motion': '인체감지',
             'dashboard.motionDetected': '감지됨',
             'dashboard.motionAbsent': '부재',
-            'dashboard.modeSwitchedProfile': '프로필 모드로 전환되었습니다',
-            'dashboard.fanStop': '끔',
-            'dashboard.fanStage': '{n}단',
 
             // =====================================================
             // [Phase5 5.6] Chart
@@ -384,7 +384,6 @@ window.SNW = window.SNW || {};
             'settings.fieldEnabled': '활성화',
             'settings.fieldPinPir': 'PIR 핀',
             'settings.fieldDebounce': '디바운스 (초)',
-            'settings.fieldHold': '유지 시간 (초)',
             'settings.fieldPinDht': 'DHT 핀',
             'settings.fieldType': '센서 타입',
             'settings.fieldInterval': '읽기 주기 (초)',
@@ -479,23 +478,6 @@ window.SNW = window.SNW || {};
             // =====================================================
             // [Phase5 5.6] Segment (Studio/Profile/Schedule 공통)
             // =====================================================
-            'segment.onMinutes': '작동 시간(분)',
-            'segment.offMinutes': '정지 시간(분)',
-            'segment.mode': '모드',
-            'segment.modePreset': '프리셋 모드',
-            'segment.modeFixed': '고정풍속 모드',
-            'segment.presetSelect': '프리셋 선택',
-            'segment.styleSelect': '스타일 선택',
-            'segment.fixedSpeed': '고정 풍속(%)',
-            'segment.overrideTitle': '⚙️ 고급 물리 설정 (Override 직접 지정)',
-            'segment.overrideDesc': '이 세그먼트에서 바람 세부 설정 직접 지정',
-            'segment.overrideIntensity': '바람 강도 (%)',
-            'segment.overrideVariability': '바람 변동성 (%)',
-            'segment.overrideGust': '돌풍 빈도 (%)',
-            'segment.moveUp': '위로',
-            'segment.moveDown': '아래로',
-            'segment.deleted': '세그먼트가 삭제되었습니다',
-            'segment.summaryPrefix': '세그먼트',
 
             // =====================================================
             // [Phase5 5.6] Schedule 추가
@@ -510,21 +492,10 @@ window.SNW = window.SNW || {};
             'schedule.repeatCount': '반복 횟수',
             'schedule.startTime': '시작 시각',
             'schedule.endTime': '종료 시각',
-            'scheduler.title': '스케줄 예약',
-            'scheduler.day': '요일',
-            'scheduler.segment': '세그먼트',
-            'scheduler.scheduledOff': '예약 종료',
-            'scheduler.tempOff': '온도 도달 종료',
 
             // =====================================================
             // [Phase5 5.6] Profiles 추가
             // =====================================================
-            'profiles.add': '프로필 추가',
-            'profiles.no': '프로필 번호',
-            'profiles.enabled': '활성화',
-            'profiles.name': '프로필 이름',
-            'profiles.addSegmentBtn': '세그먼트 추가',
-            'profiles.autoOffTimer': '자동 종료 (분)',
             'profile.title': '사용자 프로필',
             'profile.active': '활성',
 
@@ -596,10 +567,32 @@ window.SNW = window.SNW || {};
             // [Phase5 5.6] FSM 상태 배지
             // =====================================================
             'fsm.idle': '대기',
+            'fsm.reserved': '예약됨',
+            'feedback.intensity.off.title': '0.0 m/s · 팬 정지',
+            'feedback.intensity.off.desc': '팬 모터가 대기 상태입니다.',
+            'feedback.intensity.gentle.title': '체감 약 {speed} m/s (초미풍 · 수면풍)',
+            'feedback.intensity.gentle.desc': '부채질 수준의 고요한 미풍 (수면 시 또는 영유아에 적합, 저소음 <25dB)',
+            'feedback.intensity.natural.title': '체감 약 {speed} m/s (표준 자연풍 · 1~2단)',
+            'feedback.intensity.natural.desc': '나뭇잎이 살랑거리는 기분 좋은 산들바람 (일상 생활 및 휴식에 가장 쾌적)',
+            'feedback.intensity.strong.title': '체감 약 {speed} m/s (강풍 · 급속 환기 3~4단)',
+            'feedback.intensity.strong.desc': '창문을 열었을 때 부는 시원한 야외 바람 (운동 직후나 빠른 환기에 적합)',
+            'feedback.variability.low.title': '풍속 전환 약 10~15초 소요 (변화폭 <10%)',
+            'feedback.variability.low.desc': '바람 세기가 천천히 바뀌어 체감상 거의 일정하고 부드럽습니다.',
+            'feedback.variability.mid.title': '풍속 전환 약 5~8초 소요 (변화폭 ±30%)',
+            'feedback.variability.mid.desc': '숲속 바람처럼 5~8초 간격으로 오르내리며 자연스러운 리듬감을 줍니다.',
+            'feedback.variability.high.title': '풍속 전환 약 2~4초 소요 (변화폭 최대 ±60%)',
+            'feedback.variability.high.desc': '2~3초 만에 풍속이 급격히 전환되어 계곡이나 해변처럼 역동적입니다.',
+            'feedback.gust.none.title': '돌풍 없음 (기본 기류만 유지)',
+            'feedback.gust.none.desc': '돌풍 없이 평온한 기류만 부드럽게 유지됩니다.',
+            'feedback.gust.low.title': '약 60~120초(1~2분)에 1회 유입',
+            'feedback.gust.low.desc': '가벼운 돌풍이 드물게 지나가 수면이나 독서에 방해되지 않습니다.',
+            'feedback.gust.mid.title': '약 30~50초에 1회 유입 (순간 풍속 ×1.5~2.0배)',
+            'feedback.gust.mid.desc': '30~45초마다 시원한 바람이 훅 불어와 답답함을 해소해 줍니다.',
+            'feedback.gust.high.title': '약 15~25초에 1회 유입 (순간 풍속 최대 ×2.5배)',
+            'feedback.gust.high.desc': '15~20초마다 강력한 돌풍이 연속 유입되어 야외 언덕에 있는 듯 상쾌합니다.',
             'fsm.override': '수동 제어',
             'fsm.profileRun': '프로필 실행',
             'fsm.scheduleRun': '스케줄 실행',
-            'fsm.motionBlocked': '모션 차단',
             'fsm.autoOffStopped': '자동 종료',
             'fsm.timeInvalid': '시간 미동기',
 
@@ -617,7 +610,12 @@ window.SNW = window.SNW || {};
             'reason.motionNoPresence': '재실 감지 안됨',
             'reason.autoOffTimer': '자동 종료 타이머',
             'reason.autoOffTime': '자동 종료 시각',
-            'reason.autoOffTemp': '자동 종료 온도',
+
+            'reason.userStop': '사용자 정지',
+            'reason.tempLowStop': '저온 안전 정지',
+            'reason.diLowStop': '불쾌지수 저하 정지',
+            'autoOff.di': '불쾌지수 종료',
+
 
             // =====================================================
             // [Phase5 5.6] Wind Phase
@@ -696,14 +694,7 @@ window.SNW = window.SNW || {};
             'settings.levelL2': '표준 (일반 사용 권장)',
             'settings.levelL3': '고급 (세부 파라미터)',
             'settings.levelL4': '전문가 (모든 엔지니어링 기능)',
-            'dashboard.tabControl': '제어',
-            'dashboard.tabEnv': '스마트쾌적',
-            'dashboard.tabPreset': '프리셋',
-            'dashboard.sensorTitle': '센서 모니터링',
-            'dashboard.styleTitle': '바람 스타일',
-            'dashboard.styleHint': '바람 변동 패턴 보정',
-            'dashboard.presetTitle': '자연풍 프리셋',
-            'dashboard.presetHint': '10대 시뮬레이션 환경 선택',
+
             'common.details': '상세보기',
             'timer.quickPrompt': '몇 분 후 종료할까요? (분 단위 입력)',
             'comfort.autoTitle': '스마트 쾌적 자동 모드',
@@ -731,15 +722,92 @@ window.SNW = window.SNW || {};
             'schedule.modeAdvanced': '고급 작곡 예약',
             'schedule.simpleSaved': '스케줄이 등록되었습니다.',
             'ai.inputPlaceholder': '자연풍 제어나 궁금한 점을 물어보세요...',
+            // ═══════════ [Stage 5] 신규 키 (KO) ═══════════
+            'home.oneTouchStart': '⚡ 지금 시작',
+            'home.scenario.sleep': '🌙 수면',
+            'home.scenario.office': '💼 사무',
+            'home.scenario.study': '📚 독서',
+            'home.scenario.rest': '🛋️ 휴식',
+            'home.scenario.exercise': '🏃 운동',
+            'home.scenario.baby': '👶 유아',
+            'home.scenario.pet': '🐾 반려',
+            'home.scenario.autoFull': '✨ AI 스마트 쾌적',
+            'home.scenario.autoSelect': '🎯 취향 맞춤 Auto',
+            'home.scenario.skipConfirm': '☑ 다음부터 이 확인창 없이 바로 시작',
+            'home.scenario.sleepMeta': '8h타이머·맞춤Auto',
+            'home.scenario.officeMeta': 'DI·PIR연동',
+            'home.scenario.studyMeta': '미풍·집중스타일',
+            'home.scenario.restMeta': '밸런스·자연풍',
+            'home.scenario.exerciseMeta': '강풍·돌풍활력',
+            'home.scenario.babyMeta': '23°C정지·초미풍',
+            'home.scenario.petMeta': 'PIR감지·온도감시',
+            'home.scenario.autoFullMeta': '실시간 100% 자율',
+            'home.scenario.autoSelectMeta': '바람고정·세기자동',
+            'session.autoFull': '✨ AI 스마트 쾌적',
+            'session.autoSelect': '🎯 취향 맞춤 Auto',
+            'session.autoSelectSuffix': '(취향 맞춤 Auto)',
+            'session.autoSelectPrompt': '내가 원하는 바람 기준 선택',
+            'session.autoSelectPreset': '프리셋',
+            'session.autoSelectPlaylist': '플레이리스트',
+            'session.autoSelectHint': '※ 선택한 바람을 유지하며, 날씨에 따라 바람 스타일과 팬 세기만 자동 조절됩니다',
+            'session.autoFullHint1': '· 실내 온도·습도·불쾌지수 실시간 자동 감지',
+            'session.autoFullHint2': '· 5분마다 최적의 프리셋 & 스타일 자동 전환',
+            'session.autoFullHint3': '· 상시 쾌적 감시 (더워지면 스스로 재가동)',
+            'session.autoFullHint4': '· 사용자가 슬라이더 조작 시 수동 전환',
+            'fsm.envPaused': '⏸ 환경 일시정지',
+            'fsm.pauseReasonMotion': '👤 사람 없음',
+            'fsm.pauseReasonTempLow': '🌡️ 온도 낮음',
+            'fsm.pauseReasonDiLow': '☀️ 불쾌지수 낮음',
+            'fsm.pauseResumeHint.temp': '현재 {cur}°C / 재개 {resume}°C 대기 중',
+            'fsm.pauseResumeHint.di': '현재 DI {cur} / 재개 {resume} 대기 중',
+            'fsm.pauseResumeHint.motion': '재실 감지 시 자동 재개',
+            'rule.template.deepSleep': '🌙 숙면 권장',
+            'rule.template.babySafe': '👶 유아 안심',
+            'rule.template.officeFocus': '💼 사무 집중',
+            'rule.sectionPause': '⏸ 일시정지 (자동 재개)',
+            'rule.sectionStop': '⏹ 완전 종료 (사용자 확인)',
+            'rule.sectionComfort': '✨ AI 스마트 쾌적',
+            'rule.pir.enabled': '사람 없으면 멈춤',
+            'rule.tempLow.enabled': '온도 낮음',
+            'rule.tempLow.threshold': '임계',
+            'rule.tempLow.modePause': '일시정지 (자동 재개)',
+            'rule.tempLow.modeStop': '완전 종료 (사용자 확인 필요)',
+            'rule.tempLow.hysteresis': '재개 임계',
+            'rule.diLow.enabled': '불쾌지수 낮음',
+            'rule.timer.enabled': '타이머',
+            'rule.timer.suffix': '분 후 종료',
+            'rule.offTime.enabled': '예약 시각',
+            'rule.offTime.suffix': '종료',
+            'rule.smartComfort.interval': '자동 개입',
+            'rule.smartComfort.alwaysOn': '상시 쾌적 감시 (더워지면 스스로 켜기)',
+            'rule.tipModes': '⦿일시정지 = 자동 재개 / ○완전 종료 = 사용자 확인까지 유지',
+            'rule.tipBabySafe': '유아방·수면에는 완전 종료를 권장합니다',
+            'rule.validate.saveDisabled': '규칙 입력값을 확인하세요',
+            'auto.rules.globalSection': '🌐 전역 기본 규칙',
+            'auto.rules.profileSection': '📋 프로필별 규칙',
+            'auto.rules.scheduleSection': '📅 스케줄별 규칙',
+            'auto.rules.inheritHint': '프로필 규칙 상속',
+            'auto.rules.customHint': '직접 설정',
+            
+            
+            'monitor.timeline.running': '■ 가동',
+            'monitor.timeline.paused': '■ 환경 일시정지',
+            'monitor.timeline.idle': '■ 대기',
+            'chart.yAxis.fixedHint': 'Y축 0.0~8.0 m/s 고정',
+
 
         },
 
         en: {
+            'rule.title': 'Edit Rule',
+            'rule.validate.hysteresisTemp': 'Temperature hysteresis (>=0.5°C) is required in PAUSE mode',
+            'rule.validate.hysteresisDi': 'DI hysteresis (>=3.0) is required in PAUSE mode',
             // =====================================================
             // Common
             // =====================================================
             'app.title': 'Smart Nature Wind',
             'common.ok': 'OK',
+            'common.auto': 'Auto',
             'common.cancel': 'Cancel',
             'common.close': 'Close',
             'common.save': 'Save',
@@ -974,14 +1042,38 @@ window.SNW = window.SNW || {};
             'settings.deleteApiKey': 'Delete API Key',
             'settings.deleteGeminiKey': 'Delete Gemini Key',
 
-            // =====================================================
-            // Header / Nav
-            // =====================================================
+            // Nav
             'nav.home': 'Home',
-            'nav.wind': 'Wind',
+            //'nav.wind': 'Wind',
             'nav.automation': 'Auto',
             'nav.monitor': 'Monitor',
+            'nav.chart': 'Live Chart',
             'nav.settings': 'Settings',
+            'nav.simulation': 'Simulation',
+            'nav.logs': 'System Logs',
+            'nav.ai': 'AI Assistant',
+            // 'nav.groupControl': 'Control',
+            // 'nav.groupSystem': 'System',
+            
+            'nav.network': 'Wifi Config',
+            'nav.firmware': 'firmware',
+            'nav.diagnostics': 'diagnostics',
+            
+
+            'nav.wind': 'Wind Studio',
+            'nav.wind.studio': '🎨 Studio',
+            'nav.wind.simulation': '🎮 Simulation',
+            'nav.wind.playlist': '📋 Playlist',
+            'nav.wind.presets': '🌿 Presets',
+            'nav.groupDaily': 'Daily',
+            'nav.groupControl': 'Main Control',
+            'nav.groupSystem': 'System',
+          
+
+
+            // =====================================================
+            // Header
+            // =====================================================
             'header.menu': 'Menu',
             'header.language': 'Language',
             'header.online': 'Online',
@@ -1005,24 +1097,6 @@ window.SNW = window.SNW || {};
             'msg.selectProfile': 'Please select a playlist',
             'msg.timeOrder': 'End time must be after start time',
 
-            // Nav
-            'nav.dashboard': 'Dashboard',
-            'nav.chart': 'Chart',
-            'nav.schedule': 'Schedule',
-            'nav.profiles': 'Profiles',
-            'nav.sensors': 'Sensors',
-            'nav.monitor': 'Monitor',
-            'nav.simulation': 'Simulation',
-            'nav.windprofile': 'Wind Presets',
-            'nav.network': 'Network',
-            'nav.logs': 'System Logs',
-            'nav.diagnostics': 'Diagnostics',
-            'nav.firmware': 'Firmware',
-            'nav.ai': 'AI Assistant',
-            'nav.info': 'Info',
-            'nav.groupControl': 'Control',
-            'nav.groupSettings': 'Settings',
-            'nav.groupSystem': 'System',
 
             'common.start': 'Start',
             'common.stop': 'Stop',
@@ -1034,21 +1108,14 @@ window.SNW = window.SNW || {};
             'footer.polling': '🟡 Polling',
 
             // Dashboard
-            'dashboard.modeTitle': 'Operation Mode',
-            'dashboard.modeSchedule': '◻ Schedule Auto Mode',
-            'dashboard.modeProfile': '◼ Profile Manual Mode',
-            'dashboard.realtimeState': 'Real-time State',
-            'dashboard.currentWind': 'Current Wind',
-            'dashboard.targetWind': 'Target Wind',
-            'dashboard.phase': 'Phase',
-            'dashboard.pwm': 'PWM',
-            'dashboard.sch': 'Schedule',
-            'dashboard.prof': 'Profile',
-            'dashboard.powerTitle': 'Power Control',
-            'dashboard.sensorTitle': 'Sensors',
+            'dashboard.tabControl': 'Control',
+            'dashboard.tabEnv': 'Environment',
+            'dashboard.tabPreset': 'Presets',
+            'dashboard.sensorTitle': 'Sensors Monitoring',
             'dashboard.styleTitle': 'Wind Style',
+            'dashboard.styleHint': 'Waveform pattern modifier',
             'dashboard.presetTitle': 'Nature Presets',
-            'dashboard.physicsTitle': 'Physics Fine Tuning (3 params)',
+            'dashboard.presetHint': '10 nature presets',
             'dashboard.powerOn': 'Power On',
             'dashboard.powerOff': 'Power Off',
             'dashboard.temp': 'Temp',
@@ -1056,9 +1123,6 @@ window.SNW = window.SNW || {};
             'dashboard.motion': 'Motion',
             'dashboard.motionDetected': 'Detected',
             'dashboard.motionAbsent': 'Absent',
-            'dashboard.modeSwitchedProfile': 'Switched to Profile mode',
-            'dashboard.fanStop': 'Off',
-            'dashboard.fanStage': 'Stage {n}',
 
             // Chart
             'chart.title': 'Live Physics Chart',
@@ -1098,7 +1162,6 @@ window.SNW = window.SNW || {};
             'settings.fieldEnabled': 'Enabled',
             'settings.fieldPinPir': 'PIR Pin',
             'settings.fieldDebounce': 'Debounce (sec)',
-            'settings.fieldHold': 'Hold (sec)',
             'settings.fieldPinDht': 'DHT Pin',
             'settings.fieldType': 'Sensor Type',
             'settings.fieldInterval': 'Interval (sec)',
@@ -1185,23 +1248,6 @@ window.SNW = window.SNW || {};
             'firmware.fileUpload': 'File Upload',
 
             // Segment
-            'segment.onMinutes': 'On (min)',
-            'segment.offMinutes': 'Off (min)',
-            'segment.mode': 'Mode',
-            'segment.modePreset': 'Preset Mode',
-            'segment.modeFixed': 'Fixed Speed Mode',
-            'segment.presetSelect': 'Preset',
-            'segment.styleSelect': 'Style',
-            'segment.fixedSpeed': 'Fixed Speed (%)',
-            'segment.overrideTitle': '⚙️ Advanced Physics (Override)',
-            'segment.overrideDesc': 'Override wind physics for this segment',
-            'segment.overrideIntensity': 'Wind Intensity (%)',
-            'segment.overrideVariability': 'Wind Variability (%)',
-            'segment.overrideGust': 'Gust Frequency (%)',
-            'segment.moveUp': 'Up',
-            'segment.moveDown': 'Down',
-            'segment.deleted': 'Segment deleted',
-            'segment.summaryPrefix': 'Segments',
 
             // Schedule additions
             'schedule.secBasic': 'Basic Info',
@@ -1214,19 +1260,8 @@ window.SNW = window.SNW || {};
             'schedule.repeatCount': 'Repeat Count',
             'schedule.startTime': 'Start Time',
             'schedule.endTime': 'End Time',
-            'scheduler.title': 'Schedule',
-            'scheduler.day': 'Days',
-            'scheduler.segment': 'Segment',
-            'scheduler.scheduledOff': 'Scheduled Off',
-            'scheduler.tempOff': 'Temp Threshold Off',
 
             // Profiles additions
-            'profiles.add': 'Add Profile',
-            'profiles.no': 'Profile No.',
-            'profiles.enabled': 'Enabled',
-            'profiles.name': 'Profile Name',
-            'profiles.addSegmentBtn': 'Add Segment',
-            'profiles.autoOffTimer': 'Auto Off (min)',
             'profile.title': 'User Profiles',
             'profile.active': 'Active',
 
@@ -1284,10 +1319,32 @@ window.SNW = window.SNW || {};
 
             // FSM
             'fsm.idle': 'Idle',
+            'fsm.reserved': 'Reserved',
+            'feedback.intensity.off.title': '0.0 m/s · Fan Stopped',
+            'feedback.intensity.off.desc': 'Fan motor is in standby mode.',
+            'feedback.intensity.gentle.title': 'Approx {speed} m/s (Gentle / Sleep)',
+            'feedback.intensity.gentle.desc': 'Gentle breeze comparable to fanning (ideal for sleep or infants, quiet <25dB)',
+            'feedback.intensity.natural.title': 'Approx {speed} m/s (Natural Breeze · Stage 1-2)',
+            'feedback.intensity.natural.desc': 'Pleasant fluttering breeze (most comfortable for daily living and relaxation)',
+            'feedback.intensity.strong.title': 'Approx {speed} m/s (Strong Wind · Stage 3-4)',
+            'feedback.intensity.strong.desc': 'Cool open-window breeze (ideal after workouts or quick cooling)',
+            'feedback.variability.low.title': 'Transition ~10-15s (Delta <10%)',
+            'feedback.variability.low.desc': 'Wind changes very slowly, maintaining a smooth and steady flow.',
+            'feedback.variability.mid.title': 'Transition ~5-8s (Delta ±30%)',
+            'feedback.variability.mid.desc': 'Rhythmic fluctuation like a forest breeze every 5-8s.',
+            'feedback.variability.high.title': 'Transition ~2-4s (Delta up to ±60%)',
+            'feedback.variability.high.desc': 'Rapid 2-4s velocity changes creating dynamic coastal or valley winds.',
+            'feedback.gust.none.title': 'No Gust (Base flow only)',
+            'feedback.gust.none.desc': 'Maintains gentle airflow without sudden gusts.',
+            'feedback.gust.low.title': 'Inflow every ~60-120s (1-2 min)',
+            'feedback.gust.low.desc': 'Rare gentle gusts suitable for sleep or quiet focus.',
+            'feedback.gust.mid.title': 'Inflow every ~30-50s (Peak ×1.5~2.0)',
+            'feedback.gust.mid.desc': 'Refreshing bursts every 30-50s relieving stuffiness.',
+            'feedback.gust.high.title': 'Inflow every ~15-25s (Peak up to ×2.5)',
+            'feedback.gust.high.desc': 'Frequent energetic gusts giving an invigorating hilltop sensation.',
             'fsm.override': 'Manual',
             'fsm.profileRun': 'Profile',
             'fsm.scheduleRun': 'Schedule',
-            'fsm.motionBlocked': 'Motion Blocked',
             'fsm.autoOffStopped': 'AutoOff',
             'fsm.timeInvalid': 'Time Invalid',
 
@@ -1303,7 +1360,13 @@ window.SNW = window.SNW || {};
             'reason.motionNoPresence': 'No presence',
             'reason.autoOffTimer': 'AutoOff timer',
             'reason.autoOffTime': 'AutoOff time',
-            'reason.autoOffTemp': 'AutoOff temp',
+
+            'reason.userStop': 'User stopped',
+            'reason.tempLowStop': 'Low temp safety stop',
+            'reason.diLowStop': 'Low DI stop',
+            'autoOff.di': 'DI threshold stop',
+
+
 
             // Wind Phase
             'phase.calm': 'Calm',
@@ -1374,14 +1437,7 @@ window.SNW = window.SNW || {};
             'settings.levelL2': 'Standard (Recommended)',
             'settings.levelL3': 'Advanced (Detailed Tuning)',
             'settings.levelL4': 'Expert (All Engineering Tools)',
-            'dashboard.tabControl': 'Control',
-            'dashboard.tabEnv': 'Environment',
-            'dashboard.tabPreset': 'Presets',
-            'dashboard.sensorTitle': 'Sensors Monitoring',
-            'dashboard.styleTitle': 'Wind Style',
-            'dashboard.styleHint': 'Waveform pattern modifier',
-            'dashboard.presetTitle': 'Nature Presets',
-            'dashboard.presetHint': '10 nature presets',
+
             'common.details': 'Details',
             'timer.quickPrompt': 'Minutes until fan auto stop? (Enter number)',
             'comfort.autoTitle': 'Smart Comfort Auto Mode',
@@ -1409,6 +1465,79 @@ window.SNW = window.SNW || {};
             'schedule.modeAdvanced': 'Advanced Schedule',
             'schedule.simpleSaved': 'Schedule has been saved.',
             'ai.inputPlaceholder': 'Ask AI to control wind or anything...',
+            // ═══════════ [Stage 5] 신규 키 (EN) ═══════════
+            'home.oneTouchStart': '⚡ Quick Start',
+            'home.scenario.sleep': '🌙 Sleep',
+            'home.scenario.office': '💼 Office',
+            'home.scenario.study': '📚 Study',
+            'home.scenario.rest': '🛋️ Rest',
+            'home.scenario.exercise': '🏃 Exercise',
+            'home.scenario.baby': '👶 Baby',
+            'home.scenario.pet': '🐾 Pet',
+            'home.scenario.autoFull': '✨ AI Smart Comfort',
+            'home.scenario.autoSelect': '🎯 Custom Auto',
+            'home.scenario.skipConfirm': '☑ Skip this confirmation next time',
+            'home.scenario.sleepMeta': '8h timer · Custom Auto',
+
+            'home.scenario.officeMeta': 'DI · PIR linked',
+            'home.scenario.studyMeta': 'Gentle · Focus style',
+            'home.scenario.restMeta': 'Balance · Natural',
+            'home.scenario.exerciseMeta': 'Strong · Gusty',
+            'home.scenario.babyMeta': '23°C stop · Ultra gentle',
+            'home.scenario.petMeta': 'PIR · Temp monitoring',
+            'home.scenario.autoFullMeta': '100% Autonomous',
+            'home.scenario.autoSelectMeta': 'Fixed base · Auto strength',
+            'session.autoFull': '✨ AI Smart Comfort',
+            'session.autoSelect': '🎯 Custom Auto',
+            'session.autoSelectSuffix': '(Custom Auto)',
+            'session.autoSelectPrompt': 'Select your preferred base',
+            'session.autoSelectPreset': 'Preset',
+            'session.autoSelectPlaylist': 'Playlist',
+            'session.autoSelectHint': '※ Base wind stays fixed; style and strength auto-adjust to weather',
+            'session.autoFullHint1': '· Real-time temp · humidity · DI sensing',
+            'session.autoFullHint2': '· Optimal preset switch every 5 minutes',
+            'session.autoFullHint3': '· Continuous comfort monitoring (auto-restart if hot)',
+            'session.autoFullHint4': '· Switch to manual on user interaction',
+            'fsm.envPaused': '⏸ Environment Paused',
+            'fsm.pauseReasonMotion': '👤 No presence',
+            'fsm.pauseReasonTempLow': '🌡️ Temp too low',
+            'fsm.pauseReasonDiLow': '☀️ DI too low',
+            'fsm.pauseResumeHint.temp': 'Current {cur}°C / Resume at {resume}°C',
+            'fsm.pauseResumeHint.di': 'Current DI {cur} / Resume at {resume}',
+            'fsm.pauseResumeHint.motion': 'Auto-resume on presence detection',
+            'rule.template.deepSleep': '🌙 Deep Sleep',
+            'rule.template.babySafe': '👶 Baby Safe',
+            'rule.template.officeFocus': '💼 Office Focus',
+            'rule.sectionPause': '⏸ Pause (Auto-resume)',
+            'rule.sectionStop': '⏹ Stop (User Confirm)',
+            'rule.sectionComfort': '✨ AI Smart Comfort',
+            'rule.pir.enabled': 'Pause when no presence',
+            'rule.tempLow.enabled': 'Low temperature',
+            'rule.tempLow.threshold': 'Threshold',
+            'rule.tempLow.modePause': 'Pause (Auto-resume)',
+            'rule.tempLow.modeStop': 'Stop (User Confirm required)',
+            'rule.tempLow.hysteresis': 'Resume threshold',
+            'rule.diLow.enabled': 'Low DI',
+            'rule.timer.enabled': 'Timer',
+            'rule.timer.suffix': 'min later stop',
+            'rule.offTime.enabled': 'Scheduled stop',
+            'rule.offTime.suffix': 'stop',
+            'rule.smartComfort.interval': 'Auto intervention',
+            'rule.smartComfort.alwaysOn': 'Always-on comfort (auto-restart if hot)',
+            'rule.tipModes': '⦿Pause = auto-resume / ○Stop = persist until user confirm',
+            'rule.tipBabySafe': 'Use Stop mode for baby room & sleep',
+            'rule.validate.saveDisabled': 'Check rule inputs',
+            'auto.rules.globalSection': '🌐 Global Default Rules',
+            'auto.rules.profileSection': '📋 Per-Profile Rules',
+            'auto.rules.scheduleSection': '📅 Per-Schedule Rules',
+            'auto.rules.inheritHint': 'Inherit profile rule',
+            'auto.rules.customHint': 'Custom',
+  
+            'monitor.timeline.running': '■ Running',
+            'monitor.timeline.paused': '■ Env. Paused',
+            'monitor.timeline.idle': '■ Idle',
+            'chart.yAxis.fixedHint': 'Y-axis fixed 0.0~8.0 m/s',
+
         }
 
     };
@@ -1424,6 +1553,33 @@ window.SNW = window.SNW || {};
             return nav.startsWith('ko') ? 'ko' : 'en';
         } catch { return 'ko'; }
     })();
+
+    const ALL_KEYS = new Set([...Object.keys(DICT.ko), ...Object.keys(DICT.en)]);
+
+    const SCENARIO_BY_PROFILE_NO = {
+        10: 'sleep',
+        20: 'office',
+        30: 'study',
+        40: 'rest',
+        50: 'exercise',
+        70: 'pet',
+        80: 'baby'
+    };
+    const DEFAULT_PROFILE_NAMES = new Set([
+        '수면모드', '집중모드', '휴식모드', '환기모드', '활동모드', '반려동물 케어', '아기/유아 케어'
+    ]);
+
+    function _pickLocalizedField(itemOrFallback) {
+        if (!itemOrFallback) return '';
+        if (typeof itemOrFallback === 'string') return itemOrFallback;
+        if (typeof itemOrFallback === 'object') {
+            if (currentLang === 'en') {
+                return itemOrFallback.nameEn || itemOrFallback.name || itemOrFallback.nameKo || '';
+            }
+            return itemOrFallback.nameKo || itemOrFallback.name || itemOrFallback.nameEn || '';
+        }
+        return '';
+    }
 
     SNW.I18n = {
         getLang() { return currentLang; },
@@ -1447,13 +1603,60 @@ window.SNW = window.SNW || {};
         },
 
         hasKey(key) {
-            return DICT.ko[key] != null || DICT.en[key] != null;
+            return ALL_KEYS.has(key);
+        },
+
+        presetName(code, itemOrFallback) {
+            const c = code || '';
+            const k = c ? 'preset.' + c : '';
+            if (k && this.hasKey(k)) return this.t(k);
+            return _pickLocalizedField(itemOrFallback) || c;
+        },
+
+        styleName(code, itemOrFallback) {
+            const c = code || '';
+            const k = c ? 'style.' + c : '';
+            if (k && this.hasKey(k)) return this.t(k);
+            return _pickLocalizedField(itemOrFallback) || c;
+        },
+
+        presetStyleName(presetCode, styleCode, presetObj, styleObj) {
+            const pFb = presetObj || (currentLang === 'en' ? 'Natural Wind' : '자연풍');
+            const sFb = styleObj || (currentLang === 'en' ? 'Standard' : '표준');
+            return `${this.presetName(presetCode, pFb)} · ${this.styleName(styleCode, sFb)}`;
+        },
+
+        profileName(profileOrSession) {
+            if (!profileOrSession) return '';
+            const pNo = Number(profileOrSession.profileNo || 0);
+            const rawName = _pickLocalizedField({
+                name: profileOrSession.profileName || profileOrSession.name || '',
+                nameKo: profileOrSession.nameKo || '',
+                nameEn: profileOrSession.nameEn || ''
+            });
+            const scenarioKey = SCENARIO_BY_PROFILE_NO[pNo];
+            if (scenarioKey && (!rawName || DEFAULT_PROFILE_NAMES.has(rawName))) {
+                const full = this.t('home.scenario.' + scenarioKey);
+                const parts = full.split(' ');
+                const base = (parts.length > 1 ? parts.slice(1).join(' ') : full).trim();
+                return currentLang === 'ko' ? `${base}모드` : `${base} Mode`;
+            }
+            if (rawName) return rawName;
+            if (pNo) return currentLang === 'ko' ? `프로필 #${pNo}` : `Profile #${pNo}`;
+            return '';
         },
 
         applyTo(root) {
-            (root || document).querySelectorAll('[data-i18n]').forEach(el => {
+            const r = root || document;
+            r.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (key && this.hasKey(key)) el.textContent = this.t(key);
+            });
+            ['placeholder', 'title', 'aria-label', 'alt'].forEach(attr => {
+                r.querySelectorAll(`[data-i18n-${attr}]`).forEach(el => {
+                    const key = el.getAttribute(`data-i18n-${attr}`);
+                    if (key && this.hasKey(key)) el.setAttribute(attr, this.t(key));
+                });
             });
         },
     };

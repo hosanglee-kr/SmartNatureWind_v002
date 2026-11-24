@@ -81,6 +81,7 @@ constexpr const char* HTTP_API_SESSION_START        = HTTP_API_BASE "/session/st
 constexpr const char* HTTP_API_SESSION_PAUSE        = HTTP_API_BASE "/session/pause";
 constexpr const char* HTTP_API_SESSION_RESUME       = HTTP_API_BASE "/session/resume";
 constexpr const char* HTTP_API_SESSION_STOP         = HTTP_API_BASE "/session/stop";
+constexpr const char* HTTP_API_SESSION_RULE         = HTTP_API_BASE "/session/rule";
 constexpr const char* HTTP_API_SESSION_CURRENT      = HTTP_API_BASE "/session/current";
 constexpr const char* HTTP_API_SESSION_SCH_OVERRIDE = HTTP_API_BASE "/session/schedule-override"; // [v0203 Stage 5]
 constexpr const char* HTTP_API_COMFORT              = HTTP_API_BASE "/comfort";                   // [v0203 Stage 6]

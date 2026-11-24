@@ -42,15 +42,30 @@ window.SNW = window.SNW || {};
                 // Ignore LS error
             }
 
-            // 세션 종료 감지 시 타이머 자동 해제
+            // 세션 종료 및 서버 하드웨어 타이머(triggerRt) 역동기화
             if (SNW.Store && typeof SNW.Store.watch === 'function') {
                 this._storeUnsub = SNW.Store.watch('control', (ctl) => {
-                    if (!this._active) return;
                     const sess = ctl && ctl.session;
-                    if (sess && (sess.state === 'COMPLETED' || sess.state === 'NONE' || !sess.active)) {
-                        this.cancel(false); // 세션이 이미 끝났으므로 조용히 해제
-                    }
-                });
+                        if (this._active && sess && (sess.state === 'COMPLETED' || sess.state === 'NONE' || !sess.active)) {
+                            this.cancel(false);
+                            return;
+                        }
+                        const tr = ctl && ctl.triggerRt;
+                        const uptimeMs = ctl && ctl.system && ctl.system.uptimeMs;
+                        if (tr && tr.timerArmed && tr.timerMinutes > 0 && uptimeMs > 0) {
+                            const totalMs = Number(tr.timerMinutes) * 60000;
+                            const pausedMs = Number(tr.pausedAccumMs || 0);
+                            const elapsedMs = Math.max(0, Number(uptimeMs) - Number(tr.timerStartMs || 0) - pausedMs);
+                            const remainMs = Math.max(0, totalMs - elapsedMs);
+                            if (remainMs > 0 && !this._active) {
+                                this._active = true;
+                                this._durationMin = Number(tr.timerMinutes);
+                                this._targetEndMs = Date.now() + remainMs;
+                                this._startInterval();
+                                this._notify();
+                            }
+                        }
+                    });
             }
         },
 
@@ -345,6 +360,10 @@ window.SNW = window.SNW || {};
                     ? sess.profileName
                     : (sess.typeName || '세션');
                 const escape = (s) => (SNW.DomUtil ? SNW.DomUtil.escape(s) : s);
+                const tr = st && st.control && st.control.triggerRt;
+                const offTimeLine = (tr && tr.offTimeEnabled && tr.offTimeMinutes >= 0)
+                    ? `<div style="font-size:0.75rem;color:var(--snw-warn,#d29922);margin-top:2px;">⏰ 예약 자동 종료: ${String(Math.floor(tr.offTimeMinutes / 60)).padStart(2, '0')}:${String(tr.offTimeMinutes % 60).padStart(2, '0')} 예정</div>`
+                    : '';
                 slot.innerHTML = `
                     <div style="background:var(--snw-surface,#1b2028);border:1px solid var(--snw-border,#2f3844);border-radius:8px;padding:12px;display:flex;align-items:center;justify-content:space-between;">
                         <div style="display:flex;align-items:center;gap:10px;">
@@ -356,6 +375,7 @@ window.SNW = window.SNW || {};
                                 <div style="font-size:0.8rem;color:var(--snw-text-dim,#8b949e);">
                                     ${escape(sess.typeName || 'PLAYLIST')} · ${t('timer.sessionActive')}
                                 </div>
+                                ${offTimeLine}
                             </div>
                         </div>
                         <span class="snw-badge snw-badge--success" style="font-size:0.75rem;">
@@ -369,10 +389,10 @@ window.SNW = window.SNW || {};
                             ⚠️ ${t('timer.noSession')}
                         </div>
                         <div style="display:flex;justify-content:center;gap:8px;">
-                            <button type="button" class="snw-btn snw-btn--sm snw-btn--secondary" onclick="SNW.Router.navigate('/automation/playlist')">
+                            <button type="button" class="snw-btn snw-btn--sm snw-btn--secondary" onclick="SNW.Router.navigate('/wind/playlist')">
                                 ${t('timer.gotoPlaylist')}
                             </button>
-                            <button type="button" class="snw-btn snw-btn--sm snw-btn--secondary" onclick="SNW.Router.navigate('/dashboard')">
+                            <button type="button" class="snw-btn snw-btn--sm snw-btn--secondary" onclick="SNW.Router.navigate('/home')">
                                 ${t('timer.gotoHome')}
                             </button>
                         </div>

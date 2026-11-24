@@ -20,6 +20,7 @@ SNW.Page = SNW.Page || {};
 		}
 
 		async mount() {
+			document.body.classList.add('is-ai-page');
 			this.el.innerHTML = '';
 			this.el.appendChild(SNW.Tpl.ai());
 			SNW.I18n.applyTo(this.el);
@@ -136,6 +137,7 @@ SNW.Page = SNW.Page || {};
 		}
 
 		unmount() {
+			document.body.classList.remove('is-ai-page');
 			this._active = false;
 			if (SNW.AIVoice) {
 				SNW.AIVoice.stopListening();
@@ -364,6 +366,7 @@ SNW.Page = SNW.Page || {};
 			if (!msg) return;
 			inp.value = '';
 
+			const prevHistory = this._history.slice();
 			this._appendMessage('user', msg, true);
 			this._appendMessage('assistant', SNW.I18n.t('ai.thinking'), false);
 
@@ -373,7 +376,7 @@ SNW.Page = SNW.Page || {};
 				let actions = [];
 
 				if (SNW.AIClient) {
-					const res = await SNW.AIClient.send(msg, this._history, {
+					const res = await SNW.AIClient.send(msg, prevHistory, {
 						lang: (SNW.I18n && SNW.I18n.getLang ? SNW.I18n.getLang() : 'ko'),
 						voiceMode: isVoiceMode
 					});

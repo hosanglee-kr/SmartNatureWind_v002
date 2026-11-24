@@ -24,7 +24,7 @@
  * [Batch E] Dead Code 정리
  *  - <WiFiMulti.h> include 제거 (WF10 경유 transitive 포함)
  *  - commented factory reset 블록 제거
- *  - "=== Boot (v002) ===" → v0201 표기
+ *  - "=== Boot (v002) ===" → v0203 표기
  * ------------------------------------------------------
  */
 
@@ -46,8 +46,8 @@
 #include "W10_Web_0203.h"
 #include "WF10_WiFiMgr_0203.h"
 #include "TM10_TimeMg_0203.h"
-#include "CT10_Monitor_0203.h"   // [MON-A] Phase 1
-#include "A20_Const_Const_0203.h"   // [C] G_A00_WDT_TIMEOUT_SEC, G_A00_LOOP_DELAY_MS
+#include "CT10_Monitor_0203.h"    // [MON-A] Phase 1
+#include "A20_Const_Const_0203.h" // [C] G_A00_WDT_TIMEOUT_SEC, G_A00_LOOP_DELAY_MS
 
 // ======================================================
 // 전역 변수 정의 (헤더 extern에 대응)
@@ -126,10 +126,9 @@ void A00_init() {
 
         // 할당조차 실패 (심각한 OOM) → recovery AP만 기동
         if (!g_A20_config_root.system || !g_A20_config_root.wifi) {
-            CL_D10_Logger::log(EN_L10_LOG_ERROR,
-                               "[A00] Recovery defaults allocation failed. Booting recovery AP only.");
+            CL_D10_Logger::log(EN_L10_LOG_ERROR, "[A00] Recovery defaults allocation failed. Booting recovery AP only.");
             WiFi.mode(WIFI_AP);
-            WiFi.softAP("NatureWind_Recovery", "2540");
+            WiFi.softAP(A20_Const::G_WIFI_RECOVERY_AP_SSID, A20_Const::G_WIFI_RECOVERY_AP_PASS);
             return;
         }
 
@@ -139,7 +138,7 @@ void A00_init() {
     }
 
     const ST_A20_WifiConfig_t&   v_wifi = *g_A20_config_root.wifi;
-    const ST_A20_SystemConfig_t& v_sys  = g_A20_config_root.system ? *g_A20_config_root.system : ST_A20_SystemConfig_t{};
+    const ST_A20_SystemConfig_t& v_sys = g_A20_config_root.system ? *g_A20_config_root.system : ST_A20_SystemConfig_t{};
 
     // ------------------------------------------------------
     // [B-13] LED 파라미터 유효성 검증
@@ -148,10 +147,8 @@ void A00_init() {
     //  - 이후: 유효 범위 검증 + 안전한 기본값
     // ------------------------------------------------------
     int16_t v_ledPin = v_sys.hw.led.pin;
-    if (v_ledPin < 0 || v_ledPin > 48) {   // ESP32-S3 GPIO 유효 범위: 0~48
-        CL_D10_Logger::log(EN_L10_LOG_WARN,
-                           "[A00] Invalid LED pin=%d (range 0~48). Using default 48.",
-                           (int)v_ledPin);
+    if (v_ledPin < 0 || v_ledPin > 48) { // ESP32-S3 GPIO 유효 범위: 0~48
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A00] Invalid LED pin=%d (range 0~48). Using default 48.", (int)v_ledPin);
         v_ledPin = 48;
     }
 
@@ -160,9 +157,7 @@ void A00_init() {
         CL_D10_Logger::log(EN_L10_LOG_WARN, "[A00] LED numPixels=0, forcing to 1.");
         v_ledNum = 1;
     } else if (v_ledNum > 16) {
-        CL_D10_Logger::log(EN_L10_LOG_WARN,
-                           "[A00] LED numPixels=%u too large, clamping to 16.",
-                           (unsigned)v_ledNum);
+        CL_D10_Logger::log(EN_L10_LOG_WARN, "[A00] LED numPixels=%u too large, clamping to 16.", (unsigned)v_ledNum);
         v_ledNum = 16;
     }
 
@@ -187,7 +182,7 @@ void A00_init() {
     // ------------------------------------------------------
     // 6. PWM + Control + Simulation
     // ------------------------------------------------------
-    g_P10_pwm.P10_begin(*g_A20_config_root.system);
+    g_P10_pwm.begin(*g_A20_config_root.system);
 
     CL_CT10_ControlManager::begin();
 
@@ -229,11 +224,9 @@ void A00_init() {
     //  - [C] esp_task_wdt_init(10) → A20_Const::G_A00_WDT_TIMEOUT_SEC
     // ------------------------------------------------------
 #if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
-    esp_task_wdt_config_t twdt_config = {
-        .timeout_ms = A20_Const::G_A00_WDT_TIMEOUT_SEC * 1000,
-        .idle_core_mask = (1 << portNUM_PROCESSORS) - 1,
-        .trigger_panic = true
-    };
+    esp_task_wdt_config_t twdt_config = {.timeout_ms     = A20_Const::G_A00_WDT_TIMEOUT_SEC * 1000,
+                                         .idle_core_mask = (1 << portNUM_PROCESSORS) - 1,
+                                         .trigger_panic  = true};
     esp_task_wdt_init(&twdt_config);
 #else
     esp_task_wdt_init(A20_Const::G_A00_WDT_TIMEOUT_SEC, true);

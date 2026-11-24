@@ -3,7 +3,7 @@
 // =========================================================
 window.SNW = window.SNW || {};
 SNW.Page = SNW.Page || {};
-(function(SNW) {
+(function (SNW) {
     'use strict';
 
     SNW.Page.Monitor = class Monitor {
@@ -13,6 +13,7 @@ SNW.Page = SNW.Page || {};
             this._currentTab = 'live';
             this._unsubs = [];
             this._liveEq = null;
+            this._chartPage = null;
             this._retroRange = '24h';
         }
 
@@ -28,10 +29,14 @@ SNW.Page = SNW.Page || {};
 
         unmount() {
             this._active = false;
-            this._unsubs.forEach(fn => { try { fn(); } catch {} });
+            this._unsubs.forEach(fn => { try { fn(); } catch { } });
             this._unsubs = [];
             if (this._liveEq && typeof this._liveEq.stop === 'function') {
                 this._liveEq.stop();
+            }
+            if (this._chartPage && typeof this._chartPage.unmount === 'function') {
+                this._chartPage.unmount();
+                this._chartPage = null;
             }
         }
 
@@ -40,9 +45,11 @@ SNW.Page = SNW.Page || {};
                 <div class="snw-monitor">
                     <div class="snw-tabs">
                         <button type="button" class="snw-tab-btn is-active" data-tab="live">📊 실시간</button>
+                        <button type="button" class="snw-tab-btn" data-tab="chart">📈 물리 차트</button>
                         <button type="button" class="snw-tab-btn" data-tab="retro">🎬 히스토리</button>
                     </div>
                     <div data-tab-content="live"></div>
+                    <div data-tab-content="chart" style="display:none;"></div>
                     <div data-tab-content="retro" style="display:none;"></div>
                 </div>`;
 
@@ -59,8 +66,26 @@ SNW.Page = SNW.Page || {};
                 c.style.display = (c.getAttribute('data-tab-content') === tab) ? 'block' : 'none';
             });
 
-            if (tab === 'live')  this._renderLive();
+            if (tab !== 'chart' && this._chartPage && typeof this._chartPage.unmount === 'function') {
+                this._chartPage.unmount();
+                this._chartPage = null;
+            }
+            if (tab === 'live') this._renderLive();
+            if (tab === 'chart') this._renderChartTab();
             if (tab === 'retro') this._renderRetro();
+        }
+
+        async _renderChartTab() {
+            const slot = this.el.querySelector('[data-tab-content="chart"]');
+            if (!slot) return;
+            if (this._chartPage && typeof this._chartPage.unmount === 'function') {
+                this._chartPage.unmount();
+                this._chartPage = null;
+            }
+            if (SNW.Page && typeof SNW.Page.Chart === 'function') {
+                this._chartPage = new SNW.Page.Chart(slot);
+                await this._chartPage.mount();
+            }
         }
 
         // =========================================================
@@ -86,31 +111,47 @@ SNW.Page = SNW.Page || {};
             }
             const eqSlot = slot.querySelector('[data-slot="live-eq"]');
             if (eqSlot && SNW.UI && typeof SNW.UI.equalizer === 'function') {
-                this._liveEq = SNW.UI.equalizer(eqSlot, { bars: 40, fps: 30, maxWind: 11 });
+                this._liveEq = SNW.UI.equalizer(eqSlot, { bars: 40, bufferSize: 40, fps: 30, maxWind: 11 });
                 this._liveEq.start();
+                if (SNW.Api && typeof SNW.Api.getChartHistory === 'function') {
+                    SNW.Api.getChartHistory().then(hist => {
+                        if (!this._active || !this._liveEq || !hist || !Array.isArray(hist.chart)) return;
+                        const st = (SNW.Store && SNW.Store.get) ? SNW.Store.get() : {};
+                        if (!st.sim || !st.sim.active) return;
+                        hist.chart.slice(-40).forEach(pt => {
+                            this._liveEq.push(pt.wind != null ? pt.wind : 0);
+                        });
+                    }).catch(() => {});
+                }
             }
             this._onLiveUpdate();
         }
 
-        _onLiveUpdate() {
+        _onLiveUpdate(pushEq = true) {
             const storeData = (SNW.Store && typeof SNW.Store.get === 'function') ? SNW.Store.get() : {};
             const ctl = storeData.control;
             const sim = storeData.sim;
             const session = storeData.session;
 
-            if (this._liveEq && sim) {
+            if (pushEq && this._liveEq && sim) {
                 this._liveEq.push(sim.windSpeed || 0);
             }
 
             const infoEl = this.el.querySelector('[data-slot="live-info"]');
-            const typeName = session ? (session.typeName || (['NONE','PLAYLIST','PRESET','FIXED'][Number(session.type)] || String(session.type || 'NONE'))) : 'NONE';
+            const typeName = session ? (session.typeName || (['NONE', 'PLAYLIST', 'PRESET', 'FIXED'][Number(session.type)] || String(session.type || 'NONE'))) : 'NONE';
             const isActive = Boolean(session && typeName !== 'NONE' && session.active !== false && session.state !== 'COMPLETED');
 
             if (infoEl && isActive) {
                 let title = '';
-                if (typeName === 'PLAYLIST') title = session.profileName || session.name || `프로필 #${session.profileNo || session.profileId || ''}`;
-                else if (typeName === 'PRESET') title = `${session.presetCode || ''} · ${session.styleCode || ''}`;
-                else {
+                if (typeName === 'PLAYLIST') {
+                    title = (SNW.I18n && SNW.I18n.profileName)
+                        ? SNW.I18n.profileName(session)
+                        : (session.profileName || session.name || `프로필 #${session.profileNo || session.profileId || ''}`);
+                } else if (typeName === 'PRESET') {
+                    title = (SNW.I18n && SNW.I18n.presetStyleName)
+                        ? SNW.I18n.presetStyleName(session.presetCode, session.styleCode)
+                        : `${session.presetCode || ''} · ${session.styleCode || ''}`;
+                } else {
                     const spd = (session.percent != null) ? session.percent : (session.fixedSpeed != null ? session.fixedSpeed : (session.speed || 0));
                     title = `일반 선풍기 ${Math.round(spd)}%`;
                 }
@@ -153,7 +194,7 @@ SNW.Page = SNW.Page || {};
         async _renderRetro() {
             const slot = this.el.querySelector('[data-tab-content="retro"]');
             if (!slot) return;
-            
+
             slot.innerHTML = `
                 <div class="snw-card">
                     <h2>🎬 세션 히스토리</h2>
@@ -167,15 +208,15 @@ SNW.Page = SNW.Page || {};
                     </div>
                     <div data-slot="retro-content"></div>
                 </div>`;
-            
+
             const refreshBtn = slot.querySelector('[data-action="refresh"]');
             if (refreshBtn) refreshBtn.onclick = () => this._loadRetro();
             const rangeSelect = slot.querySelector('[data-slot="retro-range"]');
             if (rangeSelect) rangeSelect.onchange = () => this._loadRetro();
-            
+
             await this._loadRetro();
         }
-        
+
         async _loadRetro() {
             const slot = this.el.querySelector('[data-slot="retro-content"]');
             if (!slot) return;
@@ -188,22 +229,28 @@ SNW.Page = SNW.Page || {};
             const since = now - (durMap[range] || 86400);
 
             slot.innerHTML = '<div class="snw-loading" style="min-height:150px;">로딩 중...</div>';
-            
+
             try {
                 const getTlFn = (SNW.Api && (SNW.Api.getTimeline || SNW.Api.getMonitorTimeline)) ?
                     (SNW.Api.getTimeline || SNW.Api.getMonitorTimeline).bind(SNW.Api) : () => Promise.resolve({ events: [] });
                 const getSumFn = (SNW.Api && SNW.Api.getSessionSummary) ?
                     SNW.Api.getSessionSummary.bind(SNW.Api) : () => Promise.resolve(null);
 
-                const [timeline, summary] = await Promise.all([
+                const getStateFn = (SNW.Api && SNW.Api.getMonitor)
+                    ? SNW.Api.getMonitor.bind(SNW.Api)
+                    : () => Promise.resolve({ data: [] });
+
+                const [timeline, summary, stateHist] = await Promise.all([
                     getTlFn(since).catch(() => ({ events: [] })),
                     getSumFn(since, now).catch(() => null),
+                    getStateFn('state', range).catch(() => ({ data: [] })),
                 ]);
 
                 if (!this._active) return;
 
                 slot.innerHTML = '';
                 slot.appendChild(this._renderSummary(summary));
+                slot.appendChild(this._renderStateBand(stateHist, range, since, now));
                 slot.appendChild(this._renderTimeline(timeline, range));
                 slot.appendChild(this._renderEventList(timeline, range));
             } catch (e) {
@@ -227,7 +274,7 @@ SNW.Page = SNW.Page || {};
 
             if (!stats) {
                 const starts = Number(summary.sessionStarts || 0);
-                const total  = Number(summary.totalEvents   || 0);
+                const total = Number(summary.totalEvents || 0);
 
                 if (total === 0 && starts === 0) {
                     div.innerHTML = '<div class="snw-empty">세션 데이터 없음</div>';
@@ -235,13 +282,13 @@ SNW.Page = SNW.Page || {};
                 }
 
                 stats = {
-                    totalSessions:  starts,
+                    totalSessions: starts,
                     totalActiveSec: 0,
-                    avgWindSpeed:   0,
-                    maxWindSpeed:   0,
-                    avgTempC:       0,
-                    presenceRatio:  0,
-                    _legacy:        true,
+                    avgWindSpeed: 0,
+                    maxWindSpeed: 0,
+                    avgTempC: 0,
+                    presenceRatio: 0,
+                    _legacy: true,
                 };
             }
 
@@ -249,31 +296,26 @@ SNW.Page = SNW.Page || {};
                 <div class="snw-retro-summary__title">세션 요약</div>
                 <div class="snw-retro-summary__grid">
                     <div><span>총 세션</span><b>${stats.totalSessions || 0}회</b></div>
-                    <div><span>총 가동</span><b>${
-                        stats._legacy
-                            ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
-                            : this._fmtDuration(stats.totalActiveSec || 0)
-                    }</b></div>
-                    <div><span>평균 풍속</span><b>${
-                        stats._legacy
-                            ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
-                            : (stats.avgWindSpeed || 0).toFixed(1) + ' m/s'
-                    }</b></div>
-                    <div><span>최고 풍속</span><b>${
-                        stats._legacy
-                            ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
-                            : (stats.maxWindSpeed || 0).toFixed(1) + ' m/s'
-                    }</b></div>
-                    <div><span>평균 온도</span><b>${
-                        stats._legacy
-                            ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
-                            : (stats.avgTempC || 0).toFixed(1) + '°C'
-                    }</b></div>
-                    <div><span>재실 비율</span><b>${
-                        stats._legacy
-                            ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
-                            : Math.round((stats.presenceRatio || 0) * 100) + '%'
-                    }</b></div>
+                    <div><span>총 가동</span><b>${stats._legacy
+                    ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
+                    : this._fmtDuration(stats.totalActiveSec || 0)
+                }</b></div>
+                    <div><span>평균 풍속</span><b>${stats._legacy
+                    ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
+                    : (stats.avgWindSpeed || 0).toFixed(1) + ' m/s'
+                }</b></div>
+                    <div><span>최고 풍속</span><b>${stats._legacy
+                    ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
+                    : (stats.maxWindSpeed || 0).toFixed(1) + ' m/s'
+                }</b></div>
+                    <div><span>평균 온도</span><b>${stats._legacy
+                    ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
+                    : (stats.avgTempC || 0).toFixed(1) + '°C'
+                }</b></div>
+                    <div><span>재실 비율</span><b>${stats._legacy
+                    ? `<span style="color:var(--snw-text-dim);font-size:11px;">N/A</span>`
+                    : Math.round((stats.presenceRatio || 0) * 100) + '%'
+                }</b></div>
                 </div>
                 ${stats._legacy
                     ? `<div style="font-size:11px;color:var(--snw-text-dim);margin-top:8px;">
@@ -287,6 +329,57 @@ SNW.Page = SNW.Page || {};
         // ======================================================
         // 타임라인: 마커 겹침 방지 (엇갈림 배치) 적용
         // ======================================================
+        _stateLabel(stCode) {
+            const c = Number(stCode);
+            if (c === 2 || c === 3 || c === 4) return '가동';
+            if (c === 7) return '환경 일시정지';
+            return '대기/정지';
+        }
+
+        _renderStateBand(stateHist, range, since, now) {
+            const card = document.createElement('div');
+            card.className = 'snw-card snw-state-band';
+            const rows = (stateHist && Array.isArray(stateHist.data)) ? stateHist.data : [];
+            const span = Math.max(1, (now || Math.floor(Date.now() / 1000)) - (since || 0));
+
+            const segHtml = rows.map((pt, i) => {
+                const t0 = Math.max(since, Number(pt.t || since));
+                const t1 = (i + 1 < rows.length) ? Math.min(now, Number(rows[i + 1].t || now)) : now;
+                if (t1 <= t0) return '';
+                const leftPct = ((t0 - since) / span) * 100;
+                const widthPct = Math.max(0.5, ((t1 - t0) / span) * 100);
+                const code = Number(pt.new ?? pt.state ?? 0);
+                const cls = (code === 2 || code === 3 || code === 4)
+                    ? 'running'
+                    : (code === 7 ? 'paused' : 'idle');
+                const tsLabel = new Date(t0 * 1000).toTimeString().slice(0, 5);
+                return `<div class="snw-state-band__seg snw-state-band__seg--${cls}" style="left:${leftPct.toFixed(2)}%;width:${widthPct.toFixed(2)}%;" title="${tsLabel} · ${this._stateLabel(code)}"></div>`;
+            }).join('');
+
+            const startStr = new Date(since * 1000).toTimeString().slice(0, 5);
+            const midStr = new Date(((since + now) / 2) * 1000).toTimeString().slice(0, 5);
+            const endStr = new Date(now * 1000).toTimeString().slice(0, 5);
+
+            card.innerHTML = `
+                <h3 style="margin:0 0 6px;font-size:13px;">상태 밴드 (${range})</h3>
+                <div class="snw-state-band__track">${segHtml || '<div class="snw-state-band__seg snw-state-band__seg--idle" style="left:0;width:100%;"></div>'}</div>
+                <div class="snw-state-band__axis"><span>${startStr}</span><span>${midStr}</span><span>${endStr}</span></div>
+                <div data-slot="band-caption" style="font-size:11px;color:var(--snw-primary,#4a9eff);text-align:center;min-height:16px;margin-top:6px;">구간을 탭/클릭하면 상세 시각과 상태를 확인할 수 있습니다.</div>
+                <div class="snw-state-band__legend">
+                    <span class="snw-state-band__legend-item"><span class="snw-state-band__dot snw-state-band__dot--running"></span>가동</span>
+                    <span class="snw-state-band__legend-item"><span class="snw-state-band__dot snw-state-band__dot--paused"></span>환경 일시정지</span>
+                    <span class="snw-state-band__legend-item"><span class="snw-state-band__dot snw-state-band__dot--idle"></span>대기/정지</span>
+                </div>
+            `;
+            const capEl = card.querySelector('[data-slot="band-caption"]');
+            card.querySelectorAll('.snw-state-band__seg').forEach(seg => {
+                seg.addEventListener('click', () => {
+                    if (capEl && seg.title) capEl.textContent = seg.title;
+                });
+            });
+            return card;
+        }
+
         _renderTimeline(timeline, range = '24h') {
             const div = document.createElement('div');
             div.className = 'snw-retro-timeline';
@@ -298,11 +391,11 @@ SNW.Page = SNW.Page || {};
 
             const events = timeline.events;
             const fromTs = (timeline.from != null) ? timeline.from : (events[0]?.t ?? 0);
-            const toTs   = (timeline.to != null) ? timeline.to : (events[events.length - 1]?.t ?? Math.floor(Date.now() / 1000));
+            const toTs = (timeline.to != null) ? timeline.to : (events[events.length - 1]?.t ?? Math.floor(Date.now() / 1000));
 
             const normalized = { ...timeline, from: fromTs, to: toTs, events };
             const fromLabel = this._fmtAxisTime(fromTs, range);
-            const toLabel   = this._fmtAxisTime(toTs, range);
+            const toLabel = this._fmtAxisTime(toTs, range);
 
             let lastPos = -10;
             let lane = 0;
@@ -310,7 +403,7 @@ SNW.Page = SNW.Page || {};
             const markersHtml = events.map(e => {
                 const rawPos = ((e.t - fromTs) / Math.max(1, toTs - fromTs)) * 100;
                 const pos = Math.min(98, Math.max(2, rawPos));
-                
+
                 // 이전 마커와 5% 이내로 가까우면 위/아래 위치 교차
                 if (pos - lastPos < 5) {
                     lane = lane === 0 ? 1 : 0;
@@ -372,15 +465,14 @@ SNW.Page = SNW.Page || {};
                 ${events.map(e => `
                     <div class="snw-retro-event-row">
                         <span class="snw-retro-event-row__time">${this._fmtAxisTime(e.t, range)}</span>
-                        <span class="snw-retro-event-row__icon">${
-                            2 === e.eventType ? '▶' :
-                            3 === e.eventType ? '⏹' :
-                            1 === e.eventType ? '➡️' :
+                        <span class="snw-retro-event-row__icon">${2 === e.eventType ? '▶' :
+                    3 === e.eventType ? '⏹' :
+                        1 === e.eventType ? '➡️' :
                             4 === e.eventType ? '✋' :
-                            5 === e.eventType ? '🌙' :
-                            6 === e.eventType ? '⏸' :
-                            7 === e.eventType ? '▶' : '•'
-                        }</span>
+                                5 === e.eventType ? '🌙' :
+                                    6 === e.eventType ? '⏸' :
+                                        7 === e.eventType ? '▶' : '•'
+                }</span>
                         <span class="snw-retro-event-row__label">${SNW.DomUtil.escape(e.label || '')}</span>
                     </div>
                 `).join('')}
@@ -392,11 +484,21 @@ SNW.Page = SNW.Page || {};
         // 유틸리티
         // =========================================================
         _bindStore() {
-            if (SNW.Store && typeof SNW.Store.subscribe === 'function') {
+            if (SNW.Store && typeof SNW.Store.watch === 'function') {
                 this._unsubs.push(
-                    SNW.Store.subscribe(() => {
+                    SNW.Store.watch('sim', () => {
                         if (this._active && this._currentTab === 'live') {
-                            this._onLiveUpdate();
+                            this._onLiveUpdate(true);
+                        }
+                    }),
+                    SNW.Store.watch('session', () => {
+                        if (this._active && this._currentTab === 'live') {
+                            this._onLiveUpdate(false);
+                        }
+                    }),
+                    SNW.Store.watch('control', () => {
+                        if (this._active && this._currentTab === 'live') {
+                            this._onLiveUpdate(false);
                         }
                     })
                 );
@@ -433,15 +535,8 @@ SNW.Page = SNW.Page || {};
 
         async _loadLiveData() {
             try {
-                if (SNW.Api && typeof SNW.Api.getState === 'function') {
-                    const st = await SNW.Api.getState();
-                    if (st && SNW.Store && typeof SNW.Store.set === 'function') {
-                        SNW.Store.set({
-                            control: st.control,
-                            sim: st.sim,
-                            session: st.control?.session,
-                        });
-                    }
+                if (SNW.StoreBridge && typeof SNW.StoreBridge.refreshNow === 'function') {
+                    await SNW.StoreBridge.refreshNow();
                 }
             } catch (e) {
                 if (SNW.LogUtil && typeof SNW.LogUtil.warn === 'function') {

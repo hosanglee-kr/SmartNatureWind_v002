@@ -1,4 +1,4 @@
-# TEST_PLAN_0203.md — 회귀 테스트 인덱스 (v4.3)
+# TEST_PLAN_0203.md — 회귀 테스트 인덱스 (v4.4)
 
 > **검증 대상**: Smart Nature Wind v0203 펌웨어 + v0203 SPA 프론트엔드
 > **기준선**: Batch A~F + Phase 0~7 + Batch G/H/I + Stage 8 AI/Live + Stage 9 UI/UX
@@ -358,6 +358,14 @@ git push origin v0203-release-2026-10-26
 
 | 날짜 | 버전 | 변경 내용 | 작성자 |
 |---|---|---|---|
+| **2026-11-22** | **v4.11** | **실시간 WS 풍속/차트 스트리밍·`reduced-motion` EQ·모니터 3탭 실기기 검증 반영**: `/ws/state`(4.5s 7프레임)·`/ws/chart`(4.5s 4프레임) 송신, `prefers-reduced-motion: reduce` EQ 누적 렌더, `body.snw-night-mode` 해제, `#/monitor` `📈 물리 차트` 탭 및 `check_i18n.py --strict` (`ko=602/en=602`) 실기기 검증 완료 반영 | Antigravity AI |
+| **2026-11-21** | **v4.10** | **FE 다국어·온보딩·Now Playing 즉시 동기화 실기 검증 반영**: 온보딩 4단계 완주/취소, 한/영 전환 시 프리셋·스타일·플레이리스트·Now Playing Bar·환경 추천 표시, 플레이리스트 재생 직후 즉시 동기화 검증 완료 반영 | Antigravity AI |
+| **2026-11-21** | **v4.9** | **AI 프록시 비동기 워커 검증 기준 반영 (0203_015)**: `TEST_PLAN_L9_L11_0203.md` T-114 `POST 202` + `GET ?jobId=` 폴링 및 `async_tcp` 무블로킹(`/state < 50ms`) 기준 반영 | Antigravity AI |
+| **2026-11-20** | **v4.8** | **NTP 기본 서버(`kr.pool.ntp.org`)·정적 캐시(`86400s`) 검증 기준 현행화**: `TEST_PLAN_L6_L8_0203.md` T-94 기대값 `"kr.pool.ntp.org"` 갱신 및 `max-age=86400` 기준 반영 | Antigravity AI |
+| **2026-11-18** | **v4.7** | **FE/오프라인 AI·NowPlaying·AUTO_SELECT 보완 검증 기준 반영 (0203_014_20/21)**: Now Playing Bar 자동 초기화 및 시나리오/모드명 일치, `#/ai` 모바일 레이아웃·`.snw-ai-fab` 비노출, 오프라인 AI 키워드 폴백(타이머 우선), `AUTO_SELECT` 매회 base 모달·`PLAYLIST` 규칙 보존, `check_i18n.py --strict` (`ko=601/en=601`) 검증 반영 | Antigravity AI |
+| **2026-11-18** | **v4.6** | **Stage 12~13 웹 API 보안·안정화 검증 기준 반영 (0203_014_19)**: 정적 MIME(`nosniff`+`endsWith`)·missing `404`·`Cache-Control`, `requireApiKey` 401/`W10_USE_API_KEY`·WS 핸드셰이크, 4KB+ TCP 단편화 JSON POST, 빈 body `400`(`cost-reset` `200`/`control/mode` form), `1MB` 초과 `413`, 동시 업로드/OTA `429` 검증 항목 현행화 | Antigravity AI |
+| **2026-11-17** | **v4.5** | **FE Core·Offline 정비 및 20종 CSS 분리 검증 결과 반영 (0203_014_18_02)**: `e2e_ui_browser_check_0203.cjs` 24/24 PASS, Core 스모크 10/10(`?prod` 포함) 및 `check_i18n.py --strict` (`ko=597/en=597`) 통과 반영 | Antigravity AI |
+| **2026-11-14** | **v4.4** | **Phase 2 — L12 회귀 (T-158~T-168)**: `ENV_PAUSED` 진입/해제, `TempLow`/`DiLow` PAUSE/STOP 이원화, `AUTO_FULL`/`AUTO_SELECT` 세션, AUTO 중 사용자 개입, PIR 시작 유예(T-167), `PATCH /session/rule`(T-168) 11건 신규 (`TEST_PLAN_L9_L11_0203.md` §3.8, `test/e2e_phase2.py`) | Antigravity AI |
 | **2026-11-10** | **v4.3** | **웹 UI/UX 인터랙션 고도화 검증 절차 반영 (T-156, b3d06c2)**: L11 계층에 T-156(모니터 히스토리 지그재그 타임라인/시간축, Wind Studio 하단 분리 액션바 및 AI FAB 자동 은닉, AI 어시스턴트 세그먼트/스마트 입력창 검증) 반영 | Antigravity AI |
 | **2026-11-09** | **v4.2** | **Stage 10.1 결함 패치 및 하드웨어 백엔드 타이머 검증 항목 반영 (0203_013_20_02)**: L11 계층 T-154-FE(Comfort 5상태 매트릭스) 강화 및 T-155(하드웨어 타이머 브라우저 종료 후 단독 만료/재기동 차단 E2E) 추가 | Antigravity AI |
 | **2026-11-09** | **v4.1** | **Stage 10 IA 재설계 및 Comfort 자동 모드 (0203_013)**: L9~L11 레이어에 T-153(Dashboard 3탭), T-154(Comfort 자동모드 백엔드), T-154-FE(Comfort UI 토글/배지) 반영 | Antigravity AI |

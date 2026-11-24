@@ -1006,7 +1006,7 @@ getEventListeners(overlay).click?.length; // 기대: 1 (누적 없음)
 **검증 절차**:
 ```bash
 # 1. 현재 서버 확인
-curl -s http://$IP/api/v001/state | jq .time.activeServer # 기대: "pool.ntp.org"
+curl -s http://$IP/api/v001/state | jq .time.activeServer # 기대: "kr.pool.ntp.org"
 # 2. NTP 서버 변경
 curl -X PATCH http://$IP/api/v001/system -H "X-API-Key: $KEY" -d '{"timeCfg":{"ntpServer":"time.google.com"}}'
 # 3. 5초 후 재조회

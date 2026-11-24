@@ -55,15 +55,19 @@ window.SNW = window.SNW || {};
                 this._onStateChange({ busy: true });
                 let replyText = '(응답 없음)';
                 let toolCalls = [];
-
-                if (SNW.Api && typeof SNW.Api.postAI === 'function') {
-                    const res = await SNW.Api.postAI({ prompt: msg, mode: this._mode });
-                    if (res && res.reply) replyText = res.reply;
-                    if (res && res.toolCalls) toolCalls = res.toolCalls;
+                
+                // [147c.ai.chat.core.js] AIChatCore.send() 내부 API 호출 교체 (라인 56~62 부근)
+                if (SNW.AIClient && typeof SNW.AIClient.send === 'function') {
+                    const res = await SNW.AIClient.send(msg, this._history.slice(0, -1), {
+                        lang: (SNW.I18n && SNW.I18n.getLang ? SNW.I18n.getLang() : 'ko'),
+                        voiceMode: this._mode === 'live'
+                    });
+                    if (res && res.text) replyText = res.text;
+                    if (res && res.actions) toolCalls = res.actions;
                 } else {
                     replyText = 'AI 클라이언트를 초기화할 수 없습니다.';
                 }
-                
+
                 const modelEntry = {
                     role: 'model',
                     text: replyText,

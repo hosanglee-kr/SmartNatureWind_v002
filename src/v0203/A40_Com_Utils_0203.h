@@ -165,9 +165,10 @@ static inline JsonObjectConst Json_pickRootObject(const JsonDocument& p_doc, con
     return v.isNull() ? p_doc.as<JsonObjectConst>() : v;
 }
 
-static inline JsonObject Json_ensureObject(JsonVariant p_v) {
-    if (p_v.is<JsonObject>()) return p_v.as<JsonObject>();
-    return p_v.to<JsonObject>();
+template <typename T>
+static inline JsonObject Json_ensureObject(T&& p_v) {
+    if (p_v.template is<JsonObject>()) return p_v.template as<JsonObject>();
+    return p_v.template to<JsonObject>();
 }
 
 static inline bool Json_copyStr(JsonObjectConst p_obj,
@@ -262,20 +263,6 @@ static inline void Json_removeKey(JsonDocument& p_doc, const char* p_key) {
     JsonObject v_root = p_doc.as<JsonObject>();
     if (v_root.isNull()) return;
     v_root.remove(p_key);
-}
-
-static inline void Json_writeAutoOff(JsonObject p_ao, const ST_A20_AutoOff_t& p_src) {
-    p_ao["timer"]["enabled"]   = p_src.timer.enabled;
-    p_ao["timer"]["minutes"]   = p_src.timer.minutes;
-    p_ao["offTime"]["enabled"] = p_src.offTime.enabled;
-    p_ao["offTime"]["time"]    = p_src.offTime.time;
-    p_ao["offTemp"]["enabled"] = p_src.offTemp.enabled;
-    p_ao["offTemp"]["temp"]    = p_src.offTemp.temp;
-}
-
-static inline void Json_writeMotion(JsonObject p_root, const ST_A20_Motion_t& p_m) {
-    p_root["motion"]["pir"]["enabled"] = p_m.pir.enabled;
-    p_root["motion"]["pir"]["holdSec"] = p_m.pir.holdSec;
 }
 
 template <typename T>

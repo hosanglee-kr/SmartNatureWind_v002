@@ -6,6 +6,10 @@ description: "v0203 웹 프론트엔드 CSS 규칙"
 
 # 프론트엔드 CSS 규칙 (v0203)
 
+## ⚠️ 번들 산출물 직접 편집 금지 (필수)
+- `common_base_0203.css`, `common_pages_0203.css`는 `pio_gzip_0203.py`가 생성하는 **번들 결과물**이므로 **절대 직접 수정하지 않는다.**
+- 반드시 `src/v0203/data_v0203_src/html_v0203/css/*.css` 원본 모듈 파일을 수정한 뒤 `pio_gzip_0203.py`(또는 `uploadfs`)로 번들링한다.
+
 ## Z-index 계층 (ADR-4 + 0203_012)
 `header(50) < nowplaying(95) < ai-fab(990) < bottom-nav(1000) < sidebar-overlay(1040) < sidebar(1050) < modal(1100) < toast(1200)`
 

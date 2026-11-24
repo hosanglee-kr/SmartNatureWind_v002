@@ -13,7 +13,7 @@
 | MCU | ESP32-S3 Zero (기본, 4MB Flash / 2MB PSRAM), ESP32-C3 Zero (4MB, No PSRAM), ESP32-S3-N16R8 |
 | 빌드 | PlatformIO + Arduino-ESP32 (`-std=gnu++17`), default env: `esp32-s3-zero`, **`-j 12` 필수** |
 | 파일시스템 | LittleFS (`./src/v0203/data_v0203`) |
-| 에셋 파이프라인 | `pio_gzip_0203.py` (54 JS + 18 CSS 번들 + Gzip L9) |
+| 에셋 파이프라인 | `pio_gzip_0203.py` (54 JS + 20 CSS 번들 + Gzip L9) |
 | 활성 버전 | **v0203** (FW_Ver_2.0.3) / C++·에셋 모두 `_0203` 접미사 |
 
 ---
@@ -36,7 +36,7 @@
 | **AUDIT_LOG_0203.md** | **감사 이력** | §1~§11 | [AUDIT_LOG](src/v0203/contract_doc_0203/AUDIT_LOG_0203.md) |
 | **AGENT_OPERATIONS_0203.md** | **운영 표준** | §1~§5 | [OPS](src/v0203/contract_doc_0203/AGENT_OPERATIONS_0203.md) |
 | README_0203.md | CBD 워크플로/커밋 도구 | §4, §5 | [README §4](src/v0203/contract_doc_0203/README_0203.md) |
-| **UserManual_0203_004.md** | **개발 시 참조하지 않음** (사용자 문서) | — | — |
+| **UserManual_0203_*.md** | **개발 시 참조하지 않음** (사용자 문서) | — | — |
 
 ---
 
@@ -49,12 +49,14 @@ C++ 소스(`.h`, `.cpp`) 수정이 필요하면 **목적·기능변화를 먼저
 ### 원칙 2 — Graph-First
 1. `graphify query "<질문>"` / `path` / `explain`으로 **파일:라인 확정**
 2. 확정된 최소 라인 범위만 `Read`
-3. 작업 후 `graphify update .`
+3. 작업 후 `graphify update . ; python tools/graphify_sync_docs.py` (또는 `cmd /c update_graph.bat`)
 
 무차별 `grep_search`/`view_file` 금지.
 
 ### 원칙 3 — 정적 에셋 파이프라인
-FE 소스(`data_v0203_src/html_v0203/`) 수정 시 **반드시**:
+FE 소스(`data_v0203_src/html_v0203/`) 수정 시:
+- **번들 산출물(`app_core_0203.js`, `app_ui_0203.js`, `app_pages_0203.js`, `common_base_0203.css`, `common_pages_0203.css`) 직접 편집 금지** → 반드시 `js/*.js` · `css/*.css` 원본 수정
+- 수정 후 **반드시** 실행:
 ```
 
 python src/v0203/tools_0203/pio_gzip_0203.py
@@ -80,13 +82,13 @@ python src/v0203/tools_0203/commit_contracts_0203.py --dry-run --strict
 
 | 작업 | 명령 | Skill |
 |---|---|---|
-| 빌드 + 플래시 | `pio run -e esp32-s3-zero -j 12 [--target upload/uploadfs]` | `build-and-flash` |
+| 빌드 + 플래시 | `pio run -e esp32-s3-zero -j 12 [--target upload/uploadfs]` (`BypassSandbox: true`, 미인식 시 `%USERPROFILE%\.platformio\penv\Scripts\pio.exe`) | `build-and-flash` |
 | 계약 갱신 | `commit_contracts_0203.py --dry-run --strict` | `contract-update` |
 | 회귀 실행 | `test/e2e_stage8_4.py <IP>` / TEST_PLAN T-항목 | `regression-run` |
 | UI E2E 점검 | `node test/e2e_ui_browser_check_0203.cjs` | `regression-run` |
 | 프론트 번들 | `pio_gzip_0203.py` (+ `check_i18n.py --strict`) | `bundle-frontend` |
 | 그래프 질의 | `graphify query "<q>"` | `graphify` |
-| 그래프 갱신 | `graphify update .` | `graphify` |
+| 그래프 갱신 | `graphify update . ; python tools/graphify_sync_docs.py` | `graphify` |
 | 그래프 탐색 | `graphify explain "<concept>"` / `graphify path "<A>" "<B>"` | `graphify` |
 | 동기화 | `python tools/sync-agent-configs.py [--check]` | — |
 

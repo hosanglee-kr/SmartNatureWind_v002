@@ -52,9 +52,13 @@ SNW.Page = SNW.Page || {};
 			const updateBanner = () => {
 				if (!banner) return;
 				if (this._activeTab === 'live') {
+					const simActive = Boolean(SNW.Store && SNW.Store.get().sim && SNW.Store.get().sim.active);
+					const hint = 'Y축 0.0~8.0 (돌풍 시 12.0) m/s';
 					banner.style.display = 'block';
-					banner.innerHTML = '🔴 <b>실선풍기 가동 중</b> · WS 라이브 데이터';
-					banner.style.background = 'rgba(74,158,255,0.1)';
+					banner.innerHTML = simActive
+						? `🔴 <b>실선풍기 가동 중</b> · WS 라이브 데이터 <span style="float:right;opacity:0.85;">${hint}</span>`
+						: `⏸ <b>대기 중 (가동 중인 세션 없음)</b> · WS 대기 <span style="float:right;opacity:0.85;">${hint}</span>`;
+					banner.style.background = simActive ? 'rgba(74,158,255,0.1)' : 'rgba(139,148,158,0.12)';
 				} else {
 					banner.style.display = 'block';
 					banner.innerHTML = '🎬 <b>예상 파형 (±10% 오차)</b> · 실선풍기는 가동되지 않습니다';
@@ -62,6 +66,9 @@ SNW.Page = SNW.Page || {};
 				}
 			};
 			updateBanner();
+			if (SNW.Store && typeof SNW.Store.watch === 'function') {
+				this._unsubs.push(SNW.Store.watch('sim', updateBanner));
+			}
 
 			this.el.querySelectorAll('[data-chart-tab]').forEach(btn => {
 				btn.addEventListener('click', () => {
@@ -365,25 +372,24 @@ SNW.Page = SNW.Page || {};
 				ovl.width = Math.floor(rect.width);
 				ovl.height = Math.floor(rect.height);
 
-				// 실측 + 예상 통합 min/max
-				let mn = Infinity, mx = -Infinity;
+				// 120.ui.chart.js와 동일한 고정 Y축(0.0~8.0 / 12.0 m/s) 및 여백(padL=32, padR=36, padY=10)
+				let maxWindVal = 0;
 				this._buffer.forEach(p => {
 					const v = Number(p.windSpeed);
-					if (!Number.isFinite(v)) return;
-					if (v < mn) mn = v;
-					if (v > mx) mx = v;
+					if (Number.isFinite(v) && v > maxWindVal) maxWindVal = v;
 				});
 				this._previewBuffer.forEach(p => {
 					const v = Number(p.wind);
-					if (!Number.isFinite(v)) return;
-					if (v < mn) mn = v;
-					if (v > mx) mx = v;
+					if (Number.isFinite(v) && v > maxWindVal) maxWindVal = v;
 				});
-				if (!Number.isFinite(mn) || !Number.isFinite(mx) || mx <= mn) return;
+				const windMin = 0.0;
+				const windMax = (maxWindVal > 8.0) ? 12.0 : 8.0;
+				const yRange = Math.max(1, windMax - windMin);
 
 				const ctx = ovl.getContext('2d');
-				const pad = 6;
-				const innerH = ovl.height - pad * 2;
+				const padL = 34, padR = 38, padT = 16, padB = 24;
+				const innerW = Math.max(40, ovl.width - padL - padR);
+				const innerH = Math.max(40, ovl.height - padT - padB);
 				const n = this._previewBuffer.length;
 				if (n < 2) return;
 
@@ -393,8 +399,10 @@ SNW.Page = SNW.Page || {};
 				ctx.setLineDash([5, 4]);
 				ctx.beginPath();
 				for (let i = 0; i < n; i++) {
-					const x = (i / (n - 1)) * ovl.width;
-					const y = pad + ((mx - this._previewBuffer[i].wind) / (mx - mn)) * innerH;
+					const val = Number(this._previewBuffer[i].wind);
+					const ratio = Math.max(0, Math.min(1, ((Number.isFinite(val) ? val : 0) - windMin) / yRange));
+					const x = padL + (i / (n - 1)) * innerW;
+					const y = padT + innerH - ratio * innerH;
 					if (i === 0) ctx.moveTo(x, y);
 					else ctx.lineTo(x, y);
 				}

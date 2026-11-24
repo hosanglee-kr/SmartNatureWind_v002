@@ -18,6 +18,56 @@
 
 #include "W10_Web_0203.h"
 
+// ======================================================
+// [Stage 13 P0] Control 공통 빈 body(onRequest) + 단편화 JSON 누적(onBody) 헬퍼
+// ======================================================
+static void _ctlOnReqEmptyCheck(AsyncWebServerRequest* p_request) {
+    if (!CL_W10_WebAPI::requireApiKey(p_request)) return;
+    if (p_request->contentLength() == 0) {
+        p_request->send(400, "application/json", "{\"error\":\"empty body\"}");
+    }
+}
+
+static bool _ctlAccumJson(AsyncWebServerRequest* p_request,
+                          uint8_t*               p_data,
+                          size_t                 p_len,
+                          size_t                 p_index,
+                          size_t                 p_total,
+                          JsonDocument&          r_doc) {
+    if (p_index == 0) {
+        if (!CL_W10_WebAPI::requireApiKey(p_request)) return false;
+        if (p_total == 0) {
+            p_request->send(400, "application/json", "{\"error\":\"empty body\"}");
+            return false;
+        }
+        if (p_total > (1024 * 1024)) {
+            p_request->send(413, "application/json", "{\"error\":\"payload too large\"}");
+            return false;
+        }
+        if (!CL_W10_WebAPI::beginBody(p_request, p_total)) {
+            p_request->send(500, "application/json", "{\"error\":\"oom\"}");
+            return false;
+        }
+    }
+    if (!CL_W10_WebAPI::appendBody(p_request, p_data, p_len, p_index, p_total)) return false;
+
+    size_t   v_bodyLen = 0;
+    uint8_t* v_bodyBuf = CL_W10_WebAPI::takeBodyBuf(p_request, v_bodyLen);
+    if (!v_bodyBuf) {
+        CL_W10_WebAPI::freeBody(p_request);
+        p_request->send(500, "application/json", "{\"error\":\"acc\"}");
+        return false;
+    }
+
+    if (!CL_W10_WebAPI::parseJsonBody(p_request, v_bodyBuf, v_bodyLen, r_doc)) {
+        CL_W10_WebAPI::freeBody(p_request);
+        p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
+        return false;
+    }
+    CL_W10_WebAPI::freeBody(p_request);
+    return true;
+}
+
 // --------------------------------------------------
 // 1. /api/control (프로필/오버라이드/리부트/팩토리리셋)
 // --------------------------------------------------
@@ -26,20 +76,11 @@ void CL_W10_WebAPI::routeControl() {
     s_server->on(
         W10_Const::HTTP_API_CTL_PROF_SEL,
         HTTP_POST,
-        [](AsyncWebServerRequest* p_request) {},
+        _ctlOnReqEmptyCheck,
         nullptr,
         [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                return;
-            }
-            if (p_index + p_len != p_total) return;
-
             JsonDocument v_doc;
-            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-                p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
-                return;
-            }
+            if (!_ctlAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
 
             int v_id = v_doc["id"] | -1;
 
@@ -56,10 +97,7 @@ void CL_W10_WebAPI::routeControl() {
 
     // reboot
     s_server->on(W10_Const::HTTP_API_CTL_REBOOT, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         p_request->send(200, "application/json", "{\"result\":\"rebooting\"}");
         delay(500);
         ESP.restart();
@@ -67,10 +105,7 @@ void CL_W10_WebAPI::routeControl() {
 
     // factoryReset + reboot
     s_server->on(W10_Const::HTTP_API_CTL_FACTORY, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         CL_D10_Logger::log(EN_L10_LOG_WARN, "[W10] Factory Reset requested via %s", W10_Const::HTTP_API_CTL_FACTORY);
         bool v_ok = CL_C10_ConfigManager::factoryResetFromDefault();
 
@@ -86,10 +121,7 @@ void CL_W10_WebAPI::routeControl() {
 
     // profile/stop
     s_server->on(W10_Const::HTTP_API_CTL_PROF_STOP, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         if (!s_control) {
             p_request->send(500, "application/json", "{\"error\":\"control not ready\"}");
             return;
@@ -100,10 +132,7 @@ void CL_W10_WebAPI::routeControl() {
 
     // override/fixed
     s_server->on(W10_Const::HTTP_API_CTL_OVR_FIXED, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
         if (!p_request->hasParam("percent", true)) {
             p_request->send(400, "application/json", "{\"error\":\"missing param: percent\"}");
@@ -131,20 +160,11 @@ void CL_W10_WebAPI::routeControl() {
     s_server->on(
         W10_Const::HTTP_API_CTL_OVR_PRESET,
         HTTP_POST,
-        [](AsyncWebServerRequest* p_request) {},
+        _ctlOnReqEmptyCheck,
         nullptr,
         [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                return;
-            }
-            if (p_index + p_len != p_total) return;
-
             JsonDocument v_doc;
-            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-                p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
-                return;
-            }
+            if (!_ctlAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
 
             const char* v_preset  = v_doc["presetCode"] | "";
             const char* v_style   = v_doc["styleCode"] | "BALANCE";
@@ -173,10 +193,7 @@ void CL_W10_WebAPI::routeControl() {
 
     // override/clear
     s_server->on(W10_Const::HTTP_API_CTL_OVR_CLEAR, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         if (s_control) {
             s_control->stopOverride();
         }
@@ -187,10 +204,7 @@ void CL_W10_WebAPI::routeControl() {
     //  - 프론트엔드 "확인" 버튼 → s_control->ackEvent() (기존 CT10 API 재사용)
     //  - ackEventState()는 s_stateMutex 보유 후 _autoOffLatched=false 설정
     s_server->on(W10_Const::HTTP_API_CTL_ACK, HTTP_POST, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         if (s_control) {
             CL_CT10_ControlManager::ackEvent();
         }
@@ -201,10 +215,7 @@ void CL_W10_WebAPI::routeControl() {
 
     // [v0203] 작동 모드 조회 (GET /api/v001/control/mode)
     s_server->on(W10_Const::HTTP_API_CTL_MODE, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         bool         v_profMode = s_control ? s_control->useProfileMode : false;
         JsonDocument v_res;
         v_res["profileMode"] = v_profMode;
@@ -216,21 +227,71 @@ void CL_W10_WebAPI::routeControl() {
     s_server->on(
         W10_Const::HTTP_API_CTL_MODE,
         HTTP_POST,
-        [](AsyncWebServerRequest* p_request) {},
-        nullptr,
-        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
+        [](AsyncWebServerRequest* p_request) {
+            if (!requireApiKey(p_request)) return;
+            // body가 0바이트(form-urlencoded 또는 빈 요청)일 때만 onRequest에서 처리
+            if (p_request->contentLength() > 0) return;
+
+            bool v_mode   = false;
+            bool v_parsed = false;
+            if (p_request->hasParam("profileMode", true)) {
+                String f = p_request->getParam("profileMode", true)->value();
+                f.toLowerCase();
+                v_mode   = (f == "true" || f == "1");
+                v_parsed = true;
+            } else if (p_request->hasParam("mode", true)) {
+                String m = p_request->getParam("mode", true)->value();
+                m.toLowerCase();
+                v_mode   = (m == "profile" || m == "user_profile" || m == "true" || m == "1");
+                v_parsed = true;
+            }
+            if (!v_parsed) {
+                p_request->send(400, "application/json", "{\"error\":\"missing param: profileMode or mode\"}");
                 return;
             }
-            if (p_index + p_len != p_total) return;
+            if (s_control) {
+                CL_CT10_ControlManager::setMode(v_mode);
+                CL_N10_NvsManager::setRunMode(v_mode ? 2 : 1, 2);
+            }
+            JsonDocument v_res;
+            v_res["result"]      = "ok";
+            v_res["profileMode"] = v_mode;
+            v_res["mode"]        = v_mode ? "PROFILE" : "SCHEDULE";
+            sendJson(p_request, v_res);
+        },
+        nullptr,
+        [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
+            if (p_index == 0) {
+                if (!requireApiKey(p_request)) return;
+                if (p_total == 0) {
+                    p_request->send(400, "application/json", "{\"error\":\"empty body\"}");
+                    return;
+                }
+                if (p_total > (1024 * 1024)) {
+                    p_request->send(413, "application/json", "{\"error\":\"payload too large\"}");
+                    return;
+                }
+                if (!beginBody(p_request, p_total)) {
+                    p_request->send(500, "application/json", "{\"error\":\"oom\"}");
+                    return;
+                }
+            }
+            if (!appendBody(p_request, p_data, p_len, p_index, p_total)) return;
+
+            size_t   v_bodyLen = 0;
+            uint8_t* v_bodyBuf = takeBodyBuf(p_request, v_bodyLen);
+            if (!v_bodyBuf) {
+                freeBody(p_request);
+                p_request->send(500, "application/json", "{\"error\":\"acc\"}");
+                return;
+            }
 
             bool v_mode   = false;
             bool v_parsed = false;
 
-            if (p_len > 0) {
+            if (v_bodyLen > 0) {
                 JsonDocument v_doc;
-                if (parseJsonBody(p_request, p_data, p_len, v_doc)) {
+                if (parseJsonBody(p_request, v_bodyBuf, v_bodyLen, v_doc)) {
                     if (v_doc["profileMode"].is<bool>()) {
                         v_mode   = v_doc["profileMode"].as<bool>();
                         v_parsed = true;
@@ -241,6 +302,7 @@ void CL_W10_WebAPI::routeControl() {
                     }
                 }
             }
+            freeBody(p_request);
 
             if (!v_parsed && p_request->hasParam("profileMode", true)) {
                 String f = p_request->getParam("profileMode", true)->value();
@@ -277,17 +339,12 @@ void CL_W10_WebAPI::routeControl() {
     s_server->on(
         W10_Const::HTTP_API_CTL_TIMER,
         HTTP_POST,
-        [](AsyncWebServerRequest* p_request) {},
+        _ctlOnReqEmptyCheck,
         nullptr,
         [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                return;
-            }
-            if (p_index + p_len != p_total) return;
-
             JsonDocument v_doc;
-            if (!parseJsonBody(p_request, p_data, p_len, v_doc) || !v_doc["minutes"].is<uint16_t>()) {
+            if (!_ctlAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
+            if (!v_doc["minutes"].is<uint16_t>()) {
                 p_request->send(400, "application/json", "{\"error\":\"invalid body\"}");
                 return;
             }
@@ -309,20 +366,14 @@ void CL_W10_WebAPI::routeControl() {
 
     // [Stage 10.1 Option A] DELETE /api/v001/control/timer
     s_server->on(W10_Const::HTTP_API_CTL_TIMER, HTTP_DELETE, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         CL_CT10_ControlManager::clearSessionAutoOff();
         p_request->send(200, "application/json", "{\"success\":true,\"active\":false}");
     });
 
     // [Stage 10.1 Option A] GET /api/v001/control/timer
     s_server->on(W10_Const::HTTP_API_CTL_TIMER, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         char v_buf[128];
         snprintf(v_buf, sizeof(v_buf),
                  "{\"active\":%s,\"remainSec\":%lu,\"durationMin\":%u}",
@@ -338,10 +389,7 @@ void CL_W10_WebAPI::routeControl() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeControlSummary() {
     s_server->on(W10_Const::HTTP_API_CONTROL_SUMMARY, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
         JsonDocument v_doc;
         if (s_control) {
@@ -361,10 +409,7 @@ void CL_W10_WebAPI::routeControlSummary() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeSimulation() {
     s_server->on(W10_Const::HTTP_API_SIMULATION, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         JsonDocument v_doc;
         if (s_control) {
             s_control->exportSimJson(v_doc); // [A-2] 위임
@@ -375,20 +420,11 @@ void CL_W10_WebAPI::routeSimulation() {
     s_server->on(
         W10_Const::HTTP_API_SIMULATION,
         HTTP_POST,
-        [](AsyncWebServerRequest* p_request) {},
+        _ctlOnReqEmptyCheck,
         nullptr,
         [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                return;
-            }
-            if (p_index + p_len != p_total) return;
-
             JsonDocument v_doc;
-            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-                p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
-                return;
-            }
+            if (!_ctlAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
 
             bool v_changed = false;
             if (s_control) {
@@ -409,10 +445,7 @@ void CL_W10_WebAPI::routeSimulation() {
 // --------------------------------------------------
 void CL_W10_WebAPI::routeSimState() {
     s_server->on(W10_Const::HTTP_API_SIM_STATE, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
 
         JsonDocument v_doc;
         if (s_control) {
@@ -437,20 +470,11 @@ void CL_W10_WebAPI::routeMotionFeed() {
     s_server->on(
         W10_Const::HTTP_API_FEED_PIR,
         HTTP_POST,
-        [](AsyncWebServerRequest* p_request) {},
+        _ctlOnReqEmptyCheck,
         nullptr,
         [](AsyncWebServerRequest* p_request, uint8_t* p_data, size_t p_len, size_t p_index, size_t p_total) {
-            if (!checkApiKey(p_request)) {
-                p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-                return;
-            }
-            if (p_index + p_len != p_total) return;
-
             JsonDocument v_doc;
-            if (!parseJsonBody(p_request, p_data, p_len, v_doc)) {
-                p_request->send(400, "application/json", "{\"error\":\"json parse\"}");
-                return;
-            }
+            if (!_ctlAccumJson(p_request, p_data, p_len, p_index, p_total, v_doc)) return;
 
             if (s_control) {
                 bool v_pir = v_doc["pir"] | false;
@@ -467,10 +491,7 @@ void CL_W10_WebAPI::routeMotionFeed() {
 // [U-002] 차트 120초 이력 REST API
 void CL_W10_WebAPI::routeChartHistory() {
     s_server->on(W10_Const::HTTP_API_CHART_HISTORY, HTTP_GET, [](AsyncWebServerRequest* p_request) {
-        if (!checkApiKey(p_request)) {
-            p_request->send(401, "application/json", "{\"error\":\"unauthorized\"}");
-            return;
-        }
+        if (!requireApiKey(p_request)) return;
         if (!s_control) {
             p_request->send(500, "application/json", "{\"error\":\"control not ready\"}");
             return;

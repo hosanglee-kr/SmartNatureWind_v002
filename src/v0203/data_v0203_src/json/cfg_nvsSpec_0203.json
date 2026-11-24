@@ -8,8 +8,6 @@
       { "key": "run_src", "type": "uint8", "defaultValue": "0" },
       { "key": "sched_no", "type": "int16", "defaultValue": "-1" },
       { "key": "uprofile_no", "type": "int16", "defaultValue": "-1" },
-      { "key": "autoOff_en", "type": "uint8", "defaultValue": "0" },
-      { "key": "autoOff_min", "type": "uint32", "defaultValue": "0" },
       { "key": "ovr_en", "type": "uint8", "defaultValue": "0" },
       { "key": "ovr_mode", "type": "uint8", "defaultValue": "0" },
       { "key": "ovr_fixed", "type": "float", "defaultValue": "0.0" },

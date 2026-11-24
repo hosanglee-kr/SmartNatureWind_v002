@@ -13,12 +13,11 @@
 #include "WF10_WiFiMgr_0203.h"
 
 #include "A40_Com_Utils_0203.h"
+#include "C10_Config_0203.h"
 
 #include <esp_netif.h>
 #include <lwip/dns.h>
 #include <lwip/ip_addr.h>
-
-extern ST_A20_ConfigRoot_t g_A20_config_root;
 
 // --------------------------------------------------
 // Static Members Definition
@@ -28,8 +27,8 @@ wl_status_t       CL_WF10_WiFiManager::s_lastStaStatus     = WL_IDLE_STATUS;
 uint8_t           CL_WF10_WiFiManager::s_reconnectAttempts = 0;
 SemaphoreHandle_t CL_WF10_WiFiManager::s_wifiMutex         = nullptr;
 
-TaskHandle_t      CL_WF10_WiFiManager::s_wifiTaskHandle    = nullptr;
-SemaphoreHandle_t CL_WF10_WiFiManager::s_wifiRequestSem    = nullptr;
+TaskHandle_t      CL_WF10_WiFiManager::s_wifiTaskHandle = nullptr;
+SemaphoreHandle_t CL_WF10_WiFiManager::s_wifiRequestSem = nullptr;
 
 // --------------------------------------------------
 // 이벤트 등록
@@ -39,9 +38,7 @@ void CL_WF10_WiFiManager::attachWiFiEvents() {
     if (v_attached) return;
 
     WiFi.onEvent(
-        [](arduino_event_id_t, arduino_event_info_t) {
-            CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] STA start");
-        },
+        [](arduino_event_id_t, arduino_event_info_t) { CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] STA start"); },
         ARDUINO_EVENT_WIFI_STA_START);
 
     WiFi.onEvent(
@@ -58,8 +55,11 @@ void CL_WF10_WiFiManager::attachWiFiEvents() {
             s_lastStaStatus     = WL_CONNECTED;
             s_reconnectAttempts = 0;
 
-            if (g_A20_config_root.system) {
-                CL_TM10_TimeManager::onWiFiConnected(*g_A20_config_root.system);
+            // [P-21][CONTRACT §3.1] T-sys_evt 컨텍스트 → getRootSnapshot 필수
+            ST_A20_ConfigRoot_t v_snap;
+            CL_C10_ConfigManager::getRootSnapshot(v_snap);
+            if (v_snap.system) {
+                CL_TM10_TimeManager::onWiFiConnected(*v_snap.system);
             }
         },
         ARDUINO_EVENT_WIFI_STA_GOT_IP);
@@ -166,9 +166,15 @@ bool CL_WF10_WiFiManager::startAP(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_t
     WiFi.softAPdisconnect(true);
     WiFi.disconnect(true, true);
 
-    WiFi.softAPConfig(IPAddress(192, 168, 4, 1), IPAddress(192, 168, 4, 1), IPAddress(255, 255, 255, 0));
+    WiFi.softAPConfig(
+        IPAddress(A20_Const::G_WIFI_AP_IP_0, A20_Const::G_WIFI_AP_IP_1, A20_Const::G_WIFI_AP_IP_2, A20_Const::G_WIFI_AP_IP_3),
+        IPAddress(A20_Const::G_WIFI_AP_IP_0, A20_Const::G_WIFI_AP_IP_1, A20_Const::G_WIFI_AP_IP_2, A20_Const::G_WIFI_AP_IP_3),
+        IPAddress(A20_Const::G_WIFI_AP_SUBNET_0,
+                  A20_Const::G_WIFI_AP_SUBNET_1,
+                  A20_Const::G_WIFI_AP_SUBNET_2,
+                  A20_Const::G_WIFI_AP_SUBNET_3));
 
-    bool v_ok = WiFi.softAP(p_cfg_wifi.ap.ssid, v_pass, p_channel, false, 4);
+    bool v_ok = WiFi.softAP(p_cfg_wifi.ap.ssid, v_pass, p_channel, false, A20_Const::G_WIFI_AP_MAX_CONN);
 
     if (!p_enableDhcp) {
         esp_netif_t* v_apNetif = esp_netif_get_handle_from_ifkey("WIFI_AP_DEF");
@@ -224,9 +230,7 @@ bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_
         if (s_wifiMulti.run(G_WF10_MULTI_RUN_TIMEOUT_MS) == WL_CONNECTED) break;
         v_try++;
         delay(v_wait);
-        v_wait = (v_wait < G_WF10_BACKOFF_MAX_MS)
-                     ? (v_wait * G_WF10_BACKOFF_MUL)
-                     : G_WF10_BACKOFF_MAX_MS;
+        v_wait = (v_wait < G_WF10_BACKOFF_MAX_MS) ? (v_wait * G_WF10_BACKOFF_MUL) : G_WF10_BACKOFF_MAX_MS;
     }
 
     if (!v_guard.acquireTicks(G_A40_MUTEX_TIMEOUT_100)) {
@@ -248,9 +252,7 @@ bool CL_WF10_WiFiManager::startSTA(const ST_A20_WifiConfig_t& p_cfg_wifi, uint8_
         CL_C10_ConfigManager::getRootSnapshot(v_snap);
         if (v_snap.system) {
             CL_TM10_TimeManager::onWiFiConnected(*v_snap.system);
-            CL_D10_Logger::log(EN_L10_LOG_INFO,
-                               "[WF10] %s: TM10 notified (explicit, STA up)",
-                               __func__);
+            CL_D10_Logger::log(EN_L10_LOG_INFO, "[WF10] %s: TM10 notified (explicit, STA up)", __func__);
         }
 
         return true;
@@ -319,31 +321,44 @@ void CL_WF10_WiFiManager::scanNetworksToJson(JsonDocument& p_doc) {
 // [D-4] lock-free isStaConnected
 // --------------------------------------------------
 bool CL_WF10_WiFiManager::isStaConnected() {
-    return s_staConnected.load(std::memory_order_acquire)
-        && (WiFi.status() == WL_CONNECTED);
+    return s_staConnected.load(std::memory_order_acquire) && (WiFi.status() == WL_CONNECTED);
 }
 
 const char* CL_WF10_WiFiManager::getStaStatusString() {
     switch (WiFi.status()) {
-        case WL_CONNECTED:      return "CONNECTED";
-        case WL_NO_SSID_AVAIL:  return "NO_SSID";
-        case WL_CONNECT_FAILED: return "FAILED";
-        case WL_IDLE_STATUS:    return "IDLE";
-        case WL_DISCONNECTED:   return "DISCONNECTED";
-        default:                return "UNKNOWN";
+        case WL_CONNECTED:
+            return "CONNECTED";
+        case WL_NO_SSID_AVAIL:
+            return "NO_SSID";
+        case WL_CONNECT_FAILED:
+            return "FAILED";
+        case WL_IDLE_STATUS:
+            return "IDLE";
+        case WL_DISCONNECTED:
+            return "DISCONNECTED";
+        default:
+            return "UNKNOWN";
     }
 }
 
 const char* CL_WF10_WiFiManager::_encTypeToString(wifi_auth_mode_t p_mode) {
     switch (p_mode) {
-        case WIFI_AUTH_OPEN:            return "OPEN";
-        case WIFI_AUTH_WEP:             return "WEP";
-        case WIFI_AUTH_WPA_PSK:         return "WPA_PSK";
-        case WIFI_AUTH_WPA2_PSK:        return "WPA2_PSK";
-        case WIFI_AUTH_WPA_WPA2_PSK:    return "WPA_WPA2_PSK";
-        case WIFI_AUTH_WPA3_PSK:        return "WPA3_PSK";
-        case WIFI_AUTH_WPA2_WPA3_PSK:   return "WPA2_WPA3_PSK";
-        default:                        return "UNKNOWN";
+        case WIFI_AUTH_OPEN:
+            return "OPEN";
+        case WIFI_AUTH_WEP:
+            return "WEP";
+        case WIFI_AUTH_WPA_PSK:
+            return "WPA_PSK";
+        case WIFI_AUTH_WPA2_PSK:
+            return "WPA2_PSK";
+        case WIFI_AUTH_WPA_WPA2_PSK:
+            return "WPA_WPA2_PSK";
+        case WIFI_AUTH_WPA3_PSK:
+            return "WPA3_PSK";
+        case WIFI_AUTH_WPA2_WPA3_PSK:
+            return "WPA2_WPA3_PSK";
+        default:
+            return "UNKNOWN";
     }
 }
 
@@ -368,8 +383,8 @@ bool CL_WF10_WiFiManager::applyConfig(const ST_A20_WifiConfig_t& p_cfg) {
 
         ST_A20_SystemConfig_t v_sys;
         memset(&v_sys, 0, sizeof(v_sys));
-        strlcpy(v_sys.timeCfg.ntpServer, "pool.ntp.org", sizeof(v_sys.timeCfg.ntpServer));
-        strlcpy(v_sys.timeCfg.timezone,  "Asia/Seoul",   sizeof(v_sys.timeCfg.timezone));
+        strlcpy(v_sys.timeCfg.ntpServer, A20_Const::G_TIME_DEFAULT_NTP_PRIMARY, sizeof(v_sys.timeCfg.ntpServer));
+        strlcpy(v_sys.timeCfg.timezone, A20_Const::G_TIME_DEFAULT_TZ, sizeof(v_sys.timeCfg.timezone));
         v_sys.timeCfg.syncIntervalMin = 360;
 
         bool v_ok = init(p_cfg, v_sys, 1, 15, true);
@@ -378,9 +393,7 @@ bool CL_WF10_WiFiManager::applyConfig(const ST_A20_WifiConfig_t& p_cfg) {
 
     bool v_ok = init(p_cfg, *v_snap.system, 1, 15, true);
 
-    CL_D10_Logger::log(EN_L10_LOG_INFO,
-                       "[WiFi] Configuration applied (ok=%d, mode=%d)",
-                       (int)v_ok, (int)p_cfg.wifiMode);
+    CL_D10_Logger::log(EN_L10_LOG_INFO, "[WiFi] Configuration applied (ok=%d, mode=%d)", (int)v_ok, (int)p_cfg.wifiMode);
     return v_ok;
 }
 
@@ -411,9 +424,7 @@ bool CL_WF10_WiFiManager::_ensureWifiTask() {
 
     CL_A40_MutexGuard_Semaphore v_guard(s_wifiMutex, G_A40_MUTEX_TIMEOUT_100, __func__);
     if (!v_guard.isAcquired()) {
-        CL_D10_Logger::log(EN_L10_LOG_DEBUG,
-                           "[WF10] %s: Mutex busy (task creating?)",
-                           __func__);
+        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[WF10] %s: Mutex busy (task creating?)", __func__);
         return (s_wifiTaskHandle != nullptr);
     }
 
@@ -428,14 +439,7 @@ bool CL_WF10_WiFiManager::_ensureWifiTask() {
         }
     }
 
-    BaseType_t v_ret = xTaskCreate(
-        _wifiTask,
-        "WF10_Reconnect",
-        8192,
-        nullptr,
-        1,
-        &s_wifiTaskHandle
-    );
+    BaseType_t v_ret = xTaskCreate(_wifiTask, "WF10_Reconnect", 8192, nullptr, 1, &s_wifiTaskHandle);
 
     if (v_ret != pdPASS) {
         CL_D10_Logger::log(EN_L10_LOG_ERROR, "[WF10] task create failed (ret=%d)", (int)v_ret);
@@ -473,9 +477,9 @@ void CL_WF10_WiFiManager::_wifiTask(void* p_param) {
 
         UBaseType_t v_hwm = uxTaskGetStackHighWaterMark(NULL);
         CL_D10_Logger::log(EN_L10_LOG_INFO,
-                          "[WF10][Task] done (ok=%d, stack_free_min=%u bytes / %u words)",
-                          (int)v_ok,
-                          (unsigned)(v_hwm * sizeof(StackType_t)),
-                          (unsigned)v_hwm);
+                           "[WF10][Task] done (ok=%d, stack_free_min=%u bytes / %u words)",
+                           (int)v_ok,
+                           (unsigned)(v_hwm * sizeof(StackType_t)),
+                           (unsigned)v_hwm);
     }
 }

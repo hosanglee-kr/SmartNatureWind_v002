@@ -223,3 +223,10 @@
 - **[PHY-2] 스타일 정규화**: 5종 스타일(BALANCE/ACTIVE/FOCUS/RELAX/SLEEP) multipliers가 10개 프리셋에 100% 동일하게 작용.
 - **[PHY-3] 개별 오버라이드 격리**: 슬라이더 조작 시 `override.enabled=true`, 프리셋/스타일 재선택 시 자동 해제.
 - **[PHY-4] 상태 안전**: 모든 물리 반영은 `_recursiveMutex` 하에서 원자적으로 수행.
+
+### 7.11 2026-11-22 실시간 WS·EQ·UI Z-Order 결함 해결 (3건)
+| ID | 심각도 | 위치 | 내용 | 해결 |
+|---|:---:|---|---|---|
+| **WS-LOCK-1** | 🔴 | `CT10_Ctl_0203.h`, `CT10_Ctl_IOWS_0203.cpp` | `tickLoop()` 내 `s_stateMutex` 보유 중 `markDirty()` 재진입 → 100ms 타임아웃으로 dirty 누락 | `_dirtyState/Metrics/Chart/Summary`를 `std::atomic<bool>` lock-free로 전환 |
+| **WS-BCAST-1** | 🔴 | `W10_Web_WS_0203.cpp::_broadcast` | `ESPAsyncWebServer 3.12.1` `client(id)`를 인덱스 루프 `0..count()-1`로 호출해 `client(0)==nullptr` 브로드캐스트 전량 누락 | `p_ws->textAll(v_json)` 공유 버퍼 전송으로 교체 |
+| **UI-EQ-1** | 🟠 | `115.ui.eq.js`, `_comp_form.css`, `999.app.js` | `prefers-reduced-motion: reduce`에서 `start()`가 `running=true` 후 rAF 미실행 → `push()` `if(!running)` 렌더 데드락, `body.snw-night-mode` `filter`로 전체 딤/z-order 왜곡 | `if (!running || reduceMotion) render();` 수정 및 `snw-night-mode` `filter` 비활성화 |

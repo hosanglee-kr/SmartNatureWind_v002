@@ -1,8 +1,8 @@
 /* ---- 998.offline_data_0203.js ---- */
 window.SNW = window.SNW || {};
 (function(SNW) {
-    'use strict';
-    /* __AUTO_INJECT_CACHE_START__ */
+	'use strict';
+	/* __AUTO_INJECT_CACHE_START__ */
     // [주의] 아래 DEFAULT_CACHE는 pio_gzip_0203.py 빌드 시 data_v0203_src/json/*.json에서 자동 주입됩니다.
     const DEFAULT_CACHE = {
         "system": {
@@ -52,7 +52,7 @@ window.SNW = window.SNW || {};
                 },
                 "hw": {
                         "fanPwm": {
-                                "pin": 6,
+                                "pin": 1,
                                 "channel": 0,
                                 "freq": 25000,
                                 "res": 10
@@ -86,7 +86,12 @@ window.SNW = window.SNW || {};
                         "geminiApiKey": ""
                 },
                 "timeCfg": {
-                        "ntpServer": "pool.ntp.org",
+                        "ntpServer": "kr.pool.ntp.org",
+                        "ntpFallbackServers": [
+                                "time.google.com",
+                                "pool.ntp.org",
+                                "time.cloudflare.com"
+                        ],
                         "timezone": "Asia/Seoul",
                         "syncIntervalMin": 60
                 }
@@ -101,12 +106,8 @@ window.SNW = window.SNW || {};
                         },
                         "sta": [
                                 {
-                                        "ssid": "AP-12-1106",
-                                        "pass": "7743#49c"
-                                },
-                                {
-                                        "ssid": "U+Net3CA8",
-                                        "pass": "A8A5KCFD6#"
+                                        "ssid": "U+NetE89C",
+                                        "pass": "38D#4FP001"
                                 },
                                 {
                                         "ssid": "GalNote10-2540",
@@ -170,7 +171,39 @@ window.SNW = window.SNW || {};
                                         "startTime": "08:00",
                                         "endTime": "12:00"
                                 },
-                                "profileId": 1
+                                "profileId": 1,
+                                "ruleOverride": false,
+                                "rule": {
+                                        "timer": {
+                                                "enabled": false,
+                                                "minutes": 0
+                                        },
+                                        "offTime": {
+                                                "enabled": false,
+                                                "time": "00:00"
+                                        },
+                                        "tempLow": {
+                                                "enabled": false,
+                                                "mode": "PAUSE",
+                                                "threshold": 22.0,
+                                                "hysteresis": 0.5
+                                        },
+                                        "diLow": {
+                                                "enabled": false,
+                                                "mode": "PAUSE",
+                                                "threshold": 65.0,
+                                                "hysteresis": 3.0
+                                        },
+                                        "pirPause": {
+                                                "enabled": false,
+                                                "holdSec": 120
+                                        },
+                                        "smartComfort": {
+                                                "enabled": false,
+                                                "intervalMin": 5,
+                                                "level": 2
+                                        }
+                                }
                         },
                         {
                                 "schId": 2,
@@ -191,7 +224,39 @@ window.SNW = window.SNW || {};
                                         "startTime": "19:00",
                                         "endTime": "23:00"
                                 },
-                                "profileId": 2
+                                "profileId": 2,
+                                "ruleOverride": false,
+                                "rule": {
+                                        "timer": {
+                                                "enabled": false,
+                                                "minutes": 0
+                                        },
+                                        "offTime": {
+                                                "enabled": false,
+                                                "time": "00:00"
+                                        },
+                                        "tempLow": {
+                                                "enabled": false,
+                                                "mode": "PAUSE",
+                                                "threshold": 22.0,
+                                                "hysteresis": 0.5
+                                        },
+                                        "diLow": {
+                                                "enabled": false,
+                                                "mode": "PAUSE",
+                                                "threshold": 65.0,
+                                                "hysteresis": 3.0
+                                        },
+                                        "pirPause": {
+                                                "enabled": false,
+                                                "holdSec": 120
+                                        },
+                                        "smartComfort": {
+                                                "enabled": false,
+                                                "intervalMin": 5,
+                                                "level": 2
+                                        }
+                                }
                         },
                         {
                                 "schId": 3,
@@ -212,7 +277,39 @@ window.SNW = window.SNW || {};
                                         "startTime": "23:00",
                                         "endTime": "07:00"
                                 },
-                                "profileId": 3
+                                "profileId": 3,
+                                "ruleOverride": false,
+                                "rule": {
+                                        "timer": {
+                                                "enabled": false,
+                                                "minutes": 0
+                                        },
+                                        "offTime": {
+                                                "enabled": false,
+                                                "time": "00:00"
+                                        },
+                                        "tempLow": {
+                                                "enabled": false,
+                                                "mode": "PAUSE",
+                                                "threshold": 22.0,
+                                                "hysteresis": 0.5
+                                        },
+                                        "diLow": {
+                                                "enabled": false,
+                                                "mode": "PAUSE",
+                                                "threshold": 65.0,
+                                                "hysteresis": 3.0
+                                        },
+                                        "pirPause": {
+                                                "enabled": false,
+                                                "holdSec": 120
+                                        },
+                                        "smartComfort": {
+                                                "enabled": false,
+                                                "intervalMin": 5,
+                                                "level": 2
+                                        }
+                                }
                         }
                 ]
         },
@@ -228,23 +325,35 @@ window.SNW = window.SNW || {};
                                         "enabled": true,
                                         "repeatSegments": true,
                                         "repeatCount": 1,
-                                        "autoOff": {
+                                        "rule": {
                                                 "timer": {
                                                         "enabled": true,
-                                                        "minutes": 240
+                                                        "minutes": 480
                                                 },
                                                 "offTime": {
                                                         "enabled": true,
-                                                        "time": "05:00"
+                                                        "time": "06:00"
                                                 },
-                                                "offTemp": {
+                                                "tempLow": {
                                                         "enabled": true,
-                                                        "temp": 26.0
-                                                }
-                                        },
-                                        "motion": {
-                                                "pir": {
-                                                        "enabled": false
+                                                        "mode": "STOP",
+                                                        "threshold": 22.0,
+                                                        "hysteresis": 0.0
+                                                },
+                                                "diLow": {
+                                                        "enabled": false,
+                                                        "mode": "PAUSE",
+                                                        "threshold": 65.0,
+                                                        "hysteresis": 3.0
+                                                },
+                                                "pirPause": {
+                                                        "enabled": true,
+                                                        "holdSec": 300
+                                                },
+                                                "smartComfort": {
+                                                        "enabled": false,
+                                                        "intervalMin": 5,
+                                                        "level": 2
                                                 }
                                         },
                                         "steps": [
@@ -296,22 +405,35 @@ window.SNW = window.SNW || {};
                                         "enabled": true,
                                         "repeatSegments": true,
                                         "repeatCount": 2,
-                                        "autoOff": {
+                                        "rule": {
                                                 "timer": {
                                                         "enabled": true,
                                                         "minutes": 180
                                                 },
                                                 "offTime": {
-                                                        "enabled": false
+                                                        "enabled": false,
+                                                        "time": "00:00"
                                                 },
-                                                "offTemp": {
-                                                        "enabled": false
-                                                }
-                                        },
-                                        "motion": {
-                                                "pir": {
+                                                "tempLow": {
+                                                        "enabled": false,
+                                                        "mode": "PAUSE",
+                                                        "threshold": 22.0,
+                                                        "hysteresis": 0.5
+                                                },
+                                                "diLow": {
+                                                        "enabled": true,
+                                                        "mode": "PAUSE",
+                                                        "threshold": 65.0,
+                                                        "hysteresis": 3.0
+                                                },
+                                                "pirPause": {
                                                         "enabled": true,
                                                         "holdSec": 300
+                                                },
+                                                "smartComfort": {
+                                                        "enabled": false,
+                                                        "intervalMin": 5,
+                                                        "level": 2
                                                 }
                                         },
                                         "steps": [
@@ -338,22 +460,35 @@ window.SNW = window.SNW || {};
                                         "enabled": true,
                                         "repeatSegments": true,
                                         "repeatCount": 2,
-                                        "autoOff": {
+                                        "rule": {
                                                 "timer": {
                                                         "enabled": false,
                                                         "minutes": 0
                                                 },
                                                 "offTime": {
-                                                        "enabled": false
+                                                        "enabled": false,
+                                                        "time": "00:00"
                                                 },
-                                                "offTemp": {
-                                                        "enabled": false
-                                                }
-                                        },
-                                        "motion": {
-                                                "pir": {
+                                                "tempLow": {
+                                                        "enabled": false,
+                                                        "mode": "PAUSE",
+                                                        "threshold": 22.0,
+                                                        "hysteresis": 0.5
+                                                },
+                                                "diLow": {
+                                                        "enabled": false,
+                                                        "mode": "PAUSE",
+                                                        "threshold": 65.0,
+                                                        "hysteresis": 3.0
+                                                },
+                                                "pirPause": {
                                                         "enabled": true,
                                                         "holdSec": 180
+                                                },
+                                                "smartComfort": {
+                                                        "enabled": false,
+                                                        "intervalMin": 5,
+                                                        "level": 2
                                                 }
                                         },
                                         "steps": [
@@ -380,21 +515,35 @@ window.SNW = window.SNW || {};
                                         "enabled": true,
                                         "repeatSegments": false,
                                         "repeatCount": 0,
-                                        "autoOff": {
+                                        "rule": {
                                                 "timer": {
-                                                        "enabled": false,
-                                                        "minutes": 0
+                                                        "enabled": true,
+                                                        "minutes": 30
                                                 },
                                                 "offTime": {
-                                                        "enabled": false
+                                                        "enabled": false,
+                                                        "time": "00:00"
                                                 },
-                                                "offTemp": {
-                                                        "enabled": false
-                                                }
-                                        },
-                                        "motion": {
-                                                "pir": {
-                                                        "enabled": false
+                                                "tempLow": {
+                                                        "enabled": false,
+                                                        "mode": "PAUSE",
+                                                        "threshold": 22.0,
+                                                        "hysteresis": 0.5
+                                                },
+                                                "diLow": {
+                                                        "enabled": false,
+                                                        "mode": "PAUSE",
+                                                        "threshold": 65.0,
+                                                        "hysteresis": 3.0
+                                                },
+                                                "pirPause": {
+                                                        "enabled": false,
+                                                        "holdSec": 120
+                                                },
+                                                "smartComfort": {
+                                                        "enabled": false,
+                                                        "intervalMin": 5,
+                                                        "level": 2
                                                 }
                                         },
                                         "steps": [
@@ -421,22 +570,35 @@ window.SNW = window.SNW || {};
                                         "enabled": true,
                                         "repeatSegments": true,
                                         "repeatCount": 3,
-                                        "autoOff": {
+                                        "rule": {
                                                 "timer": {
                                                         "enabled": false,
                                                         "minutes": 0
                                                 },
                                                 "offTime": {
-                                                        "enabled": false
+                                                        "enabled": false,
+                                                        "time": "00:00"
                                                 },
-                                                "offTemp": {
-                                                        "enabled": false
-                                                }
-                                        },
-                                        "motion": {
-                                                "pir": {
+                                                "tempLow": {
+                                                        "enabled": false,
+                                                        "mode": "PAUSE",
+                                                        "threshold": 22.0,
+                                                        "hysteresis": 0.5
+                                                },
+                                                "diLow": {
+                                                        "enabled": false,
+                                                        "mode": "PAUSE",
+                                                        "threshold": 65.0,
+                                                        "hysteresis": 3.0
+                                                },
+                                                "pirPause": {
                                                         "enabled": true,
                                                         "holdSec": 150
+                                                },
+                                                "smartComfort": {
+                                                        "enabled": false,
+                                                        "intervalMin": 5,
+                                                        "level": 2
                                                 }
                                         },
                                         "steps": [
@@ -463,24 +625,145 @@ window.SNW = window.SNW || {};
                                         "enabled": false,
                                         "repeatSegments": false,
                                         "repeatCount": 0,
-                                        "autoOff": {
+                                        "rule": {
                                                 "timer": {
                                                         "enabled": false,
                                                         "minutes": 0
                                                 },
                                                 "offTime": {
-                                                        "enabled": false
+                                                        "enabled": false,
+                                                        "time": "00:00"
                                                 },
-                                                "offTemp": {
-                                                        "enabled": false
-                                                }
-                                        },
-                                        "motion": {
-                                                "pir": {
-                                                        "enabled": false
+                                                "tempLow": {
+                                                        "enabled": false,
+                                                        "mode": "PAUSE",
+                                                        "threshold": 22.0,
+                                                        "hysteresis": 0.5
+                                                },
+                                                "diLow": {
+                                                        "enabled": false,
+                                                        "mode": "PAUSE",
+                                                        "threshold": 65.0,
+                                                        "hysteresis": 3.0
+                                                },
+                                                "pirPause": {
+                                                        "enabled": false,
+                                                        "holdSec": 120
+                                                },
+                                                "smartComfort": {
+                                                        "enabled": false,
+                                                        "intervalMin": 5,
+                                                        "level": 2
                                                 }
                                         },
                                         "steps": []
+                                },
+                                {
+                                        "profileId": 7,
+                                        "profileNo": 70,
+                                        "name": "반려동물 케어",
+                                        "enabled": true,
+                                        "repeatSegments": true,
+                                        "repeatCount": 0,
+                                        "rule": {
+                                                "timer": {
+                                                        "enabled": false,
+                                                        "minutes": 0
+                                                },
+                                                "offTime": {
+                                                        "enabled": false,
+                                                        "time": "00:00"
+                                                },
+                                                "tempLow": {
+                                                        "enabled": true,
+                                                        "mode": "PAUSE",
+                                                        "threshold": 24.0,
+                                                        "hysteresis": 1.0
+                                                },
+                                                "diLow": {
+                                                        "enabled": false,
+                                                        "mode": "PAUSE",
+                                                        "threshold": 65.0,
+                                                        "hysteresis": 3.0
+                                                },
+                                                "pirPause": {
+                                                        "enabled": false,
+                                                        "holdSec": 120
+                                                },
+                                                "smartComfort": {
+                                                        "enabled": false,
+                                                        "intervalMin": 5,
+                                                        "level": 2
+                                                }
+                                        },
+                                        "steps": [
+                                                {
+                                                        "stepNo": 10,
+                                                        "durationMin": 60,
+                                                        "type": "PRESET",
+                                                        "presetCode": "FOREST_CANOPY",
+                                                        "styleCode": "RELAX",
+                                                        "fixedSpeed": 0.0,
+                                                        "override": {
+                                                                "enabled": false
+                                                        }
+                                                }
+                                        ]
+                                },
+                                {
+                                        "profileId": 8,
+                                        "profileNo": 80,
+                                        "name": "아기/유아 케어",
+                                        "enabled": true,
+                                        "repeatSegments": true,
+                                        "repeatCount": 0,
+                                        "rule": {
+                                                "timer": {
+                                                        "enabled": true,
+                                                        "minutes": 180
+                                                },
+                                                "offTime": {
+                                                        "enabled": false,
+                                                        "time": "00:00"
+                                                },
+                                                "tempLow": {
+                                                        "enabled": true,
+                                                        "mode": "STOP",
+                                                        "threshold": 23.0,
+                                                        "hysteresis": 0.0
+                                                },
+                                                "diLow": {
+                                                        "enabled": false,
+                                                        "mode": "PAUSE",
+                                                        "threshold": 65.0,
+                                                        "hysteresis": 3.0
+                                                },
+                                                "pirPause": {
+                                                        "enabled": false,
+                                                        "holdSec": 120
+                                                },
+                                                "smartComfort": {
+                                                        "enabled": false,
+                                                        "intervalMin": 5,
+                                                        "level": 2
+                                                }
+                                        },
+                                        "steps": [
+                                                {
+                                                        "stepNo": 10,
+                                                        "durationMin": 60,
+                                                        "type": "PRESET",
+                                                        "presetCode": "OCEAN",
+                                                        "styleCode": "SLEEP",
+                                                        "fixedSpeed": 0.0,
+                                                        "override": {
+                                                                "enabled": true,
+                                                                "windIntensity": 25.0,
+                                                                "windVariability": 15.0,
+                                                                "gustFrequency": 5.0
+                                                        }
+                                                }
+                                        ]
                                 }
                         ]
                 }
@@ -787,16 +1070,6 @@ window.SNW = window.SNW || {};
                                         "defaultValue": "-1"
                                 },
                                 {
-                                        "key": "autoOff_en",
-                                        "type": "uint8",
-                                        "defaultValue": "0"
-                                },
-                                {
-                                        "key": "autoOff_min",
-                                        "type": "uint32",
-                                        "defaultValue": "0"
-                                },
-                                {
                                         "key": "ovr_en",
                                         "type": "uint8",
                                         "defaultValue": "0"
@@ -850,12 +1123,24 @@ window.SNW = window.SNW || {};
                                 "order": 10,
                                 "pageAssets": [
                                         {
-                                                "uri": "/P000_common_0203.css",
-                                                "path": "/html_v0203/P000_common_0203.css"
+                                                "uri": "/common_base_0203.css",
+                                                "path": "/html_v0203/common_base_0203.css"
                                         },
                                         {
-                                                "uri": "/P010_bundle_0203.js",
-                                                "path": "/html_v0203/P010_bundle_0203.js"
+                                                "uri": "/common_pages_0203.css",
+                                                "path": "/html_v0203/common_pages_0203.css"
+                                        },
+                                        {
+                                                "uri": "/app_core_0203.js",
+                                                "path": "/html_v0203/app_core_0203.js"
+                                        },
+                                        {
+                                                "uri": "/app_ui_0203.js",
+                                                "path": "/html_v0203/app_ui_0203.js"
+                                        },
+                                        {
+                                                "uri": "/app_pages_0203.js",
+                                                "path": "/html_v0203/app_pages_0203.js"
                                         }
                                 ]
                         }
@@ -864,71 +1149,11 @@ window.SNW = window.SNW || {};
                         {
                                 "uriFrom": "/",
                                 "uriTo": "/index.html"
-                        },
-                        {
-                                "uriFrom": "/dashboard",
-                                "uriTo": "/index.html#/dashboard"
-                        },
-                        {
-                                "uriFrom": "/chart",
-                                "uriTo": "/index.html#/chart"
-                        },
-                        {
-                                "uriFrom": "/schedule",
-                                "uriTo": "/index.html#/schedule"
-                        },
-                        {
-                                "uriFrom": "/profiles",
-                                "uriTo": "/index.html#/profiles"
-                        },
-                        {
-                                "uriFrom": "/sensors",
-                                "uriTo": "/index.html#/sensors"
-                        },
-                        {
-                                "uriFrom": "/simulation",
-                                "uriTo": "/index.html#/simulation"
-                        },
-                        {
-                                "uriFrom": "/windprofile",
-                                "uriTo": "/index.html#/windprofile"
-                        },
-                        {
-                                "uriFrom": "/automation",
-                                "uriTo": "/index.html#/automation"
-                        },
-                        {
-                                "uriFrom": "/settings",
-                                "uriTo": "/index.html#/settings"
-                        },
-                        {
-                                "uriFrom": "/network",
-                                "uriTo": "/index.html#/network"
-                        },
-                        {
-                                "uriFrom": "/logs",
-                                "uriTo": "/index.html#/logs"
-                        },
-                        {
-                                "uriFrom": "/diagnostics",
-                                "uriTo": "/index.html#/diagnostics"
-                        },
-                        {
-                                "uriFrom": "/firmware",
-                                "uriTo": "/index.html#/firmware"
-                        },
-                        {
-                                "uriFrom": "/ai",
-                                "uriTo": "/index.html#/ai"
-                        },
-                        {
-                                "uriFrom": "/info",
-                                "uriTo": "/index.html#/info"
                         }
                 ],
                 "assets": []
         }
 };
     /* __AUTO_INJECT_CACHE_END__ */
-    SNW.OFFLINE_DEFAULT_CACHE = DEFAULT_CACHE;
+	SNW.OFFLINE_DEFAULT_CACHE = DEFAULT_CACHE;
 })(window.SNW);

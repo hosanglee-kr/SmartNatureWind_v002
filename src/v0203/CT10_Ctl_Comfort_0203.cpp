@@ -145,33 +145,109 @@ uint32_t CL_CT10_ControlManager::getAutoComfortRemainSec() {
 }
 
 void CL_CT10_ControlManager::tickAutoComfort() {
-    if (!s_autoComfortEnabled) return;
-
     const uint32_t v_now = millis();
     if (v_now - s_autoComfortLastEvalMs < AUTO_COMFORT_INTERVAL_MS) return;
     s_autoComfortLastEvalMs = v_now;
 
-    // 1. AutoOff 래치 활성 시 자동 기동 차단
-    if (instance().runCtx.state == EN_CT10_STATE_AUTOOFF_STOPPED || instance()._autoOffLatched) {
-        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoComfort: skip (AutoOff latched)");
+    auto& self = instance();
+
+    // ─── 1) AUTO_FULL 세션 재평가 (s_autoComfortEnabled와 독립 동작) ───
+    if (self._session.type  == EN_CT10_SESSION_AUTO_FULL &&
+        self._session.state == EN_SESSION_ACTIVE) {
+        const char* recPreset = getRecommendedPresetCode();
+        const char* recStyle  = getRecommendedStyleCode();
+
+        if (recPreset && strcasecmp(self._session.payload.preset.presetCode, recPreset) != 0) {
+            CL_D10_Logger::log(EN_L10_LOG_INFO,
+                "[CT10] AUTO_FULL switch: %s → %s",
+                self._session.payload.preset.presetCode, recPreset);
+            snprintf(self._session.autoSwitchReason, sizeof(self._session.autoSwitchReason),
+                     "comfort:%s->%s", self._session.payload.preset.presetCode, recPreset);
+            self._session.autoSwitchAtMs = millis();
+            self.applyPresetToSession(recPreset, recStyle);
+        }
         return;
     }
 
-    // 2. 이미 세션이 활성 가동 중이면 사용자 의도 우선
-    if (instance().isSessionActive()) {
-        CL_D10_Logger::log(EN_L10_LOG_DEBUG, "[CT10] AutoComfort: skip (Session already active)");
+    // ─── 2) AUTO_SELECT 세션 재평가 (styleCode만 자동) ───
+    if (self._session.type  == EN_CT10_SESSION_AUTO_SELECT &&
+        self._session.state == EN_SESSION_ACTIVE) {
+        const char* newStyle = getRecommendedStyleCode();
+
+        // ─── [M3] PRESET base: presetCode 고정 + styleCode 자동 ───
+        if (self._session.autoSelect.baseType == EN_CT10_SESSION_PRESET) {
+            if (newStyle && strcasecmp(self._session.payload.preset.styleCode, newStyle) != 0) {
+                CL_D10_Logger::log(EN_L10_LOG_INFO,
+                    "[CT10] AUTO_SELECT(PRESET) style: %s → %s",
+                    self._session.payload.preset.styleCode, newStyle);
+                snprintf(self._session.autoSwitchReason, sizeof(self._session.autoSwitchReason),
+                         "comfort_style:%s->%s", self._session.payload.preset.styleCode, newStyle);
+                self._session.autoSwitchAtMs = millis();
+                self.startOverridePreset(
+                    self._session.autoSelect.basePresetCode,
+                    newStyle, nullptr, 0, true, false);
+            }
+            return;
+        }
+
+        // ─── [M3] PLAYLIST base: 각 step presetCode 유지 + styleCode만 자동 ───
+        if (self._session.autoSelect.baseType == EN_CT10_SESSION_PLAYLIST) {
+            ST_A20_ConfigRoot_t v_snap;
+            CL_C10_ConfigManager::getRootSnapshot(v_snap);
+            if (!v_snap.userProfiles) return;
+
+            const auto& profs = *v_snap.userProfiles;
+            const uint16_t targetProfileNo = self._session.payload.playlist.profileNo;
+
+            for (uint8_t i = 0; i < profs.count; ++i) {
+                if (profs.items[i].profileNo != targetProfileNo) continue;
+
+                const ST_A20_UserProfileItem_t& prof = profs.items[i];
+                const uint8_t stepIdx = self._session.payload.playlist.currentStepIdx;
+
+                if (stepIdx >= prof.segCount) break;
+
+                const ST_A20_UserProfileSegment_t& step = prof.segments[stepIdx];
+
+                // PRESET 타입 step만 대상 (FIXED/REST는 스타일 무관)
+                if (step.type != EN_A20_STEP_TYPE_PRESET) break;
+
+                if (newStyle && strcasecmp(step.styleCode, newStyle) != 0) {
+                    CL_D10_Logger::log(EN_L10_LOG_INFO,
+                        "[CT10] AUTO_SELECT(PLAYLIST step %u/%u) style: %s → %s",
+                        (unsigned)(stepIdx + 1),
+                        (unsigned)prof.segCount,
+                        step.styleCode, newStyle);
+
+                    snprintf(self._session.autoSwitchReason, sizeof(self._session.autoSwitchReason),
+                             "comfort_style_step%u:%s->%s", (unsigned)(stepIdx + 1), step.styleCode, newStyle);
+                    self._session.autoSwitchAtMs = millis();
+
+                    // 현재 세션 payload에 반영 (다음 tick에서 사용)
+                    A40_ComFunc::copyStr2Buffer_safe(
+                        self._session.payload.preset.styleCode,
+                        newStyle,
+                        sizeof(self._session.payload.preset.styleCode));
+
+                    // step presetCode는 고정 유지
+                    self.startOverridePreset(
+                        step.presetCode,
+                        newStyle, nullptr, 0, true, false);
+                }
+                break;
+            }
+        }
         return;
     }
 
-    // 3. 실내 환경 기반 추천 프리셋 산출 및 세션 시작
-    const char* v_recPreset = getRecommendedPresetCode();
-    const char* v_recStyle  = getRecommendedStyleCode();
+    // ─── 3) 기존 IDLE Auto Comfort (전역 스위치 적용 지점) ───
+    if (!s_autoComfortEnabled) return;
+    if (self.isSessionActive()) return;
+    if (self.runCtx.state == EN_CT10_STATE_AUTOOFF_STOPPED || self._autoOffLatched) return;
 
-    if (v_recPreset && strlen(v_recPreset) > 0) {
-        CL_D10_Logger::log(EN_L10_LOG_INFO, "[CT10] AutoComfort 5m eval -> startPreset: %s (%s)", v_recPreset, v_recStyle);
-        startPresetManual(v_recPreset, v_recStyle);
-
-        // [Stage 10.1 갭 3-A] 자동 기동 세션임을 명시하여 FE의 is-running 표출 보장
-        instance()._session.trigger = EN_CT10_TRIGGER_AUTO_COMFORT;
+    const char* recPreset = getRecommendedPresetCode();
+    if (recPreset && strlen(recPreset) > 0) {
+        self.startPresetManual(recPreset, getRecommendedStyleCode());
+        self._session.trigger = EN_CT10_TRIGGER_AUTO_COMFORT;
     }
 }

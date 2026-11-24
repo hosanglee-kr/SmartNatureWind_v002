@@ -14,9 +14,9 @@ window.SNW = window.SNW || {};
             OVERRIDE: 1,
             PROFILE_RUN: 2,
             SCHEDULE_RUN: 3,
-            MOTION_BLOCKED: 4,
             AUTOOFF_STOPPED: 5,
-            TIME_INVALID: 6
+            TIME_INVALID: 6,
+            ENV_PAUSED: 7
         },
         FSM_REASON: {
             NONE: 0,
@@ -30,7 +30,9 @@ window.SNW = window.SNW || {};
             MOTION_NO_PRESENCE: 8,
             AUTOOFF_TIMER: 9,
             AUTOOFF_TIME: 10,
-            AUTOOFF_TEMP: 11
+            USER_STOP: 11,
+            TEMP_LOW_STOP: 12,
+            DI_LOW_STOP: 13
         },
         WIND_PHASE: { CALM: 'CALM', NORMAL: 'NORMAL', STRONG: 'STRONG' }
     };
@@ -50,32 +52,36 @@ window.SNW = window.SNW || {};
         // =====================================================
         FSM_STATE: AUTO_CONST.FSM_STATE,
         FSM_STATE_META: {
-            0: { code: 'IDLE',            icon: '⏸', color: 'gray',   labelKey: 'fsm.idle',           l1: true  },
-            1: { code: 'OVERRIDE',        icon: '✋', color: 'blue',   labelKey: 'fsm.override',       l1: true  },
-            2: { code: 'PROFILE_RUN',     icon: '👤', color: 'green',  labelKey: 'fsm.profileRun',     l1: false },
-            3: { code: 'SCHEDULE_RUN',    icon: '📅', color: 'cyan',   labelKey: 'fsm.scheduleRun',    l1: false },
-            4: { code: 'MOTION_BLOCKED',  icon: '🚫', color: 'yellow', labelKey: 'fsm.motionBlocked',  l1: true  },
-            5: { code: 'AUTOOFF_STOPPED', icon: '⏹', color: 'orange', labelKey: 'fsm.autoOffStopped', l1: true  },
-            6: { code: 'TIME_INVALID',    icon: '🕐', color: 'red',    labelKey: 'fsm.timeInvalid',    l1: false }
+            0: { code: 'IDLE', icon: '⏸', color: 'gray', labelKey: 'fsm.idle', l1: true },
+            1: { code: 'OVERRIDE', icon: '✋', color: 'blue', labelKey: 'fsm.override', l1: true },
+            2: { code: 'PROFILE_RUN', icon: '👤', color: 'green', labelKey: 'fsm.profileRun', l1: false },
+            3: { code: 'SCHEDULE_RUN', icon: '📅', color: 'cyan', labelKey: 'fsm.scheduleRun', l1: false },
+            4: { code: 'RESERVED_4', icon: '⏸', color: 'gray', labelKey: 'fsm.reserved', l1: false },
+            5: { code: 'AUTOOFF_STOPPED', icon: '⏹', color: 'orange', labelKey: 'fsm.autoOffStopped', l1: true },
+            6: { code: 'TIME_INVALID', icon: '🕐', color: 'red', labelKey: 'fsm.timeInvalid', l1: false },
+            7: { code: 'ENV_PAUSED', icon: '⏸', color: 'orange', labelKey: 'fsm.envPaused', l1: true }
         },
 
         // =====================================================
         // CT10 Reason Code (SPEC §2.2) - 자동 동기화 연동
         // =====================================================
         FSM_REASON: AUTO_CONST.FSM_REASON,
+        // [수정 1] FSM_REASON_META 교체 (라인 67~80 부근)
         FSM_REASON_META: {
-            0:  { code: 'NONE',                labelKey: 'reason.none'             },
-            1:  { code: 'OVERRIDE_ACTIVE',     labelKey: 'reason.overrideActive'   },
-            2:  { code: 'PROFILE_MODE',        labelKey: 'reason.profileMode'      },
-            3:  { code: 'USER_PROFILE_ACTIVE', labelKey: 'reason.userProfileActive'},
-            4:  { code: 'SCHEDULE_ACTIVE',     labelKey: 'reason.scheduleActive'   },
-            5:  { code: 'NO_ACTIVE_SCHEDULE',  labelKey: 'reason.noActiveSchedule' },
-            6:  { code: 'NO_SCHEDULES',        labelKey: 'reason.noSchedules'      },
-            7:  { code: 'TIME_NOT_VALID',      labelKey: 'reason.timeNotValid'     },
-            8:  { code: 'MOTION_NO_PRESENCE',  labelKey: 'reason.motionNoPresence' },
-            9:  { code: 'AUTOOFF_TIMER',       labelKey: 'reason.autoOffTimer'     },
-            10: { code: 'AUTOOFF_TIME',        labelKey: 'reason.autoOffTime'      },
-            11: { code: 'AUTOOFF_TEMP',        labelKey: 'reason.autoOffTemp'      }
+            0: { code: 'NONE', labelKey: 'reason.none' },
+            1: { code: 'OVERRIDE_ACTIVE', labelKey: 'reason.overrideActive' },
+            2: { code: 'PROFILE_MODE', labelKey: 'reason.profileMode' },
+            3: { code: 'USER_PROFILE_ACTIVE', labelKey: 'reason.userProfileActive' },
+            4: { code: 'SCHEDULE_ACTIVE', labelKey: 'reason.scheduleActive' },
+            5: { code: 'NO_ACTIVE_SCHEDULE', labelKey: 'reason.noActiveSchedule' },
+            6: { code: 'NO_SCHEDULES', labelKey: 'reason.noSchedules' },
+            7: { code: 'TIME_NOT_VALID', labelKey: 'reason.timeNotValid' },
+            8: { code: 'MOTION_NO_PRESENCE', labelKey: 'reason.motionNoPresence' },
+            9: { code: 'AUTOOFF_TIMER', labelKey: 'reason.autoOffTimer' },
+            10: { code: 'AUTOOFF_TIME', labelKey: 'reason.autoOffTime' },
+            11: { code: 'USER_STOP', labelKey: 'reason.userStop' },
+            12: { code: 'TEMP_LOW_STOP', labelKey: 'reason.tempLowStop' },
+            13: { code: 'DI_LOW_STOP', labelKey: 'reason.diLowStop' }
         },
 
         // =====================================================
@@ -83,8 +89,8 @@ window.SNW = window.SNW || {};
         // =====================================================
         WIND_PHASE: AUTO_CONST.WIND_PHASE,
         WIND_PHASE_META: {
-            CALM:   { icon: '🍃', color: 'gray',   labelKey: 'phase.calm'   },
-            NORMAL: { icon: '🟢', color: 'green',  labelKey: 'phase.normal' },
+            CALM: { icon: '🍃', color: 'gray', labelKey: 'phase.calm' },
+            NORMAL: { icon: '🟢', color: 'green', labelKey: 'phase.normal' },
             STRONG: { icon: '🌪', color: 'orange', labelKey: 'phase.strong' }
         },
 
@@ -123,11 +129,11 @@ window.SNW = window.SNW || {};
         // =====================================================
         LOG_LEVEL: { NONE: 0, ERROR: 1, WARN: 2, INFO: 3, DEBUG: 4 },
         LOG_LEVEL_META: {
-            0: { code: 'NONE',  color: 'gray',   labelKey: 'log.none'  },
-            1: { code: 'ERROR', color: 'red',    labelKey: 'log.error' },
-            2: { code: 'WARN',  color: 'yellow', labelKey: 'log.warn'  },
-            3: { code: 'INFO',  color: 'green',  labelKey: 'log.info'  },
-            4: { code: 'DEBUG', color: 'cyan',   labelKey: 'log.debug' }
+            0: { code: 'NONE', color: 'gray', labelKey: 'log.none' },
+            1: { code: 'ERROR', color: 'red', labelKey: 'log.error' },
+            2: { code: 'WARN', color: 'yellow', labelKey: 'log.warn' },
+            3: { code: 'INFO', color: 'green', labelKey: 'log.info' },
+            4: { code: 'DEBUG', color: 'cyan', labelKey: 'log.debug' }
         },
 
         // =====================================================
@@ -151,7 +157,7 @@ window.SNW = window.SNW || {};
         // =====================================================
         RELOAD: {
             POLL_INTERVAL_MS: 300,
-            POLL_TIMEOUT_MS:  5000
+            POLL_TIMEOUT_MS: 5000
         },
 
         // =====================================================
@@ -172,13 +178,15 @@ window.SNW = window.SNW || {};
         ],
 
         // =====================================================
-        // AutoOff reason 라벨 매핑
+        // AutoOff reason 라벨 매핑 (11=USER_STOP은 정상 사용자 정지이므로 의도적 제외)
         // =====================================================
         AUTOOFF_REASON_MAP: {
-            9:  'autoOff.timer',
+            9: 'autoOff.timer',
             10: 'autoOff.time',
-            11: 'autoOff.temp'
+            12: 'autoOff.temp',
+            13: 'autoOff.di'
         }
+
     };
 
 })(window.SNW);

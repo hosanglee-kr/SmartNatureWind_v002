@@ -64,7 +64,7 @@ void CL_S10_Simulation::toJson(JsonDocument& p_doc) {
     v_objSim["gustActive"]    = gustActive;
     v_objSim["thermalActive"] = thermalActive;
 
-    v_objSim["pwmDuty"] = _pwm ? _pwm->P10_getDutyPercent() : 0.0f;
+    v_objSim["pwmDuty"] = _pwm ? _pwm->getDutyPercent() : 0.0f;
 
     v_objSim["presetCode"] = presetCode;
     v_objSim["styleCode"]  = styleCode;

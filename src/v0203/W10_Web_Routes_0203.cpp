@@ -83,6 +83,12 @@ void CL_W10_WebAPI::begin(AsyncWebServer& p_server, CL_CT10_ControlManager& p_co
     s_server  = &p_server;
     s_control = &p_control;
 
+    // [신규] null 방어 (호출자 오류 조기 감지)
+    if (!s_server) {
+        CL_D10_Logger::log(EN_L10_LOG_ERROR, "[W10] begin: server null");
+        return;
+    }
+
     // 1. 시스템 정보 및 상태 (W10_Web_Routes_System_0203.cpp)
     routeVersion();
     routeState();

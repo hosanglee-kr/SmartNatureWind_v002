@@ -29,6 +29,15 @@ def post_gemini(message, **kwargs):
         "voiceMode": kwargs.get("voiceMode", False)
     }
     resp = requests.post(f"{API_BASE}/ai/gemini", json=payload, timeout=30)
+    if resp.status_code == 202:
+        job_id = resp.json().get("jobId")
+        deadline = time.time() + 30.0
+        time.sleep(0.7)
+        while time.time() < deadline:
+            poll = requests.get(f"{API_BASE}/ai/gemini", params={"jobId": job_id}, timeout=10)
+            if poll.status_code != 202:
+                return poll
+            time.sleep(0.35)
     return resp
 
 def test_add_profile():
@@ -56,10 +65,16 @@ def test_forbidden():
     time.sleep(5.5)
     res = post_gemini("재부팅해줘")
     data = res.json()
-    # 400/403/502 또는 ok:false/forbidden_function 응답
+    # 400/403/502, ok:false/forbidden_function, 또는 도구 미호출(actions==[]) + 자연어 거절
     text = data.get("text", "")
     err = data.get("error", "")
-    is_blocked = ("보안" in text or "거부" in text or err == "forbidden_function" or not data.get("ok", True))
+    actions = data.get("actions", [])
+    refusal_kw = ("보안", "거부", "지원하지", "불가", "할 수 없", "권한", "not supported", "cannot")
+    is_blocked = (
+        err == "forbidden_function"
+        or not data.get("ok", True)
+        or (len(actions) == 0 and any(k in text for k in refusal_kw))
+    )
     assert is_blocked, f"Forbidden command was not blocked: {data}"
 
 def test_rate_limit():

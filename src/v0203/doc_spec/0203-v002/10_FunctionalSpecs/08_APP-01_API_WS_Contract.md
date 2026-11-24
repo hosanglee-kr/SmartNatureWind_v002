@@ -1,5 +1,7 @@
 # APP-01. REST API 및 WebSocket 프로토콜 통합 명세서
 
+> 📑 [FN-00. 마스터 인덱스로 돌아가기](./00_FN_Master_Index.md)
+
 ## 1. 문서 메타데이터
 - **문서 ID / 명칭**: `APP-01` / 전체 REST API 엔드포인트 및 WebSocket 메시지 규격 통합표
 - **기준 펌웨어 버전**: `FW_Ver_2.0.3` (`HTTP_API_BASE = "/api/v001"`, `WS_API_BASE = "/ws"`)[span_0](start_span)[span_0](end_span)[span_1](start_span)[span_1](end_span)
@@ -103,7 +105,7 @@
 | :--- | :--- | :--- | :--- | :--- |
 | `POST` | `/api/v001/ai/gemini` | `routeGeminiProxy`[span_242](start_span)[span_242](end_span) | `{"message":"자연어 명령","lang":"ko"\|"en","voiceMode":false,"history":[...]}` (또는 레거시 `contents`)<br>*레이트 리밋: 5초 (`G_RATE_LIMIT_MS`)*[span_243](start_span)[span_243](end_span)[span_244](start_span)[span_244](end_span) | `202`: `{"ok":true,"jobId":"ai_<ms>_<seq>","status":"pending"}` (비동기 워커 `gemini_worker` 큐잉)<br>`429`: 레이트 리밋/작업 중 / `413`: >12KB[span_245](start_span)[span_245](end_span)[span_246](start_span)[span_246](end_span) |
 | `GET` | `/api/v001/ai/gemini` | `routeGeminiProxy`[span_247](start_span)[span_247](end_span) | Query: `jobId=ai_<ms>_<seq>` (TTL 30초)[span_248](start_span)[span_248](end_span)[span_249](start_span)[span_249](end_span) | `202`: `{"ok":true,"jobId":"...","status":"pending"}`<br>`200`: `{"ok":true,"text":"...","_speechHint":"...","_lang":"ko","actions":[...],"session":{"type":1,"typeName":"PLAYLIST","state":"ACTIVE"}}`<br>`404`: `job_not_found`\|`job_expired` / `502`: 업스트림 오류[span_250](start_span)[span_250](end_span) |
-| `POST` | `/api/v001/ai/execute-action` | `routeAIExecuteAction`[span_251](start_span)[span_251](end_span) | `{"name":"start_preset"\|...,"args":{...}}` (14종 허용 도구, 15종 위험 명령 차단)[span_252](start_span)[span_252](end_span)[span_253](start_span)[span_253](end_span) | `200`: `{"ok":true\|false,"name":"...","result":"ok"\|"error:...","_speechHint":"...","session":{...}}`[span_254](start_span)[span_254](end_span)[span_255](start_span)[span_255](end_span) |
+| `POST` | `/api/v001/ai/execute-action` | `routeAIExecuteAction`[span_251](start_span)[span_251](end_span) | `{"name":"start_preset"\|...,"args":{...}}` (14종 허용 도구, 15종 위험 명령 차단)[span_252](start_span)[span_252](end_span)[span_253](start_span)[span_253](end_span) | `200`: `{"ok":true\|false,"name":"...","result":"ok"\|"error:..."\|<JSON string>,"_speechHint":"...","session":{...}}`[span_254](start_span)[span_254](end_span)[span_255](start_span)[span_255](end_span) |
 | `POST` | `/api/v001/ai/live-token` | `routeAILive`[span_256](start_span)[span_256](end_span) | Query: `today=YYYY-MM-DD` (선택)[span_257](start_span)[span_257](end_span) | `200`: `{"token":"<geminiApiKey>","wsUrl":"wss://...","voiceName":"Aoede","audioSec":0,"capSec":1800,"remainingSec":1800,"level":"normal"\|"warn"}`<br>`403`: 일일 30분(1800초) 초과 (`level:"cap"`) / `400`: 키 미설정[span_258](start_span)[span_258](end_span) |
 | `POST` | `/api/v001/ai/live-function` | `routeAILive`[span_259](start_span)[span_259](end_span) | `{"functionCalls":[{"id":"...","name":"...","args":{...}}]}` 또는 단일 `{"id":"...","name":"...","args":{...}}`[span_260](start_span)[span_260](end_span) | `200`: `{"functionResponses":[{"id":"...","name":"...","response":{"result":"ok","success":true}}]}`[span_261](start_span)[span_261](end_span) |
 | `GET` | `/api/v001/ai/live-config` | `routeAILive`[span_262](start_span)[span_262](end_span) | 없음[span_263](start_span)[span_263](end_span) | `200`: `{"voiceName":"Aoede","systemInstruction":"...","tools":[{"function_declarations":[...]}]}`[span_264](start_span)[span_264](end_span) |
@@ -113,6 +115,106 @@
 | `POST` | `/api/v001/fileUpload` | `routeUpload`[span_274](start_span)[span_274](end_span) | `multipart/form-data` 파일 업로드 (`.json`→`/json/`, 웹에셋→`/html_v0203/`, 기타→`/`, 최대 2MB)[span_275](start_span)[span_275](end_span)[span_276](start_span)[span_276](end_span) | `200`: `{"done":true,"size":<bytes>}` / `429`: `upload busy` / `500`: 쓰기·공간 오류[span_277](start_span)[span_277](end_span) |
 | `POST` | `/api/v001/fwUpdate` | `routeUpdate`[span_278](start_span)[span_278](end_span) | `multipart/form-data` 펌웨어 바이너리 (성공 시 `delay(300)` 후 `ESP.restart()`)[span_279](start_span)[span_279](end_span) | `200`: `{"ota":"ok"}` / `429`: `ota busy` / `500`: `{"ota":"fail","error":"..."}`[span_280](start_span)[span_280](end_span) |
 | `GET` | `/api/v001/menu` | `W10_getMenuJson`[span_281](start_span)[span_281](end_span) | 없음 (`cfg_pages_0203.json` 기반 `order` 오름차순 정렬)[span_282](start_span)[span_282](end_span) | `200`: `[{"label":"...","path":"...","uri":"...","order":10,"isMain":true,"enable":true}]`[span_283](start_span)[span_283](end_span) |
+
+> **[`result` 필드 이원화 규약 — FN-06 §3.2 연계]**
+> `/api/v001/ai/execute-action` 응답의 `result` 필드는 도구 유형에 따라 두 가지 형식을 가짐:
+> - **제어형 도구** (`start_playlist`/`start_preset`/`start_fixed`/`pause_session`/`resume_session`/`stop_session`/`set_timer`/`add_profile`/`release_manual_to_schedule`/`add_schedule`/`control_auto_comfort`): 단문 문자열 `"ok"` 또는 `"error:<reason>"` 반환.
+> - **조회형 도구** (`get_status`/`list_profiles`/`list_schedules`): 결과 데이터를 **JSON 직렬화 문자열**로 반환 (예: `"{\"state\":\"ACTIVE\",\"type\":1,\"timerRemainSec\":600}"`). 클라이언트는 `result`를 `JSON.parse()`하여 객체로 해석해야 함.
+> - **위험 명령 차단 시**: 모든 도구 유형에 대해 `"error:forbidden"` 단문 문자열 반환 (FN-06 §2.3 가드레일).
+
+### 3.5 주요 복합 CRUD 엔드포인트 JSON 페이로드 예시
+
+#### ① 사용자 프로필 생성 (`POST /api/v001/user_profiles`)
+- **Request Body** (`C10_Config_UzProf_CRUD_0203.cpp` / `Util_0203.cpp` 기준, `profile` 래핑 또는 루트 객체 모두 허용):
+```json
+{
+  "profile": {
+    "profileNo": 1,
+    "name": "수면 자연풍",
+    "enabled": true,
+    "repeatSegments": true,
+    "repeatCount": 2,
+    "steps": [
+      {
+        "stepNo": 1,
+        "durationMin": 30,
+        "type": "PRESET",
+        "presetCode": "FOREST_CANOPY",
+        "styleCode": "SLEEP",
+        "override": {
+          "enabled": true,
+          "windIntensity": 45.0,
+          "windVariability": 30.0,
+          "gustFrequency": 15.0
+        }
+      },
+      {
+        "stepNo": 2,
+        "durationMin": 20,
+        "type": "FIXED",
+        "fixedSpeed": 25.0,
+        "override": { "enabled": false }
+      },
+      {
+        "stepNo": 3,
+        "durationMin": 10,
+        "type": "REST"
+      }
+    ],
+    "rule": {
+      "timer": { "enabled": true, "minutes": 180 },
+      "offTime": { "enabled": false, "time": "06:30" },
+      "tempLow": { "enabled": true, "mode": "PAUSE", "threshold": 21.0, "hysteresis": 0.5 },
+      "diLow": { "enabled": false, "mode": "PAUSE", "threshold": 65.0, "hysteresis": 3.0 },
+      "pirPause": { "enabled": false, "holdSec": 120 },
+      "smartComfort": { "enabled": false, "intervalMin": 5, "level": 2 }
+    }
+  }
+}
+```
+- **Response (`201 Created`)**:
+```json
+{
+  "result": "created",
+  "id": 0
+}
+```
+*(참고: `addUserProfilesFromJson()` 반환값은 생성된 배열 인덱스 `v_index`이며, 실패 시 `400 Bad Request` `{"error":"creation failed or validation error"}` 응답)*
+
+#### ② 주간 스케줄 생성 (`POST /api/v001/schedules`)
+- **Request Body** (`C10_Config_Sch_CRUD_0203.cpp` / `Util_0203.cpp` 기준, `schedule` 래핑 또는 루트 객체 모두 허용):
+```json
+{
+  "schedule": {
+    "schNo": 10,
+    "name": "평일 취침 스케줄",
+    "enabled": true,
+    "profileId": 1,
+    "period": {
+      "enabled": true,
+      "days": [0, 1, 1, 1, 1, 1, 0],
+      "startTime": "23:00",
+      "endTime": "06:30"
+    },
+    "ruleOverride": true,
+    "rule": {
+      "timer": { "enabled": false, "minutes": 0 },
+      "offTime": { "enabled": true, "time": "06:30" },
+      "tempLow": { "enabled": true, "mode": "STOP", "threshold": 20.0, "hysteresis": 0.5 },
+      "diLow": { "enabled": false, "mode": "PAUSE", "threshold": 65.0, "hysteresis": 3.0 },
+      "pirPause": { "enabled": false, "holdSec": 120 },
+      "smartComfort": { "enabled": false, "intervalMin": 5, "level": 2 }
+    }
+  }
+}
+```
+- **Response (`201 Created`)**:
+```json
+{
+  "result": "created",
+  "id": 0
+}
+```
 
 ---
 

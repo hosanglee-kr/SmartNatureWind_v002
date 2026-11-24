@@ -1,5 +1,7 @@
 # FN-05. 센서 모니터링 및 물리 시뮬레이션 기능 명세서
 
+> 📑 [FN-00. 마스터 인덱스로 돌아가기](./00_FN_Master_Index.md)
+
 ## 1. 문서 메타데이터
 - **기능 ID / 명칭**: `FN-05` / 센서 모니터링 및 물리 시뮬레이션 (`Sensor Monitoring, Motion Logic & Physics Wind Simulation`)
 - **관련 소스 파일**:

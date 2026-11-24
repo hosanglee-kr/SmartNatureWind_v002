@@ -1,5 +1,7 @@
 # APP-03. 전역 상태머신, 동시성(Mutex) 규약 및 Fail-safe 매트릭스
 
+> 📑 [FN-00. 마스터 인덱스로 돌아가기](./00_FN_Master_Index.md)
+
 ## 1. 문서 메타데이터
 - **문서 ID / 명칭**: `APP-03` / 전역 상태머신(`EN_*`), Mutex 점유 규칙, 에러 코드 및 Fail-safe 매트릭스[span_0](start_span)[span_0](end_span)[span_1](start_span)[span_1](end_span)
 - **기준 펌웨어 버전**: `FW_Ver_2.0.3`[span_2](start_span)[span_2](end_span)

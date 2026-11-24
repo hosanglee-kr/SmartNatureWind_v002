@@ -1,5 +1,7 @@
 # FN-01. 시스템 코어 및 공통 유틸리티 기능 명세서
 
+> 📑 [FN-00. 마스터 인덱스로 돌아가기](./00_FN_Master_Index.md)
+
 ## 1. 문서 메타데이터
 - **기능 ID / 명칭**: `FN-01` / 시스템 코어 및 공통 유틸리티 (`System Core, Boot Orchestration, LED, Logger & Common Utilities`)
 - **관련 소스 파일**:

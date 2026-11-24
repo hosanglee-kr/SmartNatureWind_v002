@@ -1,5 +1,7 @@
 # FN-02. 네트워크 및 시간 동기화 기능 명세서
 
+> 📑 [FN-00. 마스터 인덱스로 돌아가기](./00_FN_Master_Index.md)
+
 ## 1. 문서 메타데이터
 - **기능 ID / 명칭**: `FN-02` / 네트워크 및 시간 동기화 (`Wi-Fi AP/STA Connection & Multi-Server SNTP Sync`)
 - **관련 소스 파일**:

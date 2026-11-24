@@ -1,5 +1,7 @@
 # FN-06. AI 연동 및 프롬프트/액션 제어 기능 명세서
 
+> 📑 [FN-00. 마스터 인덱스로 돌아가기](./00_FN_Master_Index.md)
+
 ## 1. 문서 메타데이터
 - **기능 ID / 명칭**: `FN-06` / AI 연동 및 프롬프트/액션 제어 (`Gemini AI Proxy, Live Voice & Tool Action Dispatcher`)
 - **관련 소스 파일**:

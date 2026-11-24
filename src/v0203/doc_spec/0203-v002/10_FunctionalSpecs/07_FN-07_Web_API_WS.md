@@ -1,5 +1,7 @@
 # FN-07. 웹 서버, REST API 및 실시간 통신 기능 명세서
 
+> 📑 [FN-00. 마스터 인덱스로 돌아가기](./00_FN_Master_Index.md)
+
 ## 1. 문서 메타데이터
 - **기능 ID / 명칭**: `FN-07` / 웹 서버, REST API 및 실시간 통신 (`Web Server, REST API & WebSocket`)
 - **관련 소스 파일**:

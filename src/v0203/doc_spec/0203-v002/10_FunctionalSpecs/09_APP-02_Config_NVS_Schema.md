@@ -1,5 +1,7 @@
 # APP-02. LittleFS JSON 설정 및 NVS 스키마 통합 명세서
 
+> 📑 [FN-00. 마스터 인덱스로 돌아가기](./00_FN_Master_Index.md)
+
 ## 1. 문서 메타데이터
 - **문서 ID / 명칭**: `APP-02` / LittleFS JSON 전체 트리 스키마 및 NVS Namespace/Key 매핑 통합표
 - **기준 펌웨어 버전**: `FW_Ver_2.0.3` (`G_JSON_VERSION = "0203"`)
@@ -154,9 +156,10 @@
   - `pages[]` (최대 24개): `uri` (`string[96]`, 필수), `path` (`string[160]`, 필수), `label` (`string[32]`), `enable` (`bool`, 기본 `true`), `isMain` (`bool`), `order` (`uint16`), `pageAssets[]` (최대 8개: `uri`, `path`)
   - `reDirect[]` (최대 32개): `uriFrom` (`string[96]`, 필수), `uriTo` (`string[96]`, 필수) — 기본 17개 SPA 해시 리다이렉트(`/` → `/index.html`, `/ai` → `/index.html#/ai` 등) 포함
   - `assets[]` (최대 16개): `uri`, `path`, `isCommon` (`bool`)
-- **`nvsSpec` (`nvsSpec` 래핑 저장)**:
+- **`nvsSpec` (`nvsSpec` 래핑 저장 — UI/진단 메타데이터 정의용)**:
   - `nvsSpec.namespace` (`string[16]`, 기본 `"SNW"`)
   - `nvsSpec.entries[]` (최대 32개): `key` (`string[32]`, 필수), `type` (`string[16]`), `defaultValue` (`string[64]`)
+  - **[주의 — 저장소 용도 구분]**: 본 `cfg_nvsSpec_0203.json`은 웹 UI 설정 진단 및 스키마 노출용 메타 정의(`namespace: "SNW"`, `camelCase` 키: `runMode`, `actProfileNo`, `actSegmentNo`, `presetCode`, `styleCode`, `wifiConnected`)이며, **실제 ESP32 NVS 플래시 파티션에 런타임 상태를 영구 기록하는 단일 진실 공급원(SSOT)은 아래 §4의 `CL_N10_NvsManager` (`namespace: "SNW_RUN"`, `snake_case <= 15B` 키)**임.
 
 ---
 

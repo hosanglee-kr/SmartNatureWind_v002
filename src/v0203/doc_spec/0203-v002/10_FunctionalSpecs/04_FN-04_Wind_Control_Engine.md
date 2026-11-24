@@ -1,5 +1,7 @@
 # FN-04. 바람 제어 엔진 및 상태 머신 기능 명세서
 
+> 📑 [FN-00. 마스터 인덱스로 돌아가기](./00_FN_Master_Index.md)
+
 ## 1. 문서 메타데이터
 - **기능 ID / 명칭**: `FN-04` / 바람 제어 엔진 및 상태 머신 (`Wind Control Engine & FSM`)
 - **관련 소스 파일**:
@@ -75,6 +77,11 @@
 - **`ST_CT10_TriggerRuntime_t` (트리거 평가 상태)**[span_75](start_span)[span_75](end_span):
   - `timerArmed`, `timerStartMs`, `timerMinutes`, `offTimeEnabled`, `offTimeMinutes`, `offTimeCrossMidnight`[span_76](start_span)[span_76](end_span)
   - `pauseMask` (`bit0=MOTION(0x01)`, `bit1=TEMP(0x02)`, `bit2=DI(0x04)`), `pauseBypassUntilMs`, `lastCheckTempC`, `lastCheckDI`[span_77](start_span)[span_77](end_span)
+- **`ST_A20_Step_t` (`ST_A20_UserProfileSegment_t`) & FSM 레거시 브릿지 매핑 (`A20_Const_Sch_0203.h` / `C10_Config_UzProf_Util_0203.cpp`)**:
+  - 외부 JSON/API는 `stepNo`, `durationMin`, `type`(`PRESET`/`FIXED`/`REST`) 단일 규격을 사용하며, JSON 디코딩 시 `tickSegmentSequence()` FSM 호환을 위해 아래 미러 필드가 자동 동기화됨:
+    - `stepNo` (`uint8`) → `segId` (`uint8`) 및 `segNo` (`uint16`)
+    - `durationMin` (`uint16`, `1..1440`분) → `onMinutes = durationMin`, `offMinutes = 0`
+    - `type` (`EN_A20_step_type_t`) → `EN_A20_STEP_TYPE_FIXED`이면 `mode = EN_A20_SEG_MODE_FIXED`, `PRESET`/`REST`이면 `mode = EN_A20_SEG_MODE_PRESET` (`REST`는 `applySegmentOn()` 진입 시 즉시 `applySegmentOff()` 분기 처리)
 
 ### 3.2 입력 및 출력 데이터
 - **입력 (Input)**:
